@@ -1204,7 +1204,7 @@ pub mod ibc_packet {
             &self,
             p0: ::std::string::String,
             p1: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, (u8, u8, Data, ::std::string::String)>
+        ) -> ::ethers::contract::builders::ContractCall<M, (u8, u8, IbcCoreChannelV1CounterpartyData, ::std::string::String)>
         {
             self.0
                 .method_hash([91, 61, 226, 96], (p0, p1))
@@ -3251,7 +3251,7 @@ pub mod ibc_packet {
     pub struct ChannelsReturn {
         pub state: u8,
         pub ordering: u8,
-        pub counterparty: Data,
+        pub counterparty: IbcCoreChannelV1CounterpartyData,
         pub version: ::std::string::String,
     }
     ///Container type for all return fields from the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`

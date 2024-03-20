@@ -1389,7 +1389,7 @@ pub mod glue {
         Eq,
         Hash,
     )]
-    pub struct Data {
+    pub struct TendermintTypesBlockIDData {
         pub hash: ::ethers::core::types::Bytes,
         pub part_set_header: TendermintTypesPartSetHeaderData,
     }
@@ -1455,7 +1455,7 @@ pub mod glue {
     pub struct TendermintTypesCommitData {
         pub height: i64,
         pub round: i32,
-        pub block_id: Data,
+        pub block_id: TendermintTypesBlockIDData,
         pub signatures: ::std::vec::Vec<TendermintTypesCommitSigData>,
     }
     ///`TendermintTypesCommitSigData(uint8,bytes,(int64,int64),bytes)`
@@ -1491,7 +1491,7 @@ pub mod glue {
         pub chain_id: ::std::string::String,
         pub height: i64,
         pub time: GoogleProtobufTimestampData,
-        pub last_block_id: Data,
+        pub last_block_id: TendermintTypesBlockIDData,
         pub last_commit_hash: ::ethers::core::types::Bytes,
         pub data_hash: ::ethers::core::types::Bytes,
         pub validators_hash: ::ethers::core::types::Bytes,

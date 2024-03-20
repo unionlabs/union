@@ -679,7 +679,7 @@ pub mod cometbls_client {
         pub fn get_consensus_state(
             &self,
             client_id: ::std::string::String,
-            height: Data,
+            height: IbcCoreClientV1HeightData,
         ) -> ::ethers::contract::builders::ContractCall<M, (::ethers::core::types::Bytes, bool)>
         {
             self.0
@@ -699,7 +699,7 @@ pub mod cometbls_client {
         pub fn get_timestamp_at_height(
             &self,
             client_id: ::std::string::String,
-            height: Data,
+            height: IbcCoreClientV1HeightData,
         ) -> ::ethers::contract::builders::ContractCall<M, (u64, bool)> {
             self.0
                 .method_hash([75, 11, 189, 196], (client_id, height))
@@ -722,7 +722,7 @@ pub mod cometbls_client {
         pub fn verify_membership(
             &self,
             client_id: ::std::string::String,
-            height: Data,
+            height: IbcCoreClientV1HeightData,
             delay_period_time: u64,
             delay_period_blocks: u64,
             proof: ::ethers::core::types::Bytes,
@@ -750,7 +750,7 @@ pub mod cometbls_client {
         pub fn verify_non_membership(
             &self,
             client_id: ::std::string::String,
-            height: Data,
+            height: IbcCoreClientV1HeightData,
             delay_period_time: u64,
             delay_period_blocks: u64,
             proof: ::ethers::core::types::Bytes,
