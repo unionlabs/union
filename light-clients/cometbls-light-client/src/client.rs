@@ -32,7 +32,7 @@ use unionlabs::{
 use crate::{
     errors::{Error, InvalidHeaderError},
     storage::{
-        get_or_next_consensus_state_meta, get_or_prev_consensus_state_meta,
+        get_current_or_next_consensus_state_meta, get_current_or_prev_consensus_state_meta,
         save_consensus_state_metadata,
     },
     zkp_verifier::ZKPVerifier,
@@ -299,7 +299,8 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             return Ok(false);
         }
 
-        if let Ok(Some((_, next_consensus_state))) = get_or_next_consensus_state_meta(deps, height)
+        if let Ok(Some((_, next_consensus_state))) =
+            get_current_or_next_consensus_state_meta(deps, height)
         {
             // next (in terms of height) consensus state must have a larger timestamp
             if next_consensus_state.timestamp <= expected_timestamp {
@@ -307,7 +308,8 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             }
         }
 
-        if let Ok(Some((_, prev_consensus_state))) = get_or_prev_consensus_state_meta(deps, height)
+        if let Ok(Some((_, prev_consensus_state))) =
+            get_current_or_prev_consensus_state_meta(deps, height)
         {
             // previous (in terms of height) consensus state must have a smaller timestamp
             if prev_consensus_state.timestamp >= expected_timestamp {
@@ -620,7 +622,7 @@ mod tests {
 
         // the new consensus state metadata is saved under substitute's latest height
         assert_eq!(
-            get_or_next_consensus_state_meta(
+            get_current_or_next_consensus_state_meta(
                 deps.as_ref(),
                 INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT
             )

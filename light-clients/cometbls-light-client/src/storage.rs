@@ -44,7 +44,7 @@ impl ConsensusStateMetadata {
 /// **Note**: The caller should note that if there is no other (lexicographically) previous consensus
 /// state metadata in the storage, this could try to parse a random item and return an error. Hence,
 /// on such occasion, there is no guarantee of whether the caller will get `Ok(None)` or `Err`.
-pub fn get_or_prev_consensus_state_meta(
+pub fn get_current_or_prev_consensus_state_meta(
     deps: Deps,
     height: Height,
 ) -> Result<Option<(Height, ConsensusStateMetadata)>, StorageError> {
@@ -70,7 +70,7 @@ pub fn get_or_prev_consensus_state_meta(
 /// **Note**: The caller should note that if there is no other (lexicographically) next consensus
 /// state metadata in the storage, this could try to parse a random item and return an error. Hence,
 /// on such occasion, there is no guarantee of whether the caller will get `Ok(None)` or `Err`.
-pub fn get_or_next_consensus_state_meta(
+pub fn get_current_or_next_consensus_state_meta(
     deps: Deps,
     height: Height,
 ) -> Result<Option<(Height, ConsensusStateMetadata)>, StorageError> {
@@ -227,7 +227,7 @@ mod tests {
             revision_height: ordered_heights[3].1,
         };
 
-        let next = get_or_next_consensus_state_meta(
+        let next = get_current_or_next_consensus_state_meta(
             deps.as_ref(),
             Height {
                 revision_number: prev_height.revision_number,
@@ -241,7 +241,7 @@ mod tests {
         assert_eq!(next.0, next_height);
         assert_eq!(next.1.timestamp, ordered_heights[3].2);
 
-        let prev = get_or_prev_consensus_state_meta(
+        let prev = get_current_or_prev_consensus_state_meta(
             deps.as_ref(),
             Height {
                 revision_number: next_height.revision_number,
@@ -257,7 +257,7 @@ mod tests {
 
         // next of a height of the largest item is None
         assert_eq!(
-            get_or_next_consensus_state_meta(
+            get_current_or_next_consensus_state_meta(
                 deps.as_ref(),
                 Height {
                     revision_number: ordered_heights.last().unwrap().0,
@@ -270,7 +270,7 @@ mod tests {
 
         // prev of a height of the smallest item is None
         assert_eq!(
-            get_or_prev_consensus_state_meta(
+            get_current_or_prev_consensus_state_meta(
                 deps.as_ref(),
                 Height {
                     revision_number: ordered_heights.first().unwrap().0,
