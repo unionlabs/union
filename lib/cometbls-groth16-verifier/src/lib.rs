@@ -335,7 +335,7 @@ fn verify_generic_zkp_2(
             .chain_update(
                 vec![0u8; 32 - chain_id.len()]
                     .into_iter()
-                    .chain(chain_id.bytes().into_iter())
+                    .chain(chain_id.bytes())
                     .collect::<Vec<_>>(),
             )
             .chain_update(

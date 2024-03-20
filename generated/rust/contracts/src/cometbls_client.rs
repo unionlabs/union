@@ -690,7 +690,8 @@ pub mod cometbls_client {
         pub fn get_latest_height(
             &self,
             client_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, (Data, bool)> {
+        ) -> ::ethers::contract::builders::ContractCall<M, (IbcCoreClientV1HeightData, bool)>
+        {
             self.0
                 .method_hash([50, 150, 129, 208], client_id)
                 .expect("method not found (this should never happen)")

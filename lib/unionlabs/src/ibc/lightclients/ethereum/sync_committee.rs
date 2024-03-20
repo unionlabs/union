@@ -24,7 +24,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncCommittee<C>>
 {
     fn from(value: SyncCommittee<C>) -> Self {
         Self {
-            pubkeys: value.pubkeys.iter().cloned().map(Into::into).collect(),
+            pubkeys: value.pubkeys.iter().copied().map(Into::into).collect(),
             aggregate_pubkey: value.aggregate_pubkey.into(),
         }
     }

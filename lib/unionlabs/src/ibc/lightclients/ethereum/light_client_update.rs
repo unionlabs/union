@@ -59,14 +59,14 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .next_sync_committee_branch
                 .unwrap_or_default()
                 .iter()
-                .cloned()
+                .copied()
                 .map(H256::into_bytes)
                 .collect(),
             finalized_header: Some(value.finalized_header.into()),
             finality_branch: value
                 .finality_branch
                 .iter()
-                .cloned()
+                .copied()
                 .map(H256::into_bytes)
                 .collect(),
             sync_aggregate: Some(value.sync_aggregate.into()),
