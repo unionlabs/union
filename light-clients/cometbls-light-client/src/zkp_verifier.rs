@@ -1,18 +1,13 @@
-use unionlabs::{hash::H256, uint::U256};
+use unionlabs::{hash::H256, ibc::lightclients::cometbls::light_header::LightHeader};
 
 pub trait ZKPVerifier {
     fn verify_zkp(
+        chain_id: &str,
         trusted_validators_hash: H256,
-        untrusted_validators_hash: H256,
-        message: &[u8],
+        header: &LightHeader,
         zkp: &[u8],
     ) -> Result<(), cometbls_groth16_verifier::Error> {
-        cometbls_groth16_verifier::verify_zkp(
-            U256::from_big_endian(trusted_validators_hash.0),
-            U256::from_big_endian(untrusted_validators_hash.0),
-            message,
-            zkp,
-        )
+        cometbls_groth16_verifier::verify_zkp(chain_id, trusted_validators_hash, header, zkp)
     }
 }
 
@@ -22,9 +17,9 @@ pub struct MockZKPVerifier;
 
 impl ZKPVerifier for MockZKPVerifier {
     fn verify_zkp(
+        _chain_id: &str,
         _trusted_validators_hash: H256,
-        _untrusted_validators_hash: H256,
-        _message: &[u8],
+        _header: &LightHeader,
         _zkp: &[u8],
     ) -> Result<(), cometbls_groth16_verifier::Error> {
         Ok(())

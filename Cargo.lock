@@ -997,7 +997,6 @@ dependencies = [
  "cosmwasm-std",
  "dlmalloc",
  "hex",
- "hex-literal",
  "ics008-wasm-client",
  "ics23",
  "lazy_static",

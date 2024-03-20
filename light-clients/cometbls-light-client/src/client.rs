@@ -10,11 +10,9 @@ use ics008_wasm_client::{
     IbcClient, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
-use prost::Message;
 use unionlabs::{
     encoding::{Decode, Proto},
     ensure,
-    hash::H256,
     ibc::{
         core::{
             client::{genesis_metadata::GenesisMetadata, height::Height},
@@ -26,7 +24,7 @@ use unionlabs::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },
     },
-    tendermint::types::commit::Commit,
+    traits::ClientState as ClientStateExt,
 };
 
 use crate::{
@@ -106,7 +104,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
                 .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
         // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
-        let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
+        let untrusted_height_number = header.signed_header.height.inner() as u64;
         let trusted_height_number = header.trusted_height.revision_height;
 
         if untrusted_height_number <= trusted_height_number {
@@ -119,7 +117,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
 
         let trusted_timestamp = consensus_state.data.timestamp;
         let untrusted_timestamp = {
-            let header_timestamp = header.signed_header.header.time.seconds.inner();
+            let header_timestamp = header.signed_header.time.seconds.inner();
             header_timestamp
                 .try_into()
                 .map_err(|_| InvalidHeaderError::NegativeTimestamp(header_timestamp))?
@@ -158,37 +156,16 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
 
         let trusted_validators_hash = consensus_state.data.next_validators_hash;
 
-        let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
-            trusted_validators_hash.clone()
-        } else {
-            header.signed_header.header.validators_hash.clone()
+        if untrusted_height_number == trusted_height_number + 1 {
+            if header.signed_header.validators_hash != trusted_validators_hash {
+                return Err(InvalidHeaderError::InvalidValidatorsHash.into());
+            }
         };
 
-        let expected_block_hash = header
-            .signed_header
-            .header
-            .calculate_merkle_root()
-            .ok_or(Error::UnableToCalculateMerkleRoot)?;
-
-        if header.signed_header.commit.block_id.hash != expected_block_hash {
-            return Err(InvalidHeaderError::SignedHeaderMismatchWithCommitHash {
-                commit_hash: header.signed_header.commit.block_id.hash,
-                signed_header_root: expected_block_hash,
-            }
-            .into());
-        }
-
-        let signed_vote = canonical_vote(
-            &header.signed_header.commit,
-            header.signed_header.header.chain_id.clone(),
-            expected_block_hash,
-        )
-        .encode_length_delimited_to_vec();
-
         T::verify_zkp(
+            &client_state.chain_id(),
             trusted_validators_hash,
-            untrusted_validators_hash,
-            &signed_vote,
+            &header.signed_header,
             &header.zero_knowledge_proof,
         )
         .map_err(Error::InvalidZKP)
@@ -214,7 +191,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
 
         let untrusted_height = Height {
             revision_number: header.trusted_height.revision_number,
-            revision_height: header.signed_header.commit.height.inner() as u64,
+            revision_height: header.signed_header.height.inner() as u64,
         };
 
         if untrusted_height > client_state.latest_height {
@@ -223,21 +200,17 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         consensus_state.data.app_hash = MerkleRoot {
-            hash: header.signed_header.header.app_hash,
+            hash: header.signed_header.app_hash,
         };
 
-        consensus_state.data.next_validators_hash =
-            header.signed_header.header.next_validators_hash;
+        consensus_state.data.next_validators_hash = header.signed_header.next_validators_hash;
         consensus_state.data.timestamp = header
             .signed_header
-            .header
             .time
             .seconds
             .inner()
             .try_into()
-            .map_err(|_| {
-                Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
-            })?;
+            .map_err(|_| Error::NegativeTimestamp(header.signed_header.time.seconds.inner()))?;
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state_metadata(
@@ -266,14 +239,11 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
 
         let expected_timestamp: u64 = header
             .signed_header
-            .header
             .time
             .seconds
             .inner()
             .try_into()
-            .map_err(|_| {
-                Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
-            })?;
+            .map_err(|_| Error::NegativeTimestamp(header.signed_header.time.seconds.inner()))?;
 
         // If there is already a header at this height, it should be exactly the same as the header that
         // we saved previously. If this is not the case, either the client is broken or the chain is
@@ -288,8 +258,8 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         }) = read_consensus_state::<_, ConsensusState>(deps, &height)?
         {
             if timestamp != expected_timestamp
-                || hash != header.signed_header.header.app_hash
-                || next_validators_hash != header.signed_header.header.next_validators_hash
+                || hash != header.signed_header.app_hash
+                || next_validators_hash != header.signed_header.next_validators_hash
             {
                 return Ok(true);
             }
@@ -459,37 +429,16 @@ fn is_client_expired(
     }
 }
 
-fn canonical_vote(
-    commit: &Commit,
-    chain_id: String,
-    expected_block_hash: H256,
-) -> protos::tendermint::types::CanonicalVote {
-    protos::tendermint::types::CanonicalVote {
-        r#type: protos::tendermint::types::SignedMsgType::Precommit as i32,
-        height: commit.height.inner(),
-        round: commit.round.inner() as i64,
-        // TODO(aeryz): Implement BlockId to proto::CanonicalBlockId
-        block_id: Some(protos::tendermint::types::CanonicalBlockId {
-            hash: expected_block_hash.into(),
-            part_set_header: Some(protos::tendermint::types::CanonicalPartSetHeader {
-                total: commit.block_id.part_set_header.total,
-                hash: commit.block_id.part_set_header.hash.0.to_vec(),
-            }),
-        }),
-        chain_id,
-    }
-}
-
 /// Returns the height from the update data
 ///
-/// `header.signed_header.header.height` is `u64` and it does not contain the
+/// `header.signed_header.height` is `u64` and it does not contain the
 /// revision height. This function is a utility to generate a `Height` type out
 /// of the update data.
 fn height_from_header(header: &Header) -> Height {
     Height {
         revision_number: header.trusted_height.revision_number,
         // SAFETY: height's bounds are [0..i64::MAX]
-        revision_height: header.signed_header.header.height.inner() as u64,
+        revision_height: header.signed_header.height.inner() as u64,
     }
 }
 
@@ -501,7 +450,6 @@ mod tests {
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
         OwnedDeps,
     };
-    use hex_literal::hex;
     use ics008_wasm_client::{
         storage_utils::{
             consensus_db_key, read_subject_consensus_state, HOST_CLIENT_STATE_KEY,
@@ -509,11 +457,7 @@ mod tests {
         },
         FROZEN_HEIGHT,
     };
-    use unionlabs::{
-        encoding::Encode,
-        google::protobuf::any::Any,
-        tendermint::types::{block_id::BlockId, part_set_header::PartSetHeader},
-    };
+    use unionlabs::{encoding::Encode, google::protobuf::any::Any};
 
     use super::*;
 
@@ -693,55 +637,6 @@ mod tests {
         assert_eq!(
             CometblsLightClient::<()>::migrate_client_store(deps.as_mut()),
             Err(Error::SubstituteClientFrozen)
-        );
-    }
-
-    #[test]
-    fn test_ok_regression_1() {
-        // "commit": {
-        //     "round": 0,
-        //     "height": 124,
-        //     "block_id": {
-        //         "hash": "0xed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5",
-        //         "part_set_header": {
-        //             "hash": "0xb1c27e9a68de8ddbc981319dea0ad31aa3e41f6759bd7200581eff9d1373ca9f",
-        //             "total": 1
-        //         }
-        //     },
-        //     "signatures": [
-        //     ]
-        // },
-        let signed_vote = canonical_vote(
-            &Commit {
-                height: 124.try_into().unwrap(),
-                round: 0.try_into().unwrap(),
-                block_id: BlockId {
-                    hash: H256(hex!(
-                        "ed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5"
-                    )),
-                    part_set_header: PartSetHeader {
-                        total: 1,
-                        hash: H256(hex!(
-                            "b1c27e9a68de8ddbc981319dea0ad31aa3e41f6759bd7200581eff9d1373ca9f"
-                        )),
-                    },
-                },
-                signatures: Default::default(),
-            },
-            "union-devnet-1".into(),
-            H256(hex!(
-                "ed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5"
-            )),
-        )
-        .encode_length_delimited_to_vec();
-        assert_eq!(
-            <() as ZKPVerifier>::verify_zkp(
-                H256(hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d")),
-                H256(hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d")),
-                &signed_vote,
-                &hex!("07942610e1aeb229308405cd7fc0305f31129bb6d7a3f39b0b18ac0adc09e5301d05c7dfb6b1c21aeeae94928b7ddbf59c04454454b785bc430b8d825dc1a52f0444e6bddff7896fce6625c4fef776be5ef1dc9e539db05241b201e83e1ed2d02942b8a7c777ed5806508ab66547cfcff01f0a0aeffa773f32dfb9bf76c07e700c21088d0ed1f4aea52b7962ac5ffa2748d4b021bcafa5bcec2e1748130e64691dea0ac767b1fd72750c517f49da19aaa4e5e70591f9bdc1d177850275e2f1a90712c5ed8902568d20e34b2f3e224c3bcbefa57917efe64104d19767a419524f1eb315c1291e1eeaaf765a3f3c2f0ddd908b49cd2e5e776dc9b063fa62777dfc2a59e984c4b0a21d8afb790d9d06cb7d0cbef6b573eaa48398a8d0b731f3362c2f385771a9bce77c5e6cd66c074d36b6cb71cfe97c65dd75bcad2a9d91f899ee15256a75d3065bee14962a6b10b05b72ba616034803a76c8487fd9285f502c011eae9d47767324ea7d90ee9b4e8d9dbcad3cdc1759d3566e2351bd1176d3cd28")
-            ),
-            Ok(())
         );
     }
 }
