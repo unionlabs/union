@@ -1,6 +1,5 @@
 <script lang="ts">
   import Spline from "#/components/Spline.svelte";
-  import cube from "#/spline/cube-responsive.splinecode";
 </script>
 
 <Spline model={cube} />
