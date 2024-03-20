@@ -351,16 +351,16 @@ fn verify_generic_zkp_2(
                 state + substrate_bn::G1::from(verifying_key_public_input) * public_input
             },
         );
-    // TODO: the negation should be computed at compile time
+    // TODO: the verifying key, pedersen key and this negations should be done at compile time
     let result = substrate_bn::pairing_batch(&[
         (zkp.proof.a.into(), zkp.proof.b.into()),
         (public_inputs_msm, -substrate_bn::G2::from(vk.gamma_g2)),
         (zkp.proof.c.into(), -substrate_bn::G2::from(vk.delta_g2)),
         (zkp.proof_commitment.into(), g.into()),
         (zkp.proof_commitment_pok.into(), g_root_sigma_neg.into()),
+        (vk.alpha_g1.into(), -substrate_bn::G2::from(vk.beta_g2)),
     ]);
-    // TODO: this pairing should be computed at compile time
-    if result != substrate_bn::pairing(vk.alpha_g1.into(), vk.beta_g2.into()) {
+    if result != substrate_bn::Gt::one() {
         Err(Error::InvalidProof)
     } else {
         Ok(())
