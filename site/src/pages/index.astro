@@ -10,9 +10,9 @@ import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 import VoyagerModel from '#/components/models/VoyagerModel.svelte'
 import ProductSection from '#/components/ProductSection.astro'
-import microGaloisModel from "#/spline/micro-galois.splinecode";
-import microCometblsModel from "#/spline/micro-cometbls.splinecode";
-import microVoyagerModel from "#/spline/micro-voyager.splinecode";
+import microGaloisModel from "#/spline/micro-galois-optimized.splinecode";
+import microCometblsModel from "#/spline/micro-cometbls-optimized.splinecode";
+import microVoyagerModel from "#/spline/micro-voyager-optimized.splinecode";
 import cube from "#/spline/cube-rotating-optimized.splinecode";
 import Spline from "#/components/Spline.svelte";
 
@@ -122,7 +122,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             <p>
               <span class="text-white">Union</span> is the only interoperability layer that solves the
               <span class="text-white">sovereign bridging trilemma.</span>
-            </p>microGaloisModel
+            </p>
             <p>
               <span class="text-accent">Trustless</span>: Union implements proper <span
                 class="text-white">consensus-verification</span
