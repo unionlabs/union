@@ -856,19 +856,21 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
 macro_rules! msg_struct {
     (
         $(#[cover($($CoverTy:ty),+)])?
+        $(#[doc = $doc:tt])*
         pub struct $Struct:ident$(<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>)? {
             $(
                 pub $field:ident: $FieldTy:ty,
             )*
         }
     ) => {
-        #[derive(Serialize, Deserialize)]
+        #[derive(::serde::Serialize, ::serde::Deserialize)]
         #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
         #[cfg_attr(
             feature = "arbitrary",
             derive(arbitrary::Arbitrary),
             arbitrary(bound = "")
         )]
+        $(#[doc = $doc])*
         pub struct $Struct$(<$($generics: $bound$(<$($boundT),+>)?),+>)? {
             $(
                 pub $field: $FieldTy,
@@ -876,7 +878,7 @@ macro_rules! msg_struct {
             $(
                 #[serde(skip)]
                 #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-                pub __marker: PhantomData<fn() -> ($($CoverTy,)+)>,
+                pub __marker: ::core::marker::PhantomData<fn() -> ($($CoverTy,)+)>,
             )?
         }
         const _: () = {
@@ -895,7 +897,7 @@ macro_rules! msg_struct {
                     Self {
                         $($field: ::core::clone::Clone::clone(&self.$field),)*
                         $(
-                            __marker: PhantomData::<fn() -> ($($CoverTy,)+)>,
+                            __marker: ::core::marker::PhantomData::<fn() -> ($($CoverTy,)+)>,
                         )?
                     }
                 }
@@ -913,19 +915,21 @@ macro_rules! msg_struct {
 
     (
         $(#[cover($($CoverTy:ty),+)])?
-        pub struct $Struct:ident<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>(pub $FieldTy:ty$(,)?);
+        $(#[doc = $doc:tt])*
+        pub struct $Struct:ident$(<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>)?(pub $FieldTy:ty$(,)?);
     ) => {
-        #[derive(Serialize, Deserialize)]
+        #[derive(::serde::Serialize, ::serde::Deserialize)]
         #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields, transparent)]
         #[cfg_attr(
             feature = "arbitrary",
             derive(arbitrary::Arbitrary),
             arbitrary(bound = "")
         )]
-        pub struct $Struct<$($generics: $bound$(<$($boundT),+>)?),+> (pub $FieldTy);
+        $(#[doc = $doc])*
+        pub struct $Struct $(<$($generics: $bound$(<$($boundT),+>)?),+>)? (pub $FieldTy);
         const _: () = {
-            impl<$($generics: $bound$(<$($boundT),+>)?),+> ::core::fmt::Debug
-            for $Struct<$($generics),+> {
+            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::fmt::Debug
+            for $Struct $(<$($generics),+>)? {
                 fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                     fmt.debug_tuple(stringify!($Struct))
                         .field(&self.0)
@@ -933,15 +937,15 @@ macro_rules! msg_struct {
                 }
             }
 
-            impl<$($generics: $bound$(<$($boundT),+>)?),+> ::core::clone::Clone
-            for $Struct<$($generics),+> {
+            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::clone::Clone
+            for $Struct $(<$($generics),+>)? {
                 fn clone(&self) -> Self {
                     Self(::core::clone::Clone::clone(&self.0))
                 }
             }
 
-            impl<$($generics: $bound$(<$($boundT),+>)?),+> ::core::cmp::PartialEq
-            for $Struct<$($generics),+> {
+            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::cmp::PartialEq
+            for $Struct $(<$($generics),+>)? {
                 fn eq(&self, other: &Self) -> bool {
                     self.0 == other.0
                 }

@@ -182,13 +182,26 @@ where
 }
 
 pub mod fetch {
+    use std::marker::PhantomData;
+
+    use chain_utils::cosmos_sdk::CosmosSdkChain;
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
     use macros::apply;
-    use queue_msg::msg_struct;
+    use queue_msg::{data, msg_struct, QueueMsg};
     use serde::{Deserialize, Serialize};
-    use unionlabs::traits::HeightOf;
+    use tendermint_rpc::Client;
+    use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
-    use crate::{ChainExt, PathOf};
+    use crate::{
+        chain_impls::cosmos_sdk::{
+            data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
+            tendermint_helpers::{
+                tendermint_commit_to_signed_header, tendermint_validator_info_to_validator,
+            },
+        },
+        data::{AnyData, Data},
+        id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayerMsgTypes,
+    };
 
     #[apply(msg_struct)]
     pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
@@ -207,5 +220,374 @@ pub mod fetch {
     pub enum AbciQueryType {
         State,
         Proof,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Tr)]
+    pub struct FetchTrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Tr)]
+    pub struct FetchUntrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Tr)]
+    pub struct FetchTrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Tr)]
+    pub struct FetchUntrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+    }
+
+    pub async fn fetch_trusted_commit<Hc, Tr>(
+        hc: &Hc,
+        height: Hc::Height,
+    ) -> QueueMsg<RelayerMsgTypes>
+    where
+        Hc: CosmosSdkChain + ChainExt,
+        <Hc as ChainExt>::Data<Tr>: From<TrustedCommit<Hc, Tr>>,
+        Tr: ChainExt,
+        AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    {
+        let commit = hc
+            .tm_client()
+            .commit(
+                TryInto::<::tendermint::block::Height>::try_into(height.revision_height()).unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let signed_header = tendermint_commit_to_signed_header(commit);
+
+        data(id::<Hc, Tr, _>(
+            hc.chain_id(),
+            Data::specific(TrustedCommit {
+                height,
+                // REVIEW: Ensure `commit.canonical`?
+                signed_header,
+                __marker: PhantomData,
+            }),
+        ))
+    }
+
+    pub async fn fetch_untrusted_commit<Hc, Tr>(
+        hc: &Hc,
+        height: Hc::Height,
+    ) -> QueueMsg<RelayerMsgTypes>
+    where
+        Hc: CosmosSdkChain + ChainExt,
+        <Hc as ChainExt>::Data<Tr>: From<UntrustedCommit<Hc, Tr>>,
+        Tr: ChainExt,
+        AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    {
+        let commit = hc
+            .tm_client()
+            .commit(
+                TryInto::<::tendermint::block::Height>::try_into(height.revision_height()).unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let signed_header = tendermint_commit_to_signed_header(commit);
+
+        data(id::<Hc, Tr, _>(
+            hc.chain_id(),
+            Data::specific(UntrustedCommit {
+                height,
+                // REVIEW: Ensure `commit.canonical`?
+                signed_header,
+                __marker: PhantomData,
+            }),
+        ))
+    }
+
+    pub async fn fetch_trusted_validators<Hc, Tr>(
+        hc: &Hc,
+        height: Hc::Height,
+    ) -> QueueMsg<RelayerMsgTypes>
+    where
+        Hc: CosmosSdkChain + ChainExt,
+        <Hc as ChainExt>::Data<Tr>: From<TrustedValidators<Hc, Tr>>,
+        Tr: ChainExt,
+        AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    {
+        let validators = hc
+            .tm_client()
+            .validators(
+                TryInto::<::tendermint::block::Height>::try_into(height.revision_height()).unwrap(),
+                tendermint_rpc::Paging::All,
+            )
+            .await
+            .unwrap()
+            .validators
+            .into_iter()
+            .map(tendermint_validator_info_to_validator)
+            .collect();
+
+        data(id::<Hc, Tr, _>(
+            hc.chain_id(),
+            Data::specific(TrustedValidators {
+                height,
+                validators,
+                __marker: PhantomData,
+            }),
+        ))
+    }
+
+    pub async fn fetch_untrusted_validators<Hc, Tr>(
+        hc: &Hc,
+        height: Hc::Height,
+    ) -> QueueMsg<RelayerMsgTypes>
+    where
+        Hc: CosmosSdkChain + ChainExt,
+        <Hc as ChainExt>::Data<Tr>: From<UntrustedValidators<Hc, Tr>>,
+        Tr: ChainExt,
+        AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    {
+        let validators = hc
+            .tm_client()
+            .validators(
+                TryInto::<::tendermint::block::Height>::try_into(height.revision_height()).unwrap(),
+                tendermint_rpc::Paging::All,
+            )
+            .await
+            .unwrap()
+            .validators
+            .into_iter()
+            .map(tendermint_validator_info_to_validator)
+            .collect();
+
+        data(id::<Hc, Tr, _>(
+            hc.chain_id(),
+            Data::specific(UntrustedValidators {
+                height,
+                validators,
+                __marker: PhantomData,
+            }),
+        ))
+    }
+}
+
+pub mod data {
+    use macros::apply;
+    use queue_msg::msg_struct;
+    use unionlabs::tendermint::types::{signed_header::SignedHeader, validator::Validator};
+
+    use crate::ChainExt;
+
+    #[apply(msg_struct)]
+    #[cover(Tr)]
+    pub struct UntrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+        pub signed_header: SignedHeader,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Tr)]
+    pub struct TrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+        pub signed_header: SignedHeader,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Hc, Tr)]
+    pub struct TrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+        pub validators: Vec<Validator>,
+    }
+
+    #[apply(msg_struct)]
+    #[cover(Hc, Tr)]
+    pub struct UntrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+        pub height: Hc::Height,
+        pub validators: Vec<Validator>,
+    }
+}
+
+pub mod tendermint_helpers {
+    use unionlabs::{
+        bounded::BoundedI64,
+        google::protobuf::timestamp::Timestamp,
+        hash::H256,
+        tendermint::{
+            crypto::public_key::PublicKey,
+            types::{
+                block_id::BlockId, commit::Commit, commit_sig::CommitSig,
+                part_set_header::PartSetHeader, signed_header::SignedHeader, validator::Validator,
+            },
+        },
+    };
+
+    pub fn tendermint_commit_to_signed_header(
+        commit: tendermint_rpc::endpoint::commit::Response,
+    ) -> SignedHeader {
+        let header_timestamp =
+            tendermint_proto::google::protobuf::Timestamp::from(commit.signed_header.header.time);
+
+        SignedHeader {
+            header: unionlabs::tendermint::types::header::Header {
+                version: unionlabs::tendermint::version::consensus::Consensus {
+                    block: commit.signed_header.header.version.block,
+                    app: commit.signed_header.header.version.app,
+                },
+                chain_id: commit.signed_header.header.chain_id.into(),
+                height: tendermint_height_to_bounded_i64(commit.signed_header.header.height),
+                time: Timestamp {
+                    seconds: header_timestamp.seconds.try_into().unwrap(),
+                    nanos: header_timestamp.nanos.try_into().unwrap(),
+                },
+                last_block_id: BlockId {
+                    hash: tendermint_hash_to_h256(
+                        commit.signed_header.header.last_block_id.unwrap().hash,
+                    ),
+                    part_set_header: PartSetHeader {
+                        total: commit
+                            .signed_header
+                            .header
+                            .last_block_id
+                            .unwrap()
+                            .part_set_header
+                            .total,
+                        hash: tendermint_hash_to_h256(
+                            commit
+                                .signed_header
+                                .header
+                                .last_block_id
+                                .unwrap()
+                                .part_set_header
+                                .hash,
+                        ),
+                    },
+                },
+                last_commit_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.last_commit_hash.unwrap(),
+                ),
+                data_hash: tendermint_hash_to_h256(commit.signed_header.header.data_hash.unwrap()),
+                validators_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.validators_hash,
+                ),
+                next_validators_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.next_validators_hash,
+                ),
+                consensus_hash: tendermint_hash_to_h256(commit.signed_header.header.consensus_hash),
+                app_hash: commit
+                    .signed_header
+                    .header
+                    .app_hash
+                    .as_bytes()
+                    .try_into()
+                    .unwrap(),
+                last_results_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.last_results_hash.unwrap(),
+                ),
+                evidence_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.evidence_hash.unwrap(),
+                ),
+                proposer_address: commit
+                    .signed_header
+                    .header
+                    .proposer_address
+                    .as_bytes()
+                    .try_into()
+                    .expect("value is a [u8; 20] internally, this should not fail; qed;"),
+            },
+            commit: Commit {
+                height: tendermint_height_to_bounded_i64(commit.signed_header.commit.height),
+                round: i32::from(commit.signed_header.commit.round)
+                    .try_into()
+                    .unwrap(),
+                block_id: BlockId {
+                    hash: tendermint_hash_to_h256(commit.signed_header.commit.block_id.hash),
+                    part_set_header: PartSetHeader {
+                        total: commit.signed_header.commit.block_id.part_set_header.total,
+                        hash: tendermint_hash_to_h256(
+                            commit.signed_header.commit.block_id.part_set_header.hash,
+                        ),
+                    },
+                },
+                signatures: commit
+                    .signed_header
+                    .commit
+                    .signatures
+                    .into_iter()
+                    .map(tendermint_commit_sig_to_commit_sig)
+                    .collect(),
+            },
+        }
+    }
+
+    fn tendermint_commit_sig_to_commit_sig(sig: tendermint::block::CommitSig) -> CommitSig {
+        match sig {
+            ::tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig::Absent,
+            ::tendermint::block::CommitSig::BlockIdFlagCommit {
+                validator_address,
+                timestamp,
+                signature,
+            } => CommitSig::Commit {
+                validator_address: Vec::from(validator_address).try_into().unwrap(),
+                timestamp: {
+                    let ts = tendermint_proto::google::protobuf::Timestamp::from(timestamp);
+
+                    Timestamp {
+                        seconds: ts.seconds.try_into().unwrap(),
+                        nanos: ts.nanos.try_into().unwrap(),
+                    }
+                },
+                signature: signature.unwrap().into_bytes().try_into().unwrap(),
+            },
+            ::tendermint::block::CommitSig::BlockIdFlagNil {
+                validator_address,
+                timestamp,
+                signature,
+            } => CommitSig::Nil {
+                validator_address: Vec::from(validator_address).try_into().unwrap(),
+                timestamp: {
+                    let ts = tendermint_proto::google::protobuf::Timestamp::from(timestamp);
+
+                    Timestamp {
+                        seconds: ts.seconds.try_into().unwrap(),
+                        nanos: ts.nanos.try_into().unwrap(),
+                    }
+                },
+                signature: signature.unwrap().into_bytes().try_into().unwrap(),
+            },
+        }
+    }
+
+    pub fn tendermint_validator_info_to_validator(val: ::tendermint::validator::Info) -> Validator {
+        Validator {
+            address: val
+                .address
+                .as_bytes()
+                .try_into()
+                .expect("value is 20 bytes internally; should not fail; qed"),
+            pub_key: match val.pub_key {
+                ::tendermint::PublicKey::Ed25519(key) => PublicKey::Ed25519(key.as_bytes().into()),
+                ::tendermint::PublicKey::Bn254(key) => PublicKey::Bn254(key.to_vec()),
+                _ => todo!(),
+            },
+            voting_power: BoundedI64::new(val.power.value().try_into().unwrap()).unwrap(),
+            proposer_priority: val.proposer_priority.value(),
+        }
+    }
+
+    fn tendermint_hash_to_h256(hash: tendermint::Hash) -> H256 {
+        match hash {
+            tendermint::Hash::Sha256(hash) => hash.into(),
+            tendermint::Hash::None => panic!("empty hash???"),
+        }
+    }
+
+    pub fn tendermint_height_to_bounded_i64(
+        height: ::tendermint::block::Height,
+    ) -> BoundedI64<0, { i64::MAX }> {
+        i64::from(height).try_into().unwrap()
     }
 }

@@ -335,10 +335,9 @@ mod tests {
         chain_impls::{
             cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
             evm::EvmConfig,
-            union::UnionFetch,
         },
         event::IbcEvent,
-        fetch::{FetchSelfClientState, FetchSelfConsensusState, LightClientSpecificFetch},
+        fetch::{FetchSelfClientState, FetchSelfConsensusState},
         msg::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
         RelayerMsgTypes, WasmConfig,
     };
@@ -399,13 +398,13 @@ mod tests {
         println!("---------------------------------------");
         print_json::<RelayerMsgTypes>(fetch(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
             union_chain_id.clone(),
-            LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
+            relay_message::fetch::Fetch::specific(FetchAbciQuery {
                 path: proof::Path::ClientStatePath(proof::ClientStatePath {
                     client_id: parse!("client-id"),
                 }),
                 height: parse!("123-456"),
                 ty: AbciQueryType::State,
-            })),
+            }),
         )));
 
         println!("---------------------------------------");

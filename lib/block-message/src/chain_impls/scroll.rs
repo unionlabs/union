@@ -48,12 +48,12 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::{Aggregate, AnyAggregate, ChainSpecificAggregate},
+    aggregate::{Aggregate, AnyAggregate},
     chain_impls::evm::{
         FetchBeaconBlockRange, FetchChannel, FetchConnection, FetchEvents, FetchGetLogs,
     },
-    data::{AnyData, ChainEvent, ChainSpecificData, Data},
-    fetch::{AnyFetch, ChainSpecificFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
+    data::{AnyData, ChainEvent, Data},
+    fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
     id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
@@ -65,7 +65,7 @@ impl ChainExt for Scroll {
 
 impl DoFetchBlockRange<Scroll> for Scroll
 where
-    AnyChainIdentified<AnyFetch>: From<Identified<Scroll, ChainSpecificFetch<Scroll>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Scroll, Fetch<Scroll>>>,
 {
     fn fetch_block_range(
         c: &Scroll,
@@ -73,13 +73,10 @@ where
     ) -> QueueMsg<BlockPollingTypes> {
         fetch(id(
             c.chain_id(),
-            ChainSpecificFetch::<Scroll>(
-                FetchEvents {
-                    from_height: range.from_height,
-                    to_height: range.to_height,
-                }
-                .into(),
-            ),
+            Fetch::<Scroll>::specific(FetchEvents {
+                from_height: range.from_height,
+                to_height: range.to_height,
+            }),
         ))
     }
 }
@@ -97,13 +94,10 @@ where
                 to_height,
             }) => fetch(id(
                 c.chain_id(),
-                ChainSpecificFetch::<Scroll>(
-                    FetchBeaconBlockRange {
-                        from_slot: from_height.revision_height,
-                        to_slot: to_height.revision_height,
-                    }
-                    .into(),
-                ),
+                Fetch::<Scroll>::specific(FetchBeaconBlockRange {
+                    from_slot: from_height.revision_height,
+                    to_slot: to_height.revision_height,
+                }),
             )),
             ScrollFetch::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
                 let event_height = Height {
@@ -276,9 +270,9 @@ where
                                         )
                                         .unwrap();
 
-                                    data(Identified::<Scroll, _>::new(
+                                    data(id(
                                         c.chain_id(),
-                                        ChainEvent {
+                                        ChainEvent::<Scroll> {
                                             client_type: unionlabs::ClientType::Cometbls,
                                             tx_hash,
                                             height: event_height,
@@ -319,9 +313,9 @@ where
                                         )
                                         .unwrap();
 
-                                    data(Identified::<Scroll, _>::new(
+                                    data(id(
                                         c.chain_id(),
-                                        ChainEvent {
+                                        ChainEvent::<Scroll> {
                                             client_type: unionlabs::ClientType::Cometbls,
                                             tx_hash,
                                             height: event_height,
@@ -379,10 +373,7 @@ where
                 if to_slot - from_slot == 1 {
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Scroll>(ScrollFetch::from(FetchGetLogs {
-                            from_slot,
-                            to_slot,
-                        })),
+                        Fetch::<Scroll>::specific(FetchGetLogs { from_slot, to_slot }),
                     ))
                 } else {
                     // attempt to shrink from..to
@@ -412,21 +403,17 @@ where
                                 return conc([
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Scroll>(ScrollFetch::from(
-                                            FetchGetLogs {
-                                                from_slot,
-                                                to_slot: slot,
-                                            },
-                                        )),
+                                        Fetch::<Scroll>::specific(FetchGetLogs {
+                                            from_slot,
+                                            to_slot: slot,
+                                        }),
                                     )),
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Scroll>(ScrollFetch::from(
-                                            FetchBeaconBlockRange {
-                                                from_slot: slot,
-                                                to_slot,
-                                            },
-                                        )),
+                                        Fetch::<Scroll>::specific(FetchBeaconBlockRange {
+                                            from_slot: slot,
+                                            to_slot,
+                                        }),
                                     )),
                                 ])
                             }
@@ -436,10 +423,7 @@ where
                     // if the range is not shrinkable (i.e. all blocks between `from` and `to` are missing, but `from` and `to` both exist), fetch logs between `from` and `to`
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Scroll>(ScrollFetch::from(FetchGetLogs {
-                            from_slot,
-                            to_slot,
-                        })),
+                        Fetch::<Scroll>::specific(FetchGetLogs { from_slot, to_slot }),
                     ))
                 }
             }
@@ -505,7 +489,7 @@ fn with_channel<T>(
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
 where
-    EventInfo<T>: Into<AggregateWithChannel>,
+    AggregateWithChannel: From<EventInfo<T>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Scroll, Aggregate<Scroll>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Scroll, Fetch<Scroll>>>,
@@ -513,28 +497,22 @@ where
     aggregate(
         [fetch(id(
             chain_id,
-            ChainSpecificFetch::<Scroll>(
-                FetchChannel {
-                    height: event_height,
-                    path: ChannelEndPath {
-                        port_id: port_id.parse().unwrap(),
-                        channel_id: channel_id.parse().unwrap(),
-                    },
-                }
-                .into(),
-            ),
+            Fetch::<Scroll>::specific(FetchChannel {
+                height: event_height,
+                path: ChannelEndPath {
+                    port_id: port_id.parse().unwrap(),
+                    channel_id: channel_id.parse().unwrap(),
+                },
+            }),
         ))],
         [],
-        Identified::<Scroll, _>::new(
+        id(
             chain_id,
-            ChainSpecificAggregate(ScrollAggregate::AggregateWithChannel(
-                EventInfo {
-                    height: event_height,
-                    tx_hash,
-                    raw_event,
-                }
-                .into(),
-            )),
+            Aggregate::<Scroll>::specific(AggregateWithChannel::from(EventInfo {
+                height: event_height,
+                tx_hash,
+                raw_event,
+            })),
         ),
     )
 }
@@ -547,7 +525,7 @@ fn with_connection<T>(
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
 where
-    EventInfo<T>: Into<AggregateWithConnection>,
+    AggregateWithConnection: From<EventInfo<T>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Scroll, Aggregate<Scroll>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Scroll, Fetch<Scroll>>>,
@@ -555,27 +533,21 @@ where
     aggregate(
         [fetch(id(
             chain_id,
-            ChainSpecificFetch::<Scroll>(
-                FetchConnection {
-                    height: event_height,
-                    path: ConnectionPath {
-                        connection_id: connection_id.parse().unwrap(),
-                    },
-                }
-                .into(),
-            ),
+            Fetch::<Scroll>::specific(FetchConnection {
+                height: event_height,
+                path: ConnectionPath {
+                    connection_id: connection_id.parse().unwrap(),
+                },
+            }),
         ))],
         [],
-        Identified::<Scroll, _>::new(
+        id(
             chain_id,
-            ChainSpecificAggregate(ScrollAggregate::AggregateWithConnection(
-                EventInfo {
-                    height: event_height,
-                    tx_hash,
-                    raw_event,
-                }
-                .into(),
-            )),
+            Aggregate::<Scroll>::specific(AggregateWithConnection::from(EventInfo {
+                height: event_height,
+                tx_hash,
+                raw_event,
+            })),
         ),
     )
 }
@@ -614,7 +586,13 @@ pub struct FetchBatchIndex {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    enumorph::Enumorph,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
@@ -643,12 +621,8 @@ where
         data: VecDeque<AnyChainIdentified<AnyData>>,
     ) -> QueueMsg<BlockPollingTypes> {
         match t {
-            ScrollAggregate::AggregateWithChannel(msg) => {
-                do_aggregate(Identified::<Scroll, _>::new(chain_id, msg), data)
-            }
-            ScrollAggregate::AggregateWithConnection(msg) => {
-                do_aggregate(Identified::<Scroll, _>::new(chain_id, msg), data)
-            }
+            ScrollAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
+            ScrollAggregate::AggregateWithConnection(msg) => do_aggregate(id(chain_id, msg), data),
         }
     }
 }
@@ -719,7 +693,7 @@ where
                 height,
                 tx_hash,
                 raw_event,
-            }) => ChainEvent {
+            }) => ChainEvent::<Scroll> {
                 client_type: unionlabs::ClientType::Cometbls,
                 tx_hash,
                 height,
@@ -849,7 +823,7 @@ where
             },
         };
 
-        data(Identified::<Scroll, _>::new(chain_id, event))
+        data(id(chain_id, event))
     }
 }
 
@@ -875,7 +849,7 @@ where
                 height,
                 tx_hash,
                 raw_event,
-            }) => ChainEvent {
+            }) => ChainEvent::<Scroll> {
                 client_type: unionlabs::ClientType::Cometbls,
                 tx_hash,
                 height,
@@ -944,7 +918,7 @@ where
             },
         };
 
-        data(Identified::<Scroll, _>::new(chain_id, event))
+        data(id(chain_id, event))
     }
 }
 

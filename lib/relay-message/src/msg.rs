@@ -1,9 +1,8 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::fmt::Display;
 
 use chain_utils::GetChain;
 use macros::apply;
 use queue_msg::{msg_struct, HandleMsg, QueueError, QueueMsg, QueueMsgTypes};
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::{
         channel::{

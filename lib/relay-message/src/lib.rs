@@ -115,6 +115,7 @@ macro_rules! any_enum {
     (
         $(#[doc = $outer_doc:literal])*
         #[any = $Any:ident]
+        $(#[specific = $Specific:ident])?
         pub enum $Enum:ident<Hc: ChainExt, Tr: ChainExt> {
             $(
                 $(#[doc = $doc:literal])*
@@ -212,6 +213,14 @@ macro_rules! any_enum {
                 }
             )+
         };
+
+        $(
+            impl<Hc: ChainExt, Tr: ChainExt> $Enum<Hc, Tr> {
+                pub fn specific(t: impl Into<Hc::$Enum<Tr>>) -> $Enum<Hc, Tr> {
+                    $Specific(t.into()).into()
+                }
+            }
+        )?
     };
 }
 pub(crate) use any_enum;

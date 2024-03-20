@@ -63,6 +63,7 @@ use crate::{
 #[apply(any_enum)]
 /// Aggregate data, using data from [`AggregateData`]
 #[any = AnyAggregate]
+#[specific = LightClientSpecificAggregate]
 pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
     ConnectionOpenTry(AggregateConnectionOpenTry<Hc, Tr>),
     ConnectionOpenAck(AggregateConnectionOpenAck<Hc, Tr>),

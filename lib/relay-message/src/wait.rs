@@ -1,11 +1,10 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::fmt::Display;
 
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
     defer, fetch, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg, QueueMsgTypes,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::client::height::IsHeight,
     proof::ClientStatePath,

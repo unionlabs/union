@@ -6,7 +6,6 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     fetch, msg_struct, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
 
 use crate::{
@@ -18,6 +17,7 @@ use crate::{
 
 #[apply(any_enum)]
 #[any = AnyAggregate]
+#[specific = ChainSpecificAggregate]
 pub enum Aggregate<C: ChainExt> {
     FetchBlockRange(AggregateFetchBlockRange<C>),
     #[serde(untagged)]
