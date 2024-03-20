@@ -11,6 +11,6 @@
   });
 </script>
 
-<div class="w-full aspect-h-1 aspect-w-1">
-  <canvas bind:this={canvas}></canvas>
+<div class="w-full aspect-h-1 aspect-w-1 overflow-hidden rounded">
+  <canvas class="overflow-hidden" bind:this={canvas}></canvas>
 </div>
