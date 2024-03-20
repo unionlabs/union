@@ -290,6 +290,8 @@ pub enum Error {
     InvalidCommitment,
     InvalidRawProof,
     InvalidChainId,
+    InvalidHeight,
+    InvalidTimestamp,
 }
 
 pub fn verify_zkp(
@@ -339,13 +341,24 @@ fn verify_generic_zkp_2(
                     .collect::<Vec<_>>(),
             )
             .chain_update(
-                U256::from(u64::try_from(i64::from(header.height)).unwrap()).to_big_endian(),
+                U256::from(
+                    u64::try_from(i64::from(header.height)).map_err(|_| Error::InvalidHeight)?,
+                )
+                .to_big_endian(),
             )
             .chain_update(
-                U256::from(u64::try_from(i64::from(header.time.seconds)).unwrap()).to_big_endian(),
+                U256::from(
+                    u64::try_from(i64::from(header.time.seconds))
+                        .map_err(|_| Error::InvalidTimestamp)?,
+                )
+                .to_big_endian(),
             )
             .chain_update(
-                U256::from(u64::try_from(i32::from(header.time.nanos)).unwrap()).to_big_endian(),
+                U256::from(
+                    u64::try_from(i32::from(header.time.nanos))
+                        .map_err(|_| Error::InvalidTimestamp)?,
+                )
+                .to_big_endian(),
             )
             .chain_update(header.validators_hash)
             .chain_update(header.next_validators_hash)
