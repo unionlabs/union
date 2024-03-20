@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use thiserror::Error;
 
 use crate::types::{
-    EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken,
+    EncodingError, ForwardMemo, GenericAck, TransferPacket, TransferPacketCommon, TransferToken,
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
@@ -315,6 +315,14 @@ pub trait TransferProtocol {
             (ATTR_SUCCESS, ATTR_VALUE_FALSE),
             (ATTR_ERROR, &error),
         ]))
+    }
+
+    fn packet_forward(&mut self, packet: Self::Packet) -> IbcReceiveResponse<Self::CustomMsg> {
+        let memo = Into::<String>::into(packet.extension().clone());
+
+        if let Ok(forward) = serde_json_wasm::from_str::<ForwardMemo>(&memo) {}
+
+        todo!()
     }
 }
 
