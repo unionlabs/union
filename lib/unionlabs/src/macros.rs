@@ -6,6 +6,7 @@ macro_rules! hex_string_array_wrapper {
     ) => {
         $(
             #[derive(
+                Copy,
                 Clone,
                 PartialEq,
                 Eq,
