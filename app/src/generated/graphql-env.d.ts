@@ -26,6 +26,56 @@ export type introspection = {
         "name": "Address"
       },
       {
+        "kind": "OBJECT",
+        "name": "Balance",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "BalancesListItem",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
         "kind": "SCALAR",
         "name": "Boolean"
       },
@@ -211,6 +261,50 @@ export type introspection = {
         "interfaces": []
       },
       {
+        "kind": "OBJECT",
+        "name": "CosmosBankV1beta1Balances",
+        "fields": [
+          {
+            "name": "balances",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "BalancesListItem",
+                "ofType": null
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "pagination",
+            "type": {
+              "kind": "OBJECT",
+              "name": "Pagination",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "CosmosBankV1beta1BalancesByDenom",
+        "fields": [
+          {
+            "name": "balance",
+            "type": {
+              "kind": "OBJECT",
+              "name": "Balance",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
         "kind": "SCALAR",
         "name": "Float"
       },
@@ -311,6 +405,31 @@ export type introspection = {
       {
         "kind": "SCALAR",
         "name": "Long"
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Pagination",
+        "fields": [
+          {
+            "name": "nextKey",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "total",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
       },
       {
         "kind": "INPUT_OBJECT",
@@ -2630,6 +2749,96 @@ export type introspection = {
         "kind": "OBJECT",
         "name": "query_root",
         "fields": [
+          {
+            "name": "cosmosBankV1Beta1AllBalances",
+            "type": {
+              "kind": "OBJECT",
+              "name": "CosmosBankV1beta1Balances",
+              "ofType": null
+            },
+            "args": [
+              {
+                "name": "address",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                }
+              },
+              {
+                "name": "paginationCountTotal",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "paginationKey",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "paginationLimit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "paginationOffset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "paginationReverse",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "cosmosBankV1Beta1Balance",
+            "type": {
+              "kind": "OBJECT",
+              "name": "CosmosBankV1beta1BalancesByDenom",
+              "ofType": null
+            },
+            "args": [
+              {
+                "name": "address",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                }
+              },
+              {
+                "name": "denom",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            ]
+          },
           {
             "name": "union",
             "type": {
