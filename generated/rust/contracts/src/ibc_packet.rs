@@ -1204,8 +1204,15 @@ pub mod ibc_packet {
             &self,
             p0: ::std::string::String,
             p1: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, (u8, u8, IbcCoreChannelV1CounterpartyData, ::std::string::String)>
-        {
+        ) -> ::ethers::contract::builders::ContractCall<
+            M,
+            (
+                u8,
+                u8,
+                IbcCoreChannelV1CounterpartyData,
+                ::std::string::String,
+            ),
+        > {
             self.0
                 .method_hash([91, 61, 226, 96], (p0, p1))
                 .expect("method not found (this should never happen)")
