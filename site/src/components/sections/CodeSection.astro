@@ -1,0 +1,35 @@
+---
+import LanderSection from "#/components/LanderSection.astro";
+import CodeSnippet from '#/components/CodeSnippet.astro'
+import Card from '#/components/Card.astro'
+import IntroHeading from "#/components/typography/IntroHeading.astro";
+import { codeSnippets } from '#/content/_snippets/landing.ts'
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+---
+
+<LanderSection>
+  <IntroHeading title="Streamlined Developer Integrations">
+    Union seamlessly connects L1s, L2s, Rollups and Appchains by natively integrating with leading smart-contract platforms such as <span class="text-white">Solidity</span>, <span class="text-white">CosmWasm</span>, and soon <span class="text-white">Move</span>.
+  </IntroHeading>
+
+  <div class="grid grid-cols-2 gap-4 max-md:hidden">
+    <Card class="to-black p-2"><CodeSnippet code={codeSnippets[0].code} /></Card>
+    <Card class="to-black p-2"><CodeSnippet code={codeSnippets[1].code} /></Card>
+  </div>
+  <Card
+    id="code-snippets"
+    class="antialiased bg-black text-left font-monospace text-[15px] to-black md:hidden"
+  >
+    <Tabs>
+      {
+        codeSnippets.map(snippet => (
+          <TabItem label={snippet.title}>
+            <div class="pl-3 pb-3 w-full">
+              <CodeSnippet code={snippet.code} />
+            </div>
+          </TabItem>
+        ))
+      }
+    </Tabs>
+  </Card>
+</LanderSection>
