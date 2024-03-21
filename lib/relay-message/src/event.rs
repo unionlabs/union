@@ -168,8 +168,6 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     id(
                         hc.chain_id(),
                         AggregateChannelHandshakeMsgAfterUpdate {
-                            // REVIEW: Remove this field and just use `event_height`?
-                            update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             channel_handshake_event: ChannelHandshakeEvent::Init(init),
                             __marker: PhantomData,
@@ -202,7 +200,6 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     id(
                         hc.chain_id(),
                         AggregateChannelHandshakeMsgAfterUpdate {
-                            update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             channel_handshake_event: ChannelHandshakeEvent::Try(try_),
                             __marker: PhantomData,
@@ -235,7 +232,6 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     id(
                         hc.chain_id(),
                         AggregateChannelHandshakeMsgAfterUpdate {
-                            update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
                             __marker: PhantomData,
