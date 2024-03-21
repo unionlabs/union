@@ -4645,6 +4645,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
+ "static_assertions",
  "tendermint",
  "tendermint-proto",
  "tendermint-rpc",

@@ -8,41 +8,24 @@ use std::{
     marker::PhantomData,
 };
 
-use chain_utils::{
-    cosmos::Cosmos,
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
-    ethereum::Ethereum,
-    union::Union,
-    wasm::Wasm,
-    Chains,
-};
+use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{seq, QueueMsg, QueueMsgTypes, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    encoding::{Encode, Proto},
     ethereum::config::{Mainnet, Minimal},
-    google::protobuf::any::{mk_any, Any, IntoAny},
-    hash::H256,
-    ibc::{core::client::height::IsHeight, lightclients::wasm},
     proof::{self},
-    traits::{
-        Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
-        HeightOf,
-    },
-    MaybeArbitrary, MaybeRecoverableError, TypeUrl,
+    traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
+    MaybeArbitrary, MaybeRecoverableError,
 };
 
 use crate::{
     aggregate::AnyAggregate,
-    data::{AnyData, Data},
+    data::AnyData,
     event::AnyEvent,
-    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
-    msg::{
-        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
-        MsgUpdateClientData,
-    },
-    wait::{AnyWait, Wait},
+    fetch::{AnyFetch, DoFetch, FetchUpdateHeaders},
+    msg::{AnyMsg, Msg},
+    wait::AnyWait,
 };
 
 pub mod use_aggregate;
@@ -55,15 +38,6 @@ pub mod msg;
 pub mod wait;
 
 pub mod chain_impls;
-
-// pub trait RelayerMsgDatagram = Debug
-//     + Display
-//     + Clone
-//     + PartialEq
-//     + Serialize
-//     + for<'de> Deserialize<'de>
-//     + 'static
-//     + MaybeArbitrary;
 
 pub trait ChainExt: Chain {
     type Data<Tr: ChainExt>: QueueMsgTypesTraits;
@@ -81,7 +55,7 @@ pub trait ChainExt: Chain {
         msg: Self::Fetch<Tr>,
     ) -> impl Future<Output = QueueMsg<RelayerMsgTypes>> + '_
     where
-        Self::Fetch<Tr>: DoFetch<Self>,
+        Self::Fetch<Tr>: DoFetch<Self, Tr>,
     {
         DoFetch::do_fetch(self, msg)
     }
@@ -491,298 +465,6 @@ pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn msg(&self, msg: Msg<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct WasmConfig {
-    pub checksum: H256,
-    // pub inner: T,
-}
-
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[display(fmt = "{_0}")]
-pub struct WasmDataMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
-
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[display(fmt = "{_0}")]
-pub struct WasmFetchMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
-
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[display(fmt = "{_0}")]
-pub struct WasmAggregateMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
-
-impl<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt> DoAggregate for identified!(WasmAggregateMsg<Hc, Tr>)
-where
-    Identified<Hc, Tr, Hc::Aggregate<Tr>>: DoAggregate,
-{
-    fn do_aggregate(
-        i: Self,
-        v: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
-            Identified {
-                chain_id: i.chain_id,
-                t: i.t.0,
-                __marker: PhantomData,
-            },
-            v,
-        )
-    }
-}
-
-impl<Hc, Tr> DoMsg<Self, Tr> for Wasm<Hc>
-where
-    Hc: ChainExt<MsgError = BroadcastTxCommitError> + CosmosSdkChain,
-    Tr: ChainExt,
-
-    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
-    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
-    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
-
-    ConsensusStateOf<Hc>: Encode<Proto> + TypeUrl,
-
-    ClientStateOf<Hc>: Encode<Proto> + TypeUrl,
-
-    // TODO: Move this associated type to this trait
-    Wasm<Hc>: ChainExt<
-        SelfClientState = Hc::SelfClientState,
-        SelfConsensusState = Hc::SelfConsensusState,
-        MsgError = BroadcastTxCommitError,
-        Config = WasmConfig,
-    >,
-
-    Tr::StoredClientState<Wasm<Hc>>: Encode<Proto> + IntoAny,
-    Tr::StateProof: Encode<Proto>,
-{
-    async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
-        self.0
-            .signers()
-            .with(|signer| async {
-                let msg_any = match msg.clone() {
-                    Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
-                            client_id: data.client_id.to_string(),
-                            counterparty: Some(data.counterparty.into()),
-                            version: Some(data.version.into()),
-                            signer: signer.to_string(),
-                            delay_period: data.delay_period,
-                        })
-                    }
-                    Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
-                    {
-                        #[allow(deprecated)]
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
-                            client_id: data.client_id.to_string(),
-                            previous_connection_id: String::new(),
-                            client_state: Some(data.client_state.into_any().into()),
-                            counterparty: Some(data.counterparty.into()),
-                            delay_period: data.delay_period,
-                            counterparty_versions: data
-                                .counterparty_versions
-                                .into_iter()
-                                .map(Into::into)
-                                .collect(),
-                            proof_height: Some(data.proof_height.into_height().into()),
-                            proof_init: data.proof_init.encode(),
-                            proof_client: data.proof_client.encode(),
-                            proof_consensus: data.proof_consensus.encode(),
-                            consensus_height: Some(data.consensus_height.into_height().into()),
-                            signer: signer.to_string(),
-                            host_consensus_state_proof: vec![],
-                        })
-                    }
-                    Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(data.client_state.into_any().into()),
-                            proof_height: Some(data.proof_height.into_height().into()),
-                            proof_client: data.proof_client.encode(),
-                            proof_consensus: data.proof_consensus.encode(),
-                            consensus_height: Some(data.consensus_height.into_height().into()),
-                            signer: signer.to_string(),
-                            host_consensus_state_proof: vec![],
-                            connection_id: data.connection_id.to_string(),
-                            counterparty_connection_id: data.counterparty_connection_id.to_string(),
-                            version: Some(data.version.into()),
-                            proof_try: data.proof_try.encode(),
-                        })
-                    }
-                    Msg::ConnectionOpenConfirm(data) => mk_any(
-                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
-                            connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack.encode(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        },
-                    ),
-                    Msg::ChannelOpenInit(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
-                            port_id: data.msg.port_id.to_string(),
-                            channel: Some(data.msg.channel.into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Msg::ChannelOpenTry(data) =>
-                    {
-                        #[allow(deprecated)]
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
-                            port_id: data.msg.port_id.to_string(),
-                            channel: Some(data.msg.channel.into()),
-                            counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init.encode(),
-                            proof_height: Some(data.msg.proof_height.into()),
-                            previous_channel_id: String::new(),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Msg::ChannelOpenAck(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
-                            port_id: data.msg.port_id.to_string(),
-                            channel_id: data.msg.channel_id.to_string(),
-                            counterparty_version: data.msg.counterparty_version,
-                            counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try.encode(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Msg::ChannelOpenConfirm(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
-                            port_id: data.msg.port_id.to_string(),
-                            channel_id: data.msg.channel_id.to_string(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                            proof_ack: data.msg.proof_ack.encode(),
-                        })
-                    }
-                    Msg::RecvPacket(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
-                            packet: Some(data.msg.packet.into()),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                            proof_commitment: data.msg.proof_commitment.encode(),
-                        })
-                    }
-                    Msg::AckPacket(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
-                            packet: Some(data.msg.packet.into()),
-                            acknowledgement: data.msg.acknowledgement,
-                            proof_acked: data.msg.proof_acked.encode(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Msg::CreateClient(data) => {
-                        mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
-                            client_state: Some(
-                                Any(wasm::client_state::ClientState {
-                                    latest_height: data.msg.client_state.height().into(),
-                                    data: data.msg.client_state,
-                                    checksum: data.config.checksum,
-                                })
-                                .into(),
-                            ),
-                            consensus_state: Some(
-                                Any(wasm::consensus_state::ConsensusState {
-                                    data: data.msg.consensus_state,
-                                })
-                                .into(),
-                            ),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Msg::UpdateClient(MsgUpdateClientData(data)) => {
-                        mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
-                            signer: signer.to_string(),
-                            client_id: data.client_id.to_string(),
-                            client_message: Some(
-                                Any(wasm::client_message::ClientMessage {
-                                    data: data.client_message,
-                                })
-                                .into(),
-                            ),
-                        })
-                    }
-                };
-
-                let tx_hash = self.0.broadcast_tx_commit(signer, [msg_any]).await?;
-
-                tracing::info!("cosmos tx {:?} => {:?}", tx_hash, msg);
-
-                Ok(())
-            })
-            .await
-    }
-}
-
-impl<Hc: ChainExt + CosmosSdkChain + DoFetchProof<Wasm<Hc>, Tr>, Tr: ChainExt>
-    DoFetchProof<Self, Tr> for Wasm<Hc>
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Wasm<Hc>, Tr>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Wasm<Hc>, Tr>)>,
-    Wasm<Hc>: ChainExt,
-{
-    fn proof(
-        hc: &Self,
-        at: HeightOf<Self>,
-        path: PathOf<Wasm<Hc>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        Hc::proof(hc, at, path)
-    }
-}
-
-impl<Hc: ChainExt + CosmosSdkChain + DoFetchState<Wasm<Hc>, Tr>, Tr: ChainExt>
-    DoFetchState<Self, Tr> for Wasm<Hc>
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Wasm<Hc>, Tr>)>,
-    Wasm<Hc>: ChainExt,
-{
-    fn state(
-        hc: &Self,
-        at: HeightOf<Self>,
-        path: PathOf<Wasm<Hc>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        Hc::state(hc, at, path)
-    }
-
-    fn query_client_state(
-        hc: &Self,
-        client_id: Self::ClientId,
-        height: Self::Height,
-    ) -> impl Future<Output = Self::StoredClientState<Tr>> + '_ {
-        Hc::query_client_state(hc, client_id, height)
-    }
-}
-
-impl<Hc: ChainExt + CosmosSdkChain + DoFetchUpdateHeaders<Self, Tr>, Tr: ChainExt>
-    DoFetchUpdateHeaders<Self, Tr> for Wasm<Hc>
-where
-    Wasm<Hc>: ChainExt,
-{
-    fn fetch_update_headers(
-        hc: &Self,
-        update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        Hc::fetch_update_headers(
-            hc,
-            FetchUpdateHeaders {
-                counterparty_chain_id: update_info.counterparty_chain_id,
-                counterparty_client_id: update_info.counterparty_client_id,
-                update_from: update_info.update_from,
-                update_to: update_info.update_to,
-            },
-        )
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 #[serde(
     bound(serialize = "S: Serialize", deserialize = "S: for<'d> Deserialize<'d>"),
@@ -862,3 +544,21 @@ macro_rules! any_lc {
     };
 }
 pub(crate) use any_lc;
+
+mod sanity_checks {
+    use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm};
+    use queue_msg::aggregation::UseAggregate;
+    use static_assertions::assert_impl_all;
+    use unionlabs::ethereum::config::Mainnet;
+
+    use crate::{
+        aggregate::AggregateConnectionOpenTry, chain_impls::union::UnionFetch, fetch::DoFetch,
+        DoFetchState, RelayerMsgTypes,
+    };
+
+    assert_impl_all!(Wasm<Cosmos>: DoFetchState<Wasm<Cosmos>, Union>);
+
+    assert_impl_all!(identified!(AggregateConnectionOpenTry<Wasm<Cosmos>, Union>): UseAggregate<RelayerMsgTypes>);
+
+    assert_impl_all!(UnionFetch<Wasm<Union>, Ethereum<Mainnet>>: DoFetch<Wasm<Union>, Ethereum<Mainnet>>);
+}

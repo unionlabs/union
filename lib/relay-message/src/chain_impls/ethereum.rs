@@ -403,7 +403,7 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetch<Ethereum<C>> for EthereumFetchMsg<C, Tr>
+impl<C: ChainSpec, Tr: ChainExt> DoFetch<Ethereum<C>, Tr> for EthereumFetchMsg<C, Tr>
 where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
 

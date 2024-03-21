@@ -66,7 +66,7 @@ impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
     }
 }
 
-pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
+pub trait DoFetch<Hc: ChainExt, Tr: ChainExt>: Sized + Debug + Clone + PartialEq {
     fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayerMsgTypes>>;
 }
 
@@ -152,7 +152,7 @@ pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr
 impl<Hc, Tr> Fetch<Hc, Tr>
 where
     Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr> + DoFetchUpdateHeaders<Hc, Tr>,
-    Hc::Fetch<Tr>: DoFetch<Hc>,
+    Hc::Fetch<Tr>: DoFetch<Hc, Tr>,
     Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
