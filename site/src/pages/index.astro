@@ -61,29 +61,17 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         </div>
       </section>
 
-<!--
 
-      <section class="bg-black mb-px items-center justify-center max-w-4xl w-full self-center">
-        <div
-          class="p-4 top-0 font-normal z-10"
-        >
-          <h2
-            class="text-white font-bold"
-          >
-            Interoperability for the Modular Stack</span>
-          </h2>
-          <div class="mt-2 text-lg sm:text-xl font-normal text-gray-400">
+      <LanderSection>
+        <IntroHeading title="Interoperability for the Modular Stack" >
           Trustless, decentralized, and permissionless interoperability
           is now possible. Union is the only protocol that provides all three, using state-of-the-art
           <span class="text-white">Zero-Knowledge cryptography</span>.
-          </dvi>
-        </div>
-        </div>
-        <div class="w-full min-w-full h-full min-h-full z-10">
-          <ConnectedVisual client:load />
-        </div>
-      </section>
+        </IntroHeading>
+        <ConnectedVisual client:load />
+      </LanderSection>
 
+<!--
       <section
         class:list={[
           'grid sm:grid-cols-2 grid-cols-1 sm:grid-rows-1 grid-rows-2 sm:divide-x sm:divide-y-0 divide-y divide-solid divide-[#1f1f1f]',
