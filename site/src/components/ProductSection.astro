@@ -1,8 +1,9 @@
 ---
 import Spline from '#/components/Spline.svelte';
+import Card from '#/components/Card.astro';
 const { name, description, link, model } = Astro.props;
 ---
-<div class="flex flex-col text-left from-black bg-gradient-to-b to-neutral-950 rounded border border-[#1f1f1f] shadow-lg">
+<Card class="flex flex-col text-left">
   <div class="-mt-16 -mb-4">
     <Spline {model} client:only />
   </div>
@@ -14,4 +15,4 @@ const { name, description, link, model } = Astro.props;
       href={link}>Read More {'->'}</a
     >
   </div>
-</div>
+</Card>
