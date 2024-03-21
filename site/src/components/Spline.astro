@@ -22,7 +22,8 @@ export interface Props {
 const { model, loading = "auto", eventsTarget = "global", ...restProps } = Astro.props
 ---
 
-<script src="@splinetool/viewer"></script>
+<!-- or just `src="@splinetool/viewer"` if pkg installed locally -->
+<script src="https://unpkg.com/@splinetool/viewer"></script>
 
 <div class="w-full aspect-h-1 aspect-w-1 overflow-hidden rounded-t">
   <spline-viewer

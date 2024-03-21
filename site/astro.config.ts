@@ -152,11 +152,6 @@ export default defineConfig({
     sitemap()
   ],
   vite: {
-    build: {
-      rollupOptions: {
-        external: ["@splinetool/viewer"]
-      }
-    },
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"]
     },
