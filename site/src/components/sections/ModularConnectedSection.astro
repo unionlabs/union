@@ -1,0 +1,17 @@
+---
+import LanderSection from "#/components/LanderSection.astro";
+import IntroHeading from "#/components/typography/IntroHeading.astro";
+import Card from "#/components/Card.astro";
+import ConnectedVisual from '#/components/ConnectedVisual.svelte'
+---
+
+<LanderSection>
+  <IntroHeading title="Interoperability for the Modular Stack" >
+    Trustless, decentralized, and permissionless interoperability
+    is now possible. Union is the only protocol that provides all three, using state-of-the-art
+    <span class="text-white">Zero-Knowledge cryptography</span>.
+  </IntroHeading>
+  <Card>
+    <ConnectedVisual client:load />
+  </Card>
+</LanderSection>

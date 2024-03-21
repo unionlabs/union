@@ -1,0 +1,24 @@
+---
+import LanderSection from "#/components/LanderSection.astro";
+import IntroHeading from "#/components/typography/IntroHeading.astro";
+import Card from "#/components/Card.astro";
+import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+---
+
+<LanderSection>
+  <IntroHeading title="The most efficient interoperability layer">
+    Galois is the first interoperability proving layer that is so efficient that it allows anyone to <span class="text-white" >generate proofs on a phone.</span > Gone is the era of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+  </IntroHeading>
+  <Card padded>
+    <AppleGraphContainer
+      bars={[
+        { width: 100, label: 'CometBLS V3', primary: true },
+        { width: 9.1, label: 'ZkMint' },
+        { width: 1.45, label: 'TendermintX' },
+        { width: 0.77, label: 'Fraud-proof bridges' },
+      ]}
+      client:load
+    />
+  </Card>
+</LanderSection>
+

@@ -1,0 +1,31 @@
+---
+import H1 from '#/components/typography/h1.astro';
+import Subtitle from '#/components/typography/subtitle.astro';
+
+import cube from "#/spline/cube-rotating-optimized.splinecode";
+import Spline from "#/components/Spline.svelte";
+---
+
+<section
+  class="flex flex-col pt-16 md:pb-16 lg:py-32 bg-gradient-to-b from-black to-gray-950 border-b border-gray-800"
+>
+  <div class="w-full self-center max-w-[1200px] flex flex-col md:grid md:grid-cols-2  items-center gap-2 md:gap-0 -mx-4 md:mx-0 px-4">
+  <div class="md:order-last w-full max-w-[500px] md:max-w-full">
+    <Spline model={cube} client:only />
+  </div>
+  <div class="max-md:bg-gradient-to-t max-md:from-gray-950 flex flex-col text-center md:text-left flex flex-col items-left drop-shadow-2xl -mt-48 pt-16 md:mt-0 px-4 pb-16">
+    <H1>
+      The Sovereign<br />Interoperability Layer
+    </H1>
+    <Subtitle>
+      By using consensus verification, Union builds unstoppable and decentralized connections to
+      enable anyone to transfer assets and data.
+    </Subtitle>
+    <div class="mt-4">
+      <a class="font-bold rounded-lg bg-gray-700 text-white border border-gray-600 px-4 py-2 rounded-sm font-semibold" href="/docs">
+        Start Building -&gt;
+      </a>
+    </div>
+  </div>
+  </div>
+</section>
