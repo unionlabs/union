@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content'
+import Card from '#/components/Card.astro'
 
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
@@ -11,35 +12,39 @@ publishedBlogPosts.sort((a, b) => Number(a.data.date) - Number(b.data.date))
 const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 ---
 
-<div class="w-full p-8 mr-px">
-  <a class="text-left space-y-2" href={`/blog/${latestBlogPost.slug}`}>
-    <div>
-      <p class="text-3xl font-bold">
-        {latestBlogPost.data.title}
-      </p>
-    </div>
-    <p class="text-pretty text-lg text-left">
-      {latestBlogPost.data.description}
-    </p>
 
-    <a
-      class="underline uppercase block mt-2 text-accent font-semibold"
-      href={`/blog/${latestBlogPost.slug}`}>Read more {'->'}</a
-    >
-  </a>
-</div>
-<div
-  class="p-0 list-none mx-auto w-full grid grid-rows-3 divide divide-y divide-solid divide-[#1f1f1f]"
->
-  {
-    blogPosts.map(post => (
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <Card padded>
+    <a class="text-left space-y-2" href={`/blog/${latestBlogPost.slug}`}>
+      <div>
+        <p class="text-3xl font-bold">
+          {latestBlogPost.data.title}
+        </p>
+      </div>
+      <p class="text-pretty text-lg text-left">
+        {latestBlogPost.data.description}
+      </p>
+
       <a
-        href={`/blog/${post.slug}`}
-        class="justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto"
+        class="underline uppercase block mt-2 text-accent font-semibold"
+        href={`/blog/${latestBlogPost.slug}`}>Read more {'->'}</a
       >
-        <p class="text-xl font-bold">{post.data.title}</p>
-        <p class="underline uppercase text-accent font-semibold">Read more {'->'}</p>
-      </a>
-    ))
-  }
+    </a>
+  </Card>
+
+  <Card
+    class="p-0 list-none mx-auto w-full grid grid-rows-3 divide divide-y divide-solid divide-[#1f1f1f]"
+  >
+    {
+      blogPosts.map(post => (
+        <a
+          href={`/blog/${post.slug}`}
+          class="justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto"
+        >
+          <p class="text-xl font-bold">{post.data.title}</p>
+          <p class="underline uppercase text-accent font-semibold">Read more {'->'}</p>
+        </a>
+      ))
+    }
+  </Card>
 </div>
