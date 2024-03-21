@@ -2,8 +2,8 @@
 /// <reference path="../.astro/types.d.ts" />
 
 declare module "*.splinecode" {
-  const content: string;
-  export default content;
+  const content: string
+  export default content
 }
 
 interface EventTarget {
