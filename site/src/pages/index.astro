@@ -18,6 +18,8 @@ import microVoyagerModel from "#/spline/micro-voyager-no-zoom.splinecode";
 import cube from "#/spline/cube-rotating-optimized.splinecode";
 import Spline from "#/components/Spline.svelte";
 
+import Card from '#/components/Card.astro';
+
 import H1 from '#/components/typography/h1.astro';
 import H2 from '#/components/typography/h2.astro';
 import Subtitle from '#/components/typography/subtitle.astro';
@@ -68,7 +70,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
           is now possible. Union is the only protocol that provides all three, using state-of-the-art
           <span class="text-white">Zero-Knowledge cryptography</span>.
         </IntroHeading>
-        <ConnectedVisual client:load />
+        <Card>
+          <ConnectedVisual client:load />
+        </Card>
       </LanderSection>
 
 <!--
@@ -144,7 +148,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         <IntroHeading title="The most efficient interoperability layer">
           Galois is the first interoperability proving layer that is so efficient that it allows anyone to <span class="text-white" >generate proofs on a phone.</span > Gone is the era of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
         </IntroHeading>
-        <div class="flex flex-col text-left from-black bg-gradient-to-b to-neutral-950 rounded border border-[#1f1f1f] shadow-lg w-full p-4 w-full">
+        <Card padded>
           <AppleGraphContainer
             bars={[
               { width: 100, label: 'CometBLS V3', primary: true },
@@ -154,7 +158,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             ]}
             client:load
           />
-        </div>
+        </Card>
       </LanderSection>
 
       <LanderSection>
