@@ -9,7 +9,7 @@
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-yZ1tygnZX07qovPOGK4sF0uVCxyVS4qdfMUStVvVFrs=";
+          npmDepsHash = "";
           src = ./.;
           sourceRoot = "app";
           pname = packageJSON.name;

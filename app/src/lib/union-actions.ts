@@ -13,7 +13,7 @@ import { snapAddress } from "$/lib/snap"
 import { ucs01relayAbi } from "$/lib/abi"
 import { writable, get } from "svelte/store"
 import { fromBech32 } from "@cosmjs/encoding"
-import { CONTRACT, UNO } from "$/lib/constants.ts"
+import { CONTRACT, UNO } from "$/lib/constants"
 import { config, unionAddress, wallet } from "$/lib/wallet/config"
 import { readContract, simulateContract, writeContract } from "@wagmi/core"
 

@@ -6,6 +6,7 @@ export const UNO = {
 } as const
 
 export const URLS = {
+  GRAPHQL: "https://introspect.unionlabs.workers.dev",
   UNION: {
     /**
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array

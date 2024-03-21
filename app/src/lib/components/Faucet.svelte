@@ -3,7 +3,7 @@ import clsx from "clsx"
 
 import { snapAddress } from "$/lib/snap.ts"
 import { Button } from "$lib/components/ui/button"
-import { getUnoFromFaucet } from "$/lib/fetchers/faucet"
+import { getUnoFromFaucet } from "$/lib/mutations/faucet"
 import { createMutation, useQueryClient } from "@tanstack/svelte-query"
 
 const queryClient = useQueryClient()
