@@ -186,7 +186,10 @@
     </pattern>
   </defs>
 
+  <!--
+  Uncomment for black background color
   <rect width="100%" height="100%" fill="#000" />
+  !-->
 
   <rect width="150%" height="150%" fill="url(#grid)" />
 
