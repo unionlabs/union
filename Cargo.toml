@@ -182,6 +182,7 @@ tonic                    = { version = "0.10", default-features = false }
 tracing                  = { version = "0.1.40", default-features = false }
 tracing-subscriber       = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
 typenum                  = { version = "1.17.0", default-features = false }
+go-parse-duration = { version = "0.1.1", default-features = false }
 
 [patch."crates-io"]
 arbitrary = { git = "https://github.com/unionlabs/arbitrary" }

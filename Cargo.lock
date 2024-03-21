@@ -7549,10 +7549,12 @@ dependencies = [
  "cosmwasm-std 2.0.3",
  "ethabi",
  "serde-utils",
+ "go-parse-duration",
  "serde",
  "serde-json-wasm 1.0.1",
  "thiserror",
  "token-factory-api",
+ "unionlabs",
 ]
 
 [[package]]

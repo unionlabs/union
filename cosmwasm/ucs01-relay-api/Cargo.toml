@@ -15,3 +15,5 @@ thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
 serde = { workspace = true }
 serde-json-wasm = { workspace = true }
+unionlabs = { workspace = true }
+go-parse-duration = { workspace = true }
