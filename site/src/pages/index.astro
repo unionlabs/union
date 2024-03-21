@@ -37,7 +37,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 ---
 
 <Layout>
-  <main class="flex flex-col flex-1 items-center">
+  <main class="flex flex-col flex-1 gap-4">
     <div class="w-full flex flex-col p-px bg-black">
       <section
         class="flex flex-col pt-16 md:pb-16 lg:py-32 bg-gradient-to-b from-black to-gray-950 border-b border-gray-800"
@@ -177,9 +177,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         </div>
       </LanderSection>
 
-      <section
-        class="bg-black mb-px grid grid-rows-2 grid-cols-1 sm:grid-cols-2 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f] max-w-5xl self-center"
-      >
+      <LanderSection>
         <div class="w-full p-8 mr-px">
           <a class="text-left space-y-2" href={`/blog/${latestBlogPost.slug}`}>
             <div>
@@ -212,11 +210,11 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             ))
           }
         </div>
-      </section>
+      </LanderSection>
 
-      <section>
+      <LanderSection>
         <SocialsGrid />
-      </section>
+      </LanderSection>
     </div>
   </main>
 </Layout>
