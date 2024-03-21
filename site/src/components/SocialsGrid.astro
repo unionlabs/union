@@ -1,6 +1,7 @@
 ---
 import { Icon } from "@astrojs/starlight/components"
 import { socialLinks } from "#/lib/constants/socials.ts"
+import IntroHeading from "#/components/typography/IntroHeading.astro";
 ---
 
 <section class="flex flex-col">
@@ -11,7 +12,7 @@ import { socialLinks } from "#/lib/constants/socials.ts"
           href={socialLink.href}
           target="_blank"
           rel="noopener noreferrer"
-          class="flex flex-col flex-1 p-7 text-center bg-black w-full"
+          class="flex flex-col flex-1 p-7 text-center w-full"
         >
           <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
           <div class="mt-4">
