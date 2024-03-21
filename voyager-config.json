@@ -18,11 +18,6 @@
         "chain_type": "ethereum",
         "preset_base": "mainnet",
         "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
-        "signers": [
-          {
-            "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-          }
-        ],
         "eth_rpc_api": "wss://rpc.ankr.com/eth_sepolia/ws/864e6497c4508f901b2dbaec5ae848868e2163370ec1776d3262960137dc38eb",
         "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
       },

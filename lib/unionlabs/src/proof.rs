@@ -1,8 +1,4 @@
-use core::{
-    fmt::{Debug, Display},
-    num::NonZeroU64,
-    str::FromStr,
-};
+use core::{fmt::Display, num::NonZeroU64, str::FromStr};
 
 use clap::builder::{StringValueParser, TypedValueParser};
 use serde::{Deserialize, Serialize};
@@ -14,8 +10,7 @@ use crate::{
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ConnectionId, PortId},
-    traits::{self, Chain, ClientIdOf, HeightOf},
-    MaybeArbitrary,
+    traits::{self, Chain, ClientIdOf, HeightOf, Member},
 };
 
 fn eat_static_segment(s: Option<&str>, expecting: &'static str) -> Result<(), PathParseError> {
@@ -70,18 +65,12 @@ pub enum PathParseError {
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
 pub trait IbcPath<Hc: Chain, Tr: Chain>:
-    Debug
-    + Clone
-    + PartialEq
-    + Serialize
-    + for<'de> Deserialize<'de>
+    Member
     + Display
-    + Sized
     + TryFrom<Path<ClientIdOf<Hc>, HeightOf<Tr>>, Error = Path<ClientIdOf<Hc>, HeightOf<Tr>>>
     + Into<Path<ClientIdOf<Hc>, HeightOf<Tr>>>
-    + MaybeArbitrary
 {
-    type Output: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
+    type Output: Member;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
