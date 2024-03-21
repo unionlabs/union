@@ -6,8 +6,9 @@ use cosmwasm_std::{
 };
 use thiserror::Error;
 
-use crate::types::{
-    EncodingError, ForwardMemo, GenericAck, TransferPacket, TransferPacketCommon, TransferToken,
+use crate::{
+    middleware::{Memo, PacketForward},
+    types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
@@ -276,6 +277,16 @@ pub trait TransferProtocol {
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
             let memo = Into::<String>::into(packet.extension().clone());
+
+            if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
+                match memo {
+                    Memo::Forward { forward } => {
+                        return Ok(Self::packet_forward(self, packet, forward))
+                    }
+                    Memo::None {} => {}
+                };
+            }
+
             let packet_event = if memo.is_empty() {
                 Event::new(PACKET_EVENT)
             } else {
@@ -317,11 +328,11 @@ pub trait TransferProtocol {
         ]))
     }
 
-    fn packet_forward(&mut self, packet: Self::Packet) -> IbcReceiveResponse<Self::CustomMsg> {
-        let memo = Into::<String>::into(packet.extension().clone());
-
-        if let Ok(forward) = serde_json_wasm::from_str::<ForwardMemo>(&memo) {}
-
+    fn packet_forward(
+        &mut self,
+        packet: Self::Packet,
+        forward: PacketForward,
+    ) -> IbcReceiveResponse<Self::CustomMsg> {
         todo!()
     }
 }
