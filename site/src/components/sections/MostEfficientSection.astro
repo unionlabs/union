@@ -3,22 +3,32 @@ import LanderSection from "#/components/LanderSection.astro";
 import IntroHeading from "#/components/typography/IntroHeading.astro";
 import Card from "#/components/Card.astro";
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 ---
 
 <LanderSection>
   <IntroHeading title="The most efficient interoperability layer">
     Galois is the first interoperability proving layer that is so efficient that it allows anyone to <span class="text-white" >generate proofs on a phone.</span > Gone is the era of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
   </IntroHeading>
-  <Card padded>
-    <AppleGraphContainer
-      bars={[
-        { width: 100, label: 'CometBLS V3', primary: true },
-        { width: 9.1, label: 'ZkMint' },
-        { width: 1.45, label: 'TendermintX' },
-        { width: 0.77, label: 'Fraud-proof bridges' },
-      ]}
-      client:load
-    />
-  </Card>
+  <div class="grid grid-cols-1 md:grid-cols-2 size-full gap-4">
+    <Card padded>
+      <AppleGraphContainer
+        bars={[
+          { width: 100, label: 'CometBLS V3', primary: true },
+          { width: 9.1, label: 'ZkMint' },
+          { width: 1.45, label: 'TendermintX' },
+          { width: 0.77, label: 'Fraud-proof bridges' },
+        ]}
+        client:load
+      />
+    </Card>
+
+    <Card>
+      <div class="absolute p-4 sm:p-8 text-xl md:text-2xl font-bold text-white z-20">
+        <span>Galois' Scalability</span>
+      </div>
+      <PerformanceGraph client:load />
+    </Card>
+  </div>
 </LanderSection>
 

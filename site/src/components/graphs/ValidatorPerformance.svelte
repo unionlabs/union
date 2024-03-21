@@ -221,6 +221,6 @@ onMount(() => {
 })
 </script>
 
-<div class="w-full h-full text-center flex antialiased">
+<div class="size-full text-center flex antialiased">
   <article id="galois-graph" class="w-full h-full" bind:this={myChart}></article>
 </div>
