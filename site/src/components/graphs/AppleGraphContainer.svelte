@@ -10,7 +10,7 @@ type BarProps = {
 export let bars: Array<BarProps>
 </script>
 
-<div class="flex gap-8">
+<div class="flex gap-8 w-full">
 	<div class="flex-1 grid gap-4">
 		{#each bars as { primary, width, label }}
 			<AppleGraph {primary} {width} {label} />

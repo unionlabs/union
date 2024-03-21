@@ -1,0 +1,11 @@
+---
+import H2 from '#/components/typography/h2.astro';
+import Subtitle from '#/components/typography/subtitle.astro';
+
+const { title } = Astro.props;
+---
+
+<div class="my-16 text-center">
+  <H2>{title}</H2>
+  <Subtitle><slot/></Subtitle>
+</div>
