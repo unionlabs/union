@@ -4,8 +4,6 @@ import SocialsGrid from '#/components/SocialsGrid.astro'
 import CodeSnippet from '#/components/CodeSnippet.astro'
 import { codeSnippets } from '#/content/_snippets/landing.ts'
 import { Tabs, TabItem } from '@astrojs/starlight/components'
-import ConnectedVisual from '#/components/ConnectedVisual.svelte'
-import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 
 import ModularConnectedSection from '#/components/sections/ModularConnectedSection.astro'
 import MostEfficientSection from '#/components/sections/MostEfficientSection.astro'
@@ -23,7 +21,6 @@ import LanderSection from '#/components/LanderSection.astro';
     <MostEfficientSection/>
     <ProductsSection/>
     <BlogSection/>
-
     <LanderSection><SocialsGrid /></LanderSection>
 
 
@@ -33,22 +30,8 @@ import LanderSection from '#/components/LanderSection.astro';
         'grid sm:grid-cols-2 grid-cols-1 sm:grid-rows-1 grid-rows-2 sm:divide-x sm:divide-y-0 divide-y divide-solid divide-[#1f1f1f]',
         'md:flex-row max-w-4x items-center mb-px bg-black',
       ]}
-    >
-      <div class="p-4 sm:p-8 text-xl md:text-2xl font-normal text-gray-400">
-        <span class="text-white">Galois</span> is the first interoperability proving layer that is
-        so efficient that it allows anyone to <span class="text-white"
-          >generate proofs on a phone.</span
-        > Gone is the era of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available
-        to anyone.
-      </div>
-      <div class="w-full min-w-full h-full min-h-full">
-        <div class="absolute p-4 sm:p-8 text-xl md:text-2xl font-normal text-white z-20">
-          <span> Unmatched Scalability</span>
-        </div>
-        <PerformanceGraph client:only />
-      </div>
-    </section>
-    <section class="flex flex-col items-center bg-black mb-px">
+    >    <section class="flex flex-col items-center bg-black mb-px">
+
       <div
         class="w-full flex flex-col-reverse sm:flex-row justify-evenly divide-y divide-x-0 sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]"
       >
