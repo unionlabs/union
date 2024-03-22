@@ -29,6 +29,7 @@ jobs:
     with:
       eval_target: 'build'
       eval_top_attr: 'packages'
+      lfs: true
   devShells:
     if: github.event.pull_request.draft == false
     uses: unionlabs/workflows/.github/workflows/build.yml@54db69f90dc7171e9dd185582c1a47d98ee35ea6
@@ -38,6 +39,7 @@ jobs:
     with:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
+      lfs: true
   checks:
     if: github.event.pull_request.draft == false
     uses: unionlabs/workflows/.github/workflows/build.yml@54db69f90dc7171e9dd185582c1a47d98ee35ea6
@@ -47,3 +49,4 @@ jobs:
     with:
       eval_target: 'test'
       eval_top_attr: 'checks'
+      lfs: true
