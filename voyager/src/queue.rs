@@ -15,7 +15,9 @@ use axum::{
     Json,
 };
 use block_message::BlockPollingTypes;
-use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm, Chains};
+use chain_utils::{
+    cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm, Chains,
+};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
 use queue_msg::{
@@ -845,6 +847,18 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Union, Ethereum<Mainnet>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Scroll) => {
+                            event(relay_message::id::<Wasm<Union>, Scroll, _>(
+                                chain_id,
+                                relay_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Union, Scroll>(
                                         ibc_event.event,
                                     ),
                                 },

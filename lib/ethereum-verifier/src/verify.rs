@@ -503,7 +503,7 @@ mod tests {
             ctx,
             update,
             attested_slot + 32,
-            INITIAL_DATA.genesis_validators_root.clone(),
+            INITIAL_DATA.genesis_validators_root,
             BlsVerifier,
         )
         .map_err(|e| e.0)
@@ -663,7 +663,7 @@ mod tests {
     fn verify_state_works() {
         assert_eq!(
             get_node(
-                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_root,
                 VALID_PROOF.storage_proof.key.to_big_endian(),
                 VALID_PROOF.storage_proof.proof.iter()
             )
@@ -676,7 +676,7 @@ mod tests {
     #[test]
     fn verify_state_fails_when_invalid_root() {
         let storage_root = {
-            let mut root = VALID_PROOF.storage_root.clone().into_bytes();
+            let mut root = VALID_PROOF.storage_root.into_bytes();
             root[0] = u8::MAX - root[0];
             root.try_into().unwrap()
         };
@@ -698,7 +698,7 @@ mod tests {
 
         assert!(matches!(
             get_node(
-                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_root,
                 proof_key,
                 VALID_PROOF.storage_proof.proof.iter()
             ),
@@ -713,7 +713,7 @@ mod tests {
 
         assert!(matches!(
             get_node(
-                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_root,
                 VALID_PROOF.storage_proof.key.to_big_endian(),
                 &proof
             ),
@@ -725,7 +725,7 @@ mod tests {
     fn verify_absent_storage_works() {
         assert_eq!(
             verify_storage_absence(
-                ABSENT_PROOF.storage_root.clone(),
+                ABSENT_PROOF.storage_root,
                 ABSENT_PROOF.storage_proof.key,
                 ABSENT_PROOF.storage_proof.proof.iter()
             ),
@@ -737,7 +737,7 @@ mod tests {
     fn verify_absent_storage_returns_false_when_storage_exists() {
         assert_eq!(
             verify_storage_absence(
-                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_root,
                 VALID_PROOF.storage_proof.key,
                 VALID_PROOF.storage_proof.proof.iter()
             ),
@@ -749,7 +749,7 @@ mod tests {
     fn verify_storage_proof_works() {
         assert_eq!(
             verify_storage_proof(
-                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_root,
                 VALID_PROOF.storage_proof.key,
                 &rlp::encode(&VALID_PROOF.storage_proof.value),
                 VALID_PROOF.storage_proof.proof.iter()
@@ -765,7 +765,7 @@ mod tests {
 
         assert!(matches!(
             verify_storage_proof(
-                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_root,
                 VALID_PROOF.storage_proof.key,
                 proof_value.as_ref(),
                 VALID_PROOF.storage_proof.proof.iter()
@@ -778,7 +778,7 @@ mod tests {
     fn verify_storage_proof_leading_zero_value_works() {
         assert_eq!(
             verify_storage_proof(
-                VALID_PROOF2.storage_root.clone(),
+                VALID_PROOF2.storage_root,
                 VALID_PROOF2.storage_proof.key,
                 &rlp::encode(&VALID_PROOF2.storage_proof.value),
                 VALID_PROOF2.storage_proof.proof.iter()

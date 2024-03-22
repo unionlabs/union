@@ -40,6 +40,7 @@ members = [
   "lib/scroll-verifier",
   "lib/block-message",
   "lib/scroll-api",
+  "lib/scroll-rpc",
 ]
 
 [workspace.package]
@@ -70,6 +71,7 @@ protos                    = { path = "generated/rust/protos", default-features =
 queue-msg                 = { path = "lib/queue-msg", default-features = false }
 relay-message             = { path = "lib/relay-message", default-features = false }
 scroll-api                = { path = "lib/scroll-api", default-features = false }
+scroll-rpc                = { path = "lib/scroll-rpc", default-features = false }
 scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }

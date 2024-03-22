@@ -467,6 +467,7 @@ jemallocator
 jetbrains
 journalctl
 jsoncpp
+jsonrpsee
 jsonschema
 jumpstart
 justif

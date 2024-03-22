@@ -117,6 +117,7 @@ pub mod errors {
     #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
     #[error("invalid length: expected {expected}, found {found}")]
     pub struct InvalidLength {
+        // TODO: Make this generic with this enum as individual types
         pub expected: ExpectedLength,
         pub found: usize,
     }
@@ -129,6 +130,8 @@ pub mod errors {
         LessThan(usize),
         #[display(fmt = "between ({_0}, {_1})")]
         Between(usize, usize),
+        #[display(fmt = "greater than or equal to ({_0})")]
+        Gte(usize),
     }
 
     #[derive(Debug, PartialEq, Eq, thiserror::Error)]

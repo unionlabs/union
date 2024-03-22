@@ -252,8 +252,7 @@ mod tests {
         let domain_type = DomainType([1, 2, 3, 4]);
         let current_version = Version([5, 6, 7, 8]);
         let genesis_validators_root = H256([1; 32]);
-        let fork_data_root =
-            compute_fork_data_root(current_version.clone(), genesis_validators_root.clone());
+        let fork_data_root = compute_fork_data_root(current_version, genesis_validators_root);
         let genesis_version = Version([0, 0, 0, 0]);
 
         let mut domain = Domain::default();
@@ -265,14 +264,14 @@ mod tests {
         assert_eq!(
             domain,
             compute_domain(
-                domain_type.clone(),
+                domain_type,
                 Some(current_version),
                 Some(genesis_validators_root),
-                genesis_version.clone(),
+                genesis_version,
             )
         );
 
-        let fork_data_root = compute_fork_data_root(genesis_version.clone(), Default::default());
+        let fork_data_root = compute_fork_data_root(genesis_version, Default::default());
         let mut domain = Domain::default();
         domain.0[..4].copy_from_slice(&domain_type.0);
         domain.0[4..].copy_from_slice(&fork_data_root.0[..28]);
@@ -310,7 +309,7 @@ mod tests {
 
         let signing_data = SigningData {
             object_root: fork_data.tree_hash_root().into(),
-            domain: domain.clone(),
+            domain: domain,
         };
 
         assert_eq!(

@@ -13,25 +13,24 @@ use crate::{uint::U256, ByteArrayExt};
 ///   * block[n-1]      60          BlockContext    60*n-59     The last block in this chunk
 ///   * l2Transactions  dynamic     bytes           60*n+1
 /// ```
-
 #[derive(Debug, Clone, PartialEq)]
-pub struct ChunkCodec {
+pub struct Chunk {
     pub blocks: Vec<BlockContext>,
     pub l2_transactions: Vec<u8>,
 }
 
-impl ChunkCodec {
+impl Chunk {
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ChunkCodecDecodeError> {
+    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ChunkDecodeError> {
         let len: usize = bz
             .as_ref()
             .first()
             .copied()
-            .ok_or(ChunkCodecDecodeError::EmptyBytes)?
+            .ok_or(ChunkDecodeError::EmptyBytes)?
             .into();
 
         if bz.as_ref().len() < len * 60 + 1 {
-            return Err(ChunkCodecDecodeError::TooManyBlocks);
+            return Err(ChunkDecodeError::TooManyBlocks);
         }
 
         let mut blocks = vec![];
@@ -52,7 +51,7 @@ impl ChunkCodec {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ChunkCodecDecodeError {
+pub enum ChunkDecodeError {
     EmptyBytes,
     TooManyBlocks,
 }
@@ -120,7 +119,7 @@ mod tests {
         let blocks = call
             .chunks
             .iter()
-            .map(ChunkCodec::decode)
+            .map(Chunk::decode)
             .map(|cc| cc.unwrap().blocks)
             .collect::<Vec<_>>();
 

@@ -21,7 +21,8 @@
         "eth_rpc_api": "wss://rpc.ankr.com/eth_sepolia/ws/864e6497c4508f901b2dbaec5ae848868e2163370ec1776d3262960137dc38eb",
         "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
       },
-      "scroll_api": "https://sepolia-api-re.scroll.io/"
+      "scroll_api": "https://sepolia-api-re.scroll.io/",
+      "union_grpc_url": "http://localhost:9090"
     },
     "ethereum-devnet": {
       "enabled": true,

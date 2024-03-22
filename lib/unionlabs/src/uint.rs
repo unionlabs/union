@@ -7,7 +7,6 @@ use core::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
 
 use crate::{
@@ -33,11 +32,8 @@ use crate::{
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[ssz(struct_behaviour = "transparent")]
 #[repr(transparent)]
-pub struct U256(
-    #[serde(with = "::serde_utils::u256_from_dec_str")]
-    #[debug("{}", _0)]
-    pub primitive_types::U256,
-);
+#[debug("U256({})", self)]
+pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
 
 #[cfg(feature = "ethabi")]
 mod ethabi {
@@ -165,17 +161,12 @@ impl U256 {
 
     #[must_use]
     pub fn to_big_endian_hex(&self) -> String {
-        let data = self.to_big_endian();
-        let data = data.as_ref();
+        serde_utils::to_hex(self.to_big_endian())
+    }
 
-        let encoded = hex::encode(data);
-
-        let encoded = encoded.trim_start_matches('0');
-
-        format!(
-            "{HEX_ENCODING_PREFIX}{}",
-            if encoded.is_empty() { "0" } else { encoded }
-        )
+    #[must_use]
+    pub fn to_packed_big_endian_hex(&self) -> String {
+        serde_utils::to_hex(self.to_packed_big_endian())
     }
 
     pub fn from_big_endian_hex(s: impl AsRef<str>) -> Result<U256, TryFromHexError> {
@@ -224,7 +215,7 @@ pub mod u256_big_endian_hex {
     where
         D: serde::Deserializer<'de>,
     {
-        <&str>::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
+        String::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
             U256::from_big_endian_hex(s).map_err(de::Error::custom)
         })
     }
