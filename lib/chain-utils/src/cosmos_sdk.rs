@@ -202,7 +202,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .chain_update(&tx_raw_bytes)
             .finalize()
             .into();
-        let tx_hash = hex::encode_upper(&tx_hash_normalized);
+        let tx_hash = hex::encode_upper(tx_hash_normalized);
 
         if self
             .tm_client()

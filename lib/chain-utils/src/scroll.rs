@@ -81,7 +81,7 @@ impl EthereumChain for Scroll {
     }
 
     fn ibc_handler_address(&self) -> H160 {
-        self.ibc_handler_address.clone()
+        self.ibc_handler_address
     }
 }
 
@@ -113,16 +113,13 @@ impl Scroll {
                 wallet.clone(),
             ));
 
-            IBCHandler::new(
-                config.ibc_handler_address.clone(),
-                signer_middleware.clone(),
-            )
+            IBCHandler::new(config.ibc_handler_address, signer_middleware.clone())
         });
 
         Ok(Self {
             chain_id: U256(chain_id),
             ibc_handlers: Pool::new(ibc_handlers),
-            ibc_handler_address: config.ibc_handler_address.clone(),
+            ibc_handler_address: config.ibc_handler_address,
             provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
             l1: Ethereum::new(config.l1).await?,
@@ -234,9 +231,9 @@ impl Chain for Scroll {
                 revision_number: 0,
                 revision_height: 0,
             },
-            rollup_contract_address: self.rollup_contract_address.clone(),
+            rollup_contract_address: self.rollup_contract_address,
             rollup_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
-            ibc_contract_address: self.l1.ibc_handler_address.clone(),
+            ibc_contract_address: self.l1.ibc_handler_address,
             ibc_commitment_slot: U256::from(0),
         }
     }

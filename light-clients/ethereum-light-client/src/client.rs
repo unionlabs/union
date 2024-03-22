@@ -144,7 +144,7 @@ impl IbcClient for EthereumLightClient {
             &ctx,
             header.consensus_update.clone(),
             current_slot,
-            wasm_client_state.data.genesis_validators_root.clone(),
+            wasm_client_state.data.genesis_validators_root,
             VerificationContext { deps },
         )?;
 
@@ -210,7 +210,7 @@ impl IbcClient for EthereumLightClient {
             &ctx,
             misbehaviour.update_1,
             current_slot,
-            wasm_client_state.data.genesis_validators_root.clone(),
+            wasm_client_state.data.genesis_validators_root,
             VerificationContext { deps },
         )?;
 
@@ -218,7 +218,7 @@ impl IbcClient for EthereumLightClient {
             &ctx,
             misbehaviour.update_2,
             current_slot,
-            wasm_client_state.data.genesis_validators_root.clone(),
+            wasm_client_state.data.genesis_validators_root,
             VerificationContext { deps },
         )?;
 
@@ -251,7 +251,7 @@ impl IbcClient for EthereumLightClient {
         if let Some(ref next_sync_committee) = consensus_state.data.next_sync_committee {
             // sync committee only changes when the period change
             if update_finalized_period == store_period + 1 {
-                consensus_state.data.current_sync_committee = next_sync_committee.clone();
+                consensus_state.data.current_sync_committee = *next_sync_committee;
                 consensus_state.data.next_sync_committee = consensus_update
                     .next_sync_committee
                     .map(|c| c.aggregate_pubkey);

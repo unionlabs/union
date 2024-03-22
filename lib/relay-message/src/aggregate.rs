@@ -1314,7 +1314,7 @@ where
                     fetch(id::<Hc, Tr, _>(
                         this_chain_id.clone(),
                         FetchPacketAcknowledgement {
-                            tx_hash: tx_hash.clone(),
+                            tx_hash,
                             destination_port_id: event.packet_dst_port.clone(),
                             destination_channel_id: event.packet_dst_channel.clone(),
                             sequence: event.packet_sequence,

@@ -234,7 +234,7 @@ where
                 Msg::CreateClient(data) => {
                     let register_client_result = ibc_handler.register_client(
                         data.config.client_type.clone(),
-                        data.config.client_address.clone().into(),
+                        data.config.client_address.into(),
                     );
 
                     // TODO(benluelo): Better way to check if client type has already been registered?
@@ -493,10 +493,8 @@ where
                         Err(err) => panic!("{err}"),
                     };
 
-                    let bootstrap_response = ethereum
-                        .beacon_api_client
-                        .bootstrap(header.data.root.clone())
-                        .await;
+                    let bootstrap_response =
+                        ethereum.beacon_api_client.bootstrap(header.data.root).await;
 
                     match bootstrap_response {
                         Ok(ok) => break ok.data,
@@ -530,7 +528,7 @@ where
                 let account_update = ethereum
                     .provider
                     .get_proof(
-                        ethers::types::H160::from(ethereum.ibc_handler_address.clone()),
+                        ethers::types::H160::from(ethereum.ibc_handler_address),
                         vec![],
                         // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
                         Some(execution_height.into()),

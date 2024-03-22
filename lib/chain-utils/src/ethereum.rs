@@ -84,7 +84,7 @@ impl<C: ChainSpec> EthereumChain for Ethereum<C> {
     }
 
     fn ibc_handler_address(&self) -> H160 {
-        self.ibc_handler_address.clone()
+        self.ibc_handler_address
     }
 }
 
@@ -174,7 +174,7 @@ impl EthereumSignersConfig for ReadWrite {
                 wallet.clone(),
             ));
 
-            IBCHandler::new(ibc_handler_address.clone(), signer_middleware.clone())
+            IBCHandler::new(ibc_handler_address, signer_middleware.clone())
         }))
     }
 }
@@ -390,7 +390,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
                 revision_height: 0,
             },
             ibc_commitment_slot: U256::from(0),
-            ibc_contract_address: self.ibc_handler_address.clone(),
+            ibc_contract_address: self.ibc_handler_address,
         }
     }
 
@@ -453,7 +453,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
         sequence: NonZeroU64,
     ) -> Vec<u8> {
         self.provider
-            .get_transaction_receipt(tx_hash.clone())
+            .get_transaction_receipt(tx_hash)
             .await
             .unwrap()
             .unwrap()
@@ -497,7 +497,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
             chain_id: U256(chain_id),
             ibc_handlers: S::new(
                 config.signers,
-                config.ibc_handler_address.clone(),
+                config.ibc_handler_address,
                 chain_id.as_u64(),
                 provider.clone(),
             ),

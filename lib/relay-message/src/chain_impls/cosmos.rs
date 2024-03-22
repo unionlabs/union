@@ -653,7 +653,7 @@ where
 
         let untrusted_valset = mk_valset(
             untrusted_validators,
-            untrusted_signed_header.header.proposer_address.clone(),
+            untrusted_signed_header.header.proposer_address,
         );
 
         msg(id::<Tr, Hc, _>(
