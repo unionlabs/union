@@ -1,6 +1,9 @@
 ---
 import Layout from "#/layouts/Layout.astro"
 import { getCollection } from "astro:content"
+import Card from "#/components/Card.astro"
+import LanderSection from "#/components/LanderSection.astro"
+import IntroHeading from "#/components/typography/IntroHeading.astro"
 
 const isProduction = import.meta.env.PROD
 
@@ -9,16 +12,21 @@ let blogEntries = await getCollection("blog", ({ data }) =>
   isProduction ? data.hidden !== true : true
 )
 blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
+
 ---
 
 <Layout title='Union Blog'>
   <main
-    class="flex items-center text-xl md:text-2xl mt-2 sm:mt-12 justify-center pt-6 sm:pt-0 mx-4"
+    class="flex flex-col items-center gap-16 lg:gap-32 py-32"
   >
-    <ul class="flex flex-col gap-14 flex-1 list-none p-0 max-w-2xl">
+    <IntroHeading title="Blog">
+      Our latest partnerships, technical deepdives, and announcements.
+    </IntroHeading>
+
+    <ul class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1 list-none p-0 max-w-5xl w-full">
       {
         blogEntries.map(blogPostEntry => (
-          <li>
+          <Card padded>
             <a class="pointer-cursor" href={`/blog/${blogPostEntry.slug}`}>
               <time class="text-lg text-gray-300" datetime={blogPostEntry.data.date.toISOString()}>
                 {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
@@ -34,7 +42,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
                 Read Post -&gt;
               </div>
             </a>
-          </li>
+          </Card>
         ))
       }
     </ul>
