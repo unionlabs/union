@@ -39,7 +39,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
       blogPosts.map(post => (
         <a
           href={`/blog/${post.slug}`}
-          class="justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto"
+          class="justify-center w-full h-full flex flex-col text-left flex-start p-4"
         >
           <p class="text-xl font-bold">{post.data.title}</p>
           <p class="underline uppercase text-accent font-semibold">Read more {'->'}</p>
