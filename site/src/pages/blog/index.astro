@@ -1,9 +1,11 @@
 ---
-import Layout from "#/layouts/Layout.astro"
+import SectionsLayout from '#/layouts/SectionsLayout.astro'
 import { getCollection } from "astro:content"
 import Card from "#/components/Card.astro"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
+
+import H3 from "#/components/typography/h3.astro"
 
 const isProduction = import.meta.env.PROD
 
@@ -12,31 +14,27 @@ let blogEntries = await getCollection("blog", ({ data }) =>
   isProduction ? data.hidden !== true : true
 )
 blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
-
 ---
 
-<Layout title='Union Blog'>
-  <main
-    class="flex flex-col items-center gap-16 lg:gap-32 py-32"
-  >
-    <IntroHeading title="Blog">
+<SectionsLayout title='Union Blog'>
+  <LanderSection>
+    <IntroHeading main title="Union Blog">
       Our latest partnerships, technical deepdives, and announcements.
     </IntroHeading>
-
-    <ul class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1 list-none p-0 max-w-5xl w-full">
+    <div class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1">
       {
         blogEntries.map(blogPostEntry => (
           <Card padded>
             <a class="pointer-cursor" href={`/blog/${blogPostEntry.slug}`}>
-              <time class="text-lg text-gray-300" datetime={blogPostEntry.data.date.toISOString()}>
+              <time class="text-lg text-gray-400" datetime={blogPostEntry.data.date.toISOString()}>
                 {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
                   year: 'numeric',
                   month: 'numeric',
                   day: 'numeric',
                 })}
               </time>
-              <h2 class="text-3xl sm:text-4xl font-extrabold mb-0">{blogPostEntry.data.title}</h2>
-              <p class="sm:text-xl text-gray-200">{blogPostEntry.data.description}</p>
+              <H3>{blogPostEntry.data.title}</H3>
+              <p class="sm:text-xl text-gray-400">{blogPostEntry.data.description}</p>
 
               <div class="underline text-lg text-accent font-semibold">
                 Read Post -&gt;
@@ -45,9 +43,9 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
           </Card>
         ))
       }
-    </ul>
-  </main>
-</Layout>
+    </div>
+  </LanderSection>
+</SectionsLayout>
 
 <style is:inline>
   *::selection {
