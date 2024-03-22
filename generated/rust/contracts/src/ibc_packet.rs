@@ -2429,6 +2429,8 @@ pub mod ibc_packet {
         name = "AcknowledgePacket",
         abi = "AcknowledgePacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes)"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct AcknowledgePacketFilter {
         pub packet: IbcCoreChannelV1PacketData,
         pub acknowledgement: ::ethers::core::types::Bytes,
@@ -2447,6 +2449,8 @@ pub mod ibc_packet {
         name = "RecvPacket",
         abi = "RecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64))"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct RecvPacketFilter {
         pub packet: IbcCoreChannelV1PacketData,
     }
@@ -2464,6 +2468,8 @@ pub mod ibc_packet {
         name = "SendPacket",
         abi = "SendPacket(uint64,string,string,(uint64,uint64),uint64,bytes)"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct SendPacketFilter {
         pub sequence: u64,
         pub source_port: ::std::string::String,
@@ -2486,6 +2492,8 @@ pub mod ibc_packet {
         name = "TimeoutPacket",
         abi = "TimeoutPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64))"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct TimeoutPacketFilter {
         pub packet: IbcCoreChannelV1PacketData,
     }
@@ -2503,6 +2511,8 @@ pub mod ibc_packet {
         name = "WriteAcknowledgement",
         abi = "WriteAcknowledgement(string,string,uint64,bytes)"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct WriteAcknowledgementFilter {
         pub destination_port: ::std::string::String,
         pub destination_channel: ::std::string::String,
