@@ -6,19 +6,17 @@ use crate::{
     union::galois::zero_knowledge_proof::ZeroKnowledgeProof,
 };
 
-#[model(proto(raw(protos::union::galois::api::v2::ProveResponse), into, from))]
+#[model(proto(raw(protos::union::galois::api::v3::ProveResponse), into, from))]
 pub struct ProveResponse {
     pub proof: ZeroKnowledgeProof,
     pub trusted_validator_set_root: H256,
-    pub untrusted_validator_set_root: H256,
 }
 
-impl From<ProveResponse> for protos::union::galois::api::v2::ProveResponse {
+impl From<ProveResponse> for protos::union::galois::api::v3::ProveResponse {
     fn from(value: ProveResponse) -> Self {
         Self {
             proof: Some(value.proof.into()),
             trusted_validator_set_root: value.trusted_validator_set_root.into(),
-            untrusted_validator_set_root: value.untrusted_validator_set_root.into(),
         }
     }
 }
@@ -30,20 +28,16 @@ pub enum TryFromProveResponseError {
     UntrustedValidatorSetRoot(InvalidLength),
 }
 
-impl TryFrom<protos::union::galois::api::v2::ProveResponse> for ProveResponse {
+impl TryFrom<protos::union::galois::api::v3::ProveResponse> for ProveResponse {
     type Error = TryFromProveResponseError;
 
-    fn try_from(value: protos::union::galois::api::v2::ProveResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: protos::union::galois::api::v3::ProveResponse) -> Result<Self, Self::Error> {
         Ok(Self {
             proof: required!(value.proof)?.into(),
             trusted_validator_set_root: value
                 .trusted_validator_set_root
                 .try_into()
                 .map_err(TryFromProveResponseError::TrustedValidatorSetRoot)?,
-            untrusted_validator_set_root: value
-                .untrusted_validator_set_root
-                .try_into()
-                .map_err(TryFromProveResponseError::UntrustedValidatorSetRoot)?,
         })
     }
 }

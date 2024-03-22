@@ -14,7 +14,7 @@ use macros::apply;
 use num_bigint::BigUint;
 use protos::{
     ibc::core::connection::v1::MsgConnectionOpenInit,
-    union::galois::api::v2::union_prover_api_client,
+    union::galois::api::v3::union_prover_api_client,
 };
 use queue_msg::{
     aggregate,
@@ -510,7 +510,7 @@ where
                 )
                 .await
                 .unwrap()
-                .poll(protos::union::galois::api::v2::PollRequest::from(
+                .poll(protos::union::galois::api::v3::PollRequest::from(
                     PollRequest {
                         request: request.clone(),
                     },
@@ -841,6 +841,7 @@ where
                             },
                             chain_id: signed_header.header.chain_id.clone(),
                         },
+                        untrusted_header: signed_header.header.clone(),
                         trusted_commit: trusted_validators_commit,
                         untrusted_commit: untrusted_validators_commit,
                     },
@@ -896,7 +897,7 @@ where
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),
                 client_message: cometbls::header::Header {
-                    signed_header,
+                    signed_header: signed_header.into(),
                     trusted_height: req.update_from.into(),
                     zero_knowledge_proof: response.proof.evm_proof,
                 },

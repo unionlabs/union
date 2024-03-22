@@ -1,7 +1,7 @@
 use macros::model;
 
 // REVIEW: Are these fields fixed size?
-#[model(proto(raw(protos::union::galois::api::v2::ZeroKnowledgeProof), into, from))]
+#[model(proto(raw(protos::union::galois::api::v3::ZeroKnowledgeProof), into, from))]
 pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -17,7 +17,7 @@ pub struct ZeroKnowledgeProof {
     pub public_inputs: Vec<u8>,
 }
 
-impl From<ZeroKnowledgeProof> for protos::union::galois::api::v2::ZeroKnowledgeProof {
+impl From<ZeroKnowledgeProof> for protos::union::galois::api::v3::ZeroKnowledgeProof {
     fn from(value: ZeroKnowledgeProof) -> Self {
         Self {
             content: value.content,
@@ -28,8 +28,8 @@ impl From<ZeroKnowledgeProof> for protos::union::galois::api::v2::ZeroKnowledgeP
     }
 }
 
-impl From<protos::union::galois::api::v2::ZeroKnowledgeProof> for ZeroKnowledgeProof {
-    fn from(value: protos::union::galois::api::v2::ZeroKnowledgeProof) -> Self {
+impl From<protos::union::galois::api::v3::ZeroKnowledgeProof> for ZeroKnowledgeProof {
+    fn from(value: protos::union::galois::api::v3::ZeroKnowledgeProof) -> Self {
         Self {
             content: value.content,
             compressed_content: value.compressed_content,
