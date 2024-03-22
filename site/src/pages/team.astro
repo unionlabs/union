@@ -163,34 +163,34 @@ const teams = [
       We're a collective of engineers and researchers building the final state of interoperability.  
     </IntroHeading>
 
-    <Card class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 p-0 auto-rows-[1fr] w-full">
+    <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 p-0 auto-rows-[1fr] w-full gap-4 md:gap-6">
       {
         profiles.map(person => (
-          <li>
+          <Card>
             <a 
             href={`https://x.com/${person.x_name}`}
             target="_blank"
             rel="noopener noreferrer"
-            class="w-full gap-4 items-center flex-1 flex flex-row p-4  hover:bg-[#152325] transition-colors"
+            class="w-full gap-4 items-center flex-1 flex flex-row  hover:bg-[#152325] transition-colors"
             >
-                <img class="w-20 h-20" src={person.profile_pic.src}/>
+                <img class="w-24 h-24 rounded-l" src={person.profile_pic.src}/>
                 <div class="leading-tight">
                   <h3 class="text-2xl">{person.name}</h3>
                   <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
                   <div class="text-accent text-lg -mt-1 block">@{person.x_name}</div>
                 </div>
             </a>
-          </li>
+          </Card>
         ))
       }
-    </Card>
+    </ul>
   </LanderSection>
   <LanderSection>
     <IntroHeading title="Supporting Teams">Auditing, security, legal, funding.</IntroHeading>
-    <Card class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 gap-px p-0 auto-rows-[1fr] w-full">
+    <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 p-0 auto-rows-[1fr] w-full gap-4 md:gap-6">
       {
         teams.map(team=> (
-          <li>
+          <Card>
             <a 
             href={team.url}
             target="_blank"
@@ -199,9 +199,9 @@ const teams = [
             >
                 <img class={team.clazz ? team.clazz : "p-4 h-16"} src={team.logo.src} alt={team.name}/>
             </a>
-          </li>
+          </Card>
         ))
       }
-    </Card>
+    </ul>
   </LanderSection>
 </SectionsLayout>
