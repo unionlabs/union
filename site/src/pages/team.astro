@@ -1,5 +1,9 @@
 ---
-import Layout from "#/layouts/Layout.astro"
+import SectionsLayout from "#/layouts/SectionsLayout.astro"
+import LanderSection from "#/components/LanderSection.astro"
+import IntroHeading from "#/components/typography/IntroHeading.astro"
+import Card from "#/components/Card.astro"
+
 import headshot_karel from "#/assets/images/headshots/karel.jpg"
 import headshot_cor from "#/assets/images/headshots/cor.jpg"
 import headshot_ben from "#/assets/images/headshots/ben.jpeg"
@@ -153,57 +157,51 @@ const teams = [
   }
 ]
 ---
-<Layout>
-  <div class="flex flex-col flex-1 items-center px-4">
-    <main class="max-w-5xl w-full bg-[#1f1f1f] p-px flex flex-col gap-px">
-      <div class="bg-black py-12 md:py-20 px-4">
-        <h1 class="text-4xl md:text-5xl text-white text-center font-semibold px-4">Meet Union Labs</h1>
-        <p class="text-gray-400 text-xl text-center mt-2">We're a collective of engineers and researchers building the final state of interoperability.</p>
-      </div>
-      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
-        {
-          profiles.map(person => (
-            <li>
-              <a 
-              href={`https://x.com/${person.x_name}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="w-full gap-4 items-center flex-1 flex flex-row p-4 bg-black hover:bg-[#152325] transition-colors"
-              >
-                  <img class="w-20 h-20" src={person.profile_pic.src}/>
-                  <div class="leading-tight">
-                    <h3 class="text-2xl">{person.name}</h3>
-                    <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
-                    <div class="text-accent text-lg -mt-1 block">@{person.x_name}</div>
-                  </div>
-              </a>
-            </li>
-          ))
-        }
-        <div class="bg-black h-full w-full hidden sm:block"></div>
-      </ul>
-      <div class="bg-black py-12 md:py-20 px-4">
-        <h2 class="text-3xl md:text-4xl text-white text-center font-semibold px-4">Supporting Teams</h2>
-        <p class="text-gray-400 text-xl text-center mt-2">Auditing, security, legal, funding.</p>
-      </div>
-      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
-        {
-          teams.map(team=> (
-            <li>
-              <a 
-              href={team.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="w-full h-full gap-3 items-center flex-1 flex flex-row p-3 bg-black hover:bg-[#152325] justify-center" 
-              >
-                  <img class={team.clazz ? team.clazz : "p-4 h-16"} src={team.logo.src} alt={team.name}/>
-              </a>
-            </li>
-          ))
-        }
-        <div class="bg-black h-full w-full hidden min-[884px]:block"/>
-        <div class="bg-black h-full w-full hidden min-[884px]:block"/>
-      </ul>
-    </main>
-  </div>
-</Layout>
+<SectionsLayout title="Union Team">
+  <LanderSection>
+    <IntroHeading main title="Meet Union Labs">
+      We're a collective of engineers and researchers building the final state of interoperability.  
+    </IntroHeading>
+
+    <Card class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 p-0 auto-rows-[1fr] w-full">
+      {
+        profiles.map(person => (
+          <li>
+            <a 
+            href={`https://x.com/${person.x_name}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full gap-4 items-center flex-1 flex flex-row p-4  hover:bg-[#152325] transition-colors"
+            >
+                <img class="w-20 h-20" src={person.profile_pic.src}/>
+                <div class="leading-tight">
+                  <h3 class="text-2xl">{person.name}</h3>
+                  <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
+                  <div class="text-accent text-lg -mt-1 block">@{person.x_name}</div>
+                </div>
+            </a>
+          </li>
+        ))
+      }
+    </Card>
+  </LanderSection>
+  <LanderSection>
+    <IntroHeading title="Supporting Teams">Auditing, security, legal, funding.</IntroHeading>
+    <Card class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 gap-px p-0 auto-rows-[1fr] w-full">
+      {
+        teams.map(team=> (
+          <li>
+            <a 
+            href={team.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full h-full gap-3 items-center flex-1 flex flex-row p-3 hover:bg-[#152325] transition-colors justify-center" 
+            >
+                <img class={team.clazz ? team.clazz : "p-4 h-16"} src={team.logo.src} alt={team.name}/>
+            </a>
+          </li>
+        ))
+      }
+    </Card>
+  </LanderSection>
+</SectionsLayout>
