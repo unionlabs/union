@@ -19,7 +19,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
   <Card padded>
     <a class="flex flex-col items-start gap-2" href={`/blog/${latestBlogPost.slug}`}>
       <H3>{latestBlogPost.data.title}</H3>
-      <p class="text-pretty text-lg text-left">{latestBlogPost.data.description}</p>
+      <p class="text-pretty text-lg text-left text-gray-400">{latestBlogPost.data.description}</p>
       <ButtonA href={`/blog/${latestBlogPost.slug}`} fake>read more</ButtonA>
     </a>
   </Card>
