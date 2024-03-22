@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content'
 import Card from '#/components/Card.astro'
+import ButtonA from '#/components/ButtonA.astro'
 
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
@@ -16,19 +17,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <Card padded>
     <a class="text-left space-y-2" href={`/blog/${latestBlogPost.slug}`}>
-      <div>
-        <p class="text-3xl font-bold">
-          {latestBlogPost.data.title}
-        </p>
-      </div>
-      <p class="text-pretty text-lg text-left">
-        {latestBlogPost.data.description}
-      </p>
-
-      <a
-        class="underline uppercase block mt-2 text-accent font-semibold"
-        href={`/blog/${latestBlogPost.slug}`}>Read more {'->'}</a
-      >
+      <p class="text-3xl font-bold">{latestBlogPost.data.title}</p>
+      <p class="text-pretty text-lg text-left">{latestBlogPost.data.description}</p>
+      <ButtonA href={`/blog/${latestBlogPost.slug}`}>read more</ButtonA>
     </a>
   </Card>
 
