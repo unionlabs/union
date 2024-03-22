@@ -1,5 +1,10 @@
 ---
-import Layout from "#/layouts/Layout.astro"
+import SectionsLayout from "#/layouts/SectionsLayout.astro"
+import LanderSection from "#/components/LanderSection.astro"
+import IntroHeading from "#/components/typography/IntroHeading.astro"
+import Card from "#/components/Card.astro"
+import ButtonA from "#/components/ButtonA.astro"
+
 
 const colors = [
   {
@@ -28,56 +33,43 @@ const colors = [
   }
 ]
 ---
-<Layout title="Union Brand Kit">
-<div class="flex justify-center">
-  <div class="flex flex-col flex-1 items-center bg-[#1f1f1f] max-w-5xl p-px justify-self gap-px">
-    <div class="bg-black py-20 w-full">
-      <h1 class="text-4xl md:text-5xl lg:text-6xl sm:text-4xl text-white text-center font-semibold px-4">Union Brand Kit</h1>
-      <p class="text-gray-400 text-xl text-center mt-4">Logo, fonts, colors.</p>
-    </div>
-      <div class="bg-black py-8 w-full">
-        <h2 class="text-4xl md:text-4xl sm:text-4xl text-white text-center font-semibold px-4">Logo</h2>
-      </div>
-      <div class="bg-black p-4 w-full flex justify-center">
-        <div class="max-w-2xl w-full border-y-px">
-          <p class="mb-4">Here's our Logo Kit .zip with the following files. We provide svg and png versions for all assets:</p>
+<SectionsLayout title="Union Brand Kit">
+  <LanderSection>
+    <IntroHeading main title="Union Brand Kit">Logo, fonts, colors.</IntroHeading>
+    <Card padded>
+        <p class="mb-4 text-lg">Here's our Logo Kit .zip with the following files. We provide svg and png versions for all assets:</p>
 
-          <ul class="mb-4 text-gray-400">
-            <li class="font-mono">union-logo-banner-black-transparent.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-banner-transparent.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-banner.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-black-transparent.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-transparent.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-wide-black-transparent.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-wide-transparent.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo-wide.&#123;svg,png&#125; </li>
-            <li class="font-mono">union-logo.&#123;svg,png&#125; </li>
-          </ul>
-          <a href="/union-logo.zip" class="inline-block text-white font-bold px-4 py-2 uppercase border border-white">Download union-logo.zip</a>
-        </div>
-      </div>
+        <ul class="mb-4 text-gray-400">
+          <li class="font-mono">union-logo-banner-black-transparent.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-banner-transparent.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-banner.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-black-transparent.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-transparent.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-wide-black-transparent.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-wide-transparent.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo-wide.&#123;svg,png&#125; </li>
+          <li class="font-mono">union-logo.&#123;svg,png&#125; </li>
+        </ul>
+        <ButtonA href="/union-logo.zip">Download union-logo.zip</ButtonA>
+    </Card>
+  </LanderSection>
+  <LanderSection>
+    <IntroHeading title="Fonts"></IntroHeading>
+    <Card padded>
+      <p class="mb-4 text-lg">Our font is the <b>Display Variant</b> of Inter v4. The display variant is assigned to an opsz variable-font axis, and exposed as a second family "Inter Display" as static fonts.</p>
 
-      <div class="bg-black py-8 w-full">
-        <h2 class="text-4xl md:text-4xl sm:text-4xl text-white text-center font-semibold px-4">Font</h2>
-      </div>
-    <div class="w-full bg-black p-8 flex justify-center">
-      <div class="max-w-2xl w-full">
-        <p class="mb-4">Our font is the <b>Display Variant</b> of Inter v4. The display variant is assigned to an opsz variable-font axis, and exposed as a second family "Inter Display" as static fonts.</p>
+      <ButtonA href="https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip">Download Inter-4.0.zip</ButtonA>
+    </Card>
+  </LanderSection>
 
-        <div class="bg-black">
-          <a href="https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip" class="inline-block text-white font-bold px-4 py-2 uppercase border border-white">Download Inter-4.0.zip</a>
-        </div>
-      </div>
-    </div>
-
-      <div class="bg-black py-8 w-full">
-        <h2 class="text-4xl md:text-4xl sm:text-4xl text-white text-center font-semibold px-4">Colors</h2>
-      </div>
-      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full m-0 p-0 gap-px">
+  <LanderSection>
+    <IntroHeading title="Colors"></IntroHeading>
+    <Card>
+      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full m-0 p-0">
         {
           colors.map(color=> (
-            <li class="bg-black w-full p-4 flex gap-4">
-              <div style={`background-color: ${color.code}`} class="w-12 h-12"/>
+            <li class=" w-full p-4 flex gap-4">
+              <div style={`background-color: ${color.code}`} class="rounded w-12 h-12"/>
               <div>
                 <div class="text-xl font-bold">{color.name}</div>
                 <div class="font-mono"> {color.code}</div>
@@ -86,6 +78,6 @@ const colors = [
           ))
         }
       </ul>
-  </div>
-</div>
-</Layout>
+    </Card>
+  </LanderSection>
+</SectionsLayout>
