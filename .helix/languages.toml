@@ -48,7 +48,7 @@ name             = "svelte"
 
 [[grammar]]
 name   = "astro"
-source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "947e93089e60c66e681eba22283f4037841451e7" }
+source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "dfa0893bdc4bdfada102043404758c66e3580568" }
 
 [[grammar]]
 name   = "sql"
