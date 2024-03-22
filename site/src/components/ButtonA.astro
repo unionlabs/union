@@ -1,8 +1,9 @@
 ---
-const { href } = Astro.props;
+const { href, fake } = Astro.props;
+const Element = fake ? "div" : "a";
 ---
 
-<a class="inline-block font-bold rounded-lg bg-gray-700 text-white border capitalize border-gray-600 px-4 py-2 rounded-sm font-semibold" {href}>
+<Element class="inline-block block font-bold rounded-lg bg-gray-700 text-white border capitalize border-gray-600 px-4 py-2 rounded-sm font-semibold" {href}>
   <slot /> -&gt;
-</a>
+</Element>
 
