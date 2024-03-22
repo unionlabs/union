@@ -24,7 +24,7 @@
       "scroll_api": "https://sepolia-api-re.scroll.io/"
     },
     "ethereum-devnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_handler_address": "0xEDa338E4dC46038493b885327842fD3E301CaB39",

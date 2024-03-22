@@ -133,7 +133,6 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
 
         // proof
         Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-
         Identified<Hc, Tr, IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
             IsAggregateData,
         Identified<Hc, Tr, IbcProof<ConnectionPath, Hc, Tr>>: IsAggregateData,
@@ -326,7 +325,6 @@ pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, Tr: ChainExt> {
 #[cover(Tr)]
 pub struct AggregateChannelHandshakeMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     // Will be threaded through to the update msg
-    pub update_to: HeightOf<Hc>,
     pub event_height: HeightOf<Hc>,
     pub channel_handshake_event: ChannelHandshakeEvent,
 }
@@ -446,7 +444,6 @@ where
             chain_id: this_chain_id,
             t:
                 AggregateChannelHandshakeMsgAfterUpdate {
-                    update_to,
                     channel_handshake_event,
                     event_height,
                     __marker: _,
@@ -494,7 +491,7 @@ where
                 this_chain_id.clone(),
                 connection.client_id,
                 connection.counterparty.client_id,
-                update_to,
+                event_height,
             )],
             [],
             id(this_chain_id, event_msg),
