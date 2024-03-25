@@ -7552,6 +7552,7 @@ dependencies = [
  "go-parse-duration",
  "serde",
  "serde-json-wasm 1.0.1",
+ "sha2 0.10.8",
  "thiserror",
  "token-factory-api",
  "unionlabs",

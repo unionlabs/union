@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use unionlabs::{
     id::{ChannelId, PortId},
     validated::{Validate, Validated},
@@ -63,5 +64,18 @@ impl<T: Into<String> + From<String>> Validate<T> for NotEmptyString {
 /// the receiver address is deterministic and can be used to identify the sender on the
 /// initial chain.
 pub fn GetReceiver(channel_id: ChannelId, original_sender: String) -> String {
+    let sender_string = format!("{0}/{1}", channel_id.value(), original_sender);
     todo!()
+}
+
+fn account_hash(typ: String, key: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(typ.as_bytes());
+    let th = hasher.finalize();
+
+    let mut hasher = Sha256::new();
+    hasher.update(th);
+    hasher.update(key);
+
+    hasher.finalize()[..].into()
 }

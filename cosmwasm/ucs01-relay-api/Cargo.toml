@@ -17,3 +17,4 @@ serde = { workspace = true }
 serde-json-wasm = { workspace = true }
 unionlabs = { workspace = true }
 go-parse-duration = { workspace = true }
+sha2 = { workspace = true }
