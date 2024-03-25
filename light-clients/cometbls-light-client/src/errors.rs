@@ -151,6 +151,9 @@ pub enum Error {
 
     #[error("forbidden fields have been changed during state migration")]
     MigrateFieldsChanged,
+
+    #[error("the chain id cannot be more than 31 bytes long to fit in the bn254 scalar field")]
+    InvalidChainID,
 }
 
 impl Error {
