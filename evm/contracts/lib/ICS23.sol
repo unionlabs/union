@@ -274,6 +274,8 @@ library Ics23 {
     }
 
     // verifyMembership, throws an exception in case anything goes wrong
+    // NOTE: We are expecting `proof` to be `ExistentProof` only to avoid handling batch proofs
+    // and doing decompressing.
     function verifyMembership(
         CosmosIcs23V1ProofSpec.Data memory spec,
         bytes memory commitmentRoot,
@@ -281,10 +283,7 @@ library Ics23 {
         bytes memory key,
         bytes memory value
     ) internal pure returns (VerifyMembershipError) {
-        CosmosIcs23V1CommitmentProof.Data memory decoProof =
-            Compress.decompress(proof);
-        CosmosIcs23V1ExistenceProof.Data memory exiProof =
-            getExistProofForKey(decoProof, key);
+        CosmosIcs23V1ExistenceProof.Data memory exiProof = proof.exist;
         //require(CosmosIcs23V1ExistenceProof.isNil(exiProof) == false); // dev: getExistProofForKey not available
         if (CosmosIcs23V1ExistenceProof.isNil(exiProof)) {
             return VerifyMembershipError.ExistenceProofIsNil;
