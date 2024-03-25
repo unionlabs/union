@@ -24,7 +24,7 @@ use unionlabs::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },
     },
-    traits::ClientState as ClientStateExt,
+    traits::ClientState as _,
 };
 
 use crate::{
@@ -427,8 +427,6 @@ fn is_client_expired(
     if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
         sum < current_block_time
     } else {
-        // TODO(aeryz): This is really an unexpected error and this should return
-        // a nice error message.
         true
     }
 }
