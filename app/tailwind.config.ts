@@ -79,9 +79,12 @@ export default (<Config>{
       },
       fontFamily: {
         sans: [
+          "Inter var", ...defaultTheme.fontFamily.sans
+        ],
+        display: [
           "Inter var",
           {
-            fontFeatureSettings: '"cv11", "ss01"',
+            fontFeatureSettings:  '"ss01", "cv09", "ss08" "zero"',
             fontVariationSettings: '"opsz" 32'
           }
         ],
