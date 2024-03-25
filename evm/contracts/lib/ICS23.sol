@@ -499,19 +499,22 @@ library Ops {
         if (key.length == 0) return (empty, ApplyLeafOpError.KeyLength);
         //require(value.length > 0); // dev: Leaf op needs value
         if (value.length == 0) return (empty, ApplyLeafOpError.ValueLength);
-        (bytes memory pKey, PrepareLeafDataError pCode1) =
-            prepareLeafData(leafOp.prehash_key, leafOp.length, key);
-        if (pCode1 != PrepareLeafDataError.None) {
-            return (empty, ApplyLeafOpError.PrepareLeafData);
-        }
-        (bytes memory pValue, PrepareLeafDataError pCode2) =
-            prepareLeafData(leafOp.prehash_value, leafOp.length, value);
-        if (pCode2 != PrepareLeafDataError.None) {
-            return (empty, ApplyLeafOpError.PrepareLeafData);
-        }
+
+        // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
+        // TODO(aeryz): do we need to ensure lengthOp and hashOp here?
+        bytes memory encodedKey = new bytes(ProtoBufRuntime._sz_varint(key.length));
+        ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
+        bytes memory pKey = abi.encodePacked(encodedKey, key);
+
+        // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
+        // TODO(aeryz): do we need to ensure lengthOp and hashOp here?
+        bytes memory hashedValue = abi.encodePacked(sha256(value));
+        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(hashedValue.length));
+        ProtoBufRuntime._encode_varint(hashedValue.length, 32, encodedValue);
+        bytes memory pValue = abi.encodePacked(encodedValue, hashedValue);
+
         bytes memory data = abi.encodePacked(leafOp.prefix, pKey, pValue);
-        (bytes memory hashed, DoHashError hCode) = doHash(leafOp.hash, data);
-        if (hCode != DoHashError.None) return (empty, ApplyLeafOpError.DoHash);
+        bytes memory hashed = abi.encodePacked(sha256(data));
         return (hashed, ApplyLeafOpError.None);
     }
 
@@ -592,8 +595,10 @@ library Ops {
         if (child.length == 0) return (empty, ApplyInnerOpError.ChildLength);
         bytes memory preImage =
             abi.encodePacked(innerOp.prefix, child, innerOp.suffix);
-        (bytes memory hashed, DoHashError code) = doHash(innerOp.hash, preImage);
-        if (code != DoHashError.None) return (empty, ApplyInnerOpError.DoHash);
+
+        // TODO(aeryz): do we need to ensure inner_spec.hash == SHA256 here or is it implied?
+        // inner_spec.hash is always SHA256 in the tm/iavl specs
+        bytes memory hashed = abi.encodePacked(sha256(preImage));
 
         return (hashed, ApplyInnerOpError.None);
     }
