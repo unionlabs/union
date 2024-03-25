@@ -32,8 +32,8 @@ pub enum InvalidHeaderError {
         commit_hash: H256,
         signed_header_root: H256,
     },
-    #[error("the validators hash doesn't match the trusted validators hash for an adjacent block")]
-    InvalidValidatorsHash,
+    #[error("the validators hash ({actual}) doesn't match the trusted validators hash ({expected}) for an adjacent block")]
+    InvalidValidatorsHash { expected: H256, actual: H256 },
 }
 
 #[derive(ThisError, Debug, PartialEq)]

@@ -159,7 +159,11 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         if untrusted_height_number == trusted_height_number + 1
             && header.signed_header.validators_hash != trusted_validators_hash
         {
-            return Err(InvalidHeaderError::InvalidValidatorsHash.into());
+            return Err(InvalidHeaderError::InvalidValidatorsHash {
+                expected: trusted_validators_hash,
+                actual: header.signed_header.validators_hash,
+            }
+            .into());
         }
 
         T::verify_zkp(
