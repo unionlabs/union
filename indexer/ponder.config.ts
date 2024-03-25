@@ -6,7 +6,6 @@ const UCS01_EVM_ADDRESS = process.env.UCS01_EVM_ADDRESS
 const UNO_ERC20_ADDRESS = process.env.UNO_ERC20_ADDRESS
 
 if (!(UCS01_EVM_ADDRESS && UNO_ERC20_ADDRESS)) {
-  // biome-ignore lint/nursery/noConsole: <explanation>
   console.error("Missing UCS01_EVM_ADDRESS or UNO_ERC20_ADDRESS")
   process.exit(1)
 }

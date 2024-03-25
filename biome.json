@@ -19,7 +19,19 @@
       "*.astro",
       "*.svelte"
     ],
-    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules", "generated"]
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      "vendor",
+      "testdata",
+      "generated",
+      ".svelte-kit",
+      "node_modules",
+      "./lib/poseidon-rs/constants.json"
+    ]
   },
   "css": {
     "formatter": {
@@ -47,7 +59,19 @@
       "*.svelte"
     ],
     "ignoreUnknown": true,
-    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules", "generated"]
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      "vendor",
+      "testdata",
+      "generated",
+      ".svelte-kit",
+      "node_modules",
+      "./lib/poseidon-rs/constants.json"
+    ]
   },
   "json": {
     "parser": {
@@ -83,10 +107,12 @@
       "dist",
       "build",
       "result",
+      "vendor",
+      "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
-      "unionvisor/src/testdata"
+      "./lib/poseidon-rs/constants.json"
     ]
   },
   "linter": {
@@ -162,7 +188,19 @@
       "*.astro",
       "*.svelte"
     ],
-    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules", "generated"]
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      "vendor",
+      "testdata",
+      "generated",
+      ".svelte-kit",
+      "node_modules",
+      "./lib/poseidon-rs/constants.json"
+    ]
   },
   "javascript": {
     "globals": ["NodeJS", "Astro"],
