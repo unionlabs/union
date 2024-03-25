@@ -3,7 +3,9 @@ import H1 from '#/components/typography/h1.astro';
 import Subtitle from '#/components/typography/subtitle.astro';
 
 import cube from "#/spline/cube-rotating-optimized.splinecode";
-import Spline from "#/components/Spline.astro";
+import Spline from  "#/components/Spline.astro";
+import SplineRuntime from '#/components/SplineRuntime.astro';
+
 import ButtonA from "#/components/ButtonA.astro";
 ---
 
@@ -12,9 +14,11 @@ import ButtonA from "#/components/ButtonA.astro";
 >
   <div class="w-full self-center max-w-[1200px] flex flex-col md:grid md:grid-cols-2  items-center gap-2 md:gap-0 -mx-4 md:mx-0 px-4">
   <div class="md:order-last w-full max-w-[500px] md:max-w-full">
-    <Spline model={cube} loading="eager"/>
+    <!-- <Spline model={cube} loading="eager" /> -->
+    <SplineRuntime model={cube} />
+
   </div>
-  <div class="max-md:bg-gradient-to-t max-md:from-gray-950 flex flex-col text-center md:text-left flex flex-col items-start drop-shadow-2xl -mt-48 pt-16 md:mt-0 px-4 pb-16 gap-2">
+  <div class="max-md:bg-gradient-to-t max-md:from-gray-950 text-center md:text-left flex flex-col items-start drop-shadow-2xl -mt-48 pt-16 md:mt-0 px-4 pb-16 gap-2">
     <H1>The Sovereign<br />Interoperability Layer</H1>
     <Subtitle>
       By using consensus verification, Union builds unstoppable and decentralized connections to

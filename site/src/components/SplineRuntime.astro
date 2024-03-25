@@ -1,0 +1,22 @@
+---
+interface Props {
+  model: string
+}
+---
+
+<section class="w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t">
+  <canvas data-canvas data-model={Astro.props.model} class="h-auto"></canvas>
+</section>
+
+<script>
+  import { Application } from '@splinetool/runtime'
+
+  const canvasElements = document.querySelectorAll(`canvas[data-canvas]`)
+
+  canvasElements.forEach(canvasElement => {
+    const model = canvasElement.getAttribute('data-model')
+    if (!model) return
+    const spline = new Application(canvasElement, { renderMode: 'continuous' })
+    spline.load(model)
+  })
+</script>
