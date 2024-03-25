@@ -501,13 +501,11 @@ library Ops {
         if (value.length == 0) return (empty, ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        // TODO(aeryz): do we need to ensure lengthOp and hashOp here?
         bytes memory encodedKey = new bytes(ProtoBufRuntime._sz_varint(key.length));
         ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
         bytes memory pKey = abi.encodePacked(encodedKey, key);
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
-        // TODO(aeryz): do we need to ensure lengthOp and hashOp here?
         bytes memory hashedValue = abi.encodePacked(sha256(value));
         bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(hashedValue.length));
         ProtoBufRuntime._encode_varint(hashedValue.length, 32, encodedValue);
@@ -518,29 +516,29 @@ library Ops {
         return (hashed, ApplyLeafOpError.None);
     }
 
-    enum PrepareLeafDataError {
-        None,
-        DoHash,
-        DoLengthOp
-    }
+    // enum PrepareLeafDataError {
+    //     None,
+    //     DoHash,
+    //     DoLengthOp
+    // }
 
-    // preapare leaf data for encoding
-    function prepareLeafData(
-        CosmosIcs23V1GlobalEnums.HashOp hashOp,
-        CosmosIcs23V1GlobalEnums.LengthOp lenOp,
-        bytes memory data
-    ) internal pure returns (bytes memory, PrepareLeafDataError) {
-        (bytes memory hased, DoHashError hCode) = doHashOrNoop(hashOp, data);
-        if (hCode != DoHashError.None) {
-            return (empty, PrepareLeafDataError.DoHash);
-        }
-        (bytes memory res, DoLengthOpError lCode) = doLengthOp(lenOp, hased);
-        if (lCode != DoLengthOpError.None) {
-            return (empty, PrepareLeafDataError.DoLengthOp);
-        }
+    // // preapare leaf data for encoding
+    // function prepareLeafData(
+    //     CosmosIcs23V1GlobalEnums.HashOp hashOp,
+    //     CosmosIcs23V1GlobalEnums.LengthOp lenOp,
+    //     bytes memory data
+    // ) internal pure returns (bytes memory, PrepareLeafDataError) {
+    //     (bytes memory hased, DoHashError hCode) = doHashOrNoop(hashOp, data);
+    //     if (hCode != DoHashError.None) {
+    //         return (empty, PrepareLeafDataError.DoHash);
+    //     }
+    //     (bytes memory res, DoLengthOpError lCode) = doLengthOp(lenOp, hased);
+    //     if (lCode != DoLengthOpError.None) {
+    //         return (empty, PrepareLeafDataError.DoLengthOp);
+    //     }
 
-        return (res, PrepareLeafDataError.None);
-    }
+    //     return (res, PrepareLeafDataError.None);
+    // }
 
     enum CheckAgainstSpecError {
         None,
@@ -557,22 +555,23 @@ library Ops {
         CosmosIcs23V1LeafOp.Data memory leafOp,
         CosmosIcs23V1ProofSpec.Data memory spec
     ) internal pure returns (CheckAgainstSpecError) {
+        // TODO(aeryz): since we only support iavl and tm proof specs, we could consider removing the commented out fields
         //require (leafOp.hash == spec.leaf_spec.hash); // dev: checkAgainstSpec for LeafOp - Unexpected HashOp
-        if (leafOp.hash != spec.leaf_spec.hash) {
-            return CheckAgainstSpecError.Hash;
-        }
-        //require(leafOp.prehash_key == spec.leaf_spec.prehash_key); // dev: checkAgainstSpec for LeafOp - Unexpected PrehashKey
-        if (leafOp.prehash_key != spec.leaf_spec.prehash_key) {
-            return CheckAgainstSpecError.PreHashKey;
-        }
-        //require(leafOp.prehash_value == spec.leaf_spec.prehash_value); // dev: checkAgainstSpec for LeafOp - Unexpected PrehashValue");
-        if (leafOp.prehash_value != spec.leaf_spec.prehash_value) {
-            return CheckAgainstSpecError.PreHashValue;
-        }
-        //require(leafOp.length == spec.leaf_spec.length); // dev: checkAgainstSpec for LeafOp - Unexpected lengthOp
-        if (leafOp.length != spec.leaf_spec.length) {
-            return CheckAgainstSpecError.Length;
-        }
+        // if (leafOp.hash != spec.leaf_spec.hash) {
+        //     return CheckAgainstSpecError.Hash;
+        // }
+        // //require(leafOp.prehash_key == spec.leaf_spec.prehash_key); // dev: checkAgainstSpec for LeafOp - Unexpected PrehashKey
+        // if (leafOp.prehash_key != spec.leaf_spec.prehash_key) {
+        //     return CheckAgainstSpecError.PreHashKey;
+        // }
+        // //require(leafOp.prehash_value == spec.leaf_spec.prehash_value); // dev: checkAgainstSpec for LeafOp - Unexpected PrehashValue");
+        // if (leafOp.prehash_value != spec.leaf_spec.prehash_value) {
+        //     return CheckAgainstSpecError.PreHashValue;
+        // }
+        // //require(leafOp.length == spec.leaf_spec.length); // dev: checkAgainstSpec for LeafOp - Unexpected lengthOp
+        // if (leafOp.length != spec.leaf_spec.length) {
+        //     return CheckAgainstSpecError.Length;
+        // }
         bool hasprefix = hasPrefix(leafOp.prefix, spec.leaf_spec.prefix);
         //require(hasprefix); // dev: checkAgainstSpec for LeafOp - Leaf Prefix doesn't start with
         if (hasprefix == false) return CheckAgainstSpecError.HasPrefix;
@@ -596,7 +595,6 @@ library Ops {
         bytes memory preImage =
             abi.encodePacked(innerOp.prefix, child, innerOp.suffix);
 
-        // TODO(aeryz): do we need to ensure inner_spec.hash == SHA256 here or is it implied?
         // inner_spec.hash is always SHA256 in the tm/iavl specs
         bytes memory hashed = abi.encodePacked(sha256(preImage));
 
@@ -607,10 +605,11 @@ library Ops {
         CosmosIcs23V1InnerOp.Data memory innerOp,
         CosmosIcs23V1ProofSpec.Data memory spec
     ) internal pure returns (CheckAgainstSpecError) {
+        // TODO(aeryz): since we only support iavl and tm proof specs, we could consider removing the commented out fields
         //require(innerOp.hash == spec.inner_spec.hash); // dev: checkAgainstSpec for InnerOp - Unexpected HashOp
-        if (innerOp.hash != spec.inner_spec.hash) {
-            return CheckAgainstSpecError.Hash;
-        }
+        // if (innerOp.hash != spec.inner_spec.hash) {
+        //     return CheckAgainstSpecError.Hash;
+        // }
         uint256 minPrefixLength =
             SafeCast.toUint256(spec.inner_spec.min_prefix_length);
         //require(innerOp.prefix.length >= minPrefixLength); // dev: InnerOp prefix too short;
@@ -757,7 +756,7 @@ library Ops {
     function hasPrefix(
         bytes memory element,
         bytes memory prefix
-    ) private pure returns (bool) {
+    ) internal pure returns (bool) {
         if (prefix.length == 0) {
             return true;
         }
@@ -862,8 +861,9 @@ library Proof {
         if (CosmosIcs23V1LeafOp._empty(proof.leaf)) {
             return CheckAgainstSpecError.EmptyLeaf;
         }
-        Ops.CheckAgainstSpecError cCode = Ops.checkAgainstSpec(proof.leaf, spec);
-        if (cCode != Ops.CheckAgainstSpecError.None) {
+        // LeafOp's checkAgainstSpec is inlined here since we only need to check the prefix here
+        //require(hasprefix); // dev: checkAgainstSpec for LeafOp - Leaf Prefix doesn't start with
+        if (Ops.hasPrefix(proof.leaf.prefix, spec.leaf_spec.prefix) == false) {
             return CheckAgainstSpecError.OpsCheckAgainstSpec;
         }
         if (spec.min_depth > 0) {
@@ -882,6 +882,8 @@ library Proof {
                 return CheckAgainstSpecError.InnerOpsDepthTooLong;
             }
         }
+
+        Ops.CheckAgainstSpecError cCode = Ops.CheckAgainstSpecError.None;
         for (uint256 i = 0; i < proof.path.length; i++) {
             cCode = Ops.checkAgainstSpec(proof.path[i], spec);
             if (cCode != Ops.CheckAgainstSpecError.None) {
@@ -998,38 +1000,12 @@ library Proof {
         pure
         returns (bytes memory, CalculateRootError)
     {
+        // We ignore batch and compressed batch as an optimization
         if (CosmosIcs23V1ExistenceProof._empty(proof.exist) == false) {
             return calculateRoot(proof.exist);
         }
         if (CosmosIcs23V1NonExistenceProof._empty(proof.nonexist) == false) {
             return calculateRoot(proof.nonexist);
-        }
-        if (CosmosIcs23V1BatchProof._empty(proof.batch) == false) {
-            //require(proof.batch.entries.length > 0); // dev: batch proof has no entry
-            if (proof.batch.entries.length == 0) {
-                return (empty, CalculateRootError.BatchEntriesLength);
-            }
-            //require(BatchEntry._empty(proof.batch.entries[0]) == false); // dev: batch proof has empty entry
-            if (CosmosIcs23V1BatchEntry._empty(proof.batch.entries[0])) {
-                return (empty, CalculateRootError.BatchEntryEmpty);
-            }
-            if (
-                CosmosIcs23V1ExistenceProof._empty(proof.batch.entries[0].exist)
-                    == false
-            ) {
-                return calculateRoot(proof.batch.entries[0].exist);
-            }
-            if (
-                CosmosIcs23V1NonExistenceProof._empty(
-                    proof.batch.entries[0].nonexist
-                ) == false
-            ) {
-                return calculateRoot(proof.batch.entries[0].nonexist);
-            }
-        }
-        if (CosmosIcs23V1CompressedBatchProof._empty(proof.compressed) == false)
-        {
-            return calculateRoot(Compress.decompress(proof));
         }
         //revert(); // dev: calculateRoot(CommitmentProof) empty proof
         return (empty, CalculateRootError.EmptyProof);
