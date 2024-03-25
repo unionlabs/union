@@ -4,6 +4,23 @@
   scrollbar-color: transparent transparent;
 }
 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+button {
+  user-select: none;
+  touch-action: manipulation;
+}
+
 img,
 picture,
 video,
@@ -119,6 +136,7 @@ video {
   font: inherit;
   vertical-align: baseline;
 }
+
 /* HTML5 display-role reset for older browsers */
 article,
 aside,
@@ -133,19 +151,23 @@ nav,
 section {
   display: block;
 }
+
 body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   line-height: 1;
 }
+
 ol,
 ul {
   list-style: none;
 }
+
 blockquote,
 q {
   quotes: none;
 }
+
 blockquote:before,
 blockquote:after,
 q:before,
@@ -153,6 +175,7 @@ q:after {
   content: '';
   content: none;
 }
+
 table {
   border-collapse: collapse;
   border-spacing: 0;

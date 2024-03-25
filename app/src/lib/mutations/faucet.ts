@@ -1,23 +1,11 @@
-import { fetcher } from "$lib/utilities"
-
-export async function getUnoFromFaucet({ address }: { address: string }) {
-  const response = await fetcher<
-    | { data: { union: { send: undefined } } }
-    | {
-        errors: Array<{
-          message: string
-          extensions: { path: string; code: string }
-        }>
-      }
-  >("https://graphql.union.build/v1/graphql", {
+export async function getUnoFromFaucet(address: string) {
+  const response = await fetch("https://graphql.union.build/v1/graphql", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query: /* GraphQL */ `
         mutation GetUno($address: Address!) {
-          union {
-            send(input: { toAddress: $address })
-          }
+          union { send(input: { toAddress: $address }) }
         }
       `,
       variables: { address },
@@ -25,11 +13,17 @@ export async function getUnoFromFaucet({ address }: { address: string }) {
     })
   })
 
-  if ("errors" in response) {
-    const [error] = response.errors
+  if (!response.ok) return { error: await response.text(), status: response.status }
+
+  const responseJson = (await response.json()) as {
+    data?: { union: { send: string } }
+    errors?: Array<{ message: string }>
+  }
+  if ("errors" in responseJson) {
+    const [error] = responseJson.errors || []
     console.error(error)
-    throw new Error(error?.message)
+    return { error: error.message, status: response.status }
   }
 
-  return response?.data
+  return { data: responseJson.data, status: response.status }
 }

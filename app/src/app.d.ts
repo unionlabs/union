@@ -1,21 +1,10 @@
-// See https://kit.svelte.dev/docs/types#app
-// for information about these interfaces
+import type { LeapWindow } from "@leapwallet/types"
+import type { Window as KeplrWindow } from "@keplr-wallet/types"
+
 declare global {
-  namespace App {
-    // interface Error {}
-    // interface Locals {}
-    // interface PageData {}
-    // interface PageState {}
-    // interface Platform {}
-  }
-  interface Window {
+  namespace App {}
+  interface Window extends KeplrWindow, LeapWindow {
     EventEmitter: typeof EventEmitter
-    ethereum: {
-      request(arguments_: {
-        method: EthereumRequestMethod
-        params?: Record<string, any>
-      }): Promise<any>
-    }
   }
 }
 
@@ -24,5 +13,3 @@ type EthereumRequestMethod =
   | "wallet_requestSnaps"
   | "wallet_invokeSnap"
   | "wallet_watchAsset"
-
-export type {}

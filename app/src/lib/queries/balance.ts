@@ -12,18 +12,18 @@ import type { Chain, ChainAsset } from "$/lib/constants/assets"
 export function balanceQuery<TChain extends Chain>({
   chain,
   asset,
-  address
-}: { chain: TChain; address: string; asset: ChainAsset<TChain> }) {
+  address,
+  refetchInterval = 4_000
+}: { chain: TChain; address: string; asset: ChainAsset<TChain>; refetchInterval?: number }) {
   return createQuery({
     queryKey: ["balance", chain, asset, address],
     queryFn: async () =>
       request(
         URLS.GRAPHQL,
+        // TODO: Update the query once REST API codegen is done
         graphql(/* GraphQL */ `
         query userBalances($address: String!) {
-          cosmosBankV1Beta1AllBalances(address: $address) {
-            balances { amount denom }
-          }
+          __typename
         }`),
         { address }
       ),

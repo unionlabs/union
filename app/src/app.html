@@ -1,30 +1,16 @@
 <!doctype html>
-<html
-  lang="en"
-  class="dark"
-  data-theme="dark"
->
-  <head>
-    <meta charset="utf-8" />
-    <link
-      rel="icon"
-      href="/favicon.svg"
-      type="image/svg+xml"
-    />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1"
-    />
-    <title>Union App Beta</title>
-    %sveltekit.head%
-  </head>
+<html lang="en" data-theme="dark" class="dark font-mono scroll-smooth max-h-screen">
 
-  <body
-    data-sveltekit-preload-data="hover"
-    class="min-h-screen min-w-full bg-black text-white"
-  >
-    <div>
-      %sveltekit.body%
-    </div>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  %sveltekit.head%
+</head>
+
+<body data-sveltekit-prefetch data-sveltekit-preload-data="hover" data-sveltekit-preload-code="hover"
+  class="size-full m-auto flex justify-center max-w-full overflow-x-hidden">
+  <div>%sveltekit.body%</div>
+</body>
+
 </html>

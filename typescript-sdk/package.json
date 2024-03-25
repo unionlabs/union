@@ -1,63 +1,45 @@
 {
-  "name": "@unionlabs/client",
+  "name": "@union/client",
   "version": "0.0.0",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "module": "./dist/index.js",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.js"
-      }
-    }
-  },
-  "files": ["dist", "./package.json"],
+  "exports": "./mod.ts",
   "scripts": {
-    "build": "tsup --config=tsup.config.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit",
+    "build": "echo 'No need… jsr.io doesn't require a build step",
     "demo": "bun ./scripts/demo.ts",
-    "release": "bumpp package.json --commit --push --tag",
-    "prebuild": "rm -rf dist",
-    "check-package": "npx publint@latest --public --strict && npm pack && attw --pack",
     "faucet": "bun ./scripts/faucet.ts",
     "balance": "bun ./scripts/balance.ts",
     "transfer": "bun ./scripts/transfer.ts",
+    "test": "vitest --run",
     "clean": "rm -rf dist node_modules",
-    "pack": "rm -rf dist *.tgz && npm run build && npm pack",
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@cosmjs/cosmwasm-stargate": "0.31.3",
-    "@cosmjs/encoding": "0.31.3",
-    "@cosmjs/stargate": "0.31.3",
-    "@cosmjs/tendermint-rpc": "0.31.3",
-    "viem": "^2.7.14"
+    "@cosmjs/cosmwasm-stargate": "0.32.3",
+    "@cosmjs/encoding": "^0.32.3",
+    "@cosmjs/stargate": "0.32.3",
+    "@cosmjs/tendermint-rpc": "0.32.3",
+    "viem": "^2.9.29"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.14.1",
-    "@cosmjs/amino": "0.31.3",
-    "@cosmjs/proto-signing": "0.31.3",
-    "@leapwallet/cosmos-snap-provider": "^0.1.25",
+    "@arethetypeswrong/cli": "^0.15.3",
+    "@cosmjs/amino": "0.32.3",
+    "@cosmjs/proto-signing": "0.32.3",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.11.20",
-    "bumpp": "^9.3.0",
+    "@types/bun": "^1.1.1",
+    "@types/node": "^20.12.7",
+    "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",
-    "publint": "^0.2.7",
-    "tsup": "^8.0.2",
-    "tsx": "^4.7.1",
-    "typescript": "^5.3.3",
-    "vitest": "^1.3.1"
+    "tsx": "^4.7.3",
+    "typescript": "^5.4.5",
+    "vite-tsconfig-paths": "^4.3.2",
+    "vitest": "^1.5.3"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/unionlabs/union.git",
-    "directory": "lib/typescript"
-  },
-  "engines": {
-    "node": ">=18"
+    "directory": "typescript-sdk"
   },
   "engineStrict": true,
   "sideEffects": false
