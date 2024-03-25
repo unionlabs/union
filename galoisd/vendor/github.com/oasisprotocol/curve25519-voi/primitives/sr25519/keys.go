@@ -252,6 +252,34 @@ func NewSecretKeyFromBytes(b []byte) (*SecretKey, error) {
 	return &sk, nil
 }
 
+// NewSecretKeyFromEd25519Bytes constructs a SecretKey from the byte representation
+// of an expanded Ed25519 key.
+func NewSecretKeyFromEd25519Bytes(b []byte) (*SecretKey, error) {
+	if len(b) != SecretKeySize {
+		return nil, fmt.Errorf("sr25519: invalid expanded ed25519 key length")
+	}
+
+	// Check the scalar is clamped.
+	s := b[:SecretKeyScalarSize]
+	if (s[0]&0b0000_0111) != 0 || (s[31]&0b1100_0000) != 0b0100_0000 {
+		return nil, fmt.Errorf("sr25519: ed25519 scalar invalid")
+	}
+
+	scalar, err := scalarDivideByCofactor(s)
+	if err != nil {
+		return nil, err
+	}
+
+	var nonce [SecretKeyNonceSize]byte
+	copy(nonce[:], b[SecretKeyScalarSize:])
+
+	sk := &SecretKey{
+		key:   scalar,
+		nonce: nonce,
+	}
+	return sk, nil
+}
+
 // GenerateSecretKey generates a SecretKey using entropy from rng.
 // If rng is nil, crypto/rand.Reader will be used.
 func GenerateSecretKey(rng io.Reader) (*SecretKey, error) {

@@ -213,7 +213,7 @@ where
             }) => {
                 let ack = c
                     .read_ack(
-                        tx_hash.clone(),
+                        tx_hash,
                         destination_channel_id.clone(),
                         destination_port_id.clone(),
                         sequence,

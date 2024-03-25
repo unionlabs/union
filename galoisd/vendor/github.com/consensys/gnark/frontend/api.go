@@ -160,4 +160,7 @@ type BatchInverter interface {
 type PlonkAPI interface {
 	// EvaluatePlonkExpression returns res = qL.a + qR.b + qM.ab + qC
 	EvaluatePlonkExpression(a, b Variable, qL, qR, qM, qC int) Variable
+
+	// AddPlonkConstraint asserts qL.a + qR.b + qM.ab + qO.o + qC
+	AddPlonkConstraint(a, b, o Variable, qL, qR, qO, qM, qC int)
 }

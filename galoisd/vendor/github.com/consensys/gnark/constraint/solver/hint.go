@@ -4,6 +4,7 @@ import (
 	"hash/fnv"
 	"math/big"
 	"reflect"
+	"regexp"
 	"runtime"
 )
 
@@ -14,6 +15,17 @@ type HintID uint32
 //
 // It defines an annotated hint function; the number of inputs and outputs injected at solving
 // time is defined in the circuit (compile time).
+//
+// The slices inputs and outputs are already initialized and the also the
+// elements within. The elements come from the pool, so leaking the values leads
+// to undefined behaviour. As elements in output slice are already initialized,
+// then use [math/big.Int.Set] method to assign value.
+//
+// The value field defines the current field of definition. Usually the circuits
+// are typed to particular fields, but this allows to use a single hint function
+// for all different curves.
+//
+// When the hint function returns an error, then this leads to solver error during the proving stage.
 //
 // For example:
 //
@@ -64,7 +76,7 @@ type HintID uint32
 // proof. To allow the particular hint functions to be used during proof
 // construction, the user needs to supply a solver.Option indicating the
 // enabled hints. Such options can be obtained by a call to
-// solver.WithHints(hintFns...), where hintFns are the corresponding hint
+// [solver.WithHints], where hintFns are the corresponding hint
 // functions.
 //
 // # Using hint functions in gadgets
@@ -79,11 +91,11 @@ type HintID uint32
 // proof computation and the prover does not need to provide a corresponding
 // proving option.
 //
-// In the init() method of the gadget, call the method RegisterHint(hintFn) function on
+// In the init() method of the gadget, call the method [RegisterHint] function on
 // the hint function hintFn to register a hint function in the package registry.
 type Hint func(field *big.Int, inputs []*big.Int, outputs []*big.Int) error
 
-// GetHintID is a reference function for computing the hint ID based on a function name
+// GetHintID returns the derived hint ID from the hint function reference.
 func GetHintID(fn Hint) HintID {
 	hf := fnv.New32a()
 	name := GetHintName(fn)
@@ -95,7 +107,18 @@ func GetHintID(fn Hint) HintID {
 	return HintID(hf.Sum32())
 }
 
+// GetHintName returns the derived hint name from the hint function reference.
+// By default, it is the fully qualified name of the function. If the function
+// is anonymous, then it is the fully qualified name of the package and the
+// function index.
 func GetHintName(fn Hint) string {
 	fnptr := reflect.ValueOf(fn).Pointer()
-	return runtime.FuncForPC(fnptr).Name()
+	name := runtime.FuncForPC(fnptr).Name()
+	return newToOldStyle(name)
 }
+
+func newToOldStyle(name string) string {
+	return string(newStyleAnonRe.ReplaceAll([]byte(name), []byte("${pkgname}glob.${funcname}")))
+}
+
+var newStyleAnonRe = regexp.MustCompile(`^(?P<pkgname>.*\.)init(?P<funcname>\.func\d+)$`)

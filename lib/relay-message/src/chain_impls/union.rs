@@ -14,7 +14,7 @@ use macros::apply;
 use num_bigint::BigUint;
 use protos::{
     ibc::core::connection::v1::MsgConnectionOpenInit,
-    union::galois::api::v2::union_prover_api_client,
+    union::galois::api::v3::union_prover_api_client,
 };
 use queue_msg::{
     aggregate,
@@ -510,7 +510,7 @@ where
                 )
                 .await
                 .unwrap()
-                .poll(protos::union::galois::api::v2::PollRequest::from(
+                .poll(protos::union::galois::api::v3::PollRequest::from(
                     PollRequest {
                         request: request.clone(),
                     },
@@ -755,7 +755,7 @@ where
             let validators_map = validators
                 .iter()
                 .enumerate()
-                .map(|(i, v)| (v.address.clone(), i))
+                .map(|(i, v)| (v.address, i))
                 .collect::<HashMap<_, _>>();
 
             // For each validator signature, we search for the actual validator
@@ -777,7 +777,7 @@ where
                             validators_map.get(&validator_address.0.to_vec().try_into().unwrap())
                         {
                             bitmap.set_bit(*validator_index as u64, true);
-                            signatures.push(signature.clone().into());
+                            signatures.push((*signature).into());
                             tracing::debug!(
                                 "Validator {:?} at index {} signed",
                                 validator_address,
@@ -828,19 +828,15 @@ where
                             round: BoundedI64::new(signed_header.commit.round.inner().into())
                                 .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
                             block_id: CanonicalBlockId {
-                                hash: signed_header.commit.block_id.hash.clone(),
+                                hash: signed_header.commit.block_id.hash,
                                 part_set_header: CanonicalPartSetHeader {
                                     total: signed_header.commit.block_id.part_set_header.total,
-                                    hash: signed_header
-                                        .commit
-                                        .block_id
-                                        .part_set_header
-                                        .hash
-                                        .clone(),
+                                    hash: signed_header.commit.block_id.part_set_header.hash,
                                 },
                             },
                             chain_id: signed_header.header.chain_id.clone(),
                         },
+                        untrusted_header: signed_header.header.clone(),
                         trusted_commit: trusted_validators_commit,
                         untrusted_commit: untrusted_validators_commit,
                     },
@@ -896,7 +892,7 @@ where
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),
                 client_message: cometbls::header::Header {
-                    signed_header,
+                    signed_header: signed_header.into(),
                     trusted_height: req.update_from.into(),
                     zero_knowledge_proof: response.proof.evm_proof,
                 },

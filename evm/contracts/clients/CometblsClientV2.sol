@@ -23,9 +23,9 @@ library CometblsClientLib {
     error ErrUntrustedTimestampLTETrustedTimestamp();
     error ErrHeaderExpired();
     error ErrMaxClockDriftExceeded();
-    error ErrPrecomputedRootAndBlockRootMismatch();
     error ErrInvalidZKP();
     error ErrDelayPeriodNotExpired();
+    error ErrInvalidUntrustedValidatorsHash();
 }
 
 contract CometblsClient is ILightClient {
@@ -83,6 +83,10 @@ contract CometblsClient is ILightClient {
         ) {
             return (clientStateCommitment, update, false);
         }
+        // ChainID can't exceed 31 bytes (ensures its big-endian repr fit in F_r)
+        if (bytes(clientState.chain_id).length > 31) {
+            return (clientStateCommitment, update, false);
+        }
         clientStates[clientId] = clientState;
         uint128 latestHeight = clientState.latest_height.toUint128();
         consensusStates[clientId][latestHeight] = consensusState;
@@ -107,23 +111,21 @@ contract CometblsClient is ILightClient {
             revert CometblsClientLib.ErrTrustedConsensusStateNotFound();
         }
 
-        uint64 untrustedHeightNumber =
-            uint64(header.signed_header.commit.height);
+        uint64 untrustedHeightNumber = uint64(header.signed_header.height);
         uint64 trustedHeightNumber = header.trusted_height.revision_height;
         if (untrustedHeightNumber <= trustedHeightNumber) {
             revert CometblsClientLib.ErrUntrustedHeightLTETrustedHeight();
         }
 
         uint64 trustedTimestamp = consensusState.timestamp;
-        uint64 untrustedTimestamp =
-            uint64(header.signed_header.header.time.secs);
+        uint64 untrustedTimestamp = uint64(header.signed_header.time.secs);
         if (untrustedTimestamp <= trustedTimestamp) {
             revert CometblsClientLib.ErrUntrustedTimestampLTETrustedTimestamp();
         }
 
         if (
             CometblsHelp.isExpired(
-                header.signed_header.header.time,
+                header.signed_header.time,
                 clientState.trusting_period,
                 uint64(block.timestamp)
             )
@@ -146,33 +148,19 @@ contract CometblsClient is ILightClient {
         bytes32 untrustedValidatorsHash;
         bool adjacent = untrustedHeightNumber == trustedHeightNumber + 1;
         if (adjacent) {
-            untrustedValidatorsHash = trustedValidatorsHash;
-        } else {
-            untrustedValidatorsHash =
-                header.signed_header.header.validators_hash.toBytes32(0);
+            if (
+                keccak256(header.signed_header.validators_hash)
+                    != keccak256(abi.encodePacked(trustedValidatorsHash))
+            ) {
+                revert CometblsClientLib.ErrInvalidUntrustedValidatorsHash();
+            }
         }
-
-        bytes32 expectedBlockHash = header.signed_header.header.merkleRoot();
-
-        if (
-            header.signed_header.commit.block_id.hash.toBytes32(0)
-                != expectedBlockHash
-        ) {
-            revert CometblsClientLib.ErrPrecomputedRootAndBlockRootMismatch();
-        }
-
-        TendermintTypesCanonicalVote.Data memory vote = header
-            .signed_header
-            .commit
-            .canonicalize(clientState.chain_id, expectedBlockHash);
-        bytes memory signedVote =
-            Encoder.encodeDelim(TendermintTypesCanonicalVote.encode(vote));
 
         bool ok = zkVerifier.verifyZKP(
+            header.zero_knowledge_proof,
+            clientState.chain_id,
             trustedValidatorsHash,
-            untrustedValidatorsHash,
-            signedVote,
-            header.zero_knowledge_proof
+            header.signed_header
         );
         if (!ok) {
             revert CometblsClientLib.ErrInvalidZKP();
@@ -219,14 +207,14 @@ contract CometblsClient is ILightClient {
 
         consensusState = consensusStates[clientId][untrustedHeightIndex];
         consensusState.timestamp = untrustedTimestamp;
-        consensusState.appHash =
-            header.signed_header.header.app_hash.toBytes32(0);
+        consensusState.appHash = header.signed_header.app_hash.toBytes32(0);
         consensusState.nextValidatorsHash =
-            header.signed_header.header.next_validators_hash.toBytes32(0);
+            header.signed_header.next_validators_hash.toBytes32(0);
 
-        processedMoments[clientId][untrustedHeightIndex].timestamp =
-            block.timestamp;
-        processedMoments[clientId][untrustedHeightIndex].height = block.number;
+        ProcessedMoment storage processed =
+            processedMoments[clientId][untrustedHeightIndex];
+        processed.timestamp = block.timestamp;
+        processed.height = block.number;
 
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
         updates[0] = ConsensusStateUpdate({

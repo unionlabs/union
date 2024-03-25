@@ -138,6 +138,14 @@ func (builder *builder) Mul(i1, i2 frontend.Variable, in ...frontend.Variable) f
 	if len(vars) == 0 {
 		return builder.cs.ToBigInt(k)
 	}
+	if k.IsZero() {
+		return 0
+	}
+	for i := range vars {
+		if vars[i].Coeff.IsZero() {
+			return 0
+		}
+	}
 	l := builder.mulConstant(vars[0], k)
 
 	return builder.splitProd(l, vars[1:])
@@ -457,14 +465,11 @@ func (builder *builder) Lookup2(b0, b1 frontend.Variable, i0, i1, i2, i3 fronten
 	//    (3) (in2 - in0) * s1 = RES - tmp2 - in0
 	// the variables tmp1 and tmp2 are new internal variables and the variables
 	// RES will be the returned result
-
-	// TODO check how it can be optimized for PLONK (currently it's a copy
-	// paste of the r1cs version)
-	tmp1 := builder.Add(i3, i0)
-	tmp1 = builder.Sub(tmp1, i2, i1)
+	tmp1 := builder.Sub(i3, i2)
+	tmp := builder.Sub(i0, i1)
+	tmp1 = builder.Add(tmp1, tmp)
 	tmp1 = builder.Mul(tmp1, b1)
-	tmp1 = builder.Add(tmp1, i1)
-	tmp1 = builder.Sub(tmp1, i0)  // (1) tmp1 = s1 * (in3 - in2 - in1 + in0) + in1 - in0
+	tmp1 = builder.Sub(tmp1, tmp) // (1) tmp1 = s1 * (in3 - in2 - in1 + in0) + in1 - in0
 	tmp2 := builder.Mul(tmp1, b0) // (2) tmp2 = tmp1 * s0
 	res := builder.Sub(i2, i0)
 	res = builder.Mul(res, b1)
@@ -681,6 +686,37 @@ func (builder *builder) EvaluatePlonkExpression(a, b frontend.Variable, qL, qR, 
 		qC: builder.cs.FromInterface(qC),
 	})
 	return res
+}
+
+// AddPlonkConstraint asserts qL.a + qR.b + qO.o + qM.ab + qC = 0
+func (builder *builder) AddPlonkConstraint(a, b, o frontend.Variable, qL, qR, qO, qM, qC int) {
+	_, aConstant := builder.constantValue(a)
+	_, bConstant := builder.constantValue(b)
+	_, oConstant := builder.constantValue(o)
+	if aConstant || bConstant || oConstant {
+		builder.AssertIsEqual(
+			builder.Add(
+				builder.Mul(a, qL),
+				builder.Mul(b, qR),
+				builder.Mul(a, b, qM),
+				builder.Mul(o, qO),
+				qC,
+			),
+			0,
+		)
+		return
+	}
+
+	builder.addPlonkConstraint(sparseR1C{
+		xa: a.(expr.Term).VID,
+		xb: b.(expr.Term).VID,
+		xc: o.(expr.Term).VID,
+		qL: builder.cs.Mul(builder.cs.FromInterface(qL), a.(expr.Term).Coeff),
+		qR: builder.cs.Mul(builder.cs.FromInterface(qR), b.(expr.Term).Coeff),
+		qO: builder.cs.Mul(builder.cs.FromInterface(qO), o.(expr.Term).Coeff),
+		qM: builder.cs.Mul(builder.cs.FromInterface(qM), builder.cs.Mul(a.(expr.Term).Coeff, b.(expr.Term).Coeff)),
+		qC: builder.cs.FromInterface(qC),
+	})
 }
 
 func filterConstants(v []frontend.Variable) []frontend.Variable {

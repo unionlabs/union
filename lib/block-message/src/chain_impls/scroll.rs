@@ -98,7 +98,7 @@ where
                                 .get_logs(
                                     &Filter::new()
                                         .address(ethers::types::H160::from(
-                                            scroll.ibc_handler_address.clone(),
+                                            scroll.ibc_handler_address,
                                         ))
                                         .from_block(from_scroll_height)
                                         // NOTE: This -1 is very important, else events will be double fetched

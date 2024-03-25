@@ -46,6 +46,8 @@ import {
     TendermintTypesBlockID,
     TendermintTypesPartSetHeader
 } from "../../../contracts/proto/tendermint/types/types.sol";
+import
+    "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 
 import "../TestPlus.sol";
 
@@ -71,7 +73,7 @@ contract TestVerifier is IZKVerifierV2 {
         uint256[8] memory proof,
         uint256[2] memory proofCommitment,
         uint256[2] calldata proofCommitmentPOK,
-        uint256[4] calldata input
+        uint256[2] calldata input
     ) external returns (bool) {
         bool ok = valid > 0;
         if (valid > 0) {
@@ -201,43 +203,17 @@ contract IBCPacketHandlerTest is TestPlus {
     function makeHeader(
         uint64 height,
         uint64 timestamp
-    ) internal pure returns (TendermintTypesSignedHeader.Data memory) {
-        TendermintTypesHeader.Data memory header = TendermintTypesHeader.Data({
-            version: TendermintVersionConsensus.Data({block: 11, app: 0}),
-            chain_id: "union-devnet-1",
+    )
+        internal
+        pure
+        returns (UnionIbcLightclientsCometblsV1LightHeader.Data memory)
+    {
+        return UnionIbcLightclientsCometblsV1LightHeader.Data({
             height: int64(height),
             time: Timestamp.Data({secs: int64(timestamp), nanos: 0}),
-            last_block_id: TendermintTypesBlockID.Data({
-                hash: hex"80DF3A892BF2586E3B22201D2AC5A65EDAB66ECE7BB6F51077F3B50CCE7526E1",
-                part_set_header: TendermintTypesPartSetHeader.Data({
-                    total: 1,
-                    hash: hex"0468D541CAD891D571E2AD1DD9F43480993BDF18A1016F4C956555A417EFE681"
-                })
-            }),
-            last_commit_hash: hex"DA6FCBD48131808D58B54E8B44737AB2B6F3A3DD1AFF946D0F6CEFD25306FD48",
-            data_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
             validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
             next_validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
-            consensus_hash: hex"048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
-            app_hash: hex"983EF85676937CEC783601B5B50865733A72C3DF88E4CC0B3F11C108C9688459",
-            last_results_hash: hex"357B78587B9CD4469F1F63C29B96EAC1D7F643520B97D396B20A20505122AA01",
-            evidence_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-            proposer_address: hex"4CE57693C82B50F830731DAB14FA759327762456"
-        });
-        return TendermintTypesSignedHeader.Data({
-            header: header,
-            commit: TendermintTypesCommit.Data({
-                height: header.height,
-                round: 0,
-                block_id: TendermintTypesBlockID.Data({
-                    hash: abi.encodePacked(header.merkleRoot()),
-                    part_set_header: TendermintTypesPartSetHeader.Data({
-                        total: 1,
-                        hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
-                    })
-                }),
-                signatures: new TendermintTypesCommitSig.Data[](0)
-            })
+            app_hash: hex"983EF85676937CEC783601B5B50865733A72C3DF88E4CC0B3F11C108C9688459"
         });
     }
 

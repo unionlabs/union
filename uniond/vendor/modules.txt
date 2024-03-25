@@ -384,7 +384,7 @@ github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
 ## explicit; go 1.19
 github.com/cockroachdb/tokenbucket
-# github.com/cometbft/cometbft v0.38.2 => github.com/unionlabs/cometbls v0.0.0-20240129161721-360766577f7d
+# github.com/cometbft/cometbft v0.38.2 => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
 ## explicit; go 1.21
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/kvstore
@@ -1758,8 +1758,7 @@ rsc.io/tmplfunc/internal/parse
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240129161721-360766577f7d
-# github.com/consensys/gnark => github.com/consensys/gnark v0.9.1-0.20231013131835-4ebcccd9c0a8
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832
 # github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa

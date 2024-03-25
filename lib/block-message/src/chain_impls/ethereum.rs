@@ -124,9 +124,7 @@ where
                         c.provider
                             .get_logs(
                                 &Filter::new()
-                                    .address(ethers::types::H160::from(
-                                        c.ibc_handler_address.clone(),
-                                    ))
+                                    .address(ethers::types::H160::from(c.ibc_handler_address))
                                     .from_block(from_block)
                                     // NOTE: This -1 is very important, else events will be double fetched
                                     .to_block(to_block - 1),
@@ -746,7 +744,7 @@ impl<Hc: ChainExt + EthereumChain, T: Clone> Clone for EventInfo<Hc, T> {
     fn clone(&self) -> Self {
         Self {
             height: self.height,
-            tx_hash: self.tx_hash.clone(),
+            tx_hash: self.tx_hash,
             raw_event: self.raw_event.clone(),
         }
     }

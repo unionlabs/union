@@ -33,7 +33,7 @@ pub fn calculate_merkle_root<Inner: AsRef<[u8]>>(leaves: &[Inner]) -> H256 {
         leaves_size = i / 2;
     }
 
-    leaves[0].clone()
+    leaves[0]
 }
 
 fn inner_hash(left: &[u8], right: &[u8]) -> H256 {

@@ -22,15 +22,15 @@ use crate::{primitives::GENESIS_SLOT, Error, InvalidMerkleBranch};
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
 pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
     if epoch >= fork_parameters.deneb.epoch {
-        fork_parameters.deneb.version.clone()
+        fork_parameters.deneb.version
     } else if epoch >= fork_parameters.capella.epoch {
-        fork_parameters.capella.version.clone()
+        fork_parameters.capella.version
     } else if epoch >= fork_parameters.bellatrix.epoch {
-        fork_parameters.bellatrix.version.clone()
+        fork_parameters.bellatrix.version
     } else if epoch >= fork_parameters.altair.epoch {
-        fork_parameters.altair.version.clone()
+        fork_parameters.altair.version
     } else {
-        fork_parameters.genesis_fork_version.clone()
+        fork_parameters.genesis_fork_version
     }
 }
 
@@ -145,7 +145,7 @@ pub fn validate_merkle_branch<'a>(
     let branch = branch.into_iter().cloned().collect::<Vec<_>>();
 
     'block: {
-        let mut value = leaf.clone();
+        let mut value = *leaf;
 
         // TODO: This is just a fold
         // NB: zip ends when either iterator ends
@@ -170,11 +170,11 @@ pub fn validate_merkle_branch<'a>(
     }
     .then_some(())
     .ok_or(Error::InvalidMerkleBranch(InvalidMerkleBranch {
-        leaf: leaf.clone(),
+        leaf: *leaf,
         branch,
         depth,
         index,
-        root: root.clone(),
+        root: *root,
     }))
 }
 

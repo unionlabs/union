@@ -170,8 +170,8 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             ensure(
                 next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
-                    expected: stored_next_sync_committee.aggregate_pubkey.clone(),
-                    got: next_sync_committee.aggregate_pubkey.clone(),
+                    expected: stored_next_sync_committee.aggregate_pubkey,
+                    got: next_sync_committee.aggregate_pubkey,
                 },
             )?;
         }
@@ -214,14 +214,14 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         DomainType::SYNC_COMMITTEE,
         Some(fork_version),
         Some(genesis_validators_root),
-        ctx.fork_parameters().genesis_fork_version.clone(),
+        ctx.fork_parameters().genesis_fork_version,
     );
     let signing_root = compute_signing_root(&update.attested_header.beacon, domain);
 
     bls_verifier.fast_aggregate_verify(
         participant_pubkeys,
         signing_root.as_ref().to_owned(),
-        sync_aggregate.sync_committee_signature.clone(),
+        sync_aggregate.sync_committee_signature,
     )?;
 
     Ok(())

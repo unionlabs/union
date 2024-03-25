@@ -30,7 +30,7 @@ const (
 	PrivKeyName              = "tendermint/PrivKeyBn254"
 	PubKeyName               = "tendermint/PubKeyBn254"
 	KeyType                  = "bn254"
-	CometblsSigDST           = "COMETBLS_SIG_BN254G2_XMD:MIMC256"
+	CometblsSigDST           = "COMETBLS_SIG_BN254G2_XMDMIMC256"
 	CometblsHMACKey          = "CometBLS"
 )
 
@@ -216,7 +216,11 @@ func HashToField(msg []byte) fr.Element {
 // Union whitepaper: (3) H
 //
 func HashToG2(msg []byte) bn254.G2Affine {
-	img := HashToField(msg)
+	var img fr.Element
+	err := img.SetBytesCanonical(msg)
+	if err != nil {
+		img = HashToField(msg)
+	}
 	var imgBytes [32]byte
 	fr.LittleEndian.PutElement(&imgBytes, img)
 	var dst fr.Element

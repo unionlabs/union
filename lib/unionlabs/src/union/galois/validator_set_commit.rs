@@ -3,7 +3,7 @@ use macros::model;
 
 use crate::tendermint::types::simple_validator::SimpleValidator;
 
-#[model(proto(raw(protos::union::galois::api::v2::ValidatorSetCommit), from))]
+#[model(proto(raw(protos::union::galois::api::v3::ValidatorSetCommit), from))]
 pub struct ValidatorSetCommit {
     pub validators: Vec<SimpleValidator>,
     // REVIEW: Is this arbitrary bytes or strongly typed? (i.e. H512)
@@ -14,7 +14,7 @@ pub struct ValidatorSetCommit {
     pub bitmap: Vec<u8>,
 }
 
-impl From<ValidatorSetCommit> for protos::union::galois::api::v2::ValidatorSetCommit {
+impl From<ValidatorSetCommit> for protos::union::galois::api::v3::ValidatorSetCommit {
     fn from(value: ValidatorSetCommit) -> Self {
         Self {
             validators: value.validators.into_iter().map(Into::into).collect(),

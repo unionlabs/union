@@ -236,7 +236,7 @@ func (ps *PartSet) BitArray() *bits.BitArray {
 
 func (ps *PartSet) Hash() []byte {
 	if ps == nil {
-		return merkle.HashFromByteSlices(nil)
+		return merkle.MimcHashFromByteSlices(nil)
 	}
 	return ps.hash
 }

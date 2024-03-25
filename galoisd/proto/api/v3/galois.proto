@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package union.galois.api.v3;
+
+import "tendermint/types/types.proto";
+import "tendermint/types/validator.proto";
+import "tendermint/types/canonical.proto";
+
+option go_package = "union/galois/rpc/grpc";
+
+message FrElement {
+  bytes value = 1;
+}
+
+message ZeroKnowledgeProof {
+  bytes content = 1;
+  bytes compressed_content = 2;
+  bytes evm_proof = 3;
+  bytes public_inputs = 4;
+}
+
+message ValidatorSetCommit {
+  repeated .tendermint.types.SimpleValidator validators = 1;
+  repeated bytes signatures = 2;
+  bytes bitmap = 3;
+}
+
+message ProveRequest {
+  .tendermint.types.CanonicalVote vote = 1;
+  .tendermint.types.Header untrusted_header = 2;
+  ValidatorSetCommit trusted_commit = 3;
+  ValidatorSetCommit untrusted_commit = 4;
+}
+
+message ProveResponse {
+  ZeroKnowledgeProof proof = 1;
+  bytes trusted_validator_set_root = 2;
+}
+
+message VerifyRequest {
+  ZeroKnowledgeProof proof = 1;
+  bytes inputs_hash = 2;
+}
+
+message VerifyResponse {
+  bool valid = 1;
+}
+
+message GenerateContractRequest {}
+
+message GenerateContractResponse {
+  bytes content = 1;
+}
+
+message QueryStatsRequest {}
+
+message VariableStats {
+  uint32 nb_internal_variables = 1;
+  uint32 nb_secret_variables = 2;
+  uint32 nb_public_variables = 3;
+  uint32 nb_constraints = 4;
+  uint32 nb_coefficients = 5;
+}
+
+message ProvingKeyStats {
+  uint32 nb_g1 = 1;
+  uint32 nb_g2 = 2;
+}
+
+message VerifyingKeyStats {
+  uint32 nb_g1 = 1;
+  uint32 nb_g2 = 2;
+  uint32 nb_public_witness = 3;
+}
+
+message CommitmentStats {
+  uint32 nb_public_committed = 1;
+  uint32 nb_private_committed = 2;
+}
+
+message QueryStatsResponse {
+  VariableStats variable_stats = 1;
+  ProvingKeyStats proving_key_stats = 2;
+  VerifyingKeyStats verifying_key_stats = 3;
+  CommitmentStats commitment_stats = 4;
+}
+
+message PollRequest {
+  ProveRequest request = 1;
+}
+
+message ProveRequestPending {
+}
+
+message ProveRequestFailed {
+  string message = 1;
+}
+
+message ProveRequestDone {
+  ProveResponse response = 1;
+}
+
+message PollResponse {
+  oneof result {
+    ProveRequestPending pending = 1;
+    ProveRequestFailed failed = 2;
+    ProveRequestDone done = 3;
+  }
+}
+
+service UnionProverAPI {
+  rpc Prove(ProveRequest) returns (ProveResponse);
+  rpc Verify(VerifyRequest) returns (VerifyResponse);
+  rpc GenerateContract(GenerateContractRequest) returns (GenerateContractResponse);
+  rpc QueryStats(QueryStatsRequest) returns (QueryStatsResponse);
+
+  rpc Poll(PollRequest) returns (PollResponse);
+}
+

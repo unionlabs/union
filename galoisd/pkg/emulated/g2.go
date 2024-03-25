@@ -140,6 +140,8 @@ func (e *EmulatedAPI) g2Sgn0Circuit(z *fields_bn254.E2) frontend.Variable {
 // Union whitepaper: (2) svdw
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#straightline-svdw
+//
+// WARNING: this function is partial, the legendre hint only check the root branch. If you are going to reuse this function, make sure you are aware of this edge case.
 func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 	// NOTE: up to the caller to call legendre if the root is not guarantee to exist
 	sqrt := func(x *fields_bn254.E2) *fields_bn254.E2 {
@@ -396,15 +398,6 @@ func (e *EmulatedAPI) Double(p *gadget.G2Affine) *gadget.G2Affine {
 	return &point
 }
 
-func (e *EmulatedAPI) Reduce(p *gadget.G2Affine) *gadget.G2Affine {
-	reducedP := gadget.G2Affine{}
-	reducedP.P.X.A0 = *e.field.Reduce(&p.P.X.A0)
-	reducedP.P.X.A1 = *e.field.Reduce(&p.P.X.A1)
-	reducedP.P.Y.A0 = *e.field.Reduce(&p.P.Y.A0)
-	reducedP.P.Y.A1 = *e.field.Reduce(&p.P.Y.A1)
-	return &reducedP
-}
-
 func (e *EmulatedAPI) DoubleN(p *gadget.G2Affine, n int) *gadget.G2Affine {
 	pn := p
 	for s := 0; s < n; s++ {
@@ -478,6 +471,8 @@ func (e *EmulatedAPI) ClearCofactor(Q *gadget.G2Affine) *gadget.G2Affine {
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-encoding-byte-strings-to-el
+
+// WARNING: this function calls a partial MapToCurve, read it's documentation before using it.
 func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable) (*gadget.G2Affine, error) {
 	u, err := e.HashToField(message, dst)
 	if err != nil {
@@ -491,13 +486,16 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 		A0: *u[2],
 		A1: *u[3],
 	})
-	return e.Reduce(e.ClearCofactor(e.Add(Q0, Q1))), nil
+	return e.ClearCofactor(e.Add(Q0, Q1)), nil
 }
 
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-hash_to_field-implementatio
-// NOTE: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
+// /
+// WARNING: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
+// WARNING: this functions uses a 256bit block MiMC (which is in fact only 254bit), use it at your own risk.
+// WARNING: we only support 254bit messages (usually MiMC hash) and domain separation tag (usually MiMC hash).
 func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
 	if err != nil {
@@ -518,6 +516,10 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 
 // /!\ IMPORTANT /!\ : This is not a general implementation as the input/output length are fixed.
 // It is a tailor-made for BN254G2_XMD:MiMC-256_SVDW hash_to_curve implementation.
+//
+// WARNING: this functions uses a 256bit block MiMC (effectively 254bit with modulus happening), use it at your own risk.
+// WARNING: we only support ~254bit messages and domain separation tag (both bn254 F_r elements).
+//
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf

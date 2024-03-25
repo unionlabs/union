@@ -172,8 +172,8 @@ pub fn verify_adjacent<V: HostFns>(
 
     if untrusted_header.header.validators_hash != trusted_header.header.next_validators_hash {
         return Err(Error::NextValidatorsHashMismatch {
-            next_validators_hash: untrusted_header.header.next_validators_hash.clone(),
-            validators_hash: trusted_header.header.next_validators_hash.clone(),
+            next_validators_hash: untrusted_header.header.next_validators_hash,
+            validators_hash: trusted_header.header.next_validators_hash,
         });
     }
 
@@ -211,7 +211,7 @@ pub fn verify_commit_light<V: HostFns>(
                 validator_address,
                 timestamp,
                 signature,
-            } => Some((validator_address.clone(), *timestamp, signature.clone())),
+            } => Some((*validator_address, *timestamp, *signature)),
             _ => None,
         }
     };
@@ -292,7 +292,7 @@ pub fn verify_commit_light_trusting<V: HostFns>(
                 validator_address,
                 timestamp,
                 signature,
-            } => Some((validator_address.clone(), *timestamp, signature.clone())),
+            } => Some((*validator_address, *timestamp, *signature)),
             _ => None,
         }
     };
@@ -470,7 +470,7 @@ fn verify_new_headers_and_vals(
     if untrusted_header_hash != untrusted_header.commit.block_id.hash {
         return Err(Error::SignedHeaderCommitHashMismatch {
             sh_hash: untrusted_header_hash,
-            commit_hash: untrusted_header.commit.block_id.hash.clone(),
+            commit_hash: untrusted_header.commit.block_id.hash,
         });
     }
 

@@ -106,7 +106,7 @@ func (mc *mulCheck[T]) cleanEvaluations() {
 func (f *Field[T]) mulMod(a, b *Element[T], _ uint) *Element[T] {
 	f.enforceWidthConditional(a)
 	f.enforceWidthConditional(b)
-	k, r, c, err := f.callMulHint(a, b)
+	k, r, c, err := f.callMulHint(a, b, true)
 	if err != nil {
 		panic(err)
 	}
@@ -122,6 +122,27 @@ func (f *Field[T]) mulMod(a, b *Element[T], _ uint) *Element[T] {
 	return r
 }
 
+// checkZero creates multiplication check a * 1 = 0 + k*p.
+func (f *Field[T]) checkZero(a *Element[T]) {
+	// the method works similarly to mulMod, but we know that we are multiplying
+	// by one and expected result should be zero.
+	f.enforceWidthConditional(a)
+	b := f.shortOne()
+	k, r, c, err := f.callMulHint(a, b, false)
+	if err != nil {
+		panic(err)
+	}
+	mc := mulCheck[T]{
+		f: f,
+		a: a,
+		b: b, // one on single limb to speed up the polynomial evaluation
+		c: c,
+		k: k,
+		r: r, // expected to be zero on zero limbs.
+	}
+	f.mulChecks = append(f.mulChecks, mc)
+}
+
 // evalWithChallenge represents element a as a polynomial a(X) and evaluates at
 // at[0]. For efficiency, we use already evaluated powers of at[0] given by at.
 // It stores the evaluation result inside the Element and marks it as evaluated.
@@ -133,7 +154,10 @@ func (f *Field[T]) evalWithChallenge(a *Element[T], at []frontend.Variable) *Ele
 	if len(at) < len(a.Limbs)-1 {
 		panic("evaluation powers less than limbs")
 	}
-	sum := f.api.Mul(a.Limbs[0], 1) // copy because we use MulAcc
+	var sum frontend.Variable = 0
+	if len(a.Limbs) > 0 {
+		sum = f.api.Mul(a.Limbs[0], 1) // copy because we use MulAcc
+	}
 	for i := 1; i < len(a.Limbs); i++ {
 		sum = f.api.MulAcc(sum, a.Limbs[i], at[i-1])
 	}
@@ -171,15 +195,15 @@ func (f *Field[T]) performMulChecks(api frontend.API) error {
 	// we give all the inputs as inputs to obtain random verifier challenge.
 	multicommit.WithCommitment(api, func(api frontend.API, commitment frontend.Variable) error {
 		// for efficiency, we compute all powers of the challenge as slice at.
-		coefsLen := 0
+		coefsLen := int(f.fParams.NbLimbs())
 		for i := range f.mulChecks {
-			coefsLen = max(coefsLen, len(f.mulChecks[i].c.Limbs))
+			coefsLen = max(coefsLen, len(f.mulChecks[i].a.Limbs), len(f.mulChecks[i].b.Limbs),
+				len(f.mulChecks[i].c.Limbs), len(f.mulChecks[i].k.Limbs))
 		}
 		at := make([]frontend.Variable, coefsLen)
-		var prev frontend.Variable = 1
-		for i := range at {
-			at[i] = api.Mul(prev, commitment)
-			prev = at[i]
+		at[0] = commitment
+		for i := 1; i < len(at); i++ {
+			at[i] = api.Mul(at[i-1], commitment)
 		}
 		// evaluate all r, k, c
 		for i := range f.mulChecks {
@@ -210,24 +234,38 @@ func (f *Field[T]) performMulChecks(api frontend.API) error {
 }
 
 // callMulHint uses hint to compute r, k and c.
-func (f *Field[T]) callMulHint(a, b *Element[T]) (quo, rem, carries *Element[T], err error) {
-	// inputs is always nblimbs
-	// quotient may be larger if inputs have overflow
-	// remainder is always nblimbs
-	// carries is 2 * nblimbs - 2 (do not consider first limb)
+func (f *Field[T]) callMulHint(a, b *Element[T], isMulMod bool) (quo, rem, carries *Element[T], err error) {
+	// compute the expected overflow after the multiplication of a*b to be able
+	// to estimate the number of bits required to represent the result.
 	nextOverflow, _ := f.mulPreCond(a, b)
 	// skip error handle - it happens when we are supposed to reduce. But we
 	// already check it as a precondition. We only need the overflow here.
+	if !isMulMod {
+		// b is one on single limb. We do not increase the overflow
+		nextOverflow = a.overflow
+	}
 	nbLimbs, nbBits := f.fParams.NbLimbs(), f.fParams.BitsPerLimb()
-	nbQuoLimbs := ((2*nbLimbs-1)*nbBits + nextOverflow + 1 - //
+	// we need to compute the number of limbs for the quotient. To compute it,
+	// we compute the width of the product of a*b, then we divide it by the
+	// width of the modulus. We add 1 to the result to ensure that we have
+	// enough space for the quotient.
+	nbQuoLimbs := (uint(nbMultiplicationResLimbs(len(a.Limbs), len(b.Limbs)))*nbBits + nextOverflow + 1 - //
 		uint(f.fParams.Modulus().BitLen()) + //
 		nbBits - 1) /
 		nbBits
+	// the remainder is always less than modulus so can represent on the same
+	// number of limbs as the modulus.
 	nbRemLimbs := nbLimbs
-	nbCarryLimbs := (nbQuoLimbs + nbLimbs) - 2
+	// we need to compute the number of limbs for the carries. It is maximum of
+	// the number of limbs of the product of a*b or k*p.
+	nbCarryLimbs := max(nbMultiplicationResLimbs(len(a.Limbs), len(b.Limbs)), nbMultiplicationResLimbs(int(nbQuoLimbs), int(nbLimbs))) - 1
+	// we encode the computed parameters and widths to the hint function so can
+	// know how many limbs to expect.
 	hintInputs := []frontend.Variable{
 		nbBits,
 		nbLimbs,
+		len(a.Limbs),
+		nbQuoLimbs,
 	}
 	hintInputs = append(hintInputs, f.Modulus().Limbs...)
 	hintInputs = append(hintInputs, a.Limbs...)
@@ -237,8 +275,19 @@ func (f *Field[T]) callMulHint(a, b *Element[T]) (quo, rem, carries *Element[T],
 		err = fmt.Errorf("call hint: %w", err)
 		return
 	}
+	// quotient is always range checked according to how many limbs we expect.
 	quo = f.packLimbs(ret[:nbQuoLimbs], false)
-	rem = f.packLimbs(ret[nbQuoLimbs:nbQuoLimbs+nbRemLimbs], true)
+	// remainder is always range checked when we use it as a result of
+	// multiplication (and it needs to be strictly less than modulus). However,
+	// when we use the hint for equality assertion then we assume the result to
+	// be 0 which can be represented by 0 limbs.
+	if isMulMod {
+		rem = f.packLimbs(ret[nbQuoLimbs:nbQuoLimbs+nbRemLimbs], true)
+	} else {
+		rem = &Element[T]{}
+	}
+	// pack the carries into element. Used in the deferred multiplication check
+	// to align the limbs due to different overflows.
 	carries = f.newInternalElement(ret[nbQuoLimbs+nbRemLimbs:], 0)
 	return
 }
@@ -246,15 +295,17 @@ func (f *Field[T]) callMulHint(a, b *Element[T]) (quo, rem, carries *Element[T],
 func mulHint(field *big.Int, inputs, outputs []*big.Int) error {
 	nbBits := int(inputs[0].Int64())
 	nbLimbs := int(inputs[1].Int64())
-	ptr := 2
+	nbALen := int(inputs[2].Int64())
+	nbQuoLen := int(inputs[3].Int64())
+	nbBLen := len(inputs) - 4 - nbLimbs - nbALen
+	ptr := 4
 	plimbs := inputs[ptr : ptr+nbLimbs]
 	ptr += nbLimbs
-	alimbs := inputs[ptr : ptr+nbLimbs]
-	ptr += nbLimbs
-	blimbs := inputs[ptr : ptr+nbLimbs]
+	alimbs := inputs[ptr : ptr+nbALen]
+	ptr += nbALen
+	blimbs := inputs[ptr : ptr+nbBLen]
 
-	nbQuoLen := (len(outputs) - 2*nbLimbs + 2) / 2
-	nbCarryLen := nbLimbs + nbQuoLen - 2
+	nbCarryLen := max(nbMultiplicationResLimbs(nbALen, nbBLen), nbMultiplicationResLimbs(nbQuoLen, nbLimbs)) - 1
 	outptr := 0
 	quoLimbs := outputs[outptr : outptr+nbQuoLen]
 	outptr += nbQuoLen
@@ -284,8 +335,8 @@ func mulHint(field *big.Int, inputs, outputs []*big.Int) error {
 	if err := decompose(rem, uint(nbBits), remLimbs); err != nil {
 		return fmt.Errorf("decompose rem: %w", err)
 	}
-	xp := make([]*big.Int, nbLimbs+nbQuoLen-1)
-	yp := make([]*big.Int, nbLimbs+nbQuoLen-1)
+	xp := make([]*big.Int, nbMultiplicationResLimbs(nbALen, nbBLen))
+	yp := make([]*big.Int, nbMultiplicationResLimbs(nbQuoLen, nbLimbs))
 	for i := range xp {
 		xp[i] = new(big.Int)
 	}
@@ -293,11 +344,15 @@ func mulHint(field *big.Int, inputs, outputs []*big.Int) error {
 		yp[i] = new(big.Int)
 	}
 	tmp := new(big.Int)
-	for i := 0; i < nbLimbs; i++ {
-		for j := 0; j < nbLimbs; j++ {
+	// we know compute the schoolbook multiprecision multiplication of a*b and
+	// r+k*p
+	for i := 0; i < nbALen; i++ {
+		for j := 0; j < nbBLen; j++ {
 			tmp.Mul(alimbs[i], blimbs[j])
 			xp[i+j].Add(xp[i+j], tmp)
 		}
+	}
+	for i := 0; i < nbLimbs; i++ {
 		yp[i].Add(yp[i], remLimbs[i])
 		for j := 0; j < nbQuoLen; j++ {
 			tmp.Mul(quoLimbs[j], plimbs[i])
@@ -306,8 +361,12 @@ func mulHint(field *big.Int, inputs, outputs []*big.Int) error {
 	}
 	carry := new(big.Int)
 	for i := range carryLimbs {
-		carry.Add(carry, xp[i])
-		carry.Sub(carry, yp[i])
+		if i < len(xp) {
+			carry.Add(carry, xp[i])
+		}
+		if i < len(yp) {
+			carry.Sub(carry, yp[i])
+		}
 		carry.Rsh(carry, uint(nbBits))
 		carryLimbs[i] = new(big.Int).Set(carry)
 	}
@@ -376,7 +435,7 @@ func (f *Field[T]) mulPreCond(a, b *Element[T]) (nextOverflow uint, err error) {
 	nbResLimbs := nbMultiplicationResLimbs(len(a.Limbs), len(b.Limbs))
 	nbLimbsOverflow := uint(1)
 	if nbResLimbs > 0 {
-		nbLimbsOverflow = uint(bits.Len(uint(2*nbResLimbs - 1)))
+		nbLimbsOverflow = uint(bits.Len(uint(nbResLimbs)))
 	}
 	nextOverflow = f.fParams.BitsPerLimb() + nbLimbsOverflow + a.overflow + b.overflow
 	if nextOverflow > f.maxOverflow() {
@@ -385,46 +444,22 @@ func (f *Field[T]) mulPreCond(a, b *Element[T]) (nextOverflow uint, err error) {
 	return
 }
 
-func (f *Field[T]) mul(a, b *Element[T], nextOverflow uint) *Element[T] {
-	// TODO: kept for [AssertIsEqual]. Consider if this can be removed and we
-	// can use MulMod for equality assertion.
-	ba, aConst := f.constantValue(a)
-	bb, bConst := f.constantValue(b)
-	if aConst && bConst {
-		ba.Mul(ba, bb).Mod(ba, f.fParams.Modulus())
-		return newConstElement[T](ba)
+// MulNoReduce computes a*b and returns the result without reducing it modulo
+// the field order. The number of limbs of the returned element depends on the
+// number of limbs of the inputs.
+func (f *Field[T]) MulNoReduce(a, b *Element[T]) *Element[T] {
+	return f.reduceAndOp(f.mulNoReduce, f.mulPreCond, a, b)
+}
+
+func (f *Field[T]) mulNoReduce(a, b *Element[T], nextoverflow uint) *Element[T] {
+	resLimbs := make([]frontend.Variable, nbMultiplicationResLimbs(len(a.Limbs), len(b.Limbs)))
+	for i := range resLimbs {
+		resLimbs[i] = 0
 	}
-
-	// mulResult contains the result (out of circuit) of a * b school book multiplication
-	// len(mulResult) == len(a) + len(b) - 1
-	mulResult, err := f.computeMultiplicationHint(a.Limbs, b.Limbs)
-	if err != nil {
-		panic(fmt.Sprintf("multiplication hint: %s", err))
-	}
-
-	// we computed the result of the mul outside the circuit (mulResult)
-	// and we want to constrain inside the circuit that this injected value
-	// actually matches the in-circuit a * b values
-	// create constraints (\sum_{i=0}^{m-1} a_i c^i) * (\sum_{i=0}^{m-1} b_i
-	// c^i) = (\sum_{i=0}^{2m-2} z_i c^i) for c \in {1, 2m-1}
-	w := new(big.Int)
-	for c := 1; c <= len(mulResult); c++ {
-		w.SetInt64(1) // c^i
-		l := f.api.Mul(a.Limbs[0], 1)
-		r := f.api.Mul(b.Limbs[0], 1)
-		o := f.api.Mul(mulResult[0], 1)
-
-		for i := 1; i < len(mulResult); i++ {
-			w.Lsh(w, uint(c))
-			if i < len(a.Limbs) {
-				l = f.api.MulAcc(l, a.Limbs[i], w)
-			}
-			if i < len(b.Limbs) {
-				r = f.api.MulAcc(r, b.Limbs[i], w)
-			}
-			o = f.api.MulAcc(o, mulResult[i], w)
+	for i := range a.Limbs {
+		for j := range b.Limbs {
+			resLimbs[i+j] = f.api.MulAcc(resLimbs[i+j], a.Limbs[i], b.Limbs[j])
 		}
-		f.api.AssertIsEqual(f.api.Mul(l, r), o)
 	}
-	return f.newInternalElement(mulResult, nextOverflow)
+	return f.newInternalElement(resLimbs, nextoverflow)
 }

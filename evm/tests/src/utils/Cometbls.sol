@@ -35,7 +35,8 @@ import {
 import {
     UnionIbcLightclientsCometblsV1ClientState as CometblsClientState,
     UnionIbcLightclientsCometblsV1Header as CometblsHeader,
-    UnionIbcLightclientsCometblsV1Header as CometblsHeader
+    UnionIbcLightclientsCometblsV1Header as CometblsHeader,
+    UnionIbcLightclientsCometblsV1LightHeader as CometblsLightHeader
 } from
     "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import {IbcLightclientsWasmV1ClientState as WasmClientState} from
@@ -119,7 +120,7 @@ library Cometbls {
 
     function updateClient(
         string memory clientId,
-        TendermintTypesSignedHeader.Data memory signedHeader,
+        CometblsLightHeader.Data memory signedHeader,
         uint64 trustedHeight,
         bytes memory zkp
     ) internal view returns (IBCMsgs.MsgUpdateClient memory m) {

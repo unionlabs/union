@@ -196,9 +196,10 @@ func (e Ext6) MulBy01(z *E6, c0, c1 *E2) *E6 {
 	t0 = e.Ext2.Sub(t0, b)
 	t0 = e.Ext2.MulByNonResidue(t0)
 	t0 = e.Ext2.Add(t0, a)
-	tmp = e.Ext2.Add(&z.B0, &z.B2)
-	t2 := e.Ext2.Mul(c0, tmp)
-	t2 = e.Ext2.Sub(t2, a)
+	// for t2, schoolbook is faster than karatsuba
+	// c2 = a0b2 + a1b1 + a2b0,
+	// c2 = a2b0 + b ∵ b2 = 0, b = a1b1
+	t2 := e.Ext2.Mul(&z.B2, c0)
 	t2 = e.Ext2.Add(t2, b)
 	t1 := e.Ext2.Add(c0, c1)
 	tmp = e.Ext2.Add(&z.B0, &z.B1)
@@ -230,22 +231,15 @@ func (e Ext6) MulBy01(z *E6, c0, c1 *E2) *E6 {
 func (e Ext6) Mul01By01(c0, c1, d0, d1 *E2) *E6 {
 	a := e.Ext2.Mul(d0, c0)
 	b := e.Ext2.Mul(d1, c1)
-	t0 := e.Ext2.Mul(c1, d1)
-	t0 = e.Ext2.Sub(t0, b)
-	t0 = e.Ext2.MulByNonResidue(t0)
-	t0 = e.Ext2.Add(t0, a)
-	t2 := e.Ext2.Mul(c0, d0)
-	t2 = e.Ext2.Sub(t2, a)
-	t2 = e.Ext2.Add(t2, b)
 	t1 := e.Ext2.Add(c0, c1)
 	tmp := e.Ext2.Add(d0, d1)
 	t1 = e.Ext2.Mul(t1, tmp)
 	t1 = e.Ext2.Sub(t1, a)
 	t1 = e.Ext2.Sub(t1, b)
 	return &E6{
-		B0: *t0,
+		B0: *a,
 		B1: *t1,
-		B2: *t2,
+		B2: *b,
 	}
 }
 

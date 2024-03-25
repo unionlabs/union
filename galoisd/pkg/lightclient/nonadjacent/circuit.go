@@ -1,7 +1,6 @@
 package nonadjacent
 
 import (
-	"galois/pkg/emulated"
 	"galois/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
@@ -25,21 +24,23 @@ type TendermintNonAdjacentLightClientInput struct {
 }
 
 type Circuit struct {
-	DomainSeparationTag      frontend.Variable
-	TrustedInput             TendermintNonAdjacentLightClientInput
-	UntrustedInput           TendermintNonAdjacentLightClientInput
-	ExpectedTrustedValRoot   frontend.Variable `gnark:",public"`
-	ExpectedUntrustedValRoot frontend.Variable `gnark:",public"`
-	Message                  frontend.Variable `gnark:",public"`
+	DomainSeparationTag frontend.Variable
+	TrustedInput        TendermintNonAdjacentLightClientInput
+	TrustedValRoot      frontend.Variable
+	UntrustedInput      TendermintNonAdjacentLightClientInput
+	Vote                lightclient.BlockVote
+	Header              lightclient.BlockHeader
+	InputsHash          frontend.Variable `gnark:",public"`
 }
 
 // Union whitepaper: Algorithm 2. procedure Main
 func (circuit *Circuit) Define(api frontend.API) error {
-	emulatedAPI, err := g2.NewEmulatedAPI(api)
+	bhapi, err := lightclient.NewBlockHeaderAPI(api, circuit.Header, circuit.Vote)
 	if err != nil {
 		return err
 	}
-	hashedMessage, err := emulatedAPI.HashToG2(circuit.Message, circuit.DomainSeparationTag)
+	bhapi.VerifyInputs(circuit.InputsHash, circuit.TrustedValRoot)
+	hashedMessage, err := bhapi.HashToCurve(circuit.DomainSeparationTag)
 	if err != nil {
 		return err
 	}
@@ -50,7 +51,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.TrustedInput.NbOfSignature,
 		Bitmap:        circuit.TrustedInput.Bitmap,
 	})
-	res := lc.Verify(hashedMessage, circuit.ExpectedTrustedValRoot, TrustedRatioNum, TrustedRatioDen)
+	res := lc.Verify(hashedMessage, circuit.TrustedValRoot, TrustedRatioNum, TrustedRatioDen)
 	if res != nil {
 		return res
 	}
@@ -61,5 +62,5 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.UntrustedInput.NbOfSignature,
 		Bitmap:        circuit.UntrustedInput.Bitmap,
 	})
-	return lc.Verify(hashedMessage, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
+	return lc.Verify(hashedMessage, circuit.Header.ValidatorsHash, UntrustedRatioNum, UntrustedRatioDen)
 }

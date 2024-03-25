@@ -5,7 +5,6 @@ import (
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/backend/plonk"
-	"github.com/consensys/gnark/backend/plonkfri"
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
@@ -108,8 +107,6 @@ func (assert *Assert) CheckCircuit(circuit frontend.Circuit, opts ...TestingOpti
 						concreteBackend = _groth16
 					case backend.PLONK:
 						concreteBackend = _plonk
-					case backend.PLONKFRI:
-						concreteBackend = _plonkfri
 					default:
 						panic("backend not implemented")
 					}
@@ -269,22 +266,6 @@ var (
 		},
 		verify: func(proof, vk any, publicWitness witness.Witness, opts ...backend.VerifierOption) error {
 			return plonk.Verify(proof.(plonk.Proof), vk.(plonk.VerifyingKey), publicWitness, opts...)
-		},
-	}
-
-	_plonkfri = tBackend{
-		setup: func(ccs constraint.ConstraintSystem, curve ecc.ID) (
-			pk, vk any,
-			pkBuilder, vkBuilder, proofBuilder func() any,
-			err error) {
-			pk, vk, err = plonkfri.Setup(ccs)
-			return pk, vk, func() any { return nil }, func() any { return nil }, func() any { return nil }, err
-		},
-		prove: func(ccs constraint.ConstraintSystem, pk any, fullWitness witness.Witness, opts ...backend.ProverOption) (proof any, err error) {
-			return plonkfri.Prove(ccs, pk.(plonkfri.ProvingKey), fullWitness, opts...)
-		},
-		verify: func(proof, vk any, publicWitness witness.Witness, opts ...backend.VerifierOption) error {
-			return plonkfri.Verify(proof, vk.(plonkfri.VerifyingKey), publicWitness, opts...)
 		},
 	}
 )

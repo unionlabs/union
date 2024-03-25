@@ -29,6 +29,10 @@ pub fn instantiate(
             reason: format!("{:?}", e),
         })?;
 
+    if client_state.chain_id.len() > 31 {
+        return Err(Error::InvalidChainID);
+    }
+
     save_proto_consensus_state(
         deps.branch(),
         ProtoConsensusState {

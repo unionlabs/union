@@ -31,12 +31,11 @@ impl<C: ChainSpec> TrustedConsensusState<C> {
     ) -> Result<Self, Error> {
         let (active_sync_committee, given_committee) = match &sync_committee {
             ActiveSyncCommittee::Current(committee) => {
-                (consensus_state.current_sync_committee.clone(), committee)
+                (consensus_state.current_sync_committee, committee)
             }
             ActiveSyncCommittee::Next(committee) => (
                 consensus_state
                     .next_sync_committee
-                    .clone()
                     .ok_or(Error::NoNextSyncCommittee)?,
                 committee,
             ),
@@ -52,7 +51,7 @@ impl<C: ChainSpec> TrustedConsensusState<C> {
                 && given_committee.aggregate_pubkey == aggregate_public_key,
             Error::TrustedSyncCommitteeMismatch {
                 stored_aggregate: active_sync_committee,
-                given_aggregate: given_committee.aggregate_pubkey.clone(),
+                given_aggregate: given_committee.aggregate_pubkey,
             },
         )?;
 
@@ -63,6 +62,6 @@ impl<C: ChainSpec> TrustedConsensusState<C> {
     }
 
     pub fn current_sync_committee_aggregate_key(&self) -> BlsPublicKey {
-        self.state.current_sync_committee.clone()
+        self.state.current_sync_committee
     }
 }

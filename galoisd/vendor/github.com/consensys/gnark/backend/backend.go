@@ -29,12 +29,11 @@ const (
 	UNKNOWN ID = iota
 	GROTH16
 	PLONK
-	PLONKFRI
 )
 
 // Implemented return the list of proof systems implemented in gnark
 func Implemented() []ID {
-	return []ID{GROTH16, PLONK, PLONKFRI}
+	return []ID{GROTH16, PLONK}
 }
 
 // String returns the string representation of a proof system
@@ -44,8 +43,6 @@ func (id ID) String() string {
 		return "groth16"
 	case PLONK:
 		return "plonk"
-	case PLONKFRI:
-		return "plonkFRI"
 	default:
 		return "unknown"
 	}

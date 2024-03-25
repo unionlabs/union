@@ -33,10 +33,10 @@ pub(crate) fn canonical_vote(
             .try_into()
             .expect("impossible"), // SAFE because within the bounds
         block_id: CanonicalBlockId {
-            hash: block_id.hash.clone(),
+            hash: block_id.hash,
             part_set_header: CanonicalPartSetHeader {
                 total: block_id.part_set_header.total,
-                hash: block_id.part_set_header.hash.clone(),
+                hash: block_id.part_set_header.hash,
             },
         },
         chain_id: chain_id.to_string(),

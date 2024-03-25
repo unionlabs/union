@@ -7,13 +7,21 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"galois/grpc/api/v2"
+	grpc "galois/grpc/api/v3"
 	"galois/pkg/lightclient"
 	lcgadget "galois/pkg/lightclient/nonadjacent"
+	"io"
+	"log"
+	"math/big"
+	"os"
+	"runtime"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -28,14 +36,6 @@ import (
 	"github.com/consensys/gnark/logger"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/rs/zerolog"
-	"io"
-	"log"
-	"math/big"
-	"os"
-	"runtime"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 type proverServer struct {
@@ -160,7 +160,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		}
 
 		log.Println("Marshalling untrusted validators...")
-		untrustedValidators, untrustedValidatorsRoot, err := MarshalValidators(req.UntrustedCommit.Validators)
+		untrustedValidators, _, err := MarshalValidators(req.UntrustedCommit.Validators)
 		if err != nil {
 			return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)
 		}
@@ -187,20 +187,74 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			Bitmap:        new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
 		}
 
-		signedBytes, err := protoio.MarshalDelimited(req.Vote)
-		if err != nil {
-			return nil, fmt.Errorf("Could not marshal the vote %s", err)
+		uncons := func(b []byte) lightclient.UnconsHash {
+			return lightclient.UnconsHash{
+				Head: b[0],
+				Tail: b[1:],
+			}
 		}
 
-		message := cometbn254.HashToField(signedBytes)
+		getInputsHash := func(chainID string, h *types.Header) []byte {
+			buff := []byte{}
+			var padded [32]byte
+			writeI64 := func(x int64) {
+				big.NewInt(x).FillBytes(padded[:])
+				buff = append(buff, padded[:]...)
+			}
+			writeMiMCHash := func(b []byte) {
+				big.NewInt(0).SetBytes(b).FillBytes(padded[:])
+				buff = append(buff, padded[:]...)
+			}
+			writeHash := func(b []byte) {
+				buff = append(buff, b...)
+			}
+			writeMiMCHash([]byte(chainID))
+			writeI64(h.Height)
+			writeI64(h.Time.Unix())
+			writeI64(int64(h.Time.Nanosecond()))
+			writeMiMCHash(h.ValidatorsHash)
+			writeMiMCHash(h.NextValidatorsHash)
+			writeHash(h.AppHash)
+			writeMiMCHash(h.ValidatorsHash)
+			hash := sha256.Sum256(buff)
+			return hash[1:]
+		}
+
+		inputsHash := getInputsHash(req.Vote.ChainID, req.UntrustedHeader)
+
+		log.Printf("Inputs hash: %X\n", inputsHash)
 
 		witness := lcgadget.Circuit{
-			DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
-			TrustedInput:             trustedInput,
-			UntrustedInput:           untrustedInput,
-			ExpectedTrustedValRoot:   trustedValidatorsRoot,
-			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-			Message:                  message,
+			DomainSeparationTag: []byte(cometbn254.CometblsSigDST),
+			TrustedInput:        trustedInput,
+			TrustedValRoot:      trustedValidatorsRoot,
+			UntrustedInput:      untrustedInput,
+			Vote: lightclient.BlockVote{
+				BlockPartSetHeaderTotal: req.Vote.BlockID.PartSetHeader.Total,
+				BlockPartSetHeaderHash:  uncons(req.Vote.BlockID.PartSetHeader.Hash),
+				Round:                   req.Vote.Round,
+			},
+			Header: lightclient.BlockHeader{
+				VersionBlock:                req.UntrustedHeader.Version.Block,
+				VersionApp:                  req.UntrustedHeader.Version.App,
+				ChainID:                     []byte(req.UntrustedHeader.ChainID),
+				Height:                      req.UntrustedHeader.Height,
+				TimeSecs:                    req.UntrustedHeader.Time.Unix(),
+				TimeNanos:                   req.UntrustedHeader.Time.Nanosecond(),
+				LastBlockHash:               req.UntrustedHeader.LastBlockId.Hash,
+				LastBlockPartSetHeaderTotal: req.UntrustedHeader.LastBlockId.PartSetHeader.Total,
+				LastBlockPartSetHeaderHash:  uncons(req.UntrustedHeader.LastBlockId.PartSetHeader.Hash),
+				LastCommitHash:              uncons(req.UntrustedHeader.LastCommitHash),
+				DataHash:                    uncons(req.UntrustedHeader.DataHash),
+				ValidatorsHash:              req.UntrustedHeader.ValidatorsHash,
+				NextValidatorsHash:          req.UntrustedHeader.NextValidatorsHash,
+				ConsensusHash:               uncons(req.UntrustedHeader.ConsensusHash),
+				AppHash:                     uncons(req.UntrustedHeader.AppHash),
+				LastResultsHash:             uncons(req.UntrustedHeader.LastResultsHash),
+				EvidenceHash:                uncons(req.UntrustedHeader.EvidenceHash),
+				ProposerAddress:             uncons(req.UntrustedHeader.ProposerAddress),
+			},
+			InputsHash: inputsHash,
 		}
 
 		privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
@@ -271,8 +325,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 				PublicInputs:      publicInputs,
 				EvmProof:          evmProof,
 			},
-			TrustedValidatorSetRoot:   trustedValidatorsRoot,
-			UntrustedValidatorSetRoot: untrustedValidatorsRoot,
+			TrustedValidatorSetRoot: trustedValidatorsRoot,
 		}
 
 		return &proveRes, nil
@@ -370,58 +423,25 @@ func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*gr
 		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
 	}
 
-	if len(req.TrustedValidatorSetRoot) != 32 {
-		return nil, fmt.Errorf("The trusted validator set root must be a SHA256 hash")
-	}
-	if len(req.UntrustedValidatorSetRoot) != 32 {
-		return nil, fmt.Errorf("The untrusted validator set root must be a SHA256 hash")
-	}
-
-	var hashedMessage fr.Element
-	err = hashedMessage.SetBytesCanonical(req.HashedMessage.Value)
-	if err != nil {
-		return nil, fmt.Errorf("The hashed message must be a BN254 fr.Element: %w", err)
-	}
-
-	validators := [lightclient.MaxVal]lightclient.Validator{}
-	for i := 0; i < lightclient.MaxVal; i++ {
-		validators[i].HashableX = 0
-		validators[i].HashableY = 0
-		validators[i].HashableXMSB = 0
-		validators[i].HashableYMSB = 0
-		validators[i].Power = 0
-	}
-
-	// We don't need the private input to verify, this is present to typecheck
-	dummyInput := lcgadget.TendermintNonAdjacentLightClientInput{
-		Sig:           gadget.G2Affine{},
-		Validators:    validators,
-		NbOfVal:       0,
-		NbOfSignature: 0,
-		Bitmap:        0,
-	}
+	log.Printf("Inputs hash: %X\n", req.InputsHash)
 
 	witness := lcgadget.Circuit{
-		TrustedInput:             dummyInput,
-		UntrustedInput:           dummyInput,
-		ExpectedTrustedValRoot:   req.TrustedValidatorSetRoot,
-		ExpectedUntrustedValRoot: req.UntrustedValidatorSetRoot,
-		Message:                  hashedMessage,
+		InputsHash: req.InputsHash,
 	}
 
-	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+	publicWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField(), frontend.PublicOnly())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create private witness: %w", err)
 	}
 
-	publicWitness, err := privateWitness.Public()
+	err = backend.Verify(
+		backend.Proof(&proof),
+		backend.VerifyingKey(&p.vk),
+		publicWitness,
+		backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to extract public witness: %w", err)
-	}
-
-	err = backend.Verify(backend.Proof(&proof), backend.VerifyingKey(&p.vk), publicWitness)
-	if err != nil {
-		log.Println("Verification failed: %w", err)
+		log.Println("Verification failed: ", err)
 		return &grpc.VerifyResponse{
 			Valid: false,
 		}, nil
@@ -547,7 +567,6 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 				commitmentKey := commitmentKeyBytes.Bytes()
 				log.Printf("Pedersen commitment key: %X", commitmentKey)
 				log.Printf("Public committed: %v", vk.PublicAndCommitmentCommitted)
-
 				return cs, pk, vk, nil
 			}
 		}
@@ -581,6 +600,31 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 	if err != nil {
 		return cs, pk, vk, err
 	}
+
+	log.Printf("VK Alpha X: %v", vk.G1.Alpha.X.String())
+	log.Printf("VK Alpha Y: %v", vk.G1.Alpha.Y.String())
+	log.Printf("VK Beta X0: %v", vk.G2.Beta.X.A0.String())
+	log.Printf("VK Beta X1: %v", vk.G2.Beta.X.A1.String())
+	log.Printf("VK Beta Y0: %v", vk.G2.Beta.Y.A0.String())
+	log.Printf("VK Beta Y1: %v", vk.G2.Beta.Y.A1.String())
+	log.Printf("VK Gamma X0: %v", vk.G2.Gamma.X.A0.String())
+	log.Printf("VK Gamma X1: %v", vk.G2.Gamma.X.A1.String())
+	log.Printf("VK Gamma Y0: %v", vk.G2.Gamma.Y.A0.String())
+	log.Printf("VK Gamma Y1: %v", vk.G2.Gamma.Y.A1.String())
+	log.Printf("VK Delta X0: %v", vk.G2.Delta.X.A0.String())
+	log.Printf("VK Delta X1: %v", vk.G2.Delta.X.A1.String())
+	log.Printf("VK Delta Y0: %v", vk.G2.Delta.Y.A0.String())
+	log.Printf("VK Delta Y1: %v", vk.G2.Delta.Y.A1.String())
+	var commitmentKeyBytes bytes.Buffer
+	mem := bufio.NewWriter(&commitmentKeyBytes)
+	_, err = vk.CommitmentKey.WriteRawTo(mem)
+	if err != nil {
+		return cs, pk, vk, err
+	}
+	mem.Flush()
+	commitmentKey := commitmentKeyBytes.Bytes()
+	log.Printf("Pedersen commitment key: %X", commitmentKey)
+	log.Printf("Public committed: %v", vk.PublicAndCommitmentCommitted)
 
 	return cs, pk, vk, nil
 }

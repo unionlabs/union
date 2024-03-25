@@ -27,7 +27,7 @@ impl<'a> BlsVerify for VerificationContext<'a> {
                 .map(|x| Binary(x.into()))
                 .collect(),
             msg.clone().into(),
-            Binary(signature.clone().into()),
+            Binary(signature.into()),
         )
         .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
 

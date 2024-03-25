@@ -125,6 +125,7 @@ UNBONDING
 UNNEST
 Ucli
 Unbonding
+Uncons
 Undelegate
 Unintersect
 Unjail
@@ -193,6 +194,7 @@ beatae
 bech
 behaviour
 benluelo
+bhapi
 bigtestnet
 binaryen
 bindir
@@ -249,6 +251,7 @@ coinbases
 cometbft
 cometbls
 cometbn254
+comettypes
 commitizen
 commitmenttypes
 composability
@@ -832,10 +835,12 @@ typeof
 uatom
 ucli
 ucosm
+uints
 ulidx
 unbond
 unbonded
 unbonding
+uncons
 undelegate
 undelegations
 unergonomic

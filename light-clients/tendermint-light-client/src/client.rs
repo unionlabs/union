@@ -474,7 +474,7 @@ fn check_trusted_header(header: &Header, next_validators_hash: &H256) -> Result<
     if &val_hash != next_validators_hash {
         Err(Error::TrustedValidatorsMismatch(
             val_hash,
-            next_validators_hash.clone(),
+            *next_validators_hash,
         ))
     } else {
         Ok(())
