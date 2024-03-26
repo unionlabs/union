@@ -59,6 +59,8 @@
             pkgs.protoc-gen-go-grpc
             pkgs.gnused
             pkgs.gnostic
+            pkgs.yq
+            pkgs.tree
             cosmos-proto
             gogoproto
             grpc-gateway
@@ -142,6 +144,24 @@
               fi
             done
 
+            specs=$(find $out/openapi -path -prune -o -name '*.yaml' -print0 | xargs -0 -n1 | sort | uniq)
+
+            touch openapi_combined.yaml
+            echo "# Generated with protoc-gen-openapi
+            # https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+            openapi: 3.0.3
+            info:
+                title: ""
+                version: 0.0.1
+            paths: {}
+            components:
+                schemas: {}
+            " > openapi_combined.yaml
+
+            yq 'reduce inputs.paths as $s (.; .paths += $s)' openapi_combined.yaml $specs > openapi_combined.yaml
+            yq 'reduce inputs.components.schemas as $s (.; .components.schemas += $s)' openapi_combined.yaml $specs > $out/openapi_combined.yaml
+
             echo "Patching generated go files to ignore staticcheck warnings"
             find $out -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;
           '';
@@ -150,7 +170,7 @@
       {
         gen-proto = mkCi false (pkgs.writeShellApplication {
           name = "gen-proto";
-          runtimeInputs = (with pkgs; [ buf go gnused tree ]) ++ [ grpc-gateway cosmos-proto gogoproto ];
+          runtimeInputs = (with pkgs; [ buf go gnused ]) ++ [ grpc-gateway cosmos-proto gogoproto ];
           text = ''
             set -eo pipefail
 
@@ -159,14 +179,11 @@
             cd uniond
 
             echo "Generating go code based on ./uniond/proto"
-            echo "tree"
-            tree ${generate-uniond-proto}/openapi/
             echo "Moving patched go sources to correct directories"
-            cp --no-preserve=mode -RL ${generate-uniond-proto}/openapi/* ./openapi
+            cp --no-preserve=mode -RL ${generate-uniond-proto}/openapi_combined.yaml ./docs/static/openapi.yml
             cp --no-preserve=mode -RL ${generate-uniond-proto}/union/x/* ./x/
             cp --no-preserve=mode -RL ${generate-uniond-proto}/union/staking/* ./x/staking
-
-            cp ${generate-uniond-proto}/union/app/ibc/cometbls/02-client/keeper/* ./app/ibc/cometbls/02-client/keeper/
+            cp --no-preserve=mode -RL ${generate-uniond-proto}/union/ibc/* ./ibc/
 
             echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';
