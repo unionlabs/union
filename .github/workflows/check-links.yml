@@ -33,6 +33,9 @@ jobs:
           nix_conf: |
             experimental-features = nix-command flakes
             access-tokens = ${{ secrets.GITHUB_TOKEN }}
+      - uses: nixbuild/nixbuild-action@968e447093b702c0ab3e78d53eea1c38da1b1d0a
+        with:
+          nixbuild_token: ${{secrets.nixbuild_token}}
 
       - run: mkdir dump
       - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `nix eval --raw .#packages.x86_64-linux.site` --extra-experimental-features nix-command
