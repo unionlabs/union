@@ -1,4 +1,8 @@
 { inputs, ... }: {
+  imports = [
+    ./all-tests.nix
+  ];
+
   perSystem = { pkgs, nixpkgs, system, networks, inputs', ... }:
     let
       mkTest =

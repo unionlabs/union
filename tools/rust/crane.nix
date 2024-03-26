@@ -1,5 +1,5 @@
 # cspell:ignore tomls
-{ inputs, ... }: {
+{ inputs, self, ... }: {
   perSystem = { self', pkgs, rust, system, lib, dbg, inputs', mkCi, ... }:
     let
       inherit (inputs) crane;
@@ -35,14 +35,15 @@
         members
       );
 
-
       # root of the repository
-      root = builtins.path { name = "root"; path = ../../.; };
+      # NOTE: We use self.outPath instead of a relative path, because imports + relative paths = you're gonna have a bad time
+      # surprisingly, this still isn't IFD!
+      root = builtins.path { name = "root"; path = self.outPath; };
 
       # read the Cargo.toml from the given crate directory into a nix value.
       crateCargoToml = dir:
         assert builtins.isString dir;
-        lib.trivial.importTOML ../../${dir}/Cargo.toml;
+        lib.trivial.importTOML "${root}/${dir}/Cargo.toml";
 
       # For use in source filtering; ensures that a directory and all of it's contents are included
       # in the new filtered source.
@@ -164,7 +165,7 @@
               assert lib.assertMsg
                 (builtins.isString crateDirFromRoot)
                 "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}";
-              (dbg (getWorkspaceDeps crateDirFromRoot));
+              (getWorkspaceDeps crateDirFromRoot);
 
             workspaceDepsForCrateCargoTomls = readMemberCargoTomls workspaceDepsForCrate;
 
@@ -363,7 +364,7 @@
           name = "cargo-workspace-src";
           srcFilter =
             with { inherit (lib) hasPrefix; };
-            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (dbg (allCraneIncludes ++ allIncludes)));
+            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (allCraneIncludes ++ allIncludes));
         };
     in
     {

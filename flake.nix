@@ -138,6 +138,16 @@
     , wasmd
     , ...
     }:
+    let
+      dbg = value:
+        builtins.trace
+          (
+            if value ? type && value.type == "derivation"
+            then "derivation: ${value}"
+            else inputs.nixpkgs.lib.generators.toPretty { } value
+          )
+          value;
+    in
     flake-parts.lib.mkFlake { inherit inputs; } {
       flake =
         let
@@ -164,53 +174,11 @@
         };
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
-      imports = [
-        ./uniond
-        ./galoisd
-        ./unionvisor
-        ./voyager
-        ./lib/ics23
-        ./hubble
-        ./lib/ethereum-verifier
-        ./lib/tendermint-verifier
-        ./lib/scroll-verifier
-        ./uniond/proto.nix
-        ./typescript-sdk
-        ./app
-        ./site
-        ./indexer
-        ./light-clients/ethereum-light-client
-        ./light-clients/cometbls-light-client
-        ./light-clients/tendermint-light-client
-        ./light-clients/scroll-light-client
-        ./lib/cometbls-groth16-verifier
-        ./cosmwasm
-        ./evm
-        ./tools/rust-proto.nix
-        ./tools/tools.nix
-        ./tools/wasm-light-client.nix
-        ./tools/generate-rust-sol-bindings
-        ./tools/libwasmvm/libwasmvm.nix
-        ./tools/libblst/libblst.nix
-        ./tools/rust/rust.nix
-        ./tools/rust/crane.nix
-        ./tools/tera/tera.nix
-        ./tools/biome/biome.nix
-        ./tools/docgen/docgen.nix
-        ./tools/hasura-cli/hasura-cli.nix
-        ./tools/todo-comment.nix
-        ./tools/iaviewer/iaviewer.nix
+      imports = ((import ./tools/importDirectory.nix) ./.) ++ [
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
-        ./testnet-validator.nix
-        ./e2e/all-tests.nix
-        ./e2e
-        ./fuzz
-        ./faucet
-        ./ucli
-        ./zerg
         treefmt-nix.flakeModule
       ];
 
@@ -229,16 +197,7 @@
         , ...
         }:
         let
-          mkCi = import ./tools/mkCi.nix { inherit pkgs; };
-          mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
-          dbg = value:
-            builtins.trace
-              (
-                if value ? type && value.type == "derivation"
-                then "derivation: ${value}"
-                else pkgs.lib.generators.toPretty { } value
-              )
-              value;
+          mkCi = import ./tools/utils/mkCi.nix { inherit pkgs; };
 
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
@@ -254,13 +213,12 @@
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi;
+              inherit nixpkgs dbg uniondBundleVersions goPkgs unstablePkgs mkCi;
 
-              gitRev =
-                if (builtins.hasAttr "rev" self) then self.rev else "dirty";
+              gitRev = self.rev or "dirty";
 
               writeShellApplicationWithArgs =
-                import ./tools/writeShellApplicationWithArgs.nix {
+                import ./tools/utils/writeShellApplicationWithArgs.nix {
                   inherit pkgs;
                 };
 

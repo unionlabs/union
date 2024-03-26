@@ -1,4 +1,8 @@
 { inputs, ... }: {
+  imports = [
+    ./proto.nix
+  ];
+
   perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, mkCi, ... }:
     let
       CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
