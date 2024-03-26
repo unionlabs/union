@@ -165,31 +165,31 @@
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
-        ./uniond/uniond.nix
-        ./galoisd/galoisd.nix
-        ./unionvisor/unionvisor.nix
-        ./voyager/voyager.nix
-        ./lib/ics23/ics23.nix
-        ./hubble/hubble.nix
-        ./lib/ethereum-verifier/ethereum-verifier.nix
-        ./lib/tendermint-verifier/tendermint-verifier.nix
-        ./lib/scroll-verifier/scroll-verifier.nix
+        ./uniond
+        ./galoisd
+        ./unionvisor
+        ./voyager
+        ./lib/ics23
+        ./hubble
+        ./lib/ethereum-verifier
+        ./lib/tendermint-verifier
+        ./lib/scroll-verifier
         ./uniond/proto.nix
-        ./typescript-sdk/typescript-sdk.nix
-        ./app/app.nix
-        ./site/site.nix
-        ./indexer/indexer.nix
-        ./light-clients/ethereum-light-client/ethereum-light-client.nix
-        ./light-clients/cometbls-light-client/cometbls-light-client.nix
-        ./light-clients/tendermint-light-client/tendermint-light-client.nix
-        ./light-clients/scroll-light-client/scroll-light-client.nix
-        ./lib/cometbls-groth16-verifier/default.nix
-        ./cosmwasm/cosmwasm.nix
-        ./evm/evm.nix
+        ./typescript-sdk
+        ./app
+        ./site
+        ./indexer
+        ./light-clients/ethereum-light-client
+        ./light-clients/cometbls-light-client
+        ./light-clients/tendermint-light-client
+        ./light-clients/scroll-light-client
+        ./lib/cometbls-groth16-verifier
+        ./cosmwasm
+        ./evm
         ./tools/rust-proto.nix
         ./tools/tools.nix
         ./tools/wasm-light-client.nix
-        ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
+        ./tools/generate-rust-sol-bindings
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
         ./tools/rust/rust.nix
@@ -206,11 +206,11 @@
         ./networks/stargaze.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
-        ./e2e/e2e.nix
+        ./e2e
         ./fuzz
-        ./faucet/faucet.nix
-        ./ucli/ucli.nix
-        ./zerg/zerg.nix
+        ./faucet
+        ./ucli
+        ./zerg
         treefmt-nix.flakeModule
       ];
 
