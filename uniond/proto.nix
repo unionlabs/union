@@ -183,7 +183,6 @@
             cp --no-preserve=mode -RL ${generate-uniond-proto}/openapi_combined.yaml ./docs/static/openapi.yml
             cp --no-preserve=mode -RL ${generate-uniond-proto}/union/x/* ./x/
             cp --no-preserve=mode -RL ${generate-uniond-proto}/union/staking/* ./x/staking
-            cp --no-preserve=mode -RL ${generate-uniond-proto}/union/ibc/* ./ibc/
 
             echo "Done! Generated .pb.go files are added to ./uniond/x"
           '';
