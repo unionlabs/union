@@ -452,10 +452,10 @@
               yq
             ] ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
-              biome
               nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server
+              nodePackages."@astrojs/language-server"
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
             ])

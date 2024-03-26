@@ -350,6 +350,7 @@ feegrantmodule
 fetchurl
 fetchzip
 fields
+fileset
 floorlog
 fmtlib
 foldl
