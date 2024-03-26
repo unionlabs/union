@@ -141,26 +141,20 @@ library Ics23 {
         }
 
         Proof.VerifyExistenceError mCode = Proof.verify(
-            existProof,
-            getTendermintProofSpec(),
-            subroot2,
-            path[0],
-            subroot
+            existProof, getTendermintProofSpec(), subroot2, path[0], subroot
         );
 
         if (mCode != Proof.VerifyExistenceError.None) {
             if (mCode == Proof.VerifyExistenceError.KeyNotMatching) {
                 return VerifyChainedNonMembershipError.KeyMismatch;
-            } else if (mCode == Proof.VerifyExistenceError.ValueNotMatching)
-            {
+            } else if (mCode == Proof.VerifyExistenceError.ValueNotMatching) {
                 return VerifyChainedNonMembershipError.ValueMismatch;
             } else if (mCode == Proof.VerifyExistenceError.CheckSpec) {
                 return VerifyChainedNonMembershipError.InvalidSpec;
             } else if (mCode == Proof.VerifyExistenceError.CalculateRoot) {
-                return VerifyChainedNonMembershipError
-                    .InvalidIntermediateProofRoot;
-            } else if (mCode == Proof.VerifyExistenceError.RootNotMatching)
-            {
+                return
+                    VerifyChainedNonMembershipError.InvalidIntermediateProofRoot;
+            } else if (mCode == Proof.VerifyExistenceError.RootNotMatching) {
                 return
                     VerifyChainedNonMembershipError.IntermateProofRootMismatch;
             }
@@ -196,18 +190,14 @@ library Ics23 {
         bytes[] memory path,
         bytes memory value
     ) internal pure returns (VerifyChainedMembershipError) {
-        (bytes memory subroot, Proof.CalculateRootError rCode) = Proof.calculateRoot(proofs[0]);
+        (bytes memory subroot, Proof.CalculateRootError rCode) =
+            Proof.calculateRoot(proofs[0]);
         if (rCode != Proof.CalculateRootError.None) {
             return VerifyChainedMembershipError.InvalidProofRoot;
         }
 
-        Proof.VerifyExistenceError vCode = Proof.verify(
-            proofs[0],
-            getIavlProofSpec(),
-            subroot,
-            path[1],
-            value
-        );
+        Proof.VerifyExistenceError vCode =
+            Proof.verify(proofs[0], getIavlProofSpec(), subroot, path[1], value);
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
         }
@@ -219,17 +209,13 @@ library Ics23 {
         }
 
         vCode = Proof.verify(
-            proofs[1],
-            getTendermintProofSpec(),
-            subroot2,
-            path[0],
-            subroot
+            proofs[1], getTendermintProofSpec(), subroot2, path[0], subroot
         );
 
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
         }
-        
+
         if (keccak256(root) != keccak256(subroot2)) {
             return VerifyChainedMembershipError.RootMismatch;
         } else {
@@ -237,23 +223,21 @@ library Ics23 {
         }
     }
 
-    function convertExistenceError(
-        Proof.VerifyExistenceError vCode
-    ) internal pure returns (VerifyChainedMembershipError) {
+    function convertExistenceError(Proof.VerifyExistenceError vCode)
+        internal
+        pure
+        returns (VerifyChainedMembershipError)
+    {
         if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
             return VerifyChainedMembershipError.KeyMismatch;
-        } else if (vCode == Proof.VerifyExistenceError.ValueNotMatching)
-        {
+        } else if (vCode == Proof.VerifyExistenceError.ValueNotMatching) {
             return VerifyChainedMembershipError.ValueMismatch;
         } else if (vCode == Proof.VerifyExistenceError.CheckSpec) {
             return VerifyChainedMembershipError.InvalidSpec;
         } else if (vCode == Proof.VerifyExistenceError.CalculateRoot) {
-            return VerifyChainedMembershipError
-                .InvalidIntermediateProofRoot;
-        } else if (vCode == Proof.VerifyExistenceError.RootNotMatching)
-        {
-            return
-                VerifyChainedMembershipError.IntermateProofRootMismatch;
+            return VerifyChainedMembershipError.InvalidIntermediateProofRoot;
+        } else if (vCode == Proof.VerifyExistenceError.RootNotMatching) {
+            return VerifyChainedMembershipError.IntermateProofRootMismatch;
         }
 
         revert(
@@ -359,13 +343,15 @@ library Ops {
         if (value.length == 0) return (empty, ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        bytes memory encodedKey = new bytes(ProtoBufRuntime._sz_varint(key.length));
+        bytes memory encodedKey =
+            new bytes(ProtoBufRuntime._sz_varint(key.length));
         ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
         bytes memory pKey = abi.encodePacked(encodedKey, key);
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes memory hashedValue = abi.encodePacked(sha256(value));
-        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(hashedValue.length));
+        bytes memory encodedValue =
+            new bytes(ProtoBufRuntime._sz_varint(hashedValue.length));
         ProtoBufRuntime._encode_varint(hashedValue.length, 32, encodedValue);
         bytes memory pValue = abi.encodePacked(encodedValue, hashedValue);
 

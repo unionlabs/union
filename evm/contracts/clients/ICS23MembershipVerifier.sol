@@ -33,13 +33,17 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
         fullPath[1] = path;
-        (CosmosIcs23V1NonExistenceProof.Data memory nonexist, CosmosIcs23V1ExistenceProof.Data memory exist) =
-            abi.decode(proof, (CosmosIcs23V1NonExistenceProof.Data,CosmosIcs23V1ExistenceProof.Data));
-        return Ics23.verifyChainedNonMembership(
-            nonexist,
-            exist,
-            root,
-            fullPath
-        ) == Ics23.VerifyChainedNonMembershipError.None;
+        (
+            CosmosIcs23V1NonExistenceProof.Data memory nonexist,
+            CosmosIcs23V1ExistenceProof.Data memory exist
+        ) = abi.decode(
+            proof,
+            (
+                CosmosIcs23V1NonExistenceProof.Data,
+                CosmosIcs23V1ExistenceProof.Data
+            )
+        );
+        return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)
+            == Ics23.VerifyChainedNonMembershipError.None;
     }
 }
