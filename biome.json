@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.6.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.6.3/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -24,12 +24,14 @@
       "out",
       "dist",
       "build",
+      ".sqlx",
       "result",
       "vendor",
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
+      "package-lock.json",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -64,12 +66,14 @@
       "out",
       "dist",
       "build",
+      ".sqlx",
       "result",
       "vendor",
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
+      "package-lock.json",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -106,12 +110,14 @@
       "out",
       "dist",
       "build",
+      ".sqlx",
       "result",
       "vendor",
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
+      "package-lock.json",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -193,12 +199,14 @@
       "out",
       "dist",
       "build",
+      ".sqlx",
       "result",
       "vendor",
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
+      "package-lock.json",
       "./lib/poseidon-rs/constants.json"
     ]
   },
