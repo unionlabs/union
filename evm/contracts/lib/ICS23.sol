@@ -88,28 +88,22 @@ library Ics23 {
     }
 
     function verifyChainedNonMembership(
-        IbcCoreCommitmentV1MerkleProof.Data memory merkleProof,
+        CosmosIcs23V1NonExistenceProof.Data memory nonExistProof,
+        CosmosIcs23V1ExistenceProof.Data memory existProof,
         bytes memory root,
         bytes[] memory path
     ) internal pure returns (VerifyChainedNonMembershipError) {
         CosmosIcs23V1ProofSpec.Data memory iavlSpec = getIavlProofSpec();
 
-        CosmosIcs23V1CommitmentProof.Data memory proof = merkleProof.proofs[0];
-        CosmosIcs23V1NonExistenceProof.Data memory nonExistenceProof =
-            proof.nonexist;
-        if (CosmosIcs23V1NonExistenceProof.isNil(nonExistenceProof)) {
-            return VerifyChainedNonMembershipError.NonExistenceProofIsNil;
-        }
-
         (bytes memory subroot, Proof.CalculateRootError rCode) =
-            Proof.calculateRoot(proof);
+            Proof.calculateRoot(nonExistProof);
         if (rCode != Proof.CalculateRootError.None) {
             return VerifyChainedNonMembershipError.InvalidProofRoot;
         }
 
-        bytes memory key = path[path.length - 1];
+        bytes memory key = path[1];
         Proof.VerifyNonExistenceError vCode =
-            Proof.verify(nonExistenceProof, iavlSpec, subroot, key);
+            Proof.verify(nonExistProof, iavlSpec, subroot, key);
 
         // Map non existence error to non membership error
         if (vCode != Proof.VerifyNonExistenceError.None) {
@@ -140,34 +134,45 @@ library Ics23 {
             );
         }
 
-        VerifyChainedMembershipError mCode =
-            verifyChainedMembershipAt(merkleProof, root, path, subroot, 1);
+        bytes memory subroot2;
+        (subroot2, rCode) = Proof.calculateRoot(existProof);
+        if (rCode != Proof.CalculateRootError.None) {
+            return VerifyChainedNonMembershipError.InvalidProofRoot;
+        }
 
-        // Map membership error to non membership error
-        if (mCode != VerifyChainedMembershipError.None) {
-            if (mCode == VerifyChainedMembershipError.ExistenceProofIsNil) {
-                return VerifyChainedNonMembershipError.ExistenceProofIsNil;
-            } else if (mCode == VerifyChainedMembershipError.InvalidProofRoot) {
-                return VerifyChainedNonMembershipError.InvalidProofRoot;
-            } else if (mCode == VerifyChainedMembershipError.KeyMismatch) {
+        Proof.VerifyExistenceError mCode = Proof.verify(
+            existProof,
+            getTendermintProofSpec(),
+            subroot2,
+            path[0],
+            subroot
+        );
+
+        if (mCode != Proof.VerifyExistenceError.None) {
+            if (mCode == Proof.VerifyExistenceError.KeyNotMatching) {
                 return VerifyChainedNonMembershipError.KeyMismatch;
-            } else if (mCode == VerifyChainedMembershipError.ValueMismatch) {
+            } else if (mCode == Proof.VerifyExistenceError.ValueNotMatching)
+            {
                 return VerifyChainedNonMembershipError.ValueMismatch;
-            } else if (mCode == VerifyChainedMembershipError.InvalidSpec) {
+            } else if (mCode == Proof.VerifyExistenceError.CheckSpec) {
                 return VerifyChainedNonMembershipError.InvalidSpec;
-            } else if (
-                mCode
-                    == VerifyChainedMembershipError.InvalidIntermediateProofRoot
-            ) {
+            } else if (mCode == Proof.VerifyExistenceError.CalculateRoot) {
+                return VerifyChainedNonMembershipError
+                    .InvalidIntermediateProofRoot;
+            } else if (mCode == Proof.VerifyExistenceError.RootNotMatching)
+            {
                 return
-                    VerifyChainedNonMembershipError.InvalidIntermediateProofRoot;
-            } else if (mCode == VerifyChainedMembershipError.RootMismatch) {
-                return VerifyChainedNonMembershipError.RootMismatch;
+                    VerifyChainedNonMembershipError.IntermateProofRootMismatch;
             }
-
             revert(
-                "verifyChainedNonMembership: non exhaustive pattern matching on VerifyChainedMembershipError"
+                "verifyChainedNonMembership: non exhaustive pattern matching on VerifyNonExistenceError"
             );
+        }
+
+        if (keccak256(root) != keccak256(subroot2)) {
+            return VerifyChainedNonMembershipError.RootMismatch;
+        } else {
+            return VerifyChainedNonMembershipError.None;
         }
 
         return VerifyChainedNonMembershipError.None;
@@ -186,83 +191,74 @@ library Ics23 {
     }
 
     function verifyChainedMembership(
-        IbcCoreCommitmentV1MerkleProof.Data memory merkleProof,
+        CosmosIcs23V1ExistenceProof.Data[2] memory proofs,
         bytes memory root,
         bytes[] memory path,
         bytes memory value
     ) internal pure returns (VerifyChainedMembershipError) {
-        return verifyChainedMembershipAt(merkleProof, root, path, value, 0);
-    }
-
-    function verifyChainedMembershipAt(
-        IbcCoreCommitmentV1MerkleProof.Data memory merkleProof,
-        bytes memory root,
-        bytes[] memory path,
-        bytes memory value,
-        uint256 index
-    ) internal pure returns (VerifyChainedMembershipError) {
-        CosmosIcs23V1ProofSpec.Data memory iavlSpec = getIavlProofSpec();
-        CosmosIcs23V1ProofSpec.Data memory tendermintSpec =
-            getTendermintProofSpec();
-        bytes memory subroot = value;
-        for (uint256 i = index; i < merkleProof.proofs.length; i++) {
-            CosmosIcs23V1CommitmentProof.Data memory proof =
-                merkleProof.proofs[i];
-
-            CosmosIcs23V1ExistenceProof.Data memory existenceProof = proof.exist;
-
-            if (CosmosIcs23V1ExistenceProof.isNil(existenceProof)) {
-                return VerifyChainedMembershipError.ExistenceProofIsNil;
-            }
-
-            Proof.CalculateRootError rCode;
-            (subroot, rCode) = Proof.calculateRoot(proof);
-            if (rCode != Proof.CalculateRootError.None) {
-                return VerifyChainedMembershipError.InvalidProofRoot;
-            }
-
-            /*
-             * Path is provided as /a/b/c, we need to pop until reaching the root
-             */
-            bytes memory key = path[path.length - i - 1];
-
-            Proof.VerifyExistenceError vCode = Proof.verify(
-                existenceProof,
-                i == 0 ? iavlSpec : tendermintSpec,
-                subroot,
-                key,
-                value
-            );
-
-            if (vCode != Proof.VerifyExistenceError.None) {
-                if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
-                    return VerifyChainedMembershipError.KeyMismatch;
-                } else if (vCode == Proof.VerifyExistenceError.ValueNotMatching)
-                {
-                    return VerifyChainedMembershipError.ValueMismatch;
-                } else if (vCode == Proof.VerifyExistenceError.CheckSpec) {
-                    return VerifyChainedMembershipError.InvalidSpec;
-                } else if (vCode == Proof.VerifyExistenceError.CalculateRoot) {
-                    return VerifyChainedMembershipError
-                        .InvalidIntermediateProofRoot;
-                } else if (vCode == Proof.VerifyExistenceError.RootNotMatching)
-                {
-                    return
-                        VerifyChainedMembershipError.IntermateProofRootMismatch;
-                }
-
-                revert(
-                    "verifyChainedMembership: non exhaustive pattern matching on VerifyExistenceError"
-                );
-            }
-            value = subroot;
+        (bytes memory subroot, Proof.CalculateRootError rCode) = Proof.calculateRoot(proofs[0]);
+        if (rCode != Proof.CalculateRootError.None) {
+            return VerifyChainedMembershipError.InvalidProofRoot;
         }
 
-        if (keccak256(root) != keccak256(subroot)) {
+        Proof.VerifyExistenceError vCode = Proof.verify(
+            proofs[0],
+            getIavlProofSpec(),
+            subroot,
+            path[1],
+            value
+        );
+        if (vCode != Proof.VerifyExistenceError.None) {
+            return convertExistenceError(vCode);
+        }
+
+        bytes memory subroot2;
+        (subroot2, rCode) = Proof.calculateRoot(proofs[1]);
+        if (rCode != Proof.CalculateRootError.None) {
+            return VerifyChainedMembershipError.InvalidProofRoot;
+        }
+
+        vCode = Proof.verify(
+            proofs[1],
+            getTendermintProofSpec(),
+            subroot2,
+            path[0],
+            subroot
+        );
+
+        if (vCode != Proof.VerifyExistenceError.None) {
+            return convertExistenceError(vCode);
+        }
+        
+        if (keccak256(root) != keccak256(subroot2)) {
             return VerifyChainedMembershipError.RootMismatch;
         } else {
             return VerifyChainedMembershipError.None;
         }
+    }
+
+    function convertExistenceError(
+        Proof.VerifyExistenceError vCode
+    ) internal pure returns (VerifyChainedMembershipError) {
+        if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
+            return VerifyChainedMembershipError.KeyMismatch;
+        } else if (vCode == Proof.VerifyExistenceError.ValueNotMatching)
+        {
+            return VerifyChainedMembershipError.ValueMismatch;
+        } else if (vCode == Proof.VerifyExistenceError.CheckSpec) {
+            return VerifyChainedMembershipError.InvalidSpec;
+        } else if (vCode == Proof.VerifyExistenceError.CalculateRoot) {
+            return VerifyChainedMembershipError
+                .InvalidIntermediateProofRoot;
+        } else if (vCode == Proof.VerifyExistenceError.RootNotMatching)
+        {
+            return
+                VerifyChainedMembershipError.IntermateProofRootMismatch;
+        }
+
+        revert(
+            "verifyChainedMembership: non exhaustive pattern matching on VerifyExistenceError"
+        );
     }
 
     enum VerifyMembershipError {
