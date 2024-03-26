@@ -58,6 +58,7 @@
             pkgs.protoc-gen-go
             pkgs.protoc-gen-go-grpc
             pkgs.gnused
+            pkgs.gnostic
             cosmos-proto
             gogoproto
             grpc-gateway
@@ -65,10 +66,13 @@
 
           buildPhase = ''
             mkdir $out
+            mkdir $out/openapi
 
             find ${proto.uniond} -type f -regex ".*proto" | \
             while read -r file; do
+              relpath="$(sed 's#/nix/store/.*-uniond/proto##' <<< $file)"
               echo "Generating protobuf for $file"
+              mkdir -p "$out/openapi$relpath"
               protoc \
                 -I"${proto.uniond}" \
                 -I"${proto.gogoproto}" \
@@ -81,7 +85,61 @@
                 --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \
                 --gocosmos_out $out \
                 --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
+                --openapi_out=$out/openapi$relpath \
                 "$file"
+            done
+
+            mkdir -p cosmos-sdk/proto
+            cp --no-preserve=mode -RL ${proto.cosmossdk}/proto/* cosmos-sdk/proto
+
+            echo "Generating Cosmos SDK OpenAPI"
+            echo "$LINENO"
+            find ${proto.cosmossdk}/proto -type f -regex '.*proto' | \
+            while read -r file; do
+              if grep -q "option go_package" "$file"
+              then
+                relpath="$(sed 's#/nix/store/.*-source/proto##' <<< $file)"
+                prefix="''${relpath%'/'*}"
+                maybe_version=''${prefix##*'/'}
+                if [[ $maybe_version =~ /(v[0-9]+p[0-9]+(alpha|beta)[0-9]*)|(v[0-9]+(alpha|beta)[0-9]*)|(v[0-9]+)|(v[0-9]+test.*)/g ]]
+                then
+                  version="''${prefix##*'/'}"
+                  del_version_trim="''${prefix%'/'*}"
+                  package="''${del_version_trim##*'/'}"
+                  sed 's#option go_package.*= ".*";#option go_package = "cosmossdk.io/api'"$prefix;$package$version"'";#' $file > "./cosmos-sdk/proto$relpath"
+                else
+                  sed 's#option go_package.*= ".*";#option go_package = "cosmossdk.io/api'"$prefix"'";#' $file > "./cosmos-sdk/proto$relpath"
+                fi
+              else # file is missing `go_package`
+                relpath="$(sed 's#/nix/store/.*-source/proto##' <<< $file)"
+                prefix="''${relpath%'/'*}"
+                maybe_version=''${prefix##*'/'}
+                if [[ $maybe_version =~ /(v[0-9]+p[0-9]+(alpha|beta)[0-9]*)|(v[0-9]+(alpha|beta)[0-9]*)|(v[0-9]+)|(v[0-9]+test.*)/g ]]
+                then
+                  version="''${prefix##*'/'}"
+                  del_version_trim="''${prefix%'/'*}"
+                  package="''${del_version_trim##*'/'}"
+                  sed '2 i option go_package = "cosmossdk.io/api'"$prefix;$package$version"'";' $file > "./cosmos-sdk/proto$relpath"
+                else
+                  sed '2 i option go_package = "cosmossdk.io/api'"$prefix"'";' $file > "./cosmos-sdk/proto$relpath"
+                fi
+              fi
+            done
+
+            proto_dirs=$(find $(pwd)/cosmos-sdk/proto/cosmos -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
+            for dir in $proto_dirs; do
+              # generate swagger files (filter query files)
+              query_file=$(find "$dir" -maxdepth 1 \( -name 'query.proto' -o -name 'service.proto' \))
+              if [[ ! -z "$query_file" ]]; then
+                mkdir -p $out/openapi$query_file
+                protoc \
+                -I"${proto.gogoproto}" \
+                -I"${proto.googleapis}" \
+                -I"$(pwd)/cosmos-sdk/proto" \
+                -I"${proto.cosmosproto}/proto" \
+                --openapi_out=$out/openapi$query_file \
+                "$query_file"
+              fi
             done
 
             echo "Patching generated go files to ignore staticcheck warnings"
@@ -92,7 +150,7 @@
       {
         gen-proto = mkCi false (pkgs.writeShellApplication {
           name = "gen-proto";
-          runtimeInputs = (with pkgs; [ buf go gnused ]) ++ [ grpc-gateway cosmos-proto gogoproto ];
+          runtimeInputs = (with pkgs; [ buf go gnused tree ]) ++ [ grpc-gateway cosmos-proto gogoproto ];
           text = ''
             set -eo pipefail
 
@@ -101,9 +159,12 @@
             cd uniond
 
             echo "Generating go code based on ./uniond/proto"
+            echo "tree"
+            tree ${generate-uniond-proto}/openapi/
             echo "Moving patched go sources to correct directories"
-            cp -r ${generate-uniond-proto}/union/x/* ./x/
-            cp -r ${generate-uniond-proto}/union/staking/* ./x/staking
+            cp --no-preserve=mode -RL ${generate-uniond-proto}/openapi/* ./openapi
+            cp --no-preserve=mode -RL ${generate-uniond-proto}/union/x/* ./x/
+            cp --no-preserve=mode -RL ${generate-uniond-proto}/union/staking/* ./x/staking
 
             cp ${generate-uniond-proto}/union/app/ibc/cometbls/02-client/keeper/* ./app/ibc/cometbls/02-client/keeper/
 
