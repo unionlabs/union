@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package union.ics23.v1;
+
+option go_package = "union/ics23";
+
+/**
+ExistenceProof takes a key and a value and a set of steps to perform on it.
+The result of peforming all these steps will provide a "root hash", which can
+be compared to the value in a header.
+
+Since it is computationally infeasible to produce a hash collission for any of the used
+cryptographic hash functions, if someone can provide a series of operations to transform
+a given key and value into a root hash that matches some trusted root, these key and values
+must be in the referenced merkle tree.
+
+The only possible issue is maliablity in LeafOp, such as providing extra prefix data,
+which should be controlled by a spec. Eg. with lengthOp as NONE,
+  prefix = FOO, key = BAR, value = CHOICE
+and
+  prefix = F, key = OOBAR, value = CHOICE
+would produce the same value.
+
+With LengthOp this is tricker but not impossible. Which is why the "leafPrefixEqual" field
+in the ProofSpec is valuable to prevent this mutability. And why all trees should
+length-prefix the data before hashing it.
+*/
+message ExistenceProof {
+  bytes            key   = 1;
+  bytes            value = 2;
+  bytes            leaf_prefix = 3;
+  repeated InnerOp path  = 4;
+}
+
+/*
+NonExistenceProof takes a proof of two neighbors, one 3left of the desired key,
+one right of the desired key. If both proofs are valid AND they are neighbors,
+then there is no valid proof for the given key.
+*/
+message NonExistenceProof {
+  bytes          key   = 1; // TODO: remove this as unnecessary??? we prove a range
+  ExistenceProof left  = 2;
+  ExistenceProof right = 3;
+}
+
+
+/**
+InnerOp represents a merkle-proof step that is not a leaf.
+It represents concatenating two children and hashing them to provide the next result.
+
+The result of the previous step is passed in, so the signature of this op is:
+  innerOp(child) -> output
+
+The result of applying InnerOp should be:
+  output = op.hash(op.prefix || child || op.suffix)
+
+  where the || operator is concatenation of binary data,
+and child is the result of hashing all the tree below this step.
+
+Any special data, like prepending child with the length, or prepending the entire operation with
+some value to differentiate from leaf nodes, should be included in prefix and suffix.
+If either of prefix or suffix is empty, we just treat it as an empty string
+*/
+message InnerOp {
+  bytes  prefix = 1;
+  bytes  suffix = 2;
+}
