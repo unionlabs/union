@@ -12,6 +12,13 @@ pub struct InnerOp {
     pub suffix: Vec<u8>,
 }
 
+#[derive(ethers_contract_derive::EthAbiType, ethers_contract_derive::EthAbiCodec)]
+#[cfg(feature = "ethabi")]
+pub(crate) struct InnerOpEthAbi {
+    pub prefix: ethers::types::Bytes,
+    pub suffix: ethers::types::Bytes,
+}
+
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromInnerOpError {
     #[error("unable to decode cosmos::ics23::InnerOp")]

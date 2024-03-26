@@ -1,5 +1,3 @@
-use alloc::borrow::Cow;
-
 use macros::model;
 
 use crate::{
@@ -12,14 +10,42 @@ use crate::{
 pub struct ExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub key: Cow<'static, [u8]>,
+    pub key: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub value: Cow<'static, [u8]>,
+    pub value: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub leaf_prefix: Cow<'static, [u8]>,
+    pub leaf_prefix: Vec<u8>,
     pub path: Vec<InnerOp>,
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::encoding::Encode<crate::encoding::EthAbi> for ExistenceProof {
+    fn encode(self) -> Vec<u8> {
+        ethers::abi::AbiEncode::encode(ExistenceProofEthAbi {
+            key: self.key.into(),
+            value: self.value.into(),
+            leaf_prefix: self.leaf_prefix.into(),
+            path: self
+                .path
+                .into_iter()
+                .map(|io| crate::union::ics23::inner_op::InnerOpEthAbi {
+                    prefix: io.prefix.into(),
+                    suffix: io.suffix.into(),
+                })
+                .collect(),
+        })
+    }
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
+pub(crate) struct ExistenceProofEthAbi {
+    pub key: ethers::types::Bytes,
+    pub value: ethers::types::Bytes,
+    pub leaf_prefix: ethers::types::Bytes,
+    pub path: Vec<crate::union::ics23::inner_op::InnerOpEthAbi>,
 }
 
 const EXPECTED_PREHASH_KEY: HashOp = HashOp::NoHash;
@@ -74,9 +100,9 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
         )?;
 
         Ok(Self {
-            key: value.key,
-            value: value.value,
-            leaf_prefix: value.leaf.prefix,
+            key: value.key.to_vec(),
+            value: value.value.to_vec(),
+            leaf_prefix: value.leaf.prefix.to_vec(),
             path: value
                 .path
                 .into_iter()
@@ -92,15 +118,15 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
 impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
     fn from(value: ExistenceProof) -> Self {
         Self {
-            key: value.key.to_vec(),
-            value: value.value.to_vec(),
+            key: value.key.clone(),
+            value: value.value.clone(),
             leaf: Some(
                 crate::cosmos::ics23::leaf_op::LeafOp {
                     hash: EXPECTED_HASH,
                     prehash_key: EXPECTED_PREHASH_KEY,
                     prehash_value: EXPECTED_PREHASH_VALUE,
                     length: EXPECTED_LENGTH,
-                    prefix: value.leaf_prefix,
+                    prefix: value.leaf_prefix.into(),
                 }
                 .into(),
             ),
@@ -108,15 +134,3 @@ impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
         }
     }
 }
-
-// #[cfg(feature = "ethabi")]
-// impl From<ExistenceProof> for contracts::glue::CosmosIcs23V1ExistenceProofData {
-//     fn from(value: ExistenceProof) -> Self {
-//         Self {
-//             key: value.key.into(),
-//             value: value.value.into(),
-//             leaf: value.leaf.into(),
-//             path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
-//         }
-//     }
-// }
