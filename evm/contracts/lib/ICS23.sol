@@ -93,8 +93,6 @@ library Ics23 {
         bytes[] memory path
     ) internal pure returns (VerifyChainedNonMembershipError) {
         CosmosIcs23V1ProofSpec.Data memory iavlSpec = getIavlProofSpec();
-        CosmosIcs23V1ProofSpec.Data memory tendermintSpec =
-            getTendermintProofSpec();
 
         CosmosIcs23V1CommitmentProof.Data memory proof = merkleProof.proofs[0];
         CosmosIcs23V1NonExistenceProof.Data memory nonExistenceProof =
@@ -304,16 +302,14 @@ library Ics23 {
         ProofVerify
     }
 
+    // NOTE: We are expecting `proof` to be `NonExistentProof` to avoid handling batch proofs and decompressing
     function verifyNonMembership(
         CosmosIcs23V1ProofSpec.Data memory spec,
         bytes memory commitmentRoot,
         CosmosIcs23V1CommitmentProof.Data memory proof,
         bytes memory key
     ) internal pure returns (VerifyNonMembershipError) {
-        CosmosIcs23V1CommitmentProof.Data memory decoProof =
-            Compress.decompress(proof);
-        CosmosIcs23V1NonExistenceProof.Data memory nonProof =
-            getNonExistProofForKey(decoProof, key);
+        CosmosIcs23V1NonExistenceProof.Data memory nonProof = proof.nonexist;
         //require(CosmosIcs23V1ExistenceProof.isNil(nonProof) == false); // dev: getNonExistProofForKey not available
         if (CosmosIcs23V1NonExistenceProof.isNil(nonProof)) {
             return VerifyNonMembershipError.NonExistenceProofIsNil;
@@ -325,57 +321,6 @@ library Ics23 {
         }
 
         return VerifyNonMembershipError.None;
-    }
-
-    // private
-    function getExistProofForKey(
-        CosmosIcs23V1CommitmentProof.Data memory proof,
-        bytes memory key
-    ) private pure returns (CosmosIcs23V1ExistenceProof.Data memory) {
-        if (CosmosIcs23V1ExistenceProof.isNil(proof.exist) == false) {
-            if (BytesLib.equal(proof.exist.key, key) == true) {
-                return proof.exist;
-            }
-        } else if (CosmosIcs23V1BatchProof.isNil(proof.batch) == false) {
-            for (uint256 i = 0; i < proof.batch.entries.length; i++) {
-                if (
-                    CosmosIcs23V1ExistenceProof.isNil(
-                        proof.batch.entries[i].exist
-                    ) == false
-                        && BytesLib.equal(proof.batch.entries[i].exist.key, key)
-                ) {
-                    return proof.batch.entries[i].exist;
-                }
-            }
-        }
-        return CosmosIcs23V1ExistenceProof.nil();
-    }
-
-    function getNonExistProofForKey(
-        CosmosIcs23V1CommitmentProof.Data memory proof,
-        bytes memory key
-    ) private pure returns (CosmosIcs23V1NonExistenceProof.Data memory) {
-        if (CosmosIcs23V1NonExistenceProof.isNil(proof.nonexist) == false) {
-            if (
-                isLeft(proof.nonexist.left, key)
-                    && isRight(proof.nonexist.right, key)
-            ) {
-                return proof.nonexist;
-            }
-        } else if (CosmosIcs23V1BatchProof.isNil(proof.batch) == false) {
-            for (uint256 i = 0; i < proof.batch.entries.length; i++) {
-                if (
-                    CosmosIcs23V1NonExistenceProof.isNil(
-                        proof.batch.entries[i].nonexist
-                    ) == false
-                        && isLeft(proof.batch.entries[i].nonexist.left, key)
-                        && isRight(proof.batch.entries[i].nonexist.right, key)
-                ) {
-                    return proof.batch.entries[i].nonexist;
-                }
-            }
-        }
-        return CosmosIcs23V1NonExistenceProof.nil();
     }
 
     function isLeft(
@@ -397,96 +342,13 @@ library Ics23 {
     }
 }
 
-library Compress {
-    function decompress(CosmosIcs23V1CommitmentProof.Data memory proof)
-        internal
-        pure
-        returns (CosmosIcs23V1CommitmentProof.Data memory)
-    {
-        //CosmosIcs23V1CompressedBatchProof.isNil() does not work
-        if (CosmosIcs23V1CompressedBatchProof._empty(proof.compressed) == true)
-        {
-            return proof;
-        }
-        return CosmosIcs23V1CommitmentProof.Data({
-            exist: CosmosIcs23V1ExistenceProof.nil(),
-            nonexist: CosmosIcs23V1NonExistenceProof.nil(),
-            batch: CosmosIcs23V1BatchProof.Data({
-                entries: decompress(proof.compressed)
-            }),
-            compressed: CosmosIcs23V1CompressedBatchProof.nil()
-        });
-    }
-
-    // private
-    function decompress(CosmosIcs23V1CompressedBatchProof.Data memory proof)
-        private
-        pure
-        returns (CosmosIcs23V1BatchEntry.Data[] memory)
-    {
-        CosmosIcs23V1BatchEntry.Data[] memory entries =
-            new CosmosIcs23V1BatchEntry.Data[](proof.entries.length);
-        for (uint256 i = 0; i < proof.entries.length; i++) {
-            entries[i] = decompressEntry(proof.entries[i], proof.lookup_inners);
-        }
-        return entries;
-    }
-
-    function decompressEntry(
-        CosmosIcs23V1CompressedBatchEntry.Data memory entry,
-        CosmosIcs23V1InnerOp.Data[] memory lookup
-    ) private pure returns (CosmosIcs23V1BatchEntry.Data memory) {
-        //CosmosIcs23V1ExistenceProof.isNil does not work
-        if (CosmosIcs23V1CompressedExistenceProof._empty(entry.exist) == false)
-        {
-            return CosmosIcs23V1BatchEntry.Data({
-                exist: decompressExist(entry.exist, lookup),
-                nonexist: CosmosIcs23V1NonExistenceProof.nil()
-            });
-        }
-        return CosmosIcs23V1BatchEntry.Data({
-            exist: CosmosIcs23V1ExistenceProof.nil(),
-            nonexist: CosmosIcs23V1NonExistenceProof.Data({
-                key: entry.nonexist.key,
-                left: decompressExist(entry.nonexist.left, lookup),
-                right: decompressExist(entry.nonexist.right, lookup)
-            })
-        });
-    }
-
-    function decompressExist(
-        CosmosIcs23V1CompressedExistenceProof.Data memory proof,
-        CosmosIcs23V1InnerOp.Data[] memory lookup
-    ) private pure returns (CosmosIcs23V1ExistenceProof.Data memory) {
-        if (CosmosIcs23V1CompressedExistenceProof._empty(proof)) {
-            return CosmosIcs23V1ExistenceProof.nil();
-        }
-        CosmosIcs23V1ExistenceProof.Data memory decoProof =
-        CosmosIcs23V1ExistenceProof.Data({
-            key: proof.key,
-            value: proof.value,
-            leaf: proof.leaf,
-            path: new CosmosIcs23V1InnerOp.Data[](proof.path.length)
-        });
-        for (uint256 i = 0; i < proof.path.length; i++) {
-            require(proof.path[i] >= 0); // dev: proof.path < 0
-            uint256 step = SafeCast.toUint256(proof.path[i]);
-            require(step < lookup.length); // dev: step >= lookup.length
-            decoProof.path[i] = lookup[step];
-        }
-        return decoProof;
-    }
-}
-
 library Ops {
     bytes constant empty = new bytes(0);
 
     enum ApplyLeafOpError {
         None,
         KeyLength,
-        ValueLength,
-        DoHash,
-        PrepareLeafData
+        ValueLength
     }
 
     // LeafOp operations
@@ -516,36 +378,8 @@ library Ops {
         return (hashed, ApplyLeafOpError.None);
     }
 
-    // enum PrepareLeafDataError {
-    //     None,
-    //     DoHash,
-    //     DoLengthOp
-    // }
-
-    // // preapare leaf data for encoding
-    // function prepareLeafData(
-    //     CosmosIcs23V1GlobalEnums.HashOp hashOp,
-    //     CosmosIcs23V1GlobalEnums.LengthOp lenOp,
-    //     bytes memory data
-    // ) internal pure returns (bytes memory, PrepareLeafDataError) {
-    //     (bytes memory hased, DoHashError hCode) = doHashOrNoop(hashOp, data);
-    //     if (hCode != DoHashError.None) {
-    //         return (empty, PrepareLeafDataError.DoHash);
-    //     }
-    //     (bytes memory res, DoLengthOpError lCode) = doLengthOp(lenOp, hased);
-    //     if (lCode != DoLengthOpError.None) {
-    //         return (empty, PrepareLeafDataError.DoLengthOp);
-    //     }
-
-    //     return (res, PrepareLeafDataError.None);
-    // }
-
     enum CheckAgainstSpecError {
         None,
-        Hash,
-        PreHashKey,
-        PreHashValue,
-        Length,
         MinPrefixLength,
         HasPrefix,
         MaxPrefixLength
@@ -555,23 +389,7 @@ library Ops {
         CosmosIcs23V1LeafOp.Data memory leafOp,
         CosmosIcs23V1ProofSpec.Data memory spec
     ) internal pure returns (CheckAgainstSpecError) {
-        // TODO(aeryz): since we only support iavl and tm proof specs, we could consider removing the commented out fields
-        //require (leafOp.hash == spec.leaf_spec.hash); // dev: checkAgainstSpec for LeafOp - Unexpected HashOp
-        // if (leafOp.hash != spec.leaf_spec.hash) {
-        //     return CheckAgainstSpecError.Hash;
-        // }
-        // //require(leafOp.prehash_key == spec.leaf_spec.prehash_key); // dev: checkAgainstSpec for LeafOp - Unexpected PrehashKey
-        // if (leafOp.prehash_key != spec.leaf_spec.prehash_key) {
-        //     return CheckAgainstSpecError.PreHashKey;
-        // }
-        // //require(leafOp.prehash_value == spec.leaf_spec.prehash_value); // dev: checkAgainstSpec for LeafOp - Unexpected PrehashValue");
-        // if (leafOp.prehash_value != spec.leaf_spec.prehash_value) {
-        //     return CheckAgainstSpecError.PreHashValue;
-        // }
-        // //require(leafOp.length == spec.leaf_spec.length); // dev: checkAgainstSpec for LeafOp - Unexpected lengthOp
-        // if (leafOp.length != spec.leaf_spec.length) {
-        //     return CheckAgainstSpecError.Length;
-        // }
+        // We don't check whether spec is compatible with the proof since only allow SHA256 and VAR_PROTO
         bool hasprefix = hasPrefix(leafOp.prefix, spec.leaf_spec.prefix);
         //require(hasprefix); // dev: checkAgainstSpec for LeafOp - Leaf Prefix doesn't start with
         if (hasprefix == false) return CheckAgainstSpecError.HasPrefix;
@@ -605,11 +423,8 @@ library Ops {
         CosmosIcs23V1InnerOp.Data memory innerOp,
         CosmosIcs23V1ProofSpec.Data memory spec
     ) internal pure returns (CheckAgainstSpecError) {
-        // TODO(aeryz): since we only support iavl and tm proof specs, we could consider removing the commented out fields
+        // we don't check whether `hash` matches since we use `SHA256` anyways
         //require(innerOp.hash == spec.inner_spec.hash); // dev: checkAgainstSpec for InnerOp - Unexpected HashOp
-        // if (innerOp.hash != spec.inner_spec.hash) {
-        //     return CheckAgainstSpecError.Hash;
-        // }
         uint256 minPrefixLength =
             SafeCast.toUint256(spec.inner_spec.min_prefix_length);
         //require(innerOp.prefix.length >= minPrefixLength); // dev: InnerOp prefix too short;
@@ -631,52 +446,6 @@ library Ops {
         }
 
         return CheckAgainstSpecError.None;
-    }
-
-    function doHashOrNoop(
-        CosmosIcs23V1GlobalEnums.HashOp hashOp,
-        bytes memory preImage
-    ) internal pure returns (bytes memory, DoHashError) {
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.NO_HASH) {
-            return (preImage, DoHashError.None);
-        }
-        return doHash(hashOp, preImage);
-    }
-
-    enum DoHashError {
-        None,
-        Sha512,
-        Sha512_256,
-        Unsupported
-    }
-
-    function doHash(
-        CosmosIcs23V1GlobalEnums.HashOp hashOp,
-        bytes memory preImage
-    ) internal pure returns (bytes memory, DoHashError) {
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.SHA256) {
-            return (abi.encodePacked(sha256(preImage)), DoHashError.None);
-        }
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.KECCAK) {
-            return (abi.encodePacked(keccak256(preImage)), DoHashError.None);
-        }
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.RIPEMD160) {
-            return (abi.encodePacked(ripemd160(preImage)), DoHashError.None);
-        }
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.BITCOIN) {
-            bytes memory tmp = abi.encodePacked(sha256(preImage));
-            return (abi.encodePacked(ripemd160(tmp)), DoHashError.None);
-        }
-        //require(hashOp != CosmosIcs23V1GlobalEnums.HashOp.Sha512); // dev: SHA512 not supported
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.SHA512) {
-            return (empty, DoHashError.Sha512);
-        }
-        //require(hashOp != CosmosIcs23V1GlobalEnums.HashOp.Sha512_256); // dev: SHA512_256 not supported
-        if (hashOp == CosmosIcs23V1GlobalEnums.HashOp.SHA512_256) {
-            return (empty, DoHashError.Sha512_256);
-        }
-        //revert(); // dev: Unsupported hashOp
-        return (empty, DoHashError.Unsupported);
     }
 
     function compare(
@@ -706,51 +475,6 @@ library Ops {
         Require32DataLength,
         Require64DataLength,
         Unsupported
-    }
-
-    function doLengthOp(
-        CosmosIcs23V1GlobalEnums.LengthOp lenOp,
-        bytes memory data
-    ) private pure returns (bytes memory, DoLengthOpError) {
-        if (lenOp == CosmosIcs23V1GlobalEnums.LengthOp.NO_PREFIX) {
-            return (data, DoLengthOpError.None);
-        }
-        if (lenOp == CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO) {
-            uint256 sz = ProtoBufRuntime._sz_varint(data.length);
-            bytes memory encoded = new bytes(sz);
-            ProtoBufRuntime._encode_varint(data.length, 32, encoded);
-            return (abi.encodePacked(encoded, data), DoLengthOpError.None);
-        }
-        if (lenOp == CosmosIcs23V1GlobalEnums.LengthOp.REQUIRE_32_BYTES) {
-            //require(data.length == 32); // dev: data.length != 32
-            if (data.length != 32) {
-                return (empty, DoLengthOpError.Require32DataLength);
-            }
-
-            return (data, DoLengthOpError.None);
-        }
-        if (lenOp == CosmosIcs23V1GlobalEnums.LengthOp.REQUIRE_64_BYTES) {
-            //require(data.length == 64); // dev: data.length != 64"
-            if (data.length != 64) {
-                return (empty, DoLengthOpError.Require64DataLength);
-            }
-
-            return (data, DoLengthOpError.None);
-        }
-        if (lenOp == CosmosIcs23V1GlobalEnums.LengthOp.FIXED32_LITTLE) {
-            uint32 size = SafeCast.toUint32(data.length);
-            // maybe some assembly here to make it faster
-            bytes4 sizeB = bytes4(size);
-            bytes memory littleE = new bytes(4);
-            //unfolding for loop is cheaper
-            littleE[0] = sizeB[3];
-            littleE[1] = sizeB[2];
-            littleE[2] = sizeB[1];
-            littleE[3] = sizeB[0];
-            return (abi.encodePacked(littleE, data), DoLengthOpError.None);
-        }
-        //revert(); // dev: Unsupported lenOp
-        return (empty, DoLengthOpError.Unsupported);
     }
 
     function hasPrefix(
@@ -814,8 +538,6 @@ library Proof {
         LeafNil,
         LeafOp,
         PathOp,
-        BatchEntriesLength,
-        BatchEntryEmpty,
         EmptyProof
     }
 
