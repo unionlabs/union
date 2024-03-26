@@ -13,8 +13,9 @@ pub struct InnerOp {
     pub suffix: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromInnerOpError {
+    #[error("error decoding hash")]
     Hash(UnknownEnumVariant<i32>),
 }
 

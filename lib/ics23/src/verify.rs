@@ -376,17 +376,17 @@ fn verify_existence_proof(
     existence_proof::check_against_spec(existence_proof, spec)
         .map_err(VerifyError::SpecMismatch)?;
 
-    if key != existence_proof.key {
+    if key != &existence_proof.key[..] {
         return Err(VerifyError::KeyAndExistenceProofKeyMismatch {
             key: key.into(),
-            existence_proof_key: existence_proof.key.clone(),
+            existence_proof_key: existence_proof.key.to_vec(),
         });
     }
 
-    if value != existence_proof.value {
+    if value != &existence_proof.value[..] {
         return Err(VerifyError::ValueAndExistenceProofValueMismatch {
             value: value.into(),
-            existence_proof_value: existence_proof.value.clone(),
+            existence_proof_value: existence_proof.value.to_vec(),
         });
     }
 

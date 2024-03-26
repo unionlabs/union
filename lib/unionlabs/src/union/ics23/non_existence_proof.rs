@@ -5,7 +5,7 @@ use crate::{
     union::ics23::existence_proof::{ExistenceProof, TryFromExistenceProofError},
 };
 
-#[model(proto(raw(protos::union::ics23::v1::NonExistenceProof), into, from))]
+#[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
 pub struct NonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -21,10 +21,10 @@ pub enum TryFromNonExistenceProofError {
     Right(TryFromExistenceProofError),
 }
 
-impl TryFrom<protos::union::ics23::v1::NonExistenceProof> for NonExistenceProof {
+impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof {
     type Error = TryFromNonExistenceProofError;
 
-    fn try_from(value: protos::union::ics23::v1::NonExistenceProof) -> Result<Self, Self::Error> {
+    fn try_from(value: protos::cosmos::ics23::v1::NonExistenceProof) -> Result<Self, Self::Error> {
         Ok(Self {
             key: value.key,
             left: value
@@ -52,7 +52,7 @@ impl TryFrom<protos::union::ics23::v1::NonExistenceProof> for NonExistenceProof 
 //     }
 // }
 
-impl From<NonExistenceProof> for protos::union::ics23::v1::NonExistenceProof {
+impl From<NonExistenceProof> for protos::cosmos::ics23::v1::NonExistenceProof {
     fn from(value: NonExistenceProof) -> Self {
         Self {
             key: value.key,

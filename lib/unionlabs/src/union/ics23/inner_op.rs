@@ -1,8 +1,8 @@
 use macros::model;
 
-use crate::errors::UnknownEnumVariant;
+use crate::{cosmos::ics23::hash_op::HashOp, ensure};
 
-#[model(proto(raw(protos::union::ics23::v1::InnerOp), into, from))]
+#[model(proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from))]
 pub struct InnerOp {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -12,8 +12,25 @@ pub struct InnerOp {
     pub suffix: Vec<u8>,
 }
 
-impl From<protos::union::ics23::v1::InnerOp> for InnerOp {
-    fn from(value: protos::union::ics23::v1::InnerOp) -> Self {
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum TryFromInnerOpError {
+    #[error("unable to decode cosmos::ics23::InnerOp")]
+    Cosmos(#[from] crate::cosmos::ics23::inner_op::TryFromInnerOpError),
+    #[error("hashop must be Sha256, found {0}")]
+    InvalidHash(HashOp),
+}
+
+impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
+    type Error = TryFromInnerOpError;
+
+    fn try_from(value: protos::cosmos::ics23::v1::InnerOp) -> Result<Self, TryFromInnerOpError> {
+        let value = crate::cosmos::ics23::inner_op::InnerOp::try_from(value)?;
+
+        ensure(
+            value.hash == HashOp::Sha256,
+            TryFromInnerOpError::InvalidHash(value.hash),
+        )?;
+
         Ok(Self {
             prefix: value.prefix,
             suffix: value.suffix,
@@ -21,12 +38,14 @@ impl From<protos::union::ics23::v1::InnerOp> for InnerOp {
     }
 }
 
-impl From<InnerOp> for protos::union::ics23::v1::InnerOp {
+impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
     fn from(value: InnerOp) -> Self {
-        Self {
+        crate::cosmos::ics23::inner_op::InnerOp {
+            hash: HashOp::Sha256,
             prefix: value.prefix,
             suffix: value.suffix,
         }
+        .into()
     }
 }
 
