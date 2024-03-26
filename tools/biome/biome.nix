@@ -4,16 +4,17 @@
     let
       throwBadSystem = throw "libwasmvm cannot be built on system `${system}`";
 
-      CARGO_BUILD_TARGET = if system == "aarch64-linux" then
-        "aarch64-unknown-linux-musl"
-      else if system == "x86_64-linux" then
-        "x86_64-unknown-linux-musl"
-      else if system == "aarch64-darwin" then
-        "aarch64-apple-darwin"
-      else if system == "x86_64-darwin" then
-        "x86_64-apple-darwin"
-      else
-        throwBadSystem;
+      CARGO_BUILD_TARGET =
+        if system == "aarch64-linux" then
+          "aarch64-unknown-linux-musl"
+        else if system == "x86_64-linux" then
+          "x86_64-unknown-linux-musl"
+        else if system == "aarch64-darwin" then
+          "aarch64-apple-darwin"
+        else if system == "x86_64-darwin" then
+          "x86_64-apple-darwin"
+        else
+          throwBadSystem;
 
       rustToolchain = rust.mkNightly { target = CARGO_BUILD_TARGET; };
 
@@ -40,27 +41,30 @@
 
         meta.mainProgram = "biome";
       };
-    in {
+    in
+    {
       _module.args.biome = biome;
       checks.biome-lint = mkCi (system == "x86_64") (pkgs.stdenv.mkDerivation {
         name = "biome-lint";
-        src = nix-filter {
+        src = with unstablePkgs.lib.fileset; toSource {
           root = ../../.;
-          include = [ nix-filter.isDirectory ]
-            ++ (builtins.map nix-filter.matchExt [
-              "js"
-              "ts"
-              "cjs"
-              "mjs"
-              "jsx"
-              "tsx"
-              "d.ts"
-              "css"
-              "astro"
-              "svelte"
-              "json"
-              "jsonc"
-            ]);
+          fileset = intersection
+            (difference ../../. (unions [ ../../galoisd/vendor ../../uniond/vendor ../../app/src/generated ]))
+            (fileFilter
+              (file: (file.name != "package-lock.json") && (builtins.any file.hasExt [
+                "js"
+                "ts"
+                "cjs"
+                "mjs"
+                "jsx"
+                "tsx"
+                "d.ts"
+                "css"
+                "astro"
+                "svelte"
+                "json"
+                "jsonc"
+              ])) ../../.);
         };
         buildInputs = [ biome pkgs.tree ];
         doCheck = true;
