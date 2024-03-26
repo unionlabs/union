@@ -21,7 +21,6 @@ jobs:
     permissions:
       contents: read
       issues: write
-    if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
         with:
