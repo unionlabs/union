@@ -82,12 +82,10 @@ library Ics23 {
             return VerifyChainedNonMembershipError.InvalidProofRoot;
         }
 
-        Proof.VerifyExistenceError mCode = Proof.verify(
-            existProof,
-            UnionIcs23.getTendermintProofSpec(),
-            subroot2,
-            path[0],
-            subroot
+        // We don't want the above root calculation to be done again. Since we calculated it, we also don't
+        // need to check it against anything.
+        Proof.VerifyExistenceError mCode = Proof.verifyNoRootCheck(
+            existProof, UnionIcs23.getTendermintProofSpec(), path[0], subroot
         );
 
         if (mCode != Proof.VerifyExistenceError.None) {
@@ -142,8 +140,10 @@ library Ics23 {
             return VerifyChainedMembershipError.InvalidProofRoot;
         }
 
-        Proof.VerifyExistenceError vCode = Proof.verify(
-            proofs[0], UnionIcs23.getIavlProofSpec(), subroot, path[1], value
+        // We don't want the above root calculation to be done again. Since we calculated it, we also don't
+        // need to check it against anything.
+        Proof.VerifyExistenceError vCode = Proof.verifyNoRootCheck(
+            proofs[0], UnionIcs23.getIavlProofSpec(), path[1], value
         );
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
@@ -155,12 +155,8 @@ library Ics23 {
             return VerifyChainedMembershipError.InvalidProofRoot;
         }
 
-        vCode = Proof.verify(
-            proofs[1],
-            UnionIcs23.getTendermintProofSpec(),
-            subroot2,
-            path[0],
-            subroot
+        vCode = Proof.verifyNoRootCheck(
+            proofs[1], UnionIcs23.getTendermintProofSpec(), path[0], subroot
         );
 
         if (vCode != Proof.VerifyExistenceError.None) {
@@ -234,7 +230,6 @@ library Ops {
         if (value.length == 0) return (empty, ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        // TODO(aeryz): do a custom implementation of this
         bytes memory encodedKey =
             new bytes(ProtoBufRuntime._sz_varint(key.length));
         ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
@@ -242,7 +237,6 @@ library Ops {
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes memory hashedValue = abi.encodePacked(sha256(value));
-        // TODO(aeryz): do a custom implementation of this
         bytes memory encodedValue =
             new bytes(ProtoBufRuntime._sz_varint(hashedValue.length));
         ProtoBufRuntime._encode_varint(hashedValue.length, 32, encodedValue);
@@ -279,30 +273,7 @@ library Ops {
         // inner_spec.hash is always SHA256 in the tm/iavl specs
         return (abi.encodePacked(sha256(preImage)), ApplyInnerOpError.None);
     }
-
-    function checkAgainstSpec(
-        UnionIcs23.InnerOp memory innerOp,
-        UnionIcs23.ProofSpec memory spec
-    ) internal pure returns (CheckAgainstSpecError) {
-        // we don't check whether `hash` matches since we use `SHA256` anyways
-        //require(innerOp.hash == spec.inner_spec.hash); // dev: checkAgainstSpec for InnerOp - Unexpected HashOp
-        //require(innerOp.prefix.length >= minPrefixLength); // dev: InnerOp prefix too short;
-        if (innerOp.prefix.length < spec.minPrefixLength) {
-            return CheckAgainstSpecError.MinPrefixLength;
-        }
-        // spec prefix is always 0x00
-        if (innerOp.prefix[0] == 0) {
-            return CheckAgainstSpecError.HasPrefix;
-        }
-        //require(hasprefix == false); // dev: Inner Prefix starts with wrong value
-        //require(innerOp.prefix.length <= spec.maxPrefixLength + spec.childSize); // dev: InnerOp prefix too long
-        if (innerOp.prefix.length > spec.maxPrefixLength + spec.childSize) {
-            return CheckAgainstSpecError.MaxPrefixLength;
-        }
-
-        return CheckAgainstSpecError.None;
-    }
-
+    
     function compare(
         bytes memory a,
         bytes memory b
@@ -335,6 +306,26 @@ library Proof {
         CheckSpec,
         CalculateRoot,
         RootNotMatching
+    }
+
+    function verifyNoRootCheck(
+        UnionIcs23.ExistenceProof memory proof,
+        UnionIcs23.ProofSpec memory spec,
+        bytes memory key,
+        bytes memory value
+    ) internal pure returns (VerifyExistenceError) {
+        //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
+        bool keyMatch = BytesLib.equal(proof.key, key);
+        if (keyMatch == false) return VerifyExistenceError.KeyNotMatching;
+        //require(BytesLib.equal(proof.value, value)); // dev: Provided value doesn't match proof
+        bool valueMatch = BytesLib.equal(proof.value, value);
+        if (valueMatch == false) return VerifyExistenceError.ValueNotMatching;
+        CheckAgainstSpecError cCode = checkAgainstSpec(proof, spec);
+        if (cCode != CheckAgainstSpecError.None) {
+            return VerifyExistenceError.CheckSpec;
+        }
+
+        return VerifyExistenceError.None;
     }
 
     // ExistenceProof
@@ -426,13 +417,18 @@ library Proof {
         }
         // we don't do any checks regarding min_depth, max_depth since they both are 0 in both specs
 
-        Ops.CheckAgainstSpecError cCode = Ops.CheckAgainstSpecError.None;
         for (uint256 i = 0; i < proof.path.length; i++) {
-            cCode = Ops.checkAgainstSpec(proof.path[i], spec);
-            if (cCode != Ops.CheckAgainstSpecError.None) {
+            UnionIcs23.InnerOp memory innerOp = proof.path[i];
+
+            if (
+                innerOp.prefix.length < spec.minPrefixLength
+                    || innerOp.prefix[0] == 0
+                    || innerOp.prefix.length > spec.maxPrefixLength + spec.childSize
+            ) {
                 return CheckAgainstSpecError.OpsCheckAgainstSpec;
             }
         }
+        return CheckAgainstSpecError.None;
     }
 
     enum VerifyNonExistenceError {
