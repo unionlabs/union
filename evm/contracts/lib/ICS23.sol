@@ -9,64 +9,6 @@ import "../proto/cosmos/ics23/v1/proofs.sol";
 import "./UnionICS23.sol";
 
 library Ics23 {
-    function getIavlProofSpec()
-        internal
-        pure
-        returns (CosmosIcs23V1ProofSpec.Data memory iavlProofSpec)
-    {
-        int32[] memory childOrder = new int32[](2);
-        childOrder[0] = 0;
-        childOrder[1] = 1;
-        iavlProofSpec = CosmosIcs23V1ProofSpec.Data({
-            leaf_spec: CosmosIcs23V1LeafOp.Data({
-                prefix: hex"00",
-                prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
-                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-                prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-                length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
-            }),
-            inner_spec: CosmosIcs23V1InnerSpec.Data({
-                child_order: childOrder,
-                child_size: 33,
-                min_prefix_length: 4,
-                max_prefix_length: 12,
-                empty_child: abi.encodePacked(),
-                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
-            }),
-            min_depth: 0,
-            max_depth: 0
-        });
-    }
-
-    function getTendermintProofSpec()
-        internal
-        pure
-        returns (CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec)
-    {
-        int32[] memory childOrder = new int32[](2);
-        childOrder[0] = 0;
-        childOrder[1] = 1;
-        tendermintProofSpec = CosmosIcs23V1ProofSpec.Data({
-            leaf_spec: CosmosIcs23V1LeafOp.Data({
-                prefix: hex"00",
-                prehash_key: CosmosIcs23V1GlobalEnums.HashOp.NO_HASH,
-                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-                prehash_value: CosmosIcs23V1GlobalEnums.HashOp.SHA256,
-                length: CosmosIcs23V1GlobalEnums.LengthOp.VAR_PROTO
-            }),
-            inner_spec: CosmosIcs23V1InnerSpec.Data({
-                child_order: childOrder,
-                child_size: 32,
-                min_prefix_length: 1,
-                max_prefix_length: 1,
-                empty_child: abi.encodePacked(),
-                hash: CosmosIcs23V1GlobalEnums.HashOp.SHA256
-            }),
-            min_depth: 0,
-            max_depth: 0
-        });
-    }
-
     enum VerifyChainedNonMembershipError {
         None,
         NonExistenceProofIsNil,
@@ -253,64 +195,6 @@ library Ics23 {
             "verifyChainedMembership: non exhaustive pattern matching on VerifyExistenceError"
         );
     }
-
-    enum VerifyMembershipError {
-        None,
-        ExistenceProofIsNil,
-        ProofVerify
-    }
-
-    // verifyMembership, throws an exception in case anything goes wrong
-    // NOTE: We are expecting `proof` to be `ExistentProof` only to avoid handling batch proofs
-    // and doing decompressing.
-    // function verifyMembership(
-    //     CosmosIcs23V1ProofSpec.Data memory spec,
-    //     bytes memory commitmentRoot,
-    //     CosmosIcs23V1CommitmentProof.Data memory proof,
-    //     bytes memory key,
-    //     bytes memory value
-    // ) internal pure returns (VerifyMembershipError) {
-    //     CosmosIcs23V1ExistenceProof.Data memory exiProof = proof.exist;
-    //     //require(CosmosIcs23V1ExistenceProof.isNil(exiProof) == false); // dev: getExistProofForKey not available
-    //     if (CosmosIcs23V1ExistenceProof.isNil(exiProof)) {
-    //         return VerifyMembershipError.ExistenceProofIsNil;
-    //     }
-    //     Proof.VerifyExistenceError vCode =
-    //         Proof.verify(exiProof, spec, commitmentRoot, key, value);
-    //     if (vCode != Proof.VerifyExistenceError.None) {
-    //         return VerifyMembershipError.ProofVerify;
-    //     }
-
-    //     return VerifyMembershipError.None;
-    // }
-
-    /* enum VerifyNonMembershipError { */
-    enum VerifyNonMembershipError {
-        None,
-        NonExistenceProofIsNil,
-        ProofVerify
-    }
-
-    // NOTE: We are expecting `proof` to be `NonExistentProof` to avoid handling batch proofs and decompressing
-    // function verifyNonMembership(
-    //     CosmosIcs23V1ProofSpec.Data memory spec,
-    //     bytes memory commitmentRoot,
-    //     CosmosIcs23V1CommitmentProof.Data memory proof,
-    //     bytes memory key
-    // ) internal pure returns (VerifyNonMembershipError) {
-    //     CosmosIcs23V1NonExistenceProof.Data memory nonProof = proof.nonexist;
-    //     //require(CosmosIcs23V1ExistenceProof.isNil(nonProof) == false); // dev: getNonExistProofForKey not available
-    //     if (CosmosIcs23V1NonExistenceProof.isNil(nonProof)) {
-    //         return VerifyNonMembershipError.NonExistenceProofIsNil;
-    //     }
-    //     Proof.VerifyNonExistenceError vCode =
-    //         Proof.verify(nonProof, spec, commitmentRoot, key);
-    //     if (vCode != Proof.VerifyNonExistenceError.None) {
-    //         return VerifyNonMembershipError.ProofVerify;
-    //     }
-
-    //     return VerifyNonMembershipError.None;
-    // }
 
     function isLeft(
         UnionIcs23.ExistenceProof memory left,
