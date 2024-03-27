@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package union.ibc.lightclients.cometbls.v1;
 
+option go_package = "union/ibc/lightclients/cometbls";
 import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/core/commitment/v1/commitment.proto";

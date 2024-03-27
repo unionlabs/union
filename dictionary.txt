@@ -517,6 +517,7 @@ logtostderr
 lspec
 mapstructure
 mathjax
+maxdepth
 maxdome
 maxp
 maxpeers
@@ -674,6 +675,7 @@ regclass
 regen
 rehype
 rekt
+relpath
 repellendus
 repr
 reqwest
