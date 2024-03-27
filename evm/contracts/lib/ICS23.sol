@@ -85,7 +85,10 @@ library Ics23 {
         // We don't want the above root calculation to be done again. Since we calculated it, we also don't
         // need to check it against anything.
         Proof.VerifyExistenceError mCode = Proof.verifyNoRootCheck(
-            existProof, UnionIcs23.getTendermintProofSpec(), path[0], abi.encodePacked(subroot)
+            existProof,
+            UnionIcs23.getTendermintProofSpec(),
+            path[0],
+            abi.encodePacked(subroot)
         );
 
         if (mCode != Proof.VerifyExistenceError.None) {
@@ -151,7 +154,11 @@ library Ics23 {
 
         // This will check whether the calculated root of `proofs[1]` matches the `root`
         vCode = Proof.verify(
-            proofs[1], UnionIcs23.getTendermintProofSpec(), root, path[0], abi.encodePacked(subroot)
+            proofs[1],
+            UnionIcs23.getTendermintProofSpec(),
+            root,
+            path[0],
+            abi.encodePacked(subroot)
         );
 
         if (vCode != Proof.VerifyExistenceError.None) {
@@ -227,11 +234,12 @@ library Ops {
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes32 hashedValue = sha256(value);
-        bytes memory encodedValue =
-            new bytes(ProtoBufRuntime._sz_varint(32));
+        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(32));
         ProtoBufRuntime._encode_varint(32, 32, encodedValue);
 
-        bytes32 data = sha256(abi.encodePacked(prefix, encodedKey, key, encodedValue, hashedValue));
+        bytes32 data = sha256(
+            abi.encodePacked(prefix, encodedKey, key, encodedValue, hashedValue)
+        );
         return (data, ApplyLeafOpError.None);
     }
 
@@ -261,7 +269,7 @@ library Ops {
         // inner_spec.hash is always SHA256 in the tm/iavl specs
         return (sha256(preImage), ApplyInnerOpError.None);
     }
-    
+
     function compare(
         bytes memory a,
         bytes memory b
@@ -310,7 +318,7 @@ library Proof {
         }
         //require(BytesLib.equal(proof.value, value)); // dev: Provided value doesn't match proof
         if (keccak256(proof.value) != keccak256(value)) {
-           return VerifyExistenceError.ValueNotMatching; 
+            return VerifyExistenceError.ValueNotMatching;
         }
         CheckAgainstSpecError cCode = checkAgainstSpec(proof, spec);
         if (cCode != CheckAgainstSpecError.None) {
@@ -334,7 +342,7 @@ library Proof {
         }
         //require(BytesLib.equal(proof.value, value)); // dev: Provided value doesn't match proof
         if (keccak256(proof.value) != keccak256(value)) {
-           return VerifyExistenceError.ValueNotMatching; 
+            return VerifyExistenceError.ValueNotMatching;
         }
         CheckAgainstSpecError cCode = checkAgainstSpec(proof, spec);
         if (cCode != CheckAgainstSpecError.None) {
@@ -418,8 +426,7 @@ library Proof {
             // innerOp.prefix is hardcoded to be 0 in both specs
             if (
                 innerOp.prefix.length < spec.minPrefixLength
-                    || innerOp.prefix[0] == 0
-                    || innerOp.prefix.length > max
+                    || innerOp.prefix[0] == 0 || innerOp.prefix.length > max
             ) {
                 return CheckAgainstSpecError.OpsCheckAgainstSpec;
             }
@@ -493,12 +500,18 @@ library Proof {
         }
         if (leftKey.length == 0) {
             //require(isLeftMost(spec, proof.right.path, proof.right.path.length)); // dev: left proof missing, right proof must be left-most
-            if (isLeftMost(spec, proof.right.path, proof.right.path.length) == false) {
+            if (
+                isLeftMost(spec, proof.right.path, proof.right.path.length)
+                    == false
+            ) {
                 return VerifyNonExistenceError.RightProofLeftMost;
             }
         } else if (rightKey.length == 0) {
             //require(isRightMost(spec, proof.left.path, proof.left.path.length)); // dev: isRightMost: right proof missing, left proof must be right-most
-            if (isRightMost(spec, proof.left.path, proof.left.path.length) == false) {
+            if (
+                isRightMost(spec, proof.left.path, proof.left.path.length)
+                    == false
+            ) {
                 return VerifyNonExistenceError.LeftProofRightMost;
             }
         } else {
@@ -587,8 +600,10 @@ library Proof {
         uint256 rightIdx = right.length - 1;
         while (leftIdx >= 0 && rightIdx >= 0) {
             if (
-                keccak256(left[leftIdx].prefix) == keccak256(right[rightIdx].prefix)
-                    && keccak256(left[leftIdx].suffix) == keccak256(right[rightIdx].suffix)
+                keccak256(left[leftIdx].prefix)
+                    == keccak256(right[rightIdx].prefix)
+                    && keccak256(left[leftIdx].suffix)
+                        == keccak256(right[rightIdx].suffix)
             ) {
                 leftIdx -= 1;
                 rightIdx -= 1;
@@ -652,7 +667,9 @@ library Proof {
         uint256 maxPrefix,
         uint256 suffix
     ) private pure returns (bool) {
-        if (op.prefix.length < minPrefix || op.prefix.length > maxPrefix) return false;
+        if (op.prefix.length < minPrefix || op.prefix.length > maxPrefix) {
+            return false;
+        }
         return op.suffix.length == suffix;
     }
 }

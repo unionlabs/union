@@ -40,11 +40,16 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         ) = abi.decode(
             proof, (UnionIcs23.NonExistenceProof, UnionIcs23.ExistenceProof)
         );
-        return Ics23.verifyChainedNonMembership(nonexist, exist, bytesToBytes32(root), fullPath)
-            == Ics23.VerifyChainedNonMembershipError.None;
+        return Ics23.verifyChainedNonMembership(
+            nonexist, exist, bytesToBytes32(root), fullPath
+        ) == Ics23.VerifyChainedNonMembershipError.None;
     }
 
-    function bytesToBytes32(bytes memory source) private pure returns (bytes32 result) {
+    function bytesToBytes32(bytes memory source)
+        private
+        pure
+        returns (bytes32 result)
+    {
         if (source.length == 0) {
             return 0x0;
         }
