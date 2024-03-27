@@ -85,8 +85,8 @@
             exit 1
             fi
             rclone --progress --no-traverse --http-url "https://circuit.cryptware.io" copy :http:/ "$1" --files-from=${files}
-            unzip circuit.zip
-            rm circuit.zip
+            unzip "$1"/circuit.zip
+            rm "$1"/circuit.zip
           '';
         });
     };

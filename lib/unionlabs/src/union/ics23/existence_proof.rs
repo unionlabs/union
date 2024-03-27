@@ -23,6 +23,8 @@ pub struct ExistenceProof {
     pub path: Vec<InnerOp>,
 }
 
+#[cfg(feature = "ethabi")]
+#[doc(hidden)]
 impl From<ExistenceProof> for ExistenceProofEthAbi {
     fn from(value: ExistenceProof) -> Self {
         ExistenceProofEthAbi {
@@ -34,6 +36,8 @@ impl From<ExistenceProof> for ExistenceProofEthAbi {
     }
 }
 
+#[cfg(feature = "ethabi")]
+#[doc(hidden)]
 impl From<ExistenceProofEthAbi> for ExistenceProof {
     fn from(value: ExistenceProofEthAbi) -> Self {
         ExistenceProof {

@@ -2,9 +2,7 @@ use macros::model;
 
 use crate::{
     errors::MissingField,
-    union::ics23::existence_proof::{
-        ExistenceProof, ExistenceProofEthAbi, TryFromExistenceProofError,
-    },
+    union::ics23::existence_proof::{ExistenceProof, TryFromExistenceProofError},
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
@@ -57,7 +55,7 @@ impl From<NonExistenceProof> for NonExistenceProofEthAbi {
 #[cfg(feature = "ethabi")]
 impl From<NonExistenceProofEthAbi> for NonExistenceProof {
     fn from(value: NonExistenceProofEthAbi) -> Self {
-        let exist_default = ExistenceProofEthAbi {
+        let exist_default = super::existence_proof::ExistenceProofEthAbi {
             key: vec![].into(),
             value: vec![].into(),
             leaf_prefix: vec![].into(),

@@ -28,10 +28,7 @@ use unionlabs::{
     encoding::{Decode, Encode, Proto},
     google::protobuf::any::{mk_any, Any},
     ibc::{
-        core::{
-            client::{height::IsHeight, msg_update_client::MsgUpdateClient},
-            commitment::merkle_proof::MerkleProof,
-        },
+        core::client::{height::IsHeight, msg_update_client::MsgUpdateClient},
         lightclients::cometbls,
     },
     proof::ClientStatePath,
@@ -256,11 +253,14 @@ where
     }
 }
 
-impl<
-        Tr: ChainExt,
-        Hc: ChainExt<StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>> + Wraps<Self>,
-    > DoFetchState<Hc, Tr> for Union
+impl<Tr, Hc> DoFetchState<Hc, Tr> for Union
 where
+    Tr: ChainExt,
+    Hc: ChainExt<
+            StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof,
+            Fetch<Tr> = UnionFetch<Hc, Tr>,
+        > + Wraps<Self>,
+
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     // required by fetch_abci_query, can be removed once that's been been removed
@@ -475,7 +475,7 @@ where
     Hc: Wraps<Union>
         + CosmosSdkChain
         + ChainExt<
-            StateProof = MerkleProof,
+            StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof,
             Data<Tr> = UnionDataMsg<Hc, Tr>,
             Fetch<Tr> = UnionFetch<Hc, Tr>,
         >,
