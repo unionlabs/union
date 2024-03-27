@@ -101,8 +101,9 @@ library Ics23 {
         }
 
         bytes memory key = path[1];
-        Proof.VerifyNonExistenceError vCode =
-            Proof.verify(nonExistProof, UnionIcs23.getIavlProofSpec(), subroot, key);
+        Proof.VerifyNonExistenceError vCode = Proof.verify(
+            nonExistProof, UnionIcs23.getIavlProofSpec(), subroot, key
+        );
 
         // Map non existence error to non membership error
         if (vCode != Proof.VerifyNonExistenceError.None) {
@@ -140,7 +141,11 @@ library Ics23 {
         }
 
         Proof.VerifyExistenceError mCode = Proof.verify(
-            existProof, UnionIcs23.getTendermintProofSpec(), subroot2, path[0], subroot
+            existProof,
+            UnionIcs23.getTendermintProofSpec(),
+            subroot2,
+            path[0],
+            subroot
         );
 
         if (mCode != Proof.VerifyExistenceError.None) {
@@ -195,8 +200,9 @@ library Ics23 {
             return VerifyChainedMembershipError.InvalidProofRoot;
         }
 
-        Proof.VerifyExistenceError vCode =
-            Proof.verify(proofs[0], UnionIcs23.getIavlProofSpec(), subroot, path[1], value);
+        Proof.VerifyExistenceError vCode = Proof.verify(
+            proofs[0], UnionIcs23.getIavlProofSpec(), subroot, path[1], value
+        );
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
         }
@@ -208,7 +214,11 @@ library Ics23 {
         }
 
         vCode = Proof.verify(
-            proofs[1], UnionIcs23.getTendermintProofSpec(), subroot2, path[0], subroot
+            proofs[1],
+            UnionIcs23.getTendermintProofSpec(),
+            subroot2,
+            path[0],
+            subroot
         );
 
         if (vCode != Proof.VerifyExistenceError.None) {
@@ -307,8 +317,7 @@ library Ics23 {
         bytes memory key
     ) private pure returns (bool) {
         // CosmosIcs23V1ExistenceProof.isNil does not work
-        return UnionIcs23.empty(left)
-            || Ops.compare(left.key, key) < 0;
+        return UnionIcs23.empty(left) || Ops.compare(left.key, key) < 0;
     }
 
     function isRight(
@@ -316,8 +325,7 @@ library Ics23 {
         bytes memory key
     ) private pure returns (bool) {
         // CosmosIcs23V1ExistenceProof.isNil does not work
-        return UnionIcs23.empty(right)
-            || Ops.compare(right.key, key) > 0;
+        return UnionIcs23.empty(right) || Ops.compare(right.key, key) > 0;
     }
 }
 
@@ -619,9 +627,8 @@ library Proof {
             }
         } else {
             //require(isLeftNeighbor(spec, proof.left.path, proof.right.path)); // dev: isLeftNeighbor: right proof missing, left proof must be right-most
-            bool isLeftNeigh = isLeftNeighbor(
-                spec, proof.left.path, proof.right.path
-            );
+            bool isLeftNeigh =
+                isLeftNeighbor(spec, proof.left.path, proof.right.path);
             if (isLeftNeigh == false) {
                 return VerifyNonExistenceError.IsLeftNeighbor;
             }
@@ -650,11 +657,8 @@ library Proof {
         UnionIcs23.ProofSpec memory spec,
         UnionIcs23.InnerOp[] memory path
     ) private pure returns (bool) {
-        (
-            uint256 minPrefix,
-            uint256 maxPrefix,
-            uint256 suffix
-        ) = getPadding(spec, 0);
+        (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
+            getPadding(spec, 0);
         for (uint256 i = 0; i < path.length; i++) {
             if (hasPadding(path[i], minPrefix, maxPrefix, suffix) == false) {
                 return false;
@@ -667,11 +671,8 @@ library Proof {
         UnionIcs23.ProofSpec memory spec,
         UnionIcs23.InnerOp[] memory path
     ) private pure returns (bool) {
-        (
-            uint256 minPrefix,
-            uint256 maxPrefix,
-            uint256 suffix
-        ) = getPadding(spec, 1);
+        (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
+            getPadding(spec, 1);
         for (uint256 i = 0; i < path.length; i++) {
             if (hasPadding(path[i], minPrefix, maxPrefix, suffix) == false) {
                 return false;
@@ -738,8 +739,8 @@ library Proof {
         UnionIcs23.InnerOp memory op
     ) private pure returns (uint256, OrderFromPaddingError) {
         for (uint256 branch = 0; branch < 2; branch++) {
-            (uint256 minp, uint256 maxp, uint256 suffix)
-            = getPadding(spec, branch);
+            (uint256 minp, uint256 maxp, uint256 suffix) =
+                getPadding(spec, branch);
             if (hasPadding(op, minp, maxp, suffix) == true) {
                 return (branch, OrderFromPaddingError.None);
             }
@@ -754,11 +755,7 @@ library Proof {
     )
         private
         pure
-        returns (
-            uint256 minPrefix,
-            uint256 maxPrefix,
-            uint256 suffix
-        )
+        returns (uint256 minPrefix, uint256 maxPrefix, uint256 suffix)
     {
         uint256 prefix = branch * spec.childSize;
         minPrefix = prefix + spec.minPrefixLength;

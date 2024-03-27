@@ -26,22 +26,24 @@ library UnionIcs23 {
     }
 
     function getIavlProofSpec() internal pure returns (ProofSpec memory) {
-        return ProofSpec({
-            childSize: 33,
-            minPrefixLength: 4,
-            maxPrefixLength: 12
-        });
+        return
+            ProofSpec({childSize: 33, minPrefixLength: 4, maxPrefixLength: 12});
     }
 
-    function getTendermintProofSpec() internal pure returns (ProofSpec memory) {
-        return ProofSpec({
-            childSize: 32,
-            minPrefixLength: 1,
-            maxPrefixLength: 1
-        });
+    function getTendermintProofSpec()
+        internal
+        pure
+        returns (ProofSpec memory)
+    {
+        return
+            ProofSpec({childSize: 32, minPrefixLength: 1, maxPrefixLength: 1});
     }
 
-    function empty(NonExistenceProof memory proof) internal pure returns (bool) {
+    function empty(NonExistenceProof memory proof)
+        internal
+        pure
+        returns (bool)
+    {
         if (proof.key.length != 0) {
             return false;
         }

@@ -38,11 +38,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
             UnionIcs23.NonExistenceProof memory nonexist,
             UnionIcs23.ExistenceProof memory exist
         ) = abi.decode(
-            proof,
-            (
-                UnionIcs23.NonExistenceProof,
-                UnionIcs23.ExistenceProof
-            )
+            proof, (UnionIcs23.NonExistenceProof, UnionIcs23.ExistenceProof)
         );
         return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)
             == Ics23.VerifyChainedNonMembershipError.None;
