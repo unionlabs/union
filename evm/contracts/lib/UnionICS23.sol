@@ -53,7 +53,6 @@ library UnionIcs23 {
             ProofSpec({childSize: 33, minPrefixLength: 4, maxPrefixLength: 12});
     }
 
-
     // Original spec is as follows, we trimmed the common parts:
     //     int32[] memory childOrder = new int32[](2);
     //     childOrder[0] = 0;

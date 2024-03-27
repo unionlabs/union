@@ -1,9 +1,10 @@
-use ethers::abi::Tokenize;
 use macros::model;
 
 use crate::{
     errors::MissingField,
-    union::ics23::existence_proof::{ExistenceProof, TryFromExistenceProofError},
+    union::ics23::existence_proof::{
+        ExistenceProof, ExistenceProofEthAbi, TryFromExistenceProofError,
+    },
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
@@ -27,47 +28,54 @@ pub enum TryFromNonExistenceProofError {
 }
 
 #[cfg(feature = "ethabi")]
+#[doc(hidden)]
+#[derive(Debug, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
+pub struct NonExistenceProofEthAbi {
+    pub key: ethers::types::Bytes,
+    pub left: crate::union::ics23::existence_proof::ExistenceProofEthAbi,
+    pub right: crate::union::ics23::existence_proof::ExistenceProofEthAbi,
+}
+
+#[cfg(feature = "ethabi")]
+impl From<NonExistenceProof> for NonExistenceProofEthAbi {
+    fn from(value: NonExistenceProof) -> Self {
+        let exist_default = || ExistenceProof {
+            key: vec![],
+            value: vec![],
+            leaf_prefix: vec![],
+            path: vec![],
+        };
+
+        NonExistenceProofEthAbi {
+            key: value.key.into(),
+            left: value.left.unwrap_or_else(exist_default).into(),
+            right: value.right.unwrap_or_else(exist_default).into(),
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl From<NonExistenceProofEthAbi> for NonExistenceProof {
+    fn from(value: NonExistenceProofEthAbi) -> Self {
+        let exist_default = ExistenceProofEthAbi {
+            key: vec![].into(),
+            value: vec![].into(),
+            leaf_prefix: vec![].into(),
+            path: vec![],
+        };
+
+        NonExistenceProof {
+            key: value.key.to_vec(),
+            left: (value.left != exist_default).then_some(value.left.into()),
+            right: (value.right != exist_default).then_some(value.right.into()),
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
 impl crate::encoding::Encode<crate::encoding::EthAbi> for NonExistenceProof {
     fn encode(self) -> Vec<u8> {
-        use ethers::abi::ethabi::{self, Token};
-
-        let empty_existence_proof_tokens =
-            crate::union::ics23::existence_proof::ExistenceProofEthAbi {
-                key: vec![].into(),
-                value: vec![].into(),
-                leaf_prefix: vec![].into(),
-                path: vec![],
-            }
-            .into_tokens();
-
-        let ethabi =
-            |e: ExistenceProof| crate::union::ics23::existence_proof::ExistenceProofEthAbi {
-                key: e.key.into(),
-                value: e.value.into(),
-                leaf_prefix: e.leaf_prefix.into(),
-                path: e
-                    .path
-                    .into_iter()
-                    .map(|io| crate::union::ics23::inner_op::InnerOpEthAbi {
-                        prefix: io.prefix.into(),
-                        suffix: io.suffix.into(),
-                    })
-                    .collect(),
-            };
-
-        let left = self.left.map_or_else(
-            || empty_existence_proof_tokens.clone(),
-            |e| ethabi(e).into_tokens(),
-        );
-        let right = self
-            .right
-            .map_or(empty_existence_proof_tokens, |e| ethabi(e).into_tokens());
-
-        ethabi::encode(&[
-            Token::Bytes(self.key),
-            Token::Tuple(left),
-            Token::Tuple(right),
-        ])
+        ethers::abi::AbiEncode::encode(NonExistenceProofEthAbi::from(self))
     }
 }
 
@@ -90,17 +98,6 @@ impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof
         })
     }
 }
-
-// #[cfg(feature = "ethabi")]
-// impl From<NonExistenceProof> for contracts::glue::CosmosIcs23V1NonExistenceProofData {
-//     fn from(value: NonExistenceProof) -> Self {
-//         Self {
-//             key: value.key.into(),
-//             left: value.left.map(Into::into).unwrap_or_default(),
-//             right: value.right.map(Into::into).unwrap_or_default(),
-//         }
-//     }
-// }
 
 impl From<NonExistenceProof> for protos::cosmos::ics23::v1::NonExistenceProof {
     fn from(value: NonExistenceProof) -> Self {

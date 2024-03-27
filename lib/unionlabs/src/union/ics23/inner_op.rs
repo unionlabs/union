@@ -2,7 +2,10 @@ use macros::model;
 
 use crate::{cosmos::ics23::hash_op::HashOp, ensure};
 
-#[model(proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from))]
+#[model(
+    proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from),
+    ethabi(raw(InnerOpEthAbi), into, from)
+)]
 pub struct InnerOp {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -12,18 +15,21 @@ pub struct InnerOp {
     pub suffix: Vec<u8>,
 }
 
-#[derive(ethers_contract_derive::EthAbiType, ethers_contract_derive::EthAbiCodec)]
 #[cfg(feature = "ethabi")]
-pub(crate) struct InnerOpEthAbi {
+#[doc(hidden)]
+#[derive(Debug, PartialEq, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
+pub struct InnerOpEthAbi {
     pub prefix: ethers::types::Bytes,
     pub suffix: ethers::types::Bytes,
 }
+
+const EXPECTED_HASH: HashOp = HashOp::Sha256;
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromInnerOpError {
     #[error("unable to decode cosmos::ics23::InnerOp")]
     Cosmos(#[from] crate::cosmos::ics23::inner_op::TryFromInnerOpError),
-    #[error("hashop must be Sha256, found {0}")]
+    #[error("hash must be {}, found {0}", EXPECTED_HASH)]
     InvalidHash(HashOp),
 }
 
@@ -34,7 +40,7 @@ impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
         let value = crate::cosmos::ics23::inner_op::InnerOp::try_from(value)?;
 
         ensure(
-            value.hash == HashOp::Sha256,
+            value.hash == EXPECTED_HASH,
             TryFromInnerOpError::InvalidHash(value.hash),
         )?;
 
@@ -48,7 +54,7 @@ impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
 impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
     fn from(value: InnerOp) -> Self {
         crate::cosmos::ics23::inner_op::InnerOp {
-            hash: HashOp::Sha256,
+            hash: EXPECTED_HASH,
             prefix: value.prefix,
             suffix: value.suffix,
         }
@@ -56,13 +62,22 @@ impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
     }
 }
 
-// #[cfg(feature = "ethabi")]
-// impl From<InnerOp> for contracts::glue::unionIcs23V1InnerOpData {
-//     fn from(value: InnerOp) -> Self {
-//         Self {
-//             hash: value.hash.into(),
-//             prefix: value.prefix.into(),
-//             suffix: value.suffix.into(),
-//         }
-//     }
-// }
+#[cfg(feature = "ethabi")]
+impl From<InnerOpEthAbi> for InnerOp {
+    fn from(value: InnerOpEthAbi) -> Self {
+        Self {
+            prefix: value.prefix.to_vec(),
+            suffix: value.suffix.to_vec(),
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl From<InnerOp> for InnerOpEthAbi {
+    fn from(value: InnerOp) -> Self {
+        Self {
+            prefix: value.prefix.into(),
+            suffix: value.suffix.into(),
+        }
+    }
+}

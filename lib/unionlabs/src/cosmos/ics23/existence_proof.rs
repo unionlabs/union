@@ -28,7 +28,7 @@ pub enum TryFromExistenceProofError {
     MissingField(#[from] MissingField),
     #[error("error decoding leaf")]
     Leaf(#[from] TryFromLeafOpError),
-    #[error("error ecoding path")]
+    #[error("error decoding path")]
     Path(#[from] TryFromInnerOpError),
 }
 

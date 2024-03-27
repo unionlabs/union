@@ -6,7 +6,10 @@ use crate::{
     union::ics23::inner_op::InnerOp,
 };
 
-#[model(proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from))]
+#[model(
+    proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from),
+    ethabi(raw(ExistenceProofEthAbi), into, from)
+)]
 pub struct ExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -20,28 +23,32 @@ pub struct ExistenceProof {
     pub path: Vec<InnerOp>,
 }
 
-#[cfg(feature = "ethabi")]
-impl crate::encoding::Encode<crate::encoding::EthAbi> for ExistenceProof {
-    fn encode(self) -> Vec<u8> {
-        ethers::abi::AbiEncode::encode(ExistenceProofEthAbi {
-            key: self.key.into(),
-            value: self.value.into(),
-            leaf_prefix: self.leaf_prefix.into(),
-            path: self
-                .path
-                .into_iter()
-                .map(|io| crate::union::ics23::inner_op::InnerOpEthAbi {
-                    prefix: io.prefix.into(),
-                    suffix: io.suffix.into(),
-                })
-                .collect(),
-        })
+impl From<ExistenceProof> for ExistenceProofEthAbi {
+    fn from(value: ExistenceProof) -> Self {
+        ExistenceProofEthAbi {
+            key: value.key.into(),
+            value: value.value.into(),
+            leaf_prefix: value.leaf_prefix.into(),
+            path: value.path.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<ExistenceProofEthAbi> for ExistenceProof {
+    fn from(value: ExistenceProofEthAbi) -> Self {
+        ExistenceProof {
+            key: value.key.to_vec(),
+            value: value.value.to_vec(),
+            leaf_prefix: value.leaf_prefix.to_vec(),
+            path: value.path.into_iter().map(Into::into).collect(),
+        }
     }
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
-pub(crate) struct ExistenceProofEthAbi {
+#[doc(hidden)]
+#[derive(Debug, PartialEq, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
+pub struct ExistenceProofEthAbi {
     pub key: ethers::types::Bytes,
     pub value: ethers::types::Bytes,
     pub leaf_prefix: ethers::types::Bytes,
