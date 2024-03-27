@@ -16,111 +16,137 @@ contract ICS23Test is Test {
             CosmosIcs23V1CommitmentProof.decode(proof);
     }
 
-    function ensureNonExistant(
-        bytes memory proof,
-        bytes memory root,
-        bytes memory key
-    ) internal {
-        vm.pauseGasMetering();
-        CosmosIcs23V1CommitmentProof.Data memory commitmentProof =
-            CosmosIcs23V1CommitmentProof.decode(proof);
+    // function ensureNonExistant(
+    //     bytes memory proof,
+    //     bytes memory root,
+    //     bytes memory key
+    // ) internal {
+    //     vm.pauseGasMetering();
+    //     CosmosIcs23V1CommitmentProof.Data memory commitmentProof =
+    //         CosmosIcs23V1CommitmentProof.decode(proof);
 
-        CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec =
-            Ics23.getTendermintProofSpec();
-        vm.resumeGasMetering();
+    //     CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec =
+    //         Ics23.getTendermintProofSpec();
+    //     vm.resumeGasMetering();
 
-        Ics23.VerifyNonMembershipError result = Ics23.verifyNonMembership(
-            tendermintProofSpec, root, commitmentProof, key
-        );
+    //     Ics23.VerifyNonMembershipError result = Ics23.verifyNonMembership(
+    //         tendermintProofSpec, root, commitmentProof, key
+    //     );
 
-        assertEq(uint256(result), uint256(Ics23.VerifyNonMembershipError.None));
-    }
+    //     assertEq(uint256(result), uint256(Ics23.VerifyNonMembershipError.None));
+    // }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_left.json
-    function test_nonExistLeft() public {
-        bytes memory proof =
-            hex"12e4030a04010101011adb030a143032615465366472483456706f4f583245507137121e76616c75655f666f725f3032615465366472483456706f4f5832455071371a090801180120012a0100222708011201011a20b843481496dc10561056b63ec8f726f3357395b610355b25082f5768b2073e91222708011201011a20d5281fdd872060e89173d4de1100fa6c96f778467df66abb10cf3b1f5821f182222708011201011a20eb981020433d929c6275ad772accf2e6aa916db97e31d2f26d0b6b07b444bbef222708011201011a204a40e813132aff60b64ba9d109548ab39459ad48a203ab8d3455dd842a7ab1da222708011201011a208f354a84ce1476e0b9cca92e65301a6435b1f242c2f53f943b764a4f326a71c7222708011201011a20ac6451617a6406005035dddad36657fde5312cc4d67d69ca1464611847c10cfb222708011201011a2023c1d1dd62002a0e2efcc679196589a4337234dcd209cb449cc3ac10773b60e0222708011201011a203b11c267328ba761ddc630dd5ef7642aeda05f180539fe93c0ca57729705bc46222708011201011a205ff2e1933be704539463c264b157ff2b8d9960813bd36c69c5208d57e3b1e07e222708011201011a20c4a79e6c0cbf60fb8e5bf940db4c444b7e442951b69c840db38cf28c8aa008be";
-        bytes memory root =
-            hex"4e2e78d2da505b7d0b00fda55a4b048eed9a23a7f7fc3d801f20ce4851b442aa";
-        bytes memory key = hex"01010101";
-        ensureNonExistant(proof, root, key);
-    }
+    // function test_nonExistLeft() public {
+    //     bytes memory proof =
+    //         hex"12e4030a04010101011adb030a143032615465366472483456706f4f583245507137121e76616c75655f666f725f3032615465366472483456706f4f5832455071371a090801180120012a0100222708011201011a20b843481496dc10561056b63ec8f726f3357395b610355b25082f5768b2073e91222708011201011a20d5281fdd872060e89173d4de1100fa6c96f778467df66abb10cf3b1f5821f182222708011201011a20eb981020433d929c6275ad772accf2e6aa916db97e31d2f26d0b6b07b444bbef222708011201011a204a40e813132aff60b64ba9d109548ab39459ad48a203ab8d3455dd842a7ab1da222708011201011a208f354a84ce1476e0b9cca92e65301a6435b1f242c2f53f943b764a4f326a71c7222708011201011a20ac6451617a6406005035dddad36657fde5312cc4d67d69ca1464611847c10cfb222708011201011a2023c1d1dd62002a0e2efcc679196589a4337234dcd209cb449cc3ac10773b60e0222708011201011a203b11c267328ba761ddc630dd5ef7642aeda05f180539fe93c0ca57729705bc46222708011201011a205ff2e1933be704539463c264b157ff2b8d9960813bd36c69c5208d57e3b1e07e222708011201011a20c4a79e6c0cbf60fb8e5bf940db4c444b7e442951b69c840db38cf28c8aa008be";
+    //     bytes memory root =
+    //         hex"4e2e78d2da505b7d0b00fda55a4b048eed9a23a7f7fc3d801f20ce4851b442aa";
+    //     bytes memory key = hex"01010101";
+    //     ensureNonExistant(proof, root, key);
+    // }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_middle.json
-    function test_nonExistMiddle() public {
-        bytes memory proof =
-            hex"12c0070a14544f31483668784a4b667136547a56767649ffff12cf030a14544f31483668784a4b667136547a567676497747121e76616c75655f666f725f544f31483668784a4b667136547a5676764977471a090801180120012a01002225080112210143e19cb5e5dab017734caa78a2e2bccbb4797b7dc5a91abeab630c66fa6b162522250801122101b575404a1bb42b0fef8ae7f217af88aec769f7d66b5bc4b2913e74d651365473222508011221017c22dc50e866f9a1dce517ea01621161cecd70f4bdcd024b5a392746a1c8dc2622250801122101578105344f2c98c323ba0b8ca31e75aaa2b865cc389681e300b14d1c20713796222708011201011a20895c070c14546ecef7f5cb3a4bda1fd436a0ff99190f90bd037cbeaf52b2ffc1222708011201011a20f7571fca06ac4387c3eae5469c152427b797abb55fa98727eacbd5c1c91b5fb4222508011221015056e6472f8e5c5c9b8881c5f0e49601e9eca31f3e1766aa69c2dc9c6d9112be222708011201011a206c74439556c5edb5aa693af410d3718dbb613d37799f2f4e8ff304a8bfe3351b22250801122101253014334c7b8cd78436979554f7890f3dc1c971925ea31b48fc729cd179c701222708011201011a20b81c19ad4b5d8d15f716b91519bf7ad3d6e2289f9061fd2592a8431ea97806fe1ad5030a14544f433344683150664f76657538585166635778121e76616c75655f666f725f544f433344683150664f766575385851666357781a090801180120012a0100222708011201011a20415d4cfaed0bfc98ac32acc219a8517bfa1983a15cc742e8b2f860167484bd46222708011201011a2098d853d9cc0ee1d2162527f660f2b90ab55b13e5534f1b7753ec481d7901d3ec222708011201011a20b5113e6000c5411b7cfa6fd09b6752a43de0fcd3951ed3b154d162deb53224a2222708011201011a208ce18cd72cc83511cb8ff706433f2fa4208c85b9f4c8d0ed71a614f24b89ae6c22250801122101c611244fe6b5fda4257615902eb24c14efcd9708c7c875d1ac5e867767aa1eab222708011201011a20f7571fca06ac4387c3eae5469c152427b797abb55fa98727eacbd5c1c91b5fb4222508011221015056e6472f8e5c5c9b8881c5f0e49601e9eca31f3e1766aa69c2dc9c6d9112be222708011201011a206c74439556c5edb5aa693af410d3718dbb613d37799f2f4e8ff304a8bfe3351b22250801122101253014334c7b8cd78436979554f7890f3dc1c971925ea31b48fc729cd179c701222708011201011a20b81c19ad4b5d8d15f716b91519bf7ad3d6e2289f9061fd2592a8431ea97806fe";
-        bytes memory root =
-            hex"4bf28d948566078c5ebfa86db7471c1541eab834f539037075b9f9e3b1c72cfc";
-        bytes memory key = hex"544f31483668784a4b667136547a56767649ffff";
-        ensureNonExistant(proof, root, key);
-    }
+    // function test_nonExistMiddle() public {
+    //     bytes memory proof =
+    //         hex"12c0070a14544f31483668784a4b667136547a56767649ffff12cf030a14544f31483668784a4b667136547a567676497747121e76616c75655f666f725f544f31483668784a4b667136547a5676764977471a090801180120012a01002225080112210143e19cb5e5dab017734caa78a2e2bccbb4797b7dc5a91abeab630c66fa6b162522250801122101b575404a1bb42b0fef8ae7f217af88aec769f7d66b5bc4b2913e74d651365473222508011221017c22dc50e866f9a1dce517ea01621161cecd70f4bdcd024b5a392746a1c8dc2622250801122101578105344f2c98c323ba0b8ca31e75aaa2b865cc389681e300b14d1c20713796222708011201011a20895c070c14546ecef7f5cb3a4bda1fd436a0ff99190f90bd037cbeaf52b2ffc1222708011201011a20f7571fca06ac4387c3eae5469c152427b797abb55fa98727eacbd5c1c91b5fb4222508011221015056e6472f8e5c5c9b8881c5f0e49601e9eca31f3e1766aa69c2dc9c6d9112be222708011201011a206c74439556c5edb5aa693af410d3718dbb613d37799f2f4e8ff304a8bfe3351b22250801122101253014334c7b8cd78436979554f7890f3dc1c971925ea31b48fc729cd179c701222708011201011a20b81c19ad4b5d8d15f716b91519bf7ad3d6e2289f9061fd2592a8431ea97806fe1ad5030a14544f433344683150664f76657538585166635778121e76616c75655f666f725f544f433344683150664f766575385851666357781a090801180120012a0100222708011201011a20415d4cfaed0bfc98ac32acc219a8517bfa1983a15cc742e8b2f860167484bd46222708011201011a2098d853d9cc0ee1d2162527f660f2b90ab55b13e5534f1b7753ec481d7901d3ec222708011201011a20b5113e6000c5411b7cfa6fd09b6752a43de0fcd3951ed3b154d162deb53224a2222708011201011a208ce18cd72cc83511cb8ff706433f2fa4208c85b9f4c8d0ed71a614f24b89ae6c22250801122101c611244fe6b5fda4257615902eb24c14efcd9708c7c875d1ac5e867767aa1eab222708011201011a20f7571fca06ac4387c3eae5469c152427b797abb55fa98727eacbd5c1c91b5fb4222508011221015056e6472f8e5c5c9b8881c5f0e49601e9eca31f3e1766aa69c2dc9c6d9112be222708011201011a206c74439556c5edb5aa693af410d3718dbb613d37799f2f4e8ff304a8bfe3351b22250801122101253014334c7b8cd78436979554f7890f3dc1c971925ea31b48fc729cd179c701222708011201011a20b81c19ad4b5d8d15f716b91519bf7ad3d6e2289f9061fd2592a8431ea97806fe";
+    //     bytes memory root =
+    //         hex"4bf28d948566078c5ebfa86db7471c1541eab834f539037075b9f9e3b1c72cfc";
+    //     bytes memory key = hex"544f31483668784a4b667136547a56767649ffff";
+    //     ensureNonExistant(proof, root, key);
+    // }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_right.json
-    function test_nonExistRight() public {
-        bytes memory proof =
-            hex"12a9030a04ffffffff12a0030a147a774e4d4a456f7932674253586277666e63504a121e76616c75655f666f725f7a774e4d4a456f7932674253586277666e63504a1a090801180120012a01002225080112210178a215355c17371583418df95773476b347a853f6eae317677721e0c24e78ad2222508011221015e2cf893e7cd70251eb4debd855c8c9a92f6e0a1fd931cf41e0575846ab174e822250801122101414bae883f8133f0201a2791dafeaef3daa24a6631b3f9402de3a4dc658fd035222508011221012e2829beee266a814af4db08046f4575b011e5ec9d2d93c1510c3cc7d8219edc22250801122101f8286597078491ae0ef61264c218c6e167e4e03f1de47945d9ba75bb41deb81a22250801122101dea6a53098d11ce2138cbcae26b392959f05d7e1e24b9547584571012280f289222508011221010a8e535094d18b2120c38454b445d9accf3f1b255690e6f3d48164ae73b4c775222508011221012cbb518f52ec1f8e26dd36587f29a6890a11c0dd3f94e7a28546e695f296d3a722250801122101839d9ddd9dadf41c0ecfc3f7e20f57833b8fb5bcb703bef4f97910bbe5b579b9";
-        bytes memory root =
-            hex"83952b0b17e64c862628bcc1277e7f8847589af794ed5a855339281d395ec04f";
-        bytes memory key = hex"ffffffff";
-        ensureNonExistant(proof, root, key);
-    }
+    // function test_nonExistRight() public {
+    //     bytes memory proof =
+    //         hex"12a9030a04ffffffff12a0030a147a774e4d4a456f7932674253586277666e63504a121e76616c75655f666f725f7a774e4d4a456f7932674253586277666e63504a1a090801180120012a01002225080112210178a215355c17371583418df95773476b347a853f6eae317677721e0c24e78ad2222508011221015e2cf893e7cd70251eb4debd855c8c9a92f6e0a1fd931cf41e0575846ab174e822250801122101414bae883f8133f0201a2791dafeaef3daa24a6631b3f9402de3a4dc658fd035222508011221012e2829beee266a814af4db08046f4575b011e5ec9d2d93c1510c3cc7d8219edc22250801122101f8286597078491ae0ef61264c218c6e167e4e03f1de47945d9ba75bb41deb81a22250801122101dea6a53098d11ce2138cbcae26b392959f05d7e1e24b9547584571012280f289222508011221010a8e535094d18b2120c38454b445d9accf3f1b255690e6f3d48164ae73b4c775222508011221012cbb518f52ec1f8e26dd36587f29a6890a11c0dd3f94e7a28546e695f296d3a722250801122101839d9ddd9dadf41c0ecfc3f7e20f57833b8fb5bcb703bef4f97910bbe5b579b9";
+    //     bytes memory root =
+    //         hex"83952b0b17e64c862628bcc1277e7f8847589af794ed5a855339281d395ec04f";
+    //     bytes memory key = hex"ffffffff";
+    //     ensureNonExistant(proof, root, key);
+    // }
 
-    function ensureExistant(
-        bytes memory proof,
-        bytes memory root,
-        bytes memory key,
-        bytes memory value
-    ) internal {
-        vm.pauseGasMetering();
-        CosmosIcs23V1CommitmentProof.Data memory commitmentProof =
-            CosmosIcs23V1CommitmentProof.decode(proof);
+    // function ensureExistant(
+    //     bytes memory proof,
+    //     bytes memory root,
+    //     bytes memory key,
+    //     bytes memory value
+    // ) internal {
+    //     vm.pauseGasMetering();
+    //     CosmosIcs23V1CommitmentProof.Data memory commitmentProof =
+    //         CosmosIcs23V1CommitmentProof.decode(proof);
 
-        CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec =
-            Ics23.getTendermintProofSpec();
-        vm.resumeGasMetering();
+    //     CosmosIcs23V1ProofSpec.Data memory tendermintProofSpec =
+    //         Ics23.getTendermintProofSpec();
+    //     vm.resumeGasMetering();
 
-        Ics23.VerifyMembershipError result = Ics23.verifyMembership(
-            tendermintProofSpec, root, commitmentProof, key, value
-        );
+    //     Ics23.VerifyMembershipError result = Ics23.verifyMembership(
+    //         tendermintProofSpec, root, commitmentProof, key, value
+    //     );
 
-        assertEq(uint256(result), uint256(Ics23.VerifyMembershipError.None));
-    }
+    //     assertEq(uint256(result), uint256(Ics23.VerifyMembershipError.None));
+    // }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/exist_left.json
-    function test_existLeft() public {
-        bytes memory proof =
-            hex"0adb030a14303142424373615a55715146735259436c6a5767121e76616c75655f666f725f303142424373615a55715146735259436c6a57671a090801180120012a0100222708011201011a20cb3131cd98b069efcc0e8c7e68da47370adbff32266d7fcd1b0580fdf3961266222708011201011a2021d1205c1f8537205e8fb4b176f960b459d9131669968d59c456442f7673b68b222708011201011a20b82a0e7f4434b3cedb87ea83eb5a70c7dc664c77b2fe21c6245f315e58fdf745222708011201011a20bf0657a0e6fbd8f2043eb2cf751561adcf50547d16201224133eeb8d38145229222708011201011a206d47c03df91a4a0252055d116439d34b5b73f3a24d5cb3cf0d4b08caa540cac4222708011201011a20d5d2926993fa15c7410ac4ee1f1d81afddfb0ab5f6f4706b05f407bc01638149222708011201011a20540719b26a7301ad012ac45ebe716679e5595e5570d78be9b6da8d8591afb374222708011201011a20fccaaa9950730e80b9ccf75ad2cfeab26ae750b8bd6ac1ff1c7a7502f3c64be2222708011201011a20ecb61a6d70accb79c2325fb0b51677ed1561c91af5e10578c8294002fbb3c21e222708011201011a201b3bc1bd8d08af9f6199de84e95d646570cbd9b306a632a5acf617cbd7d1ab0a";
-        bytes memory root =
-            hex"c569a38a5775bbda2051c34ae00894186f837c39d11dca55495b9aed14f17ddf";
-        bytes memory key = hex"303142424373615a55715146735259436c6a5767";
-        bytes memory value =
-            hex"76616c75655f666f725f303142424373615a55715146735259436c6a5767";
-        ensureExistant(proof, root, key, value);
-    }
+    // function test_existLeft() public {
+    //     bytes memory proof =
+    //         hex"0adb030a14303142424373615a55715146735259436c6a5767121e76616c75655f666f725f303142424373615a55715146735259436c6a57671a090801180120012a0100222708011201011a20cb3131cd98b069efcc0e8c7e68da47370adbff32266d7fcd1b0580fdf3961266222708011201011a2021d1205c1f8537205e8fb4b176f960b459d9131669968d59c456442f7673b68b222708011201011a20b82a0e7f4434b3cedb87ea83eb5a70c7dc664c77b2fe21c6245f315e58fdf745222708011201011a20bf0657a0e6fbd8f2043eb2cf751561adcf50547d16201224133eeb8d38145229222708011201011a206d47c03df91a4a0252055d116439d34b5b73f3a24d5cb3cf0d4b08caa540cac4222708011201011a20d5d2926993fa15c7410ac4ee1f1d81afddfb0ab5f6f4706b05f407bc01638149222708011201011a20540719b26a7301ad012ac45ebe716679e5595e5570d78be9b6da8d8591afb374222708011201011a20fccaaa9950730e80b9ccf75ad2cfeab26ae750b8bd6ac1ff1c7a7502f3c64be2222708011201011a20ecb61a6d70accb79c2325fb0b51677ed1561c91af5e10578c8294002fbb3c21e222708011201011a201b3bc1bd8d08af9f6199de84e95d646570cbd9b306a632a5acf617cbd7d1ab0a";
+    //     bytes memory root =
+    //         hex"c569a38a5775bbda2051c34ae00894186f837c39d11dca55495b9aed14f17ddf";
+    //     bytes memory key = hex"303142424373615a55715146735259436c6a5767";
+    //     bytes memory value =
+    //         hex"76616c75655f666f725f303142424373615a55715146735259436c6a5767";
+    //     ensureExistant(proof, root, key, value);
+    // }
 
-    // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/exist_middle.json
-    function test_existMiddle() public {
-        bytes memory proof =
-            hex"0ad1030a14513334656d766f39447145585735325257523835121e76616c75655f666f725f513334656d766f394471455857353252575238351a090801180120012a010022250801122101e231d775380f2d663651e213cc726660e2ce0a2f2e9ee12cbb7df32294104a8c222708011201011a2014af194c63500236e52cc290ab24244fab39a520ece7e20fa93f4c9ff80c6626222508011221017966d2ead34418db2eaa04c0dffb9316805e8a0d421d1270c8954c35ee3221382225080112210172339e20a49bb16795a99bd905b47f99c45e5e5a9e6b7fb223dc8fe6751e1bda222708011201011a2053dd1ecc25ff906a0ef4db37ee068f3d8ad6d1d49913eefb847a675a681c5ffa222708011201011a20de90f9951a19497be7e389e02aa79e26faf77080e740e8743249a17a537f287d22250801122101ad4e53e981afc5a71e34ab0c4ffbccf1b468414d9d0939bd08edbd2461bc944a222708011201011a209b4cf89c3995b9dd66d58ab088846b2c6b59c52c6d10ec1d759ca9e9aa5eef5c222508011221013928a078bd66ab3949f5b1846b6d354dbdc1968a416607c7d91555ca26716667222708011201011a20d2d82cf8915b9ae6f92c7eae343e37d312ace05e654ce47acdf57d0a5490b873";
-        bytes memory root =
-            hex"494b16e3a64a85df143b2881bdd3ec94c3f8e18b343e8ff9c2d61afd05d040c8";
-        bytes memory key = hex"513334656d766f39447145585735325257523835";
-        bytes memory value =
-            hex"76616c75655f666f725f513334656d766f39447145585735325257523835";
-        ensureExistant(proof, root, key, value);
-    }
+    // // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/exist_middle.json
+    // function test_existMiddle() public {
+    //     bytes memory proof =
+    //         hex"0ad1030a14513334656d766f39447145585735325257523835121e76616c75655f666f725f513334656d766f394471455857353252575238351a090801180120012a010022250801122101e231d775380f2d663651e213cc726660e2ce0a2f2e9ee12cbb7df32294104a8c222708011201011a2014af194c63500236e52cc290ab24244fab39a520ece7e20fa93f4c9ff80c6626222508011221017966d2ead34418db2eaa04c0dffb9316805e8a0d421d1270c8954c35ee3221382225080112210172339e20a49bb16795a99bd905b47f99c45e5e5a9e6b7fb223dc8fe6751e1bda222708011201011a2053dd1ecc25ff906a0ef4db37ee068f3d8ad6d1d49913eefb847a675a681c5ffa222708011201011a20de90f9951a19497be7e389e02aa79e26faf77080e740e8743249a17a537f287d22250801122101ad4e53e981afc5a71e34ab0c4ffbccf1b468414d9d0939bd08edbd2461bc944a222708011201011a209b4cf89c3995b9dd66d58ab088846b2c6b59c52c6d10ec1d759ca9e9aa5eef5c222508011221013928a078bd66ab3949f5b1846b6d354dbdc1968a416607c7d91555ca26716667222708011201011a20d2d82cf8915b9ae6f92c7eae343e37d312ace05e654ce47acdf57d0a5490b873";
+    //     bytes memory root =
+    //         hex"494b16e3a64a85df143b2881bdd3ec94c3f8e18b343e8ff9c2d61afd05d040c8";
+    //     bytes memory key = hex"513334656d766f39447145585735325257523835";
+    //     bytes memory value =
+    //         hex"76616c75655f666f725f513334656d766f39447145585735325257523835";
+    //     ensureExistant(proof, root, key, value);
+    // }
 
-    // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/exist_right.json
-    function test_existRight() public {
-        bytes memory proof =
-            hex"0aab020a147a785a4e6b534c64634d655657526c7658456644121e76616c75655f666f725f7a785a4e6b534c64634d655657526c76584566441a090801180120012a0100222508011221012634b831468dbafb1fc61a979c348ff8462da9a7d550191a6afc916ade16cc9922250801122101ab814d419bfc94ee9920d0ce993ce5da011e43613daf4b6f302855760083d7dd222508011221015a1568c73eaeaba567a6b2b2944b0e9a0228c931884cb5942f58ed835b8a7ac522250801122101a171412db5ee84835ef247768914e835ff80b7711e4aa8060871c2667ec3ea2922250801122101f9c2491884de24fb61ba8f358a56b306a8989bd35f1f8a4c8dabce22f703cc14222508011221012f12a6aa6270eff8a1628052938ff5e36cfcc5bf2eaedc0941ee46398ebc7c38";
-        bytes memory root =
-            hex"f54227f1a7d90aa2bf7931066196fd3072b7fe6b1fbd49d1e26e85a90d9541bb";
-        bytes memory key = hex"7a785a4e6b534c64634d655657526c7658456644";
-        bytes memory value =
-            hex"76616c75655f666f725f7a785a4e6b534c64634d655657526c7658456644";
-        ensureExistant(proof, root, key, value);
+    // // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/exist_right.json
+    // function test_existRight() public {
+    //     bytes memory proof =
+    //         hex"0aab020a147a785a4e6b534c64634d655657526c7658456644121e76616c75655f666f725f7a785a4e6b534c64634d655657526c76584566441a090801180120012a0100222508011221012634b831468dbafb1fc61a979c348ff8462da9a7d550191a6afc916ade16cc9922250801122101ab814d419bfc94ee9920d0ce993ce5da011e43613daf4b6f302855760083d7dd222508011221015a1568c73eaeaba567a6b2b2944b0e9a0228c931884cb5942f58ed835b8a7ac522250801122101a171412db5ee84835ef247768914e835ff80b7711e4aa8060871c2667ec3ea2922250801122101f9c2491884de24fb61ba8f358a56b306a8989bd35f1f8a4c8dabce22f703cc14222508011221012f12a6aa6270eff8a1628052938ff5e36cfcc5bf2eaedc0941ee46398ebc7c38";
+    //     bytes memory root =
+    //         hex"f54227f1a7d90aa2bf7931066196fd3072b7fe6b1fbd49d1e26e85a90d9541bb";
+    //     bytes memory key = hex"7a785a4e6b534c64634d655657526c7658456644";
+    //     bytes memory value =
+    //         hex"76616c75655f666f725f7a785a4e6b534c64634d655657526c7658456644";
+    //     ensureExistant(proof, root, key, value);
+    // }
+
+    function getExists(IbcCoreCommitmentV1MerkleProof.Data memory decoded) public returns (UnionIcs23.ExistenceProof memory, UnionIcs23.ExistenceProof memory) {
+        UnionIcs23.ExistenceProof memory existProof;
+        existProof.key = decoded.proofs[0].exist.key;
+        existProof.value = decoded.proofs[0].exist.value;
+        existProof.leafPrefix = decoded.proofs[0].exist.leaf.prefix;
+
+        existProof.path = new UnionIcs23.InnerOp[](decoded.proofs[0].exist.path.length);
+        for (uint256 i = 0; i < existProof.path.length; i++) {
+            existProof.path[i].prefix = decoded.proofs[0].exist.path[i].prefix;
+            existProof.path[i].suffix = decoded.proofs[0].exist.path[i].suffix;
+        }
+
+        UnionIcs23.ExistenceProof memory existProof2;
+        existProof2.key = decoded.proofs[1].exist.key;
+        existProof2.value = decoded.proofs[1].exist.value;
+        existProof2.leafPrefix = decoded.proofs[1].exist.leaf.prefix;
+
+        existProof2.path = new UnionIcs23.InnerOp[](decoded.proofs[1].exist.path.length);
+        for (uint256 i = 0; i < existProof2.path.length; i++) {
+            existProof2.path[i].prefix = decoded.proofs[1].exist.path[i].prefix;
+            existProof2.path[i].suffix = decoded.proofs[1].exist.path[i].suffix;
+        }
+
+        return (existProof, existProof2);        
     }
 
     function test_accountExist() public {
@@ -133,8 +159,11 @@ contract ICS23Test is Test {
             hex"0a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c12218012001";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+
+        (UnionIcs23.ExistenceProof memory existProof, UnionIcs23.ExistenceProof memory existProof2) = getExists(decoded);
+
         bytes memory encoded =
-            abi.encode([decoded.proofs[0].exist, decoded.proofs[1].exist]);
+            abi.encode([existProof, existProof2]);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertTrue(
@@ -158,8 +187,10 @@ contract ICS23Test is Test {
             hex"0a0930382d7761736d2d3112230a0131120d4f524445525f4f524445524544120f4f524445525f554e4f524445524544180222250a0e636f6d6574626c732d6e65772d30120c636f6e6e656374696f6e2d301a050a036962632806";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+        (UnionIcs23.ExistenceProof memory existProof, UnionIcs23.ExistenceProof memory existProof2) = getExists(decoded);
+
         bytes memory encoded =
-            abi.encode([decoded.proofs[0].exist, decoded.proofs[1].exist]);
+            abi.encode([existProof, existProof2]);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertTrue(
@@ -183,8 +214,10 @@ contract ICS23Test is Test {
             hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e701";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+        (UnionIcs23.ExistenceProof memory existProof, UnionIcs23.ExistenceProof memory existProof2) = getExists(decoded);
+
         bytes memory encoded =
-            abi.encode([decoded.proofs[0].exist, decoded.proofs[1].exist]);
+            abi.encode([existProof, existProof2]);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertTrue(
@@ -208,8 +241,10 @@ contract ICS23Test is Test {
             hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e701";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+        (UnionIcs23.ExistenceProof memory existProof, UnionIcs23.ExistenceProof memory existProof2) = getExists(decoded);
+
         bytes memory encoded =
-            abi.encode([decoded.proofs[0].exist, decoded.proofs[1].exist]);
+            abi.encode([existProof, existProof2]);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertFalse(
@@ -233,8 +268,10 @@ contract ICS23Test is Test {
             hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e701";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+        (UnionIcs23.ExistenceProof memory existProof, UnionIcs23.ExistenceProof memory existProof2) = getExists(decoded);
+
         bytes memory encoded =
-            abi.encode([decoded.proofs[0].exist, decoded.proofs[1].exist]);
+            abi.encode([existProof, existProof2]);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertFalse(
@@ -258,8 +295,10 @@ contract ICS23Test is Test {
             hex"0a252f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e745374617465129d010a720a20d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b807818e0fac1950622310a04900000691a060a049000007022060a04900000712a060a049000007232110a040400000010ffffffffffffffffff01280c30203880024204080110034880c2d72f50a0f4a4011220e8dcc770de5a013041588233812f73ac797ec6078b0011cbcbfe49d474f4c1191a051081f2e700";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+        (UnionIcs23.ExistenceProof memory existProof, UnionIcs23.ExistenceProof memory existProof2) = getExists(decoded);
+
         bytes memory encoded =
-            abi.encode([decoded.proofs[0].exist, decoded.proofs[1].exist]);
+            abi.encode([existProof, existProof2]);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertFalse(
@@ -273,6 +312,49 @@ contract ICS23Test is Test {
         );
     }
 
+    function getNonExists(IbcCoreCommitmentV1MerkleProof.Data memory decoded) public returns (UnionIcs23.NonExistenceProof memory, UnionIcs23.ExistenceProof memory) {
+        UnionIcs23.NonExistenceProof memory nonExistProof;
+        nonExistProof.key = decoded.proofs[0].nonexist.key;
+    
+        UnionIcs23.ExistenceProof memory leftExistProof;
+        leftExistProof.key = decoded.proofs[0].nonexist.left.key;
+        leftExistProof.value = decoded.proofs[0].nonexist.left.value;
+        leftExistProof.leafPrefix = decoded.proofs[0].nonexist.left.leaf.prefix;
+
+        leftExistProof.path = new UnionIcs23.InnerOp[](decoded.proofs[0].nonexist.left.path.length);
+        for (uint256 i = 0; i < leftExistProof.path.length; i++) {
+            leftExistProof.path[i].prefix = decoded.proofs[0].nonexist.left.path[i].prefix;
+            leftExistProof.path[i].suffix = decoded.proofs[0].nonexist.left.path[i].suffix;
+        }
+
+        UnionIcs23.ExistenceProof memory rightExistProof;
+        rightExistProof.key = decoded.proofs[0].nonexist.right.key;
+        rightExistProof.value = decoded.proofs[0].nonexist.right.value;
+        rightExistProof.leafPrefix = decoded.proofs[0].nonexist.right.leaf.prefix;
+
+        rightExistProof.path = new UnionIcs23.InnerOp[](decoded.proofs[0].nonexist.right.path.length);
+        for (uint256 i = 0; i < rightExistProof.path.length; i++) {
+            rightExistProof.path[i].prefix = decoded.proofs[0].nonexist.right.path[i].prefix;
+            rightExistProof.path[i].suffix = decoded.proofs[0].nonexist.right.path[i].suffix;
+        }
+
+        nonExistProof.left = leftExistProof;
+        nonExistProof.right = rightExistProof;
+
+        UnionIcs23.ExistenceProof memory existProof2;
+        existProof2.key = decoded.proofs[1].exist.key;
+        existProof2.value = decoded.proofs[1].exist.value;
+        existProof2.leafPrefix = decoded.proofs[1].exist.leaf.prefix;
+
+        existProof2.path = new UnionIcs23.InnerOp[](decoded.proofs[1].exist.path.length);
+        for (uint256 i = 0; i < existProof2.path.length; i++) {
+            existProof2.path[i].prefix = decoded.proofs[1].exist.path[i].prefix;
+            existProof2.path[i].suffix = decoded.proofs[1].exist.path[i].suffix;
+        }
+
+        return (nonExistProof, existProof2);
+    }
+
     function test_accountNonExistence() public {
         vm.pauseGasMetering();
         bytes memory root =
@@ -281,8 +363,10 @@ contract ICS23Test is Test {
             hex"0a96061293060a15014152090b0c95c948edc407995560feed4a9df88812fa020a15014152090b0c95c948edc407995560feed4a9df81e129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c122180420031a0b0801180120012a0300027822290801122502047820170c890f01b9fa9ab803511bbc7be7c25359309f04d021a72e0a9b93b8ff72c020222c0801120504089601201a21205f282a80f1d186fa1f7b237f81e8bc9a4bb40d5a03cbbdffdd421b1ad4cb16f4222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef81afc020a150143e46d91544517a037a8029b6c7f86f62bab389b129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e3167306a786d79323567357436716461677132646b636c7578376334366b77796d38646563667712460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034611ea6606f6241fdeb0db1854a785eaa2fef5770694237daaf46057cadb3903180320031a0c0801180120012a0400029601222c0801120502049601201a2120532543090d1564b206e953fd6f97000d9b78bd5a8a424f551d483a58b3f54c57222a0801122604089601207e55a1ee8006e9c29c895a8de8ea8cdc6aaddc10e05ea3d3ee8fac786a73c02d20222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef80a80020afd010a0361636312205281c416bf4f80b9d99428a09f91ff311968a3b2adb199342d63c9db20a417e91a090801180120012a010022250801122101ba30cf8122e71a87fea08d0da9499e0373495a64e1648de8f08ca1a73e1fc1a8222708011201011a203489cd05a389a1d165f19003cea0994df9e55a5cb53b3d659417040be528b86d222708011201011a20e5c60ddccacb1c6b0be7957e8d7a86dc0f8bcec91c91d666d39eb1ebedd1bdf1222708011201011a2047a4c9a64496594e8b255443aa979293b2c7120150cf31e0eeeb8a2a987fd7e8222708011201011a2053bca15bed4becbdfd1b4cd0e63bd3845646022a99a2289a6678d8608f092207";
         IbcCoreCommitmentV1MerkleProof.Data memory decoded =
             IbcCoreCommitmentV1MerkleProof.decode(proof);
+        (UnionIcs23.NonExistenceProof memory nonExistProof, UnionIcs23.ExistenceProof memory existProof) = getNonExists(decoded);
+
         bytes memory encoded =
-            abi.encode(decoded.proofs[0].nonexist, decoded.proofs[1].exist);
+            abi.encode(nonExistProof, existProof);
         ICS23MembershipVerifier verifier = new ICS23MembershipVerifier();
         vm.resumeGasMetering();
         assertTrue(

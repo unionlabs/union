@@ -2,6 +2,7 @@ pragma solidity ^0.8.23;
 
 import "../core/IMembershipVerifier.sol";
 import "../lib/ICS23.sol";
+import "../lib/UnionICS23.sol";
 import "../proto/cosmos/ics23/v1/proofs.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
 
@@ -17,7 +18,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         fullPath[0] = prefix;
         fullPath[1] = path;
         return Ics23.verifyChainedMembership(
-            abi.decode(proof, (CosmosIcs23V1ExistenceProof.Data[2])),
+            abi.decode(proof, (UnionIcs23.ExistenceProof[2])),
             root,
             fullPath,
             value
@@ -34,13 +35,13 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         fullPath[0] = prefix;
         fullPath[1] = path;
         (
-            CosmosIcs23V1NonExistenceProof.Data memory nonexist,
-            CosmosIcs23V1ExistenceProof.Data memory exist
+            UnionIcs23.NonExistenceProof memory nonexist,
+            UnionIcs23.ExistenceProof memory exist
         ) = abi.decode(
             proof,
             (
-                CosmosIcs23V1NonExistenceProof.Data,
-                CosmosIcs23V1ExistenceProof.Data
+                UnionIcs23.NonExistenceProof,
+                UnionIcs23.ExistenceProof
             )
         );
         return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)

@@ -6,6 +6,7 @@ import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/utils/math/Math.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
 import "../proto/cosmos/ics23/v1/proofs.sol";
+import "./UnionICS23.sol";
 
 library Ics23 {
     function getIavlProofSpec()
@@ -88,13 +89,11 @@ library Ics23 {
     }
 
     function verifyChainedNonMembership(
-        CosmosIcs23V1NonExistenceProof.Data memory nonExistProof,
-        CosmosIcs23V1ExistenceProof.Data memory existProof,
+        UnionIcs23.NonExistenceProof memory nonExistProof,
+        UnionIcs23.ExistenceProof memory existProof,
         bytes memory root,
         bytes[] memory path
     ) internal pure returns (VerifyChainedNonMembershipError) {
-        CosmosIcs23V1ProofSpec.Data memory iavlSpec = getIavlProofSpec();
-
         (bytes memory subroot, Proof.CalculateRootError rCode) =
             Proof.calculateRoot(nonExistProof);
         if (rCode != Proof.CalculateRootError.None) {
@@ -103,7 +102,7 @@ library Ics23 {
 
         bytes memory key = path[1];
         Proof.VerifyNonExistenceError vCode =
-            Proof.verify(nonExistProof, iavlSpec, subroot, key);
+            Proof.verify(nonExistProof, UnionIcs23.getIavlProofSpec(), subroot, key);
 
         // Map non existence error to non membership error
         if (vCode != Proof.VerifyNonExistenceError.None) {
@@ -141,7 +140,7 @@ library Ics23 {
         }
 
         Proof.VerifyExistenceError mCode = Proof.verify(
-            existProof, getTendermintProofSpec(), subroot2, path[0], subroot
+            existProof, UnionIcs23.getTendermintProofSpec(), subroot2, path[0], subroot
         );
 
         if (mCode != Proof.VerifyExistenceError.None) {
@@ -185,7 +184,7 @@ library Ics23 {
     }
 
     function verifyChainedMembership(
-        CosmosIcs23V1ExistenceProof.Data[2] memory proofs,
+        UnionIcs23.ExistenceProof[2] memory proofs,
         bytes memory root,
         bytes[] memory path,
         bytes memory value
@@ -197,7 +196,7 @@ library Ics23 {
         }
 
         Proof.VerifyExistenceError vCode =
-            Proof.verify(proofs[0], getIavlProofSpec(), subroot, path[1], value);
+            Proof.verify(proofs[0], UnionIcs23.getIavlProofSpec(), subroot, path[1], value);
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
         }
@@ -209,7 +208,7 @@ library Ics23 {
         }
 
         vCode = Proof.verify(
-            proofs[1], getTendermintProofSpec(), subroot2, path[0], subroot
+            proofs[1], UnionIcs23.getTendermintProofSpec(), subroot2, path[0], subroot
         );
 
         if (vCode != Proof.VerifyExistenceError.None) {
@@ -254,26 +253,26 @@ library Ics23 {
     // verifyMembership, throws an exception in case anything goes wrong
     // NOTE: We are expecting `proof` to be `ExistentProof` only to avoid handling batch proofs
     // and doing decompressing.
-    function verifyMembership(
-        CosmosIcs23V1ProofSpec.Data memory spec,
-        bytes memory commitmentRoot,
-        CosmosIcs23V1CommitmentProof.Data memory proof,
-        bytes memory key,
-        bytes memory value
-    ) internal pure returns (VerifyMembershipError) {
-        CosmosIcs23V1ExistenceProof.Data memory exiProof = proof.exist;
-        //require(CosmosIcs23V1ExistenceProof.isNil(exiProof) == false); // dev: getExistProofForKey not available
-        if (CosmosIcs23V1ExistenceProof.isNil(exiProof)) {
-            return VerifyMembershipError.ExistenceProofIsNil;
-        }
-        Proof.VerifyExistenceError vCode =
-            Proof.verify(exiProof, spec, commitmentRoot, key, value);
-        if (vCode != Proof.VerifyExistenceError.None) {
-            return VerifyMembershipError.ProofVerify;
-        }
+    // function verifyMembership(
+    //     CosmosIcs23V1ProofSpec.Data memory spec,
+    //     bytes memory commitmentRoot,
+    //     CosmosIcs23V1CommitmentProof.Data memory proof,
+    //     bytes memory key,
+    //     bytes memory value
+    // ) internal pure returns (VerifyMembershipError) {
+    //     CosmosIcs23V1ExistenceProof.Data memory exiProof = proof.exist;
+    //     //require(CosmosIcs23V1ExistenceProof.isNil(exiProof) == false); // dev: getExistProofForKey not available
+    //     if (CosmosIcs23V1ExistenceProof.isNil(exiProof)) {
+    //         return VerifyMembershipError.ExistenceProofIsNil;
+    //     }
+    //     Proof.VerifyExistenceError vCode =
+    //         Proof.verify(exiProof, spec, commitmentRoot, key, value);
+    //     if (vCode != Proof.VerifyExistenceError.None) {
+    //         return VerifyMembershipError.ProofVerify;
+    //     }
 
-        return VerifyMembershipError.None;
-    }
+    //     return VerifyMembershipError.None;
+    // }
 
     /* enum VerifyNonMembershipError { */
     enum VerifyNonMembershipError {
@@ -283,41 +282,41 @@ library Ics23 {
     }
 
     // NOTE: We are expecting `proof` to be `NonExistentProof` to avoid handling batch proofs and decompressing
-    function verifyNonMembership(
-        CosmosIcs23V1ProofSpec.Data memory spec,
-        bytes memory commitmentRoot,
-        CosmosIcs23V1CommitmentProof.Data memory proof,
-        bytes memory key
-    ) internal pure returns (VerifyNonMembershipError) {
-        CosmosIcs23V1NonExistenceProof.Data memory nonProof = proof.nonexist;
-        //require(CosmosIcs23V1ExistenceProof.isNil(nonProof) == false); // dev: getNonExistProofForKey not available
-        if (CosmosIcs23V1NonExistenceProof.isNil(nonProof)) {
-            return VerifyNonMembershipError.NonExistenceProofIsNil;
-        }
-        Proof.VerifyNonExistenceError vCode =
-            Proof.verify(nonProof, spec, commitmentRoot, key);
-        if (vCode != Proof.VerifyNonExistenceError.None) {
-            return VerifyNonMembershipError.ProofVerify;
-        }
+    // function verifyNonMembership(
+    //     CosmosIcs23V1ProofSpec.Data memory spec,
+    //     bytes memory commitmentRoot,
+    //     CosmosIcs23V1CommitmentProof.Data memory proof,
+    //     bytes memory key
+    // ) internal pure returns (VerifyNonMembershipError) {
+    //     CosmosIcs23V1NonExistenceProof.Data memory nonProof = proof.nonexist;
+    //     //require(CosmosIcs23V1ExistenceProof.isNil(nonProof) == false); // dev: getNonExistProofForKey not available
+    //     if (CosmosIcs23V1NonExistenceProof.isNil(nonProof)) {
+    //         return VerifyNonMembershipError.NonExistenceProofIsNil;
+    //     }
+    //     Proof.VerifyNonExistenceError vCode =
+    //         Proof.verify(nonProof, spec, commitmentRoot, key);
+    //     if (vCode != Proof.VerifyNonExistenceError.None) {
+    //         return VerifyNonMembershipError.ProofVerify;
+    //     }
 
-        return VerifyNonMembershipError.None;
-    }
+    //     return VerifyNonMembershipError.None;
+    // }
 
     function isLeft(
-        CosmosIcs23V1ExistenceProof.Data memory left,
+        UnionIcs23.ExistenceProof memory left,
         bytes memory key
     ) private pure returns (bool) {
         // CosmosIcs23V1ExistenceProof.isNil does not work
-        return CosmosIcs23V1ExistenceProof._empty(left)
+        return UnionIcs23.empty(left)
             || Ops.compare(left.key, key) < 0;
     }
 
     function isRight(
-        CosmosIcs23V1ExistenceProof.Data memory right,
+        UnionIcs23.ExistenceProof memory right,
         bytes memory key
     ) private pure returns (bool) {
         // CosmosIcs23V1ExistenceProof.isNil does not work
-        return CosmosIcs23V1ExistenceProof._empty(right)
+        return UnionIcs23.empty(right)
             || Ops.compare(right.key, key) > 0;
     }
 }
@@ -332,8 +331,8 @@ library Ops {
     }
 
     // LeafOp operations
-    function applyOp(
-        CosmosIcs23V1LeafOp.Data memory leafOp,
+    function applyLeafOp(
+        bytes memory prefix,
         bytes memory key,
         bytes memory value
     ) internal pure returns (bytes memory, ApplyLeafOpError) {
@@ -343,6 +342,7 @@ library Ops {
         if (value.length == 0) return (empty, ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
+        // TODO(aeryz): do a custom implementation of this
         bytes memory encodedKey =
             new bytes(ProtoBufRuntime._sz_varint(key.length));
         ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
@@ -350,12 +350,13 @@ library Ops {
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes memory hashedValue = abi.encodePacked(sha256(value));
+        // TODO(aeryz): do a custom implementation of this
         bytes memory encodedValue =
             new bytes(ProtoBufRuntime._sz_varint(hashedValue.length));
         ProtoBufRuntime._encode_varint(hashedValue.length, 32, encodedValue);
         bytes memory pValue = abi.encodePacked(encodedValue, hashedValue);
 
-        bytes memory data = abi.encodePacked(leafOp.prefix, pKey, pValue);
+        bytes memory data = abi.encodePacked(prefix, pKey, pValue);
         bytes memory hashed = abi.encodePacked(sha256(data));
         return (hashed, ApplyLeafOpError.None);
     }
@@ -367,18 +368,6 @@ library Ops {
         MaxPrefixLength
     }
 
-    function checkAgainstSpec(
-        CosmosIcs23V1LeafOp.Data memory leafOp,
-        CosmosIcs23V1ProofSpec.Data memory spec
-    ) internal pure returns (CheckAgainstSpecError) {
-        // We don't check whether spec is compatible with the proof since only allow SHA256 and VAR_PROTO
-        bool hasprefix = hasPrefix(leafOp.prefix, spec.leaf_spec.prefix);
-        //require(hasprefix); // dev: checkAgainstSpec for LeafOp - Leaf Prefix doesn't start with
-        if (hasprefix == false) return CheckAgainstSpecError.HasPrefix;
-
-        return CheckAgainstSpecError.None;
-    }
-
     enum ApplyInnerOpError {
         None,
         ChildLength,
@@ -387,7 +376,7 @@ library Ops {
 
     // InnerOp operations
     function applyOp(
-        CosmosIcs23V1InnerOp.Data memory innerOp,
+        UnionIcs23.InnerOp memory innerOp,
         bytes memory child
     ) internal pure returns (bytes memory, ApplyInnerOpError) {
         //require(child.length > 0); // dev: Inner op needs child value
@@ -396,34 +385,26 @@ library Ops {
             abi.encodePacked(innerOp.prefix, child, innerOp.suffix);
 
         // inner_spec.hash is always SHA256 in the tm/iavl specs
-        bytes memory hashed = abi.encodePacked(sha256(preImage));
-
-        return (hashed, ApplyInnerOpError.None);
+        return (abi.encodePacked(sha256(preImage)), ApplyInnerOpError.None);
     }
 
     function checkAgainstSpec(
-        CosmosIcs23V1InnerOp.Data memory innerOp,
-        CosmosIcs23V1ProofSpec.Data memory spec
+        UnionIcs23.InnerOp memory innerOp,
+        UnionIcs23.ProofSpec memory spec
     ) internal pure returns (CheckAgainstSpecError) {
         // we don't check whether `hash` matches since we use `SHA256` anyways
         //require(innerOp.hash == spec.inner_spec.hash); // dev: checkAgainstSpec for InnerOp - Unexpected HashOp
-        uint256 minPrefixLength =
-            SafeCast.toUint256(spec.inner_spec.min_prefix_length);
         //require(innerOp.prefix.length >= minPrefixLength); // dev: InnerOp prefix too short;
-        if (innerOp.prefix.length < minPrefixLength) {
+        if (innerOp.prefix.length < spec.minPrefixLength) {
             return CheckAgainstSpecError.MinPrefixLength;
         }
-        bytes memory leafPrefix = spec.leaf_spec.prefix;
-        bool hasprefix = hasPrefix(innerOp.prefix, leafPrefix);
+        // spec prefix is always 0x00
+        if (innerOp.prefix[0] == 0) {
+            return CheckAgainstSpecError.HasPrefix;
+        }
         //require(hasprefix == false); // dev: Inner Prefix starts with wrong value
-        if (hasprefix) return CheckAgainstSpecError.HasPrefix;
-        uint256 childSize = SafeCast.toUint256(spec.inner_spec.child_size);
-        uint256 maxLeftChildBytes =
-            (spec.inner_spec.child_order.length - 1) * childSize;
-        uint256 maxPrefixLength =
-            SafeCast.toUint256(spec.inner_spec.max_prefix_length);
-        //require(innerOp.prefix.length <= maxPrefixLength + maxLeftChildBytes); // dev: InnerOp prefix too long
-        if (innerOp.prefix.length > maxPrefixLength + maxLeftChildBytes) {
+        //require(innerOp.prefix.length <= spec.maxPrefixLength + spec.childSize); // dev: InnerOp prefix too long
+        if (innerOp.prefix.length > spec.maxPrefixLength + spec.childSize) {
             return CheckAgainstSpecError.MaxPrefixLength;
         }
 
@@ -450,28 +431,6 @@ library Ops {
         }
         return 0;
     }
-
-    // private
-    enum DoLengthOpError {
-        None,
-        Require32DataLength,
-        Require64DataLength,
-        Unsupported
-    }
-
-    function hasPrefix(
-        bytes memory element,
-        bytes memory prefix
-    ) internal pure returns (bool) {
-        if (prefix.length == 0) {
-            return true;
-        }
-        if (prefix.length > element.length) {
-            return false;
-        }
-        bytes memory slice = BytesLib.slice(element, 0, prefix.length);
-        return BytesLib.equal(prefix, slice);
-    }
 }
 
 library Proof {
@@ -488,8 +447,8 @@ library Proof {
 
     // ExistenceProof
     function verify(
-        CosmosIcs23V1ExistenceProof.Data memory proof,
-        CosmosIcs23V1ProofSpec.Data memory spec,
+        UnionIcs23.ExistenceProof memory proof,
+        UnionIcs23.ProofSpec memory spec,
         bytes memory commitmentRoot,
         bytes memory key,
         bytes memory value
@@ -509,8 +468,9 @@ library Proof {
             return VerifyExistenceError.CalculateRoot;
         }
         //require(BytesLib.equal(root, commitmentRoot)); // dev: Calculcated root doesn't match provided root
-        bool rootMatch = BytesLib.equal(root, commitmentRoot);
-        if (rootMatch == false) return VerifyExistenceError.RootNotMatching;
+        if (BytesLib.equal(root, commitmentRoot) == false) {
+            return VerifyExistenceError.RootNotMatching;
+        }
 
         return VerifyExistenceError.None;
     }
@@ -523,17 +483,17 @@ library Proof {
         EmptyProof
     }
 
-    function calculateRoot(CosmosIcs23V1ExistenceProof.Data memory proof)
+    function calculateRoot(UnionIcs23.ExistenceProof memory proof)
         internal
         pure
         returns (bytes memory, CalculateRootError)
     {
         //require(LeafOp.isNil(proof.leaf) == false); // dev: Existence Proof needs defined LeafOp
-        if (CosmosIcs23V1LeafOp.isNil(proof.leaf)) {
+        if (proof.leafPrefix.length == 0) {
             return (empty, CalculateRootError.LeafNil);
         }
         (bytes memory root, Ops.ApplyLeafOpError lCode) =
-            Ops.applyOp(proof.leaf, proof.key, proof.value);
+            Ops.applyLeafOp(proof.leafPrefix, proof.key, proof.value);
         if (lCode != Ops.ApplyLeafOpError.None) {
             return (empty, CalculateRootError.LeafOp);
         }
@@ -557,35 +517,22 @@ library Proof {
     }
 
     function checkAgainstSpec(
-        CosmosIcs23V1ExistenceProof.Data memory proof,
-        CosmosIcs23V1ProofSpec.Data memory spec
+        UnionIcs23.ExistenceProof memory proof,
+        UnionIcs23.ProofSpec memory spec
     ) internal pure returns (CheckAgainstSpecError) {
         // LeafOp.isNil does not work
         //require(LeafOp._empty(proof.leaf) == false); // dev: Existence Proof needs defined LeafOp
-        if (CosmosIcs23V1LeafOp._empty(proof.leaf)) {
+        // TODO(aeryz): check if there is isempty function in solidity
+        if (proof.leafPrefix.length == 0) {
             return CheckAgainstSpecError.EmptyLeaf;
         }
         // LeafOp's checkAgainstSpec is inlined here since we only need to check the prefix here
         //require(hasprefix); // dev: checkAgainstSpec for LeafOp - Leaf Prefix doesn't start with
-        if (Ops.hasPrefix(proof.leaf.prefix, spec.leaf_spec.prefix) == false) {
+        // Both specs have the prefix 0x00
+        if (proof.leafPrefix[0] != 0) {
             return CheckAgainstSpecError.OpsCheckAgainstSpec;
         }
-        if (spec.min_depth > 0) {
-            bool innerOpsDepthTooShort =
-                proof.path.length < SafeCast.toUint256(int256(spec.min_depth));
-            //require(innerOpsDepthTooShort == false); // dev: InnerOps depth too short
-            if (innerOpsDepthTooShort) {
-                return CheckAgainstSpecError.InnerOpsDepthTooShort;
-            }
-        }
-        if (spec.max_depth > 0) {
-            bool innerOpsDepthTooLong =
-                proof.path.length > SafeCast.toUint256(int256(spec.max_depth));
-            //require(innerOpsDepthTooLong == false); // dev: InnerOps depth too long
-            if (innerOpsDepthTooLong) {
-                return CheckAgainstSpecError.InnerOpsDepthTooLong;
-            }
-        }
+        // we don't do any checks regarding min_depth, max_depth since they both are 0 in both specs
 
         Ops.CheckAgainstSpecError cCode = Ops.CheckAgainstSpecError.None;
         for (uint256 i = 0; i < proof.path.length; i++) {
@@ -610,15 +557,15 @@ library Proof {
 
     // CosmosIcs23V1NonExistenceProof
     function verify(
-        CosmosIcs23V1NonExistenceProof.Data memory proof,
-        CosmosIcs23V1ProofSpec.Data memory spec,
+        UnionIcs23.NonExistenceProof memory proof,
+        UnionIcs23.ProofSpec memory spec,
         bytes memory commitmentRoot,
         bytes memory key
     ) internal pure returns (VerifyNonExistenceError) {
         bytes memory leftKey;
         bytes memory rightKey;
         // CosmosIcs23V1ExistenceProof.isNil does not work
-        if (CosmosIcs23V1ExistenceProof._empty(proof.left) == false) {
+        if (UnionIcs23.empty(proof.left) == false) {
             VerifyExistenceError eCode = verify(
                 proof.left,
                 spec,
@@ -632,7 +579,7 @@ library Proof {
 
             leftKey = proof.left.key;
         }
-        if (CosmosIcs23V1ExistenceProof._empty(proof.right) == false) {
+        if (UnionIcs23.empty(proof.right) == false) {
             VerifyExistenceError eCode = verify(
                 proof.right,
                 spec,
@@ -661,19 +608,19 @@ library Proof {
             return VerifyNonExistenceError.LeftKeyRange;
         }
         if (leftKey.length == 0) {
-            //require(isLeftMost(spec.inner_spec, proof.right.path)); // dev: left proof missing, right proof must be left-most
-            if (isLeftMost(spec.inner_spec, proof.right.path) == false) {
+            //require(isLeftMost(spec, proof.right.path)); // dev: left proof missing, right proof must be left-most
+            if (isLeftMost(spec, proof.right.path) == false) {
                 return VerifyNonExistenceError.RightProofLeftMost;
             }
         } else if (rightKey.length == 0) {
-            //require(isRightMost(spec.inner_spec, proof.left.path)); // dev: isRightMost: right proof missing, left proof must be right-most
-            if (isRightMost(spec.inner_spec, proof.left.path) == false) {
+            //require(isRightMost(spec, proof.left.path)); // dev: isRightMost: right proof missing, left proof must be right-most
+            if (isRightMost(spec, proof.left.path) == false) {
                 return VerifyNonExistenceError.LeftProofRightMost;
             }
         } else {
-            //require(isLeftNeighbor(spec.inner_spec, proof.left.path, proof.right.path)); // dev: isLeftNeighbor: right proof missing, left proof must be right-most
+            //require(isLeftNeighbor(spec, proof.left.path, proof.right.path)); // dev: isLeftNeighbor: right proof missing, left proof must be right-most
             bool isLeftNeigh = isLeftNeighbor(
-                spec.inner_spec, proof.left.path, proof.right.path
+                spec, proof.left.path, proof.right.path
             );
             if (isLeftNeigh == false) {
                 return VerifyNonExistenceError.IsLeftNeighbor;
@@ -683,50 +630,31 @@ library Proof {
         return VerifyNonExistenceError.None;
     }
 
-    function calculateRoot(CosmosIcs23V1NonExistenceProof.Data memory proof)
+    function calculateRoot(UnionIcs23.NonExistenceProof memory proof)
         internal
         pure
         returns (bytes memory, CalculateRootError)
     {
-        if (CosmosIcs23V1ExistenceProof._empty(proof.left) == false) {
+        if (!UnionIcs23.empty(proof.left)) {
             return calculateRoot(proof.left);
         }
-        if (CosmosIcs23V1ExistenceProof._empty(proof.right) == false) {
+        if (!UnionIcs23.empty(proof.right)) {
             return calculateRoot(proof.right);
         }
         //revert(); // dev: Nonexistence proof has empty Left and Right proof
         return (empty, CalculateRootError.EmptyProof);
     }
 
-    // commitment proof
-    function calculateRoot(CosmosIcs23V1CommitmentProof.Data memory proof)
-        internal
-        pure
-        returns (bytes memory, CalculateRootError)
-    {
-        // We ignore batch and compressed batch as an optimization
-        if (CosmosIcs23V1ExistenceProof._empty(proof.exist) == false) {
-            return calculateRoot(proof.exist);
-        }
-        if (CosmosIcs23V1NonExistenceProof._empty(proof.nonexist) == false) {
-            return calculateRoot(proof.nonexist);
-        }
-        //revert(); // dev: calculateRoot(CommitmentProof) empty proof
-        return (empty, CalculateRootError.EmptyProof);
-    }
-
     // private
     function isLeftMost(
-        CosmosIcs23V1InnerSpec.Data memory spec,
-        CosmosIcs23V1InnerOp.Data[] memory path
+        UnionIcs23.ProofSpec memory spec,
+        UnionIcs23.InnerOp[] memory path
     ) private pure returns (bool) {
         (
             uint256 minPrefix,
             uint256 maxPrefix,
-            uint256 suffix,
-            GetPaddingError gCode
+            uint256 suffix
         ) = getPadding(spec, 0);
-        if (gCode != GetPaddingError.None) return false;
         for (uint256 i = 0; i < path.length; i++) {
             if (hasPadding(path[i], minPrefix, maxPrefix, suffix) == false) {
                 return false;
@@ -736,17 +664,14 @@ library Proof {
     }
 
     function isRightMost(
-        CosmosIcs23V1InnerSpec.Data memory spec,
-        CosmosIcs23V1InnerOp.Data[] memory path
+        UnionIcs23.ProofSpec memory spec,
+        UnionIcs23.InnerOp[] memory path
     ) private pure returns (bool) {
-        uint256 last = spec.child_order.length - 1;
         (
             uint256 minPrefix,
             uint256 maxPrefix,
-            uint256 suffix,
-            GetPaddingError gCode
-        ) = getPadding(spec, last);
-        if (gCode != GetPaddingError.None) return false;
+            uint256 suffix
+        ) = getPadding(spec, 1);
         for (uint256 i = 0; i < path.length; i++) {
             if (hasPadding(path[i], minPrefix, maxPrefix, suffix) == false) {
                 return false;
@@ -757,9 +682,9 @@ library Proof {
     }
 
     function isLeftStep(
-        CosmosIcs23V1InnerSpec.Data memory spec,
-        CosmosIcs23V1InnerOp.Data memory left,
-        CosmosIcs23V1InnerOp.Data memory right
+        UnionIcs23.ProofSpec memory spec,
+        UnionIcs23.InnerOp memory left,
+        UnionIcs23.InnerOp memory right
     ) private pure returns (bool) {
         (uint256 leftIdx, OrderFromPaddingError lCode) =
             orderFromPadding(spec, left);
@@ -773,9 +698,9 @@ library Proof {
     }
 
     function isLeftNeighbor(
-        CosmosIcs23V1InnerSpec.Data memory spec,
-        CosmosIcs23V1InnerOp.Data[] memory left,
-        CosmosIcs23V1InnerOp.Data[] memory right
+        UnionIcs23.ProofSpec memory spec,
+        UnionIcs23.InnerOp[] memory left,
+        UnionIcs23.InnerOp[] memory right
     ) private pure returns (bool) {
         uint256 leftIdx = left.length - 1;
         uint256 rightIdx = right.length - 1;
@@ -805,21 +730,16 @@ library Proof {
 
     enum OrderFromPaddingError {
         None,
-        NotFound,
-        GetPadding
+        NotFound
     }
 
     function orderFromPadding(
-        CosmosIcs23V1InnerSpec.Data memory spec,
-        CosmosIcs23V1InnerOp.Data memory op
+        UnionIcs23.ProofSpec memory spec,
+        UnionIcs23.InnerOp memory op
     ) private pure returns (uint256, OrderFromPaddingError) {
-        uint256 maxBranch = spec.child_order.length;
-        for (uint256 branch = 0; branch < maxBranch; branch++) {
-            (uint256 minp, uint256 maxp, uint256 suffix, GetPaddingError gCode)
+        for (uint256 branch = 0; branch < 2; branch++) {
+            (uint256 minp, uint256 maxp, uint256 suffix)
             = getPadding(spec, branch);
-            if (gCode != GetPaddingError.None) {
-                return (0, OrderFromPaddingError.GetPadding);
-            }
             if (hasPadding(op, minp, maxp, suffix) == true) {
                 return (branch, OrderFromPaddingError.None);
             }
@@ -828,13 +748,8 @@ library Proof {
         return (0, OrderFromPaddingError.NotFound);
     }
 
-    enum GetPaddingError {
-        None,
-        GetPosition
-    }
-
     function getPadding(
-        CosmosIcs23V1InnerSpec.Data memory spec,
+        UnionIcs23.ProofSpec memory spec,
         uint256 branch
     )
         private
@@ -842,47 +757,19 @@ library Proof {
         returns (
             uint256 minPrefix,
             uint256 maxPrefix,
-            uint256 suffix,
-            GetPaddingError
+            uint256 suffix
         )
     {
-        uint256 uChildSize = SafeCast.toUint256(spec.child_size);
-        (uint256 idx, GetPositionError gCode) =
-            getPosition(spec.child_order, branch);
-        if (gCode != GetPositionError.None) {
-            return (0, 0, 0, GetPaddingError.GetPosition);
-        }
-        uint256 prefix = idx * uChildSize;
-        minPrefix = prefix + SafeCast.toUint256(spec.min_prefix_length);
-        maxPrefix = prefix + SafeCast.toUint256(spec.max_prefix_length);
-        suffix = (spec.child_order.length - 1 - idx) * uChildSize;
+        uint256 prefix = branch * spec.childSize;
+        minPrefix = prefix + spec.minPrefixLength;
+        maxPrefix = prefix + spec.maxPrefixLength;
+        suffix = (1 - branch) * spec.childSize;
 
-        return (minPrefix, maxPrefix, suffix, GetPaddingError.None);
-    }
-
-    enum GetPositionError {
-        None,
-        BranchLength,
-        NoFound
-    }
-
-    function getPosition(
-        int32[] memory order,
-        uint256 branch
-    ) private pure returns (uint256, GetPositionError) {
-        //require(branch < order.length); // dev: invalid branch
-        if (branch >= order.length) return (0, GetPositionError.BranchLength);
-        for (uint256 i = 0; i < order.length; i++) {
-            if (SafeCast.toUint256(order[i]) == branch) {
-                return (i, GetPositionError.None);
-            }
-        }
-        //revert(); // dev: branch not found in order
-        return (0, GetPositionError.NoFound);
+        return (minPrefix, maxPrefix, suffix);
     }
 
     function hasPadding(
-        CosmosIcs23V1InnerOp.Data memory op,
+        UnionIcs23.InnerOp memory op,
         uint256 minPrefix,
         uint256 maxPrefix,
         uint256 suffix
@@ -893,12 +780,12 @@ library Proof {
     }
 
     function sliceInnerOps(
-        CosmosIcs23V1InnerOp.Data[] memory array,
+        UnionIcs23.InnerOp[] memory array,
         uint256 start,
         uint256 end
-    ) private pure returns (CosmosIcs23V1InnerOp.Data[] memory) {
-        CosmosIcs23V1InnerOp.Data[] memory slice =
-            new CosmosIcs23V1InnerOp.Data[](end - start);
+    ) private pure returns (UnionIcs23.InnerOp[] memory) {
+        UnionIcs23.InnerOp[] memory slice =
+            new UnionIcs23.InnerOp[](end - start);
         for (uint256 i = start; i < end; i++) {
             slice[i] = array[i];
         }
