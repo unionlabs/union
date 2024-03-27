@@ -19,7 +19,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         fullPath[1] = path;
         return Ics23.verifyChainedMembership(
             abi.decode(proof, (UnionIcs23.ExistenceProof[2])),
-            root,
+            bytesToBytes32(root),
             fullPath,
             value
         ) == Ics23.VerifyChainedMembershipError.None;
@@ -40,7 +40,16 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         ) = abi.decode(
             proof, (UnionIcs23.NonExistenceProof, UnionIcs23.ExistenceProof)
         );
-        return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)
+        return Ics23.verifyChainedNonMembership(nonexist, exist, bytesToBytes32(root), fullPath)
             == Ics23.VerifyChainedNonMembershipError.None;
+    }
+
+    function bytesToBytes32(bytes memory source) private pure returns (bytes32 result) {
+        if (source.length == 0) {
+            return 0x0;
+        }
+        assembly {
+            result := mload(add(source, 32))
+        }
     }
 }
