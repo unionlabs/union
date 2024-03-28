@@ -20,6 +20,7 @@
     "@astrojs/starlight-tailwind": "^2.0.1",
     "@astrojs/svelte": "^5.2.0",
     "@astrojs/tailwind": "^5.1.0",
+    "@splinetool/viewer": "^1.0.76",
     "@expressive-code/plugin-collapsible-sections": "^0.33.5",
     "@splinetool/runtime": "^1.0.68",
     "@urql/svelte": "^4.1.0",
