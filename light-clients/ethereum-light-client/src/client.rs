@@ -956,8 +956,7 @@ mod test {
             .trusted_sync_committee
             .sync_committee
             .get()
-            .aggregate_pubkey
-            .clone();
+            .aggregate_pubkey;
         pubkey.0[0] ^= u8::MAX;
         update
             .trusted_sync_committee
@@ -1067,7 +1066,7 @@ mod test {
         for proof in proofs {
             assert!(do_verify_membership(
                 commitment_path.clone(),
-                storage_root.clone(),
+                storage_root,
                 slot,
                 proof,
                 connection_end.clone().encode_as::<Proto>(),

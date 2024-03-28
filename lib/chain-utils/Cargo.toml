@@ -28,6 +28,7 @@ num_enum                 = "0.7.0"
 prost                    = { workspace = true }
 reqwest                  = { workspace = true }
 scroll-api               = { workspace = true }
+scroll-rpc               = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 sha2                     = { workspace = true }

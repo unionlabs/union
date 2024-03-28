@@ -337,6 +337,7 @@ pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
 pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
 pub type HeaderOf<C> = <C as Chain>::Header;
 pub type HeightOf<C> = <C as Chain>::Height;
+pub type IbcStateEncodingOf<C> = <C as Chain>::IbcStateEncoding;
 pub type ChainIdOf<C> = <<C as Chain>::SelfClientState as ClientState>::ChainId;
 pub type ClientIdOf<C> = <C as Chain>::ClientId;
 pub type ClientTypeOf<C> = <C as Chain>::ClientType;

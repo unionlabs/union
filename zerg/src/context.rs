@@ -75,10 +75,8 @@ impl Context {
         let mut ethereum_accounts = HashMap::new();
 
         let chain_id = ethereum.chain_id().0.as_u64();
-        let ucs01_relay = ucs01relay::UCS01Relay::new(
-            zerg_config.ethereum_contract.clone(),
-            ethereum.provider.clone(),
-        );
+        let ucs01_relay =
+            ucs01relay::UCS01Relay::new(zerg_config.ethereum_contract, ethereum.provider.clone());
         tracing::debug!("Created usc01 relay.");
         let denom = format!(
             "wasm.{}/{}/{}",
@@ -104,7 +102,7 @@ impl Context {
 
             let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
-            let ecr_contact_address = zerg_config.ethereum_contract.clone();
+            let ecr_contact_address = zerg_config.ethereum_contract;
 
             tokio::spawn(async move {
                 if let Ok(res) = erc_contract
@@ -190,7 +188,7 @@ impl Context {
                                 let tx_res = self
                                     .union
                                     .tm_client
-                                    .tx(tx_hash.clone().into_bytes().try_into().expect("Bytes are Hash"), false)
+                                    .tx(tx_hash.into_bytes().try_into().expect("Bytes are Hash"), false)
                                     .await
                                     .unwrap();
                                 let events: Result<Vec<_>, _> = tx_res
@@ -263,7 +261,7 @@ impl Context {
         ));
 
         let ucs01_relay = ucs01relay::UCS01Relay::new(
-            self.zerg_config.ethereum_contract.clone(),
+            self.zerg_config.ethereum_contract,
             signer_middleware.clone(),
         );
 

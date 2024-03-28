@@ -71,7 +71,7 @@ pub trait EthereumChain:
     }
 }
 
-impl<C: ChainSpec> EthereumChain for Ethereum<C> {
+impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
     async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
         self.beacon_api_client
             .execution_height(beacon_api::client::BlockId::Slot(slot))

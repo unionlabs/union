@@ -12,6 +12,7 @@ use chain_utils::{
     cosmos::Cosmos,
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     ethereum::Ethereum,
+    scroll::Scroll,
     union::Union,
     wasm::Wasm,
     Chains,
@@ -25,7 +26,8 @@ use unionlabs::{
     google::protobuf::any::{mk_any, Any, IntoAny},
     hash::H256,
     ibc::{core::client::height::IsHeight, lightclients::wasm},
-    proof::{self},
+    never::Never,
+    proof,
     traits::{
         Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
         HeightOf,
@@ -55,15 +57,6 @@ pub mod msg;
 pub mod wait;
 
 pub mod chain_impls;
-
-// pub trait RelayerMsgDatagram = Debug
-//     + Display
-//     + Clone
-//     + PartialEq
-//     + Serialize
-//     + for<'de> Deserialize<'de>
-//     + 'static
-//     + MaybeArbitrary;
 
 pub trait ChainExt: Chain {
     type Data<Tr: ChainExt>: QueueMsgTypesTraits;
@@ -282,6 +275,13 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
         Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
     ),
 
+    // The 08-wasm client tracking the state of Scroll.
+    #[display(fmt = "ScrollOnUnion({}, {})", "_0.chain_id", "_0.t")]
+    ScrollOnUnion(Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>),
+    // The solidity client on Scroll tracking the state of Wasm<Union>.
+    #[display(fmt = "UnionOnScroll({}, {})", "_0.chain_id", "_0.t")]
+    UnionOnScroll(Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>),
+
     #[display(fmt = "CosmosOnUnion({}, {})", "_0.chain_id", "_0.t")]
     CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
     #[display(fmt = "UnionOnCosmos({}, {})", "_0.chain_id", "_0.t")]
@@ -322,6 +322,21 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
         >,
     ),
 
+    ScrollOnUnion(
+        Inner<
+            Wasm<Union>,
+            Scroll,
+            Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>,
+        >,
+    ),
+    UnionOnScroll(
+        Inner<
+            Scroll,
+            Wasm<Union>,
+            Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>,
+        >,
+    ),
+
     CosmosOnUnion(
         Inner<
             Union,
@@ -353,6 +368,8 @@ impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIden
             AnyLightClientIdentified::UnionOnEthereumMinimal(t) => {
                 Self::UnionOnEthereumMinimal(Inner::new(t))
             }
+            AnyLightClientIdentified::ScrollOnUnion(t) => Self::ScrollOnUnion(Inner::new(t)),
+            AnyLightClientIdentified::UnionOnScroll(t) => Self::UnionOnScroll(Inner::new(t)),
             AnyLightClientIdentified::CosmosOnUnion(t) => Self::CosmosOnUnion(Inner::new(t)),
             AnyLightClientIdentified::UnionOnCosmos(t) => Self::UnionOnCosmos(Inner::new(t)),
         }
@@ -374,6 +391,8 @@ impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClien
             AnyLightClientIdentifiedSerde::UnionOnEthereumMinimal(t) => {
                 Self::UnionOnEthereumMinimal(t.inner)
             }
+            AnyLightClientIdentifiedSerde::ScrollOnUnion(t) => Self::ScrollOnUnion(t.inner),
+            AnyLightClientIdentifiedSerde::UnionOnScroll(t) => Self::UnionOnScroll(t.inner),
             AnyLightClientIdentifiedSerde::CosmosOnUnion(t) => Self::CosmosOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnCosmos(t) => Self::UnionOnCosmos(t.inner),
         }
@@ -463,6 +482,15 @@ pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
         _: Self,
         _: VecDeque<AnyLightClientIdentified<AnyData>>,
     ) -> QueueMsg<RelayerMsgTypes>;
+}
+
+impl<Hc: Chain, Tr> DoAggregate for Identified<Hc, Tr, Never> {
+    fn do_aggregate(
+        s: Self,
+        _: VecDeque<AnyLightClientIdentified<AnyData>>,
+    ) -> QueueMsg<RelayerMsgTypes> {
+        match s.t {}
+    }
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
@@ -826,6 +854,7 @@ macro_rules! any_lc {
 
                 $expr
             }
+
             AnyLightClientIdentified::EthereumMinimalOnUnion($msg) => {
                 #[allow(dead_code)]
                 type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
@@ -842,6 +871,24 @@ macro_rules! any_lc {
 
                 $expr
             }
+
+            AnyLightClientIdentified::ScrollOnUnion($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::scroll::Scroll;
+
+                $expr
+            }
+            AnyLightClientIdentified::UnionOnScroll($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::scroll::Scroll;
+                #[allow(dead_code)]
+                type Tr = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+
+                $expr
+            }
+
             AnyLightClientIdentified::CosmosOnUnion($msg) => {
                 #[allow(dead_code)]
                 type Hc = chain_utils::union::Union;

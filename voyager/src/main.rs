@@ -9,7 +9,7 @@
 
 use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode, sync::Arc};
 
-use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm};
+use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm};
 use clap::Parser;
 use queue_msg::QueueMsg;
 use sqlx::{query_as, PgPool};
@@ -218,6 +218,15 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                             )
                             .await
                         }
+                        (AnyChain::Union(union), ChainConfigType::Scroll(_)) => {
+                            any_state_proof_to_json::<Wasm<Union>, Scroll>(
+                                chains,
+                                path,
+                                Wasm(union),
+                                at,
+                            )
+                            .await
+                        }
                         (
                             AnyChain::Union(union),
                             ChainConfigType::Ethereum(EthereumChainConfig {
@@ -325,7 +334,9 @@ mod tests {
     use std::marker::PhantomData;
 
     use block_message::BlockPollingTypes;
-    use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm};
+    use chain_utils::{
+        cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm,
+    };
     use hex_literal::hex;
     use queue_msg::{
         aggregate, defer_relative, event, fetch, msg, repeat, seq, QueueMsg, QueueMsgTypes,
@@ -370,6 +381,7 @@ mod tests {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
         let cosmos_chain_id: String = parse!("simd-devnet-1");
+        let scroll_chain_id: U256 = parse!("534351");
 
         println!("---------------------------------------");
         println!("Union - Eth (Sending to Union) Connection Open: ");
@@ -563,6 +575,51 @@ mod tests {
                 defer_relative(10),
             ]),
         ));
+
+        println!("---------------------------------------");
+        println!("Scroll - Union (Sending to Union) Create Scroll lightclient on Union: ");
+        println!("---------------------------------------");
+        print_json::<RelayerMsgTypes>(aggregate(
+            [
+                fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
+                    scroll_chain_id,
+                    FetchSelfClientState {
+                        at: QueryHeight::Latest,
+                        __marker: PhantomData,
+                    },
+                )),
+                fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
+                    scroll_chain_id,
+                    FetchSelfConsensusState {
+                        at: QueryHeight::Latest,
+                        __marker: PhantomData,
+                    },
+                )),
+            ],
+            [],
+            relay_message::id::<Wasm<Union>, Scroll, _>(
+                union_chain_id.clone(),
+                AggregateCreateClient {
+                    config: WasmConfig {
+                        checksum: H256(hex!(
+                            "c4c38c95b12a03dabe366dab1a19671193b5f8de7abf53eb3ecabbb946a4ac88"
+                        )),
+                    },
+                    __marker: PhantomData,
+                },
+            ),
+        ));
+
+        println!("---------------------------------------");
+        println!("Scroll - single update client");
+        println!("---------------------------------------");
+        print_json::<RelayerMsgTypes>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
+            scroll_chain_id,
+            relay_message::event::Command::UpdateClient {
+                client_id: parse!("cometbls-0"),
+                __marker: PhantomData,
+            },
+        )));
 
         println!("---------------------------------------");
         println!("Union - Eth Create Both Clients: ");

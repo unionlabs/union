@@ -1583,7 +1583,6 @@ pub struct Any {
     pub type_url: ::prost::alloc::string::String,
     /// Must be a valid serialized protocol buffer of the above specified type.
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Any {

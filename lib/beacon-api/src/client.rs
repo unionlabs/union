@@ -11,6 +11,7 @@ use unionlabs::{
         SignedBeaconBlock,
     },
     hash::H256,
+    typenum::Unsigned,
 };
 
 use crate::{
@@ -109,6 +110,57 @@ impl<C: ChainSpec> BeaconApiClient<C> {
         tracing::debug!("beacon height {block_id} is execution height {height}");
 
         Ok(height)
+    }
+
+    pub async fn bootstrap_for_slot(&self, slot: u64) -> Result<Response<LightClientBootstrap<C>>> {
+        // NOTE(benluelo): While this is technically two actions, I consider it to be one
+        // action - if the beacon chain doesn't have the header, it won't have the bootstrap
+        // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
+        // functionality; I'm surprised it doesn't.
+
+        let mut amount_of_slots_back: u64 = 0;
+
+        let floored_slot = slot
+            / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
+            * (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64);
+
+        tracing::info!("fetching bootstrap at {}", floored_slot);
+
+        loop {
+            let header_response = self
+                .header(BlockId::Slot(floored_slot - amount_of_slots_back))
+                .await;
+
+            let header = match header_response {
+                Ok(header) => header,
+                Err(Error::NotFound(NotFoundError {
+                    status_code: _,
+                    error: _,
+                    message,
+                })) if message.starts_with("No block found for id") => {
+                    amount_of_slots_back += 1;
+                    continue;
+                }
+
+                Err(err) => return Err(err),
+            };
+
+            let bootstrap_response = self.bootstrap(header.data.root).await;
+
+            match bootstrap_response {
+                Ok(ok) => break Ok(ok),
+                Err(err) => match err {
+                    Error::Internal(InternalServerError {
+                        status_code: _,
+                        error: _,
+                        message,
+                    }) if message.starts_with("syncCommitteeWitness not available") => {
+                        amount_of_slots_back += 1;
+                    }
+                    _ => return Err(err),
+                },
+            };
+        }
     }
 
     // pub async fn get_light_client_updates_simple<

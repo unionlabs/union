@@ -35,11 +35,11 @@ async fn do_main() {
 
     // hash
     client
-        .block(BlockId::Hash(slot_header.data.root.clone()))
+        .block(BlockId::Hash(slot_header.data.root))
         .await
         .unwrap();
     client
-        .header(BlockId::Hash(slot_header.data.root.clone()))
+        .header(BlockId::Hash(slot_header.data.root))
         .await
         .unwrap();
 

@@ -1,4 +1,4 @@
-use std::{num::NonZeroU64, sync::Arc};
+use std::{error::Error, num::NonZeroU64, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
 use contracts::ibc_handler::IBCHandler;
@@ -8,11 +8,12 @@ use ethers::{
     signers::LocalWallet,
     utils::secret_key_to_address,
 };
-use futures::FutureExt;
+use futures::{FutureExt, TryFutureExt};
 use scroll_api::ScrollClient;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::Mainnet,
+    google::protobuf::any::Any,
     hash::{H160, H256},
     ibc::{core::client::height::Height, lightclients::scroll},
     id::{ChannelId, PortId},
@@ -25,6 +26,8 @@ use crate::{
         self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware, Readonly,
     },
     private_key::PrivateKey,
+    union::Union,
+    wasm::Wasm,
     Pool,
 };
 
@@ -42,12 +45,14 @@ pub struct Scroll {
     /// The address of the `IBCHandler` smart contract deployed on scroll.
     pub ibc_handler_address: H160,
     pub scroll_api_client: ScrollClient,
+    pub scroll_rpc: scroll_rpc::JsonRpcClient,
     pub l1: Ethereum<Mainnet, Readonly>,
 
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
     pub l1_client_id: String,
+    pub union_grpc_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,6 +72,7 @@ pub struct Config {
     pub l1_client_id: String,
     pub l1: ethereum::Config<Readonly>,
     pub scroll_api: String,
+    pub union_grpc_url: String,
 }
 
 impl EthereumChain for Scroll {
@@ -93,11 +99,13 @@ pub enum ScrollInitError {
     Ws(#[from] WsClientError),
     #[error("provider error")]
     Provider(#[from] ProviderError),
+    #[error("jsonrpc error")]
+    JsonRpc(#[from] scroll_rpc::JsonRpcError),
 }
 
 impl Scroll {
     pub async fn new(config: Config) -> Result<Self, ScrollInitError> {
-        let provider = Provider::new(Ws::connect(config.scroll_eth_rpc_api).await?);
+        let provider = Provider::new(Ws::connect(config.scroll_eth_rpc_api.clone()).await?);
 
         let chain_id = provider.get_chainid().await?;
         tracing::info!(?chain_id);
@@ -127,6 +135,8 @@ impl Scroll {
             rollup_finalized_state_roots_slot: config.rollup_finalized_state_roots_slot,
             rollup_last_finalized_batch_index_slot: config.rollup_last_finalized_batch_index_slot,
             l1_client_id: config.l1_client_id,
+            union_grpc_url: config.union_grpc_url,
+            scroll_rpc: scroll_rpc::JsonRpcClient::new(config.scroll_eth_rpc_api).await?,
         })
     }
 
@@ -179,6 +189,8 @@ impl FromStrExact for ScrollChainType {
     const EXPECTING: &'static str = "scroll";
 }
 
+type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
+
 impl Chain for Scroll {
     type ChainType = ScrollChainType;
 
@@ -200,24 +212,48 @@ impl Chain for Scroll {
 
     type ClientType = String;
 
-    type Error = <Ethereum<Mainnet> as Chain>::Error;
+    type Error = BoxDynError;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
     }
 
     async fn query_latest_height(&self) -> Result<Self::Height, Self::Error> {
-        self.l1.query_latest_height().await
+        // the latest height of scroll is the latest height of the l1 light client on union
+        let l1_client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
+            self.union_grpc_url.clone(),
+        )
+        .await?
+        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+            client_id: self.l1_client_id.clone(),
+        })
+        .await?
+        .into_inner()
+        .client_state
+        .ok_or("client state missing???")?;
+
+        // don't worry about it
+        let Any(l1_client_state) =
+            <<Wasm<Union> as Chain>::StoredClientState<Ethereum<Mainnet>>>::try_from(
+                l1_client_state,
+            )
+            .unwrap();
+
+        Ok(self.l1.make_height(l1_client_state.data.latest_slot))
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Self::Height, Self::Error> {
-        self.l1.query_latest_height_as_destination().await
+        // the height of scroll (as destination) is the beacon height of the l1
+        self.l1
+            .query_latest_height_as_destination()
+            .await
+            .map_err(Into::into)
     }
 
     fn query_latest_timestamp(
         &self,
     ) -> impl futures::prelude::Future<Output = Result<i64, Self::Error>> + '_ {
-        self.l1.query_latest_timestamp()
+        self.l1.query_latest_timestamp().map_err(Into::into)
     }
 
     async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
@@ -227,26 +263,19 @@ impl Chain for Scroll {
             latest_batch_index: self
                 .batch_index_of_beacon_slot(height.revision_height)
                 .await,
+            latest_batch_index_slot: self.rollup_last_finalized_batch_index_slot,
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,
             },
             rollup_contract_address: self.rollup_contract_address,
             rollup_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
-            ibc_contract_address: self.l1.ibc_handler_address,
+            ibc_contract_address: self.ibc_handler_address,
             ibc_commitment_slot: U256::from(0),
         }
     }
 
     async fn self_consensus_state(&self, height: Self::Height) -> Self::SelfConsensusState {
-        let trusted_header = self
-            .l1
-            .beacon_api_client
-            .header(beacon_api::client::BlockId::Slot(height.revision_height))
-            .await
-            .unwrap()
-            .data;
-
         let batch_index = self
             .batch_index_of_beacon_slot(height.revision_height)
             .await;
@@ -270,7 +299,7 @@ impl Chain for Scroll {
             timestamp: self
                 .l1
                 .beacon_api_client
-                .bootstrap(trusted_header.root)
+                .bootstrap_for_slot(height.revision_height)
                 .await
                 .unwrap()
                 .data

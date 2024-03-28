@@ -1,0 +1,21 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "scroll-rpc"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+jsonrpsee        = { version = "0.22.3", features = ["tracing", "ws-client"] }
+macros.workspace = true
+serde            = { workspace = true, features = ["derive"] }
+serde-utils      = { workspace = true }
+unionlabs        = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+serde_json         = "1.0.114"
+tokio              = { workspace = true, features = ["macros"] }
+tracing-subscriber = "0.3.18"

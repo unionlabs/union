@@ -256,6 +256,32 @@ pub mod hex_string {
     }
 }
 
+pub mod u64_hex {
+    use alloc::{format, string::String};
+
+    use serde::{de, Deserialize};
+
+    use crate::HEX_ENCODING_PREFIX;
+
+    pub fn serialize<S>(data: &u64, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("0x{data:x}"))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).and_then(|x| {
+            x.strip_prefix(HEX_ENCODING_PREFIX)
+                .ok_or_else(|| de::Error::custom("missing 0x prefix"))
+                .and_then(|s| u64::from_str_radix(s, 16).map_err(de::Error::custom))
+        })
+    }
+}
+
 pub mod hex_upper_unprefixed {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
@@ -384,7 +410,7 @@ pub mod string_opt {
 pub mod u256_from_dec_str {
     #![allow(clippy::disallowed_types)] // need to access the inner type to do ser/de
 
-    use alloc::string::String;
+    use alloc::{format, string::String};
 
     use primitive_types::U256;
     use serde::de::Deserialize;
@@ -401,8 +427,9 @@ pub mod u256_from_dec_str {
         D: serde::Deserializer<'de>,
     {
         String::deserialize(deserializer).and_then(|s| {
-            U256::from_dec_str(&s)
-                .map_err(|_| serde::de::Error::custom("failure to parse string data"))
+            U256::from_dec_str(&s).map_err(|err| {
+                serde::de::Error::custom(format!("failure to parse string data: {err}"))
+            })
         })
     }
 }
