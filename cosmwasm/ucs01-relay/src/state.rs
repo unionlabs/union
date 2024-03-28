@@ -70,7 +70,6 @@ pub const HASH_TO_FOREIGN_DENOM: Map<(IbcEndpointKey, Hash), String> =
 #[cw_serde]
 #[derive(Default)]
 pub struct ChannelState {
-    pub in_flight: Uint512,
     pub outstanding: Uint512,
 }
 
