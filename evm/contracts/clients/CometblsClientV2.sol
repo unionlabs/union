@@ -11,8 +11,8 @@ import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import "../lib/CometblsHelp.sol";
 import "../lib/ICS23.sol";
-import "../core/IZKVerifierV2.sol";
 import "./ICS23MembershipVerifier.sol";
+import "./Verifier.sol";
 
 import "solidity-bytes-utils/BytesLib.sol";
 
@@ -36,7 +36,6 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
     using CometblsHelp for OptimizedConsensusState;
     using CometblsHelp for bytes;
-    using CometblsHelp for IZKVerifierV2;
 
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) private
         clientStates;
@@ -46,14 +45,9 @@ contract CometblsClient is ILightClient {
         processedMoments;
 
     address private ibcHandler;
-    IZKVerifierV2 private zkVerifier;
 
-    constructor(
-        address ibcHandler_,
-        IZKVerifierV2 zkVerifier_
-    ) {
+    constructor(address ibcHandler_) {
         ibcHandler = ibcHandler_;
-        zkVerifier = zkVerifier_;
     }
 
     function createClient(
@@ -153,7 +147,7 @@ contract CometblsClient is ILightClient {
             }
         }
 
-        bool ok = zkVerifier.verifyZKP(
+        bool ok = verifyZKP(
             header.zero_knowledge_proof,
             clientState.chain_id,
             trustedValidatorsHash,
@@ -252,8 +246,9 @@ contract CometblsClient is ILightClient {
         bytes memory appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
-        return
-            ICS23MembershipVerifier.verifyNonMembership(appHash, proof, prefix, path);
+        return ICS23MembershipVerifier.verifyNonMembership(
+            appHash, proof, prefix, path
+        );
     }
 
     function validateDelayPeriod(
@@ -334,6 +329,90 @@ contract CometblsClient is ILightClient {
             );
         }
         return (clientState.latest_height, true);
+    }
+
+    // ZKP VERIFICATION
+
+    uint256 constant PRIME_R =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;
+
+    bytes constant HMAC_I =
+        hex"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
+    bytes constant HMAC_O =
+        hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
+
+    function hmac_keccak(bytes memory message)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(HMAC_O, keccak256(HMAC_I.concat(message)))
+        );
+    }
+
+    // Union whitepaper: (1) H_{hmac_r}
+    function hashToField(bytes memory message)
+        internal
+        pure
+        returns (uint256)
+    {
+        return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
+    }
+
+    function verifyZKP(
+        bytes memory zkp,
+        string memory chainId,
+        bytes32 trustedValidatorsHash,
+        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
+    ) public returns (bool) {
+        (
+            uint256[8] memory proof,
+            uint256[2] memory proofCommitment,
+            uint256[2] memory proofCommitmentPOK
+        ) = abi.decode(zkp, (uint256[8], uint256[2], uint256[2]));
+
+        uint256 commitmentHash = hashToField(abi.encodePacked(proofCommitment));
+
+        uint256 l = bytes(chainId).length;
+        bytes memory paddedChainId = new bytes(32 - l).concat(bytes(chainId));
+
+        // Drop the most significant byte to fit in F_r
+        bytes32 inputsHash = sha256(
+            abi.encodePacked(
+                bytes32(paddedChainId),
+                bytes32(uint256(int256(header.height))),
+                bytes32(uint256(int256(header.time.secs))),
+                bytes32(uint256(int256(header.time.nanos))),
+                bytes32(header.validators_hash),
+                bytes32(header.next_validators_hash),
+                bytes32(header.app_hash),
+                trustedValidatorsHash
+            )
+        ) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+        uint256[2] memory publicInputs = [
+            uint256(inputsHash),
+            // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
+            // See https://github.com/ConsenSys/gnark/issues/652
+            commitmentHash
+        ];
+
+        return this.verifyProof(
+            proof, proofCommitment, proofCommitmentPOK, publicInputs
+        );
+    }
+
+    function verifyProof(
+        uint256[8] calldata proof,
+        uint256[2] calldata proofCommitment,
+        uint256[2] calldata proofCommitmentPOK,
+        uint256[2] calldata publicInputs
+    ) external virtual returns (bool) {
+        return Verifier.verifyProof(
+            proof, proofCommitment, proofCommitmentPOK, publicInputs
+        );
     }
 
     function _onlyIBC() private view {

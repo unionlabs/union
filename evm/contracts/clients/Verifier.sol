@@ -1,12 +1,10 @@
 pragma solidity ^0.8.23;
 
-import "../core/IZKVerifierV2.sol";
-
 /// @title Groth16 verifier template.
 /// @author Remco Bloemen
 /// @notice Supports verifying Groth16 proofs. Proofs can be in uncompressed
 /// (256 bytes) and compressed (128 bytes) format.
-contract Verifier is IZKVerifierV2 {
+library Verifier {
     // Addresses of precompiles
     uint256 constant PRECOMPILE_MODEXP = 0x05;
     uint256 constant PRECOMPILE_ADD = 0x06;
@@ -186,7 +184,7 @@ contract Verifier is IZKVerifierV2 {
         uint256[2] calldata proofCommitment,
         uint256[2] calldata proofCommitmentPOK,
         uint256[2] calldata input
-    ) public view returns (bool) {
+    ) internal view returns (bool) {
         (bool success, uint256 x, uint256 y) =
             publicInputMSM(proofCommitment, input);
         if (!success) {

@@ -4,7 +4,6 @@ import "solady/utils/LibString.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
-import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCConnection} from
@@ -60,38 +59,33 @@ contract IBCHandlerFake is IBCHandler {
     {}
 }
 
-contract TestVerifier is IZKVerifierV2 {
-    uint256 valid = 0;
+contract TestCometblsClient is CometblsClient {
+    uint256 validMembership = 0;
 
-    function pushValid() public {
-        valid += 1;
+    function pushValidMembership() public {
+        validMembership += 1;
     }
+
+    uint256 validProof = 0;
+
+    function pushValidProof() public {
+        validProof += 1;
+    }
+
+    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
 
     function verifyProof(
         uint256[8] memory proof,
         uint256[2] memory proofCommitment,
         uint256[2] calldata proofCommitmentPOK,
         uint256[2] calldata input
-    ) external returns (bool) {
-        bool ok = valid > 0;
-        if (valid > 0) {
-            valid -= 1;
+    ) external override returns (bool) {
+        bool ok = validProof > 0;
+        if (validProof > 0) {
+            validProof -= 1;
         }
         return ok;
     }
-}
-
-contract TestCometblsClient is CometblsClient {
-    uint256 valid = 0;
-
-    function pushValid() public {
-        valid += 1;
-    }
-
-    constructor(
-        address ibcHandler_,
-        IZKVerifierV2 zkVerifier_
-    ) CometblsClient(ibcHandler_, zkVerifier_) {}
 
     function verifyMembership(
         string calldata clientId,
@@ -103,9 +97,9 @@ contract TestCometblsClient is CometblsClient {
         bytes calldata path,
         bytes calldata value
     ) external override returns (bool) {
-        bool ok = valid > 0;
-        if (valid > 0) {
-            valid -= 1;
+        bool ok = validMembership > 0;
+        if (validMembership > 0) {
+            validMembership -= 1;
         }
         return ok;
     }
@@ -119,9 +113,9 @@ contract TestCometblsClient is CometblsClient {
         bytes calldata prefix,
         bytes calldata path
     ) external override returns (bool) {
-        bool ok = valid > 0;
-        if (valid > 0) {
-            valid -= 1;
+        bool ok = validMembership > 0;
+        if (validMembership > 0) {
+            validMembership -= 1;
         }
         return ok;
     }
@@ -151,7 +145,6 @@ contract IBCPacketHandlerTest is TestPlus {
 
     IBCHandlerFake handler;
     TestCometblsClient client;
-    TestVerifier verifier;
     MockApp app;
 
     string clientId;
@@ -160,9 +153,7 @@ contract IBCPacketHandlerTest is TestPlus {
 
     function setUp() public {
         handler = new IBCHandlerFake();
-        verifier = new TestVerifier();
-        client =
-            new TestCometblsClient(address(handler), verifier);
+        client = new TestCometblsClient(address(handler));
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
         createClient();
@@ -191,8 +182,8 @@ contract IBCPacketHandlerTest is TestPlus {
         connectionId = handler.connectionOpenInit(msg_init);
         IBCMsgs.MsgConnectionOpenAck memory msg_ack =
             MsgMocks.connectionOpenAck(clientId, connectionId, LATEST_HEIGHT);
-        client.pushValid();
-        client.pushValid();
+        client.pushValidMembership();
+        client.pushValidMembership();
         handler.connectionOpenAck(msg_ack);
     }
 
@@ -203,7 +194,7 @@ contract IBCPacketHandlerTest is TestPlus {
         IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
             address(app).toHexString(), channelId, LATEST_HEIGHT
         );
-        client.pushValid();
+        client.pushValidMembership();
         handler.channelOpenAck(msg_ack);
     }
 
@@ -382,7 +373,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.recvPacket(
             MsgMocks.packetRecv(
@@ -421,7 +412,7 @@ contract IBCPacketHandlerTest is TestPlus {
             ),
             0
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.recvPacket(msg_);
         assertEq(
@@ -443,7 +434,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
-        client.pushValid();
+        client.pushValidMembership();
         IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
             address(app).toHexString(),
             channelId,
@@ -454,7 +445,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         vm.prank(relayer);
         handler.recvPacket(msg_);
-        client.pushValid();
+        client.pushValidMembership();
         vm.expectRevert(IBCPacketLib.ErrPacketAlreadyReceived.selector);
         vm.prank(relayer);
         handler.recvPacket(msg_);
@@ -471,7 +462,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0 < timeoutTimestamp && timeoutTimestamp > vm.getBlockTimestamp()
         );
         vm.assume(timeoutHeight > 0);
-        client.pushValid();
+        client.pushValidMembership();
         vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
         vm.prank(relayer);
         handler.recvPacket(
@@ -495,7 +486,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(0 < timeoutHeight && timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > 0);
-        client.pushValid();
+        client.pushValidMembership();
         vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
         vm.prank(relayer);
         handler.recvPacket(
@@ -551,7 +542,7 @@ contract IBCPacketHandlerTest is TestPlus {
             payload
         );
         msg_.packet.source_port = "invalid";
-        client.pushValid();
+        client.pushValidMembership();
         vm.expectRevert(
             IBCPacketLib.ErrSourceAndCounterpartyPortMismatch.selector
         );
@@ -577,7 +568,7 @@ contract IBCPacketHandlerTest is TestPlus {
             payload
         );
         msg_.packet.source_channel = "invalid";
-        client.pushValid();
+        client.pushValidMembership();
         vm.expectRevert(
             IBCPacketLib.ErrSourceAndCounterpartyChannelMismatch.selector
         );
@@ -601,7 +592,7 @@ contract IBCPacketHandlerTest is TestPlus {
         bytes memory acknowledgement
     ) public {
         vm.assume(acknowledgement.length > 0);
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(address(app));
         handler.writeAcknowledgement(
             address(app).toHexString(), channelId, sequence, acknowledgement
@@ -658,7 +649,7 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.acknowledgePacket(
             MsgMocks.packetAck(
@@ -694,7 +685,7 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.acknowledgePacket(
             MsgMocks.packetAck(
@@ -707,7 +698,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 acknowledgement
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.acknowledgePacket(
@@ -841,7 +832,7 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        client.pushValid();
+        client.pushValidMembership();
         IBCMsgs.MsgPacketAcknowledgement memory msg_ = MsgMocks.packetAck(
             address(app).toHexString(),
             channelId,
@@ -880,7 +871,7 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        client.pushValid();
+        client.pushValidMembership();
         IBCMsgs.MsgPacketAcknowledgement memory msg_ = MsgMocks.packetAck(
             address(app).toHexString(),
             channelId,
@@ -913,7 +904,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0,
             payload
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrInvalidPacketCommitment.selector);
         handler.timeoutPacket(
@@ -933,7 +924,7 @@ contract IBCPacketHandlerTest is TestPlus {
         bytes memory payload
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.timeoutPacket(
@@ -957,7 +948,7 @@ contract IBCPacketHandlerTest is TestPlus {
             address(app).toHexString(), channelId, LATEST_HEIGHT, 0, 0, payload
         );
         msg_.packet.destination_port = "invalid";
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(
             IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch.selector
@@ -974,7 +965,7 @@ contract IBCPacketHandlerTest is TestPlus {
             address(app).toHexString(), channelId, LATEST_HEIGHT, 0, 0, payload
         );
         msg_.packet.destination_channel = "invalid";
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(
             IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch.selector
@@ -995,7 +986,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0,
             payload
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrPacketWithoutTimeout.selector);
         handler.timeoutPacket(
@@ -1028,7 +1019,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0,
             payload
         );
-        verifier.pushValid();
+        client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
             Cometbls.updateClient(
@@ -1038,7 +1029,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 ARBITRARY_ZKP
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
@@ -1070,7 +1061,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0,
             payload
         );
-        verifier.pushValid();
+        client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
             Cometbls.updateClient(
@@ -1080,7 +1071,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 ARBITRARY_ZKP
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
@@ -1092,7 +1083,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 payload
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.timeoutPacket(
@@ -1125,7 +1116,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0,
             payload
         );
-        verifier.pushValid();
+        client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
             Cometbls.updateClient(
@@ -1167,7 +1158,7 @@ contract IBCPacketHandlerTest is TestPlus {
             0,
             payload
         );
-        verifier.pushValid();
+        client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
             Cometbls.updateClient(
@@ -1177,7 +1168,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 ARBITRARY_ZKP
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrTimeoutHeightNotReached.selector);
         handler.timeoutPacket(
@@ -1208,7 +1199,7 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp - 1,
             payload
         );
-        verifier.pushValid();
+        client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
             Cometbls.updateClient(
@@ -1218,7 +1209,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 ARBITRARY_ZKP
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
@@ -1248,7 +1239,7 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp - 1,
             payload
         );
-        verifier.pushValid();
+        client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
             Cometbls.updateClient(
@@ -1258,7 +1249,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 ARBITRARY_ZKP
             )
         );
-        client.pushValid();
+        client.pushValidMembership();
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrTimeoutTimestampNotReached.selector);
         handler.timeoutPacket(

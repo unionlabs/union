@@ -15,7 +15,9 @@ contract ICS23Test is Test {
         bytes calldata path,
         bytes calldata value
     ) external returns (bool) {
-        return ICS23MembershipVerifier.verifyMembership(root, proof, prefix, path, value);
+        return ICS23MembershipVerifier.verifyMembership(
+            root, proof, prefix, path, value
+        );
     }
 
     function verifyNonMembership(
@@ -24,7 +26,9 @@ contract ICS23Test is Test {
         bytes calldata prefix,
         bytes calldata path
     ) external returns (bool) {
-        return ICS23MembershipVerifier.verifyNonMembership(root, proof, prefix, path);
+        return ICS23MembershipVerifier.verifyNonMembership(
+            root, proof, prefix, path
+        );
     }
 
     function test_decode() public {

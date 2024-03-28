@@ -841,9 +841,7 @@
                                 "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                 "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                               ],
-                              "bitmap": [
-                                7
-                              ]
+                              "bitmap": [7]
                             },
                             "untrusted_commit": {
                               "validators": [
@@ -881,9 +879,7 @@
                                 "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                 "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                               ],
-                              "bitmap": [
-                                7
-                              ]
+                              "bitmap": [7]
                             }
                           }
                         }
@@ -1122,9 +1118,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 },
                                 "untrusted_commit": {
                                   "validators": [
@@ -1162,9 +1156,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 }
                               }
                             }
@@ -1405,9 +1397,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 },
                                 "untrusted_commit": {
                                   "validators": [
@@ -1445,9 +1435,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 }
                               }
                             }
@@ -1688,9 +1676,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 },
                                 "untrusted_commit": {
                                   "validators": [
@@ -1728,9 +1714,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 }
                               }
                             }
@@ -1971,9 +1955,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 },
                                 "untrusted_commit": {
                                   "validators": [
@@ -2011,9 +1993,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 }
                               }
                             }
@@ -2254,9 +2234,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 },
                                 "untrusted_commit": {
                                   "validators": [
@@ -2294,9 +2272,7 @@
                                     "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                     "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                                   ],
-                                  "bitmap": [
-                                    7
-                                  ]
+                                  "bitmap": [7]
                                 }
                               }
                             }
@@ -2527,9 +2503,7 @@
                                 "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                 "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                               ],
-                              "bitmap": [
-                                7
-                              ]
+                              "bitmap": [7]
                             },
                             "untrusted_commit": {
                               "validators": [
@@ -2567,9 +2541,7 @@
                                 "0x9f9ac4a9ac942b924488048798798243c822fb86e5440863f6d868869bb442ca1da5181ae3c85b71e1ee0149ac2a6a692e2d95f31967164800af7d11299c37b1",
                                 "0x8a3e59d3ad34558beffd4cd26b9cb81f8c04cf950b2182a2565acf37967c81cb26e7d14cd65e758a0719604b29f1f389660c342bc0b752b70c295f64278bbab8"
                               ],
-                              "bitmap": [
-                                7
-                              ]
+                              "bitmap": [7]
                             }
                           }
                         }

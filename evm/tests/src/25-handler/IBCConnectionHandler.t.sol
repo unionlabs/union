@@ -2,7 +2,6 @@ pragma solidity ^0.8.23;
 
 import "solidity-bytes-utils/BytesLib.sol";
 
-import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCConnectionLib} from
     "../../../contracts/core/03-connection/IBCConnection.sol";
@@ -32,32 +31,27 @@ import {
 
 import "../TestPlus.sol";
 
-contract TestVerifier is IZKVerifierV2 {
-    function verifyProof(
-        uint256[8] memory proof,
-        uint256[2] memory proofCommitment,
-        uint256[2] calldata proofCommitmentPOK,
-        uint256[2] calldata input
-    ) external returns (bool) {
-        return true;
-    }
-}
-
 contract TestCometblsClient is CometblsClient {
     uint256 calls;
-    mapping(uint256 => bool) validProof;
+    mapping(uint256 => bool) validMembershipProof;
 
-    constructor(
-        address ibcHandler_,
-        IZKVerifierV2 zkVerifier_
-    ) CometblsClient(ibcHandler_, zkVerifier_) {}
+    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
 
     function reset() public {
         calls = 0;
     }
 
-    function pushValid(uint256 index) public {
-        validProof[index] = true;
+    function pushValidMembership(uint256 index) public {
+        validMembershipProof[index] = true;
+    }
+
+    function verifyProof(
+        uint256[8] memory proof,
+        uint256[2] memory proofCommitment,
+        uint256[2] calldata proofCommitmentPOK,
+        uint256[2] calldata input
+    ) external override returns (bool) {
+        return true;
     }
 
     function verifyMembership(
@@ -70,10 +64,10 @@ contract TestCometblsClient is CometblsClient {
         bytes calldata path,
         bytes calldata value
     ) external override returns (bool) {
-        bool valid = validProof[calls];
-        validProof[calls] = false;
+        bool validMembership = validMembershipProof[calls];
+        validMembershipProof[calls] = false;
         calls++;
-        return valid;
+        return validMembership;
     }
 
     function verifyNonMembership(
@@ -85,10 +79,10 @@ contract TestCometblsClient is CometblsClient {
         bytes calldata prefix,
         bytes calldata path
     ) external override returns (bool) {
-        bool valid = validProof[calls];
-        validProof[calls] = false;
+        bool validMembership = validMembershipProof[calls];
+        validMembershipProof[calls] = false;
         calls++;
-        return valid;
+        return validMembership;
     }
 }
 
@@ -103,13 +97,10 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     IBCHandler_Testable handler;
     TestCometblsClient client;
-    TestVerifier verifier;
 
     function setUp() public {
         handler = new IBCHandler_Testable();
-        verifier = new TestVerifier();
-        client =
-            new TestCometblsClient(address(handler), verifier);
+        client = new TestCometblsClient(address(handler));
         handler.registerClient(CLIENT_TYPE, client);
     }
 
@@ -192,8 +183,8 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preAckValidProofs() public {
         client.reset();
-        client.pushValid(0);
-        client.pushValid(1);
+        client.pushValidMembership(0);
+        client.pushValidMembership(1);
     }
 
     function preAckInvalidConnectionStateProof() public {
@@ -203,14 +194,14 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preAckInvalidClientStateProof() public {
         client.reset();
-        client.pushValid(0);
+        client.pushValidMembership(0);
         vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preTryValidProofs() public {
         client.reset();
-        client.pushValid(0);
-        client.pushValid(1);
+        client.pushValidMembership(0);
+        client.pushValidMembership(1);
     }
 
     function preTryInvalidConnectionStateProof() public {
@@ -220,13 +211,13 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preTryInvalidClientStateProof() public {
         client.reset();
-        client.pushValid(0);
+        client.pushValidMembership(0);
         vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preConfirmValidProofs() public {
         client.reset();
-        client.pushValid(0);
+        client.pushValidMembership(0);
     }
 
     function preConfirmInvalidConnectionState() public {

@@ -10,7 +10,6 @@ import "../proto/tendermint/types/canonical.sol";
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
-import "../core/IZKVerifierV2.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
@@ -28,78 +27,6 @@ struct ProcessedMoment {
 
 library CometblsHelp {
     using BytesLib for bytes;
-
-    uint256 constant PRIME_R =
-        21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;
-
-    bytes constant HMAC_I =
-        hex"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
-    bytes constant HMAC_O =
-        hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
-
-    function hmac_keccak(bytes memory message)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(HMAC_O, keccak256(HMAC_I.concat(message)))
-        );
-    }
-
-    // Union whitepaper: (1) H_{hmac_r}
-    function hashToField(bytes memory message)
-        internal
-        pure
-        returns (uint256)
-    {
-        return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
-    }
-
-    function verifyZKP(
-        IZKVerifierV2 verifier,
-        bytes memory zkp,
-        string memory chainId,
-        bytes32 trustedValidatorsHash,
-        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
-    ) internal returns (bool) {
-        (
-            uint256[8] memory proof,
-            uint256[2] memory proofCommitment,
-            uint256[2] memory proofCommitmentPOK
-        ) = abi.decode(zkp, (uint256[8], uint256[2], uint256[2]));
-
-        uint256 commitmentHash = hashToField(abi.encodePacked(proofCommitment));
-
-        uint256 l = bytes(chainId).length;
-        bytes memory paddedChainId = new bytes(32 - l).concat(bytes(chainId));
-
-        // Drop the most significant byte to fit in F_r
-        bytes32 inputsHash = sha256(
-            abi.encodePacked(
-                bytes32(paddedChainId),
-                bytes32(uint256(int256(header.height))),
-                bytes32(uint256(int256(header.time.secs))),
-                bytes32(uint256(int256(header.time.nanos))),
-                bytes32(header.validators_hash),
-                bytes32(header.next_validators_hash),
-                bytes32(header.app_hash),
-                trustedValidatorsHash
-            )
-        ) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-
-        uint256[2] memory publicInputs = [
-            uint256(inputsHash),
-            // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
-            // See https://github.com/ConsenSys/gnark/issues/652
-            commitmentHash
-        ];
-
-        return verifier.verifyProof(
-            proof, proofCommitment, proofCommitmentPOK, publicInputs
-        );
-    }
 
     function isExpired(
         GoogleProtobufTimestamp.Data memory headerTime,
