@@ -2,6 +2,7 @@ use scroll_rpc::{BlockId, JsonRpcClient};
 use unionlabs::uint::U256;
 
 #[tokio::test]
+#[ignore = "needs network"]
 async fn get_proof() {
     let _ = tracing_subscriber::fmt::try_init();
 
