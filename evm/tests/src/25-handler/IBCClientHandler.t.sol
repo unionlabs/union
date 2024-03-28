@@ -15,8 +15,6 @@ import {
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
-import {IMembershipVerifier} from
-    "../../../contracts/core/IMembershipVerifier.sol";
 import {IbcCoreClientV1Height} from
     "../../../contracts/proto/ibc/core/client/v1/client.sol";
 import {
@@ -53,20 +51,32 @@ contract TestVerifier is IZKVerifierV2 {
     }
 }
 
-contract TestMembershipVerifier is IMembershipVerifier {
+contract TestCometblsClient is CometblsClient {
     uint256 valid = 0;
+
+    constructor(
+        address ibcHandler_,
+        IZKVerifierV2 zkVerifier_
+    ) CometblsClient(ibcHandler_, zkVerifier_) {}
 
     function pushValid() public {
         valid += 1;
     }
 
     function verifyMembership(
-        bytes memory root,
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height,
+        uint64 delayPeriodTime,
+        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes memory prefix,
         bytes calldata path,
         bytes calldata value
-    ) external returns (bool) {
+    ) external override returns (bool) {
+        bytes memory appHash = validateDelayPeriod(
+            clientId, height, delayPeriodTime, delayPeriodBlocks
+        );
+
         bool ok = valid > 0;
         if (valid > 0) {
             valid -= 1;
@@ -75,11 +85,18 @@ contract TestMembershipVerifier is IMembershipVerifier {
     }
 
     function verifyNonMembership(
-        bytes memory root,
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height,
+        uint64 delayPeriodTime,
+        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
-    ) external returns (bool) {
+    ) external override returns (bool) {
+        bytes memory appHash = validateDelayPeriod(
+            clientId, height, delayPeriodTime, delayPeriodBlocks
+        );
+
         bool ok = valid > 0;
         if (valid > 0) {
             valid -= 1;
@@ -95,24 +112,22 @@ contract IBCClientHandlerTests is TestPlus {
     IBCHandler_Testable handler;
 
     string constant CLIENT_TYPE = "mock";
-    ILightClient client;
-    ILightClient client2;
+    TestCometblsClient client;
+    TestCometblsClient client2;
 
     TestVerifier verifier;
-    TestMembershipVerifier membershipVerifier;
 
     bytes32 constant ARBITRARY_INITIAL_APP_HASH =
         hex"A8158610DD6858F3D26149CC0DB3339ABD580EA217DE0A151C9C451DED418E35";
 
     function setUp() public {
         handler = new IBCHandler_Testable();
-        membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
 
         client =
-            new CometblsClient(address(handler), verifier, membershipVerifier);
+            new TestCometblsClient(address(handler), verifier);
         client2 =
-            new CometblsClient(address(handler), verifier, membershipVerifier);
+            new TestCometblsClient(address(handler), verifier);
 
         vm.warp(1);
     }
@@ -915,7 +930,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        membershipVerifier.pushValid();
+        client.pushValid();
         bool ok = client.verifyMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1086,7 +1101,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(vm.getBlockTimestamp() + delayPeriodTime);
 
-        membershipVerifier.pushValid();
+        client.pushValid();
         bool ok = client.verifyMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1130,7 +1145,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.roll(vm.getBlockNumber() + delayPeriodBlocks);
 
-        membershipVerifier.pushValid();
+        client.pushValid();
         bool ok = client.verifyMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1168,7 +1183,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        membershipVerifier.pushValid();
+        client.pushValid();
         bool ok = client.verifyNonMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1335,7 +1350,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(vm.getBlockTimestamp() + delayPeriodTime);
 
-        membershipVerifier.pushValid();
+        client.pushValid();
         bool ok = client.verifyNonMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1378,7 +1393,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.roll(vm.getBlockNumber() + delayPeriodBlocks);
 
-        membershipVerifier.pushValid();
+        client.pushValid();
         bool ok = client.verifyNonMembership(
             clientId,
             IbcCoreClientV1Height.Data({

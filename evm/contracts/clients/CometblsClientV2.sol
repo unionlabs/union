@@ -12,7 +12,7 @@ import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import "../lib/CometblsHelp.sol";
 import "../lib/ICS23.sol";
 import "../core/IZKVerifierV2.sol";
-import "../core/IMembershipVerifier.sol";
+import "./ICS23MembershipVerifier.sol";
 
 import "solidity-bytes-utils/BytesLib.sol";
 
@@ -47,16 +47,13 @@ contract CometblsClient is ILightClient {
 
     address private ibcHandler;
     IZKVerifierV2 private zkVerifier;
-    IMembershipVerifier private membershipVerifier;
 
     constructor(
         address ibcHandler_,
-        IZKVerifierV2 zkVerifier_,
-        IMembershipVerifier membershipVerifier_
+        IZKVerifierV2 zkVerifier_
     ) {
         ibcHandler = ibcHandler_;
         zkVerifier = zkVerifier_;
-        membershipVerifier = membershipVerifier_;
     }
 
     function createClient(
@@ -234,11 +231,11 @@ contract CometblsClient is ILightClient {
         bytes memory prefix,
         bytes calldata path,
         bytes calldata value
-    ) external returns (bool) {
+    ) external virtual returns (bool) {
         bytes memory appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
-        return membershipVerifier.verifyMembership(
+        return ICS23MembershipVerifier.verifyMembership(
             appHash, proof, prefix, path, value
         );
     }
@@ -251,12 +248,12 @@ contract CometblsClient is ILightClient {
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
-    ) external returns (bool) {
+    ) external virtual returns (bool) {
         bytes memory appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
         return
-            membershipVerifier.verifyNonMembership(appHash, proof, prefix, path);
+            ICS23MembershipVerifier.verifyNonMembership(appHash, proof, prefix, path);
     }
 
     function validateDelayPeriod(

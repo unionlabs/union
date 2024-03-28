@@ -208,8 +208,6 @@ library Ics23 {
 }
 
 library Ops {
-    bytes constant empty = new bytes(0);
-
     enum ApplyLeafOpError {
         None,
         KeyLength,
