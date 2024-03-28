@@ -7,6 +7,7 @@ use core::{
 };
 
 use serde::{Deserialize, Serialize};
+use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
 
 use crate::{
@@ -166,7 +167,15 @@ impl U256 {
 
     #[must_use]
     pub fn to_packed_big_endian_hex(&self) -> String {
-        serde_utils::to_hex(self.to_packed_big_endian())
+        if self.0.is_zero() {
+            format!("{HEX_ENCODING_PREFIX}{}", 0)
+        } else {
+            // NOTE: Can't use serde_utils::to_hex here as it ensures there's an even number of bytes (by prepending a 0) which we don't want for u256
+            format!(
+                "{HEX_ENCODING_PREFIX}{}",
+                hex::encode(self.to_packed_big_endian()).trim_start_matches('0')
+            )
+        }
     }
 
     pub fn from_big_endian_hex(s: impl AsRef<str>) -> Result<U256, TryFromHexError> {
@@ -175,7 +184,7 @@ impl U256 {
         }
 
         s.as_ref()
-            .strip_prefix(serde_utils::HEX_ENCODING_PREFIX)
+            .strip_prefix(HEX_ENCODING_PREFIX)
             .ok_or_else(|| serde_utils::FromHexStringError::MissingPrefix(s.as_ref().to_owned()))
             .map_err(Into::into)
             .and_then(|maybe_hex| {
@@ -208,7 +217,7 @@ pub mod u256_big_endian_hex {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&data.to_big_endian_hex())
+        serializer.serialize_str(&data.to_packed_big_endian_hex())
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
