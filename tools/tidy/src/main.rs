@@ -18,9 +18,11 @@ fn main() -> ExitCode {
         .without_time()
         .with_target(false)
         .init();
+
     let app = App::parse();
 
     let metadata = MetadataCommand::new()
+        .no_deps()
         .manifest_path(&app.manifest_path)
         .exec()
         .unwrap();

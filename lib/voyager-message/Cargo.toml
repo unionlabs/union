@@ -9,7 +9,7 @@ version      = "0.1.0"
 arbitrary     = { workspace = true, optional = true, features = ["derive"] }
 block-message = { workspace = true }
 chain-utils   = { workspace = true }
-derive_more   = { version = "0.99.17", features = ["display"] }
+derive_more   = { workspace = true, features = ["display"] }
 queue-msg     = { workspace = true }
 relay-message = { workspace = true }
 serde         = { workspace = true, features = ["derive"] }

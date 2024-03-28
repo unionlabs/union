@@ -66,11 +66,10 @@
                 "jsonc"
               ])) ../../.);
         };
-        buildInputs = [ biome pkgs.tree ];
+        buildInputs = [ biome ];
         doCheck = true;
         checkPhase = ''
           cd $src
-          tree .
           biome lint . --error-on-warnings --verbose
           touch $out
         '';
