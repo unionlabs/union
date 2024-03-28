@@ -1,15 +1,15 @@
 [package]
-edition  = "2021"
-name     = "queue-msg"
-resolver = "2"
-version  = "0.1.0"
+name    = "queue-msg"
+version = "0.1.0"
+
+edition = { workspace = true }
 
 [lints]
 workspace = true
 
 [dependencies]
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
-either.workspace         = true
+either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
 frunk                    = { workspace = true }
 futures                  = { workspace = true, features = ["alloc", "std"] }

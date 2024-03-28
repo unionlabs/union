@@ -1,20 +1,20 @@
 [package]
-edition.workspace      = true
-license-file.workspace = true
-name                   = "scroll-api"
-repository.workspace   = true
-version                = "0.1.0"
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "scroll-api"
+repository   = { workspace = true }
+version      = "0.1.0"
 
 [lints]
 workspace = true
 
 [dependencies]
-reqwest.workspace     = true
-serde                 = { workspace = true, features = ["derive"] }
-serde-utils.workspace = true
-serde_json.workspace  = true
-tracing.workspace     = true
-unionlabs.workspace   = true
+reqwest     = { workspace = true }
+serde       = { workspace = true, features = ["derive"] }
+serde-utils = { workspace = true }
+serde_json  = { workspace = true }
+tracing     = { workspace = true }
+unionlabs   = { workspace = true }
 
 [dev-dependencies]
 serde_json = "1.0.114"

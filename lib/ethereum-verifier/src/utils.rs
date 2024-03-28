@@ -309,7 +309,7 @@ mod tests {
 
         let signing_data = SigningData {
             object_root: fork_data.tree_hash_root().into(),
-            domain: domain,
+            domain,
         };
 
         assert_eq!(
