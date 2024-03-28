@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, mkCi, mkNodeId, dbg, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, mkCi, mkNodeId, dbg, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -68,7 +68,7 @@
       };
 
       devnet-union-minimal = mkCosmosDevnet {
-        node = (get-flake inputs.v0_19_0).packages.${system}.uniond;
+        node = (inputs.get-flake inputs.v0_19_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
         chainName = "union-minimal";
         denom = "muno";

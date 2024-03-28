@@ -1,14 +1,7 @@
 { inputs, ... }: {
   perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, srcWithVendoredSources, dbg, ... }:
     let
-      throwBadSystem = throw "libwasmvm cannot be built on system `${system}`";
-
-      CARGO_BUILD_TARGET =
-        if system == "aarch64-linux" then "aarch64-unknown-linux-musl"
-        else if system == "x86_64-linux" then "x86_64-unknown-linux-musl"
-        else if system == "aarch64-darwin" then "aarch64-apple-darwin"
-        else if system == "x86_64-darwin" then "x86_64-apple-darwin"
-        else throwBadSystem;
+      CARGO_BUILD_TARGET = rust.staticBuildTarget system;
 
       rustToolchain = rust.mkNightly {
         channel = "nightly-2024-01-27";
@@ -38,7 +31,7 @@
               mkdir -p $out/lib
               mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
             '';
-          } else throwBadSystem);
+          } else throw "unknown system");
           craneLib = crane.lib.overrideToolchain rustToolchain;
         in
         craneLib.buildPackage (attrs // {

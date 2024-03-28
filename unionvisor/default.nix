@@ -1,5 +1,5 @@
 { self, inputs, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, get-flake, uniondBundleVersions, ... }:
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, uniondBundleVersions, ... }:
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
@@ -42,7 +42,7 @@
           (version: {
             name =
               "${meta.versions_directory}/${version}/${meta.binary_name}";
-            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
+            path = pkgs.lib.getExe (inputs.get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
           })
           versions
         ++ # add `nextVersion` to the bundle if supplied

@@ -1,4 +1,8 @@
 { ... }: {
+  imports = [
+    ./crane.nix
+  ];
+
   perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, mkCi, ... }:
     let
       nightlyVersion = "2024-03-14";
@@ -103,6 +107,19 @@
 
       _module.args.rust = {
         inherit mkBuildStdToolchain mkNightly rustSrc;
+
+        staticBuildTarget = system:
+          assert builtins.isString system;
+          if system == "aarch64-linux" then
+            "aarch64-unknown-linux-musl"
+          else if system == "x86_64-linux" then
+            "x86_64-unknown-linux-musl"
+          else if system == "aarch64-darwin" then
+            "aarch64-apple-darwin"
+          else if system == "x86_64-darwin" then
+            "x86_64-apple-darwin"
+          else
+            throw "unknown system `${system}`";
 
         toolchains = {
           nightly = mkNightly { };
