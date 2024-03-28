@@ -155,6 +155,7 @@ mod tests {
     use crate::{verify_header, verify_zktrie_storage_absence, verify_zktrie_storage_proof};
 
     #[test]
+    #[ignore = "testdata is invalid"]
     fn test_update_header() {
         let scroll_client_state = ClientState {
             l1_client_id: "08-wasm-0".into(),
