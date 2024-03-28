@@ -31,12 +31,16 @@ impl From<LeafOp> for protos::cosmos::ics23::v1::LeafOp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromLeafOpError {
-    Hash(UnknownEnumVariant<i32>),
-    PrehashKey(UnknownEnumVariant<i32>),
-    PrehashValue(UnknownEnumVariant<i32>),
-    Length(UnknownEnumVariant<i32>),
+    #[error("error decoding hash")]
+    Hash(#[source] UnknownEnumVariant<i32>),
+    #[error("error decoding prehash_key")]
+    PrehashKey(#[source] UnknownEnumVariant<i32>),
+    #[error("error decoding prehash_value")]
+    PrehashValue(#[source] UnknownEnumVariant<i32>),
+    #[error("error decoding length")]
+    Length(#[source] UnknownEnumVariant<i32>),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::LeafOp> for LeafOp {

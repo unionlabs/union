@@ -767,6 +767,16 @@ mod tests {
                 },
             },
         )));
+
+        print_json::<BlockPollingTypes>(fetch(block_message::id::<Ethereum<Minimal>, _>(
+            eth_chain_id,
+            block_message::fetch::Fetch::specific(
+                block_message::chain_impls::ethereum::FetchGetLogs {
+                    from_slot: 418,
+                    to_slot: 418,
+                },
+            ),
+        )));
     }
 
     fn print_json<T: QueueMsgTypes>(msg: QueueMsg<T>)

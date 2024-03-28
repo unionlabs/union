@@ -2,9 +2,6 @@ pragma solidity ^0.8.23;
 
 import "solidity-bytes-utils/BytesLib.sol";
 
-import {IMembershipVerifier} from
-    "../../../contracts/core/IMembershipVerifier.sol";
-import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCConnectionLib} from
     "../../../contracts/core/03-connection/IBCConnection.sol";
@@ -20,6 +17,8 @@ import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
     "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import {TendermintTypesSignedHeader} from
     "../../../contracts/proto/tendermint/types/canonical.sol";
+import {IbcCoreClientV1Height} from
+    "../../../contracts/proto/ibc/core/client/v1/client.sol";
 import {
     TendermintTypesCommit,
     TendermintTypesHeader,
@@ -32,52 +31,58 @@ import {
 
 import "../TestPlus.sol";
 
-contract TestVerifier is IZKVerifierV2 {
-    function verifyProof(
-        uint256[8] memory proof,
-        uint256[2] memory proofCommitment,
-        uint256[2] calldata proofCommitmentPOK,
-        uint256[2] calldata input
-    ) external returns (bool) {
-        return true;
-    }
-}
-
-contract TestMembershipVerifier is IMembershipVerifier {
+contract TestCometblsClient is CometblsClient {
     uint256 calls;
-    mapping(uint256 => bool) validProof;
+    mapping(uint256 => bool) validMembershipProof;
+
+    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
 
     function reset() public {
         calls = 0;
     }
 
-    function pushValid(uint256 index) public {
-        validProof[index] = true;
+    function pushValidMembership(uint256 index) public {
+        validMembershipProof[index] = true;
+    }
+
+    function verifyProof(
+        uint256[8] memory proof,
+        uint256[2] memory proofCommitment,
+        uint256[2] calldata proofCommitmentPOK,
+        uint256[2] calldata input
+    ) external override returns (bool) {
+        return true;
     }
 
     function verifyMembership(
-        bytes memory root,
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height,
+        uint64 delayPeriodTime,
+        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes memory prefix,
         bytes calldata path,
         bytes calldata value
-    ) external returns (bool) {
-        bool valid = validProof[calls];
-        validProof[calls] = false;
+    ) external override returns (bool) {
+        bool validMembership = validMembershipProof[calls];
+        validMembershipProof[calls] = false;
         calls++;
-        return valid;
+        return validMembership;
     }
 
     function verifyNonMembership(
-        bytes memory root,
+        string calldata clientId,
+        IbcCoreClientV1Height.Data calldata height,
+        uint64 delayPeriodTime,
+        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
-    ) external returns (bool) {
-        bool valid = validProof[calls];
-        validProof[calls] = false;
+    ) external override returns (bool) {
+        bool validMembership = validMembershipProof[calls];
+        validMembershipProof[calls] = false;
         calls++;
-        return valid;
+        return validMembership;
     }
 }
 
@@ -91,16 +96,11 @@ contract IBCConnectionHandlerTests is TestPlus {
         hex"A8158610DD6858F3D26149CC0DB3339ABD580EA217DE0A151C9C451DED418E35";
 
     IBCHandler_Testable handler;
-    ILightClient client;
-    TestVerifier verifier;
-    TestMembershipVerifier membershipVerifier;
+    TestCometblsClient client;
 
     function setUp() public {
         handler = new IBCHandler_Testable();
-        membershipVerifier = new TestMembershipVerifier();
-        verifier = new TestVerifier();
-        client =
-            new CometblsClient(address(handler), verifier, membershipVerifier);
+        client = new TestCometblsClient(address(handler));
         handler.registerClient(CLIENT_TYPE, client);
     }
 
@@ -178,46 +178,46 @@ contract IBCConnectionHandlerTests is TestPlus {
     }
 
     function preInitOk() public {
-        membershipVerifier.reset();
+        client.reset();
     }
 
     function preAckValidProofs() public {
-        membershipVerifier.reset();
-        membershipVerifier.pushValid(0);
-        membershipVerifier.pushValid(1);
+        client.reset();
+        client.pushValidMembership(0);
+        client.pushValidMembership(1);
     }
 
     function preAckInvalidConnectionStateProof() public {
-        membershipVerifier.reset();
+        client.reset();
         vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preAckInvalidClientStateProof() public {
-        membershipVerifier.reset();
-        membershipVerifier.pushValid(0);
+        client.reset();
+        client.pushValidMembership(0);
         vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preTryValidProofs() public {
-        membershipVerifier.reset();
-        membershipVerifier.pushValid(0);
-        membershipVerifier.pushValid(1);
+        client.reset();
+        client.pushValidMembership(0);
+        client.pushValidMembership(1);
     }
 
     function preTryInvalidConnectionStateProof() public {
-        membershipVerifier.reset();
+        client.reset();
         vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preTryInvalidClientStateProof() public {
-        membershipVerifier.reset();
-        membershipVerifier.pushValid(0);
+        client.reset();
+        client.pushValidMembership(0);
         vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preConfirmValidProofs() public {
-        membershipVerifier.reset();
-        membershipVerifier.pushValid(0);
+        client.reset();
+        client.pushValidMembership(0);
     }
 
     function preConfirmInvalidConnectionState() public {

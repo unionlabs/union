@@ -14,10 +14,7 @@ use unionlabs::{
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
-        core::{
-            client::height::Height,
-            commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
-        },
+        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::cometbls,
     },
     id::ClientId,
@@ -81,7 +78,7 @@ impl Chain for Union {
 
     type IbcStateEncoding = Proto;
 
-    type StateProof = MerkleProof;
+    type StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id.clone()

@@ -250,3 +250,17 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chain_utils::{cosmos::Cosmos, union::Union, wasm::Wasm};
+
+    use super::*;
+    use crate::chain_impls::union::UnionFetch;
+
+    #[test]
+    fn sanity_check() {
+        static_assertions::assert_impl_all!(Union: DoFetchState<Union, Wasm<Cosmos>>);
+        static_assertions::assert_impl_all!(UnionFetch<Union, Wasm<Cosmos>>: DoFetch<Union>);
+    }
+}

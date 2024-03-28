@@ -1,13 +1,13 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::cosmos_sdk::CosmosSdkChain;
 use prost::Message;
 use queue_msg::{data, QueueMsg};
 use unionlabs::{
     encoding::{Decode, Proto},
-    ibc::core::{client::height::IsHeight, commitment::merkle_proof::MerkleProof},
+    ibc::core::client::height::IsHeight,
     proof::{ClientStatePath, Path},
-    traits::HeightOf,
+    traits::{Chain, HeightOf},
 };
 
 use crate::{
@@ -25,7 +25,10 @@ pub async fn fetch_abci_query<Hc, Tr>(
     ty: AbciQueryType,
 ) -> QueueMsg<RelayerMsgTypes>
 where
-    Hc: CosmosSdkChain + ChainExt<StateProof = MerkleProof>,
+    Hc: CosmosSdkChain + ChainExt,
+    <Hc as Chain>::StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof>,
+    <<Hc as Chain>::StateProof as TryFrom<protos::ibc::core::commitment::v1::MerkleProof>>::Error:
+        Debug,
     Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
@@ -107,7 +110,7 @@ where
             )),
         },
         AbciQueryType::Proof => {
-            let proof = MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
+            let proof = Hc::StateProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
                 proofs: query_result
                     .proof_ops
                     .unwrap()

@@ -412,21 +412,23 @@ fn mk_proto(
         predicates: Default::default(),
     });
 
-    from_where_clause.predicates.push(parse_quote!(
-        #ident #ty_generics: TryFrom<#raw>
-    ));
-    from_where_clause.predicates.push(parse_quote!(
-        <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug
-    ));
-
     let mut into_where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
         where_token: parse_quote!(where),
         predicates: Default::default(),
     });
 
-    into_where_clause
-        .predicates
-        .push(parse_quote!(#ident #ty_generics: Into<#raw>));
+    if !generics.params.is_empty() {
+        into_where_clause
+            .predicates
+            .push(parse_quote!(#ident #ty_generics: Into<#raw>));
+
+        from_where_clause.predicates.push(parse_quote!(
+            #ident #ty_generics: TryFrom<#raw>
+        ));
+        from_where_clause.predicates.push(parse_quote!(
+            <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug
+        ));
+    }
 
     let mut output = quote! {
         impl #impl_generics crate::TypeUrl for #ident #ty_generics #where_clause {
@@ -438,6 +440,7 @@ fn mk_proto(
 
     if into {
         output.extend(quote! {
+            #[automatically_derived]
             impl #impl_generics crate::encoding::Decode<crate::encoding::Proto> for #ident #ty_generics #from_where_clause {
                 type Error = crate::TryFromProtoBytesError<<#ident #ty_generics as TryFrom<#raw>>::Error>;
 
@@ -456,6 +459,7 @@ fn mk_proto(
 
     if from {
         output.extend(quote! {
+            #[automatically_derived]
             impl #impl_generics crate::encoding::Encode<crate::encoding::Proto> for #ident #ty_generics #into_where_clause {
                 fn encode(self) -> Vec<u8> {
                     ::prost::Message::encode_to_vec(&Into::<#raw>::into(self))
@@ -479,27 +483,30 @@ fn mk_ethabi(
         predicates: Default::default(),
     });
 
-    from_where_clause.predicates.push(parse_quote!(
-        #ident #ty_generics: TryFrom<#raw>
-    ));
-    from_where_clause.predicates.push(parse_quote!(
-        <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug
-    ));
-
     let mut into_where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
         where_token: parse_quote!(where),
         predicates: Default::default(),
     });
 
-    into_where_clause
-        .predicates
-        .push(parse_quote!(#ident #ty_generics: Into<#raw>));
+    if !generics.params.is_empty() {
+        into_where_clause
+            .predicates
+            .push(parse_quote!(#ident #ty_generics: Into<#raw>));
+
+        from_where_clause.predicates.push(parse_quote!(
+            #ident #ty_generics: TryFrom<#raw>
+        ));
+        from_where_clause.predicates.push(parse_quote!(
+            <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug
+        ));
+    }
 
     let mut output = proc_macro2::TokenStream::new();
 
     if into {
         output.extend(quote! {
             #[cfg(feature = "ethabi")]
+            #[automatically_derived]
             impl #impl_generics crate::encoding::Decode<crate::encoding::EthAbi> for #ident #ty_generics #from_where_clause {
                 type Error = crate::TryFromEthAbiBytesError<<#ident #ty_generics as TryFrom<#raw>>::Error>;
 
@@ -519,6 +526,7 @@ fn mk_ethabi(
     if from {
         output.extend(quote! {
             #[cfg(feature = "ethabi")]
+            #[automatically_derived]
             impl #impl_generics crate::encoding::Encode<crate::encoding::EthAbi> for #ident #ty_generics #into_where_clause {
                 fn encode(self) -> Vec<u8> {
                     ethers_core::abi::AbiEncode::encode(Into::<#raw>::into(self))

@@ -82,19 +82,15 @@ pub mod uint;
 pub(crate) mod macros;
 
 pub mod errors {
-    use core::fmt::{Debug, Display};
+    use core::fmt::Debug;
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    #[error("unknown enum variant `{0}`")]
     pub struct UnknownEnumVariant<T>(pub T);
 
-    impl<T: Display> Display for UnknownEnumVariant<T> {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            f.write_fmt(format_args!("unknown enum variant: {}", self.0))
-        }
-    }
-
     /// A protobuf field was none unexpectedly.
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    #[error("missing field `{0}`")]
     pub struct MissingField(pub &'static str);
 
     /// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.

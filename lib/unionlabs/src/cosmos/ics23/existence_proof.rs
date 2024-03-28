@@ -1,3 +1,5 @@
+use alloc::borrow::Cow;
+
 use macros::model;
 
 use crate::{
@@ -12,19 +14,22 @@ use crate::{
 pub struct ExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub key: Vec<u8>,
+    pub key: Cow<'static, [u8]>,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub value: Vec<u8>,
+    pub value: Cow<'static, [u8]>,
     pub leaf: LeafOp,
     pub path: Vec<InnerOp>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromExistenceProofError {
-    MissingField(MissingField),
-    Leaf(TryFromLeafOpError),
-    Path(TryFromInnerOpError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("error decoding leaf")]
+    Leaf(#[from] TryFromLeafOpError),
+    #[error("error decoding path")]
+    Path(#[from] TryFromInnerOpError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
@@ -32,8 +37,8 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
 
     fn try_from(value: protos::cosmos::ics23::v1::ExistenceProof) -> Result<Self, Self::Error> {
         Ok(Self {
-            key: value.key,
-            value: value.value,
+            key: value.key.into(),
+            value: value.value.into(),
             leaf: required!(value.leaf)?
                 .try_into()
                 .map_err(TryFromExistenceProofError::Leaf)?,
@@ -50,8 +55,8 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
 impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
     fn from(value: ExistenceProof) -> Self {
         Self {
-            key: value.key,
-            value: value.value,
+            key: value.key.into(),
+            value: value.value.into(),
             leaf: Some(value.leaf.into()),
             path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
         }
@@ -62,8 +67,8 @@ impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
 impl From<ExistenceProof> for contracts::glue::CosmosIcs23V1ExistenceProofData {
     fn from(value: ExistenceProof) -> Self {
         Self {
-            key: value.key.into(),
-            value: value.value.into(),
+            key: value.key.to_vec().into(),
+            value: value.value.to_vec().into(),
             leaf: value.leaf.into(),
             path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
         }
