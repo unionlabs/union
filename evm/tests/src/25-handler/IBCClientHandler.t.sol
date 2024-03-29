@@ -67,7 +67,7 @@ contract TestCometblsClient is CometblsClient {
         bytes calldata path,
         bytes calldata value
     ) external override returns (bool) {
-        bytes memory appHash = validateDelayPeriod(
+        bytes32 appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
 
@@ -87,7 +87,7 @@ contract TestCometblsClient is CometblsClient {
         bytes calldata prefix,
         bytes calldata path
     ) external override returns (bool) {
-        bytes memory appHash = validateDelayPeriod(
+        bytes32 appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
 
