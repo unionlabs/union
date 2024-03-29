@@ -515,7 +515,7 @@ pub struct Ucs01Protocol<'a> {
 }
 
 impl<'a> TransferProtocol for Ucs01Protocol<'a> {
-    const VERSION: &'static str = "ucs01-0";
+    const VERSION: &'static str = "ucs01-relay-1";
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 1;
 

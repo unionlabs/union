@@ -69,7 +69,7 @@ library RelayLib {
 
     IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
         IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
-    string public constant VERSION = "ucs01-0";
+    string public constant VERSION = "ucs01-relay-1";
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
