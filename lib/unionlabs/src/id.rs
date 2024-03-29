@@ -145,9 +145,10 @@ impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize>
 #[cfg(test)]
 mod tests {
     use alloc::borrow::Cow;
+    use std::collections::HashSet;
 
     use super::*;
-    use crate::validated::ValidateT;
+    use crate::{hash::H256, validated::ValidateT};
 
     fn ics024(
         s: Cow<'_, str>,
@@ -189,5 +190,46 @@ mod tests {
                 found: 2
             })
         );
+    }
+
+    #[test]
+    fn hack() {
+        let mut counter = *b"channel-0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+
+        let mut found_so_far = HashSet::new();
+
+        for i in 0_u32..200 {
+            let mut byte = b"channel-".len();
+            dbg!(byte);
+            if i == 0 {
+                // counter[byte] += 1;
+            } else {
+                loop {
+                    if counter[byte] != b'f' {
+                        if counter[byte] == 0 {
+                            counter[byte] = b'0';
+                        } else if counter[byte] == b'9' {
+                            counter[byte] += 40;
+                        } else {
+                            counter[byte] += 1;
+                        }
+                        break;
+                    }
+                    counter[byte] = b'0';
+                    byte += 1;
+                }
+            }
+
+            // if i % 500_000 == 0 {
+            println!(
+                "{i} = {}",
+                core::str::from_utf8(&counter)
+                    .unwrap()
+                    .trim_end_matches('\0')
+            );
+            // }
+
+            assert!(found_so_far.insert(counter));
+        }
     }
 }

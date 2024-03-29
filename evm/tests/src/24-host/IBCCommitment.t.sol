@@ -118,4 +118,47 @@ contract IBCCommitmentTest is TestPlus {
             keccak256("nextSequenceRecv/ports/port-id/channels/channel-id")
         );
     }
+
+    // channel-
+    uint256 constant b = 7;
+    bytes32 constant COUNTER_DEFAULT = "channel-0";
+
+    function test_nextChannelIdentifier() public {
+        // assertEq(nextIdentifier(""), abi.encodePacked(COUNTER_DEFAULT));
+        // assertEq(nextIdentifier("channel-0"), abi.encodePacked("channel-1"));
+        // assertEq(nextIdentifier("channel-99"), abi.encodePacked("channel-a9"));
+        assertEq(nextIdentifier("channel-ff"), abi.encodePacked("channel-000"));
+    }
+
+    function nextIdentifier(bytes32 current32) internal pure returns (bytes memory) {
+        uint256 b = 8;
+
+        bytes memory current = abi.encodePacked(current32);
+
+        if (uint256(current32) == uint256(0)) {
+            current = abi.encodePacked(COUNTER_DEFAULT);
+        } else {
+            // b'f'
+            while (true) {
+                if (current[b] != bytes1("f")) {
+                    if (current[b] == bytes1(uint8(0))) {
+                        // b'0'
+                        current[b] = bytes1("0");
+                        // b'9'
+                    } else if (current[b] == bytes1("9")) {
+                        // jump from 9 to a
+                        current[b] = bytes1(uint8(current[b]) + 40);
+                    } else {
+                        current[b] = bytes1(uint8(current[b]) + 1);
+                    }
+                    break;
+                }
+                // b'a'
+                current[b] = bytes1("0");
+                b += 1;
+            }
+        }
+
+        return current;
+    }
 }

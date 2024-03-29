@@ -118,6 +118,9 @@ pub trait Chain: Sized + Send + Sync + 'static {
     type Height: Member + IsHeight + MaybeArbitrary;
 
     type ClientId: Member + Id + MaybeArbitrary;
+    // type ConnectionId: Member + Id + MaybeArbitrary;
+    // type ChannelId: Member + Id + MaybeArbitrary;
+    // type PortId: Member + Id + MaybeArbitrary;
 
     type IbcStateEncoding: Encoding;
 
