@@ -393,7 +393,7 @@
             "--exclude=parse-wasm-client-type"
             "--exclude=protos"
             "--exclude=contracts"
-            "--exclude=cargo-workspace-dependencies"
+            "--exclude=tidy"
             "--exclude=generate-rust-sol-bindings"
             "--exclude=ensure-blocks"
             "--exclude=ucli"

@@ -192,6 +192,7 @@
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
+        ./tools/tidy/tidy.nix
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
