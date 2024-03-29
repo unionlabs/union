@@ -1,9 +1,9 @@
 [package]
-edition  = "2021"
-include  = ["README.md"]
-name     = "unionlabs"
-resolver = "2"
-version  = "0.1.0"
+include = ["README.md"]
+name    = "unionlabs"
+version = "0.1.0"
+
+edition = { workspace = true }
 
 [lints]
 workspace = true
@@ -23,12 +23,12 @@ ethers                   = { workspace = true, optional = true }
 ethers-contract-derive   = { workspace = true, optional = true }
 ethers-core              = { workspace = true, optional = true }
 frame-support-procedural = { workspace = true }
-frunk.workspace          = true
+frunk                    = { workspace = true }
 generic-array            = "0.14.7"
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
-macros.workspace         = true
+macros                   = { workspace = true }
 milagro_bls              = { workspace = true }
 paste                    = { version = "1.0" }
 primitive-types          = { workspace = true, features = ["serde_no_std", "impl-rlp"] }
