@@ -226,7 +226,7 @@ contract CometblsClient is ILightClient {
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {
-        bytes memory appHash = validateDelayPeriod(
+        bytes32 appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
         return ICS23MembershipVerifier.verifyMembership(
@@ -243,7 +243,7 @@ contract CometblsClient is ILightClient {
         bytes calldata prefix,
         bytes calldata path
     ) external virtual returns (bool) {
-        bytes memory appHash = validateDelayPeriod(
+        bytes32 appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
         return ICS23MembershipVerifier.verifyNonMembership(
@@ -256,7 +256,7 @@ contract CometblsClient is ILightClient {
         IbcCoreClientV1Height.Data calldata height,
         uint64 delayPeriodTime,
         uint64 delayPeriodBlocks
-    ) internal view returns (bytes memory) {
+    ) internal view returns (bytes32) {
         OptimizedConsensusState storage consensusState =
             consensusStates[clientId][height.toUint128()];
         if (consensusState.timestamp == 0) {
@@ -274,7 +274,7 @@ contract CometblsClient is ILightClient {
         if (delayPeriodBlocks != 0 && currentHeight < validHeight) {
             revert CometblsClientLib.ErrDelayPeriodNotExpired();
         }
-        return abi.encodePacked(consensusState.appHash);
+        return consensusState.appHash;
     }
 
     function getClientState(string calldata clientId)

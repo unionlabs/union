@@ -7,7 +7,7 @@ import "../proto/ibc/core/commitment/v1/commitment.sol";
 
 library ICS23MembershipVerifier {
     function verifyMembership(
-        bytes memory root,
+        bytes32 root,
         bytes calldata proof,
         bytes memory prefix,
         bytes calldata path,
@@ -18,14 +18,14 @@ library ICS23MembershipVerifier {
         fullPath[1] = path;
         return Ics23.verifyChainedMembership(
             abi.decode(proof, (UnionIcs23.ExistenceProof[2])),
-            bytesToBytes32(root),
+            root,
             fullPath,
             value
         ) == Ics23.VerifyChainedMembershipError.None;
     }
 
     function verifyNonMembership(
-        bytes memory root,
+        bytes32 root,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
@@ -39,21 +39,7 @@ library ICS23MembershipVerifier {
         ) = abi.decode(
             proof, (UnionIcs23.NonExistenceProof, UnionIcs23.ExistenceProof)
         );
-        return Ics23.verifyChainedNonMembership(
-            nonexist, exist, bytesToBytes32(root), fullPath
-        ) == Ics23.VerifyChainedNonMembershipError.None;
-    }
-
-    function bytesToBytes32(bytes memory source)
-        private
-        pure
-        returns (bytes32 result)
-    {
-        if (source.length == 0) {
-            return 0x0;
-        }
-        assembly {
-            result := mload(add(source, 32))
-        }
+        return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)
+            == Ics23.VerifyChainedNonMembershipError.None;
     }
 }
