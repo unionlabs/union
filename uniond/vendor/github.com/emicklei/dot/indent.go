@@ -11,7 +11,7 @@ type IndentWriter struct {
 	writer io.Writer
 }
 
-// NewIndentWriter returna new IndentWriter with indent level 0.
+// NewIndentWriter returns a new IndentWriter with indent level 0.
 func NewIndentWriter(w io.Writer) *IndentWriter {
 	return &IndentWriter{level: 0, writer: w}
 }
@@ -27,7 +27,7 @@ func (i *IndentWriter) BackIndent() {
 	i.level--
 }
 
-// IndentWhile call the blocks after an indent and will restore that indent afterwards.
+// IndentWhile call the blocks after an indent and will restore that indent afterward.
 func (i *IndentWriter) IndentWhile(block func()) {
 	i.Indent()
 	block()

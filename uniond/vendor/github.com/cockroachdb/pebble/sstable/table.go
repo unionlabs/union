@@ -406,14 +406,18 @@ func (f footer) encode(buf []byte) []byte {
 	switch magic, version := f.format.AsTuple(); magic {
 	case levelDBMagic:
 		buf = buf[:levelDBFooterLen]
-		clear(buf)
+		for i := range buf {
+			buf[i] = 0
+		}
 		n := encodeBlockHandle(buf[0:], f.metaindexBH)
 		encodeBlockHandle(buf[n:], f.indexBH)
 		copy(buf[len(buf)-len(levelDBMagic):], levelDBMagic)
 
 	case rocksDBMagic, pebbleDBMagic:
 		buf = buf[:rocksDBFooterLen]
-		clear(buf)
+		for i := range buf {
+			buf[i] = 0
+		}
 		switch f.checksum {
 		case ChecksumTypeNone:
 			buf[0] = byte(ChecksumTypeNone)

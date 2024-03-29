@@ -1,6 +1,7 @@
 package aminojson
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -19,12 +20,12 @@ func marshalTimestamp(_ *Encoder, message protoreflect.Message, writer io.Writer
 	fields := message.Descriptor().Fields()
 	secondsField := fields.ByName(secondsName)
 	if secondsField == nil {
-		return fmt.Errorf("expected seconds field")
+		return errors.New("expected seconds field")
 	}
 
 	nanosField := fields.ByName(nanosName)
 	if nanosField == nil {
-		return fmt.Errorf("expected nanos field")
+		return errors.New("expected nanos field")
 	}
 
 	seconds := message.Get(secondsField).Int()
@@ -53,7 +54,7 @@ func marshalDuration(_ *Encoder, message protoreflect.Message, writer io.Writer)
 	fields := message.Descriptor().Fields()
 	secondsField := fields.ByName(secondsName)
 	if secondsField == nil {
-		return fmt.Errorf("expected seconds field")
+		return errors.New("expected seconds field")
 	}
 
 	// todo
@@ -65,7 +66,7 @@ func marshalDuration(_ *Encoder, message protoreflect.Message, writer io.Writer)
 
 	nanosField := fields.ByName(nanosName)
 	if nanosField == nil {
-		return fmt.Errorf("expected nanos field")
+		return errors.New("expected nanos field")
 	}
 
 	nanos := message.Get(nanosField).Int()

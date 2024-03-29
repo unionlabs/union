@@ -49,11 +49,6 @@ type Span struct { //nolint: maligned // prefer readability over optimal memory 
 	// parent refers to the immediate local parent span. A remote parent span is
 	// only referenced by setting ParentSpanID.
 	parent *Span
-	// isTransaction is true only for the root span of a local span tree. The
-	// root span is the first span started in a context. Note that a local root
-	// span may have a remote parent belonging to the same trace, therefore
-	// isTransaction depends on ctx and not on parent.
-	isTransaction bool
 	// recorder stores all spans in a transaction. Guaranteed to be non-nil.
 	recorder *spanRecorder
 	// span context, can only be set on transactions
@@ -114,9 +109,8 @@ func StartSpan(ctx context.Context, operation string, options ...SpanOption) *Sp
 		StartTime: time.Now(),
 		Sampled:   SampledUndefined,
 
-		ctx:           context.WithValue(ctx, spanContextKey{}, &span),
-		parent:        parent,
-		isTransaction: !hasParent,
+		ctx:    context.WithValue(ctx, spanContextKey{}, &span),
+		parent: parent,
 	}
 
 	if hasParent {
@@ -257,7 +251,7 @@ func (s *Span) SetContext(key string, value Context) {
 
 // IsTransaction checks if the given span is a transaction.
 func (s *Span) IsTransaction() bool {
-	return s.isTransaction
+	return s.parent == nil
 }
 
 // GetTransaction returns the transaction that contains this span.
@@ -289,7 +283,7 @@ func (s *Span) GetTransaction() *Span {
 // func (s *Span) TransactionName() string
 // func (s *Span) SetTransactionName(name string)
 
-// ToSentryTrace returns the seralized TraceParentContext from a transaction/sapn.
+// ToSentryTrace returns the seralized TraceParentContext from a transaction/span.
 // Use this function to propagate the TraceParentContext to a downstream SDK,
 // either as the value of the "sentry-trace" HTTP header, or as an html "sentry-trace" meta tag.
 func (s *Span) ToSentryTrace() string {
@@ -326,7 +320,7 @@ func (s *Span) ToBaggage() string {
 // SetDynamicSamplingContext sets the given dynamic sampling context on the
 // current transaction.
 func (s *Span) SetDynamicSamplingContext(dsc DynamicSamplingContext) {
-	if s.isTransaction {
+	if s.IsTransaction() {
 		s.dynamicSamplingContext = dsc
 	}
 }
@@ -391,7 +385,7 @@ func (s *Span) updateFromSentryTrace(header []byte) (updated bool) {
 }
 
 func (s *Span) updateFromBaggage(header []byte) {
-	if s.isTransaction {
+	if s.IsTransaction() {
 		dsc, err := DynamicSamplingContextFromHeader(header)
 		if err != nil {
 			return
@@ -452,7 +446,7 @@ func (s *Span) sample() Sampled {
 	// Note: non-transaction should always have a parent, but we check both
 	// conditions anyway -- the first for semantic meaning, the second to
 	// avoid a nil pointer dereference.
-	if !s.isTransaction && s.parent != nil {
+	if !s.IsTransaction() && s.parent != nil {
 		return s.parent.Sampled
 	}
 
@@ -516,7 +510,7 @@ func (s *Span) toEvent() *Event {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.isTransaction {
+	if !s.IsTransaction() {
 		return nil // only transactions can be transformed into events
 	}
 
@@ -829,17 +823,6 @@ func (s Sampled) Bool() bool {
 // A SpanOption is a function that can modify the properties of a span.
 type SpanOption func(s *Span)
 
-// The TransactionName option sets the name of the current transaction.
-//
-// A span tree has a single transaction name, therefore using this option when
-// starting a span affects the span tree as a whole, potentially overwriting a
-// name set previously.
-//
-// Deprecated: To be removed in 0.26.0. Use WithTransactionName() instead.
-func TransactionName(name string) SpanOption {
-	return WithTransactionName(name)
-}
-
 // WithTransactionName option sets the name of the current transaction.
 //
 // A span tree has a single transaction name, therefore using this option when
@@ -851,11 +834,11 @@ func WithTransactionName(name string) SpanOption {
 	}
 }
 
-// OpName sets the operation name for a given span.
-//
-// Deprecated: To be removed in 0.26.0. Use WithOpName() instead.
-func OpName(name string) SpanOption {
-	return WithOpName(name)
+// WithDescription sets the description of a span.
+func WithDescription(description string) SpanOption {
+	return func(s *Span) {
+		s.Description = description
+	}
 }
 
 // WithOpName sets the operation name for a given span.
@@ -863,13 +846,6 @@ func WithOpName(name string) SpanOption {
 	return func(s *Span) {
 		s.Op = name
 	}
-}
-
-// TransctionSource sets the source of the transaction name.
-//
-// Deprecated: To be removed in 0.26.0. Use WithTransactionSource() instead.
-func TransctionSource(source TransactionSource) SpanOption {
-	return WithTransactionSource(source)
 }
 
 // WithTransactionSource sets the source of the transaction name.
@@ -881,13 +857,6 @@ func WithTransactionSource(source TransactionSource) SpanOption {
 	return func(s *Span) {
 		s.Source = source
 	}
-}
-
-// SpanSampled updates the sampling flag for a given span.
-//
-// Deprecated: To be removed in 0.26.0. Use WithSpanSampled() instead.
-func SpanSampled(sampled Sampled) SpanOption {
-	return WithSpanSampled(sampled)
 }
 
 // WithSpanSampled updates the sampling flag for a given span.

@@ -152,11 +152,11 @@ func (p Params) ValidateBasic() error {
 	if err != nil {
 		return fmt.Errorf("invalid expedited threshold string: %w", err)
 	}
-	if !threshold.IsPositive() {
-		return fmt.Errorf("expedited vote threshold must be positive: %s", threshold)
+	if !expeditedThreshold.IsPositive() {
+		return fmt.Errorf("expedited vote threshold must be positive: %s", expeditedThreshold)
 	}
-	if threshold.GT(sdkmath.LegacyOneDec()) {
-		return fmt.Errorf("expedited vote threshold too large: %s", threshold)
+	if expeditedThreshold.GT(sdkmath.LegacyOneDec()) {
+		return fmt.Errorf("expedited vote threshold too large: %s", expeditedThreshold)
 	}
 	if expeditedThreshold.LTE(threshold) {
 		return fmt.Errorf("expedited vote threshold %s, must be greater than the regular threshold %s", expeditedThreshold, threshold)

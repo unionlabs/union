@@ -156,7 +156,7 @@ func safeMul(a, b uint) uint {
 	return c
 }
 
-// parseSizeInBytes converts strings like 1GB or 12 mb into an unsigned integer number of bytes
+// parseSizeInBytes converts strings like 1GB or 12 mb into an unsigned integer number of bytes.
 func parseSizeInBytes(sizeStr string) uint {
 	sizeStr = strings.TrimSpace(sizeStr)
 	lastChar := len(sizeStr) - 1

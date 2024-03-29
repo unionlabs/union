@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -654,7 +653,7 @@ func (f *memNode) resetToSyncedState() {
 		}
 	} else {
 		f.mu.Lock()
-		f.mu.data = slices.Clone(f.mu.syncedData)
+		f.mu.data = append([]byte(nil), f.mu.syncedData...)
 		f.mu.Unlock()
 	}
 }
@@ -788,7 +787,7 @@ func (f *memFile) Sync() error {
 			}
 		} else {
 			f.n.mu.Lock()
-			f.n.mu.syncedData = slices.Clone(f.n.mu.data)
+			f.n.mu.syncedData = append([]byte(nil), f.n.mu.data...)
 			f.n.mu.Unlock()
 		}
 	}

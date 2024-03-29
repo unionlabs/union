@@ -19,8 +19,17 @@ test-all:
 	@echo "--> Running go test"
 	@go test $(PACKAGES) -tags rocksdb,pebbledb -v
 
+golangci_version=v1.55.0
+
+#? lint-install: Install golangci-lint
+lint-install:
+	@echo "--> Installing golangci-lint $(golangci_version)"
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
+.PHONY: lint-install
+
 lint:
 	@echo "--> Running linter"
+	$(MAKE) lint-install
 	@golangci-lint run
 	@go mod verify
 .PHONY: lint

@@ -18,7 +18,6 @@ import (
 	"github.com/cockroachdb/pebble/objstorage/objstorageprovider/remoteobjcat"
 	"github.com/cockroachdb/pebble/objstorage/objstorageprovider/sharedcache"
 	"github.com/cockroachdb/pebble/objstorage/remote"
-	"github.com/cockroachdb/redact"
 )
 
 // remoteSubsystem contains the provider fields related to remote storage.
@@ -234,7 +233,7 @@ func (p *provider) sharedCreateRef(meta objstorage.ObjectMetadata) error {
 		err = writer.Close()
 	}
 	if err != nil {
-		return errors.Wrapf(err, "creating marker object %q", errors.Safe(refName))
+		return errors.Wrapf(err, "creating marker object %q", refName)
 	}
 	return nil
 }
@@ -266,7 +265,7 @@ func (p *provider) sharedCreate(
 	objName := remoteObjectName(meta)
 	writer, err := storage.CreateObject(objName)
 	if err != nil {
-		return nil, objstorage.ObjectMetadata{}, errors.Wrapf(err, "creating object %q", errors.Safe(objName))
+		return nil, objstorage.ObjectMetadata{}, errors.Wrapf(err, "creating object %q", objName)
 	}
 	return &sharedWritable{
 		p:             p,
@@ -291,19 +290,19 @@ func (p *provider) remoteOpenForReading(
 		if _, err := meta.Remote.Storage.Size(refName); err != nil {
 			if meta.Remote.Storage.IsNotExistError(err) {
 				if opts.MustExist {
-					p.st.Logger.Fatalf("marker object %q does not exist", errors.Safe(refName))
+					p.st.Logger.Fatalf("marker object %q does not exist", refName)
 					// TODO(radu): maybe list references for the object.
 				}
-				return nil, errors.Errorf("marker object %q does not exist", errors.Safe(refName))
+				return nil, errors.Errorf("marker object %q does not exist", refName)
 			}
-			return nil, errors.Wrapf(err, "checking marker object %q", errors.Safe(refName))
+			return nil, errors.Wrapf(err, "checking marker object %q", refName)
 		}
 	}
 	objName := remoteObjectName(meta)
 	reader, size, err := meta.Remote.Storage.ReadObject(ctx, objName)
 	if err != nil {
 		if opts.MustExist && meta.Remote.Storage.IsNotExistError(err) {
-			p.st.Logger.Fatalf("object %q does not exist", redact.SafeString(objName))
+			p.st.Logger.Fatalf("object %q does not exist", objName)
 			// TODO(radu): maybe list references for the object.
 		}
 		return nil, err

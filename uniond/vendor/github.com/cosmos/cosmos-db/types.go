@@ -2,6 +2,8 @@ package db
 
 import "errors"
 
+const DBFileSuffix = ".db"
+
 var (
 	// errBatchClosed is returned when a closed or written batch is used.
 	errBatchClosed = errors.New("batch has been written or closed")

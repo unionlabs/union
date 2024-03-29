@@ -44,9 +44,9 @@ consisting of all the keys provided by name and multisig threshold.`,
 	}
 	f := cmd.Flags()
 	f.String(FlagBechPrefix, sdk.PrefixAccount, "The Bech32 prefix encoding for a key (acc|val|cons)")
-	f.BoolP(FlagAddress, "a", false, "Output the address only (overrides --output)")
-	f.BoolP(FlagPublicKey, "p", false, "Output the public key only (overrides --output)")
-	f.BoolP(FlagDevice, "d", false, "Output the address in a ledger device")
+	f.BoolP(FlagAddress, "a", false, "Output the address only (cannot be used with --output)")
+	f.BoolP(FlagPublicKey, "p", false, "Output the public key only (cannot be used with --output)")
+	f.BoolP(FlagDevice, "d", false, "Output the address in a ledger device (cannot be used with --pubkey)")
 	f.Int(flagMultiSigThreshold, 1, "K out of N required signatures")
 
 	return cmd

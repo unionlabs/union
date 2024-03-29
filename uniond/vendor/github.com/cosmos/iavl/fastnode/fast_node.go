@@ -30,6 +30,7 @@ func NewNode(key []byte, value []byte, version int64) *Node {
 }
 
 // DeserializeNode constructs an *FastNode from an encoded byte slice.
+// It assumes we do not mutate this input []byte.
 func DeserializeNode(key []byte, buf []byte) (*Node, error) {
 	ver, n, err := encoding.DecodeVarint(buf)
 	if err != nil {

@@ -83,6 +83,7 @@ func (l *LevelMetadata) SstMetas() []SstMetadata {
 // SstMetadata represents metadata of sst file.
 type SstMetadata struct {
 	relativeFileName string
+	directory        string
 	size             uint64
 	smallestKey      []byte
 	largestKey       []byte
@@ -95,6 +96,7 @@ func sstMetas(c *C.rocksdb_level_metadata_t) []SstMetadata {
 	for i := range metas {
 		sm := C.rocksdb_level_metadata_get_sst_file_metadata(c, C.size_t(i))
 		metas[i].relativeFileName = C.GoString(C.rocksdb_sst_file_metadata_get_relative_filename(sm))
+		metas[i].directory = C.GoString(C.rocksdb_sst_file_metadata_get_directory(sm))
 		metas[i].size = uint64(C.rocksdb_sst_file_metadata_get_size(sm))
 
 		var ln C.size_t

@@ -883,7 +883,9 @@ func (r *valueBlockReader) doValueMangling(v []byte) []byte {
 	// property P1 only requires the valueBlockReader to maintain the memory of
 	// one fetched value.
 	if rand.Intn(2) == 0 {
-		clear(r.bufToMangle)
+		for i := range r.bufToMangle {
+			r.bufToMangle[i] = 0
+		}
 	}
 	// Store the current value in a new buffer for future mangling.
 	r.bufToMangle = append([]byte(nil), v...)

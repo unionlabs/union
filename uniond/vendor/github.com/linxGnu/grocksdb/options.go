@@ -275,9 +275,9 @@ func (opts *Options) ParanoidChecks() bool {
 	return charToBool(C.rocksdb_options_get_paranoid_checks(opts.c))
 }
 
-// SetDBPaths sets the DBPaths of the options.
+// SetDBPaths sets the db_paths option.
 //
-// A list of paths where SST files can be put into, with its target size.
+// db_paths is a list of paths where SST files can be put into, with its target size.
 // Newer data is placed into paths specified earlier in the vector while
 // older data gradually moves to paths specified later in the vector.
 //
@@ -311,6 +311,30 @@ func (opts *Options) SetDBPaths(dbpaths []*DBPath) {
 		}
 
 		C.rocksdb_options_set_db_paths(opts.c, &cDbpaths[0], C.size_t(n))
+	}
+}
+
+// SetCFPaths sets cf_paths option. cf_paths is a list of paths where SST files
+// for this column family can be put into, with its target size.
+//
+// Similar to db_paths, newer data is placed into paths specified earlier in the
+// vector while older data gradually moves to paths specified later in the vector.
+//
+// Note that, if a path is supplied to multiple column
+// families, it would have files and total size from all
+// the column families combined. User should provision for the
+// total size(from all the column families) in such cases.
+//
+// If left empty, db_paths will be used.
+// Default: empty
+func (opts *Options) SetCFPaths(dbpaths []*DBPath) {
+	if n := len(dbpaths); n > 0 {
+		cDbpaths := make([]*C.rocksdb_dbpath_t, n)
+		for i, v := range dbpaths {
+			cDbpaths[i] = v.c
+		}
+
+		C.rocksdb_options_set_cf_paths(opts.c, &cDbpaths[0], C.size_t(n))
 	}
 }
 
@@ -1517,6 +1541,29 @@ func (opts *Options) GetStatisticsString() (stats string) {
 	return
 }
 
+func (opts *Options) GetTickerCount(tickerType TickerType) uint64 {
+	return uint64(C.rocksdb_options_statistics_get_ticker_count(opts.c, C.uint32_t(tickerType)))
+}
+
+func (opts *Options) GetHistogramData(histogramType HistogramType) (histogram HistogramData) {
+	hData := C.rocksdb_statistics_histogram_data_create()
+	C.rocksdb_options_statistics_get_histogram_data(opts.c, C.uint32_t(histogramType), hData)
+
+	histogram.Median = float64(C.rocksdb_statistics_histogram_data_get_median(hData))
+	histogram.P95 = float64(C.rocksdb_statistics_histogram_data_get_p95(hData))
+	histogram.P99 = float64(C.rocksdb_statistics_histogram_data_get_p99(hData))
+	histogram.Average = float64(C.rocksdb_statistics_histogram_data_get_average(hData))
+	histogram.StdDev = float64(C.rocksdb_statistics_histogram_data_get_std_dev(hData))
+	histogram.Max = float64(C.rocksdb_statistics_histogram_data_get_max(hData))
+	histogram.Min = float64(C.rocksdb_statistics_histogram_data_get_min(hData))
+	histogram.Count = uint64(C.rocksdb_statistics_histogram_data_get_count(hData))
+	histogram.Sum = uint64(C.rocksdb_statistics_histogram_data_get_sum(hData))
+
+	C.rocksdb_statistics_histogram_data_destroy(hData)
+
+	return
+}
+
 // SetRateLimiter sets the rate limiter of the options.
 // Use to control write rate of flush and compaction. Flush has higher
 // priority than compaction. Rate limiting is disabled if nullptr.
@@ -1744,6 +1791,74 @@ func (opts *Options) EnableStatistics() {
 	C.rocksdb_options_enable_statistics(opts.c)
 }
 
+// SetPeriodicCompactionSeconds sets periodic_compaction_seconds option.
+//
+// This option has different meanings for different compaction styles:
+//
+// Leveled: files older than `periodic_compaction_seconds` will be picked up
+//
+//	for compaction and will be re-written to the same level as they were
+//	before.
+//
+// FIFO: not supported. Setting this option has no effect for FIFO compaction.
+//
+// Universal: when there are files older than `periodic_compaction_seconds`,
+//
+//	rocksdb will try to do as large a compaction as possible including the
+//	last level. Such compaction is only skipped if only last level is to
+//	be compacted and no file in last level is older than
+//	`periodic_compaction_seconds`. See more in
+//	UniversalCompactionBuilder::PickPeriodicCompaction().
+//	For backward compatibility, the effective value of this option takes
+//	into account the value of option `ttl`. The logic is as follows:
+//	- both options are set to 30 days if they have the default value.
+//	- if both options are zero, zero is picked. Otherwise, we take the min
+//	value among non-zero options values (i.e. takes the stricter limit).
+//
+// One main use of the feature is to make sure a file goes through compaction
+// filters periodically. Users can also use the feature to clear up SST
+// files using old format.
+//
+// A file's age is computed by looking at file_creation_time or creation_time
+// table properties in order, if they have valid non-zero values; if not, the
+// age is based on the file's last modified time (given by the underlying
+// Env).
+//
+// This option only supports block based table format for any compaction
+// style.
+//
+// unit: seconds. Ex: 7 days = 7 * 24 * 60 * 60
+//
+// Values:
+// 0: Turn off Periodic compactions.
+// UINT64_MAX - 1 (0xfffffffffffffffe) is special flag to allow RocksDB to
+// pick default.
+//
+// Default: 30 days if using block based table format + compaction filter +
+//
+//	leveled compaction or block based table format + universal compaction.
+//	0 (disabled) otherwise.
+//
+// Dynamically changeable through SetOptions() API
+func (opts *Options) SetPeriodicCompactionSeconds(v uint64) {
+	C.rocksdb_options_set_periodic_compaction_seconds(opts.c, C.uint64_t(v))
+}
+
+// GetPeriodicCompactionSeconds gets periodic periodic_compaction_seconds option.
+func (opts *Options) GetPeriodicCompactionSeconds() uint64 {
+	return uint64(C.rocksdb_options_get_periodic_compaction_seconds(opts.c))
+}
+
+// SetStatisticsLevel set statistics level.
+func (opts *Options) SetStatisticsLevel(level StatisticsLevel) {
+	C.rocksdb_options_set_statistics_level(opts.c, C.int(level))
+}
+
+// GetStatisticsLevel get statistics level.
+func (opts *Options) GetStatisticsLevel() StatisticsLevel {
+	return StatisticsLevel(C.rocksdb_options_get_statistics_level(opts.c))
+}
+
 // PrepareForBulkLoad prepare the DB for bulk loading.
 //
 // All data will be in level 0 without any automatic compaction.
@@ -1846,6 +1961,25 @@ func (opts *Options) SetPlainTableFactory(
 		boolToChar(fullScanMode),
 		boolToChar(storeIndexInFile),
 	)
+}
+
+// SetWriteBufferManager binds with a WriteBufferManager.
+//
+// The memory usage of memtable will report to this object. The same object
+// can be passed into multiple DBs and it will track the sum of size of all
+// the DBs. If the total size of all live memtables of all the DBs exceeds
+// a limit, a flush will be triggered in the next DB to which the next write
+// is issued, as long as there is one or more column family not already
+// flushing.
+//
+// If the object is only passed to one DB, the behavior is the same as
+// db_write_buffer_size. When write_buffer_manager is set, the value set will
+// override db_write_buffer_size.
+//
+// This feature is disabled by default. Specify a non-zero value
+// to enable it.
+func (opts *Options) SetWriteBufferManager(wbm *WriteBufferManager) {
+	C.rocksdb_options_set_write_buffer_manager(opts.c, wbm.p)
 }
 
 // SetCreateIfMissingColumnFamilies specifies whether the column families
@@ -2531,7 +2665,6 @@ func LoadLatestOptions(path string, env *Env, ignoreUnknownOpts bool, cache *Cac
 	}
 
 	cPath := C.CString(path)
-	defer C.free(unsafe.Pointer(cPath))
 
 	var env_ *C.rocksdb_env_t
 	if env != nil {
@@ -2571,6 +2704,7 @@ func LoadLatestOptions(path string, env *Env, ignoreUnknownOpts bool, cache *Cac
 		}
 	}
 
+	C.free(unsafe.Pointer(cPath))
 	return
 }
 

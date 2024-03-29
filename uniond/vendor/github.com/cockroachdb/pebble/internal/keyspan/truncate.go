@@ -69,5 +69,5 @@ func Truncate(
 		}
 
 		return !out.Empty() && cmp(out.Start, out.End) < 0
-	})
+	}, cmp)
 }

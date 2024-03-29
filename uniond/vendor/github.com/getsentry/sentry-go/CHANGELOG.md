@@ -1,10 +1,49 @@
 # Changelog
 
+## 0.27.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.27.0.
+
+### Breaking Changes
+
+- `Exception.ThreadId` is now typed as `uint64`. It was wrongly typed as `string` before. ([#770](https://github.com/getsentry/sentry-go/pull/770))
+
+### Misc
+
+- Export `Event.Attachments` ([#771](https://github.com/getsentry/sentry-go/pull/771))
+
+## 0.26.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.26.0.
+
+### Breaking Changes
+
+As previously announced, this release removes some methods from the SDK.
+
+- `sentry.TransactionName()` use `sentry.WithTransactionName()` instead.
+- `sentry.OpName()` use `sentry.WithOpName()` instead.
+- `sentry.TransctionSource()` use `sentry.WithTransactionSource()` instead.
+- `sentry.SpanSampled()` use `sentry.WithSpanSampled()` instead.
+
+### Features
+
+- Add `WithDescription` span option ([#751](https://github.com/getsentry/sentry-go/pull/751))
+
+  ```go
+  span := sentry.StartSpan(ctx, "http.client", WithDescription("GET /api/users"))
+  ```
+- Add support for package name parsing in Go 1.20 and higher ([#730](https://github.com/getsentry/sentry-go/pull/730))
+
+### Bug Fixes
+
+- Apply `ClientOptions.SampleRate` only to errors & messages ([#754](https://github.com/getsentry/sentry-go/pull/754))
+- Check if git is available before executing any git commands ([#737](https://github.com/getsentry/sentry-go/pull/737))
+
 ## 0.25.0
 
 The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.25.0.
 
-### Deprecations
+### Breaking Changes
 
 As previously announced, this release removes two global constants from the SDK.
 

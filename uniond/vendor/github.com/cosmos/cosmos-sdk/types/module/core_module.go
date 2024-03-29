@@ -109,6 +109,10 @@ func (c coreAppModuleBasicAdaptor) ExportGenesis(ctx sdk.Context, cdc codec.JSON
 		return mod.ExportGenesis(ctx, cdc)
 	}
 
+	if mod, ok := c.module.(HasABCIGenesis); ok {
+		return mod.ExportGenesis(ctx, cdc)
+	}
+
 	return nil
 }
 

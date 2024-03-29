@@ -78,24 +78,28 @@ func defaultRelease() (release string) {
 	// 	v1.0.1-0-g9de4
 	// 	v2.0-8-g77df-dirty
 	// 	4f72d7
-	cmd := exec.Command("git", "describe", "--long", "--always", "--dirty")
-	b, err := cmd.Output()
-	if err != nil {
-		// Either Git is not available or the current directory is not a
-		// Git repository.
-		var s strings.Builder
-		fmt.Fprintf(&s, "Release detection failed: %v", err)
-		if err, ok := err.(*exec.ExitError); ok && len(err.Stderr) > 0 {
-			fmt.Fprintf(&s, ": %s", err.Stderr)
+	if _, err := exec.LookPath("git"); err == nil {
+		cmd := exec.Command("git", "describe", "--long", "--always", "--dirty")
+		b, err := cmd.Output()
+		if err != nil {
+			// Either Git is not available or the current directory is not a
+			// Git repository.
+			var s strings.Builder
+			fmt.Fprintf(&s, "Release detection failed: %v", err)
+			if err, ok := err.(*exec.ExitError); ok && len(err.Stderr) > 0 {
+				fmt.Fprintf(&s, ": %s", err.Stderr)
+			}
+			Logger.Print(s.String())
+		} else {
+			release = strings.TrimSpace(string(b))
+			Logger.Printf("Using release from Git: %s", release)
+			return release
 		}
-		Logger.Print(s.String())
-		Logger.Print("Some Sentry features will not be available. See https://docs.sentry.io/product/releases/.")
-		Logger.Print("To stop seeing this message, pass a Release to sentry.Init or set the SENTRY_RELEASE environment variable.")
-		return ""
 	}
-	release = strings.TrimSpace(string(b))
-	Logger.Printf("Using release from Git: %s", release)
-	return release
+
+	Logger.Print("Some Sentry features will not be available. See https://docs.sentry.io/product/releases/.")
+	Logger.Print("To stop seeing this message, pass a Release to sentry.Init or set the SENTRY_RELEASE environment variable.")
+	return ""
 }
 
 func revisionFromBuildInfo(info *debug.BuildInfo) string {

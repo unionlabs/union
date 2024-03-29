@@ -32,7 +32,7 @@ import (
 // Please see https://cloud.google.com/storage/docs/xml-api/post-object
 // for reference about the fields.
 type PostPolicyV4Options struct {
-	// GoogleAccessID represents the authorizer of the signed URL generation.
+	// GoogleAccessID represents the authorizer of the signed post policy generation.
 	// It is typically the Google service account client email address from
 	// the Google Developers Console in the form of "xxx@developer.gserviceaccount.com".
 	// Required.
@@ -85,7 +85,7 @@ type PostPolicyV4Options struct {
 	// Exactly one of PrivateKey or SignRawBytes must be non-nil.
 	SignRawBytes func(bytes []byte) (signature []byte, err error)
 
-	// Expires is the expiration time on the signed URL.
+	// Expires is the expiration time on the signed post policy.
 	// It must be a time in the future.
 	// Required.
 	Expires time.Time
@@ -113,6 +113,12 @@ type PostPolicyV4Options struct {
 	// Optional.
 	Conditions []PostPolicyV4Condition
 
+	// Hostname sets the host of the signed post policy. This field overrides
+	// any endpoint set on a storage Client or through STORAGE_EMULATOR_HOST.
+	// Only compatible with PathStyle URLStyle.
+	// Optional.
+	Hostname string
+
 	shouldHashSignBytes bool
 }
 
@@ -128,6 +134,7 @@ func (opts *PostPolicyV4Options) clone() *PostPolicyV4Options {
 		Fields:              opts.Fields,
 		Conditions:          opts.Conditions,
 		shouldHashSignBytes: opts.shouldHashSignBytes,
+		Hostname:            opts.Hostname,
 	}
 }
 
@@ -370,7 +377,7 @@ func GenerateSignedPostPolicyV4(bucket, object string, opts *PostPolicyV4Options
 	u := &url.URL{
 		Path:    path,
 		RawPath: pathEncodeV4(path),
-		Host:    opts.Style.host(bucket),
+		Host:    opts.Style.host(opts.Hostname, bucket),
 		Scheme:  scheme,
 	}
 

@@ -7,6 +7,16 @@ linters-settings:
             - standard
             - default
             - prefix(github.com/spf13/viper)
+    gocritic:
+        # Enable multiple checks by tags. See "Tags" section in https://github.com/go-critic/go-critic#usage.
+        enabled-tags:
+            - diagnostic
+            - experimental
+            - opinionated
+            - style
+        disabled-checks:
+            - importShadow
+            - unnamedResult
     golint:
         min-confidence: 0
     goimports:
@@ -22,6 +32,8 @@ linters:
         - exhaustive
         - exportloopref
         - gci
+        - gocritic
+        - godot
         - gofmt
         - gofumpt
         - goimports
@@ -62,9 +74,7 @@ linters:
         # - gochecknoinits
         # - gocognit
         # - goconst
-        # - gocritic
         # - gocyclo
-        # - godot
         # - gosec
         # - gosimple
         # - ifshort

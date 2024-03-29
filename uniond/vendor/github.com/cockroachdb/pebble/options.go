@@ -699,6 +699,30 @@ type Options struct {
 		// CacheSizeBytesBytes is the size of the on-disk block cache for objects
 		// on shared storage in bytes. If it is 0, no cache is used.
 		SecondaryCacheSizeBytes int64
+
+		// IneffectualPointDeleteCallback is called in compactions/flushes if any
+		// single delete is being elided without deleting a point set/merge.
+		IneffectualSingleDeleteCallback func(userKey []byte)
+
+		// SingleDeleteInvariantViolationCallback is called in compactions/flushes if any
+		// single delete has consumed a Set/Merge, and there is another immediately older
+		// Set/SetWithDelete/Merge. The user of Pebble has violated the invariant under
+		// which SingleDelete can be used correctly.
+		//
+		// Consider the sequence SingleDelete#3, Set#2, Set#1. There are three
+		// ways some of these keys can first meet in a compaction.
+		//
+		// - All 3 keys in the same compaction: this callback will detect the
+		//   violation.
+		//
+		// - SingleDelete#3, Set#2 meet in a compaction first: Both keys will
+		//   disappear. The violation will not be detected, and the DB will have
+		//   Set#1 which is likely incorrect (from the user's perspective).
+		//
+		// - Set#2, Set#1 meet in a compaction first: The output will be Set#2,
+		//   which will later be consumed by SingleDelete#3. The violation will
+		//   not be detected and the DB will be correct.
+		SingleDeleteInvariantViolationCallback func(userKey []byte)
 	}
 
 	// Filters is a map from filter policy name to filter policy. It is used for

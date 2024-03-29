@@ -41,10 +41,6 @@ func (k Keeper) GetDelegatorValidators(
 		i++
 	}
 
-	if err != nil {
-		return types.Validators{}, err
-	}
-
 	return types.Validators{Validators: validators[:i], ValidatorCodec: k.validatorAddressCodec}, nil // trim
 }
 

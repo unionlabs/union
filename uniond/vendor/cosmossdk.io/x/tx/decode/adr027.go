@@ -24,6 +24,14 @@ func rejectNonADR027TxRaw(txBytes []byte) error {
 		if m < 0 {
 			return fmt.Errorf("invalid length; %w", protowire.ParseError(m))
 		}
+
+		// Paranoia from possible varint decoding which can trivially
+		// be wrong due to the precarious nature of the format being tricked:
+		// https://cyber.orijtech.com/advisory/varint-decode-limitless
+		if m > len(txBytes) {
+			return fmt.Errorf("invalid length from decoding (%d) > len(txBytes) (%d)", m, len(txBytes))
+		}
+
 		// TxRaw only has bytes fields.
 		if wireType != protowire.BytesType {
 			return fmt.Errorf("expected %d wire type, got %d", protowire.BytesType, wireType)

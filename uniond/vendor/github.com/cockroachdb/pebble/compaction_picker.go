@@ -1663,7 +1663,7 @@ func pickAutoLPositive(
 	vers *version,
 	cInfo candidateLevelInfo,
 	baseLevel int,
-	levelMaxBytes [numLevels]int64,
+	levelMaxBytes [7]int64,
 ) (pc *pickedCompaction) {
 	if cInfo.level == 0 {
 		panic("pebble: pickAutoLPositive called for L0")
@@ -1812,7 +1812,7 @@ func pickL0(env compactionEnv, opts *Options, vers *version, baseLevel int) (pc 
 	// has been shown to not cause a performance regression.
 	lcf, err := vers.L0Sublevels.PickBaseCompaction(1, vers.Levels[baseLevel].Slice())
 	if err != nil {
-		opts.Logger.Errorf("error when picking base compaction: %s", err)
+		opts.Logger.Infof("error when picking base compaction: %s", err)
 		return
 	}
 	if lcf != nil {
@@ -1830,7 +1830,7 @@ func pickL0(env compactionEnv, opts *Options, vers *version, baseLevel int) (pc 
 	// counterproductive.
 	lcf, err = vers.L0Sublevels.PickIntraL0Compaction(env.earliestUnflushedSeqNum, minIntraL0Count)
 	if err != nil {
-		opts.Logger.Errorf("error when picking intra-L0 compaction: %s", err)
+		opts.Logger.Infof("error when picking intra-L0 compaction: %s", err)
 		return
 	}
 	if lcf != nil {

@@ -1,6 +1,27 @@
 # Changes
 
 
+## [1.1.6](https://github.com/googleapis/google-cloud-go/compare/iam/v1.1.5...iam/v1.1.6) (2024-01-30)
+
+
+### Bug Fixes
+
+* **iam:** Enable universe domain resolution options ([fd1d569](https://github.com/googleapis/google-cloud-go/commit/fd1d56930fa8a747be35a224611f4797b8aeb698))
+
+## [1.1.5](https://github.com/googleapis/google-cloud-go/compare/iam/v1.1.4...iam/v1.1.5) (2023-11-01)
+
+
+### Bug Fixes
+
+* **iam:** Bump google.golang.org/api to v0.149.0 ([8d2ab9f](https://github.com/googleapis/google-cloud-go/commit/8d2ab9f320a86c1c0fab90513fc05861561d0880))
+
+## [1.1.4](https://github.com/googleapis/google-cloud-go/compare/iam/v1.1.3...iam/v1.1.4) (2023-10-26)
+
+
+### Bug Fixes
+
+* **iam:** Update grpc-go to v1.59.0 ([81a97b0](https://github.com/googleapis/google-cloud-go/commit/81a97b06cb28b25432e4ece595c55a9857e960b7))
+
 ## [1.1.3](https://github.com/googleapis/google-cloud-go/compare/iam/v1.1.2...iam/v1.1.3) (2023-10-12)
 
 

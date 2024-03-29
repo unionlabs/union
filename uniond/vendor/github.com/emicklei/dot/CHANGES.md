@@ -1,6 +1,10 @@
 # Change history of the dot package
 
 
+## v1.6.1 - 2024-01-17
+
+- deprecated MermaidShapeCirle => use MermaidShapeCircle
+
 ## v1.6.0 - 2023-07-30
 
 - add Record builder

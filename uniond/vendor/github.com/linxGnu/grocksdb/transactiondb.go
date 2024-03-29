@@ -284,10 +284,15 @@ func (db *TransactionDB) MultiGetWithCF(opts *ReadOptions, cf *ColumnFamilyHandl
 	valSizes := make(sizeTSlice, len(keys))
 	rocksErrs := make(charsSlice, len(keys))
 
+	cfs := make(ColumnFamilyHandles, len(keys))
+	for i := range keys {
+		cfs[i] = cf
+	}
+
 	C.rocksdb_transactiondb_multi_get_cf(
 		db.c,
 		opts.c,
-		&cf.c,
+		cfs.toCSlice().c(),
 		C.size_t(len(keys)),
 		cKeys.c(),
 		cKeySizes.c(),

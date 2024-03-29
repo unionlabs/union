@@ -25,7 +25,7 @@ var propBoolFalse = []byte{'0'}
 
 var propOffsetTagMap = make(map[uintptr]string)
 
-func generateTagMaps(t reflect.Type) {
+func generateTagMaps(t reflect.Type, indexPrefix []int) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if f.Type.Kind() == reflect.Struct {
@@ -34,7 +34,7 @@ func generateTagMaps(t reflect.Type) {
 				// CommonProperties is placed at the top of properties we can use
 				// the offsets of the fields within CommonProperties to determine
 				// the offsets of those fields within Properties.
-				generateTagMaps(f.Type)
+				generateTagMaps(f.Type, []int{i})
 				continue
 			}
 			panic("pebble: unknown struct type in Properties")
@@ -48,6 +48,10 @@ func generateTagMaps(t reflect.Type) {
 			default:
 				panic(fmt.Sprintf("unsupported property field type: %s %s", f.Name, f.Type))
 			}
+			if len(indexPrefix) > 0 {
+				// Prepend the index prefix so that we can use FieldByIndex on the top-level struct.
+				f.Index = append(indexPrefix[:len(indexPrefix):len(indexPrefix)], f.Index...)
+			}
 			propTagMap[tag] = f
 			propOffsetTagMap[f.Offset] = tag
 		}
@@ -55,8 +59,7 @@ func generateTagMaps(t reflect.Type) {
 }
 
 func init() {
-	t := reflect.TypeOf(Properties{})
-	generateTagMaps(t)
+	generateTagMaps(reflect.TypeOf(Properties{}), nil)
 }
 
 // CommonProperties holds properties for either a virtual or a physical sstable. This
@@ -273,10 +276,11 @@ func (p *Properties) load(
 	}
 	p.Loaded = make(map[uintptr]struct{})
 	v := reflect.ValueOf(p).Elem()
+
 	for valid := i.First(); valid; valid = i.Next() {
 		if f, ok := propTagMap[string(i.Key().UserKey)]; ok {
 			p.Loaded[f.Offset] = struct{}{}
-			field := v.FieldByName(f.Name)
+			field := v.FieldByIndex(f.Index)
 			switch f.Type.Kind() {
 			case reflect.Bool:
 				field.SetBool(bytes.Equal(i.Value(), propBoolTrue))

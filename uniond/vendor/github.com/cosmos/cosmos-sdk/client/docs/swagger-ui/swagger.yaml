@@ -3574,6 +3574,170 @@ paths:
           type: boolean
       tags:
         - Query
+  /cosmos/bank/v1beta1/denom_owners_by_query:
+    get:
+      summary: >-
+        DenomOwnersByQuery queries for all account addresses that own a
+        particular token
+
+        denomination.
+      description: 'Since: cosmos-sdk 0.50.3'
+      operationId: DenomOwnersByQuery
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              denom_owners:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                      description: >-
+                        address defines the address that owns a particular
+                        denomination.
+                    balance:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                  description: >-
+                    DenomOwner defines structure representing an account that
+                    owns or holds a
+
+                    particular denominated token. It contains the account
+                    address and account
+
+                    balance of the denominated token.
+
+
+                    Since: cosmos-sdk 0.46
+              pagination:
+                description: pagination defines the pagination in the response.
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    description: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently. It will be empty if
+                      there are no more results.
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+            description: >-
+              QueryDenomOwnersByQueryResponse defines the RPC response of a
+              DenomOwnersByQuery RPC query.
+
+
+              Since: cosmos-sdk 0.50.3
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: denom
+          description: >-
+            denom defines the coin denomination to query all account holders
+            for.
+          in: query
+          required: false
+          type: string
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
   /cosmos/bank/v1beta1/denoms_metadata:
     get:
       summary: |-
@@ -3787,7 +3951,7 @@ paths:
         - Query
   /cosmos/bank/v1beta1/denoms_metadata/{denom}:
     get:
-      summary: DenomsMetadata queries the client metadata of a given coin denomination.
+      summary: DenomMetadata queries the client metadata of a given coin denomination.
       operationId: DenomMetadata
       responses:
         '200':
@@ -3921,7 +4085,9 @@ paths:
         - Query
   /cosmos/bank/v1beta1/denoms_metadata_by_query_string:
     get:
-      summary: DenomsMetadata queries the client metadata of a given coin denomination.
+      summary: >-
+        DenomMetadataByQueryString queries the client metadata of a given coin
+        denomination.
       operationId: DenomMetadataByQueryString
       responses:
         '200':
@@ -9306,9 +9472,11 @@ paths:
                 type: string
               pruning_keep_recent:
                 type: string
-                title: pruning settings
               pruning_interval:
                 type: string
+              halt_height:
+                type: string
+                format: uint64
             description: >-
               ConfigResponse defines the response structure for the Config gRPC
               query.
@@ -40496,6 +40664,68 @@ definitions:
       Query/DenomMetadata RPC
 
       method.
+  cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse:
+    type: object
+    properties:
+      denom_owners:
+        type: array
+        items:
+          type: object
+          properties:
+            address:
+              type: string
+              description: address defines the address that owns a particular denomination.
+            balance:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+          description: >-
+            DenomOwner defines structure representing an account that owns or
+            holds a
+
+            particular denominated token. It contains the account address and
+            account
+
+            balance of the denominated token.
+
+
+            Since: cosmos-sdk 0.46
+      pagination:
+        description: pagination defines the pagination in the response.
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            description: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently. It will be empty if
+              there are no more results.
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+    description: >-
+      QueryDenomOwnersByQueryResponse defines the RPC response of a
+      DenomOwnersByQuery RPC query.
+
+
+      Since: cosmos-sdk 0.50.3
   cosmos.bank.v1beta1.QueryDenomOwnersResponse:
     type: object
     properties:
@@ -47365,9 +47595,11 @@ definitions:
         type: string
       pruning_keep_recent:
         type: string
-        title: pruning settings
       pruning_interval:
         type: string
+      halt_height:
+        type: string
+        format: uint64
     description: ConfigResponse defines the response structure for the Config gRPC query.
   cosmos.base.node.v1beta1.StatusResponse:
     type: object

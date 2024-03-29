@@ -418,6 +418,8 @@ in a Key/Value store such as etcd or Consul.  These values take precedence over
 default values, but are overridden by configuration values retrieved from disk,
 flags, or environment variables.
 
+Viper supports multiple hosts. To use, pass a list of endpoints separated by `;`. For example `http://127.0.0.1:4001;http://127.0.0.1:4002`.
+
 Viper uses [crypt](https://github.com/bketelsen/crypt) to retrieve
 configuration from the K/V store, which means that you can store your
 configuration values encrypted and have them automatically decrypted if you have
@@ -562,6 +564,9 @@ The following functions and methods exist:
 One important thing to recognize is that each Get function will return a zero
 value if it’s not found. To check if a given key exists, the `IsSet()` method
 has been provided.
+
+The zero value will also be returned if the value is set, but fails to parse
+as the requested type.
 
 Example:
 ```go

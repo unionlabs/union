@@ -211,11 +211,13 @@ func (m *memTable) apply(batch *Batch, seqNum uint64) error {
 	var tombstoneCount, rangeKeyCount uint32
 	startSeqNum := seqNum
 	for r := batch.Reader(); ; seqNum++ {
-		kind, ukey, value, ok := r.Next()
+		kind, ukey, value, ok, err := r.Next()
 		if !ok {
+			if err != nil {
+				return err
+			}
 			break
 		}
-		var err error
 		ikey := base.MakeInternalKey(ukey, seqNum, kind)
 		switch kind {
 		case InternalKeyKindRangeDelete:

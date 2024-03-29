@@ -30,7 +30,7 @@ var (
 
 // Range performs a depth-first traversal over reachable values in a message.
 //
-// See Options.Range for details.
+// See [Options.Range] for details.
 func Range(m protoreflect.Message, f func(protopath.Values) error) error {
 	return Options{}.Range(m, f, nil)
 }
@@ -61,33 +61,33 @@ type Options struct {
 }
 
 // Range performs a depth-first traversal over reachable values in a message.
-// The first push and the last pop are to push/pop a protopath.Root step.
-// If push or pop return any non-nil error (other than Break or Terminate),
+// The first push and the last pop are to push/pop a [protopath.Root] step.
+// If push or pop return any non-nil error (other than [Break] or [Terminate]),
 // it terminates the traversal and is returned by Range.
 //
 // The rules for traversing a message is as follows:
 //
-// • For messages, iterate over every populated known and extension field.
-// Each field is preceded by a push of a protopath.FieldAccess step,
-// followed by recursive application of the rules on the field value,
-// and succeeded by a pop of that step.
-// If the message has unknown fields, then push an protopath.UnknownAccess step
-// followed immediately by pop of that step.
+//   - For messages, iterate over every populated known and extension field.
+//     Each field is preceded by a push of a [protopath.FieldAccess] step,
+//     followed by recursive application of the rules on the field value,
+//     and succeeded by a pop of that step.
+//     If the message has unknown fields, then push an [protopath.UnknownAccess] step
+//     followed immediately by pop of that step.
 //
-// • As an exception to the above rule, if the current message is a
-// google.protobuf.Any message, expand the underlying message (if resolvable).
-// The expanded message is preceded by a push of a protopath.AnyExpand step,
-// followed by recursive application of the rules on the underlying message,
-// and succeeded by a pop of that step. Mutations to the expanded message
-// are written back to the Any message when popping back out.
+//   - As an exception to the above rule, if the current message is a
+//     google.protobuf.Any message, expand the underlying message (if resolvable).
+//     The expanded message is preceded by a push of a [protopath.AnyExpand] step,
+//     followed by recursive application of the rules on the underlying message,
+//     and succeeded by a pop of that step. Mutations to the expanded message
+//     are written back to the Any message when popping back out.
 //
-// • For lists, iterate over every element. Each element is preceded by a push
-// of a protopath.ListIndex step, followed by recursive application of the rules
-// on the list element, and succeeded by a pop of that step.
+//   - For lists, iterate over every element. Each element is preceded by a push
+//     of a [protopath.ListIndex] step, followed by recursive application of the rules
+//     on the list element, and succeeded by a pop of that step.
 //
-// • For maps, iterate over every entry. Each entry is preceded by a push
-// of a protopath.MapIndex step, followed by recursive application of the rules
-// on the map entry value, and succeeded by a pop of that step.
+//   - For maps, iterate over every entry. Each entry is preceded by a push
+//     of a [protopath.MapIndex] step, followed by recursive application of the rules
+//     on the map entry value, and succeeded by a pop of that step.
 //
 // Mutations should only be made to the last value, otherwise the effects on
 // traversal will be undefined. If the mutation is made to the last value
@@ -96,7 +96,7 @@ type Options struct {
 // populates a few fields in that message, then the newly modified fields
 // will be traversed.
 //
-// The protopath.Values provided to push functions is only valid until the
+// The [protopath.Values] provided to push functions is only valid until the
 // corresponding pop call and the values provided to a pop call is only valid
 // for the duration of the pop call itself.
 func (o Options) Range(m protoreflect.Message, push, pop func(protopath.Values) error) error {

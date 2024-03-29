@@ -9,14 +9,9 @@ import (
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
-	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/statesync"
-	"github.com/cometbft/cometbft/store"
 	cmtversion "github.com/cometbft/cometbft/version"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -28,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	rpc "github.com/cosmos/cosmos-sdk/client/rpc"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -387,62 +381,7 @@ func BootstrapStateCmd(appCreator types.AppCreator) *cobra.Command {
 				height = app.CommitMultiStore().LastCommitID().Version
 			}
 
-			blockStoreDB, err := cmtcfg.DefaultDBProvider(&cmtcfg.DBContext{ID: "blockstore", Config: cfg})
-			if err != nil {
-				return err
-			}
-			blockStore := store.NewBlockStore(blockStoreDB)
-
-			stateDB, err := cmtcfg.DefaultDBProvider(&cmtcfg.DBContext{ID: "state", Config: cfg})
-			if err != nil {
-				return err
-			}
-			stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-				DiscardABCIResponses: cfg.Storage.DiscardABCIResponses,
-			})
-
-			genState, _, err := node.LoadStateFromDBOrGenesisDocProvider(stateDB, node.DefaultGenesisDocProviderFunc(cfg))
-			if err != nil {
-				return err
-			}
-
-			stateProvider, err := statesync.NewLightClientStateProvider(
-				cmd.Context(),
-				genState.ChainID, genState.Version, genState.InitialHeight,
-				cfg.StateSync.RPCServers, light.TrustOptions{
-					Period: cfg.StateSync.TrustPeriod,
-					Height: cfg.StateSync.TrustHeight,
-					Hash:   cfg.StateSync.TrustHashBytes(),
-				}, servercmtlog.CometLoggerWrapper{Logger: logger.With("module", "light")})
-			if err != nil {
-				return fmt.Errorf("failed to set up light client state provider: %w", err)
-			}
-
-			state, err := stateProvider.State(cmd.Context(), uint64(height))
-			if err != nil {
-				return fmt.Errorf("failed to get state: %w", err)
-			}
-
-			commit, err := stateProvider.Commit(cmd.Context(), uint64(height))
-			if err != nil {
-				return fmt.Errorf("failed to get commit: %w", err)
-			}
-
-			if err := stateStore.Bootstrap(state); err != nil {
-				return fmt.Errorf("failed to bootstrap state: %w", err)
-			}
-
-			if err := blockStore.SaveSeenCommit(state.LastBlockHeight, commit); err != nil {
-				return fmt.Errorf("failed to save seen commit: %w", err)
-			}
-
-			store.SaveBlockStoreState(&cmtstore.BlockStoreState{
-				// it breaks the invariant that blocks in range [Base, Height] must exists, but it do works in practice.
-				Base:   state.LastBlockHeight,
-				Height: state.LastBlockHeight,
-			}, blockStoreDB)
-
-			return nil
+			return node.BootstrapState(cmd.Context(), cfg, cmtcfg.DefaultDBProvider, uint64(height), nil)
 		},
 	}
 

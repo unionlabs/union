@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"cloud.google.com/go/internal/trace"
 )
 
 // A Writer writes a Cloud Storage object.
@@ -86,7 +88,7 @@ type Writer struct {
 	// cancellation.
 	ChunkRetryDeadline time.Duration
 
-	// ProgressFunc can be used to monitor the progress of a large write.
+	// ProgressFunc can be used to monitor the progress of a large write
 	// operation. If ProgressFunc is not nil and writing requires multiple
 	// calls to the underlying service (see
 	// https://cloud.google.com/storage/docs/json_api/v1/how-tos/resumable-upload),
@@ -163,6 +165,7 @@ func (w *Writer) Close() error {
 	<-w.donec
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	trace.EndSpan(w.ctx, w.err)
 	return w.err
 }
 

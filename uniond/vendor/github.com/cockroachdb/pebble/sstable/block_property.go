@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"unsafe"
 
 	"github.com/cockroachdb/pebble/internal/base"
 	"github.com/cockroachdb/pebble/internal/rangekey"
@@ -643,15 +644,21 @@ func (f *BlockPropertiesFilterer) intersectsUserPropsAndFinishInit(
 			// considered intersecting.
 			continue
 		}
-		byteProps := []byte(props)
-		if len(byteProps) < 1 {
+		if len(props) < 1 {
 			return false, base.CorruptionErrorf(
 				"block properties for %s is corrupted", f.filters[i].Name())
 		}
-		shortID := shortID(byteProps[0])
-		intersects, err := f.filters[i].Intersects(byteProps[1:])
-		if err != nil || !intersects {
-			return false, err
+		shortID := shortID(props[0])
+		{
+			// Use an unsafe conversion to avoid allocating. Intersects() is not
+			// supposed to modify the given slice.
+			// Note that unsafe.StringData only works if the string is not empty
+			// (which we already checked).
+			byteProps := unsafe.Slice(unsafe.StringData(props), len(props))
+			intersects, err := f.filters[i].Intersects(byteProps[1:])
+			if err != nil || !intersects {
+				return false, err
+			}
 		}
 		// Intersects the sstable, so need to use this filter when
 		// deciding whether to read blocks.
@@ -684,12 +691,11 @@ func (f *BlockPropertiesFilterer) intersectsUserPropsAndFinishInit(
 		// be unused within this file.
 		return true, nil
 	}
-	byteProps := []byte(props)
-	if len(byteProps) < 1 {
+	if len(props) < 1 {
 		return false, base.CorruptionErrorf(
 			"block properties for %s is corrupted", f.boundLimitedFilter.Name())
 	}
-	f.boundLimitedShortID = int(byteProps[0])
+	f.boundLimitedShortID = int(props[0])
 
 	// We don't check for table-level intersection for the bound-limited filter.
 	// The bound-limited filter is treated as vacuously intersecting.
