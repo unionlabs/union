@@ -6,6 +6,7 @@ members = [
   "cosmwasm/ucs00-pingpong",
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
+  "cosmwasm/ucs02-nft",
 
   "e2e/ensure-blocks",
 
