@@ -104,7 +104,7 @@
       flake = false;
     };
     cosmossdk = {
-      url = "git+ssh://git@github.com/unionlabs/cosmos-sdk?rev=9973b232e83270b6c77bd4eb48c58bf1afab8757";
+      url = "git+ssh://git@github.com/unionlabs/cosmos-sdk?rev=7d067955f7028f45b3ce205b5c35aab2e1946b19";
       flake = false;
     };
 
