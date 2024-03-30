@@ -1,9 +1,14 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "",
+    "title": "Union Node GRPC API",
     "version": "0.0.1"
   },
+  "servers": [
+    {
+      "url": "http://localhost:1317"
+    }
+  ],
   "paths": {
     "/cosmos/auth/v1beta1/account_info/{address}": {
       "get": {
