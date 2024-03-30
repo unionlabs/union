@@ -37,17 +37,16 @@ contract IBCCommitmentTest is TestPlus {
 
         vm.pauseGasMetering();
 
-        assertEq(
-            path,
-            "channelEnds/ports/port-id/channels/channel-id"
-        );
+        assertEq(path, "channelEnds/ports/port-id/channels/channel-id");
 
         vm.resumeGasMetering();
     }
 
     function test_packetCommitmentPath() public {
         assertStrEq(
-            IBCCommitment.packetCommitmentPath("port-id", ChannelId.wrap("channel-id"), 1337),
+            IBCCommitment.packetCommitmentPath(
+                "port-id", ChannelId.wrap("channel-id"), 1337
+            ),
             "commitments/ports/port-id/channels/channel-id/sequences/1337"
         );
     }
@@ -71,7 +70,7 @@ contract IBCCommitmentTest is TestPlus {
     }
 
     function test_nextSequenceRecvCommitmentPath() public {
-        assertStrEq(
+        assertEq(
             IBCCommitment.nextSequenceRecvCommitmentPath(
                 "port-id", ChannelId.wrap("channel-id")
             ),
@@ -102,14 +101,18 @@ contract IBCCommitmentTest is TestPlus {
 
     function test_channelCommitmentKey() public {
         assertEq(
-            IBCCommitment.channelCommitmentKey("port-id", ChannelId.wrap("channel-id")),
+            IBCCommitment.channelCommitmentKey(
+                "port-id", ChannelId.wrap("channel-id")
+            ),
             keccak256("channelEnds/ports/port-id/channels/channel-id")
         );
     }
 
     function test_packetCommitmentKey() public {
         assertEq(
-            IBCCommitment.packetCommitmentKey("port-id", ChannelId.wrap("channel-id"), 1337),
+            IBCCommitment.packetCommitmentKey(
+                "port-id", ChannelId.wrap("channel-id"), 1337
+            ),
             keccak256(
                 "commitments/ports/port-id/channels/channel-id/sequences/1337"
             )
@@ -127,7 +130,9 @@ contract IBCCommitmentTest is TestPlus {
 
     function test_nextSequenceRecvCommitmentKey() public {
         assertEq(
-            IBCCommitment.nextSequenceRecvCommitmentKey("port-id", ChannelId.wrap("channel-id")),
+            IBCCommitment.nextSequenceRecvCommitmentKey(
+                "port-id", ChannelId.wrap("channel-id")
+            ),
             keccak256("nextSequenceRecv/ports/port-id/channels/channel-id")
         );
     }

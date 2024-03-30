@@ -237,10 +237,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenInit(ChannelId.wrap(""), "", "", "");
         ChannelId channelId = handler.channelOpenInit(msg_init);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenAck memory msg_ack =
             MsgMocks.channelOpenAck(portId, channelId, proofHeight);
@@ -314,10 +311,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenInit(ChannelId.wrap(""), "", "", "");
         ChannelId channelId = handler.channelOpenInit(msg_init);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenAck memory msg_ack =
             MsgMocks.channelOpenAck(portId, channelId, proofHeight);
@@ -340,10 +334,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenInit(ChannelId.wrap(""), "", "", "");
         ChannelId channelId = handler.channelOpenInit(msg_init);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenAck memory msg_ack =
             MsgMocks.channelOpenAck(portId, channelId, proofHeight);
@@ -367,10 +358,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenInit(ChannelId.wrap(""), "", "", "");
         ChannelId channelId = handler.channelOpenInit(msg_init);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenAck memory msg_ack =
             MsgMocks.channelOpenAck(portId, channelId, proofHeight);
@@ -393,10 +381,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenTry(ChannelId.wrap(""), "", "", "", "");
         ChannelId channelId = handler.channelOpenTry(msg_try);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
             MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
@@ -416,10 +401,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenTry(ChannelId.wrap(""), "", "", "", "");
         ChannelId channelId = handler.channelOpenTry(msg_try);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
             MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
@@ -463,10 +445,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenTry(ChannelId.wrap(""), "", "", "", "");
         ChannelId channelId = handler.channelOpenTry(msg_try);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
             MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
@@ -491,10 +470,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenTry(ChannelId.wrap(""), "", "", "", "");
         ChannelId channelId = handler.channelOpenTry(msg_try);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
             MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
@@ -520,10 +496,7 @@ contract IBCChannelHandlerTest is TestPlus {
         emit ChannelOpenTry(ChannelId.wrap(""), "", "", "", "");
         ChannelId channelId = handler.channelOpenTry(msg_try);
 
-        assertEq(
-            handler.capabilities(channelId),
-            address(app)
-        );
+        assertEq(handler.capabilities(channelId), address(app));
 
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
             MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);

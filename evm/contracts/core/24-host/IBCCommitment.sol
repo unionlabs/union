@@ -42,10 +42,7 @@ library IBCCommitment {
         ChannelId channelId
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            "channelEnds/ports/",
-            portId,
-            "/channels/",
-            channelId.toString()
+            "channelEnds/ports/", portId, "/channels/", channelId.toString()
         );
     }
 
@@ -99,7 +96,10 @@ library IBCCommitment {
         ChannelId channelId
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            "nextSequenceRecv/ports/", portId, "/channels/", channelId
+            "nextSequenceRecv/ports/",
+            portId,
+            "/channels/",
+            channelId.toString()
         );
     }
 

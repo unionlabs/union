@@ -9,8 +9,10 @@ import {IIBCModule} from "../../../contracts/core/05-port/IIBCModule.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCHost} from "../../../contracts/core/24-host/IBCHost.sol";
 import {Context} from "@openzeppelin/utils/Context.sol";
-import {ChannelId, IBCChannelTypes} from
-    "../../../contracts/core/04-channel/IBCChannelTypes.sol";
+import {
+    ChannelId,
+    IBCChannelTypes
+} from "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 
 contract MockApp is IIBCModule {
     event MockPacketRecv();

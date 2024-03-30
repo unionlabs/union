@@ -24,8 +24,7 @@ import {
 } from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
     "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
-import {ChannelId} from
-    "../../../contracts/core/04-channel/IBCChannelTypes.sol";
+import {ChannelId} from "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 
 library MsgMocks {
     //

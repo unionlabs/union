@@ -45,8 +45,7 @@ import {
 } from "../../../contracts/proto/tendermint/types/types.sol";
 import
     "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
-import 
-    "../../../contracts/core/04-channel/IBCChannelTypes.sol";
+import "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 
 import "../TestPlus.sol";
 

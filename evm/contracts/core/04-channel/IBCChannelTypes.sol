@@ -12,22 +12,22 @@ function parseChannelIdCalldata(string calldata channelId)
     pure
     returns (ChannelId)
 {
-    if (bytes(channelId).length > 32) {
-        revert InvalidChannelId();
-    } else {
+    // if (bytes(channelId).length > 32) {
+    //     revert InvalidChannelId();
+    // } else {
         return ChannelId.wrap(bytes32(bytes(channelId)));
-    }
+    // }
 }
 
 function parseChannelIdMemory(string memory channelId)
     pure
     returns (ChannelId)
 {
-    if (bytes(channelId).length > 32) {
-        revert InvalidChannelId();
-    } else {
+    // if (bytes(channelId).length > 32) {
+    //     revert InvalidChannelId();
+    // } else {
         return ChannelId.wrap(bytes32(bytes(channelId)));
-    }
+    // }
 }
 
 function toString(ChannelId channelId) pure returns (string memory) {
@@ -35,9 +35,7 @@ function toString(ChannelId channelId) pure returns (string memory) {
 
     uint256 ptr = 0;
 
-    while (bz[ptr] != 0) {
-        ptr++;
-    }
+    for (; ptr < 32 && bz[ptr] != 0; ptr++) {}
 
     assembly {
         mstore(bz, ptr)

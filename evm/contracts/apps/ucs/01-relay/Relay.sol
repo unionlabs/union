@@ -118,7 +118,7 @@ library RelayLib {
         string memory portId,
         ChannelId channelId
     ) internal pure returns (string memory) {
-        return string(abi.encodePacked(portId, "/", channelId, "/"));
+        return string(abi.encodePacked(portId, "/", channelId.toString(), "/"));
     }
 
     function makeForeignDenom(
@@ -177,8 +177,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         addressToDenom;
     // A mapping from local port/channel to it's counterparty.
     // This is required to remap denoms.
-    mapping(string => mapping(ChannelId => IBCChannelTypes.Counterparty)) private
-        counterpartyEndpoints;
+    mapping(string => mapping(ChannelId => IBCChannelTypes.Counterparty))
+        private counterpartyEndpoints;
     mapping(string => mapping(ChannelId => mapping(address => uint256))) private
         outstanding;
 
@@ -365,8 +365,10 @@ contract UCS01Relay is IBCAppBase, IRelay {
         }
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
 
-        ChannelId destinationChannelId = ibcPacket.destination_channel.parseChannelIdCalldata();
-        ChannelId sourceChannelId = ibcPacket.source_channel.parseChannelIdCalldata();
+        ChannelId destinationChannelId =
+            ibcPacket.destination_channel.parseChannelIdCalldata();
+        ChannelId sourceChannelId =
+            ibcPacket.source_channel.parseChannelIdCalldata();
 
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.destination_port, destinationChannelId
@@ -404,8 +406,10 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 denomAddress = denomToAddress[ibcPacket.destination_port][destinationChannelId][denom];
                 if (denomAddress == address(0)) {
                     denomAddress = address(new ERC20Denom(denom));
-                    denomToAddress[ibcPacket.destination_port][destinationChannelId][denom] = denomAddress;
-                    addressToDenom[ibcPacket.destination_port][destinationChannelId][denomAddress] = denom;
+                    denomToAddress[ibcPacket.destination_port][destinationChannelId][denom]
+                    = denomAddress;
+                    addressToDenom[ibcPacket.destination_port][destinationChannelId][denomAddress]
+                    = denom;
                     emit RelayLib.DenomCreated(denom, denomAddress);
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
@@ -462,7 +466,9 @@ contract UCS01Relay is IBCAppBase, IRelay {
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
-                ibcPacket.source_port, ibcPacket.source_channel.parseChannelIdCalldata(), packet
+                ibcPacket.source_port,
+                ibcPacket.source_channel.parseChannelIdCalldata(),
+                packet
             );
         }
     }

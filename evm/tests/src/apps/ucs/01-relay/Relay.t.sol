@@ -9,6 +9,7 @@ import "../../../../../contracts/apps/Base.sol";
 import "../../../../../contracts/apps/ucs/01-relay/Relay.sol";
 import "../../../../../contracts/apps/ucs/01-relay/ERC20Denom.sol";
 import "../../../../../contracts/apps/ucs/01-relay/IERC20Denom.sol";
+import "../../../../../contracts/proto/ibc/core/client/v1/client.sol";
 import "../../../utils/IBCHandler_Testable.sol";
 import {IBCHandler} from
     "../../../../../contracts/core/25-handler/IBCHandler.sol";
@@ -20,6 +21,13 @@ import {IBCChannelHandshake} from
 import {IIBCPacket} from
     "../../../../../contracts/core/04-channel/IIBCPacket.sol";
 import {IBCPacket} from "../../../../../contracts/core/04-channel/IBCPacket.sol";
+
+struct ChannelInfos {
+    string sourcePort;
+    string sourceChannel;
+    string destinationPort;
+    string destinationChannel;
+}
 
 contract IBCHandlerFake is IBCHandler {
     IbcCoreChannelV1Packet.Data[] packets;
@@ -70,6 +78,7 @@ contract IBCHandlerFake is IBCHandler {
 contract RelayTests is Test {
     using LibString for *;
     using strings for *;
+    using {parseChannelIdMemory} for string;
 
     IBCHandlerFake ibcHandler;
     IRelay relay;
@@ -95,7 +104,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -215,19 +227,34 @@ contract RelayTests is Test {
     }
 
     function test_isRemote_ok() public {
-        assertEq(RelayLib.isFromChannel("a", ChannelId.wrap("b"), "a/b/X"), true);
-        assertEq(RelayLib.isFromChannel("aa.bb", ChannelId.wrap("c"), "aa.bb/c/X"), true);
+        assertEq(
+            RelayLib.isFromChannel("a", ChannelId.wrap("b"), "a/b/X"), true
+        );
+        assertEq(
+            RelayLib.isFromChannel("aa.bb", ChannelId.wrap("c"), "aa.bb/c/X"),
+            true
+        );
     }
 
     function test_isRemote_ko() public {
-        assertEq(RelayLib.isFromChannel("a", ChannelId.wrap("b"), "b/b/X"), false);
-        assertEq(RelayLib.isFromChannel("aa.bb", ChannelId.wrap("c"), "aa.b/c/X"), false);
+        assertEq(
+            RelayLib.isFromChannel("a", ChannelId.wrap("b"), "b/b/X"), false
+        );
+        assertEq(
+            RelayLib.isFromChannel("aa.bb", ChannelId.wrap("c"), "aa.b/c/X"),
+            false
+        );
     }
 
     function test_makeForeignDenom() public {
-        assertEq(RelayLib.makeForeignDenom("a", ChannelId.wrap("b"), "BLA"), "a/b/BLA");
         assertEq(
-            RelayLib.makeForeignDenom("wasm.xyz", ChannelId.wrap("channel-1"), "muno"),
+            RelayLib.makeForeignDenom("a", ChannelId.wrap("b"), "BLA"),
+            "a/b/BLA"
+        );
+        assertEq(
+            RelayLib.makeForeignDenom(
+                "wasm.xyz", ChannelId.wrap("channel-1"), "muno"
+            ),
             "wasm.xyz/channel-1/muno"
         );
     }
@@ -257,7 +284,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION
         );
     }
@@ -276,7 +306,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             "blabla"
         );
     }
@@ -295,7 +328,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION
         );
     }
@@ -313,7 +349,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION
         );
         IBCChannelTypes.Counterparty memory counterparty =
@@ -335,7 +374,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -354,7 +396,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -378,7 +423,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             "0xDEADC0DE",
             RelayLib.VERSION
         );
@@ -398,7 +446,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -418,7 +469,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: sourceChannel
+            }),
             RelayLib.VERSION,
             "ok"
         );
@@ -462,7 +516,10 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: ChannelId.wrap("")}),
+            IBCChannelTypes.Counterparty({
+                portId: sourcePort,
+                channelId: ChannelId.wrap("")
+            }),
             RelayLib.VERSION
         );
         IBCChannelTypes.Counterparty memory counterparty =
@@ -638,9 +695,9 @@ contract RelayTests is Test {
     function test_receive_localToken(
         uint64 sequence,
         string memory sourcePort,
-        ChannelId sourceChannel,
+        string memory sourceChannel,
         string memory destinationPort,
-        ChannelId destinationChannel,
+        string memory destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -653,6 +710,11 @@ contract RelayTests is Test {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
+        vm.assume(bytes(sourceChannel).length <= 32);
+        vm.assume(bytes(destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = destinationChannel.parseChannelIdMemory();
 
         initChannel(
             sourcePort, sourceChannel, destinationPort, destinationChannel
@@ -827,9 +889,9 @@ contract RelayTests is Test {
     function test_send_remote(
         uint64 sequence,
         string memory sourcePort,
-        ChannelId sourceChannel,
+        string memory sourceChannel,
         string memory destinationPort,
-        ChannelId destinationChannel,
+        string memory destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -842,6 +904,11 @@ contract RelayTests is Test {
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
+        vm.assume(bytes(sourceChannel).length <= 32);
+        vm.assume(bytes(destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = destinationChannel.parseChannelIdMemory();
 
         initChannel(
             sourcePort, sourceChannel, destinationPort, destinationChannel
@@ -913,11 +980,8 @@ contract RelayTests is Test {
 
     function test_send_local_from_remote(
         uint64 sequence,
-        string memory destinationPort,
-        string memory sourcePort,
-        ChannelId sourceChannel,
-        uint64 timeoutRevisionNumber,
-        uint64 timeoutRevisionHeight,
+        ChannelInfos memory channelInfos,
+        IbcCoreClientV1Height.Data memory timeoutHeight,
         uint64 timeoutTimestamp,
         bytes memory sender,
         address receiver,
@@ -930,47 +994,67 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
+        ChannelId sourceChannel;
+        {
+            vm.assume(bytes(channelInfos.sourceChannel).length <= 32);
+            sourceChannel = channelInfos.sourceChannel.parseChannelIdMemory();
+        }
+
         // Open two different local channels with the same counterparty
-        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-1"));
-        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-2"));
-
-        receiveRemoteToken(
-            sequence,
-            sourcePort,
+        initChannel(
+            channelInfos.sourcePort,
             sourceChannel,
-            destinationPort,
-            ChannelId.wrap("channel-1"),
-            timeoutRevisionNumber,
-            timeoutRevisionHeight,
-            timeoutTimestamp,
-            sender,
-            receiver,
-            relayer,
-            denomName,
-            amount
+            channelInfos.destinationPort,
+            ChannelId.wrap("channel-1")
         );
-
-        receiveRemoteToken(
-            sequence + 1,
-            sourcePort,
+        initChannel(
+            channelInfos.sourcePort,
             sourceChannel,
-            destinationPort,
-            ChannelId.wrap("channel-2"),
-            timeoutRevisionNumber,
-            timeoutRevisionHeight,
-            timeoutTimestamp,
-            sender,
-            receiver,
-            relayer,
-            denomName,
-            amount
+            channelInfos.destinationPort,
+            ChannelId.wrap("channel-2")
         );
 
         {
-            address denomAddress = relay.getDenomAddress(
-                destinationPort,
+            receiveRemoteToken(
+                sequence,
+                channelInfos.sourcePort,
+                sourceChannel,
+                channelInfos.destinationPort,
                 ChannelId.wrap("channel-1"),
-                RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+                timeoutHeight.revision_number,
+                timeoutHeight.revision_height,
+                timeoutTimestamp,
+                sender,
+                receiver,
+                relayer,
+                denomName,
+                amount
+            );
+        }
+
+        {
+            receiveRemoteToken(
+                sequence + 1,
+                channelInfos.sourcePort,
+                sourceChannel,
+                channelInfos.destinationPort,
+                ChannelId.wrap("channel-2"),
+                timeoutHeight.revision_number,
+                timeoutHeight.revision_height,
+                timeoutTimestamp,
+                sender,
+                receiver,
+                relayer,
+                denomName,
+                amount
+            );
+        }
+
+        {
+            address denomAddress = relay.getDenomAddress(
+                channelInfos.destinationPort,
+                ChannelId.wrap("channel-1"),
+                RelayLib.makeForeignDenom(channelInfos.sourcePort, sourceChannel, denomName)
             );
 
             LocalToken[] memory localTokens = new LocalToken[](1);
@@ -980,8 +1064,9 @@ contract RelayTests is Test {
             vm.prank(receiver);
             IERC20Denom(denomAddress).approve(address(relay), amount);
 
-            uint256 outstandingBefore =
-                relay.getOutstanding(destinationPort, ChannelId.wrap("channel-2"), denomAddress);
+            uint256 outstandingBefore = relay.getOutstanding(
+                channelInfos.destinationPort, ChannelId.wrap("channel-2"), denomAddress
+            );
 
             vm.expectEmit();
             emit IERC20.Transfer(address(receiver), address(relay), amount);
@@ -991,7 +1076,7 @@ contract RelayTests is Test {
 
             vm.prank(receiver);
             relay.send(
-                destinationPort,
+                channelInfos.destinationPort,
                 ChannelId.wrap("channel-2"),
                 abi.encodePacked(receiver),
                 localTokens,
@@ -999,8 +1084,9 @@ contract RelayTests is Test {
                 0
             );
 
-            uint256 outstandingAfter =
-                relay.getOutstanding(destinationPort, ChannelId.wrap("channel-2"), denomAddress);
+            uint256 outstandingAfter = relay.getOutstanding(
+                channelInfos.destinationPort, ChannelId.wrap("channel-2"), denomAddress
+            );
 
             // Remote tokens are not tracked as outstanding
             assertEq(outstandingBefore + amount, outstandingAfter);
@@ -1027,8 +1113,18 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         // Open two different local channels with the same counterparty
-        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-1"));
-        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-2"));
+        initChannel(
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            ChannelId.wrap("channel-1")
+        );
+        initChannel(
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            ChannelId.wrap("channel-2")
+        );
 
         receiveRemoteToken(
             sequence,
@@ -1099,9 +1195,9 @@ contract RelayTests is Test {
 
     function test_onTimeout_refund_local(
         string memory sourcePort,
-        ChannelId sourceChannel,
+        string memory sourceChannel,
         string memory destinationPort,
-        ChannelId destinationChannel,
+        string memory destinationChannel,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1111,6 +1207,11 @@ contract RelayTests is Test {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
+        vm.assume(bytes(sourceChannel).length <= 32);
+        vm.assume(bytes(destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = destinationChannel.parseChannelIdMemory();
 
         initChannel(
             sourcePort, sourceChannel, destinationPort, destinationChannel
@@ -1155,9 +1256,9 @@ contract RelayTests is Test {
     function test_onTimeout_refund_remote(
         uint64 sequence,
         string memory sourcePort,
-        ChannelId sourceChannel,
+        string memory sourceChannel,
         string memory destinationPort,
-        ChannelId destinationChannel,
+        string memory destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -1167,6 +1268,12 @@ contract RelayTests is Test {
         string memory denomName,
         uint128 amount
     ) public {
+        vm.assume(bytes(sourceChannel).length <= 32);
+        vm.assume(bytes(destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = destinationChannel.parseChannelIdMemory();
+
         vm.assume(
             !RelayLib.isFromChannel(
                 destinationPort, destinationChannel, denomName
@@ -1237,9 +1344,9 @@ contract RelayTests is Test {
 
     function test_ack_failure_refund_local(
         string memory sourcePort,
-        ChannelId sourceChannel,
+        string memory sourceChannel,
         string memory destinationPort,
-        ChannelId destinationChannel,
+        string memory destinationChannel,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1249,6 +1356,11 @@ contract RelayTests is Test {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
+        vm.assume(bytes(sourceChannel).length <= 32);
+        vm.assume(bytes(destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = destinationChannel.parseChannelIdMemory();
 
         initChannel(
             sourcePort, sourceChannel, destinationPort, destinationChannel
@@ -1294,10 +1406,7 @@ contract RelayTests is Test {
 
     function test_ack_failure_refund_remote(
         uint64 sequence,
-        string memory sourcePort,
-        ChannelId sourceChannel,
-        string memory destinationPort,
-        ChannelId destinationChannel,
+        ChannelInfos memory channelInfos,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -1307,9 +1416,15 @@ contract RelayTests is Test {
         string memory denomName,
         uint128 amount
     ) public {
+        vm.assume(bytes(channelInfos.sourceChannel).length <= 32);
+        vm.assume(bytes(channelInfos.destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = channelInfos.sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = channelInfos.destinationChannel.parseChannelIdMemory();
+
         vm.assume(
             !RelayLib.isFromChannel(
-                destinationPort, destinationChannel, denomName
+                channelInfos.destinationPort, destinationChannel, denomName
             )
         );
         vm.assume(receiver != address(0));
@@ -1317,14 +1432,14 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            channelInfos.sourcePort, sourceChannel, channelInfos.destinationPort, destinationChannel
         );
 
         receiveRemoteToken(
             sequence,
-            sourcePort,
+            channelInfos.sourcePort,
             sourceChannel,
-            destinationPort,
+            channelInfos.destinationPort,
             destinationChannel,
             timeoutRevisionNumber,
             timeoutRevisionHeight,
@@ -1337,13 +1452,13 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
-            destinationPort,
+            channelInfos.destinationPort,
             destinationChannel,
-            RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+            RelayLib.makeForeignDenom(channelInfos.sourcePort, sourceChannel, denomName)
         );
 
         sendRemoteToken(
-            destinationPort,
+            channelInfos.destinationPort,
             destinationChannel,
             sender,
             receiver,
@@ -1360,7 +1475,7 @@ contract RelayTests is Test {
         emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         uint256 outstandingBefore = relay.getOutstanding(
-            destinationPort, destinationChannel, denomAddress
+            channelInfos.destinationPort, destinationChannel, denomAddress
         );
 
         vm.prank(address(ibcHandler));
@@ -1371,17 +1486,14 @@ contract RelayTests is Test {
         // Outstanding must not be touched
         assertEq(
             relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
+                channelInfos.destinationPort, destinationChannel, denomAddress
             ),
             outstandingBefore
         );
     }
 
     function test_ack_success_noop_local(
-        string memory sourcePort,
-        ChannelId sourceChannel,
-        string memory destinationPort,
-        ChannelId destinationChannel,
+        ChannelInfos memory channelInfos,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1391,13 +1503,18 @@ contract RelayTests is Test {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
+        vm.assume(bytes(channelInfos.sourceChannel).length <= 32);
+        vm.assume(bytes(channelInfos.destinationChannel).length <= 32);
+
+        ChannelId sourceChannel = channelInfos.sourceChannel.parseChannelIdMemory();
+        ChannelId destinationChannel = channelInfos.destinationChannel.parseChannelIdMemory();
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            channelInfos.sourcePort, sourceChannel, channelInfos.destinationPort, destinationChannel
         );
 
         address denomAddress = sendLocalToken(
-            destinationPort,
+            channelInfos.destinationPort,
             destinationChannel,
             sender,
             receiver,
@@ -1421,10 +1538,7 @@ contract RelayTests is Test {
 
     function test_ack_success_noop_remote(
         uint64 sequence,
-        string memory sourcePort,
-        ChannelId sourceChannel,
-        string memory destinationPort,
-        ChannelId destinationChannel,
+        ChannelInfos memory channelInfos,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -1437,17 +1551,27 @@ contract RelayTests is Test {
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
+        vm.assume(bytes(channelInfos.sourceChannel).length <= 32);
+        vm.assume(bytes(channelInfos.destinationChannel).length <= 32);
+
+        ChannelId sourceChannelId;
+        ChannelId destinationChannelId;
+
+        {
+            sourceChannelId = channelInfos.sourceChannel.parseChannelIdMemory();
+            destinationChannelId = channelInfos.destinationChannel.parseChannelIdMemory();
+        }
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            channelInfos.sourcePort, sourceChannelId, channelInfos.destinationPort, destinationChannelId
         );
 
         receiveRemoteToken(
             sequence,
-            sourcePort,
-            sourceChannel,
-            destinationPort,
-            destinationChannel,
+            channelInfos.sourcePort,
+            sourceChannelId,
+            channelInfos.destinationPort,
+            destinationChannelId,
             timeoutRevisionNumber,
             timeoutRevisionHeight,
             timeoutTimestamp,
@@ -1459,14 +1583,14 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
-            destinationPort,
-            destinationChannel,
-            RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+            channelInfos.destinationPort,
+            destinationChannelId,
+            RelayLib.makeForeignDenom(channelInfos.sourcePort, sourceChannelId, denomName)
         );
 
         sendRemoteToken(
-            destinationPort,
-            destinationChannel,
+            channelInfos.destinationPort,
+            destinationChannelId,
             sender,
             receiver,
             denomAddress,
