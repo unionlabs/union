@@ -4,6 +4,7 @@ import "../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import "../../contracts/core/05-port/IIBCModule.sol";
 import "../../contracts/core/25-handler/IBCHandler.sol";
 import "../../contracts/core/24-host/IBCHost.sol";
+import "../../contracts/core/04-channel/IBCChannelTypes.sol";
 import "@openzeppelin/utils/Context.sol";
 
 contract MockApp is IIBCModule {
@@ -34,8 +35,8 @@ contract MockApp is IIBCModule {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata,
         string calldata,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata,
         string calldata
     ) external virtual override {}
 
@@ -43,31 +44,31 @@ contract MockApp is IIBCModule {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata,
         string calldata,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata,
         string calldata,
         string calldata
     ) external virtual override {}
 
     function onChanOpenAck(
         string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        ChannelId channelId,
+        ChannelId counterpartyChannelId,
         string calldata counterpartyVersion
     ) external virtual override {}
 
     function onChanOpenConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override {}
 
     function onChanCloseInit(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override {}
 
     function onChanCloseConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override {}
 }

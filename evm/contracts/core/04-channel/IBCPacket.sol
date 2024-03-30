@@ -6,15 +6,16 @@ import "../25-handler/IBCMsgs.sol";
 import "../02-client/IBCHeight.sol";
 import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
-import "../04-channel/IIBCPacket.sol";
 import "../05-port/ModuleManager.sol";
 import "../05-port/IIBCModule.sol";
+import "./IIBCPacket.sol";
+import "./IBCChannelTypes.sol";
 
 library IBCPacketLib {
     event SendPacket(
         uint64 sequence,
         string sourcePort,
-        string sourceChannel,
+        ChannelId sourceChannel,
         IbcCoreClientV1Height.Data timeoutHeight,
         uint64 timeoutTimestamp,
         bytes data
@@ -22,7 +23,7 @@ library IBCPacketLib {
     event RecvPacket(IbcCoreChannelV1Packet.Data packet);
     event WriteAcknowledgement(
         string destinationPort,
-        string destinationChannel,
+        ChannelId destinationChannel,
         uint64 sequence,
         bytes acknowledgement
     );
@@ -63,6 +64,7 @@ library IBCPacketLib {
  */
 contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     using IBCHeight for IbcCoreClientV1Height.Data;
+    using {parseChannelIdCalldata, parseChannelIdMemory} for string;
 
     /**
      * @dev sendPacket is called by a module in order to send an IBC packet on a channel.
@@ -71,24 +73,21 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      */
     function sendPacket(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external override returns (uint64) {
-        if (
-            !authenticateCapability(
-                channelCapabilityPath(sourcePort, sourceChannel)
-            )
-        ) {
+        if (!authenticateCapability(sourceChannel)) {
             revert IBCPacketLib.ErrUnauthorized();
         }
 
-        IbcCoreChannelV1Channel.Data storage channel =
+        IBCChannelTypes.Channel storage channel =
             ensureChannelState(sourcePort, sourceChannel);
 
         string memory clientId =
-            connections[channel.connection_hops[0]].client_id;
+            connections[channel.connectionHops[0]].client_id;
+
         ILightClient client = getClient(clientId);
 
         (IbcCoreClientV1Height.Data memory latestHeight, bool found) =
@@ -147,25 +146,28 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            msg_.packet.destination_port, msg_.packet.destination_channel
+        ChannelId destinationChannelId =
+            msg_.packet.destination_channel.parseChannelIdCalldata();
+        ChannelId sourceChannelId =
+            msg_.packet.source_channel.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel = ensureChannelState(
+            msg_.packet.destination_port, destinationChannelId
         );
 
         if (
             hashString(msg_.packet.source_port)
-                != hashString(channel.counterparty.port_id)
+                != hashString(channel.counterparty.portId)
         ) {
             revert IBCPacketLib.ErrSourceAndCounterpartyPortMismatch();
         }
-        if (
-            hashString(msg_.packet.source_channel)
-                != hashString(channel.counterparty.channel_id)
-        ) {
+        if (sourceChannelId != channel.counterparty.channelId) {
             revert IBCPacketLib.ErrSourceAndCounterpartyChannelMismatch();
         }
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection =
-            connections[channel.connection_hops[0]];
+            connections[channel.connectionHops[0]];
+
         if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN)
         {
             revert IBCPacketLib.ErrInvalidConnectionState();
@@ -191,7 +193,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                 msg_.proof,
                 IBCCommitment.packetCommitmentPath(
                     msg_.packet.source_port,
-                    msg_.packet.source_channel,
+                    sourceChannelId,
                     msg_.packet.sequence
                 ),
                 abi.encodePacked(
@@ -214,41 +216,36 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                 == IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED
         ) {
             if (
-                packetReceipts[msg_.packet.destination_port][msg_
+                packetReceipts[msg_.packet.destination_port][destinationChannelId][msg_
                     .packet
-                    .destination_channel][msg_.packet.sequence] != 0
+                    .sequence] != 0
             ) {
                 revert IBCPacketLib.ErrPacketAlreadyReceived();
             }
-            packetReceipts[msg_.packet.destination_port][msg_
+            packetReceipts[msg_.packet.destination_port][destinationChannelId][msg_
                 .packet
-                .destination_channel][msg_.packet.sequence] = 1;
+                .sequence] = 1;
         } else if (
             channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
         ) {
             if (
-                nextSequenceRecvs[msg_.packet.destination_port][msg_
-                    .packet
-                    .destination_channel] != msg_.packet.sequence
+                nextSequenceRecvs[msg_.packet.destination_port][destinationChannelId]
+                    != msg_.packet.sequence
             ) {
                 revert IBCPacketLib.ErrPacketSequenceNextSequenceMismatch();
             }
-            nextSequenceRecvs[msg_.packet.destination_port][msg_
-                .packet
-                .destination_channel]++;
+            nextSequenceRecvs[msg_.packet.destination_port][destinationChannelId]++;
         } else {
             revert IBCPacketLib.ErrUnknownChannelOrdering();
         }
 
-        IIBCModule module = lookupModuleByChannel(
-            msg_.packet.destination_port, msg_.packet.destination_channel
-        );
+        IIBCModule module = lookupModuleByChannel(destinationChannelId);
         bytes memory acknowledgement =
             module.onRecvPacket(msg_.packet, _msgSender());
         if (acknowledgement.length > 0) {
             _writeAcknowledgement(
                 msg_.packet.destination_port,
-                msg_.packet.destination_channel,
+                destinationChannelId,
                 msg_.packet.sequence,
                 acknowledgement
             );
@@ -258,7 +255,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
     function _writeAcknowledgement(
         string calldata destinationPort,
-        string calldata destinationChannel,
+        ChannelId destinationChannel,
         uint64 sequence,
         bytes memory acknowledgement
     ) internal {
@@ -266,8 +263,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrAcknowledgementIsEmpty();
         }
 
-        IbcCoreChannelV1Channel.Data storage channel =
-            ensureChannelState(destinationPort, destinationChannel);
+        ensureChannelState(destinationPort, destinationChannel);
 
         bytes32 ackCommitmentKey = IBCCommitment
             .packetAcknowledgementCommitmentKey(
@@ -291,17 +287,14 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      */
     function writeAcknowledgement(
         string calldata destinationPort,
-        string calldata destinationChannel,
+        ChannelId destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement
     ) external override {
-        if (
-            !authenticateCapability(
-                channelCapabilityPath(destinationPort, destinationChannel)
-            )
-        ) {
+        if (!authenticateCapability(destinationChannel)) {
             revert IBCPacketLib.ErrUnauthorized();
         }
+
         _writeAcknowledgement(
             destinationPort, destinationChannel, sequence, acknowledgement
         );
@@ -319,34 +312,33 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            msg_.packet.source_port, msg_.packet.source_channel
-        );
+        ChannelId destinationChannelId =
+            msg_.packet.destination_channel.parseChannelIdCalldata();
+        ChannelId sourceChannelId =
+            msg_.packet.source_channel.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel =
+            ensureChannelState(msg_.packet.source_port, sourceChannelId);
 
         if (
             hashString(msg_.packet.destination_port)
-                != hashString(channel.counterparty.port_id)
+                != hashString(channel.counterparty.portId)
         ) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch();
         }
-        if (
-            hashString(msg_.packet.destination_channel)
-                != hashString(channel.counterparty.channel_id)
-        ) {
+        if (destinationChannelId != channel.counterparty.channelId) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch();
         }
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection =
-            connections[channel.connection_hops[0]];
+            connections[channel.connectionHops[0]];
         if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN)
         {
             revert IBCPacketLib.ErrInvalidConnectionState();
         }
 
         bytes32 packetCommitmentKey = IBCCommitment.packetCommitmentKey(
-            msg_.packet.source_port,
-            msg_.packet.source_channel,
-            msg_.packet.sequence
+            msg_.packet.source_port, sourceChannelId, msg_.packet.sequence
         );
         bytes32 packetCommitment = commitments[packetCommitmentKey];
         if (packetCommitment == bytes32(0)) {
@@ -377,7 +369,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                 msg_.proof,
                 IBCCommitment.packetAcknowledgementCommitmentPath(
                     msg_.packet.destination_port,
-                    msg_.packet.destination_channel,
+                    destinationChannelId,
                     msg_.packet.sequence
                 ),
                 abi.encodePacked(sha256(msg_.acknowledgement))
@@ -390,20 +382,16 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         {
             if (
                 msg_.packet.sequence
-                    != nextSequenceAcks[msg_.packet.source_port][msg_
-                        .packet
-                        .source_channel]
+                    != nextSequenceAcks[msg_.packet.source_port][destinationChannelId]
             ) {
                 revert IBCPacketLib.ErrPacketSequenceNextSequenceMismatch();
             }
-            nextSequenceAcks[msg_.packet.source_port][msg_.packet.source_channel]++;
+            nextSequenceAcks[msg_.packet.source_port][sourceChannelId]++;
         }
 
         delete commitments[packetCommitmentKey];
 
-        IIBCModule module = lookupModuleByChannel(
-            msg_.packet.source_port, msg_.packet.source_channel
-        );
+        IIBCModule module = lookupModuleByChannel(sourceChannelId);
 
         module.onAcknowledgementPacket(
             msg_.packet, msg_.acknowledgement, _msgSender()
@@ -420,34 +408,33 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            msg_.packet.source_port, msg_.packet.source_channel
-        );
+        ChannelId destinationChannelId =
+            msg_.packet.destination_channel.parseChannelIdCalldata();
+        ChannelId sourceChannelId =
+            msg_.packet.source_channel.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel =
+            ensureChannelState(msg_.packet.source_port, sourceChannelId);
 
         if (
             hashString(msg_.packet.destination_port)
-                != hashString(channel.counterparty.port_id)
+                != hashString(channel.counterparty.portId)
         ) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch();
         }
-        if (
-            hashString(msg_.packet.destination_channel)
-                != hashString(channel.counterparty.channel_id)
-        ) {
+        if (destinationChannelId != channel.counterparty.channelId) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch();
         }
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection =
-            connections[channel.connection_hops[0]];
+            connections[channel.connectionHops[0]];
         if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN)
         {
             revert IBCPacketLib.ErrInvalidConnectionState();
         }
 
         bytes32 packetCommitmentKey = IBCCommitment.packetCommitmentKey(
-            msg_.packet.source_port,
-            msg_.packet.source_channel,
-            msg_.packet.sequence
+            msg_.packet.source_port, sourceChannelId, msg_.packet.sequence
         );
         bytes32 packetCommitment = commitments[packetCommitmentKey];
         if (packetCommitment == bytes32(0)) {
@@ -514,8 +501,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                     msg_.proofHeight,
                     msg_.proof,
                     IBCCommitment.nextSequenceRecvCommitmentPath(
-                        msg_.packet.destination_port,
-                        msg_.packet.destination_channel
+                        msg_.packet.destination_port, destinationChannelId
                     ),
                     abi.encodePacked(msg_.nextSequenceRecv)
                 )
@@ -531,7 +517,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                     msg_.proof,
                     IBCCommitment.packetReceiptCommitmentPath(
                         msg_.packet.destination_port,
-                        msg_.packet.destination_channel,
+                        destinationChannelId,
                         msg_.packet.sequence
                     )
                 )
@@ -544,9 +530,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
         delete commitments[packetCommitmentKey];
 
-        IIBCModule module = lookupModuleByChannel(
-            msg_.packet.source_port, msg_.packet.source_channel
-        );
+        IIBCModule module = lookupModuleByChannel(sourceChannelId);
         module.onTimeoutPacket(msg_.packet, _msgSender());
 
         emit IBCPacketLib.TimeoutPacket(msg_.packet);
@@ -590,10 +574,9 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
     function ensureChannelState(
         string calldata portId,
-        string calldata channelId
-    ) internal returns (IbcCoreChannelV1Channel.Data storage) {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[portId][channelId];
+        ChannelId channelId
+    ) internal view returns (IBCChannelTypes.Channel storage) {
+        IBCChannelTypes.Channel storage channel = channels[portId][channelId];
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {
             revert IBCPacketLib.ErrInvalidChannelState();
         }

@@ -2,31 +2,32 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/utils/Strings.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
+import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../25-handler/IBCMsgs.sol";
 import "../02-client/IBCHeight.sol";
 import "../24-host/IBCCommitment.sol";
-import "../04-channel/IIBCChannel.sol";
+import "./IIBCChannel.sol";
 import "../05-port/ModuleManager.sol";
 import "../05-port/IIBCModule.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
-        string channelId,
+        ChannelId channelId,
         string connectionId,
         string portId,
         string counterpartyPortId
     );
     event ChannelOpenTry(
-        string channelId,
+        ChannelId channelId,
         string connectionId,
         string portId,
         string counterpartyPortId,
         string version
     );
-    event ChannelOpenAck(string channelId, string portId);
-    event ChannelOpenConfirm(string channelId, string portId);
-    event ChannelCloseInit(string channelId, string portId);
-    event ChannelCloseConfirm(string channelId, string portId);
+    event ChannelOpenAck(ChannelId channelId, string portId);
+    event ChannelOpenConfirm(ChannelId channelId, string portId);
+    event ChannelCloseInit(ChannelId channelId, string portId);
+    event ChannelCloseConfirm(ChannelId channelId, string portId);
 
     error ErrConnNotSingleHop();
     error ErrConnNotSingleVersion();
@@ -74,6 +75,7 @@ library IBCChannelLib {
  */
 contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
     using IBCHeight for IbcCoreClientV1Height.Data;
+    using {parseChannelIdCalldata, parseChannelIdMemory} for string;
 
     /* Handshake functions */
 
@@ -83,7 +85,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
     function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
         external
         override
-        returns (string memory)
+        returns (ChannelId)
     {
         (string memory connectionId,) = ensureConnectionFeature(
             msg_.channel.connection_hops, msg_.channel.ordering
@@ -96,8 +98,9 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             revert IBCChannelLib.ErrCounterpartyChannelNotEmpty();
         }
 
-        string memory channelId = generateChannelIdentifier();
-        channels[msg_.portId][channelId] = msg_.channel;
+        ChannelId channelId = generateChannelIdentifier();
+        channels[msg_.portId][channelId] =
+            IBCChannelTypes.optimizedChannel(msg_.channel);
         nextSequenceSends[msg_.portId][channelId] = 1;
         nextSequenceRecvs[msg_.portId][channelId] = 1;
         nextSequenceAcks[msg_.portId][channelId] = 1;
@@ -105,16 +108,14 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
 
         IIBCModule module = lookupModuleByPort(msg_.portId);
 
-        claimCapability(
-            channelCapabilityPath(msg_.portId, channelId), address(module)
-        );
+        claimCapability(channelId, address(module));
 
         module.onChanOpenInit(
             msg_.channel.ordering,
             msg_.channel.connection_hops,
             msg_.portId,
             channelId,
-            msg_.channel.counterparty,
+            IBCChannelTypes.optimizedCounterparty(msg_.channel.counterparty),
             msg_.channel.version
         );
 
@@ -134,7 +135,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
     function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
         external
         override
-        returns (string memory)
+        returns (ChannelId)
     {
         (
             string memory connectionId,
@@ -149,6 +150,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
 
+        // NOTE: We use the proto types here, as we need to verify against the counterparty storage which uses proto.
         IbcCoreChannelV1Counterparty.Data memory expectedCounterparty =
         IbcCoreChannelV1Counterparty.Data({port_id: msg_.portId, channel_id: ""});
         IbcCoreChannelV1Channel.Data memory expectedChannel =
@@ -160,21 +162,25 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             version: msg_.counterpartyVersion
         });
 
+        ChannelId counterpartyChannelId =
+            msg_.channel.counterparty.channel_id.parseChannelIdCalldata();
+
         if (
             !verifyChannelState(
                 connection,
                 msg_.proofHeight,
                 msg_.proofInit,
                 msg_.channel.counterparty.port_id,
-                msg_.channel.counterparty.channel_id,
+                counterpartyChannelId,
                 IbcCoreChannelV1Channel.encode(expectedChannel)
             )
         ) {
             revert IBCChannelLib.ErrInvalidProof();
         }
 
-        string memory channelId = generateChannelIdentifier();
-        channels[msg_.portId][channelId] = msg_.channel;
+        ChannelId channelId = generateChannelIdentifier();
+        channels[msg_.portId][channelId] =
+            IBCChannelTypes.optimizedChannel(msg_.channel);
         nextSequenceSends[msg_.portId][channelId] = 1;
         nextSequenceRecvs[msg_.portId][channelId] = 1;
         nextSequenceAcks[msg_.portId][channelId] = 1;
@@ -182,16 +188,14 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
 
         IIBCModule module = lookupModuleByPort(msg_.portId);
 
-        claimCapability(
-            channelCapabilityPath(msg_.portId, channelId), address(module)
-        );
+        claimCapability(channelId, address(module));
 
         module.onChanOpenTry(
             msg_.channel.ordering,
             msg_.channel.connection_hops,
             msg_.portId,
             channelId,
-            msg_.channel.counterparty,
+            IBCChannelTypes.optimizedCounterparty(msg_.channel.counterparty),
             msg_.channel.version,
             msg_.counterpartyVersion
         );
@@ -214,15 +218,21 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[msg_.portId][msg_.channelId];
+        ChannelId channelId = msg_.channelId.parseChannelIdCalldata();
+        ChannelId counterpartyChannelId =
+            msg_.counterpartyChannelId.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel =
+            channels[msg_.portId][channelId];
+
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_INIT) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
 
         IbcCoreConnectionV1ConnectionEnd.Data memory connection =
-            ensureConnectionState(channel.connection_hops[0]);
+            ensureConnectionState(channel.connectionHops[0]);
 
+        // NOTE: We use the proto types here, as we need to verify against the counterparty storage which uses proto.
         IbcCoreChannelV1Counterparty.Data memory expectedCounterparty =
         IbcCoreChannelV1Counterparty.Data({
             port_id: msg_.portId,
@@ -233,7 +243,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             state: IbcCoreChannelV1GlobalEnums.State.STATE_TRYOPEN,
             ordering: channel.ordering,
             counterparty: expectedCounterparty,
-            connection_hops: getCounterpartyHops(channel.connection_hops[0]),
+            connection_hops: getCounterpartyHops(channel.connectionHops[0]),
             version: msg_.counterpartyVersion
         });
 
@@ -242,8 +252,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
                 connection,
                 msg_.proofHeight,
                 msg_.proofTry,
-                channel.counterparty.port_id,
-                msg_.counterpartyChannelId,
+                channel.counterparty.portId,
+                counterpartyChannelId,
                 IbcCoreChannelV1Channel.encode(expectedChannel)
             )
         ) {
@@ -252,17 +262,18 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
 
         channel.state = IbcCoreChannelV1GlobalEnums.State.STATE_OPEN;
         channel.version = msg_.counterpartyVersion;
-        channel.counterparty.channel_id = msg_.counterpartyChannelId;
-        updateChannelCommitment(msg_.portId, msg_.channelId);
+        channel.counterparty.channelId =
+            msg_.counterpartyChannelId.parseChannelIdCalldata();
+        updateChannelCommitment(msg_.portId, channelId);
 
         lookupModuleByPort(msg_.portId).onChanOpenAck(
             msg_.portId,
-            msg_.channelId,
-            msg_.counterpartyChannelId,
+            channelId,
+            counterpartyChannelId,
             msg_.counterpartyVersion
         );
 
-        emit IBCChannelLib.ChannelOpenAck(msg_.channelId, msg_.portId);
+        emit IBCChannelLib.ChannelOpenAck(channelId, msg_.portId);
     }
 
     /**
@@ -272,14 +283,17 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[msg_.portId][msg_.channelId];
+        ChannelId channelId = msg_.channelId.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel =
+            channels[msg_.portId][channelId];
+
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_TRYOPEN) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
 
         IbcCoreConnectionV1ConnectionEnd.Data memory connection =
-            ensureConnectionState(channel.connection_hops[0]);
+            ensureConnectionState(channel.connectionHops[0]);
 
         IbcCoreChannelV1Counterparty.Data memory expectedCounterparty =
         IbcCoreChannelV1Counterparty.Data({
@@ -291,7 +305,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             state: IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
             ordering: channel.ordering,
             counterparty: expectedCounterparty,
-            connection_hops: getCounterpartyHops(channel.connection_hops[0]),
+            connection_hops: getCounterpartyHops(channel.connectionHops[0]),
             version: channel.version
         });
 
@@ -300,8 +314,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
                 connection,
                 msg_.proofHeight,
                 msg_.proofAck,
-                channel.counterparty.port_id,
-                channel.counterparty.channel_id,
+                channel.counterparty.portId,
+                channel.counterparty.channelId,
                 IbcCoreChannelV1Channel.encode(expectedChannel)
             )
         ) {
@@ -309,13 +323,13 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         }
 
         channel.state = IbcCoreChannelV1GlobalEnums.State.STATE_OPEN;
-        updateChannelCommitment(msg_.portId, msg_.channelId);
+        updateChannelCommitment(msg_.portId, channelId);
 
         lookupModuleByPort(msg_.portId).onChanOpenConfirm(
-            msg_.portId, msg_.channelId
+            msg_.portId, channelId
         );
 
-        emit IBCChannelLib.ChannelOpenConfirm(msg_.channelId, msg_.portId);
+        emit IBCChannelLib.ChannelOpenConfirm(channelId, msg_.portId);
     }
 
     /**
@@ -325,23 +339,24 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[msg_.portId][msg_.channelId];
+        ChannelId channelId = msg_.channelId.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel =
+            channels[msg_.portId][channelId];
+
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
 
-        IbcCoreConnectionV1ConnectionEnd.Data memory connection =
-            ensureConnectionState(channel.connection_hops[0]);
+        // IbcCoreConnectionV1ConnectionEnd.Data memory connection =
+        ensureConnectionState(channel.connectionHops[0]);
 
         channel.state = IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
-        updateChannelCommitment(msg_.portId, msg_.channelId);
+        updateChannelCommitment(msg_.portId, channelId);
 
-        lookupModuleByPort(msg_.portId).onChanCloseInit(
-            msg_.portId, msg_.channelId
-        );
+        lookupModuleByPort(msg_.portId).onChanCloseInit(msg_.portId, channelId);
 
-        emit IBCChannelLib.ChannelCloseInit(msg_.channelId, msg_.portId);
+        emit IBCChannelLib.ChannelCloseInit(channelId, msg_.portId);
     }
 
     /**
@@ -352,14 +367,17 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         external
         override
     {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[msg_.portId][msg_.channelId];
+        ChannelId channelId = msg_.channelId.parseChannelIdCalldata();
+
+        IBCChannelTypes.Channel storage channel =
+            channels[msg_.portId][channelId];
+
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
 
         IbcCoreConnectionV1ConnectionEnd.Data memory connection =
-            ensureConnectionState(channel.connection_hops[0]);
+            ensureConnectionState(channel.connectionHops[0]);
 
         IbcCoreChannelV1Counterparty.Data memory expectedCounterparty =
         IbcCoreChannelV1Counterparty.Data({
@@ -371,7 +389,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             state: IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED,
             ordering: channel.ordering,
             counterparty: expectedCounterparty,
-            connection_hops: getCounterpartyHops(channel.connection_hops[0]),
+            connection_hops: getCounterpartyHops(channel.connectionHops[0]),
             version: channel.version
         });
 
@@ -380,8 +398,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
                 connection,
                 msg_.proofHeight,
                 msg_.proofInit,
-                channel.counterparty.port_id,
-                channel.counterparty.channel_id,
+                channel.counterparty.portId,
+                channel.counterparty.channelId,
                 IbcCoreChannelV1Channel.encode(expectedChannel)
             )
         ) {
@@ -389,21 +407,21 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         }
 
         channel.state = IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
-        updateChannelCommitment(msg_.portId, msg_.channelId);
+        updateChannelCommitment(msg_.portId, channelId);
 
         lookupModuleByPort(msg_.portId).onChanCloseConfirm(
-            msg_.portId, msg_.channelId
+            msg_.portId, channelId
         );
 
-        emit IBCChannelLib.ChannelCloseConfirm(msg_.channelId, msg_.portId);
+        emit IBCChannelLib.ChannelCloseConfirm(channelId, msg_.portId);
     }
 
     function updateChannelCommitment(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) private {
         commitments[IBCCommitment.channelCommitmentKey(portId, channelId)] =
-        keccak256(IbcCoreChannelV1Channel.encode(channels[portId][channelId]));
+            keccak256(abi.encode(channels[portId][channelId]));
     }
 
     /* Verification functions */
@@ -413,7 +431,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         IbcCoreClientV1Height.Data calldata height,
         bytes calldata proof,
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         bytes memory channelBytes
     ) private returns (bool) {
         return getClient(connection.client_id).verifyMembership(
@@ -440,16 +458,19 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         return hops;
     }
 
-    function generateChannelIdentifier() internal returns (string memory) {
+    function generateChannelIdentifier() internal returns (ChannelId) {
         string memory identifier = string(
-            abi.encodePacked("channel-", Strings.toString(nextChannelSequence))
+            abi.encodePacked(
+                "channel-", Strings.toString(uint256(nextChannelSequence))
+            )
         );
         nextChannelSequence++;
-        return identifier;
+        return identifier.parseChannelIdMemory();
     }
 
     function ensureConnectionState(string memory connectionId)
         internal
+        view
         returns (IbcCoreConnectionV1ConnectionEnd.Data memory)
     {
         IbcCoreConnectionV1ConnectionEnd.Data memory connection =
@@ -466,6 +487,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         IbcCoreChannelV1GlobalEnums.Order ordering
     )
         internal
+        view
         returns (string memory, IbcCoreConnectionV1ConnectionEnd.Data memory)
     {
         if (connectionHops.length != 1) {

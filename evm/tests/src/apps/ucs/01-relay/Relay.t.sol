@@ -36,7 +36,7 @@ contract IBCHandlerFake is IBCHandler {
 
     function sendPacket(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
@@ -47,7 +47,7 @@ contract IBCHandlerFake is IBCHandler {
             IbcCoreChannelV1Packet.Data({
                 sequence: packetSequence,
                 source_port: sourcePort,
-                source_channel: sourceChannel,
+                source_channel: sourceChannel.toString(),
                 destination_port: "dummy-port",
                 destination_channel: "dummy-channel",
                 data: data,
@@ -74,6 +74,10 @@ contract RelayTests is Test {
     IBCHandlerFake ibcHandler;
     IRelay relay;
 
+    function assertEq(ChannelId a, ChannelId b) internal {
+        return assertEq(ChannelId.unwrap(a), ChannelId.unwrap(b));
+    }
+
     function setUp() public {
         ibcHandler = new IBCHandlerFake();
         relay = new UCS01Relay(ibcHandler);
@@ -81,9 +85,9 @@ contract RelayTests is Test {
 
     function initChannel(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
@@ -91,10 +95,7 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -102,7 +103,7 @@ contract RelayTests is Test {
 
     function sendLocalToken(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         address sender,
         bytes memory receiver,
         string memory denomName,
@@ -132,7 +133,7 @@ contract RelayTests is Test {
 
     function sendRemoteToken(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         bytes memory sender,
         address receiver,
         address denomAddress,
@@ -163,9 +164,9 @@ contract RelayTests is Test {
     function receiveRemoteToken(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -193,9 +194,9 @@ contract RelayTests is Test {
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
-                source_channel: sourceChannel,
+                source_channel: sourceChannel.toString(),
                 destination_port: destinationPort,
-                destination_channel: destinationChannel,
+                destination_channel: destinationChannel.toString(),
                 data: RelayPacketLib.encode(
                     RelayPacket({
                         sender: sender,
@@ -214,27 +215,27 @@ contract RelayTests is Test {
     }
 
     function test_isRemote_ok() public {
-        assertEq(RelayLib.isFromChannel("a", "b", "a/b/X"), true);
-        assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.bb/c/X"), true);
+        assertEq(RelayLib.isFromChannel("a", ChannelId.wrap("b"), "a/b/X"), true);
+        assertEq(RelayLib.isFromChannel("aa.bb", ChannelId.wrap("c"), "aa.bb/c/X"), true);
     }
 
     function test_isRemote_ko() public {
-        assertEq(RelayLib.isFromChannel("a", "b", "b/b/X"), false);
-        assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.b/c/X"), false);
+        assertEq(RelayLib.isFromChannel("a", ChannelId.wrap("b"), "b/b/X"), false);
+        assertEq(RelayLib.isFromChannel("aa.bb", ChannelId.wrap("c"), "aa.b/c/X"), false);
     }
 
     function test_makeForeignDenom() public {
-        assertEq(RelayLib.makeForeignDenom("a", "b", "BLA"), "a/b/BLA");
+        assertEq(RelayLib.makeForeignDenom("a", ChannelId.wrap("b"), "BLA"), "a/b/BLA");
         assertEq(
-            RelayLib.makeForeignDenom("wasm.xyz", "channel-1", "muno"),
+            RelayLib.makeForeignDenom("wasm.xyz", ChannelId.wrap("channel-1"), "muno"),
             "wasm.xyz/channel-1/muno"
         );
     }
 
     function test_makeDenomPrefix() public {
-        assertEq(RelayLib.makeDenomPrefix("a", "b"), "a/b/");
+        assertEq(RelayLib.makeDenomPrefix("a", ChannelId.wrap("b")), "a/b/");
         assertEq(
-            RelayLib.makeDenomPrefix("wasm.xyz", "channel-99"),
+            RelayLib.makeDenomPrefix("wasm.xyz", ChannelId.wrap("channel-99")),
             "wasm.xyz/channel-99/"
         );
     }
@@ -245,9 +246,9 @@ contract RelayTests is Test {
 
     function test_openInit_onlyIBC(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
@@ -256,19 +257,16 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION
         );
     }
 
     function test_openInit_wrongVersion(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
@@ -278,19 +276,16 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             "blabla"
         );
     }
 
     function test_openInit_wrongOrdering(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
@@ -300,19 +295,16 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION
         );
     }
 
     function test_openInit_setCounterparty(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
@@ -321,23 +313,20 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION
         );
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
+        IBCChannelTypes.Counterparty memory counterparty =
             r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, sourceChannel);
+        assertEq(counterparty.portId, sourcePort);
+        assertEq(counterparty.channelId, sourceChannel);
     }
 
     function test_openTry_onlyIBC(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
@@ -346,10 +335,7 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -357,9 +343,9 @@ contract RelayTests is Test {
 
     function test_openTry_setCounterparty(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
@@ -368,24 +354,21 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
+        IBCChannelTypes.Counterparty memory counterparty =
             r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, sourceChannel);
+        assertEq(counterparty.portId, sourcePort);
+        assertEq(counterparty.channelId, sourceChannel);
     }
 
     function test_openTry_wrongVersion(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
@@ -395,10 +378,7 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             "0xDEADC0DE",
             RelayLib.VERSION
         );
@@ -406,9 +386,9 @@ contract RelayTests is Test {
 
     function test_openTry_wrongOrdering(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
@@ -418,10 +398,7 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION,
             RelayLib.VERSION
         );
@@ -429,9 +406,9 @@ contract RelayTests is Test {
 
     function test_openTry_wrongCounterpartyVersion(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
@@ -441,19 +418,16 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: sourceChannel}),
             RelayLib.VERSION,
             "ok"
         );
     }
 
     function test_openAck_onlyIBC(
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
@@ -463,9 +437,9 @@ contract RelayTests is Test {
     }
 
     function test_openAck_wrongVersion(
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
@@ -477,9 +451,9 @@ contract RelayTests is Test {
 
     function test_openAck_setCounterpartyChannel(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
@@ -488,29 +462,26 @@ contract RelayTests is Test {
             new string[](0),
             destinationPort,
             destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: ""
-            }),
+            IBCChannelTypes.Counterparty({portId: sourcePort, channelId: ChannelId.wrap("")}),
             RelayLib.VERSION
         );
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
+        IBCChannelTypes.Counterparty memory counterparty =
             r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, "");
+        assertEq(counterparty.portId, sourcePort);
+        assertEq(counterparty.channelId, ChannelId.wrap(""));
         vm.prank(address(ibcHandler));
         r.onChanOpenAck(
             destinationPort, destinationChannel, sourceChannel, RelayLib.VERSION
         );
         counterparty =
             r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, sourceChannel);
+        assertEq(counterparty.portId, sourcePort);
+        assertEq(counterparty.channelId, sourceChannel);
     }
 
     function test_openConfirm_onlyIBC(
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
@@ -519,7 +490,7 @@ contract RelayTests is Test {
 
     function test_openConfirm(
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
@@ -528,7 +499,7 @@ contract RelayTests is Test {
 
     function test_closeInit_onlyIBC(
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
@@ -537,7 +508,7 @@ contract RelayTests is Test {
 
     function test_closeInit_impossible(
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrUnstoppable.selector);
@@ -547,7 +518,7 @@ contract RelayTests is Test {
 
     function test_closeConfirm_onlyIBC(
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
@@ -556,7 +527,7 @@ contract RelayTests is Test {
 
     function test_closeConfirm_impossible(
         string memory destinationPort,
-        string memory destinationChannel
+        ChannelId destinationChannel
     ) public {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrUnstoppable.selector);
@@ -567,9 +538,9 @@ contract RelayTests is Test {
     function test_onRecvPacketProcessing_onlySelf(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -582,9 +553,9 @@ contract RelayTests is Test {
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
-                source_channel: sourceChannel,
+                source_channel: sourceChannel.toString(),
                 destination_port: destinationPort,
-                destination_channel: destinationChannel,
+                destination_channel: destinationChannel.toString(),
                 data: hex"00",
                 timeout_height: IbcCoreClientV1Height.Data({
                     revision_number: timeoutRevisionNumber,
@@ -599,9 +570,9 @@ contract RelayTests is Test {
     function test_onRecvPacket_onlyIBC(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -614,9 +585,9 @@ contract RelayTests is Test {
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
-                source_channel: sourceChannel,
+                source_channel: sourceChannel.toString(),
                 destination_port: destinationPort,
-                destination_channel: destinationChannel,
+                destination_channel: destinationChannel.toString(),
                 data: hex"00",
                 timeout_height: IbcCoreClientV1Height.Data({
                     revision_number: timeoutRevisionNumber,
@@ -631,9 +602,9 @@ contract RelayTests is Test {
     function test_onRecvPacket_revertProcessing_noop(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -646,9 +617,9 @@ contract RelayTests is Test {
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
-                source_channel: sourceChannel,
+                source_channel: sourceChannel.toString(),
                 destination_port: destinationPort,
-                destination_channel: destinationChannel,
+                destination_channel: destinationChannel.toString(),
                 data: hex"00",
                 timeout_height: IbcCoreClientV1Height.Data({
                     revision_number: timeoutRevisionNumber,
@@ -667,9 +638,9 @@ contract RelayTests is Test {
     function test_receive_localToken(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -731,9 +702,9 @@ contract RelayTests is Test {
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
-                source_channel: sourceChannel,
+                source_channel: sourceChannel.toString(),
                 destination_port: destinationPort,
-                destination_channel: destinationChannel,
+                destination_channel: destinationChannel.toString(),
                 data: RelayPacketLib.encode(
                     RelayPacket({
                         sender: receiver,
@@ -762,9 +733,9 @@ contract RelayTests is Test {
     function test_receive_remoteToken(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -801,9 +772,9 @@ contract RelayTests is Test {
 
     function test_send_local(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         address sender,
         bytes memory receiver,
         string memory denomName,
@@ -856,9 +827,9 @@ contract RelayTests is Test {
     function test_send_remote(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -944,7 +915,7 @@ contract RelayTests is Test {
         uint64 sequence,
         string memory destinationPort,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -960,15 +931,15 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         // Open two different local channels with the same counterparty
-        initChannel(sourcePort, sourceChannel, destinationPort, "channel-1");
-        initChannel(sourcePort, sourceChannel, destinationPort, "channel-2");
+        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-1"));
+        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-2"));
 
         receiveRemoteToken(
             sequence,
             sourcePort,
             sourceChannel,
             destinationPort,
-            "channel-1",
+            ChannelId.wrap("channel-1"),
             timeoutRevisionNumber,
             timeoutRevisionHeight,
             timeoutTimestamp,
@@ -984,7 +955,7 @@ contract RelayTests is Test {
             sourcePort,
             sourceChannel,
             destinationPort,
-            "channel-2",
+            ChannelId.wrap("channel-2"),
             timeoutRevisionNumber,
             timeoutRevisionHeight,
             timeoutTimestamp,
@@ -998,7 +969,7 @@ contract RelayTests is Test {
         {
             address denomAddress = relay.getDenomAddress(
                 destinationPort,
-                "channel-1",
+                ChannelId.wrap("channel-1"),
                 RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
             );
 
@@ -1010,7 +981,7 @@ contract RelayTests is Test {
             IERC20Denom(denomAddress).approve(address(relay), amount);
 
             uint256 outstandingBefore =
-                relay.getOutstanding(destinationPort, "channel-2", denomAddress);
+                relay.getOutstanding(destinationPort, ChannelId.wrap("channel-2"), denomAddress);
 
             vm.expectEmit();
             emit IERC20.Transfer(address(receiver), address(relay), amount);
@@ -1021,7 +992,7 @@ contract RelayTests is Test {
             vm.prank(receiver);
             relay.send(
                 destinationPort,
-                "channel-2",
+                ChannelId.wrap("channel-2"),
                 abi.encodePacked(receiver),
                 localTokens,
                 0,
@@ -1029,7 +1000,7 @@ contract RelayTests is Test {
             );
 
             uint256 outstandingAfter =
-                relay.getOutstanding(destinationPort, "channel-2", denomAddress);
+                relay.getOutstanding(destinationPort, ChannelId.wrap("channel-2"), denomAddress);
 
             // Remote tokens are not tracked as outstanding
             assertEq(outstandingBefore + amount, outstandingAfter);
@@ -1040,7 +1011,7 @@ contract RelayTests is Test {
         uint64 sequence,
         string memory destinationPort,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -1056,15 +1027,15 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         // Open two different local channels with the same counterparty
-        initChannel(sourcePort, sourceChannel, destinationPort, "channel-1");
-        initChannel(sourcePort, sourceChannel, destinationPort, "channel-2");
+        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-1"));
+        initChannel(sourcePort, sourceChannel, destinationPort, ChannelId.wrap("channel-2"));
 
         receiveRemoteToken(
             sequence,
             sourcePort,
             sourceChannel,
             destinationPort,
-            "channel-1",
+            ChannelId.wrap("channel-1"),
             timeoutRevisionNumber,
             timeoutRevisionHeight,
             timeoutTimestamp,
@@ -1080,7 +1051,7 @@ contract RelayTests is Test {
             sourcePort,
             sourceChannel,
             destinationPort,
-            "channel-2",
+            ChannelId.wrap("channel-2"),
             timeoutRevisionNumber,
             timeoutRevisionHeight,
             timeoutTimestamp,
@@ -1094,9 +1065,9 @@ contract RelayTests is Test {
 
     function test_onTimeout_onlyIBC(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1128,9 +1099,9 @@ contract RelayTests is Test {
 
     function test_onTimeout_refund_local(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1184,9 +1155,9 @@ contract RelayTests is Test {
     function test_onTimeout_refund_remote(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -1266,9 +1237,9 @@ contract RelayTests is Test {
 
     function test_ack_failure_refund_local(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1324,9 +1295,9 @@ contract RelayTests is Test {
     function test_ack_failure_refund_remote(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -1408,9 +1379,9 @@ contract RelayTests is Test {
 
     function test_ack_success_noop_local(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         address sender,
         bytes memory receiver,
         address relayer,
@@ -1451,9 +1422,9 @@ contract RelayTests is Test {
     function test_ack_success_noop_remote(
         uint64 sequence,
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel,
+        ChannelId destinationChannel,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,

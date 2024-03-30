@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 import "../../proto/ibc/core/client/v1/client.sol";
 import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
+import {IBCChannelTypes, ChannelId} from "../04-channel/IBCChannelTypes.sol";
 
 /**
  * @dev IBCMsgs provides datagram types in [ICS-26](https://github.com/cosmos/ibc/tree/main/spec/core/ics-026-routing-module#datagram-handlers-write)

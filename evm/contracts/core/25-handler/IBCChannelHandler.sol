@@ -19,7 +19,7 @@ abstract contract IBCChannelHandler is IIBCChannelHandshake {
     function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
         external
         override
-        returns (string memory)
+        returns (ChannelId)
     {
         passthrough(ibcChannel);
     }
@@ -27,7 +27,7 @@ abstract contract IBCChannelHandler is IIBCChannelHandshake {
     function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
         external
         override
-        returns (string memory)
+        returns (ChannelId)
     {
         passthrough(ibcChannel);
     }

@@ -10,7 +10,7 @@ interface IIBCPacket {
      */
     function sendPacket(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
@@ -28,7 +28,7 @@ interface IIBCPacket {
      */
     function writeAcknowledgement(
         string calldata destinationPortId,
-        string calldata destinationChannel,
+        ChannelId destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement
     ) external;

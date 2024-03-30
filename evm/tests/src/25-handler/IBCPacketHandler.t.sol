@@ -45,6 +45,8 @@ import {
 } from "../../../contracts/proto/tendermint/types/types.sol";
 import
     "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import 
+    "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 
 import "../TestPlus.sol";
 
@@ -126,6 +128,7 @@ contract IBCPacketHandlerTest is TestPlus {
     using BytesLib for *;
     using LibString for *;
     using ConnectionCounterparty for *;
+    using {parseChannelIdMemory} for string;
 
     string constant CLIENT_TYPE = "mock";
 
@@ -149,7 +152,7 @@ contract IBCPacketHandlerTest is TestPlus {
 
     string clientId;
     string connectionId;
-    string channelId;
+    ChannelId channelId;
 
     function setUp() public {
         handler = new IBCHandlerFake();
@@ -407,7 +410,7 @@ contract IBCPacketHandlerTest is TestPlus {
         assertEq(
             handler.packetReceipts(
                 msg_.packet.destination_port,
-                msg_.packet.destination_channel,
+                msg_.packet.destination_channel.parseChannelIdMemory(),
                 msg_.packet.sequence
             ),
             0
@@ -418,7 +421,7 @@ contract IBCPacketHandlerTest is TestPlus {
         assertEq(
             handler.packetReceipts(
                 msg_.packet.destination_port,
-                msg_.packet.destination_channel,
+                msg_.packet.destination_channel.parseChannelIdMemory(),
                 msg_.packet.sequence
             ),
             1

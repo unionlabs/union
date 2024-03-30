@@ -145,8 +145,8 @@ contract PingPong is IBCAppBase {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata,
         string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
+        ChannelId,
+        IBCChannelTypes.Counterparty calldata,
         string calldata
     ) external virtual override onlyIBC {
         // This protocol is only accepting a single counterparty.
@@ -160,7 +160,7 @@ contract PingPong is IBCAppBase {
         string[] calldata,
         string calldata,
         string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
+        IBCChannelTypes.Counterparty calldata,
         string calldata,
         string calldata
     ) external virtual override onlyIBC {
@@ -172,8 +172,8 @@ contract PingPong is IBCAppBase {
 
     function onChanOpenAck(
         string calldata _portId,
-        string calldata _channelId,
-        string calldata _counterpartyChannelId,
+        ChannelId _channelId,
+        ChannelId _counterpartyChannelId,
         string calldata _counterpartyVersion
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.
@@ -183,7 +183,7 @@ contract PingPong is IBCAppBase {
 
     function onChanOpenConfirm(
         string calldata _portId,
-        string calldata _channelId
+        ChannelId _channelId
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenAck
         portId = _portId;
@@ -192,7 +192,7 @@ contract PingPong is IBCAppBase {
 
     function onChanCloseInit(
         string calldata _portId,
-        string calldata _channelId
+        ChannelId _channelId
     ) external virtual override onlyIBC {
         // The ping-pong is infinite, closing the channel is disallowed.
         revert PingPongLib.ErrInfiniteGame();
@@ -200,7 +200,7 @@ contract PingPong is IBCAppBase {
 
     function onChanCloseConfirm(
         string calldata _portId,
-        string calldata _channelId
+        ChannelId _channelId
     ) external virtual override onlyIBC {
         // Symmetric to onChanCloseInit
         revert PingPongLib.ErrInfiniteGame();

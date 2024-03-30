@@ -31,24 +31,24 @@ struct RelayPacket {
 interface IRelay is IIBCModule {
     function getDenomAddress(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory denom
     ) external view returns (address);
 
     function getOutstanding(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         address token
     ) external view returns (uint256);
 
     function getCounterpartyEndpoint(
         string memory sourcePort,
-        string memory sourceChannel
-    ) external view returns (IbcCoreChannelV1Counterparty.Data memory);
+        ChannelId sourceChannel
+    ) external view returns (IBCChannelTypes.Counterparty memory);
 
     function send(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
@@ -107,7 +107,7 @@ library RelayLib {
 
     function isFromChannel(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         string memory denom
     ) internal pure returns (bool) {
         return bytes(denom).length > 0
@@ -116,14 +116,14 @@ library RelayLib {
 
     function makeDenomPrefix(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) internal pure returns (string memory) {
         return string(abi.encodePacked(portId, "/", channelId, "/"));
     }
 
     function makeForeignDenom(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         string memory denom
     ) internal pure returns (string memory) {
         return
@@ -162,21 +162,24 @@ contract UCS01Relay is IBCAppBase, IRelay {
     using RelayPacketLib for RelayPacket;
     using LibString for *;
     using strings for *;
+    using {parseChannelIdCalldata} for string;
 
     IBCHandler private immutable ibcHandler;
 
     // A mapping from remote denom to local ERC20 wrapper.
-    mapping(string => mapping(string => mapping(string => address))) private
+    // port -> channel -> denom -> address
+    mapping(string => mapping(ChannelId => mapping(string => address))) private
         denomToAddress;
     // A mapping from a local ERC20 wrapper to the remote denom.
     // Required to determine whether an ERC20 token is originating from a remote chain.
-    mapping(string => mapping(string => mapping(address => string))) private
+    // port -> channel -> denom -> address
+    mapping(string => mapping(ChannelId => mapping(address => string))) private
         addressToDenom;
     // A mapping from local port/channel to it's counterparty.
     // This is required to remap denoms.
-    mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
-        private counterpartyEndpoints;
-    mapping(string => mapping(string => mapping(address => uint256))) private
+    mapping(string => mapping(ChannelId => IBCChannelTypes.Counterparty)) private
+        counterpartyEndpoints;
+    mapping(string => mapping(ChannelId => mapping(address => uint256))) private
         outstanding;
 
     constructor(IBCHandler _ibcHandler) {
@@ -190,7 +193,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // Return the ERC20 wrapper for the given remote-native denom.
     function getDenomAddress(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         string memory denom
     ) external view override returns (address) {
         return denomToAddress[sourcePort][sourceChannel][denom];
@@ -199,7 +202,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // Return the amount of tokens submitted through the given port/channel.
     function getOutstanding(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         address token
     ) external view override returns (uint256) {
         return outstanding[sourcePort][sourceChannel][token];
@@ -209,13 +212,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // A counterparty will exist only if a channel has been previously opened.
     function getCounterpartyEndpoint(
         string memory sourcePort,
-        string memory sourceChannel
-    )
-        external
-        view
-        override
-        returns (IbcCoreChannelV1Counterparty.Data memory)
-    {
+        ChannelId sourceChannel
+    ) external view override returns (IBCChannelTypes.Counterparty memory) {
         return counterpartyEndpoints[sourcePort][sourceChannel];
     }
 
@@ -223,7 +221,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // Happens when we send the token.
     function increaseOutstanding(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         address token,
         uint256 amount
     ) internal {
@@ -234,7 +232,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // Happens either when receiving previously sent tokens or when refunding.
     function decreaseOutstanding(
         string memory sourcePort,
-        string memory sourceChannel,
+        ChannelId sourceChannel,
         address token,
         uint256 amount
     ) internal {
@@ -247,9 +245,9 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // The operation is symmetric with the counterparty, if we burn locally, the remote relay will unescrow. If we escrow locally, the remote relay will mint.
     function sendToken(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         string memory counterpartyPortId,
-        string memory counterpartyChannelId,
+        ChannelId counterpartyChannelId,
         LocalToken calldata localToken
     ) internal returns (string memory addressDenom) {
         // Ensure the user properly fund us.
@@ -276,13 +274,13 @@ contract UCS01Relay is IBCAppBase, IRelay {
 
     function send(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
     ) external override {
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
+        IBCChannelTypes.Counterparty memory counterparty =
             counterpartyEndpoints[sourcePort][sourceChannel];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -290,8 +288,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
             string memory addressDenom = sendToken(
                 sourcePort,
                 sourceChannel,
-                counterparty.port_id,
-                counterparty.channel_id,
+                counterparty.portId,
+                counterparty.channelId,
                 localToken
             );
             normalizedTokens[i].denom = addressDenom;
@@ -327,7 +325,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
 
     function refundTokens(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         RelayPacket memory packet
     ) internal {
         string memory receiver = packet.receiver.toHexString();
@@ -366,8 +364,12 @@ contract UCS01Relay is IBCAppBase, IRelay {
             revert RelayLib.ErrUnauthorized();
         }
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
+
+        ChannelId destinationChannelId = ibcPacket.destination_channel.parseChannelIdCalldata();
+        ChannelId sourceChannelId = ibcPacket.source_channel.parseChannelIdCalldata();
+
         string memory prefix = RelayLib.makeDenomPrefix(
-            ibcPacket.destination_port, ibcPacket.destination_channel
+            ibcPacket.destination_port, destinationChannelId
         );
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
@@ -388,7 +390,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 // The token must be outstanding.
                 decreaseOutstanding(
                     ibcPacket.destination_port,
-                    ibcPacket.destination_channel,
+                    destinationChannelId,
                     denomAddress,
                     token.amount
                 );
@@ -397,16 +399,13 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 // In this branch the token was originating from the
                 // counterparty chain. We need to mint the amount.
                 denom = RelayLib.makeForeignDenom(
-                    ibcPacket.source_port, ibcPacket.source_channel, token.denom
+                    ibcPacket.source_port, sourceChannelId, token.denom
                 );
-                denomAddress = denomToAddress[ibcPacket.destination_port][ibcPacket
-                    .destination_channel][denom];
+                denomAddress = denomToAddress[ibcPacket.destination_port][destinationChannelId][denom];
                 if (denomAddress == address(0)) {
                     denomAddress = address(new ERC20Denom(denom));
-                    denomToAddress[ibcPacket.destination_port][ibcPacket
-                        .destination_channel][denom] = denomAddress;
-                    addressToDenom[ibcPacket.destination_port][ibcPacket
-                        .destination_channel][denomAddress] = denom;
+                    denomToAddress[ibcPacket.destination_port][destinationChannelId][denom] = denomAddress;
+                    addressToDenom[ibcPacket.destination_port][destinationChannelId][denomAddress] = denom;
                     emit RelayLib.DenomCreated(denom, denomAddress);
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
@@ -463,7 +462,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
-                ibcPacket.source_port, ibcPacket.source_channel, packet
+                ibcPacket.source_port, ibcPacket.source_channel.parseChannelIdCalldata(), packet
             );
         }
     }
@@ -474,7 +473,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         refundTokens(
             ibcPacket.source_port,
-            ibcPacket.source_channel,
+            ibcPacket.source_channel.parseChannelIdCalldata(),
             RelayPacketLib.decode(ibcPacket.data)
         );
     }
@@ -483,8 +482,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         IbcCoreChannelV1GlobalEnums.Order order,
         string[] calldata _connectionHops,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata counterpartyEndpoint,
         string calldata version
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
@@ -500,8 +499,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         IbcCoreChannelV1GlobalEnums.Order order,
         string[] calldata _connectionHops,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata counterpartyEndpoint,
         string calldata version,
         string calldata counterpartyVersion
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
@@ -519,33 +518,33 @@ contract UCS01Relay is IBCAppBase, IRelay {
 
     function onChanOpenAck(
         string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        ChannelId channelId,
+        ChannelId counterpartyChannelId,
         string calldata counterpartyVersion
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
         }
         // Counterparty channel was empty.
-        counterpartyEndpoints[portId][channelId].channel_id =
+        counterpartyEndpoints[portId][channelId].channelId =
             counterpartyChannelId;
     }
 
     function onChanOpenConfirm(
         string calldata _portId,
-        string calldata _channelId
+        ChannelId _channelId
     ) external override(IBCAppBase, IIBCModule) onlyIBC {}
 
     function onChanCloseInit(
         string calldata _portId,
-        string calldata _channelId
+        ChannelId _channelId
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
         string calldata _portId,
-        string calldata _channelId
+        ChannelId _channelId
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }

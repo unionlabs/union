@@ -24,6 +24,8 @@ import {
 } from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
     "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {ChannelId} from
+    "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 
 library MsgMocks {
     //
@@ -209,11 +211,11 @@ library MsgMocks {
 
     function channelOpenAck(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 proofHeight
     ) internal view returns (IBCMsgs.MsgChannelOpenAck memory m) {
         m.portId = portId;
-        m.channelId = channelId;
+        m.channelId = channelId.toString();
         m.counterpartyVersion = "counterparty-version";
         m.counterpartyChannelId = "counterparty-channel-id";
 
@@ -223,7 +225,7 @@ library MsgMocks {
             ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
-                channel_id: channelId
+                channel_id: channelId.toString()
             }),
             connection_hops: new string[](1),
             version: m.counterpartyVersion
@@ -266,18 +268,18 @@ library MsgMocks {
 
     function channelOpenConfirm(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 proofHeight
     ) internal view returns (IBCMsgs.MsgChannelOpenConfirm memory m) {
         m.portId = portId;
-        m.channelId = channelId;
+        m.channelId = channelId.toString();
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_OPEN,
             ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
-                channel_id: channelId
+                channel_id: channelId.toString()
             }),
             connection_hops: new string[](1),
             version: "counterparty-version"
@@ -288,26 +290,26 @@ library MsgMocks {
 
     function channelCloseInit(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) internal view returns (IBCMsgs.MsgChannelCloseInit memory m) {
         m.portId = portId;
-        m.channelId = channelId;
+        m.channelId = channelId.toString();
     }
 
     function channelCloseConfirm(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 proofHeight
     ) internal view returns (IBCMsgs.MsgChannelCloseConfirm memory m) {
         m.portId = portId;
-        m.channelId = channelId;
+        m.channelId = channelId.toString();
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_CLOSED,
             ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
-                channel_id: channelId
+                channel_id: channelId.toString()
             }),
             connection_hops: new string[](1),
             version: "counterparty-version"
@@ -319,14 +321,14 @@ library MsgMocks {
 
     function packetRecv(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 proofHeight,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes memory payload
     ) internal view returns (IBCMsgs.MsgPacketRecv memory m) {
         m.packet.destination_port = portId;
-        m.packet.destination_channel = channelId;
+        m.packet.destination_channel = channelId.toString();
         m.packet.source_port = "counterparty-port-id";
         m.packet.source_channel = "counterparty-channel-id";
         m.packet.data = payload;
@@ -338,7 +340,7 @@ library MsgMocks {
 
     function packetAck(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 proofHeight,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
@@ -346,7 +348,7 @@ library MsgMocks {
         bytes memory acknowledgement
     ) internal view returns (IBCMsgs.MsgPacketAcknowledgement memory m) {
         m.packet.source_port = portId;
-        m.packet.source_channel = channelId;
+        m.packet.source_channel = channelId.toString();
         m.packet.destination_port = "counterparty-port-id";
         m.packet.destination_channel = "counterparty-channel-id";
         m.packet.data = payload;
@@ -359,14 +361,14 @@ library MsgMocks {
 
     function packetTimeout(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 proofHeight,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes memory payload
     ) internal view returns (IBCMsgs.MsgPacketTimeout memory m) {
         m.packet.source_port = portId;
-        m.packet.source_channel = channelId;
+        m.packet.source_channel = channelId.toString();
         m.packet.destination_port = "counterparty-port-id";
         m.packet.destination_channel = "counterparty-channel-id";
         m.packet.data = payload;

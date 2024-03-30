@@ -3,6 +3,10 @@ args    = ["--stdio"]
 command = "astro-ls"
 config  = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "environment" = "node" }
 
+[language-server.nomicfoundation-solidity-language-server]
+args    = ["nomicfoundation-solidity-language-server", "--stdio"]
+command = "npx"
+
 [language-server.biome]
 args    = ["lsp-proxy"]
 command = "biome"
@@ -45,6 +49,11 @@ name             = "json"
 auto-format      = true
 language-servers = [{ name = "svelteserver", except-features = ["format"] }, "biome"]
 name             = "svelte"
+
+[[language]]
+# auto-format      = true
+language-servers = ["nomicfoundation-solidity-language-server"]
+name             = "solidity"
 
 [[grammar]]
 name   = "astro"

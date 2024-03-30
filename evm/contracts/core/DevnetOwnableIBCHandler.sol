@@ -30,8 +30,8 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         string calldata connectionId,
         IbcCoreConnectionV1ConnectionEnd.Data calldata connection,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Channel.Data calldata channel,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata channel,
         address moduleAddress
     ) public onlyOwner {
         passthrough(ibcHandlerInit);

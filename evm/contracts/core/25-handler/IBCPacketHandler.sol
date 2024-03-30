@@ -19,7 +19,7 @@ abstract contract IBCPacketHandler is IIBCPacket, Context, ModuleManager {
 
     function sendPacket(
         string calldata sourcePort,
-        string calldata sourceChannel,
+        ChannelId sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
@@ -36,7 +36,7 @@ abstract contract IBCPacketHandler is IIBCPacket, Context, ModuleManager {
 
     function writeAcknowledgement(
         string calldata destinationPortId,
-        string calldata destinationChannel,
+        ChannelId destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement
     ) external override {

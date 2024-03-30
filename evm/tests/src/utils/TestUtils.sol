@@ -10,6 +10,7 @@ import {
 } from "../../../contracts/proto/MockClient.sol";
 import {GoogleProtobufAny as Any} from
     "../../../contracts/proto/GoogleProtobufAny.sol";
+import "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 import {
     IbcCoreChannelV1Counterparty,
     IbcCoreChannelV1Channel,

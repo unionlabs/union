@@ -1,6 +1,7 @@
 pragma solidity ^0.8.23;
 
 import "../../proto/ibc/core/channel/v1/channel.sol";
+import {IBCChannelTypes, ChannelId} from "../04-channel/IBCChannelTypes.sol";
 
 // IIBCModule defines an interface that implements all the callbacks
 // that modules must define as specified in ICS-26
@@ -10,8 +11,8 @@ interface IIBCModule {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata connectionHops,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterparty,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata counterparty,
         string calldata version
     ) external;
 
@@ -19,32 +20,32 @@ interface IIBCModule {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata connectionHops,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterparty,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata counterparty,
         string calldata version,
         string calldata counterpartyVersion
     ) external;
 
     function onChanOpenAck(
         string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        ChannelId channelId,
+        ChannelId counterpartyChannelId,
         string calldata counterpartyVersion
     ) external;
 
     function onChanOpenConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external;
 
     function onChanCloseInit(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external;
 
     function onChanCloseConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external;
 
     function onRecvPacket(

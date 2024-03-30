@@ -30,17 +30,17 @@ contract TestableIBCHandler is OwnableIBCHandler {
 
     function setChannel(
         string memory portId,
-        string memory channelId,
-        IbcCoreChannelV1Channel.Data memory channel
+        ChannelId channelId,
+        IBCChannelTypes.Channel memory channel
     ) external {
         channels[portId][channelId] = channel;
         commitments[keccak256(IBCCommitment.channelPath(portId, channelId))] =
-            keccak256(IbcCoreChannelV1Channel.encode(channel));
+            keccak256(abi.encode(channel));
     }
 
     function setNextSequenceSend(
         string calldata portId,
-        string calldata channelId,
+        ChannelId channelId,
         uint64 sequence
     ) external {
         nextSequenceSends[portId][channelId] = sequence;
@@ -48,7 +48,7 @@ contract TestableIBCHandler is OwnableIBCHandler {
 
     function setNextSequenceRecv(
         string calldata portId,
-        string calldata channelId,
+        ChannelId channelId,
         uint64 sequence
     ) external {
         nextSequenceRecvs[portId][channelId] = sequence;
@@ -59,7 +59,7 @@ contract TestableIBCHandler is OwnableIBCHandler {
 
     function setNextSequenceAck(
         string calldata portId,
-        string calldata channelId,
+        ChannelId channelId,
         uint64 sequence
     ) external {
         nextSequenceAcks[portId][channelId] = sequence;
@@ -77,10 +77,10 @@ contract TestableIBCHandler is OwnableIBCHandler {
         nextChannelSequence = sequence;
     }
 
-    function claimCapabilityDirectly(
-        string calldata name,
-        address addr
-    ) external {
-        capabilities[name] = addr;
-    }
+    // function claimCapabilityDirectly(
+    //     ChannelId name,
+    //     address addr
+    // ) external {
+    //     capabilities[name] = addr;
+    // }
 }

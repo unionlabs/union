@@ -5,6 +5,7 @@ import "../02-client/ILightClient.sol";
 import "../24-host/IBCStore.sol";
 import "../05-port/ModuleManager.sol";
 import "../24-host/IBCCommitment.sol";
+import {IBCChannelTypes, ChannelId} from "../04-channel/IBCChannelTypes.sol";
 
 abstract contract IBCQuerier is IBCStore {
     function getClientState(string calldata clientId)
@@ -40,10 +41,9 @@ abstract contract IBCQuerier is IBCStore {
 
     function getChannel(
         string calldata portId,
-        string calldata channelId
-    ) external view returns (IbcCoreChannelV1Channel.Data memory, bool) {
-        IbcCoreChannelV1Channel.Data storage channel =
-            channels[portId][channelId];
+        ChannelId channelId
+    ) external view returns (IBCChannelTypes.Channel memory, bool) {
+        IBCChannelTypes.Channel storage channel = channels[portId][channelId];
         return (
             channel,
             channel.state
@@ -53,7 +53,7 @@ abstract contract IBCQuerier is IBCStore {
 
     function getHashedPacketCommitment(
         string calldata portId,
-        string calldata channelId,
+        ChannelId channelId,
         uint64 sequence
     ) external view returns (bytes32, bool) {
         bytes32 commitment = commitments[keccak256(
@@ -64,7 +64,7 @@ abstract contract IBCQuerier is IBCStore {
 
     function getHashedPacketAcknowledgementCommitment(
         string calldata portId,
-        string calldata channelId,
+        ChannelId channelId,
         uint64 sequence
     ) external view returns (bytes32, bool) {
         bytes32 commitment = commitments[keccak256(
@@ -77,7 +77,7 @@ abstract contract IBCQuerier is IBCStore {
 
     function hasPacketReceipt(
         string calldata portId,
-        string calldata channelId,
+        ChannelId channelId,
         uint64 sequence
     ) external view returns (bool) {
         return packetReceipts[portId][channelId][sequence] == 1;
@@ -85,7 +85,7 @@ abstract contract IBCQuerier is IBCStore {
 
     function getNextSequenceSend(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external view returns (uint64) {
         return nextSequenceSends[portId][channelId];
     }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../02-client/ILightClient.sol";
+import {IBCChannelTypes, ChannelId} from "../04-channel/IBCChannelTypes.sol";
 
 library IBCStoreLib {
     error ErrClientNotFound();
@@ -18,14 +19,19 @@ abstract contract IBCStore {
     mapping(string => string) public clientTypes;
     mapping(string => address) public clientImpls;
     mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
-    mapping(string => mapping(string => IbcCoreChannelV1Channel.Data)) public
+    // portId -> channelId -> channel
+    mapping(string => mapping(ChannelId => IBCChannelTypes.Channel)) public
         channels;
-    mapping(string => mapping(string => uint64)) public nextSequenceSends;
-    mapping(string => mapping(string => uint64)) public nextSequenceRecvs;
-    mapping(string => mapping(string => uint64)) public nextSequenceAcks;
-    mapping(string => mapping(string => mapping(uint64 => uint8))) public
+    // portId -> channelId -> sequence
+    mapping(string => mapping(ChannelId => uint64)) public nextSequenceSends;
+    // portId -> channelId -> sequence
+    mapping(string => mapping(ChannelId => uint64)) public nextSequenceRecvs;
+    // portId -> channelId -> sequence
+    mapping(string => mapping(ChannelId => uint64)) public nextSequenceAcks;
+    // portId -> channelId -> sequence -> ?
+    mapping(string => mapping(ChannelId => mapping(uint64 => uint8))) public
         packetReceipts;
-    mapping(string => address) public capabilities;
+    mapping(ChannelId => address) public capabilities;
 
     // Sequences for identifier
     uint64 public nextClientSequence;

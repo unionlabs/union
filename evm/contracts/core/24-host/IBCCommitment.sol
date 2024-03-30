@@ -1,6 +1,7 @@
 pragma solidity ^0.8.23;
 
 import "solady/utils/LibString.sol";
+import {IBCChannelTypes, ChannelId} from "../04-channel/IBCChannelTypes.sol";
 
 library IBCCommitment {
     // Commitment path generators that comply with https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#path-space
@@ -38,23 +39,26 @@ library IBCCommitment {
 
     function channelPath(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            "channelEnds/ports/", portId, "/channels/", channelId
+            "channelEnds/ports/",
+            portId,
+            "/channels/",
+            channelId.toString()
         );
     }
 
     function packetCommitmentPath(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 sequence
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             "commitments/ports/",
             portId,
             "/channels/",
-            channelId,
+            channelId.toString(),
             "/sequences/",
             LibString.toString(sequence)
         );
@@ -62,14 +66,14 @@ library IBCCommitment {
 
     function packetAcknowledgementCommitmentPath(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 sequence
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             "acks/ports/",
             portId,
             "/channels/",
-            channelId,
+            channelId.toString(),
             "/sequences/",
             LibString.toString(sequence)
         );
@@ -77,14 +81,14 @@ library IBCCommitment {
 
     function packetReceiptCommitmentPath(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 sequence
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             "receipts/ports/",
             portId,
             "/channels/",
-            channelId,
+            channelId.toString(),
             "/sequences/",
             LibString.toString(sequence)
         );
@@ -92,7 +96,7 @@ library IBCCommitment {
 
     function nextSequenceRecvCommitmentPath(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             "nextSequenceRecv/ports/", portId, "/channels/", channelId
@@ -129,14 +133,14 @@ library IBCCommitment {
 
     function channelCommitmentKey(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) internal pure returns (bytes32) {
         return keccak256(channelPath(portId, channelId));
     }
 
     function packetCommitmentKey(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 sequence
     ) internal pure returns (bytes32) {
         return keccak256(packetCommitmentPath(portId, channelId, sequence));
@@ -144,7 +148,7 @@ library IBCCommitment {
 
     function packetAcknowledgementCommitmentKey(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 sequence
     ) internal pure returns (bytes32) {
         return keccak256(
@@ -154,7 +158,7 @@ library IBCCommitment {
 
     function packetReceiptCommitmentKey(
         string memory portId,
-        string memory channelId,
+        ChannelId channelId,
         uint64 sequence
     ) internal pure returns (bytes32) {
         return
@@ -163,7 +167,7 @@ library IBCCommitment {
 
     function nextSequenceRecvCommitmentKey(
         string memory portId,
-        string memory channelId
+        ChannelId channelId
     ) internal pure returns (bytes32) {
         return keccak256(nextSequenceRecvCommitmentPath(portId, channelId));
     }

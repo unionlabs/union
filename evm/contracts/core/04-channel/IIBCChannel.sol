@@ -1,6 +1,7 @@
 pragma solidity ^0.8.23;
 
 import "../25-handler/IBCMsgs.sol";
+import "./IBCChannelTypes.sol";
 
 interface IIBCChannelHandshake {
     /**
@@ -8,14 +9,14 @@ interface IIBCChannelHandshake {
      */
     function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
         external
-        returns (string memory);
+        returns (ChannelId);
 
     /**
      * @dev channelOpenTry is called by a module to accept the first step of a channel opening handshake initiated by a module on another chain.
      */
     function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
         external
-        returns (string memory);
+        returns (ChannelId);
 
     /**
      * @dev channelOpenAck is called by the handshake-originating module to acknowledge the acceptance of the initial request by the counterparty module on the other chain.

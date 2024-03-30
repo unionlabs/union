@@ -2,6 +2,8 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/utils/Context.sol";
 import "../core/05-port/IIBCModule.sol";
+import {IBCChannelLib} from
+    "../../contracts/core/04-channel/IBCChannelHandshake.sol";
 
 library IBCAppLib {
     error ErrNotIBC();
@@ -42,8 +44,8 @@ abstract contract IBCAppBase is Context, IIBCModule {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata connectionHops,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata counterpartyEndpoint,
         string calldata version
     ) external virtual override onlyIBC {}
 
@@ -56,8 +58,8 @@ abstract contract IBCAppBase is Context, IIBCModule {
         IbcCoreChannelV1GlobalEnums.Order,
         string[] calldata connectionHops,
         string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata counterpartyEndpoint,
         string calldata version,
         string calldata counterpartyVersion
     ) external virtual override onlyIBC {}
@@ -69,8 +71,8 @@ abstract contract IBCAppBase is Context, IIBCModule {
      */
     function onChanOpenAck(
         string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        ChannelId channelId,
+        ChannelId counterpartyChannelId,
         string calldata counterpartyVersion
     ) external virtual override onlyIBC {}
 
@@ -81,7 +83,7 @@ abstract contract IBCAppBase is Context, IIBCModule {
      */
     function onChanOpenConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override onlyIBC {}
 
     /**
@@ -91,7 +93,7 @@ abstract contract IBCAppBase is Context, IIBCModule {
      */
     function onChanCloseInit(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override onlyIBC {}
 
     /**
@@ -101,7 +103,7 @@ abstract contract IBCAppBase is Context, IIBCModule {
      */
     function onChanCloseConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override onlyIBC {}
 
     /**

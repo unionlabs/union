@@ -9,12 +9,14 @@ import {IIBCModule} from "../../../contracts/core/05-port/IIBCModule.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCHost} from "../../../contracts/core/24-host/IBCHost.sol";
 import {Context} from "@openzeppelin/utils/Context.sol";
+import {ChannelId, IBCChannelTypes} from
+    "../../../contracts/core/04-channel/IBCChannelTypes.sol";
 
 contract MockApp is IIBCModule {
     event MockPacketRecv();
     event MockPacketAck();
     event MockPacketTimeout();
-    event MockChannelOpenInit(string portId, string channelId);
+    event MockChannelOpenInit(string portId, ChannelId channelId);
     event MockChannelOpenTry();
     event MockChannelOpenAck();
     event MockChannelOpenConfirm();
@@ -48,8 +50,8 @@ contract MockApp is IIBCModule {
         ChannelEnums.Order,
         string[] calldata,
         string calldata portId,
-        string calldata channelId,
-        ChannelCounterparty.Data calldata,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata,
         string calldata
     ) external virtual override {
         emit MockChannelOpenInit(portId, channelId);
@@ -59,8 +61,8 @@ contract MockApp is IIBCModule {
         ChannelEnums.Order,
         string[] calldata,
         string calldata,
-        string calldata channelId,
-        ChannelCounterparty.Data calldata,
+        ChannelId channelId,
+        IBCChannelTypes.Counterparty calldata,
         string calldata,
         string calldata
     ) external virtual override {
@@ -69,8 +71,8 @@ contract MockApp is IIBCModule {
 
     function onChanOpenAck(
         string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        ChannelId channelId,
+        ChannelId counterpartyChannelId,
         string calldata counterpartyVersion
     ) external virtual override {
         emit MockChannelOpenAck();
@@ -78,21 +80,21 @@ contract MockApp is IIBCModule {
 
     function onChanOpenConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override {
         emit MockChannelOpenConfirm();
     }
 
     function onChanCloseInit(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override {
         emit MockChannelCloseInit();
     }
 
     function onChanCloseConfirm(
         string calldata portId,
-        string calldata channelId
+        ChannelId channelId
     ) external virtual override {
         emit MockChannelCloseConfirm();
     }

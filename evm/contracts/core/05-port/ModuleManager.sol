@@ -4,6 +4,7 @@ import "@openzeppelin/utils/Context.sol";
 import "./IIBCModule.sol";
 import "../24-host/IBCStore.sol";
 import "../../lib/Hex.sol";
+import {IBCChannelLib} from "../04-channel/IBCChannelHandshake.sol";
 
 library ModuleManagerLib {
     error ErrModuleNotFound();
@@ -29,53 +30,60 @@ abstract contract ModuleManager is IBCStore, Context {
     /**
      * @dev lookupModuleByChannel will return the IBCModule along with the capability associated with a given channel defined by its portID and channelID
      */
-    function lookupModuleByChannel(
-        string memory portId,
-        string memory channelId
-    ) internal view virtual returns (IIBCModule) {
-        address module = lookupModule(channelCapabilityPath(portId, channelId));
+    // REVIEW: Remove in favor of lookupModuleByPort?
+    function lookupModuleByChannel(ChannelId channelId)
+        internal
+        view
+        virtual
+        returns (IIBCModule)
+    {
+        address module = lookupModule(channelId);
         if (module == address(0)) {
             revert ModuleManagerLib.ErrModuleNotFound();
         }
         return IIBCModule(module);
     }
 
-    /**
-     * @dev channelCapabilityPath returns the path under which module address associated with a port and channel should be stored.
-     */
-    function channelCapabilityPath(
-        string memory portId,
-        string memory channelId
-    ) public pure returns (string memory) {
-        return string.concat(portId, "/", channelId);
-    }
+    // /**
+    //  * @dev channelCapabilityPath returns the path under which module address associated with a port and channel should be stored.
+    //  */
+    // function channelCapabilityPath(
+    //     string memory portId,
+    //     ChannelId channelId
+    // ) public pure returns (string memory) {
+    //     return string.concat(portId, "/", channelId);
+    // }
 
     /**
      * @dev claimCapability allows the IBC app module to claim a capability that core IBC passes to it
      */
-    function claimCapability(string memory name, address addr) internal {
-        if (capabilities[name] != address(0)) {
+    function claimCapability(ChannelId channelId, address addr) internal {
+        if (capabilities[channelId] != address(0)) {
             revert ModuleManagerLib.ErrCapabilityAlreadyClaimed();
         }
-        capabilities[name] = addr;
+        capabilities[channelId] = addr;
     }
 
     /**
      * @dev authenticateCapability attempts to authenticate a given name from a caller.
      * It allows for a caller to check that a capability does in fact correspond to a particular name.
      */
-    function authenticateCapability(string memory name)
+    function authenticateCapability(ChannelId channelId)
         internal
         view
         returns (bool)
     {
-        return _msgSender() == capabilities[name];
+        return _msgSender() == capabilities[channelId];
     }
 
     /**
      * @dev lookupModule will return the IBCModule address bound to a given name.
      */
-    function lookupModule(string memory name) internal view returns (address) {
-        return capabilities[name];
+    function lookupModule(ChannelId channelId)
+        internal
+        view
+        returns (address)
+    {
+        return capabilities[channelId];
     }
 }
