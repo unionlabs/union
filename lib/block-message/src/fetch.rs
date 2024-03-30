@@ -104,16 +104,16 @@ pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {
     fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockMessageTypes>;
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
     pub to_height: C::Height,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchBlock<C: ChainExt> {
     pub height: C::Height,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct ChainSpecificFetch<C: ChainExt>(pub C::Fetch);

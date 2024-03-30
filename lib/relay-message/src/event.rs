@@ -339,7 +339,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
     }
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub height: HeightOf<Hc>,

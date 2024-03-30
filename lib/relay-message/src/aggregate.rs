@@ -259,53 +259,49 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Aggregate<Hc, Tr> {
     }
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateConnectionOpenTry<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateConnectionOpenAck<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenTry<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateConnectionOpenConfirm<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenAck<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateChannelOpenTry<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateChannelOpenTry<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenInit,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateChannelOpenAck<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateChannelOpenAck<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenTry,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateChannelOpenConfirm<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateChannelOpenConfirm<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenAck,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateRecvPacket<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateRecvPacket<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: SendPacket,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: RecvPacket,
@@ -315,15 +311,13 @@ pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub at: HeightOf<Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateChannelHandshakeMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateChannelHandshakeMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub event_height: HeightOf<Hc>,
     pub channel_handshake_event: ChannelHandshakeEvent,
@@ -344,9 +338,8 @@ pub enum ChannelHandshakeEvent {
     Ack(ChannelOpenAck),
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregatePacketMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregatePacketMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
     pub event_height: HeightOf<Hc>,
@@ -368,38 +361,36 @@ pub enum PacketEvent {
     Recv(RecvPacket),
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateFetchCounterpartyStateProof<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_client_id: ClientIdOf<Tr>,
     pub fetch: FetchProof<Tr, Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateUpdateClient<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateUpdateClient<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub client_id: ClientIdOf<Hc>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateUpdateClientFromHeight<Hc: ChainExt, Tr: ChainExt> {
     pub from_height: HeightOf<Tr>,
     pub client_id: ClientIdOf<Hc>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateWaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub wait_for: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct AggregateCreateClient<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct AggregateCreateClient<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub config: <Hc as ChainExt>::Config,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 /// Messages that will be re-queued after an update.

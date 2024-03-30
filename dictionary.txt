@@ -184,6 +184,7 @@ authzkeeper
 authzmodule
 autocli
 autocliv
+autotests
 awkroot
 axelar
 bankkeeper
@@ -824,6 +825,7 @@ treefmt
 treeshake
 trustlessly
 trustlessness
+trybuild
 tryopen
 tsconfigs
 tsdb

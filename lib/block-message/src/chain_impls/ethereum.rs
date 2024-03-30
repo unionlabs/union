@@ -22,7 +22,6 @@ use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::StreamExt;
-use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
@@ -603,19 +602,19 @@ pub enum EthereumFetch<C: ChainSpec> {
     FetchConnection(FetchConnection<Ethereum<C>>),
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchEvents<C: ChainSpec> {
     pub from_height: HeightOf<Ethereum<C>>,
     pub to_height: HeightOf<Ethereum<C>>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchGetLogs {
     pub from_slot: u64,
     pub to_slot: u64,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 /// NOTE: This isn't just fetching one block because sometimes beacon slots are missed. We need to be able to fetch a range of slots to account for this.
 /// The range is `[from_slot..to_slot)`, so to fetch a single block `N`, the range would be `N..N+1`.
 pub struct FetchBeaconBlockRange {
@@ -623,13 +622,13 @@ pub struct FetchBeaconBlockRange {
     pub to_slot: u64,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchChannel<Hc: EthereumChainExt> {
     pub height: Hc::Height,
     pub path: ChannelEndPath,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchConnection<Hc: EthereumChainExt> {
     pub height: Hc::Height,
     pub path: ConnectionPath,
@@ -1046,9 +1045,8 @@ const _: () = {
     }
 };
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct ChannelData<Hc: EthereumChainExt> {
+#[msg_struct]
+pub struct ChannelData<#[cover] Hc: EthereumChainExt> {
     pub channel: Channel,
 }
 

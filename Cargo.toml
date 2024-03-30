@@ -34,6 +34,7 @@ members = [
   "tools/tidy",
   "tools/keygen",
   "lib/queue-msg",
+  "lib/queue-msg-macro",
   "lib/macros",
   "lib/poseidon-rs",
   "lib/zktrie-rs",
@@ -70,6 +71,7 @@ pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }
 queue-msg                 = { path = "lib/queue-msg", default-features = false }
+queue-msg-macro           = { path = "lib/queue-msg-macro", default-features = false }
 relay-message             = { path = "lib/relay-message", default-features = false }
 scroll-api                = { path = "lib/scroll-api", default-features = false }
 scroll-rpc                = { path = "lib/scroll-rpc", default-features = false }

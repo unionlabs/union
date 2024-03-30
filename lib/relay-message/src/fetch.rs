@@ -95,45 +95,42 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
     }
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct FetchSelfClientState<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct FetchSelfClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct FetchSelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct FetchSelfConsensusState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
 }
-#[apply(msg_struct)]
+
+#[msg_struct]
 pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct FetchLatestClientState<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct FetchLatestClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub path: ClientStatePath<Hc::ClientId>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc, Tr)]
-pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct FetchPacketAcknowledgement<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub tx_hash: H256,
     pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_chain_id: ChainIdOf<Tr>,
     // id of the counterparty client that will be updated with the fetched headers
@@ -142,11 +139,10 @@ pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub update_to: HeightOf<Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc, Tr)]
-pub struct FetchLatestHeight<Hc: ChainExt, Tr: ChainExt> {}
+#[msg_struct]
+pub struct FetchLatestHeight<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {}
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
 impl<Hc, Tr> Fetch<Hc, Tr>
