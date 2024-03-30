@@ -146,23 +146,10 @@
 
             specs=$(find $out/openapi -path -prune -o -name '*.yaml' -print0 | xargs -0 -n1 | sort | uniq)
 
-            touch openapi_combined.yaml
-            echo "# Generated with protoc-gen-openapi
-            # https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
-
-            openapi: 3.0.3
-            info:
-                title: ""
-                version: 0.0.1
-            paths: {}
-            components:
-                schemas: {}
-            " > openapi_combined.yaml
-
-            yq 'reduce inputs.paths as $s (.; .paths += $s)' openapi_combined.yaml $specs > openapi_combined.yaml
+            yq 'reduce inputs.paths as $s (.; .paths += $s)' ./docs/openapi-base.yaml $specs > openapi_combined.yaml
             yq -s '.[0].paths * .[1].paths | { paths: . }' openapi_combined.yaml ./docs/openapi-overwrites.json > paths.yaml
-            yq 'reduce inputs.paths as $s (.; .paths += $s)' openapi_combined.yaml paths.yaml > openapi_combined_overwitten.yaml
-            yq 'reduce inputs.components.schemas as $s (.; .components.schemas += $s)' openapi_combined_overwitten.yaml $specs > $out/openapi_combined.yaml
+            yq 'reduce inputs.paths as $s (.; .paths += $s)' openapi_combined.yaml paths.yaml > openapi_combined_overwritten.yaml
+            yq 'reduce inputs.components.schemas as $s (.; .components.schemas += $s)' openapi_combined_overwritten.yaml $specs > $out/openapi_combined.yaml
 
             echo "Patching generated go files to ignore staticcheck warnings"
             find $out -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;

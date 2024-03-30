@@ -67,7 +67,7 @@
     },
     "/cosmos/staking/v1beta1/params": {
       "get": {
-        "operationId": "StakingParams",
+        "operationId": "StakingParams"
       }
     },
     "/cosmos/staking/v1beta1/delegators/{delegatorAddr}/validators": {
