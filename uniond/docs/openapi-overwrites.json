@@ -1,0 +1,124 @@
+{
+  "paths": {
+    "/cosmos/auth/v1beta1/params": {
+      "get": {
+        "operationId": "AuthParams"
+      }
+    },
+    "/cosmos/bank/v1beta1/params": {
+      "get": {
+        "operationId": "BankParams"
+      }
+    },
+    "/cosmos/distribution/v1beta1/params": {
+      "get": {
+        "operationId": "DistributionParams"
+      }
+    },
+    "/cosmos/gov/v1/proposals/{proposalId}": {
+      "get": {
+        "operationId": "GovV1Proposal"
+      }
+    },
+    "/cosmos/gov/v1/proposals": {
+      "get": {
+        "operationId": "GovV1Proposals"
+      }
+    },
+    "/cosmos/gov/v1/proposals/{proposalId}/votes/{voter}": {
+      "get": {
+        "operationId": "GovV1Vote"
+      }
+    },
+    "/cosmos/gov/v1/proposals/{proposalId}/votes": {
+      "get": {
+        "operationId": "GovV1Votes"
+      }
+    },
+    "/cosmos/gov/v1/proposals/{proposalId}/deposits/{depositor}": {
+      "get": {
+        "operationId": "GovV1Deposit"
+      }
+    },
+    "/cosmos/gov/v1/proposals/{proposalId}/deposits": {
+      "get": {
+        "operationId": "GovV1Deposits"
+      }
+    },
+    "/cosmos/gov/v1/proposals/{proposalId}/tally": {
+      "get": {
+        "operationId": "GovV1TallyResult"
+      }
+    },
+    "/cosmos/mint/v1beta1/params": {
+      "get": {
+        "operationId": "MintParams"
+      }
+    },
+    "/cosmos/params/v1beta1/params": {
+      "get": {
+        "operationId": "Params"
+      }
+    },
+    "/cosmos/slashing/v1beta1/params": {
+      "get": {
+        "operationId": "SlashingParams"
+      }
+    },
+    "/cosmos/staking/v1beta1/params": {
+      "get": {
+        "operationId": "StakingParams",
+      }
+    },
+    "/cosmos/staking/v1beta1/delegators/{delegatorAddr}/validators": {
+      "get": {
+        "operationId": "StakingDelegatorValidators"
+      }
+    },
+    "/cosmos/nft/v1beta1/balance/{owner}/{classId}": {
+      "get": {
+        "operationId": "NftBalance"
+      }
+    },
+    "/cosmos/group/v1/proposal/{proposalId}": {
+      "get": {
+        "operationId": "GroupProposal"
+      }
+    },
+    "/cosmos/group/v1/proposals/{proposalId}/tally": {
+      "get": {
+        "operationId": "GroupTallyResult"
+      }
+    },
+    "/cosmos/circuit/v1/accounts": {
+      "get": {
+        "operationId": "CircuitAccounts"
+      }
+    },
+    "/cosmos/circuit/v1/accounts/{address}": {
+      "get": {
+        "operationId": "CircuitAccount"
+      }
+    },
+    "/cosmos/consensus/v1/params": {
+      "get": {
+        "operationId": "ConsensusParams"
+      }
+    },
+    "/cosmos/gov/v1/params/{paramsType}": {
+      "get": {
+        "operationId": "GovV1Params"
+      }
+    },
+    "/cosmos/gov/v1beta1/params/{paramsType}": {
+      "get": {
+        "operationId": "GovV1Beta1Params"
+      }
+    },
+    "/tokenfactory.v1beta1/params": {
+      "get": {
+        "operationId": "TokenfactoryParams"
+      }
+    }
+  }
+}

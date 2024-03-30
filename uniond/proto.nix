@@ -160,7 +160,9 @@
             " > openapi_combined.yaml
 
             yq 'reduce inputs.paths as $s (.; .paths += $s)' openapi_combined.yaml $specs > openapi_combined.yaml
-            yq 'reduce inputs.components.schemas as $s (.; .components.schemas += $s)' openapi_combined.yaml $specs > $out/openapi_combined.yaml
+            yq -s '.[0].paths * .[1].paths | { paths: . }' openapi_combined.yaml ./docs/openapi-overwrites.json > paths.yaml
+            yq 'reduce inputs.paths as $s (.; .paths += $s)' openapi_combined.yaml paths.yaml > openapi_combined_overwitten.yaml
+            yq 'reduce inputs.components.schemas as $s (.; .components.schemas += $s)' openapi_combined_overwitten.yaml $specs > $out/openapi_combined.yaml
 
             echo "Patching generated go files to ignore staticcheck warnings"
             find $out -name "*.go" -exec sed -i "1s/^/\/\/lint:file-ignore SA1019 This code is generated\n/" {} +;
