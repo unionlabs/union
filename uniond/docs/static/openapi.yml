@@ -409,7 +409,7 @@
           "Query"
         ],
         "description": "Params queries all parameters.",
-        "operationId": "Query_Params",
+        "operationId": "AuthParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -1177,7 +1177,7 @@
           "Query"
         ],
         "description": "Params queries the parameters of x/bank module.",
-        "operationId": "Query_Params",
+        "operationId": "BankParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -1968,7 +1968,7 @@
           "Query"
         ],
         "description": "Account returns account permissions.",
-        "operationId": "Query_Accounts",
+        "operationId": "CircuitAccounts",
         "parameters": [
           {
             "name": "pagination.key",
@@ -2044,7 +2044,7 @@
           "Query"
         ],
         "description": "Account returns account permissions.",
-        "operationId": "Query_Account",
+        "operationId": "CircuitAccount",
         "parameters": [
           {
             "name": "address",
@@ -2116,7 +2116,7 @@
           "Query"
         ],
         "description": "Params queries the parameters of x/consensus module.",
-        "operationId": "Query_Params",
+        "operationId": "ConsensusParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -2355,7 +2355,7 @@
           "Query"
         ],
         "description": "Params queries params of the distribution module.",
-        "operationId": "Query_Params",
+        "operationId": "DistributionParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -2992,7 +2992,7 @@
           "Query"
         ],
         "description": "Params queries all parameters of the gov module.",
-        "operationId": "Query_Params",
+        "operationId": "GovV1Params",
         "parameters": [
           {
             "name": "paramsType",
@@ -3034,7 +3034,7 @@
           "Query"
         ],
         "description": "Proposals queries all proposals based on given status.",
-        "operationId": "Query_Proposals",
+        "operationId": "GovV1Proposals",
         "parameters": [
           {
             "name": "proposalStatus",
@@ -3135,7 +3135,7 @@
           "Query"
         ],
         "description": "Proposal queries proposal details based on ProposalID.",
-        "operationId": "Query_Proposal",
+        "operationId": "GovV1Proposal",
         "parameters": [
           {
             "name": "proposalId",
@@ -3178,7 +3178,7 @@
           "Query"
         ],
         "description": "Deposits queries all deposits of a single proposal.",
-        "operationId": "Query_Deposits",
+        "operationId": "GovV1Deposits",
         "parameters": [
           {
             "name": "proposalId",
@@ -3264,7 +3264,7 @@
           "Query"
         ],
         "description": "Deposit queries single deposit information based on proposalID, depositAddr.",
-        "operationId": "Query_Deposit",
+        "operationId": "GovV1Deposit",
         "parameters": [
           {
             "name": "proposalId",
@@ -3316,7 +3316,7 @@
           "Query"
         ],
         "description": "TallyResult queries the tally of a proposal vote.",
-        "operationId": "Query_TallyResult",
+        "operationId": "GovV1TallyResult",
         "parameters": [
           {
             "name": "proposalId",
@@ -3359,7 +3359,7 @@
           "Query"
         ],
         "description": "Votes queries votes of a given proposal.",
-        "operationId": "Query_Votes",
+        "operationId": "GovV1Votes",
         "parameters": [
           {
             "name": "proposalId",
@@ -3445,7 +3445,7 @@
           "Query"
         ],
         "description": "Vote queries voted information based on proposalID, voterAddr.",
-        "operationId": "Query_Vote",
+        "operationId": "GovV1Vote",
         "parameters": [
           {
             "name": "proposalId",
@@ -3497,7 +3497,7 @@
           "Query"
         ],
         "description": "Params queries all parameters of the gov module.",
-        "operationId": "Query_Params",
+        "operationId": "GovV1Beta1Params",
         "parameters": [
           {
             "name": "paramsType",
@@ -4590,7 +4590,7 @@
           "Query"
         ],
         "description": "Proposal queries a proposal based on proposal id.",
-        "operationId": "Query_Proposal",
+        "operationId": "GroupProposal",
         "parameters": [
           {
             "name": "proposalId",
@@ -4633,7 +4633,7 @@
           "Query"
         ],
         "description": "TallyResult returns the tally result of a proposal. If the proposal is\n still in voting period, then this query computes the current tally state,\n which might not be final. On the other hand, if the proposal is final,\n then it simply returns the `final_tally_result` state stored in the\n proposal itself.",
-        "operationId": "Query_TallyResult",
+        "operationId": "GroupTallyResult",
         "parameters": [
           {
             "name": "proposalId",
@@ -5046,7 +5046,7 @@
           "Query"
         ],
         "description": "Params returns the total set of minting parameters.",
-        "operationId": "Query_Params",
+        "operationId": "MintParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -5077,7 +5077,7 @@
           "Query"
         ],
         "description": "Balance queries the number of NFTs of a given class owned by the owner, same as balanceOf in ERC721",
-        "operationId": "Query_Balance",
+        "operationId": "NftBalance",
         "parameters": [
           {
             "name": "owner",
@@ -5482,7 +5482,7 @@
           "Query"
         ],
         "description": "Params queries a specific parameter of a module, given its subspace and\n key.",
-        "operationId": "Query_Params",
+        "operationId": "Params",
         "parameters": [
           {
             "name": "subspace",
@@ -5562,7 +5562,7 @@
           "Query"
         ],
         "description": "Params queries the parameters of slashing module",
-        "operationId": "Query_Params",
+        "operationId": "SlashingParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -5982,7 +5982,7 @@
           "Query"
         ],
         "description": "DelegatorValidators queries all validators info for given delegator\n address.\n\n When called from another module, this query might consume a high amount of\n gas if the pagination field is incorrectly set.",
-        "operationId": "Query_DelegatorValidators",
+        "operationId": "StakingDelegatorValidators",
         "parameters": [
           {
             "name": "delegatorAddr",
@@ -6161,7 +6161,7 @@
           "Query"
         ],
         "description": "Parameters queries the staking parameters.",
-        "operationId": "Query_Params",
+        "operationId": "StakingParams",
         "responses": {
           "200": {
             "description": "OK",
@@ -7384,7 +7384,7 @@
           "Query"
         ],
         "description": "Params defines a gRPC query method that returns the tokenfactory module's\n parameters.",
-        "operationId": "Query_Params",
+        "operationId": "TokenfactoryParams",
         "responses": {
           "200": {
             "description": "OK",
