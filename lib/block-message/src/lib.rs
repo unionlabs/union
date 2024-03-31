@@ -37,7 +37,7 @@ impl QueueMsgTypes for BlockPollingTypes {
     type Event = Never;
     type Data = AnyChainIdentified<AnyData>;
     type Fetch = AnyChainIdentified<AnyFetch>;
-    type Msg = Never;
+    type Effect = Never;
     type Wait = AnyChainIdentified<AnyWait>;
     type Aggregate = AnyChainIdentified<AnyAggregate>;
 

@@ -12,7 +12,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, msg, msg_struct, QueueMsg,
+    data, effect, fetch, msg_struct, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -37,9 +37,9 @@ use crate::{
         TxSubmitError,
     },
     data::{AnyData, Data},
+    effect::{AnyEffect, Effect, MsgUpdateClientData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
     id, identified,
-    msg::{AnyMsg, Msg, MsgUpdateClientData},
     use_aggregate::IsAggregateData,
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes,
@@ -65,7 +65,7 @@ where
     Tr::StoredClientState<Scroll>: Encode<Tr::IbcStateEncoding>,
     Tr::StateProof: Encode<EthAbi>,
 {
-    async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
+    async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
         do_msg(&self.ibc_handlers, msg).await
     }
 }
@@ -544,7 +544,7 @@ where
     Identified<Scroll, Tr, ScrollFinalizedRootProof<Tr>>: IsAggregateData,
     Identified<Scroll, Tr, IbcContractRootProof<Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Scroll>)>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Scroll>)>,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Scroll, Tr>)>,
 {
     fn do_aggregate(
@@ -569,7 +569,7 @@ where
     Identified<Scroll, Tr, ScrollFinalizedRootProof<Tr>>: IsAggregateData,
     Identified<Scroll, Tr, IbcContractRootProof<Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Scroll>)>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Scroll>)>,
 {
     type AggregatedData = HList![
         Identified<Scroll, Tr, RollupContractRootProof<Tr>>,
@@ -631,7 +631,7 @@ where
         assert_eq!(scroll_finalized_root_proof_chain_id, chain_id);
         assert_eq!(ibc_contract_root_proof_chain_id, chain_id);
 
-        msg(id::<Tr, Scroll, _>(
+        effect(id::<Tr, Scroll, _>(
             req.counterparty_chain_id,
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id,

@@ -8,7 +8,7 @@ use chain_utils::{
     cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm, Chains,
 };
 use queue_msg::{
-    event, HandleAggregate, HandleData, HandleEvent, HandleFetch, HandleMsg, HandleWait,
+    event, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch, HandleWait,
     QueueError, QueueMsg, QueueMsgTypes,
 };
 use relay_message::RelayerMsgTypes;
@@ -31,7 +31,7 @@ impl QueueMsgTypes for VoyagerMessageTypes {
     type Event = VoyagerEvent;
     type Data = VoyagerData;
     type Fetch = VoyagerFetch;
-    type Msg = VoyagerMsg;
+    type Effect = VoyagerMsg;
     type Wait = VoyagerWait;
     type Aggregate = VoyagerAggregate;
 
@@ -48,7 +48,7 @@ impl FromQueueMsg<RelayerMsgTypes> for VoyagerMessageTypes {
             QueueMsg::Event(event) => QueueMsg::Event(VoyagerEvent::Relay(event)),
             QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Relay(data)),
             QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Relay(fetch)),
-            QueueMsg::Msg(msg) => QueueMsg::Msg(VoyagerMsg::Relay(msg)),
+            QueueMsg::Effect(msg) => QueueMsg::Effect(VoyagerMsg::Relay(msg)),
             QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Relay(wait)),
             QueueMsg::Defer(defer) => QueueMsg::Defer(defer),
             QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
@@ -132,11 +132,11 @@ impl FromQueueMsg<BlockPollingTypes> for VoyagerMessageTypes {
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerMsg {
-    Block(<BlockPollingTypes as QueueMsgTypes>::Msg),
-    Relay(<RelayerMsgTypes as QueueMsgTypes>::Msg),
+    Block(<BlockPollingTypes as QueueMsgTypes>::Effect),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Effect),
 }
 
-impl HandleMsg<VoyagerMessageTypes> for VoyagerMsg {
+impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
     async fn handle(
         self,
         store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
@@ -683,7 +683,7 @@ mod tests {
     };
     use hex_literal::hex;
     use queue_msg::{
-        aggregate, defer_relative, event, fetch, msg, repeat, seq, QueueMsg, QueueMsgTypes,
+        aggregate, defer_relative, effect, event, fetch, repeat, seq, QueueMsg, QueueMsgTypes,
     };
     use relay_message::{
         aggregate::AggregateCreateClient,
@@ -691,9 +691,9 @@ mod tests {
             cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
             ethereum::EthereumConfig,
         },
+        effect::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
         event::IbcEvent,
         fetch::{FetchSelfClientState, FetchSelfConsensusState},
-        msg::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
         RelayerMsgTypes, WasmConfig,
     };
     use unionlabs::{
@@ -730,24 +730,26 @@ mod tests {
         println!("---------------------------------------");
         println!("Union - Eth (Sending to Union) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-            union_chain_id.clone(),
-            MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("08-wasm-0"),
-                counterparty: connection::counterparty::Counterparty {
-                    client_id: parse!("cometbls-0"),
-                    connection_id: parse!(""),
-                    prefix: MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
+        print_json::<RelayerMsgTypes>(effect(
+            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                union_chain_id.clone(),
+                MsgConnectionOpenInitData(MsgConnectionOpenInit {
+                    client_id: parse!("08-wasm-0"),
+                    counterparty: connection::counterparty::Counterparty {
+                        client_id: parse!("cometbls-0"),
+                        connection_id: parse!(""),
+                        prefix: MerklePrefix {
+                            key_prefix: b"ibc".to_vec(),
+                        },
                     },
-                },
-                version: Version {
-                    identifier: "1".into(),
-                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                },
-                delay_period: DELAY_PERIOD,
-            }),
-        )));
+                    version: Version {
+                        identifier: "1".into(),
+                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                    },
+                    delay_period: DELAY_PERIOD,
+                }),
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Fetch Client State: ");
@@ -768,70 +770,76 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-            union_chain_id.clone(),
-            MsgChannelOpenInitData {
-                msg: MsgChannelOpenInit {
-                    port_id: parse!("WASM_PORT_ID"),
-                    channel: Channel {
-                        state: channel::state::State::Init,
-                        ordering: channel::order::Order::Unordered,
-                        counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
+        print_json::<RelayerMsgTypes>(effect(
+            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                union_chain_id.clone(),
+                MsgChannelOpenInitData {
+                    msg: MsgChannelOpenInit {
+                        port_id: parse!("WASM_PORT_ID"),
+                        channel: Channel {
+                            state: channel::state::State::Init,
+                            ordering: channel::order::Order::Unordered,
+                            counterparty: channel::counterparty::Counterparty {
+                                port_id: parse!("ucs01-relay"),
+                                channel_id: parse!(""),
+                            },
+                            connection_hops: vec![parse!("connection-8")],
+                            version: "ucs01-0".to_string(),
                         },
-                        connection_hops: vec![parse!("connection-8")],
-                        version: "ucs01-0".to_string(),
                     },
+                    __marker: PhantomData,
                 },
-                __marker: PhantomData,
-            },
-        )));
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Starting on Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-            eth_chain_id,
-            MsgChannelOpenInitData {
-                msg: MsgChannelOpenInit {
-                    port_id: parse!("ucs01-relay"),
-                    channel: Channel {
-                        state: channel::state::State::Init,
-                        ordering: channel::order::Order::Ordered,
-                        counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
+        print_json::<RelayerMsgTypes>(effect(
+            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                eth_chain_id,
+                MsgChannelOpenInitData {
+                    msg: MsgChannelOpenInit {
+                        port_id: parse!("ucs01-relay"),
+                        channel: Channel {
+                            state: channel::state::State::Init,
+                            ordering: channel::order::Order::Ordered,
+                            counterparty: channel::counterparty::Counterparty {
+                                port_id: parse!("ucs01-relay"),
+                                channel_id: parse!(""),
+                            },
+                            connection_hops: vec![parse!("connection-8")],
+                            version: "ucs001-pingpong".to_string(),
                         },
-                        connection_hops: vec![parse!("connection-8")],
-                        version: "ucs001-pingpong".to_string(),
                     },
+                    __marker: PhantomData,
                 },
-                __marker: PhantomData,
-            },
-        )));
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-            eth_chain_id,
-            MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("cometbls-0"),
-                counterparty: connection::counterparty::Counterparty {
-                    client_id: parse!("08-wasm-0"),
-                    connection_id: parse!(""),
-                    prefix: MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
+        print_json::<RelayerMsgTypes>(effect(
+            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                eth_chain_id,
+                MsgConnectionOpenInitData(MsgConnectionOpenInit {
+                    client_id: parse!("cometbls-0"),
+                    counterparty: connection::counterparty::Counterparty {
+                        client_id: parse!("08-wasm-0"),
+                        connection_id: parse!(""),
+                        prefix: MerklePrefix {
+                            key_prefix: b"ibc".to_vec(),
+                        },
                     },
-                },
-                version: Version {
-                    identifier: "1".into(),
-                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                },
-                delay_period: DELAY_PERIOD,
-            }),
-        )));
+                    version: Version {
+                        identifier: "1".into(),
+                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                    },
+                    delay_period: DELAY_PERIOD,
+                }),
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Try: ");

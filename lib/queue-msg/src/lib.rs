@@ -68,7 +68,7 @@ pub enum QueueMsg<T: QueueMsgTypes> {
     /// Fetch some data from the outside world. This can also be thought of as a "read" operation.
     Fetch(T::Fetch),
     /// Send a message to the outside world. This can also be thought of as a "write" operation.
-    Msg(T::Msg),
+    Effect(T::Effect),
     /// Wait for some external condition.
     Wait(T::Wait),
 
@@ -183,8 +183,8 @@ pub fn fetch<T: QueueMsgTypes>(t: impl Into<T::Fetch>) -> QueueMsg<T> {
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn msg<T: QueueMsgTypes>(t: impl Into<T::Msg>) -> QueueMsg<T> {
-    QueueMsg::Msg(t.into())
+pub fn effect<T: QueueMsgTypes>(t: impl Into<T::Effect>) -> QueueMsg<T> {
+    QueueMsg::Effect(t.into())
 }
 
 #[inline]
@@ -234,7 +234,7 @@ pub trait QueueMsgTypes: Sized + 'static {
     type Event: HandleEvent<Self> + QueueMsgTypesTraits;
     type Data: HandleData<Self> + QueueMsgTypesTraits;
     type Fetch: HandleFetch<Self> + QueueMsgTypesTraits;
-    type Msg: HandleMsg<Self> + QueueMsgTypesTraits;
+    type Effect: HandleEffect<Self> + QueueMsgTypesTraits;
     type Wait: HandleWait<Self> + QueueMsgTypesTraits;
     type Aggregate: HandleAggregate<Self> + QueueMsgTypesTraits;
 
@@ -261,7 +261,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                 Self::Data(data) => data.handle(store).map(Some),
 
                 Self::Fetch(fetch) => fetch.handle(store).await.map(Some),
-                Self::Msg(msg) => msg.handle(store).await.map(Some),
+                Self::Effect(msg) => msg.handle(store).await.map(Some),
                 Self::Wait(wait) => wait.handle(store).await.map(Some),
 
                 Self::Defer(Defer::Relative(seconds)) => Ok(Some(defer_absolute(now() + seconds))),
@@ -411,7 +411,7 @@ impl<T: QueueMsgTypes> std::fmt::Display for QueueMsg<T> {
             QueueMsg::Event(event) => write!(f, "Event({event})"),
             QueueMsg::Data(data) => write!(f, "Data({data})"),
             QueueMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
-            QueueMsg::Msg(msg) => write!(f, "Msg({msg})"),
+            QueueMsg::Effect(msg) => write!(f, "Msg({msg})"),
             QueueMsg::Wait(wait) => write!(f, "Wait({wait})"),
             QueueMsg::Defer(defer) => match defer {
                 Defer::Absolute(seconds) => write!(f, "DeferUntil(Absolute, {seconds})"),
@@ -518,7 +518,7 @@ fn flatten() {
         }
     }
 
-    impl HandleMsg<EmptyMsgTypes> for Unit {
+    impl HandleEffect<EmptyMsgTypes> for Unit {
         async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
             Ok(QueueMsg::Noop)
         }
@@ -558,7 +558,7 @@ fn flatten() {
         type Event = Unit;
         type Data = Unit;
         type Fetch = Unit;
-        type Msg = Unit;
+        type Effect = Unit;
         type Wait = Unit;
 
         type Aggregate = Unit;
@@ -652,7 +652,7 @@ pub trait HandleEvent<T: QueueMsgTypes> {
     fn handle(self, store: &T::Store) -> Result<QueueMsg<T>, QueueError>;
 }
 
-pub trait HandleMsg<T: QueueMsgTypes> {
+pub trait HandleEffect<T: QueueMsgTypes> {
     fn handle(
         self,
         store: &T::Store,
@@ -681,7 +681,7 @@ impl<T: QueueMsgTypes> HandleEvent<T> for Never {
     }
 }
 
-impl<T: QueueMsgTypes> HandleMsg<T> for Never {
+impl<T: QueueMsgTypes> HandleEffect<T> for Never {
     async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }

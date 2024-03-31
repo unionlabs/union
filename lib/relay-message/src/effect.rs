@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{msg_struct, HandleMsg, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{msg_struct, HandleEffect, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -26,8 +26,8 @@ use unionlabs::{
 use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes};
 
 #[apply(any_enum)]
-#[any = AnyMsg]
-pub enum Msg<Hc: ChainExt, Tr: ChainExt> {
+#[any = AnyEffect]
+pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
     ConnectionOpenInit(MsgConnectionOpenInitData<Hc, Tr>),
     ConnectionOpenTry(MsgConnectionOpenTryData<Hc, Tr>),
     ConnectionOpenAck(MsgConnectionOpenAckData<Hc, Tr>),
@@ -45,7 +45,7 @@ pub enum Msg<Hc: ChainExt, Tr: ChainExt> {
     UpdateClient(MsgUpdateClientData<Hc, Tr>),
 }
 
-impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {
+impl HandleEffect<RelayerMsgTypes> for AnyLightClientIdentified<AnyEffect> {
     async fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
@@ -65,7 +65,7 @@ impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {
     }
 }
 
-impl<Hc, Tr> Msg<Hc, Tr>
+impl<Hc, Tr> Effect<Hc, Tr>
 where
     Hc: ChainExt + DoMsg<Hc, Tr>,
     Tr: ChainExt,
@@ -75,21 +75,21 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> Display for Msg<Hc, Tr> {
+impl<Hc: ChainExt, Tr: ChainExt> Display for Effect<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Msg::ConnectionOpenInit(_) => write!(f, "ConnectionOpenInit"),
-            Msg::ConnectionOpenTry(_) => write!(f, "ConnectionOpenTry"),
-            Msg::ConnectionOpenAck(_) => write!(f, "ConnectionOpenAck"),
-            Msg::ConnectionOpenConfirm(_) => write!(f, "ConnectionOpenConfirm"),
-            Msg::ChannelOpenInit(_) => write!(f, "ChannelOpenInit"),
-            Msg::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
-            Msg::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
-            Msg::ChannelOpenConfirm(_) => write!(f, "ChannelOpenConfirm"),
-            Msg::RecvPacket(_) => write!(f, "RecvPacket"),
-            Msg::AckPacket(_) => write!(f, "AckPacket"),
-            Msg::CreateClient(_) => write!(f, "CreateClient"),
-            Msg::UpdateClient(_) => write!(f, "UpdateClient"),
+            Effect::ConnectionOpenInit(_) => write!(f, "ConnectionOpenInit"),
+            Effect::ConnectionOpenTry(_) => write!(f, "ConnectionOpenTry"),
+            Effect::ConnectionOpenAck(_) => write!(f, "ConnectionOpenAck"),
+            Effect::ConnectionOpenConfirm(_) => write!(f, "ConnectionOpenConfirm"),
+            Effect::ChannelOpenInit(_) => write!(f, "ChannelOpenInit"),
+            Effect::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
+            Effect::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
+            Effect::ChannelOpenConfirm(_) => write!(f, "ChannelOpenConfirm"),
+            Effect::RecvPacket(_) => write!(f, "RecvPacket"),
+            Effect::AckPacket(_) => write!(f, "AckPacket"),
+            Effect::CreateClient(_) => write!(f, "CreateClient"),
+            Effect::UpdateClient(_) => write!(f, "UpdateClient"),
         }
     }
 }
