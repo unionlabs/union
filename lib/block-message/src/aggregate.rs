@@ -12,7 +12,7 @@ use crate::{
     any_chain, any_enum,
     data::{AnyData, LatestHeight},
     fetch::{AnyFetch, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 #[apply(any_enum)]
@@ -35,11 +35,11 @@ impl<C: ChainExt> Display for Aggregate<C> {
     }
 }
 
-impl HandleAggregate<BlockPollingTypes> for AnyChainIdentified<AnyAggregate> {
+impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {
     fn handle(
         self,
-        data: VecDeque<<BlockPollingTypes as QueueMsgTypes>::Data>,
-    ) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        data: VecDeque<<BlockMessageTypes as QueueMsgTypes>::Data>,
+    ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let aggregate = self;
 
         any_chain! {
@@ -49,7 +49,7 @@ impl HandleAggregate<BlockPollingTypes> for AnyChainIdentified<AnyAggregate> {
 }
 
 impl<C: ChainExt> Identified<C, Aggregate<C>> {
-    pub fn handle(self, data: VecDeque<AnyChainIdentified<AnyData>>) -> QueueMsg<BlockPollingTypes>
+    pub fn handle(self, data: VecDeque<AnyChainIdentified<AnyData>>) -> QueueMsg<BlockMessageTypes>
     where
         Identified<C, C::Aggregate>: DoAggregate,
 
@@ -79,7 +79,7 @@ pub struct AggregateFetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
 }
 
-impl<C: ChainExt> UseAggregate<BlockPollingTypes> for Identified<C, AggregateFetchBlockRange<C>>
+impl<C: ChainExt> UseAggregate<BlockMessageTypes> for Identified<C, AggregateFetchBlockRange<C>>
 where
     Identified<C, LatestHeight<C>>: IsAggregateData,
 
@@ -96,7 +96,7 @@ where
             chain_id: latest_height_chain_id,
             t: LatestHeight(to_height),
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         assert!(to_height.revision_height() > from_height.revision_number());
         assert_eq!(this_chain_id, latest_height_chain_id);
 

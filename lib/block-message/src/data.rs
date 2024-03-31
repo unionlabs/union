@@ -4,7 +4,7 @@ use macros::apply;
 use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
-use crate::{any_enum, AnyChainIdentified, BlockPollingTypes, ChainExt};
+use crate::{any_enum, AnyChainIdentified, BlockMessageTypes, ChainExt};
 
 #[apply(any_enum)]
 #[any = AnyData]
@@ -18,11 +18,11 @@ pub enum Data<C: ChainExt> {
 }
 
 // Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
-impl HandleData<BlockPollingTypes> for AnyChainIdentified<AnyData> {
+impl HandleData<BlockMessageTypes> for AnyChainIdentified<AnyData> {
     fn handle(
         self,
-        _store: &<BlockPollingTypes as QueueMsgTypes>::Store,
-    ) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        _store: &<BlockMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         Ok(data(self))
     }
 }

@@ -15,7 +15,7 @@ use crate::{
     data::{AnyData, Data, IbcProof, IbcState},
     id, identified,
     use_aggregate::IsAggregateData,
-    AnyLightClientIdentified, ChainExt, Identified, RelayerMsgTypes,
+    AnyLightClientIdentified, ChainExt, Identified, RelayMessageTypes,
 };
 
 pub async fn fetch_abci_query<Hc, Tr>(
@@ -23,7 +23,7 @@ pub async fn fetch_abci_query<Hc, Tr>(
     path: Path<Hc::ClientId, Tr::Height>,
     height: HeightOf<Hc>,
     ty: AbciQueryType,
-) -> QueueMsg<RelayerMsgTypes>
+) -> QueueMsg<RelayMessageTypes>
 where
     Hc: CosmosSdkChain + ChainExt,
     <Hc as Chain>::StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof>,
@@ -203,7 +203,7 @@ pub mod fetch {
             },
         },
         data::{AnyData, Data},
-        id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayerMsgTypes,
+        id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayMessageTypes,
     };
 
     #[apply(msg_struct)]
@@ -252,7 +252,7 @@ pub mod fetch {
     pub async fn fetch_trusted_commit<Hc, Tr>(
         hc: &Hc,
         height: Hc::Height,
-    ) -> QueueMsg<RelayerMsgTypes>
+    ) -> QueueMsg<RelayMessageTypes>
     where
         Hc: CosmosSdkChain + ChainExt,
         <Hc as ChainExt>::Data<Tr>: From<TrustedCommit<Hc, Tr>>,
@@ -283,7 +283,7 @@ pub mod fetch {
     pub async fn fetch_untrusted_commit<Hc, Tr>(
         hc: &Hc,
         height: Hc::Height,
-    ) -> QueueMsg<RelayerMsgTypes>
+    ) -> QueueMsg<RelayMessageTypes>
     where
         Hc: CosmosSdkChain + ChainExt,
         <Hc as ChainExt>::Data<Tr>: From<UntrustedCommit<Hc, Tr>>,
@@ -314,7 +314,7 @@ pub mod fetch {
     pub async fn fetch_trusted_validators<Hc, Tr>(
         hc: &Hc,
         height: Hc::Height,
-    ) -> QueueMsg<RelayerMsgTypes>
+    ) -> QueueMsg<RelayMessageTypes>
     where
         Hc: CosmosSdkChain + ChainExt,
         <Hc as ChainExt>::Data<Tr>: From<TrustedValidators<Hc, Tr>>,
@@ -347,7 +347,7 @@ pub mod fetch {
     pub async fn fetch_untrusted_validators<Hc, Tr>(
         hc: &Hc,
         height: Hc::Height,
-    ) -> QueueMsg<RelayerMsgTypes>
+    ) -> QueueMsg<RelayMessageTypes>
     where
         Hc: CosmosSdkChain + ChainExt,
         <Hc as ChainExt>::Data<Tr>: From<UntrustedValidators<Hc, Tr>>,

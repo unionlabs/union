@@ -72,7 +72,7 @@ pub trait ChainExt: Chain {
     fn do_fetch<Tr: ChainExt>(
         &self,
         msg: Self::Fetch<Tr>,
-    ) -> impl Future<Output = QueueMsg<RelayerMsgTypes>> + '_
+    ) -> impl Future<Output = QueueMsg<RelayMessageTypes>> + '_
     where
         Self::Fetch<Tr>: DoFetch<Self>,
     {
@@ -80,9 +80,9 @@ pub trait ChainExt: Chain {
     }
 }
 
-pub struct RelayerMsgTypes;
+pub struct RelayMessageTypes;
 
-impl QueueMsgTypes for RelayerMsgTypes {
+impl QueueMsgTypes for RelayMessageTypes {
     type Event = AnyLightClientIdentified<AnyEvent>;
     type Data = AnyLightClientIdentified<AnyData>;
     type Fetch = AnyLightClientIdentified<AnyFetch>;
@@ -93,10 +93,10 @@ impl QueueMsgTypes for RelayerMsgTypes {
     type Store = Chains;
 }
 
-impl TryFrom<QueueMsg<RelayerMsgTypes>> for AnyLightClientIdentified<AnyData> {
-    type Error = QueueMsg<RelayerMsgTypes>;
+impl TryFrom<QueueMsg<RelayMessageTypes>> for AnyLightClientIdentified<AnyData> {
+    type Error = QueueMsg<RelayMessageTypes>;
 
-    fn try_from(value: QueueMsg<RelayerMsgTypes>) -> Result<Self, Self::Error> {
+    fn try_from(value: QueueMsg<RelayMessageTypes>) -> Result<Self, Self::Error> {
         match value {
             QueueMsg::Data(data) => Ok(data),
             _ => Err(value),
@@ -481,20 +481,20 @@ pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
     fn do_aggregate(
         _: Self,
         _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes>;
+    ) -> QueueMsg<RelayMessageTypes>;
 }
 
 impl<Hc: Chain, Tr> DoAggregate for Identified<Hc, Tr, Never> {
     fn do_aggregate(
         s: Self,
         _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match s.t {}
     }
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes>;
+    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
 
     #[deprecated = "will be removed in favor of an aggregation with state"]
     fn query_client_state(
@@ -505,14 +505,14 @@ pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
 }
 
 pub trait DoFetchProof<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes>;
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
 }
 
 pub trait DoFetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn fetch_update_headers(
         hc: &Hc,
         update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes>;
+    ) -> QueueMsg<RelayMessageTypes>;
 }
 
 pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
@@ -555,7 +555,7 @@ where
     fn do_aggregate(
         i: Self,
         v: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
             Identified {
                 chain_id: i.chain_id,
@@ -762,7 +762,7 @@ where
         hc: &Self,
         at: HeightOf<Self>,
         path: PathOf<Wasm<Hc>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         Hc::proof(hc, at, path)
     }
 }
@@ -777,7 +777,7 @@ where
         hc: &Self,
         at: HeightOf<Self>,
         path: PathOf<Wasm<Hc>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         Hc::state(hc, at, path)
     }
 
@@ -798,7 +798,7 @@ where
     fn fetch_update_headers(
         hc: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         Hc::fetch_update_headers(
             hc,
             FetchUpdateHeaders {

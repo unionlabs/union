@@ -17,7 +17,7 @@ use chain_utils::Chains;
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
 use queue_msg::{Engine, InMemoryQueue, Queue, QueueMsg, QueueMsgTypes};
-use relay_message::RelayerMsgTypes;
+use relay_message::RelayMessageTypes;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -201,7 +201,7 @@ impl Voyager {
         })
     }
 
-    pub fn worker(&self) -> Engine<RelayerMsgTypes> {
+    pub fn worker(&self) -> Engine<RelayMessageTypes> {
         Engine::new(self.chains.clone())
     }
 

@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use block_message::{data::Data, AnyChainIdentified, BlockPollingTypes, Identified};
+use block_message::{data::Data, AnyChainIdentified, BlockMessageTypes, Identified};
 use chain_utils::{cosmos_sdk::CosmosSdkChainExt, Chains};
 use contracts::{
     erc20,
@@ -352,7 +352,7 @@ impl Context {
             ..Default::default()
         }));
 
-        let mut queue = InMemoryQueue::<BlockPollingTypes>::new(()).await.unwrap();
+        let mut queue = InMemoryQueue::<BlockMessageTypes>::new(()).await.unwrap();
 
         reactor
             .run(&mut queue)

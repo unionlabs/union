@@ -10,7 +10,7 @@ use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 use crate::{
     any_chain, any_enum,
     data::{AnyData, Data, LatestHeight},
-    AnyChainIdentified, BlockPollingTypes, ChainExt, Identified,
+    AnyChainIdentified, BlockMessageTypes, ChainExt, Identified,
 };
 
 #[apply(any_enum)]
@@ -24,7 +24,7 @@ where
     AnyChainIdentified<AnyWait>: From<Identified<C, Wait<C>>>,
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
 {
-    async fn handle(self, c: C) -> QueueMsg<BlockPollingTypes> {
+    async fn handle(self, c: C) -> QueueMsg<BlockMessageTypes> {
         match self {
             Wait::Height(WaitForHeight { height }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
@@ -65,8 +65,8 @@ impl<C: ChainExt> Display for Wait<C> {
     }
 }
 
-impl HandleWait<BlockPollingTypes> for AnyChainIdentified<AnyWait> {
-    async fn handle(self, store: &Chains) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+impl HandleWait<BlockMessageTypes> for AnyChainIdentified<AnyWait> {
+    async fn handle(self, store: &Chains) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let wait = self;
 
         any_chain! {

@@ -22,7 +22,7 @@ use crate::{
         AnyData, Data, LatestHeight, PacketAcknowledgement, SelfClientState, SelfConsensusState,
     },
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, RelayerMsgTypes,
+    DoFetchUpdateHeaders, RelayMessageTypes,
 };
 
 #[apply(any_enum)]
@@ -48,11 +48,11 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
     LightClientSpecific(LightClientSpecificFetch<Hc, Tr>),
 }
 
-impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
+impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
     async fn handle(
         self,
-        store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let fetch = self;
 
         any_lc! {
@@ -67,7 +67,7 @@ impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
 }
 
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayerMsgTypes>>;
+    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayMessageTypes>>;
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
@@ -157,7 +157,7 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
-    pub async fn handle(self, c: Hc) -> QueueMsg<RelayerMsgTypes> {
+    pub async fn handle(self, c: Hc) -> QueueMsg<RelayMessageTypes> {
         match self {
             Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
             Fetch::State(msg) => Hc::state(&c, msg.at, msg.path),

@@ -53,7 +53,7 @@ use crate::{
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes, Wasm, WasmConfig,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes, Wasm, WasmConfig,
 };
 
 impl ChainExt for Cosmos {
@@ -249,7 +249,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -298,7 +298,7 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -332,7 +332,7 @@ where
     fn fetch_update_headers(
         hc: &Hc,
         update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -467,7 +467,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessageTypes> {
         match msg {
             Self::FetchTrustedCommit(FetchTrustedCommit {
                 height,
@@ -528,7 +528,7 @@ where
     identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
     identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
-    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayerMsgTypes>,
+    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayMessageTypes>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -539,7 +539,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match data {
             CosmosAggregateMsg::AggregateHeader(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)
@@ -579,7 +579,7 @@ pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Cosmos as Chain>::Header>,
     Tr: ChainExt,
@@ -642,7 +642,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(

@@ -23,7 +23,7 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes};
+use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayMessageTypes};
 
 #[apply(any_enum)]
 #[any = AnyEffect]
@@ -45,11 +45,11 @@ pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
     UpdateClient(MsgUpdateClientData<Hc, Tr>),
 }
 
-impl HandleEffect<RelayerMsgTypes> for AnyLightClientIdentified<AnyEffect> {
+impl HandleEffect<RelayMessageTypes> for AnyLightClientIdentified<AnyEffect> {
     async fn handle(
         self,
-        store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let msg = self;
 
         any_lc! {

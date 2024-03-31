@@ -15,7 +15,7 @@ use unionlabs::{
 use crate::{
     any_enum, any_lc,
     fetch::{AnyFetch, Fetch, FetchState},
-    id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsgTypes,
+    id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayMessageTypes,
 };
 
 #[apply(any_enum)]
@@ -26,11 +26,11 @@ pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
     TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
 }
 
-impl HandleWait<RelayerMsgTypes> for AnyLightClientIdentified<AnyWait> {
+impl HandleWait<RelayMessageTypes> for AnyLightClientIdentified<AnyWait> {
     async fn handle(
         self,
-        store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let wait = self;
 
         any_lc! {
@@ -51,7 +51,7 @@ where
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: &Hc) -> QueueMsg<RelayerMsgTypes> {
+    pub async fn handle(self, c: &Hc) -> QueueMsg<RelayMessageTypes> {
         match self {
             Wait::Block(WaitForBlock { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();

@@ -12,7 +12,7 @@ use crate::{
     aggregate::{Aggregate, AggregateFetchBlockRange, AnyAggregate},
     any_chain, any_enum,
     wait::{AnyWait, Wait, WaitForHeight},
-    AnyChainIdentified, BlockPollingTypes, ChainExt, Identified,
+    AnyChainIdentified, BlockMessageTypes, ChainExt, Identified,
 };
 
 #[apply(any_enum)]
@@ -38,11 +38,11 @@ impl<C: ChainExt> Display for Fetch<C> {
     }
 }
 
-impl HandleFetch<BlockPollingTypes> for AnyChainIdentified<AnyFetch> {
+impl HandleFetch<BlockMessageTypes> for AnyChainIdentified<AnyFetch> {
     async fn handle(
         self,
-        store: &<BlockPollingTypes as QueueMsgTypes>::Store,
-    ) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        store: &<BlockMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let fetch = self;
 
         any_chain! {
@@ -65,7 +65,7 @@ where
     AnyChainIdentified<AnyWait>: From<Identified<C, Wait<C>>>,
     AnyChainIdentified<AnyAggregate>: From<Identified<C, Aggregate<C>>>,
 {
-    pub async fn handle(self, c: C) -> QueueMsg<BlockPollingTypes> {
+    pub async fn handle(self, c: C) -> QueueMsg<BlockMessageTypes> {
         match self {
             Fetch::FetchBlock(FetchBlock { height }) => aggregate(
                 [wait(Identified::<C, _>::new(
@@ -97,11 +97,11 @@ where
 }
 
 pub trait DoFetch<C: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &C, _: Self) -> impl Future<Output = QueueMsg<BlockPollingTypes>>;
+    fn do_fetch(c: &C, _: Self) -> impl Future<Output = QueueMsg<BlockMessageTypes>>;
 }
 
 pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {
-    fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockPollingTypes>;
+    fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockMessageTypes>;
 }
 
 #[apply(msg_struct)]

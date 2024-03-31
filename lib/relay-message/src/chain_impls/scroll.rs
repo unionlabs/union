@@ -42,7 +42,7 @@ use crate::{
     id, identified,
     use_aggregate::IsAggregateData,
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes,
 };
 
 impl ChainExt for Scroll {
@@ -74,7 +74,11 @@ impl<Tr: ChainExt> DoFetchProof<Self, Tr> for Scroll
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
 {
-    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn proof(
+        c: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Scroll, Tr>,
+    ) -> QueueMsg<RelayMessageTypes> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::<Self, Tr>::specific(GetProof { path, height: at }),
@@ -90,7 +94,11 @@ where
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn state(
+        hc: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Scroll, Tr>,
+    ) -> QueueMsg<RelayMessageTypes> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
@@ -121,7 +129,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         // - scroll rollup contract root proof
         // - scroll latest batch index proof against rollup contract
         // - scroll finalized root at batch index against rollup contract
@@ -178,7 +186,7 @@ where
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    async fn do_fetch(scroll: &Scroll, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+    async fn do_fetch(scroll: &Scroll, msg: Self) -> QueueMsg<RelayMessageTypes> {
         let msg = match msg {
             Self::FetchGetProof(get_proof) => fetch_get_proof(scroll, get_proof).await,
             Self::FetchIbcState(ibc_state) => fetch_ibc_state(scroll, ibc_state).await,
@@ -554,14 +562,14 @@ where
             __marker,
         }: Self,
         data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match t {
             ScrollAggregate::AggregateHeader(msg) => do_aggregate(id(chain_id, msg), data),
         }
     }
 }
 
-impl<Tr> UseAggregate<RelayerMsgTypes> for Identified<Scroll, Tr, AggregateHeader<Tr>>
+impl<Tr> UseAggregate<RelayMessageTypes> for Identified<Scroll, Tr, AggregateHeader<Tr>>
 where
     Tr: ChainExt,
     Identified<Scroll, Tr, RollupContractRootProof<Tr>>: IsAggregateData,
@@ -625,7 +633,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(rollup_contract_root_proof_chain_id, chain_id);
         assert_eq!(latest_batch_index_proof_chain_id, chain_id);
         assert_eq!(scroll_finalized_root_proof_chain_id, chain_id);

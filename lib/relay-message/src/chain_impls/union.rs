@@ -72,7 +72,7 @@ use crate::{
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes, Wasm, WasmConfig,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes, Wasm, WasmConfig,
 };
 
 impl ChainExt for Union {
@@ -272,7 +272,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -322,7 +322,7 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -357,7 +357,7 @@ where
     fn fetch_update_headers(
         hc: &Hc,
         update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -489,7 +489,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessageTypes> {
         match msg {
             Self::FetchUntrustedCommit(FetchUntrustedCommit {
                 height,
@@ -591,8 +591,8 @@ where
 
     Identified<Hc, Tr, ProveResponse<Tr>>: IsAggregateData,
 
-    identified!(AggregateProveRequest<Hc, Tr>): UseAggregate<RelayerMsgTypes>,
-    identified!(AggregateHeader<Hc, Tr>): UseAggregate<RelayerMsgTypes>,
+    identified!(AggregateProveRequest<Hc, Tr>): UseAggregate<RelayMessageTypes>,
+    identified!(AggregateHeader<Hc, Tr>): UseAggregate<RelayMessageTypes>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -603,7 +603,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match data {
             UnionAggregateMsg::AggregateProveRequest(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)
@@ -663,7 +663,7 @@ pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>
 where
     Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>,
     Tr: ChainExt,
@@ -716,7 +716,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(untrusted_commit_chain_id, untrusted_validators_chain_id);
         assert_eq!(chain_id, trusted_validators_chain_id);
         assert_eq!(chain_id, untrusted_validators_chain_id);
@@ -850,7 +850,7 @@ where
     }
 }
 
-impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Union as Chain>::Header>,
     Tr: ChainExt,
@@ -879,7 +879,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         // TODO: maybe introduce a new commit for union signed header as we don't need the signatures but the ZKP only
