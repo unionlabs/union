@@ -122,7 +122,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(sender), address(relay), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Sent(address(0), "", "", address(0), 0);
+        emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(sender);
         relay.send(sourcePort, sourceChannel, receiver, localTokens, 0, 0);
@@ -154,7 +154,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(0), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Sent(address(0), "", "", address(0), 0);
+        emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(receiver);
         relay.send(sourcePort, sourceChannel, sender, localTokens, 0, 0);
@@ -180,13 +180,15 @@ contract RelayTests is Test {
         tokens[0].amount = amount;
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.DenomCreated("", address(0));
+        emit RelayLib.DenomCreated(sequence, sourceChannel, "", address(0));
 
         vm.expectEmit(false, false, false, false);
         emit IERC20.Transfer(address(0), address(0), 0);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Received("", address(0), "", address(0), 0);
+        emit RelayLib.Received(
+            sequence, sourceChannel, "", address(0), "", address(0), 0
+        );
 
         vm.prank(address(ibcHandler));
         relay.onRecvPacket(
@@ -702,7 +704,9 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(sender), address(relay), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Sent(address(0), "", "", address(0), 0);
+        emit RelayLib.Sent(
+            sequence, sourceChannel, address(0), "", "", address(0), 0
+        );
 
         vm.prank(sender);
         relay.send(
@@ -720,7 +724,9 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Received("", address(0), "", address(0), 0);
+        emit RelayLib.Received(
+            sequence, sourceChannel, "", address(0), "", address(0), 0
+        );
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort, destinationChannel, denomAddress
@@ -837,7 +843,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(sender), address(relay), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Sent(address(0), "", "", address(0), 0);
+        emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(sender);
         relay.send(
@@ -915,7 +921,9 @@ contract RelayTests is Test {
             emit IERC20.Transfer(address(relay), address(0), amount);
 
             vm.expectEmit(false, false, false, false);
-            emit RelayLib.Sent(address(0), "", "", address(0), 0);
+            emit RelayLib.Sent(
+                sequence, sourceChannel, address(0), "", "", address(0), 0
+            );
 
             uint256 outstandingBefore = relay.getOutstanding(
                 destinationPort, destinationChannel, denomAddress
@@ -1016,7 +1024,9 @@ contract RelayTests is Test {
             emit IERC20.Transfer(address(receiver), address(relay), amount);
 
             vm.expectEmit(false, false, false, false);
-            emit RelayLib.Sent(address(0), "", "", address(0), 0);
+            emit RelayLib.Sent(
+                sequence, sourceChannel, address(0), "", "", address(0), 0
+            );
 
             vm.prank(receiver);
             relay.send(
@@ -1160,7 +1170,9 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(
+            0, sourceChannel, address(0), "", "", address(this), 0
+        );
 
         assertEq(
             relay.getOutstanding(
@@ -1246,7 +1258,9 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(receiver), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(
+            sequence, sourceChannel, address(0), "", "", address(this), 0
+        );
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort, destinationChannel, denomAddress
@@ -1298,7 +1312,9 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(
+            0, sourceChannel, address(0), "", "", address(this), 0
+        );
 
         assertEq(
             relay.getOutstanding(
@@ -1386,7 +1402,9 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(receiver), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(
+            sequence, sourceChannel, address(0), "", "", address(this), 0
+        );
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort, destinationChannel, denomAddress

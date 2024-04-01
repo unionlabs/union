@@ -6,11 +6,12 @@ import "../25-handler/IBCMsgs.sol";
 import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
+import "../../proto/ibc/core/client/v1/client.sol";
 
 library IBCClientLib {
     event ClientRegistered(string, address);
     event ClientCreated(string);
-    event ClientUpdated(string);
+    event ClientUpdated(string, IbcCoreClientV1Height.Data);
 
     error ErrClientTypeAlreadyExists();
     error ErrClientMustNotBeSelf();
@@ -114,9 +115,8 @@ contract IBCClient is IBCStore, IIBCClient {
                 updates[i].height.revision_number,
                 updates[i].height.revision_height
             )] = updates[i].consensusStateCommitment;
+            emit IBCClientLib.ClientUpdated(msg_.clientId, updates[i].height);
         }
-
-        emit IBCClientLib.ClientUpdated(msg_.clientId);
     }
 
     function generateClientIdentifier(string calldata clientType)

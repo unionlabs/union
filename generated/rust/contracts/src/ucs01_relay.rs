@@ -644,6 +644,16 @@ pub mod ucs01_relay {
                         name: ::std::borrow::ToOwned::to_owned("DenomCreated"),
                         inputs: ::std::vec![
                             ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("packetSequence"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("channelId"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
                                 name: ::std::borrow::ToOwned::to_owned("denom"),
                                 kind: ::ethers::core::abi::ethabi::ParamType::String,
                                 indexed: false,
@@ -662,6 +672,16 @@ pub mod ucs01_relay {
                     ::std::vec![::ethers::core::abi::ethabi::Event {
                         name: ::std::borrow::ToOwned::to_owned("Received"),
                         inputs: ::std::vec![
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("packetSequence"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("channelId"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                indexed: false,
+                            },
                             ::ethers::core::abi::ethabi::EventParam {
                                 name: ::std::borrow::ToOwned::to_owned("sender"),
                                 kind: ::ethers::core::abi::ethabi::ParamType::String,
@@ -697,6 +717,16 @@ pub mod ucs01_relay {
                         name: ::std::borrow::ToOwned::to_owned("Refunded"),
                         inputs: ::std::vec![
                             ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("packetSequence"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("channelId"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
                                 name: ::std::borrow::ToOwned::to_owned("sender"),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Address,
                                 indexed: false,
@@ -730,6 +760,16 @@ pub mod ucs01_relay {
                     ::std::vec![::ethers::core::abi::ethabi::Event {
                         name: ::std::borrow::ToOwned::to_owned("Sent"),
                         inputs: ::std::vec![
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("packetSequence"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::borrow::ToOwned::to_owned("channelId"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                indexed: false,
+                            },
                             ::ethers::core::abi::ethabi::EventParam {
                                 name: ::std::borrow::ToOwned::to_owned("sender"),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Address,
@@ -1702,8 +1742,13 @@ pub mod ucs01_relay {
         Eq,
         Hash,
     )]
-    #[ethevent(name = "DenomCreated", abi = "DenomCreated(string,address)")]
+    #[ethevent(
+        name = "DenomCreated",
+        abi = "DenomCreated(uint64,string,string,address)"
+    )]
     pub struct DenomCreatedFilter {
+        pub packet_sequence: u64,
+        pub channel_id: ::std::string::String,
         pub denom: ::std::string::String,
         pub token: ::ethers::core::types::Address,
     }
@@ -1719,9 +1764,11 @@ pub mod ucs01_relay {
     )]
     #[ethevent(
         name = "Received",
-        abi = "Received(string,address,string,address,uint256)"
+        abi = "Received(uint64,string,string,address,string,address,uint256)"
     )]
     pub struct ReceivedFilter {
+        pub packet_sequence: u64,
+        pub channel_id: ::std::string::String,
         pub sender: ::std::string::String,
         pub receiver: ::ethers::core::types::Address,
         pub denom: ::std::string::String,
@@ -1740,9 +1787,11 @@ pub mod ucs01_relay {
     )]
     #[ethevent(
         name = "Refunded",
-        abi = "Refunded(address,string,string,address,uint256)"
+        abi = "Refunded(uint64,string,address,string,string,address,uint256)"
     )]
     pub struct RefundedFilter {
+        pub packet_sequence: u64,
+        pub channel_id: ::std::string::String,
         pub sender: ::ethers::core::types::Address,
         pub receiver: ::std::string::String,
         pub denom: ::std::string::String,
@@ -1759,8 +1808,13 @@ pub mod ucs01_relay {
         Eq,
         Hash,
     )]
-    #[ethevent(name = "Sent", abi = "Sent(address,string,string,address,uint256)")]
+    #[ethevent(
+        name = "Sent",
+        abi = "Sent(uint64,string,address,string,string,address,uint256)"
+    )]
     pub struct SentFilter {
+        pub packet_sequence: u64,
+        pub channel_id: ::std::string::String,
         pub sender: ::ethers::core::types::Address,
         pub receiver: ::std::string::String,
         pub denom: ::std::string::String,
