@@ -176,11 +176,20 @@ type serverReflectionServer struct {
 // wire format ([]byte). The fileDescriptors will include fd and all the
 // transitive dependencies of fd with names not in sentFileDescriptors.
 func (s *serverReflectionServer) fileDescWithDependencies(fd protoreflect.FileDescriptor, sentFileDescriptors map[string]bool) ([][]byte, error) {
+	if fd.IsPlaceholder() {
+		// If the given root file is a placeholder, treat it
+		// as missing instead of serializing it.
+		return nil, protoregistry.NotFound
+	}
 	var r [][]byte
 	queue := []protoreflect.FileDescriptor{fd}
 	for len(queue) > 0 {
 		currentfd := queue[0]
 		queue = queue[1:]
+		if currentfd.IsPlaceholder() {
+			// Skip any missing files in the dependency graph.
+			continue
+		}
 		if sent := sentFileDescriptors[currentfd.Path()]; len(r) == 0 || !sent {
 			sentFileDescriptors[currentfd.Path()] = true
 			fdProto := protodesc.ToFileDescriptorProto(currentfd)

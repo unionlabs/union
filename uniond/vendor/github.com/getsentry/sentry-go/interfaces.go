@@ -11,15 +11,14 @@ import (
 	"time"
 )
 
-// Protocol Docs (kinda)
-// https://github.com/getsentry/rust-sentry-types/blob/master/src/protocol/v7.rs
+// eventType is the type of an error event.
+const eventType = "event"
 
 // transactionType is the type of a transaction event.
 const transactionType = "transaction"
 
-// eventType is the type of an error event.
-const eventType = "event"
-
+// profileType is the type of a profile event.
+// currently, profiles are always sent as part of a transaction event.
 const profileType = "profile"
 
 // checkInType is the type of a check in event.
@@ -242,7 +241,7 @@ type Exception struct {
 	Type       string      `json:"type,omitempty"`  // used as the main issue title
 	Value      string      `json:"value,omitempty"` // used as the main issue subtitle
 	Module     string      `json:"module,omitempty"`
-	ThreadID   string      `json:"thread_id,omitempty"`
+	ThreadID   uint64      `json:"thread_id,omitempty"`
 	Stacktrace *Stacktrace `json:"stacktrace,omitempty"`
 	Mechanism  *Mechanism  `json:"mechanism,omitempty"`
 }
@@ -318,6 +317,7 @@ type Event struct {
 	Request     *Request               `json:"request,omitempty"`
 	Exception   []Exception            `json:"exception,omitempty"`
 	DebugMeta   *DebugMeta             `json:"debug_meta,omitempty"`
+	Attachments []*Attachment          `json:"-"`
 
 	// The fields below are only relevant for transactions.
 
@@ -334,7 +334,6 @@ type Event struct {
 	// The fields below are not part of the final JSON payload.
 
 	sdkMetaData SDKMetaData
-	attachments []*Attachment
 }
 
 // SetException appends the unwrapped errors to the event's exception list.

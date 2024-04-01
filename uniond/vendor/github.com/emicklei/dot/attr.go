@@ -7,7 +7,9 @@ type HTML string
 // Literal renders the provided value as is, without adding enclosing
 // quotes, escaping newlines, quotations marks or any other characters.
 // For example:
-//     node.Attr("label", Literal(`"left-justified text\l"`))
+//
+//	node.Attr("label", Literal(`"left-justified text\l"`))
+//
 // allows you to left-justify the label (due to the \l at the end).
 // The caller is responsible for enclosing the value in quotes and for
 // proper escaping of special characters.

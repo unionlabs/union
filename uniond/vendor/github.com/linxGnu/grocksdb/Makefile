@@ -21,4 +21,4 @@ libs:
 
 .PHONY: test
 test:
-	go test -v -count=1 -tags testing,grocksdb_no_link
+	go test -race -v -count=1 -tags testing,grocksdb_no_link

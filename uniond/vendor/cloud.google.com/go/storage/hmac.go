@@ -20,14 +20,12 @@ import (
 	"fmt"
 	"time"
 
-	storagepb "cloud.google.com/go/storage/internal/apiv2/stubs"
+	"cloud.google.com/go/storage/internal/apiv2/storagepb"
 	"google.golang.org/api/iterator"
 	raw "google.golang.org/api/storage/v1"
 )
 
 // HMACState is the state of the HMAC key.
-//
-// This type is EXPERIMENTAL and subject to change or removal without notice.
 type HMACState string
 
 const (
@@ -50,8 +48,6 @@ const (
 //
 // HMAC keys are used to authenticate signed access to objects. To enable HMAC key
 // authentication, please visit https://cloud.google.com/storage/docs/migrating.
-//
-// This type is EXPERIMENTAL and subject to change or removal without notice.
 type HMACKey struct {
 	// The HMAC's secret key.
 	Secret string
@@ -85,8 +81,6 @@ type HMACKey struct {
 }
 
 // HMACKeyHandle helps provide access and management for HMAC keys.
-//
-// This type is EXPERIMENTAL and subject to change or removal without notice.
 type HMACKeyHandle struct {
 	projectID string
 	accessID  string
@@ -95,8 +89,6 @@ type HMACKeyHandle struct {
 }
 
 // HMACKeyHandle creates a handle that will be used for HMACKey operations.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (c *Client) HMACKeyHandle(projectID, accessID string) *HMACKeyHandle {
 	return &HMACKeyHandle{
 		projectID: projectID,
@@ -111,8 +103,6 @@ func (c *Client) HMACKeyHandle(projectID, accessID string) *HMACKeyHandle {
 //
 // Options such as UserProjectForHMACKeys can be used to set the
 // userProject to be billed against for operations.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (hkh *HMACKeyHandle) Get(ctx context.Context, opts ...HMACKeyOption) (*HMACKey, error) {
 	desc := new(hmacKeyDesc)
 	for _, opt := range opts {
@@ -128,8 +118,6 @@ func (hkh *HMACKeyHandle) Get(ctx context.Context, opts ...HMACKeyOption) (*HMAC
 // Delete invokes an RPC to delete the key referenced by accessID, on Google Cloud Storage.
 // Only inactive HMAC keys can be deleted.
 // After deletion, a key cannot be used to authenticate requests.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (hkh *HMACKeyHandle) Delete(ctx context.Context, opts ...HMACKeyOption) error {
 	desc := new(hmacKeyDesc)
 	for _, opt := range opts {
@@ -187,8 +175,6 @@ func toHMACKeyFromProto(pbmd *storagepb.HmacKeyMetadata) *HMACKey {
 }
 
 // CreateHMACKey invokes an RPC for Google Cloud Storage to create a new HMACKey.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (c *Client) CreateHMACKey(ctx context.Context, projectID, serviceAccountEmail string, opts ...HMACKeyOption) (*HMACKey, error) {
 	if projectID == "" {
 		return nil, errors.New("storage: expecting a non-blank projectID")
@@ -208,8 +194,6 @@ func (c *Client) CreateHMACKey(ctx context.Context, projectID, serviceAccountEma
 }
 
 // HMACKeyAttrsToUpdate defines the attributes of an HMACKey that will be updated.
-//
-// This type is EXPERIMENTAL and subject to change or removal without notice.
 type HMACKeyAttrsToUpdate struct {
 	// State is required and must be either StateActive or StateInactive.
 	State HMACState
@@ -219,8 +203,6 @@ type HMACKeyAttrsToUpdate struct {
 }
 
 // Update mutates the HMACKey referred to by accessID.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (h *HMACKeyHandle) Update(ctx context.Context, au HMACKeyAttrsToUpdate, opts ...HMACKeyOption) (*HMACKey, error) {
 	if au.State != Active && au.State != Inactive {
 		return nil, fmt.Errorf("storage: invalid state %q for update, must be either %q or %q", au.State, Active, Inactive)
@@ -240,8 +222,6 @@ func (h *HMACKeyHandle) Update(ctx context.Context, au HMACKeyAttrsToUpdate, opt
 // An HMACKeysIterator is an iterator over HMACKeys.
 //
 // Note: This iterator is not safe for concurrent operations without explicit synchronization.
-//
-// This type is EXPERIMENTAL and subject to change or removal without notice.
 type HMACKeysIterator struct {
 	ctx       context.Context
 	raw       *raw.ProjectsHmacKeysService
@@ -257,8 +237,6 @@ type HMACKeysIterator struct {
 // ListHMACKeys returns an iterator for listing HMACKeys.
 //
 // Note: This iterator is not safe for concurrent operations without explicit synchronization.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (c *Client) ListHMACKeys(ctx context.Context, projectID string, opts ...HMACKeyOption) *HMACKeysIterator {
 	desc := new(hmacKeyDesc)
 	for _, opt := range opts {
@@ -274,8 +252,6 @@ func (c *Client) ListHMACKeys(ctx context.Context, projectID string, opts ...HMA
 // calls will return iterator.Done.
 //
 // Note: This iterator is not safe for concurrent operations without explicit synchronization.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (it *HMACKeysIterator) Next() (*HMACKey, error) {
 	if err := it.nextFunc(); err != nil {
 		return nil, err
@@ -290,8 +266,6 @@ func (it *HMACKeysIterator) Next() (*HMACKey, error) {
 // PageInfo supports pagination. See the google.golang.org/api/iterator package for details.
 //
 // Note: This iterator is not safe for concurrent operations without explicit synchronization.
-//
-// This method is EXPERIMENTAL and subject to change or removal without notice.
 func (it *HMACKeysIterator) PageInfo() *iterator.PageInfo { return it.pageInfo }
 
 func (it *HMACKeysIterator) fetch(pageSize int, pageToken string) (token string, err error) {
@@ -315,12 +289,11 @@ func (it *HMACKeysIterator) fetch(pageSize int, pageToken string) (token string,
 		call = call.MaxResults(int64(pageSize))
 	}
 
-	ctx := it.ctx
 	var resp *raw.HmacKeysMetadata
-	err = run(it.ctx, func() error {
+	err = run(it.ctx, func(ctx context.Context) error {
 		resp, err = call.Context(ctx).Do()
 		return err
-	}, it.retry, true, setRetryHeaderHTTP(call))
+	}, it.retry, true)
 	if err != nil {
 		return "", err
 	}
@@ -345,8 +318,6 @@ type hmacKeyDesc struct {
 }
 
 // HMACKeyOption configures the behavior of HMACKey related methods and actions.
-//
-// This interface is EXPERIMENTAL and subject to change or removal without notice.
 type HMACKeyOption interface {
 	withHMACKeyDesc(*hmacKeyDesc)
 }
@@ -362,8 +333,6 @@ func (hkdf hmacKeyDescFunc) withHMACKeyDesc(hkd *hmacKeyDesc) {
 //
 // Only one service account email can be used as a filter, so if multiple
 // of these options are applied, the last email to be set will be used.
-//
-// This option is EXPERIMENTAL and subject to change or removal without notice.
 func ForHMACKeyServiceAccountEmail(serviceAccountEmail string) HMACKeyOption {
 	return hmacKeyDescFunc(func(hkd *hmacKeyDesc) {
 		hkd.forServiceAccountEmail = serviceAccountEmail
@@ -371,8 +340,6 @@ func ForHMACKeyServiceAccountEmail(serviceAccountEmail string) HMACKeyOption {
 }
 
 // ShowDeletedHMACKeys will also list keys whose state is "DELETED".
-//
-// This option is EXPERIMENTAL and subject to change or removal without notice.
 func ShowDeletedHMACKeys() HMACKeyOption {
 	return hmacKeyDescFunc(func(hkd *hmacKeyDesc) {
 		hkd.showDeletedKeys = true
@@ -383,8 +350,6 @@ func ShowDeletedHMACKeys() HMACKeyOption {
 // if userProjectID is non-empty.
 //
 // Note: This is a noop right now and only provided for API compatibility.
-//
-// This option is EXPERIMENTAL and subject to change or removal without notice.
 func UserProjectForHMACKeys(userProjectID string) HMACKeyOption {
 	return hmacKeyDescFunc(func(hkd *hmacKeyDesc) {
 		hkd.userProjectID = userProjectID

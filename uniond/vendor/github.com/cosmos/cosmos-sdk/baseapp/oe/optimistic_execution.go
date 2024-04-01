@@ -106,10 +106,13 @@ func (oe *OptimisticExecution) Execute(req *abci.RequestProcessProposal) {
 	go func() {
 		start := time.Now()
 		resp, err := oe.finalizeBlockFunc(ctx, oe.request)
+
 		oe.mtx.Lock()
+
 		executionTime := time.Since(start)
-		oe.logger.Debug("OE finished", "duration", executionTime.String(), "height", req.Height, "hash", hex.EncodeToString(req.Hash))
+		oe.logger.Debug("OE finished", "duration", executionTime.String(), "height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
 		oe.response, oe.err = resp, err
+
 		close(oe.stopCh)
 		oe.mtx.Unlock()
 	}()

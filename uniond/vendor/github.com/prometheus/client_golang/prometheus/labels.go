@@ -165,6 +165,8 @@ func validateValuesInLabels(labels Labels, expectedNumberOfValues int) error {
 
 func validateLabelValues(vals []string, expectedNumberOfValues int) error {
 	if len(vals) != expectedNumberOfValues {
+		// The call below makes vals escape, copy them to avoid that.
+		vals := append([]string(nil), vals...)
 		return fmt.Errorf(
 			"%w: expected %d label values but got %d in %#v",
 			errInconsistentCardinality, expectedNumberOfValues,

@@ -76,7 +76,7 @@ func (f frameHeader) appendTo(dst []byte) []byte {
 		if f.SingleSegment {
 			dst = append(dst, uint8(f.ContentSize))
 		}
-		// Unless SingleSegment is set, framessizes < 256 are nto stored.
+		// Unless SingleSegment is set, framessizes < 256 are not stored.
 	case 1:
 		f.ContentSize -= 256
 		dst = append(dst, uint8(f.ContentSize), uint8(f.ContentSize>>8))

@@ -34,7 +34,8 @@ func (u Uint) IsNil() bool {
 	return u.i == nil
 }
 
-// NewUintFromBigUint constructs Uint from big.Uint
+// NewUintFromBigInt constructs Uint from big.Int
+// Panics if i is negative or wider than 256 bits
 func NewUintFromBigInt(i *big.Int) Uint {
 	u, err := checkNewUint(i)
 	if err != nil {
@@ -43,7 +44,7 @@ func NewUintFromBigInt(i *big.Int) Uint {
 	return u
 }
 
-// NewUint constructs Uint from int64
+// NewUint constructs Uint from uint64
 func NewUint(n uint64) Uint {
 	i := new(big.Int)
 	i.SetUint64(n)
@@ -51,6 +52,7 @@ func NewUint(n uint64) Uint {
 }
 
 // NewUintFromString constructs Uint from string
+// Panics if parsed s is negative or wider than 256 bits
 func NewUintFromString(s string) Uint {
 	u, err := ParseUint(s)
 	if err != nil {
@@ -118,6 +120,7 @@ func (u Uint) MulUint64(u2 uint64) (res Uint) { return u.Mul(NewUint(u2)) }
 func (u Uint) Quo(u2 Uint) (res Uint) { return NewUintFromBigInt(div(u.i, u2.i)) }
 
 // Mod returns remainder after dividing with Uint
+// Panics if u2 is zero
 func (u Uint) Mod(u2 Uint) Uint {
 	if u2.IsZero() {
 		panic("division-by-zero")

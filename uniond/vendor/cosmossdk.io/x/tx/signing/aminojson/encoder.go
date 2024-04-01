@@ -75,7 +75,7 @@ func nullSliceAsEmptyEncoder(enc *Encoder, v protoreflect.Value, w io.Writer) er
 			_, err := io.WriteString(w, "[]")
 			return err
 		}
-		return enc.marshalList(list, w)
+		return enc.marshalList(list, nil /* no field descriptor available here */, w)
 	default:
 		return fmt.Errorf("unsupported type %T", list)
 	}
@@ -161,7 +161,7 @@ func thresholdStringEncoder(enc *Encoder, msg protoreflect.Message, w io.Writer)
 	pubkeysField := fields.ByName("public_keys")
 	pubkeys := msg.Get(pubkeysField).List()
 
-	err = enc.marshalList(pubkeys, w)
+	err = enc.marshalList(pubkeys, pubkeysField, w)
 	if err != nil {
 		return err
 	}

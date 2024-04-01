@@ -51,6 +51,8 @@ type FragmentIterator interface {
 	Prev() *Span
 
 	// Error returns any accumulated error.
+	//
+	// TODO(jackson): Lift errors into return values on the positioning methods.
 	Error() error
 
 	// Close closes the iterator and returns any accumulated error. Exhausting

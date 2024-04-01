@@ -475,6 +475,9 @@ type HistogramOpts struct {
 
 	// now is for testing purposes, by default it's time.Now.
 	now func() time.Time
+
+	// afterFunc is for testing purposes, by default it's time.AfterFunc.
+	afterFunc func(time.Duration, func()) *time.Timer
 }
 
 // HistogramVecOpts bundles the options to create a HistogramVec metric.
@@ -526,7 +529,9 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 	if opts.now == nil {
 		opts.now = time.Now
 	}
-
+	if opts.afterFunc == nil {
+		opts.afterFunc = time.AfterFunc
+	}
 	h := &histogram{
 		desc:                            desc,
 		upperBounds:                     opts.Buckets,
@@ -536,6 +541,7 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 		nativeHistogramMinResetDuration: opts.NativeHistogramMinResetDuration,
 		lastResetTime:                   opts.now(),
 		now:                             opts.now,
+		afterFunc:                       opts.afterFunc,
 	}
 	if len(h.upperBounds) == 0 && opts.NativeHistogramBucketFactor <= 1 {
 		h.upperBounds = DefBuckets
@@ -716,9 +722,16 @@ type histogram struct {
 	nativeHistogramMinResetDuration time.Duration
 	// lastResetTime is protected by mtx. It is also used as created timestamp.
 	lastResetTime time.Time
+	// resetScheduled is protected by mtx. It is true if a reset is
+	// scheduled for a later time (when nativeHistogramMinResetDuration has
+	// passed).
+	resetScheduled bool
 
 	// now is for testing purposes, by default it's time.Now.
 	now func() time.Time
+
+	// afterFunc is for testing purposes, by default it's time.AfterFunc.
+	afterFunc func(time.Duration, func()) *time.Timer
 }
 
 func (h *histogram) Desc() *Desc {
@@ -874,21 +887,31 @@ func (h *histogram) limitBuckets(counts *histogramCounts, value float64, bucket 
 	if h.maybeReset(hotCounts, coldCounts, coldIdx, value, bucket) {
 		return
 	}
+	// One of the other strategies will happen. To undo what they will do as
+	// soon as enough time has passed to satisfy
+	// h.nativeHistogramMinResetDuration, schedule a reset at the right time
+	// if we haven't done so already.
+	if h.nativeHistogramMinResetDuration > 0 && !h.resetScheduled {
+		h.resetScheduled = true
+		h.afterFunc(h.nativeHistogramMinResetDuration-h.now().Sub(h.lastResetTime), h.reset)
+	}
+
 	if h.maybeWidenZeroBucket(hotCounts, coldCounts) {
 		return
 	}
 	h.doubleBucketWidth(hotCounts, coldCounts)
 }
 
-// maybeReset resets the whole histogram if at least h.nativeHistogramMinResetDuration
-// has been passed. It returns true if the histogram has been reset. The caller
-// must have locked h.mtx.
+// maybeReset resets the whole histogram if at least
+// h.nativeHistogramMinResetDuration has been passed. It returns true if the
+// histogram has been reset. The caller must have locked h.mtx.
 func (h *histogram) maybeReset(
 	hot, cold *histogramCounts, coldIdx uint64, value float64, bucket int,
 ) bool {
 	// We are using the possibly mocked h.now() rather than
 	// time.Since(h.lastResetTime) to enable testing.
-	if h.nativeHistogramMinResetDuration == 0 ||
+	if h.nativeHistogramMinResetDuration == 0 || // No reset configured.
+		h.resetScheduled || // Do not interefere if a reset is already scheduled.
 		h.now().Sub(h.lastResetTime) < h.nativeHistogramMinResetDuration {
 		return false
 	}
@@ -904,6 +927,29 @@ func (h *histogram) maybeReset(
 	h.resetCounts(hot)
 	h.lastResetTime = h.now()
 	return true
+}
+
+// reset resets the whole histogram. It locks h.mtx itself, i.e. it has to be
+// called without having locked h.mtx.
+func (h *histogram) reset() {
+	h.mtx.Lock()
+	defer h.mtx.Unlock()
+
+	n := atomic.LoadUint64(&h.countAndHotIdx)
+	hotIdx := n >> 63
+	coldIdx := (^n) >> 63
+	hot := h.counts[hotIdx]
+	cold := h.counts[coldIdx]
+	// Completely reset coldCounts.
+	h.resetCounts(cold)
+	// Make coldCounts the new hot counts while resetting countAndHotIdx.
+	n = atomic.SwapUint64(&h.countAndHotIdx, coldIdx<<63)
+	count := n & ((1 << 63) - 1)
+	waitForCooldown(count, hot)
+	// Finally, reset the formerly hot counts, too.
+	h.resetCounts(hot)
+	h.lastResetTime = h.now()
+	h.resetScheduled = false
 }
 
 // maybeWidenZeroBucket widens the zero bucket until it includes the existing

@@ -13,7 +13,6 @@ import (
 	"github.com/cockroachdb/pebble/objstorage/objstorageprovider/sharedcache"
 	"github.com/cockroachdb/pebble/objstorage/remote"
 	"github.com/cockroachdb/pebble/vfs"
-	"github.com/cockroachdb/redact"
 )
 
 // Readable is the handle for an object that is open for reading.
@@ -167,11 +166,6 @@ type CreatorID uint64
 func (c CreatorID) IsSet() bool { return c != 0 }
 
 func (c CreatorID) String() string { return fmt.Sprintf("%d", c) }
-
-// SafeFormat implements redact.SafeFormatter.
-func (c CreatorID) SafeFormat(w redact.SafePrinter, _ rune) {
-	w.Printf("%d", redact.SafeUint(c))
-}
 
 // SharedCleanupMethod indicates the method for cleaning up unused shared objects.
 type SharedCleanupMethod uint8

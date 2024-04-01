@@ -6,7 +6,6 @@ package pebble
 
 import (
 	"context"
-	"slices"
 	"sort"
 	"time"
 
@@ -518,8 +517,8 @@ func ingestSortAndVerify(cmp Compare, lr ingestLoadResult, exciseSpan KeyRange) 
 				filesInLevel = append(filesInLevel, lr.sharedMeta[i])
 			}
 		}
-		slices.SortFunc(filesInLevel, func(a, b *fileMetadata) int {
-			return cmp(a.Smallest.UserKey, b.Smallest.UserKey)
+		sort.Slice(filesInLevel, func(i, j int) bool {
+			return cmp(filesInLevel[i].Smallest.UserKey, filesInLevel[j].Smallest.UserKey) < 0
 		})
 		for i := 1; i < len(filesInLevel); i++ {
 			if sstableKeyCompare(cmp, filesInLevel[i-1].Largest, filesInLevel[i].Smallest) >= 0 {
@@ -556,7 +555,7 @@ func ingestLink(
 		)
 		if err != nil {
 			if err2 := ingestCleanup(objProvider, lr.localMeta[:i]); err2 != nil {
-				opts.Logger.Errorf("ingest cleanup failed: %v", err2)
+				opts.Logger.Infof("ingest cleanup failed: %v", err2)
 			}
 			return err
 		}
@@ -1161,7 +1160,7 @@ func (d *DB) IngestAndExcise(
 
 // Both DB.mu and commitPipeline.mu must be held while this is called.
 func (d *DB) newIngestedFlushableEntry(
-	meta []*fileMetadata, seqNum uint64, logNum base.DiskFileNum,
+	meta []*fileMetadata, seqNum uint64, logNum FileNum,
 ) (*flushableEntry, error) {
 	// Update the sequence number for all of the sstables in the
 	// metadata. Writing the metadata to the manifest when the
@@ -1288,7 +1287,7 @@ func (d *DB) ingest(
 	d.mu.Lock()
 	pendingOutputs := make([]base.DiskFileNum, len(paths)+len(shared)+len(external))
 	for i := 0; i < len(paths)+len(shared)+len(external); i++ {
-		pendingOutputs[i] = d.mu.versions.getNextDiskFileNum()
+		pendingOutputs[i] = d.mu.versions.getNextFileNum().DiskFileNum()
 	}
 
 	jobID := d.mu.nextJobID
@@ -1400,7 +1399,7 @@ func (d *DB) ingest(
 				err = firstError(err, rkeyIter.Close())
 			}
 			if err != nil {
-				d.opts.Logger.Errorf("ingest error reading flushable for log %s: %s", m.logNum, err)
+				d.opts.Logger.Infof("ingest error reading flushable for log %s: %s", m.logNum, err)
 			}
 		}
 
@@ -1507,14 +1506,14 @@ func (d *DB) ingest(
 
 	if err != nil {
 		if err2 := ingestCleanup(d.objProvider, loadResult.localMeta); err2 != nil {
-			d.opts.Logger.Errorf("ingest cleanup failed: %v", err2)
+			d.opts.Logger.Infof("ingest cleanup failed: %v", err2)
 		}
 	} else {
 		// Since we either created a hard link to the ingesting files, or copied
 		// them over, it is safe to remove the originals paths.
 		for _, path := range loadResult.localPaths {
 			if err2 := d.opts.FS.Remove(path); err2 != nil {
-				d.opts.Logger.Errorf("ingest failed to remove original file: %s", err2)
+				d.opts.Logger.Infof("ingest failed to remove original file: %s", err2)
 			}
 		}
 	}
@@ -2319,11 +2318,6 @@ func (d *DB) validateSSTables() {
 	// where we are starving IO from other tasks due to having to page through
 	// all the blocks in all the sstables in the queue.
 	// TODO(travers): Add some form of pacing to avoid IO starvation.
-
-	// If we fail to validate any files due to reasons other than uncovered
-	// corruption, accumulate them and re-queue them for another attempt.
-	var retry []manifest.NewFileEntry
-
 	for _, f := range pending {
 		// The file may have been moved or deleted since it was ingested, in
 		// which case we skip.
@@ -2359,24 +2353,9 @@ func (d *DB) validateSSTables() {
 		}
 
 		if err != nil {
-			if IsCorruptionError(err) {
-				// TODO(travers): Hook into the corruption reporting pipeline, once
-				// available. See pebble#1192.
-				d.opts.Logger.Fatalf("pebble: encountered corruption during ingestion: %s", err)
-			} else {
-				// If there was some other, possibly transient, error that
-				// caused table validation to fail inform the EventListener and
-				// move on. We remember the table so that we can retry it in a
-				// subsequent table validation job.
-				//
-				// TODO(jackson): If the error is not transient, this will retry
-				// validation indefinitely. While not great, it's the same
-				// behavior as erroring flushes and compactions. We should
-				// address this as a part of #270.
-				d.opts.EventListener.BackgroundError(err)
-				retry = append(retry, f)
-				continue
-			}
+			// TODO(travers): Hook into the corruption reporting pipeline, once
+			// available. See pebble#1192.
+			d.opts.Logger.Fatalf("pebble: encountered corruption during ingestion: %s", err)
 		}
 
 		d.opts.EventListener.TableValidated(TableValidatedInfo{
@@ -2385,9 +2364,9 @@ func (d *DB) validateSSTables() {
 		})
 	}
 	rs.unref()
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.mu.tableValidation.pending = append(d.mu.tableValidation.pending, retry...)
 	d.mu.tableValidation.validating = false
 	d.mu.tableValidation.cond.Broadcast()
 	if d.shouldValidateSSTablesLocked() {

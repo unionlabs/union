@@ -2,6 +2,7 @@ package textual
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -74,7 +75,7 @@ func (ar anyValueRenderer) Format(ctx context.Context, v protoreflect.Value) ([]
 // Parse implements the ValueRenderer interface.
 func (ar anyValueRenderer) Parse(ctx context.Context, screens []Screen) (protoreflect.Value, error) {
 	if len(screens) == 0 {
-		return nilValue, fmt.Errorf("expect at least one screen")
+		return nilValue, errors.New("expect at least one screen")
 	}
 	if screens[0].Indent != 0 {
 		return nilValue, fmt.Errorf("bad indentation: want 0, got %d", screens[0].Indent)
@@ -82,7 +83,7 @@ func (ar anyValueRenderer) Parse(ctx context.Context, screens []Screen) (protore
 
 	typeURL := screens[0].Content
 	msgType, err := ar.tr.typeResolver.FindMessageByURL(typeURL)
-	if err == protoregistry.NotFound {
+	if errors.Is(err, protoregistry.NotFound) {
 		// If the proto v2 registry doesn't have this message, then we use
 		// protoFiles (which can e.g. be initialized to gogo's MergedRegistry)
 		// to retrieve the message descriptor, and then use dynamicpb on that

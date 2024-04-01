@@ -86,7 +86,7 @@ func NewPebbleDB(name string, dir string, opts Options) (DB, error) {
 		}
 	}
 
-	dbPath := filepath.Join(dir, name+".db")
+	dbPath := filepath.Join(dir, name+DBFileSuffix)
 	p, err := pebble.Open(dbPath, do)
 	if err != nil {
 		return nil, err
@@ -177,11 +177,7 @@ func (db *PebbleDB) Delete(key []byte) error {
 	if isForceSync {
 		wopts = pebble.Sync
 	}
-	err := db.db.Delete(key, wopts)
-	if err != nil {
-		return err
-	}
-	return nil
+	return db.db.Delete(key, wopts)
 }
 
 // DeleteSync implements DB.
@@ -190,11 +186,7 @@ func (db PebbleDB) DeleteSync(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
-	err := db.db.Delete(key, pebble.Sync)
-	if err != nil {
-		return nil
-	}
-	return nil
+	return db.db.Delete(key, pebble.Sync)
 }
 
 func (db *PebbleDB) DB() *pebble.DB {
@@ -256,7 +248,10 @@ func (db *PebbleDB) Iterator(start, end []byte) (Iterator, error) {
 		LowerBound: start,
 		UpperBound: end,
 	}
-	itr := db.db.NewIter(&o)
+	itr, err := db.db.NewIter(&o)
+	if err != nil {
+		return nil, err
+	}
 	itr.First()
 
 	return newPebbleDBIterator(itr, start, end, false), nil
@@ -272,7 +267,10 @@ func (db *PebbleDB) ReverseIterator(start, end []byte) (Iterator, error) {
 		LowerBound: start,
 		UpperBound: end,
 	}
-	itr := db.db.NewIter(&o)
+	itr, err := db.db.NewIter(&o)
+	if err != nil {
+		return nil, err
+	}
 	itr.Last()
 	return newPebbleDBIterator(itr, start, end, true), nil
 }
@@ -488,11 +486,7 @@ func (itr *pebbleDBIterator) Error() error {
 // Close implements Iterator.
 func (itr *pebbleDBIterator) Close() error {
 	// fmt.Println("pebbleDBIterator.Close")
-	err := itr.source.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return itr.source.Close()
 }
 
 func (itr *pebbleDBIterator) assertIsValid() {

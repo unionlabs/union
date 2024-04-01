@@ -12,9 +12,11 @@ Extensively unit tested and cross tested (100+ tests) for compatibility with [jo
 
 
 ## Status
-Used in production. GA ready. Current version is 1.5.
+Used in production. GA ready. Current version is 1.6.
 
 ## Important
+v1.6 security tuning options
+
 v1.5 bug fix release
 
 v1.4 changes default behavior of inserting `typ=JWT` header if not overriden. As of 1.4 no
@@ -250,7 +252,7 @@ func main() {
         //go use token
         fmt.Printf("\ntoken = %v\n",token)
     }
-}  
+}
 ```
 
 #### AES Key Wrap key management family of algorithms
@@ -330,7 +332,7 @@ func main() {
         //go use token
         fmt.Printf("\ntoken = %v\n",token)
     }
-}  
+}
 ```
 
 #### PBES2 using HMAC SHA with AES Key Wrap key management family of algorithms
@@ -482,7 +484,7 @@ func main() {
         //and/or use headers
         fmt.Printf("\nheaders = %v\n",headers)
     }
-}  
+}
 ```
 
 **RSA-OAEP-256**, **RSA-OAEP** and **RSA1_5** key management algorithms expecting `*rsa.PrivateKey` private key of corresponding length:
@@ -522,7 +524,7 @@ func main() {
         //and/or use headers
         fmt.Printf("\nheaders = %v\n",headers)
     }
-}  
+}
 ```
 
 **PBES2-HS256+A128KW, PBES2-HS384+A192KW, PBES2-HS512+A256KW** key management algorithms expects `string` passpharase as a key
@@ -679,6 +681,8 @@ func main() {
 }
 ```
 
+Two phase validation can be used for implementing additional things like strict `alg` or `enc` validation, see [Customizing library for security](#customizing-library-for-security) for more information.
+
 ### Working with binary payload
 In addition to work with string payloads (typical use-case) `jose2go` supports
 encoding and decoding of raw binary data. `jose.DecodeBytes`, `jose.SignBytes`
@@ -776,7 +780,7 @@ func main() {
         //go use token
         fmt.Printf("\ntoken = %v\n",token)
     }
-}  
+}
 ```
 ### Dealing with keys
 **jose2go** provides several helper methods to simplify loading & importing of elliptic and rsa keys. Import `jose2go/keys/rsa` or `jose2go/keys/ecc` respectively:
@@ -925,7 +929,88 @@ func main() {
 ### More examples
 Checkout `jose_test.go` for more examples.
 
+## Customizing library for security
+In response to ever increasing attacks on various JWT implementations, `jose2go` as of version v1.6 introduced number of additional security controls to limit potential attack surface on services and projects using the library.
+
+### Deregister algorithm implementations
+One can use following methods to deregister any signing, encryption, key management or compression algorithms from runtime suite, that is considered unsafe or simply not expected by service.
+
+- `func DeregisterJwa(alg string) JwaAlgorithm`
+- `func DeregisterJwe(alg string) JweEncryption`
+- `func DeregisterJws(alg string) JwsAlgorithm`
+- `func DeregisterJwc(alg string) JwcAlgorithm`
+
+All of them expecting alg name matching `jose` constants and returns implementation that have been deregistered.
+
+### Strict validation
+Sometimes it is desirable to verify that `alg` or `enc` values are matching expected before attempting to decode actual payload.
+`jose2go` provides helper matchers to be used within [Two-phase validation](#two-phase-validation) precheck:
+
+- `jose.Alg(key, alg)` - to match alg header
+- `jose.Enc(key, alg)` - to match alg and enc headers
+
+```Go
+	token := "eyJhbGciOiJSUzI1NiIsImN0eSI6InRleHRcL3BsYWluIn0.eyJoZWxsbyI6ICJ3b3JsZCJ9.NL_dfVpZkhNn4bZpCyMq5TmnXbT4yiyecuB6Kax_lV8Yq2dG8wLfea-T4UKnrjLOwxlbwLwuKzffWcnWv3LVAWfeBxhGTa0c4_0TX_wzLnsgLuU6s9M2GBkAIuSMHY6UTFumJlEeRBeiqZNrlqvmAzQ9ppJHfWWkW4stcgLCLMAZbTqvRSppC1SMxnvPXnZSWn_Fk_q3oGKWw6Nf0-j-aOhK0S0Lcr0PV69ZE4xBYM9PUS1MpMe2zF5J3Tqlc1VBcJ94fjDj1F7y8twmMT3H1PI9RozO-21R0SiXZ_a93fxhE_l_dj5drgOek7jUN9uBDjkXUwJPAyp9YPehrjyLdw"
+
+	key := Rsa.ReadPublic(....)
+
+	// we expecting 'RS256' alg here and if matching continue to decode with a key
+	payload, header, err := jose.Decode(token, Alg(key, "RS256"))
+
+	// or match both alg and enc for decrypting scenarios
+	payload, header, err := jose.Decode(token, Enc(key, "RSA-OAEP-256", "A192CBC-HS384"))
+```
+
+### Customizing PBKDF2
+As it quite easy to abuse PBES2 family of algorithms via forging header with extra large p2c values, jose-jwt library introduced iteration count limits in v1.6 to reduce runtime exposure.
+
+By default, maxIterations is set according to [OWASP PBKDF2](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2) Recomendations:
+
+```
+PBES2-HS256+A128KW: 1300000
+PBES2-HS384+A192KW: 950000
+PBES2-HS512+A256KW: 600000
+```
+
+, while minIterations kept at 0 for backward compatibility.
+
+If it is desired to implement different limits, register new implementation with new parameters:
+
+```Go
+	jose.RegisterJwa(NewPbse2HmacAesKWAlg(128, 1300000, 1300000))
+	jose.RegisterJwa(NewPbse2HmacAesKWAlg(192, 950000, 950000))
+	jose.RegisterJwa(NewPbse2HmacAesKWAlg(256, 600000, 600000))
+```
+
+In case you can't upgrade to latest version, but would like to have protections against PBES2 abuse, it is recommended to stick with [Two-phase validation](#two-phase-validation) precheck before decoding:
+
+```Go
+test, headers, err := Decode(token, func(headers map[string]interface{}, payload string) interface{} {
+	alg := headers["alg"].(string)
+	p2c := headers["p2c"].(float64)
+
+	if strings.HasPrefix(alg, "PBES2-") && int64(p2c) > 100 {
+		return errors.New("Too many p2c interation count, aborting")
+	}
+
+	return "top secret"
+})
+```
+
 ## Changelog
+### 1.6
+- ability to deregister specific algorithms
+- configurable min/max restrictions for PBES2-HS256+A128KW, PBES2-HS384+A192KW, PBES2-HS512+A256KW
+
+### 1.5
+- security and bug fixes
+
+### 1.4
+- removed extra headers to be inserted by library
+
+### 1.3
+- security fixes: Invalid Curve Attack on NIST curves
+
 ### 1.2
 - interface to access token headers after decoding
 - interface to provide extra headers for token encoding

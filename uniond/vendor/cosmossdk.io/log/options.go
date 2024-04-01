@@ -14,6 +14,7 @@ var defaultConfig = Config{
 	Color:      true,
 	StackTrace: false,
 	TimeFormat: time.Kitchen,
+	Hooks:      nil,
 }
 
 // Config defines configuration for the logger.
@@ -24,6 +25,7 @@ type Config struct {
 	Color      bool
 	StackTrace bool
 	TimeFormat string
+	Hooks      []zerolog.Hook
 }
 
 type Option func(*Config)
@@ -85,5 +87,12 @@ func TimeFormatOption(format string) Option {
 func TraceOption(val bool) Option {
 	return func(cfg *Config) {
 		cfg.StackTrace = val
+	}
+}
+
+// HooksOption append hooks to the Logger hooks
+func HooksOption(hooks ...zerolog.Hook) Option {
+	return func(cfg *Config) {
+		cfg.Hooks = append(cfg.Hooks, hooks...)
 	}
 }

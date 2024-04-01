@@ -8,7 +8,7 @@ type Edge struct {
 	fromPort, toPort string
 }
 
-// Attr sets key=value and returns the Egde.
+// Attr sets key=value and returns the Edge.
 func (e Edge) Attr(key string, value interface{}) Edge {
 	e.AttributesMap.Attr(key, value)
 	return e

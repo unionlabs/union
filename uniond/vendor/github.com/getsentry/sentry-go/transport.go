@@ -185,7 +185,7 @@ func envelopeFromBody(event *Event, dsn *Dsn, sentAt time.Time, body json.RawMes
 	}
 
 	// Attachments
-	for _, attachment := range event.attachments {
+	for _, attachment := range event.Attachments {
 		if err := encodeAttachment(enc, &b, attachment); err != nil {
 			return nil, err
 		}

@@ -192,7 +192,7 @@ func (g *Graph) DeleteNode(id string) bool {
 }
 
 // Edge creates a new edge between two nodes.
-// Nodes can be have multiple edges to the same other node (or itself).
+// Nodes can have multiple edges to the same other node (or itself).
 // If one or more labels are given then the "label" attribute is set to the edge.
 func (g *Graph) Edge(fromNode, toNode Node, labels ...string) Edge {
 	return g.EdgeWithPorts(fromNode, toNode, "", "", labels...)

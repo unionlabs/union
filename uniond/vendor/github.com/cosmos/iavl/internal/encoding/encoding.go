@@ -30,6 +30,7 @@ var uvarintPool = &sync.Pool{
 
 // decodeBytes decodes a varint length-prefixed byte slice, returning it along with the number
 // of input bytes read.
+// Assumes bz will not be mutated.
 func DecodeBytes(bz []byte) ([]byte, int, error) {
 	s, n, err := DecodeUvarint(bz)
 	if err != nil {
@@ -51,9 +52,7 @@ func DecodeBytes(bz []byte) ([]byte, int, error) {
 	if len(bz) < end {
 		return nil, n, fmt.Errorf("insufficient bytes decoding []byte of length %v", size)
 	}
-	bz2 := make([]byte, size)
-	copy(bz2, bz[n:end])
-	return bz2, end, nil
+	return bz[n:end], end, nil
 }
 
 // decodeUvarint decodes a varint-encoded unsigned integer from a byte slice, returning it and the
@@ -90,6 +89,23 @@ func DecodeVarint(bz []byte) (int64, int, error) {
 // EncodeBytes writes a varint length-prefixed byte slice to the writer.
 func EncodeBytes(w io.Writer, bz []byte) error {
 	err := EncodeUvarint(w, uint64(len(bz)))
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(bz)
+	return err
+}
+
+var hashLenBz []byte
+
+func init() {
+	hashLenBz = make([]byte, 1)
+	binary.PutUvarint(hashLenBz, 32)
+}
+
+// Encode 32 byte long hash
+func Encode32BytesHash(w io.Writer, bz []byte) error {
+	_, err := w.Write(hashLenBz)
 	if err != nil {
 		return err
 	}

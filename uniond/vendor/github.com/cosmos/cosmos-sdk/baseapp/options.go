@@ -105,11 +105,21 @@ func SetChainID(chainID string) func(*BaseApp) {
 	return func(app *BaseApp) { app.chainID = chainID }
 }
 
+// SetStoreLoader allows customization of the rootMultiStore initialization.
+func SetStoreLoader(loader StoreLoader) func(*BaseApp) {
+	return func(app *BaseApp) { app.SetStoreLoader(loader) }
+}
+
 // SetOptimisticExecution enables optimistic execution.
 func SetOptimisticExecution(opts ...func(*oe.OptimisticExecution)) func(*BaseApp) {
 	return func(app *BaseApp) {
 		app.optimisticExec = oe.NewOptimisticExecution(app.logger, app.internalFinalizeBlock, opts...)
 	}
+}
+
+// DisableBlockGasMeter disables the block gas meter.
+func DisableBlockGasMeter() func(*BaseApp) {
+	return func(app *BaseApp) { app.SetDisableBlockGasMeter(true) }
 }
 
 func (app *BaseApp) SetName(name string) {
@@ -356,4 +366,9 @@ func (app *BaseApp) SetStoreMetrics(gatherer metrics.StoreMetrics) {
 // SetStreamingManager sets the streaming manager for the BaseApp.
 func (app *BaseApp) SetStreamingManager(manager storetypes.StreamingManager) {
 	app.streamingManager = manager
+}
+
+// SetDisableBlockGasMeter sets the disableBlockGasMeter flag for the BaseApp.
+func (app *BaseApp) SetDisableBlockGasMeter(disableBlockGasMeter bool) {
+	app.disableBlockGasMeter = disableBlockGasMeter
 }

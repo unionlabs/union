@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
@@ -51,6 +52,7 @@ type ModuleInputs struct {
 	AccountKeeper          ante.AccountKeeper                 `optional:"true"`
 	FeeGrantKeeper         ante.FeegrantKeeper                `optional:"true"`
 	CustomSignModeHandlers func() []txsigning.SignModeHandler `optional:"true"`
+	CustomGetSigners       []txsigning.CustomGetSigner        `optional:"true"`
 }
 
 type ModuleOutputs struct {
@@ -77,8 +79,13 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 			FileResolver:          in.ProtoFileResolver,
 			AddressCodec:          in.AddressCodec,
 			ValidatorAddressCodec: in.ValidatorAddressCodec,
+			CustomGetSigners:      make(map[protoreflect.FullName]txsigning.GetSignersFunc),
 		},
 		CustomSignModes: customSignModeHandlers,
+	}
+
+	for _, mode := range in.CustomGetSigners {
+		txConfigOptions.SigningOptions.CustomGetSigners[mode.MsgType] = mode.Fn
 	}
 
 	// enable SIGN_MODE_TEXTUAL only if bank keeper is available

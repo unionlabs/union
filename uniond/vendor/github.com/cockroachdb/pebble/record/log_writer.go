@@ -323,9 +323,7 @@ var blockPool = sync.Pool{
 }
 
 // NewLogWriter returns a new LogWriter.
-func NewLogWriter(
-	w io.Writer, logNum base.DiskFileNum, logWriterConfig LogWriterConfig,
-) *LogWriter {
+func NewLogWriter(w io.Writer, logNum base.FileNum, logWriterConfig LogWriterConfig) *LogWriter {
 	c, _ := w.(io.Closer)
 	s, _ := w.(syncer)
 	r := &LogWriter{
@@ -741,7 +739,9 @@ func (w *LogWriter) emitFragment(n int, p []byte) (remainingP []byte) {
 	if blockSize-b.written.Load() < recyclableHeaderSize {
 		// There is no room for another fragment in the block, so fill the
 		// remaining bytes with zeros and queue the block for flushing.
-		clear(b.buf[b.written.Load():])
+		for i := b.written.Load(); i < blockSize; i++ {
+			b.buf[i] = 0
+		}
 		w.queueBlock()
 	}
 	return p[r:]

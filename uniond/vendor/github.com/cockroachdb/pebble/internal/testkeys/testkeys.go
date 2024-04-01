@@ -14,13 +14,13 @@ package testkeys
 
 import (
 	"bytes"
-	"cmp"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/cockroachdb/pebble/internal/base"
+	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/rand"
 )
 
@@ -133,7 +133,14 @@ func compareTimestamps(a, b []byte) int {
 	if err != nil {
 		panic(fmt.Sprintf("invalid test mvcc timestamp %q", b))
 	}
-	return cmp.Compare(bi, ai)
+	switch {
+	case ai < bi:
+		return +1
+	case ai > bi:
+		return -1
+	default:
+		return 0
+	}
 }
 
 // Keyspace describes a finite keyspace of unsuffixed test keys.
@@ -411,7 +418,7 @@ func RandomSeparator(dst, a, b []byte, suffix int64, maxLength int, rng *rand.Ra
 	bi := Comparer.Split(b)
 	ap := a[:ai]
 	bp := b[:bi]
-	maxLength = max(maxLength, len(ap), len(bp))
+	maxLength = max[int](maxLength, max[int](len(ap), len(bp)))
 	var as, bs int64
 	var err error
 	if ai != len(a) {
@@ -501,4 +508,11 @@ func RandomSeparator(dst, a, b []byte, suffix int64, maxLength int, rng *rand.Ra
 		w = WriteKeyAt(dst, Alpha(maxLength), generatedIdx, suffix)
 	}
 	return dst[:w]
+}
+
+func max[I constraints.Ordered](a, b I) I {
+	if b > a {
+		return b
+	}
+	return a
 }

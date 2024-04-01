@@ -8,9 +8,8 @@ RocksDB file formats and a few extensions such as range deletion
 tombstones, table-level bloom filters, and updates to the MANIFEST
 format.
 
-Pebble intentionally does not aspire to include every feature in
-RocksDB and is specifically targetting the use case and feature set
-needed by CockroachDB:
+Pebble intentionally does not aspire to include every feature in RocksDB and
+specifically targets the use case and feature set needed by CockroachDB:
 
 * Block-based tables
 * Checkpoints
@@ -68,6 +67,17 @@ Pebble offers several improvements over RocksDB:
 * Faster commit pipeline that achieves better concurrency.
 * Seamless merged iteration of indexed batches. The mutations in the
   batch conceptually occupy another memtable level.
+* L0 sublevels and flush splitting for concurrent compactions out of L0 and
+  reduced read-amplification during heavy write load.
+* Faster LSM edits in LSMs with large numbers of sstables through use of a
+  copy-on-write B-tree to hold file metadata.
+* Delete-only compactions that drop whole sstables that fall within the bounds
+  of a range deletion.
+* Block-property collectors and filters that enable iterators to skip tables,
+  index blocks and data blocks that are irrelevant, according to user-defined
+  properties over key-value pairs.
+* Range keys API, allowing KV pairs defined over a range of keyspace with
+  user-defined semantics and interleaved during iteration.
 * Smaller, more approachable code base.
 
 See the [Pebble vs RocksDB: Implementation
@@ -100,10 +110,68 @@ known incompatibilities.
   format.
 * Plain table format. Pebble does not support the plain table sstable
   format.
-* SSTable format version 3 and 4. Pebble does not currently support
-  version 3 and version 4 format sstables. The sstable format version
-  is controlled by the `BlockBasedTableOptions::format_version`
-  option. See [#97](https://github.com/cockroachdb/pebble/issues/97).
+* SSTable format version 3 and 4. Pebble does not support version 3
+  and version 4 format sstables. The sstable format version is
+  controlled by the `BlockBasedTableOptions::format_version` option.
+  See [#97](https://github.com/cockroachdb/pebble/issues/97).
+
+## Format major versions
+
+Over time Pebble has introduced new physical file formats.  Backwards
+incompatible changes are made through the introduction of 'format major
+versions'. By default, when Pebble opens a database, it defaults to
+`FormatMostCompatible`. This version is bi-directionally compatible with RocksDB
+6.2.1 (with the caveats described above).
+
+To opt into new formats, a user may set `FormatMajorVersion` on the
+[`Options`](https://pkg.go.dev/github.com/cockroachdb/pebble#Options)
+supplied to
+[`Open`](https://pkg.go.dev/github.com/cockroachdb/pebble#Open), or
+upgrade the format major version at runtime using
+[`DB.RatchetFormatMajorVersion`](https://pkg.go.dev/github.com/cockroachdb/pebble#DB.RatchetFormatMajorVersion).
+Format major version upgrades are permanent; There is no option to
+return to an earlier format.
+
+The table below outlines the history of format major versions:
+
+| Name                               | Value | Migration  |
+|------------------------------------|-------|------------|
+| FormatMostCompatible               |   1   | No         |
+| FormatVersioned                    |   3   | No         |
+| FormatSetWithDelete                |   4   | No         |
+| FormatBlockPropertyCollector       |   5   | No         |
+| FormatSplitUserKeysMarked          |   6   | Background |
+| FormatSplitUserKeysMarkedCompacted |   7   | Blocking   |
+| FormatRangeKeys                    |   8   | No         |
+| FormatMinTableFormatPebblev1       |   9   | No         |
+| FormatPrePebblev1Marked            |  10   | Background |
+| FormatSSTableValueBlocks           |  12   | No         |
+| FormatFlushableIngest              |  13   | No         |
+| FormatPrePebblev1MarkedCompacted   |  14   | Blocking   |
+| FormatDeleteSizedAndObsolete       |  15   | No         |
+| FormatVirtualSSTables              |  16   | No         |
+
+Upgrading to a format major version with 'Background' in the migration
+column may trigger background activity to rewrite physical file
+formats, typically through compactions. Upgrading to a format major
+version with 'Blocking' in the migration column will block until a
+migration is complete. The database may continue to serve reads and
+writes if upgrading a live database through
+`RatchetFormatMajorVersion`, but the method call will not return until
+the migration is complete.
+
+For reference, the table below lists the range of supported Pebble format major
+versions for CockroachDB releases.
+
+| CockroachDB release | Earliest supported                 | Latest supported          |
+|---------------------|------------------------------------|---------------------------|
+| 20.1 through 21.1   | FormatMostCompatible               | FormatMostCompatible      |
+| 21.2                | FormatMostCompatible               | FormatSetWithDelete       |
+| 21.2                | FormatMostCompatible               | FormatSetWithDelete       |
+| 22.1                | FormatMostCompatible               | FormatSplitUserKeysMarked |
+| 22.2                | FormatMostCompatible               | FormatPrePebblev1Marked   |
+| 23.1                | FormatSplitUserKeysMarkedCompacted | FormatFlushableIngest     |
+| 23.2                | FormatSplitUserKeysMarkedCompacted | FormatVirtualSSTables     |
 
 ## Pedigree
 
