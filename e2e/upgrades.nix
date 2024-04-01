@@ -61,7 +61,7 @@ in
       # Ensure the union network commits more than one block
       union.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
-      ${upgradeTo "v0.20.0" 10}
+      ${upgradeTo "v0.21.0" 10}
     '';
 
     nodes = {
@@ -85,7 +85,7 @@ in
       print(union.succeed("docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.'"))
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m\"') == true ]]")
 
-      ${upgradeTo "v0.20.0" 10}
+      ${upgradeTo "v0.21.0" 10}
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m\"') == true ]]")
     '';
 
