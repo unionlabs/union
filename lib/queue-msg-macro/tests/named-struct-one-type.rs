@@ -25,6 +25,6 @@ fn main() {
         serde_json::from_str(serde_json::to_string(&named).unwrap().as_str()).unwrap();
     assert_eq!(named, serialized_deserialized);
 
-    assert_eq!(format!("{:?}", named), "Named { a: \"A\", b: 42, c: 1 }");
+    assert_eq!(format!("{:?}", named), r#"Named { a: "A", b: 42, c: 1 }"#);
     assert_eq!(named, named.clone());
 }

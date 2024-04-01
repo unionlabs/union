@@ -5,3 +5,11 @@ error: Only support Structs
   | ^^^^^^^^^^^^^
   |
   = note: this error originates in the attribute macro `msg_struct` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Only support Structs
+ --> tests/non-struct.rs:9:1
+  |
+9 | #[msg_struct]
+  | ^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `msg_struct` (in Nightly builds, run with -Z macro-backtrace for more info)

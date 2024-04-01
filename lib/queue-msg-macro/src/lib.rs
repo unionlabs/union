@@ -9,18 +9,17 @@ use syn::{
 };
 
 #[proc_macro_attribute]
-pub fn msg_struct(args: TokenStream, input: TokenStream) -> TokenStream {
-    let _ = args;
-    let mut input = parse_macro_input!(input as Item);
+pub fn msg_struct(_: TokenStream, input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as Item);
 
-    let result = apply_item(&mut input).unwrap_or_else(|error| error.to_compile_error());
+    let result = apply_item(input).unwrap_or_else(|error| error.to_compile_error());
 
     result.into()
 }
 
-fn apply_item(item: &mut Item) -> Result<proc_macro2::TokenStream, Error> {
+fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
     match item {
-        Item::Struct(item_struct) => {
+        Item::Struct(mut item_struct) => {
             match &mut item_struct.fields {
                 Fields::Named(field_named) => {
                     let struct_ident = item_struct.ident.clone();
@@ -32,12 +31,12 @@ fn apply_item(item: &mut Item) -> Result<proc_macro2::TokenStream, Error> {
                         .map(|field| field.clone().ident.expect("a field Ident for Named field"))
                         .collect::<Vec<Ident>>();
 
-                    let type_params_to_cover = extract_covered_types(item_struct);
+                    let type_params_to_cover = extract_covered_types(&mut item_struct);
 
                     let clone_marker_fields = if let Some(type_params_to_cover) =
                         &type_params_to_cover
                     {
-                        add_marker_field_to_struct(item_struct, type_params_to_cover);
+                        add_marker_field_to_struct(&mut item_struct, type_params_to_cover);
 
                         quote! {
                             __marker: ::core::marker::PhantomData::<fn() -> (#(#type_params_to_cover),*)>

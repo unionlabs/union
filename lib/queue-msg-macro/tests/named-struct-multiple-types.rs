@@ -31,7 +31,7 @@ fn main() {
 
     assert_eq!(
         format!("{:?}", named),
-        "Named { a: \"A\", b: 42, c: 1, d: 2 }"
+        r#"Named { a: "A", b: 42, c: 1, d: 2 }"#
     );
     assert_eq!(named, named.clone());
 }

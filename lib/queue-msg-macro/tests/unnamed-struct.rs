@@ -10,6 +10,6 @@ fn main() {
         serde_json::from_str(serde_json::to_string(&unnamed).unwrap().as_str()).unwrap();
     assert_eq!(unnamed, serialized_deserialized);
 
-    assert_eq!(format!("{:?}", unnamed), "Unnamed(\"A\")");
+    assert_eq!(format!("{:?}", unnamed), r#"Unnamed("A")"#);
     assert_eq!(unnamed, unnamed.clone());
 }
