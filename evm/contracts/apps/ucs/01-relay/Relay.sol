@@ -74,8 +74,12 @@ library RelayLib {
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
 
-    event DenomCreated(string denom, address token);
+    event DenomCreated(
+        uint64 packetSequence, string channelId, string denom, address token
+    );
     event Received(
+        uint64 packetSequence,
+        string channelId,
         string sender,
         address receiver,
         string denom,
@@ -83,6 +87,8 @@ library RelayLib {
         uint256 amount
     );
     event Sent(
+        uint64 packetSequence,
+        string channelId,
         address sender,
         string receiver,
         string denom,
@@ -90,6 +96,8 @@ library RelayLib {
         uint256 amount
     );
     event Refunded(
+        uint64 packetSequence,
+        string channelId,
         address sender,
         string receiver,
         string denom,
@@ -285,24 +293,17 @@ contract UCS01Relay is IBCAppBase, IRelay {
         IbcCoreChannelV1Counterparty.Data memory counterparty =
             counterpartyEndpoints[sourcePort][sourceChannel];
         Token[] memory normalizedTokens = new Token[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
+        uint256 tokensLength = tokens.length;
+        for (uint256 i = 0; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
-            string memory addressDenom = sendToken(
+            normalizedTokens[i].denom = sendToken(
                 sourcePort,
                 sourceChannel,
                 counterparty.port_id,
                 counterparty.channel_id,
                 localToken
             );
-            normalizedTokens[i].denom = addressDenom;
             normalizedTokens[i].amount = uint256(localToken.amount);
-            emit RelayLib.Sent(
-                msg.sender,
-                receiver.toHexString(),
-                addressDenom,
-                localToken.denom,
-                uint256(localToken.amount)
-            );
         }
         string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({
@@ -315,7 +316,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             revision_number: counterpartyTimeoutRevisionNumber,
             revision_height: counterpartyTimeoutRevisionHeight
         });
-        ibcHandler.sendPacket(
+        uint64 packetSequence = ibcHandler.sendPacket(
             sourcePort,
             sourceChannel,
             timeoutHeight,
@@ -323,9 +324,23 @@ contract UCS01Relay is IBCAppBase, IRelay {
             0,
             packet.encode()
         );
+        for (uint256 i = 0; i < tokensLength; i++) {
+            LocalToken calldata localToken = tokens[i];
+            Token memory normalizedToken = normalizedTokens[i];
+            emit RelayLib.Sent(
+                packetSequence,
+                sourceChannel,
+                msg.sender,
+                receiver.toHexString(),
+                normalizedToken.denom,
+                localToken.denom,
+                uint256(localToken.amount)
+            );
+        }
     }
 
     function refundTokens(
+        uint64 sequence,
         string memory portId,
         string memory channelId,
         RelayPacket memory packet
@@ -353,7 +368,13 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
             emit RelayLib.Refunded(
-                userToRefund, receiver, token.denom, denomAddress, token.amount
+                sequence,
+                channelId,
+                userToRefund,
+                receiver,
+                token.denom,
+                denomAddress,
+                token.amount
             );
         }
     }
@@ -407,11 +428,18 @@ contract UCS01Relay is IBCAppBase, IRelay {
                         .destination_channel][denom] = denomAddress;
                     addressToDenom[ibcPacket.destination_port][ibcPacket
                         .destination_channel][denomAddress] = denom;
-                    emit RelayLib.DenomCreated(denom, denomAddress);
+                    emit RelayLib.DenomCreated(
+                        ibcPacket.sequence,
+                        ibcPacket.source_channel,
+                        denom,
+                        denomAddress
+                    );
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             }
             emit RelayLib.Received(
+                ibcPacket.sequence,
+                ibcPacket.source_channel,
                 packet.sender.toHexString(),
                 receiver,
                 denom,
@@ -463,7 +491,10 @@ contract UCS01Relay is IBCAppBase, IRelay {
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
-                ibcPacket.source_port, ibcPacket.source_channel, packet
+                ibcPacket.sequence,
+                ibcPacket.source_port,
+                ibcPacket.source_channel,
+                packet
             );
         }
     }
@@ -473,6 +504,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         address _relayer
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         refundTokens(
+            ibcPacket.sequence,
             ibcPacket.source_port,
             ibcPacket.source_channel,
             RelayPacketLib.decode(ibcPacket.data)
