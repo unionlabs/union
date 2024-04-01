@@ -69,11 +69,11 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-testnet-6-image = mkUnionvisorImage self'.packages.bundle-testnet-6;
+        bundle-testnet-7-image = mkUnionvisorImage self'.packages.bundle-testnet-7;
 
-        bundle-testnet-6 =
+        bundle-testnet-7 =
           mkBundle {
-            name = "testnet-6";
+            name = "testnet-7";
             versions = uniondBundleVersions.complete;
             genesis = ../networks/genesis/union-testnet-6/genesis.json;
             meta = {
@@ -87,7 +87,7 @@
           mkBundle {
             name = "testnet-next";
             versions = uniondBundleVersions.complete;
-            nextVersion = "v0.20.0";
+            nextVersion = "v0.21.0";
             genesis = ../networks/genesis/union-testnet-6/genesis.json;
             meta = {
               binary_name = "uniond";

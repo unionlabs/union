@@ -244,7 +244,7 @@
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
           uniondBundleVersions = rec {
-            complete = versions.union-testnet-6.versions;
+            complete = versions.union-testnet-7.versions;
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
