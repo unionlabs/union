@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Union Node GRPC API",
+    "title": "Union Node REST API",
     "version": "0.0.1"
   },
   "servers": [
