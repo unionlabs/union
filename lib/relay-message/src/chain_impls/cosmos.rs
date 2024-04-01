@@ -12,7 +12,7 @@ use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    fetch, msg, msg_struct, wait, QueueMsg,
+    effect, fetch, msg_struct, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -44,17 +44,16 @@ use crate::{
         fetch_abci_query,
     },
     data::{AnyData, Data, IbcState},
-    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
-    id, identified,
-    msg::{
-        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
-        MsgUpdateClientData,
+    effect::{
+        AnyEffect, Effect, MsgConnectionOpenAckData, MsgConnectionOpenInitData,
+        MsgConnectionOpenTryData, MsgUpdateClientData,
     },
-    seq,
+    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
+    id, identified, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes, Wasm, WasmConfig,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes, Wasm, WasmConfig,
 };
 
 impl ChainExt for Cosmos {
@@ -91,11 +90,11 @@ where
     Tr::StoredClientState<Hc>: Into<protos::google::protobuf::Any>,
     Tr::StateProof: Encode<Proto>,
 {
-    async fn msg(&self, msg: Msg<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
+    async fn msg(&self, msg: Effect<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
         self.signers
             .with(|signer| async {
                 let msg_any = match msg.clone() {
-                    Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+                    Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
                         mk_any(&MsgConnectionOpenInit {
                             client_id: data.client_id.to_string(),
                             counterparty: Some(data.counterparty.into()),
@@ -104,7 +103,7 @@ where
                             delay_period: data.delay_period,
                         })
                     }
-                    Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
+                    Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
                     {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
@@ -127,7 +126,7 @@ where
                             host_consensus_state_proof: vec![],
                         })
                     }
-                    Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
+                    Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
                             client_state: Some(data.client_state.into()),
                             proof_height: Some(data.proof_height.into_height().into()),
@@ -142,7 +141,7 @@ where
                             proof_try: data.proof_try.encode(),
                         })
                     }
-                    Msg::ConnectionOpenConfirm(data) => mk_any(
+                    Effect::ConnectionOpenConfirm(data) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
                             proof_ack: data.msg.proof_ack.encode(),
@@ -150,14 +149,14 @@ where
                             signer: signer.to_string(),
                         },
                     ),
-                    Msg::ChannelOpenInit(data) => {
+                    Effect::ChannelOpenInit(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
                             port_id: data.msg.port_id.to_string(),
                             channel: Some(data.msg.channel.into()),
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::ChannelOpenTry(data) =>
+                    Effect::ChannelOpenTry(data) =>
                     {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
@@ -170,7 +169,7 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::ChannelOpenAck(data) => {
+                    Effect::ChannelOpenAck(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
                             port_id: data.msg.port_id.to_string(),
                             channel_id: data.msg.channel_id.to_string(),
@@ -181,7 +180,7 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::ChannelOpenConfirm(data) => {
+                    Effect::ChannelOpenConfirm(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
                             port_id: data.msg.port_id.to_string(),
                             channel_id: data.msg.channel_id.to_string(),
@@ -190,7 +189,7 @@ where
                             proof_ack: data.msg.proof_ack.encode(),
                         })
                     }
-                    Msg::RecvPacket(data) => {
+                    Effect::RecvPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                             packet: Some(data.msg.packet.into()),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
@@ -198,7 +197,7 @@ where
                             proof_commitment: data.msg.proof_commitment.encode(),
                         })
                     }
-                    Msg::AckPacket(data) => {
+                    Effect::AckPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(data.msg.packet.into()),
                             acknowledgement: data.msg.acknowledgement,
@@ -207,14 +206,14 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::CreateClient(data) => {
+                    Effect::CreateClient(data) => {
                         mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
                             client_state: Some(Any(data.msg.client_state).into()),
                             consensus_state: Some(Any(data.msg.consensus_state).into()),
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::UpdateClient(MsgUpdateClientData(data)) => {
+                    Effect::UpdateClient(MsgUpdateClientData(data)) => {
                         mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
                             signer: signer.to_string(),
                             client_id: data.client_id.to_string(),
@@ -250,7 +249,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -299,7 +298,7 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -333,7 +332,7 @@ where
     fn fetch_update_headers(
         hc: &Hc,
         update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -468,7 +467,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessageTypes> {
         match msg {
             Self::FetchTrustedCommit(FetchTrustedCommit {
                 height,
@@ -529,7 +528,7 @@ where
     identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
     identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
-    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayerMsgTypes>,
+    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayMessageTypes>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -540,7 +539,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match data {
             CosmosAggregateMsg::AggregateHeader(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)
@@ -580,7 +579,7 @@ pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Cosmos as Chain>::Header>,
     Tr: ChainExt,
@@ -590,7 +589,7 @@ where
     identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
     identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Hc>)>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Hc>)>,
 {
     type AggregatedData = HList![
         identified!(TrustedCommit<Hc, Tr>),
@@ -643,7 +642,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(
@@ -656,7 +655,7 @@ where
             untrusted_signed_header.header.proposer_address,
         );
 
-        msg(id::<Tr, Hc, _>(
+        effect(id::<Tr, Hc, _>(
             req.counterparty_chain_id,
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),

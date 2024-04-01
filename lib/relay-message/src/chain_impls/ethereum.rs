@@ -25,7 +25,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, msg, msg_struct, wait, QueueMsg,
+    data, effect, fetch, msg_struct, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -58,17 +58,16 @@ use unionlabs::{
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, Data, IbcProof, IbcState},
-    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
-    id, identified,
-    msg::{
-        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
-        MsgUpdateClientData,
+    effect::{
+        AnyEffect, Effect, MsgConnectionOpenAckData, MsgConnectionOpenInitData,
+        MsgConnectionOpenTryData, MsgUpdateClientData,
     },
-    seq,
+    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
+    id, identified, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForTimestamp},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -99,14 +98,14 @@ where
     Tr::StoredClientState<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
     Tr::StateProof: Encode<EthAbi>,
 {
-    async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
+    async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
         do_msg(&self.ibc_handlers, msg).await
     }
 }
 
 pub async fn do_msg<Hc: ChainExt<Config = EthereumConfig> + EthereumChain, Tr: ChainExt>(
     ibc_handlers: &Pool<IBCHandler<EthereumSignerMiddleware>>,
-    msg: Msg<Hc, Tr>,
+    msg: Effect<Hc, Tr>,
 ) -> Result<(), TxSubmitError>
 where
     ConsensusStateOf<Tr>: Encode<EthAbi>,
@@ -119,7 +118,7 @@ where
 {
     let f = |ibc_handler| async move {
         let msg: ethers::contract::FunctionCall<_, _, ()> = match msg.clone() {
-            Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
+            Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
                 ibc_handler,
                 ConnectionOpenInitCall {
                     msg: contracts::ibc_handler::MsgConnectionOpenInit {
@@ -129,7 +128,7 @@ where
                     },
                 },
             ),
-            Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => mk_function_call(
+            Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => mk_function_call(
                 ibc_handler,
                 ConnectionOpenTryCall {
                     msg: contracts::ibc_handler::MsgConnectionOpenTry {
@@ -154,7 +153,7 @@ where
                     },
                 },
             ),
-            Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => mk_function_call(
+            Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => mk_function_call(
                 ibc_handler,
                 ConnectionOpenAckCall {
                     msg: contracts::ibc_handler::MsgConnectionOpenAck {
@@ -174,7 +173,7 @@ where
                     },
                 },
             ),
-            Msg::ConnectionOpenConfirm(data) => mk_function_call(
+            Effect::ConnectionOpenConfirm(data) => mk_function_call(
                 ibc_handler,
                 ConnectionOpenConfirmCall {
                     msg: contracts::ibc_handler::MsgConnectionOpenConfirm {
@@ -184,7 +183,7 @@ where
                     },
                 },
             ),
-            Msg::ChannelOpenInit(data) => mk_function_call(
+            Effect::ChannelOpenInit(data) => mk_function_call(
                 ibc_handler,
                 ChannelOpenInitCall {
                     msg: contracts::ibc_handler::MsgChannelOpenInit {
@@ -193,7 +192,7 @@ where
                     },
                 },
             ),
-            Msg::ChannelOpenTry(data) => mk_function_call(
+            Effect::ChannelOpenTry(data) => mk_function_call(
                 ibc_handler,
                 ChannelOpenTryCall {
                     msg: contracts::ibc_handler::MsgChannelOpenTry {
@@ -205,7 +204,7 @@ where
                     },
                 },
             ),
-            Msg::ChannelOpenAck(data) => mk_function_call(
+            Effect::ChannelOpenAck(data) => mk_function_call(
                 ibc_handler,
                 ChannelOpenAckCall {
                     msg: contracts::ibc_handler::MsgChannelOpenAck {
@@ -218,7 +217,7 @@ where
                     },
                 },
             ),
-            Msg::ChannelOpenConfirm(data) => mk_function_call(
+            Effect::ChannelOpenConfirm(data) => mk_function_call(
                 ibc_handler,
                 ChannelOpenConfirmCall {
                     msg: contracts::ibc_handler::MsgChannelOpenConfirm {
@@ -229,7 +228,7 @@ where
                     },
                 },
             ),
-            Msg::RecvPacket(data) => mk_function_call(
+            Effect::RecvPacket(data) => mk_function_call(
                 ibc_handler,
                 RecvPacketCall {
                     msg: contracts::ibc_handler::MsgPacketRecv {
@@ -239,7 +238,7 @@ where
                     },
                 },
             ),
-            Msg::AckPacket(data) => mk_function_call(
+            Effect::AckPacket(data) => mk_function_call(
                 ibc_handler,
                 AcknowledgePacketCall {
                     msg: contracts::ibc_handler::MsgPacketAcknowledgement {
@@ -250,7 +249,7 @@ where
                     },
                 },
             ),
-            Msg::CreateClient(data) => {
+            Effect::CreateClient(data) => {
                 let register_client_result = ibc_handler.register_client(
                     data.config.client_type.clone(),
                     data.config.client_address.into(),
@@ -283,7 +282,7 @@ where
                     },
                 )
             }
-            Msg::UpdateClient(MsgUpdateClientData(data)) => mk_function_call(
+            Effect::UpdateClient(MsgUpdateClientData(data)) => mk_function_call(
                 ibc_handler,
                 UpdateClientCall {
                     msg: ibc_handler::MsgUpdateClient {
@@ -347,7 +346,7 @@ where
         c: &Self,
         at: HeightOf<Self>,
         path: PathOf<Ethereum<C>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::specific(GetProof { path, height: at }),
@@ -366,7 +365,7 @@ where
         hc: &Self,
         at: HeightOf<Self>,
         path: PathOf<Ethereum<C>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::specific(FetchIbcState { path, height: at }),
@@ -397,7 +396,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         aggregate(
             [fetch(id::<Ethereum<C>, Tr, _>(
                 c.chain_id,
@@ -421,7 +420,7 @@ where
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> QueueMsg<RelayMessageTypes> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
             EthereumFetchMsg::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
@@ -905,7 +904,7 @@ where
     Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
@@ -920,7 +919,7 @@ where
             __marker: _,
         }: Self,
         aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match data {
             EthereumAggregateMsg::CreateUpdate(msg) => {
                 do_aggregate(id(chain_id, msg), aggregated_data)
@@ -941,7 +940,7 @@ fn make_create_update<C, Tr>(
     currently_trusted_slot: u64,
     light_client_update: light_client_update::LightClientUpdate<C>,
     is_next: bool,
-) -> QueueMsg<RelayerMsgTypes>
+) -> QueueMsg<RelayMessageTypes>
 where
     C: ChainSpec,
     Tr: ChainExt,
@@ -1034,7 +1033,7 @@ pub struct FetchIbcState<Hc: EthereumChainExt, Tr: ChainExt> {
     pub height: HeightOf<Hc>,
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Ethereum<C>, Tr, CreateUpdateData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayMessageTypes> for Identified<Ethereum<C>, Tr, CreateUpdateData<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
@@ -1043,7 +1042,7 @@ where
     Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 {
     type AggregatedData = HList![
@@ -1095,7 +1094,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(light_client_update_chain_id, account_update_chain_id);
         assert_eq!(chain_id, account_update_chain_id);
         assert_eq!(chain_id, beacon_api_chain_id);
@@ -1127,7 +1126,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            msg(id::<Tr, Ethereum<C>, _>(
+            effect(id::<Tr, Ethereum<C>, _>(
                 req.counterparty_chain_id,
                 MsgUpdateClientData(MsgUpdateClient {
                     client_id: req.counterparty_client_id,
@@ -1138,7 +1137,7 @@ where
     }
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes>
+impl<C, Tr> UseAggregate<RelayMessageTypes>
     for Identified<Ethereum<C>, Tr, MakeCreateUpdatesData<C, Tr>>
 where
     C: ChainSpec,
@@ -1166,7 +1165,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(chain_id, bootstrap_chain_id);
 
         let target_period =
@@ -1202,7 +1201,7 @@ where
     }
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes>
+impl<C, Tr> UseAggregate<RelayMessageTypes>
     for Identified<Ethereum<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
 where
     C: ChainSpec,
@@ -1210,7 +1209,7 @@ where
 
     Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
@@ -1242,7 +1241,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(chain_id, light_client_updates_chain_id);
 
         let target_period = sync_committee_period::<_, C>(finality_update.signature_slot);

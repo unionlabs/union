@@ -24,12 +24,12 @@ macro_rules! try_from_relayer_msg {
                         ),
                     ) => {
                         $d (
-                            impl <$($generics)+> TryFrom<queue_msg::QueueMsg<crate::RelayerMsgTypes>> for Identified<$d Chain, Tr, $d Ty>
+                            impl <$($generics)+> TryFrom<queue_msg::QueueMsg<crate::RelayMessageTypes>> for Identified<$d Chain, Tr, $d Ty>
                             where
                                 identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
                             {
-                                type Error = queue_msg::QueueMsg<crate::RelayerMsgTypes>;
-                                fn try_from(value: queue_msg::QueueMsg<crate::RelayerMsgTypes>) -> Result<Identified<$d Chain, Tr, $d Ty>, queue_msg::QueueMsg<crate::RelayerMsgTypes>> {
+                                type Error = queue_msg::QueueMsg<crate::RelayMessageTypes>;
+                                fn try_from(value: queue_msg::QueueMsg<crate::RelayMessageTypes>) -> Result<Identified<$d Chain, Tr, $d Ty>, queue_msg::QueueMsg<crate::RelayMessageTypes>> {
                                     match value {
                                         queue_msg::QueueMsg::Data(data) => {
                                             let Identified {

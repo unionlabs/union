@@ -4,28 +4,8 @@ title: "Voyager"
 
 import Mermaid from "#/components/Mermaid.astro";
 
-IBC relays on off-chain actors transferring packets and proofs between chains. Voyager is our in-house relayer, allowing us to support new networks without waiting for up-stream support.
+Voyager is our in-house relayer, allowing us to support new networks without waiting for up-stream support.
 
 ## Architecture
 
-We have opted for an event driven architecture, where the application uses an internal memory queue for observed events and I/O.
-
-<Mermaid
-  content={`
-    stateDiagram-v2
-    direction LR
-    EventListener --> Queue
-    Queue --> Processor
-    state Processor {
-      [*] --> Actor
-      Actor --> Galois
-      Galois --> [*]
-    }
-
-    Processor --> Chains
-    Chains --> EventListener
-
-`}
-/>
-
-Voyager integrates over [gRPC](https://grpc.io/) with Galois to offload computation to dedicated hardware, with pending support for proving markets.
+At it's core, Voyager is a virtual machine. The instructions of the program it executes describe how to fetch data from chains, how to aggregate that data, and how to send messages back to the chains. A postgres-based priority queue is used to store the messages, utilizing postgres' transactional integrity to ensure no invalid state is reached. This allows us to take the "let it fail" approach when it comes to error handling - since no state is held within the application itself, Voyager can crash and restart safely without corrupting it's state or missing packets.

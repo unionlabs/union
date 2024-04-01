@@ -10,7 +10,7 @@ use unionlabs::{
 
 use crate::{
     any_enum, fetch::FetchPacketAcknowledgement, AnyLightClientIdentified, ChainExt,
-    RelayerMsgTypes,
+    RelayMessageTypes,
 };
 
 #[apply(any_enum)]
@@ -44,11 +44,11 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 }
 
 // Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
-impl HandleData<RelayerMsgTypes> for AnyLightClientIdentified<AnyData> {
+impl HandleData<RelayMessageTypes> for AnyLightClientIdentified<AnyData> {
     fn handle(
         self,
-        _: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        _: &<RelayMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         Ok(data(self))
     }
 }

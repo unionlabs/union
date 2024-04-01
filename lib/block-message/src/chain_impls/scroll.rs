@@ -21,7 +21,7 @@ use crate::{
     },
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 impl ChainExt for Scroll {
@@ -37,7 +37,7 @@ where
     fn fetch_block_range(
         c: &Scroll,
         range: FetchBlockRange<Scroll>,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         fetch(id(
             c.chain_id(),
             Fetch::<Scroll>::specific(FetchEvents {
@@ -54,7 +54,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Scroll, Aggregate<Scroll>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Scroll, Fetch<Scroll>>>,
 {
-    async fn do_fetch(scroll: &Scroll, msg: Self) -> QueueMsg<BlockPollingTypes> {
+    async fn do_fetch(scroll: &Scroll, msg: Self) -> QueueMsg<BlockMessageTypes> {
         match msg {
             ScrollFetch::FetchEvents(FetchEvents {
                 from_height,
@@ -250,7 +250,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         match t {
             ScrollAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
             ScrollAggregate::AggregateWithConnection(msg) => do_aggregate(id(chain_id, msg), data),

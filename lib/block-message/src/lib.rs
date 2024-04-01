@@ -31,13 +31,13 @@ pub trait ChainExt: Chain {
     type Aggregate: QueueMsgTypesTraits;
 }
 
-pub struct BlockPollingTypes;
+pub struct BlockMessageTypes;
 
-impl QueueMsgTypes for BlockPollingTypes {
+impl QueueMsgTypes for BlockMessageTypes {
     type Event = Never;
     type Data = AnyChainIdentified<AnyData>;
     type Fetch = AnyChainIdentified<AnyFetch>;
-    type Msg = Never;
+    type Effect = Never;
     type Wait = AnyChainIdentified<AnyWait>;
     type Aggregate = AnyChainIdentified<AnyAggregate>;
 
@@ -241,7 +241,7 @@ pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
     fn do_aggregate(
         _: Self,
         _: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockPollingTypes>;
+    ) -> QueueMsg<BlockMessageTypes>;
 }
 
 macro_rules! any_chain {

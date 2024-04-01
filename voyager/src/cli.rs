@@ -8,7 +8,7 @@ use queue_msg::{aggregation::UseAggregate, run_to_completion, InMemoryQueue};
 use relay_message::{
     data::{IbcProof, IbcState},
     use_aggregate::IsAggregateData,
-    ChainExt, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
+    ChainExt, DoFetchProof, DoFetchState, Identified, RelayMessageTypes,
 };
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
@@ -219,7 +219,7 @@ struct FetchStateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
 }
 
 impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>>
-    UseAggregate<RelayerMsgTypes, StateProof<Hc, Tr, P>> for FetchStateProof<Hc, Tr, P>
+    UseAggregate<RelayMessageTypes, StateProof<Hc, Tr, P>> for FetchStateProof<Hc, Tr, P>
 where
     Identified<Hc, Tr, IbcState<P, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<P, Hc, Tr>>: IsAggregateData,

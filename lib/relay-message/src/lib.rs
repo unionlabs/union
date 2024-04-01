@@ -38,12 +38,12 @@ use unionlabs::{
 use crate::{
     aggregate::AnyAggregate,
     data::{AnyData, Data},
+    effect::{
+        AnyEffect, Effect, MsgConnectionOpenAckData, MsgConnectionOpenInitData,
+        MsgConnectionOpenTryData, MsgUpdateClientData,
+    },
     event::AnyEvent,
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
-    msg::{
-        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
-        MsgUpdateClientData,
-    },
     wait::{AnyWait, Wait},
 };
 
@@ -51,9 +51,9 @@ pub mod use_aggregate;
 
 pub mod aggregate;
 pub mod data;
+pub mod effect;
 pub mod event;
 pub mod fetch;
-pub mod msg;
 pub mod wait;
 
 pub mod chain_impls;
@@ -72,7 +72,7 @@ pub trait ChainExt: Chain {
     fn do_fetch<Tr: ChainExt>(
         &self,
         msg: Self::Fetch<Tr>,
-    ) -> impl Future<Output = QueueMsg<RelayerMsgTypes>> + '_
+    ) -> impl Future<Output = QueueMsg<RelayMessageTypes>> + '_
     where
         Self::Fetch<Tr>: DoFetch<Self>,
     {
@@ -80,23 +80,23 @@ pub trait ChainExt: Chain {
     }
 }
 
-pub struct RelayerMsgTypes;
+pub struct RelayMessageTypes;
 
-impl QueueMsgTypes for RelayerMsgTypes {
+impl QueueMsgTypes for RelayMessageTypes {
     type Event = AnyLightClientIdentified<AnyEvent>;
     type Data = AnyLightClientIdentified<AnyData>;
     type Fetch = AnyLightClientIdentified<AnyFetch>;
-    type Msg = AnyLightClientIdentified<AnyMsg>;
+    type Effect = AnyLightClientIdentified<AnyEffect>;
     type Wait = AnyLightClientIdentified<AnyWait>;
     type Aggregate = AnyLightClientIdentified<AnyAggregate>;
 
     type Store = Chains;
 }
 
-impl TryFrom<QueueMsg<RelayerMsgTypes>> for AnyLightClientIdentified<AnyData> {
-    type Error = QueueMsg<RelayerMsgTypes>;
+impl TryFrom<QueueMsg<RelayMessageTypes>> for AnyLightClientIdentified<AnyData> {
+    type Error = QueueMsg<RelayMessageTypes>;
 
-    fn try_from(value: QueueMsg<RelayerMsgTypes>) -> Result<Self, Self::Error> {
+    fn try_from(value: QueueMsg<RelayMessageTypes>) -> Result<Self, Self::Error> {
         match value {
             QueueMsg::Data(data) => Ok(data),
             _ => Err(value),
@@ -481,20 +481,20 @@ pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
     fn do_aggregate(
         _: Self,
         _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes>;
+    ) -> QueueMsg<RelayMessageTypes>;
 }
 
 impl<Hc: Chain, Tr> DoAggregate for Identified<Hc, Tr, Never> {
     fn do_aggregate(
         s: Self,
         _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         match s.t {}
     }
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes>;
+    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
 
     #[deprecated = "will be removed in favor of an aggregation with state"]
     fn query_client_state(
@@ -505,18 +505,18 @@ pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
 }
 
 pub trait DoFetchProof<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes>;
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
 }
 
 pub trait DoFetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn fetch_update_headers(
         hc: &Hc,
         update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes>;
+    ) -> QueueMsg<RelayMessageTypes>;
 }
 
 pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn msg(&self, msg: Msg<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
+    fn msg(&self, msg: Effect<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -555,7 +555,7 @@ where
     fn do_aggregate(
         i: Self,
         v: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
             Identified {
                 chain_id: i.chain_id,
@@ -591,12 +591,12 @@ where
     Tr::StoredClientState<Wasm<Hc>>: Encode<Proto> + IntoAny,
     Tr::StateProof: Encode<Proto>,
 {
-    async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
+    async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
         self.0
             .signers()
             .with(|signer| async {
                 let msg_any = match msg.clone() {
-                    Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+                    Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
                             client_id: data.client_id.to_string(),
                             counterparty: Some(data.counterparty.into()),
@@ -605,7 +605,7 @@ where
                             delay_period: data.delay_period,
                         })
                     }
-                    Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
+                    Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
                     {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
@@ -628,7 +628,7 @@ where
                             host_consensus_state_proof: vec![],
                         })
                     }
-                    Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
+                    Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
                             client_state: Some(data.client_state.into_any().into()),
                             proof_height: Some(data.proof_height.into_height().into()),
@@ -643,7 +643,7 @@ where
                             proof_try: data.proof_try.encode(),
                         })
                     }
-                    Msg::ConnectionOpenConfirm(data) => mk_any(
+                    Effect::ConnectionOpenConfirm(data) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
                             proof_ack: data.msg.proof_ack.encode(),
@@ -651,14 +651,14 @@ where
                             signer: signer.to_string(),
                         },
                     ),
-                    Msg::ChannelOpenInit(data) => {
+                    Effect::ChannelOpenInit(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
                             port_id: data.msg.port_id.to_string(),
                             channel: Some(data.msg.channel.into()),
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::ChannelOpenTry(data) =>
+                    Effect::ChannelOpenTry(data) =>
                     {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
@@ -671,7 +671,7 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::ChannelOpenAck(data) => {
+                    Effect::ChannelOpenAck(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
                             port_id: data.msg.port_id.to_string(),
                             channel_id: data.msg.channel_id.to_string(),
@@ -682,7 +682,7 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::ChannelOpenConfirm(data) => {
+                    Effect::ChannelOpenConfirm(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
                             port_id: data.msg.port_id.to_string(),
                             channel_id: data.msg.channel_id.to_string(),
@@ -691,7 +691,7 @@ where
                             proof_ack: data.msg.proof_ack.encode(),
                         })
                     }
-                    Msg::RecvPacket(data) => {
+                    Effect::RecvPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                             packet: Some(data.msg.packet.into()),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
@@ -699,7 +699,7 @@ where
                             proof_commitment: data.msg.proof_commitment.encode(),
                         })
                     }
-                    Msg::AckPacket(data) => {
+                    Effect::AckPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(data.msg.packet.into()),
                             acknowledgement: data.msg.acknowledgement,
@@ -708,7 +708,7 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::CreateClient(data) => {
+                    Effect::CreateClient(data) => {
                         mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
                             client_state: Some(
                                 Any(wasm::client_state::ClientState {
@@ -727,7 +727,7 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::UpdateClient(MsgUpdateClientData(data)) => {
+                    Effect::UpdateClient(MsgUpdateClientData(data)) => {
                         mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
                             signer: signer.to_string(),
                             client_id: data.client_id.to_string(),
@@ -762,7 +762,7 @@ where
         hc: &Self,
         at: HeightOf<Self>,
         path: PathOf<Wasm<Hc>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         Hc::proof(hc, at, path)
     }
 }
@@ -777,7 +777,7 @@ where
         hc: &Self,
         at: HeightOf<Self>,
         path: PathOf<Wasm<Hc>, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         Hc::state(hc, at, path)
     }
 
@@ -798,7 +798,7 @@ where
     fn fetch_update_headers(
         hc: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> QueueMsg<RelayMessageTypes> {
         Hc::fetch_update_headers(
             hc,
             FetchUpdateHeaders {

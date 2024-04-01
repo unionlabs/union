@@ -25,13 +25,13 @@ macro_rules! try_from_block_poll_msg {
                         ),
                     ) => {
                         $d (
-                            impl <$($generics)*> TryFrom<QueueMsg<BlockPollingTypes>> for Identified<$d Chain, $d Ty>
+                            impl <$($generics)*> TryFrom<QueueMsg<crate::BlockMessageTypes>> for Identified<$d Chain, $d Ty>
                             where
                                 Identified<$d Chain, Data<$d Chain>>: TryFrom<AnyChainIdentified<AnyData>, Error = AnyChainIdentified<AnyData>> + Into<AnyChainIdentified<AnyData>>,
                                 $($($where)+)?
                             {
-                                type Error = QueueMsg<BlockPollingTypes>;
-                                fn try_from(value: QueueMsg<BlockPollingTypes>) -> Result<Identified<$d Chain, $d Ty>, QueueMsg<BlockPollingTypes>> {
+                                type Error = QueueMsg<crate::BlockMessageTypes>;
+                                fn try_from(value: QueueMsg<crate::BlockMessageTypes>) -> Result<Identified<$d Chain, $d Ty>, QueueMsg<BlockMessageTypes>> {
                                     match value {
                                         QueueMsg::Data(data) => {
                                             let Identified {

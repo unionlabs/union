@@ -54,7 +54,7 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 pub trait EthereumChainExt = ChainExt + EthereumChain;
@@ -72,7 +72,7 @@ where
     fn fetch_block_range(
         c: &Ethereum<C>,
         range: FetchBlockRange<Ethereum<C>>,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         fetch(id(
             c.chain_id(),
             Fetch::<Ethereum<C>>::specific(FetchEvents {
@@ -89,7 +89,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
-    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<BlockPollingTypes> {
+    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<BlockMessageTypes> {
         match msg {
             EthereumFetch::FetchEvents(FetchEvents {
                 from_height,
@@ -207,7 +207,7 @@ pub async fn fetch_beacon_block_range<C, Hc>(
     c: &Hc,
     FetchBeaconBlockRange { from_slot, to_slot }: FetchBeaconBlockRange,
     beacon_api_client: &BeaconApiClient<C>,
-) -> QueueMsg<BlockPollingTypes>
+) -> QueueMsg<BlockMessageTypes>
 where
     C: ChainSpec,
     Hc: ChainExt + EthereumChain,
@@ -278,7 +278,7 @@ pub async fn mk_aggregate_event<Hc>(
     event: IBCHandlerEvents,
     event_height: Hc::Height,
     tx_hash: H256,
-) -> QueueMsg<BlockPollingTypes>
+) -> QueueMsg<BlockMessageTypes>
 where
     Hc: ChainExt + EthereumChain,
     Hc::Aggregate: From<AggregateWithChannel<Hc>>,
@@ -493,7 +493,7 @@ pub fn with_channel<Hc, T>(
     event_height: HeightOf<Hc>,
     tx_hash: H256,
     raw_event: T,
-) -> QueueMsg<BlockPollingTypes>
+) -> QueueMsg<BlockMessageTypes>
 where
     Hc: ChainExt + EthereumChain,
 
@@ -534,7 +534,7 @@ pub fn with_connection<Hc, T>(
     event_height: HeightOf<Hc>,
     tx_hash: H256,
     raw_event: T,
-) -> QueueMsg<BlockPollingTypes>
+) -> QueueMsg<BlockMessageTypes>
 where
     Hc: ChainExt + EthereumChain,
 
@@ -669,7 +669,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         match t {
             EthereumAggregate::AggregateWithChannel(msg) => {
                 do_aggregate(id::<Ethereum<C>, _>(chain_id, msg), data)
@@ -751,7 +751,7 @@ impl<Hc: ChainExt + EthereumChain, T: Clone> Clone for EventInfo<Hc, T> {
 }
 
 // NOTE: Currently, we assume that EthereumChains will only connect to Union, and as such hardcode the client_type to be Cometbls. This avoids an extra fetch and aggregation to figure out the client type.
-impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockPollingTypes>
+impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockMessageTypes>
     for Identified<Hc, AggregateWithChannel<Hc>>
 where
     Identified<Hc, ChannelData<Hc>>: IsAggregateData,
@@ -769,7 +769,7 @@ where
                 __marker: _
             }
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         assert_eq!(chain_id, channel_data_chain_id);
 
         let event = match msg {
@@ -911,7 +911,7 @@ where
     }
 }
 
-impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockPollingTypes>
+impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockMessageTypes>
     for Identified<Hc, AggregateWithConnection<Hc>>
 where
     Identified<Hc, ConnectionData<Hc>>: IsAggregateData,
@@ -926,7 +926,7 @@ where
             chain_id: connection_data_chain_id,
             t: ConnectionData(connection)
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockPollingTypes> {
+    ) -> QueueMsg<BlockMessageTypes> {
         assert_eq!(chain_id, connection_data_chain_id);
 
         let event = match msg {

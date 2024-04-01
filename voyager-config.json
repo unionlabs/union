@@ -25,7 +25,7 @@
       "union_grpc_url": "http://localhost:9090"
     },
     "ethereum-devnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_handler_address": "0xA79fC743bcCDF8ec0078021fF7b00837a7CDB032",
