@@ -570,11 +570,21 @@ pub mod ibc_client {
                     ::std::borrow::ToOwned::to_owned("ClientUpdated"),
                     ::std::vec![::ethers::core::abi::ethabi::Event {
                         name: ::std::borrow::ToOwned::to_owned("ClientUpdated"),
-                        inputs: ::std::vec![::ethers::core::abi::ethabi::EventParam {
-                            name: ::std::string::String::new(),
-                            kind: ::ethers::core::abi::ethabi::ParamType::String,
-                            indexed: false,
-                        },],
+                        inputs: ::std::vec![
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::string::String::new(),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                indexed: false,
+                            },
+                            ::ethers::core::abi::ethabi::EventParam {
+                                name: ::std::string::String::new(),
+                                kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                    ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                    ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                ],),
+                                indexed: false,
+                            },
+                        ],
                         anonymous: false,
                     },],
                 ),
@@ -1230,8 +1240,8 @@ pub mod ibc_client {
         Eq,
         Hash,
     )]
-    #[ethevent(name = "ClientUpdated", abi = "ClientUpdated(string)")]
-    pub struct ClientUpdatedFilter(pub ::std::string::String);
+    #[ethevent(name = "ClientUpdated", abi = "ClientUpdated(string,(uint64,uint64))")]
+    pub struct ClientUpdatedFilter(pub ::std::string::String, pub IbcCoreClientV1HeightData);
     ///Container type for all of the contract's events
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCClientEvents {

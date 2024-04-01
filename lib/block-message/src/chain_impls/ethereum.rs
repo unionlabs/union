@@ -40,8 +40,7 @@ use unionlabs::{
     hash::H256,
     ibc::{
         core::{
-            channel::channel::Channel,
-            client::height::{Height, IsHeight},
+            channel::channel::Channel, client::height::Height,
             connection::connection_end::ConnectionEnd,
         },
         lightclients::cometbls,
@@ -417,28 +416,13 @@ where
         }
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => QueueMsg::Noop,
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
-            ClientUpdatedFilter(client_id),
+            ClientUpdatedFilter(client_id, consensus_height),
         )) => {
             let client_type = c
                 .ibc_handler()
                 .client_types(client_id.clone())
                 .await
                 .unwrap();
-
-            let (client_state, success) = c
-                .ibc_handler()
-                .get_client_state(client_id.clone())
-                .block(
-                    c.execution_height_of_beacon_slot(event_height.revision_height())
-                        .await,
-                )
-                .await
-                .unwrap();
-
-            assert!(success);
-
-            let client_state =
-                cometbls::client_state::ClientState::decode_as::<EthAbi>(&client_state).unwrap();
 
             data(id(
                 c.chain_id(),
@@ -449,7 +433,7 @@ where
                     event: IbcEvent::UpdateClient(UpdateClient {
                         client_id: client_id.parse().unwrap(),
                         client_type,
-                        consensus_heights: vec![client_state.latest_height],
+                        consensus_heights: vec![consensus_height.into()],
                     }),
                 },
             ))
