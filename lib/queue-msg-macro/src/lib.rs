@@ -142,14 +142,23 @@ fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Err
                     "queue-msg only supports Named and Unnamed Struct fields",
                 )),
             }
-        }
-        Data::Enum(data_enum) => Err(Error::new_spanned(
-            data_enum.enum_token,
-            "queue-msg only supports Struct",
+        },
+        Data::Enum(_) => Ok(parse_quote!(
+            #[derive(::frame_support_procedural::DebugNoBound, ::frame_support_procedural::CloneNoBound, ::frame_support_procedural::PartialEqNoBound, ::serde::Serialize, ::serde::Deserialize)]
+            #[serde(
+                tag = "@type",
+                content = "@value",
+                rename_all = "snake_case",
+                bound(serialize = "", deserialize = ""),
+                deny_unknown_fields
+            )]
+            #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+            
+            #derive_input
         )),
         Data::Union(data_union) => Err(Error::new_spanned(
             data_union.union_token,
-            "queue-msg only supports Struct",
+            "queue-msg only supports Enum and Struct",
         )),
     }
 }
