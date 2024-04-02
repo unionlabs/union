@@ -381,7 +381,7 @@
           buildInputs = [ pkgs.git ];
           doCheck = true;
           checkPhase = ''
-            rust_protos_in_git_repo=${self}/generated/rust/protos
+            rust_protos_in_git_repo=${self'}/generated/rust/protos
             rust_protos_in_derivation=${self'.packages.rust-proto}
             git --no-pager diff --exit-code --no-index $rust_protos_in_git_repo $rust_protos_in_derivation
             touch $out
