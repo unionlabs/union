@@ -4,39 +4,41 @@ use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, spanned::Spanned, Attribute, Error, Fields, GenericParam, Item,
-    ItemStruct, Meta,
+    parse_macro_input, parse_quote, spanned::Spanned, Attribute, Data::Struct, DataStruct,
+    DeriveInput, Error, Fields, GenericParam, Generics, Meta,
 };
 
 #[proc_macro_attribute]
 pub fn msg_struct(_: TokenStream, input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as Item);
+    let input = parse_macro_input!(input as DeriveInput);
 
     let result = apply_item(input).unwrap_or_else(|error| error.to_compile_error());
 
     result.into()
 }
 
-fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
-    match item {
-        Item::Struct(mut item_struct) => {
-            match &mut item_struct.fields {
+fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
+    let derive_input = &mut derive_input.clone();
+
+    match &mut derive_input.data {
+        Struct(data_struct) => {
+            match &mut data_struct.fields {
                 Fields::Named(field_named) => {
-                    let struct_ident = item_struct.ident.clone();
+                    let struct_ident = &derive_input.ident.clone();
 
                     // copy the fields, before we're adding them in 'cover_types' below
-                    let fields = field_named
+                    let fields = &field_named
                         .named
                         .iter()
                         .map(|field| field.clone().ident.expect("a field Ident for Named field"))
                         .collect::<Vec<Ident>>();
 
-                    let type_params_to_cover = extract_covered_types(&mut item_struct);
+                    let type_params_to_cover = extract_covered_types(&mut derive_input.generics);
 
                     let clone_marker_fields = if let Some(type_params_to_cover) =
                         &type_params_to_cover
                     {
-                        add_marker_field_to_struct(&mut item_struct, type_params_to_cover);
+                        add_marker_field_to_struct(data_struct, type_params_to_cover);
 
                         quote! {
                             __marker: ::core::marker::PhantomData::<fn() -> (#(#type_params_to_cover),*)>
@@ -46,7 +48,7 @@ fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
                     };
 
                     let (impl_generics, ty_generics, where_clause) =
-                        &item_struct.generics.split_for_impl();
+                        &derive_input.generics.split_for_impl();
 
                     Ok(parse_quote!(
                         #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -57,7 +59,7 @@ fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
                             arbitrary(bound = "")
                         )]
 
-                        #item_struct
+                        #derive_input
 
                         const _: () = {
                             impl #impl_generics ::core::fmt::Debug for #struct_ident #ty_generics #where_clause {
@@ -94,10 +96,10 @@ fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
                         ));
                     }
 
-                    let struct_ident = item_struct.ident.clone();
+                    let struct_ident = derive_input.ident.clone();
 
                     let (impl_generics, ty_generics, where_clause) =
-                        &item_struct.generics.split_for_impl();
+                        &derive_input.generics.split_for_impl();
 
                     Ok(parse_quote!(
                         #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -108,7 +110,7 @@ fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
                             arbitrary(bound = "")
                         )]
 
-                        #item_struct
+                        #derive_input
 
                         const _: () = {
                             impl #impl_generics ::core::fmt::Debug for #struct_ident #ty_generics #where_clause {
@@ -146,8 +148,8 @@ fn apply_item(item: Item) -> Result<proc_macro2::TokenStream, Error> {
 }
 
 // inject `__marker: PhantomData<fn -> ({type params})>` fields into struct
-fn add_marker_field_to_struct(item_struct: &mut ItemStruct, type_params_to_cover: &Vec<Ident>) {
-    match &mut item_struct.fields {
+fn add_marker_field_to_struct(data_struct: &mut DataStruct, type_params_to_cover: &Vec<Ident>) {
+    match &mut data_struct.fields {
         Fields::Named(fields_named) => {
             fields_named.named.push(parse_quote! {
                 #[serde(skip)]
@@ -159,9 +161,8 @@ fn add_marker_field_to_struct(item_struct: &mut ItemStruct, type_params_to_cover
     }
 }
 
-fn extract_covered_types(item_struct: &mut ItemStruct) -> Option<Vec<Ident>> {
-    let type_params_to_cover = &mut item_struct
-        .generics
+fn extract_covered_types(generics: &mut Generics) -> Option<Vec<Ident>> {
+    let type_params_to_cover = &mut generics
         .params
         .iter_mut()
         .filter_map(|generic_param| {
