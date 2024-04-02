@@ -47,7 +47,28 @@
       checks.biome-lint = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
         name = "biome-lint";
         description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue files";
-        src = ../../.;
+        src = with unstablePkgs.lib.fileset; toSource {
+          root = ../../.;
+          fileset = intersection
+            (difference ../../. (unions [ ../../galoisd/vendor ../../uniond/vendor ../../app/src/generated ]))
+            (fileFilter
+              (file: (file.name != "package-lock.json") && (builtins.any file.hasExt [
+                "js"
+                "ts"
+                "mts"
+                "cjs"
+                "mjs"
+                "jsx"
+                "tsx"
+                "vue"
+                "d.ts"
+                "css"
+                "astro"
+                "svelte"
+                "json"
+                "jsonc"
+              ])) ../../.);
+        };
         buildInputs = [ biome ];
         doCheck = true;
         checkPhase = ''
