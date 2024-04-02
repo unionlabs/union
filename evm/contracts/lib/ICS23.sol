@@ -225,18 +225,18 @@ library Ops {
         //require(value.length > 0); // dev: Leaf op needs value
         if (value.length == 0) return ("", ApplyLeafOpError.ValueLength);
 
-        // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        bytes memory encodedKey =
-            new bytes(ProtoBufRuntime._sz_varint(key.length));
-        ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
-
-        // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
+        // Note that we can expect hashed inputs and completely omit this hashes. Then it would be light client's
+        // job to make sure public inputs are correct
+        bytes32 hashedKey = sha256(key);
         bytes32 hashedValue = sha256(value);
-        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(32));
-        ProtoBufRuntime._encode_varint(32, 32, encodedValue);
 
+        // This will be MiMC and the size is `16 + 32 + 32 = 80` 
+        // prefix is 16 because:
+        //     - 32 bit height (4)
+        //     - 64 bit size   (8)
+        //     - 32 bit version(4)
         bytes32 data = sha256(
-            abi.encodePacked(prefix, encodedKey, key, encodedValue, hashedValue)
+            abi.encodePacked(prefix, hashedKey, hashedValue)
         );
         return (data, ApplyLeafOpError.None);
     }
@@ -261,6 +261,17 @@ library Ops {
     ) internal pure returns (bytes32, ApplyInnerOpError) {
         //require(child.length > 0); // dev: Inner op needs child value
         if (child.length == 0) return ("", ApplyInnerOpError.ChildLength);
+        // This will be MiMC and the size is `80` because:
+        // prefix is 16 or 48:
+        //     - 32 bit height (4)
+        //     - 64 bit size   (8)
+        //     - 32 bit version(4)
+        //     - if left exists, hash of left 32 byte
+        //          - note that in this case suffix is guaranteed to be empty
+        // suffix is 0 or 32:
+        //     - if left does not exist, hash of right 32 byte
+        //          - note that suffix will be always 0, if left exists
+        // child is 32 byte hash
         bytes memory preImage =
             abi.encodePacked(innerOp.prefix, child, innerOp.suffix);
 
