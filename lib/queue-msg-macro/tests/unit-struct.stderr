@@ -1,7 +1,5 @@
-error: Only supports Named and Unnamed fields
- --> tests/unit-struct.rs:3:1
+error: queue-msg only supports Named and Unnamed Struct fields
+ --> tests/unit-struct.rs:4:1
   |
-3 | #[msg_struct]
-  | ^^^^^^^^^^^^^
-  |
-  = note: this error originates in the attribute macro `msg_struct` (in Nightly builds, run with -Z macro-backtrace for more info)
+4 | struct UnitStruct;
+  | ^^^^^^

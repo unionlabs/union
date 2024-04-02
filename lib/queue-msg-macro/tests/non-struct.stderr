@@ -1,15 +1,11 @@
-error: Only support Structs
- --> tests/non-struct.rs:3:1
+error: queue-msg only supports Struct
+ --> tests/non-struct.rs:4:1
   |
-3 | #[msg_struct]
-  | ^^^^^^^^^^^^^
-  |
-  = note: this error originates in the attribute macro `msg_struct` (in Nightly builds, run with -Z macro-backtrace for more info)
+4 | enum Enum {
+  | ^^^^
 
-error: Only support Structs
- --> tests/non-struct.rs:9:1
-  |
-9 | #[msg_struct]
-  | ^^^^^^^^^^^^^
-  |
-  = note: this error originates in the attribute macro `msg_struct` (in Nightly builds, run with -Z macro-backtrace for more info)
+error: queue-msg only supports Struct
+  --> tests/non-struct.rs:10:1
+   |
+10 | union Union {
+   | ^^^^^

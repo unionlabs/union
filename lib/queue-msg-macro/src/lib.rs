@@ -1,10 +1,10 @@
 #![feature(proc_macro_quote)]
 
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, Span};
+use proc_macro2::Ident;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, spanned::Spanned, Attribute, Data::Struct, DataStruct,
+    parse_macro_input, parse_quote, spanned::Spanned, Attribute, Data, Data::Struct, DataStruct,
     DeriveInput, Error, Fields, GenericParam, Generics, Meta,
 };
 
@@ -137,13 +137,20 @@ fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Err
                         };
                     ))
                 }
-                _ => Err(Error::new(
-                    Span::call_site(),
-                    "Only supports Named and Unnamed fields",
+                _ => Err(Error::new_spanned(
+                    data_struct.struct_token,
+                    "queue-msg only supports Named and Unnamed Struct fields",
                 )),
             }
         }
-        _ => Err(Error::new(Span::call_site(), "Only support Structs")),
+        Data::Enum(data_enum) => Err(Error::new_spanned(
+            data_enum.enum_token,
+            "queue-msg only supports Struct",
+        )),
+        Data::Union(data_union) => Err(Error::new_spanned(
+            data_union.union_token,
+            "queue-msg only supports Struct",
+        )),
     }
 }
 
