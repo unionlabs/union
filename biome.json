@@ -135,7 +135,6 @@
         "useSelfClosingElements": "off",
         "noUnusedTemplateLiteral": "off",
         "useFilenamingConvention": "off",
-        "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "warn",
           "options": { "syntax": "generic" }
@@ -158,7 +157,7 @@
       },
       "performance": {
         "all": true,
-        "noAccumulatingSpread": "off"
+        "noAccumulatingSpread": "warn"
       },
       "correctness": {
         "all": true,
@@ -179,6 +178,9 @@
         "useLiteralKeys": "off",
         "noUselessFragments": "off",
         "noExcessiveCognitiveComplexity": "off"
+      },
+      "security": {
+        "all": true
       }
     },
     "enabled": true,
@@ -272,6 +274,16 @@
         "rules": {
           "nursery": {
             "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["./app/src/patch.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNodejsImportProtocol": "off"
           }
         }
       }
