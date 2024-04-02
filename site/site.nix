@@ -10,7 +10,7 @@
         site = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-p9vmPZP0IfIDAhwgs/Pm5d6Di92rxxeyMtw6g6P/qNI=";
           src = ./.;
-          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
+          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ./../uniond/docs/static/. ];
           sourceRoot = "site";
           pname = "site";
           version = "0.0.1";
