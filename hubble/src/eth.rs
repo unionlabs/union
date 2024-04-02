@@ -60,7 +60,7 @@ impl Config {
                 info!("no block found, starting at 0");
                 0
             } else {
-                info!("block found, continueing at {}", block.height + 1);
+                info!("block found, continuing at {}", block.height + 1);
                 block.height + 1
             }
         })
@@ -82,11 +82,11 @@ impl Indexer {
     /// The second routine handles fixing up block reorgs.
     pub async fn index(mut self) -> Result<(), Report> {
         info!(
-            self.chain_id.cannonical,
+            self.chain_id.canonical,
             "starting indexing from {} to {}", self.range.start, self.range.end
         );
 
-        debug!(self.chain_id.cannonical, "spawning main indexing routine");
+        debug!(self.chain_id.canonical, "spawning main indexing routine");
         self.tasks.spawn(index_blocks(
             self.pool.clone(),
             self.range,
@@ -94,7 +94,7 @@ impl Indexer {
             self.provider.clone(),
         ));
 
-        debug!(self.chain_id.cannonical, "spawning fork indexing routine");
+        debug!(self.chain_id.canonical, "spawning fork indexing routine");
         self.tasks.spawn(reindex_blocks(
             self.pool.clone(),
             self.chain_id,
@@ -135,7 +135,7 @@ async fn index_blocks(
                         }
                         Ok(info) => {
                             info!(
-                                chain_id.cannonical,
+                                chain_id.canonical,
                                 height = info.height,
                                 hash = info.hash,
                                 num_transactions = info.num_tx,
@@ -143,13 +143,13 @@ async fn index_blocks(
                                 "indexed block"
                             );
                             metrics::BLOCK_COLLECTOR
-                                .with_label_values(&[chain_id.cannonical])
+                                .with_label_values(&[chain_id.canonical])
                                 .inc();
                             metrics::TRANSACTION_COLLECTOR
-                                .with_label_values(&[chain_id.cannonical])
+                                .with_label_values(&[chain_id.canonical])
                                 .inc_by(info.num_tx as u64);
                             metrics::EVENT_COLLECTOR
-                                .with_label_values(&[chain_id.cannonical])
+                                .with_label_values(&[chain_id.canonical])
                                 .inc_by(info.num_events as u64);
                         }
                     }
@@ -274,7 +274,7 @@ impl BlockInsert {
         let block = provider.get_block(height).await?.unwrap();
         let mut receipts = provider.get_block_receipts(height).await.unwrap();
         let ts = if block.number.unwrap().is_zero() {
-            match chain_id.cannonical {
+            match chain_id.canonical {
                 "1" => 1438269973,
                 "11155111" => 1691344421,
                 id => todo!(

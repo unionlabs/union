@@ -37,19 +37,19 @@ pub struct Event {
 }
 
 /// The internal representation of a chain-id, assigned by the database, combined
-/// with the cannonical chain-id (from the genesis).
+/// with the canonical chain-id (from the genesis).
 #[derive(Copy, Clone, Debug, Valuable)]
 pub struct ChainId {
     pub db: i32,
-    // We do not track too many chains in hubble, hence leaking the cannonical
+    // We do not track too many chains in hubble, hence leaking the canonical
     // chain-id makes the code more efficient and easier to pass IDs around as `Copy`.
-    pub cannonical: &'static str,
+    pub canonical: &'static str,
 }
 
 impl ChainId {
-    pub fn new_leaked(db: i32, cannonical: String) -> Self {
-        let cannonical = cannonical.leak();
-        Self { db, cannonical }
+    pub fn new_leaked(db: i32, canonical: String) -> Self {
+        let canonical = canonical.leak();
+        Self { db, canonical }
     }
 }
 
@@ -76,7 +76,7 @@ pub async fn insert_batch_logs<T: Serialize, B: Stream<Item = Log<T>>>(
             );
             logs_query_builder.push_values(chunk.into_iter(), |mut b, log| {
                 debug!(
-                    chain_id = log.chain_id.cannonical,
+                    chain_id = log.chain_id.canonical,
                     height = log.height,
                     block_hash = log.block_hash,
                     "batch inserting log"
@@ -138,7 +138,7 @@ pub async fn insert_batch_blocks<B: Stream<Item = Block>>(
             );
             blocks_query_builder.push_values(chunk.into_iter(), |mut b, block| {
                 debug!(
-                    chain_id = block.chain_id.cannonical,
+                    chain_id = block.chain_id.canonical,
                     height = block.height,
                     block_hash = block.hash,
                     "batch inserting block"
@@ -178,7 +178,7 @@ pub async fn insert_batch_transactions<B: Stream<Item = Transaction>>(
             );
             tx_query_builder.push_values(chunk.into_iter(), |mut b, transaction| {
                 debug!(
-                    chain_id = transaction.chain_id.cannonical,
+                    chain_id = transaction.chain_id.canonical,
                     height = transaction.block_height,
                     block_hash = transaction.block_hash,
                     transaction_hash = &transaction.hash,
@@ -221,7 +221,7 @@ pub async fn insert_batch_events<B: Stream<Item = Event>>(
     );
     event_query_builder.push_values(chunk.into_iter(), |mut b, event| {
             debug!(
-                chain_id = event.chain_id.cannonical,
+                chain_id = event.chain_id.canonical,
                 height = event.block_height,
                 block_hash = event.block_hash,
                 transaction_hash = &event.transaction_hash,
@@ -270,27 +270,27 @@ impl<T> FetchOrCreated<T> {
 
 pub async fn fetch_or_insert_chain_id<'a, A: Acquire<'a, Database = Postgres>>(
     db: A,
-    cannonical: String,
+    canonical: String,
 ) -> sqlx::Result<FetchOrCreated<ChainId>> {
     use FetchOrCreated::*;
     let mut conn = db.acquire().await?;
     let db_chain_id = if let Some(chain_id) = sqlx::query!(
         "SELECT id FROM \"v0\".chains WHERE chain_id = $1 LIMIT 1",
-        cannonical.to_string()
+        canonical.to_string()
     )
     .fetch_optional(&mut *conn)
     .await?
     {
-        Fetched(ChainId::new_leaked(chain_id.id, cannonical))
+        Fetched(ChainId::new_leaked(chain_id.id, canonical))
     } else {
         let id = sqlx::query!(
             "INSERT INTO \"v0\".chains (chain_id) VALUES ($1) RETURNING id",
-            cannonical.to_string()
+            canonical.to_string()
         )
         .fetch_one(&mut *conn)
         .await?
         .id;
-        Created(ChainId::new_leaked(id, cannonical))
+        Created(ChainId::new_leaked(id, canonical))
     };
     Ok(db_chain_id)
 }
