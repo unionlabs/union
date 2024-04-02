@@ -18,12 +18,11 @@ path = "src/main.rs"
 
 [dependencies]
 axum               = { workspace = true, features = ["macros", "tokio"] }
-base64             = "0.21.5"
+base64             = { workspace = true }
 clap               = { workspace = true, features = ["derive", "env"] }
 color-eyre         = { workspace = true, features = ["default"] }
 ethers             = { workspace = true, features = ["default", "std"] }
 futures            = { workspace = true, features = ["async-await"] }
-graphql_client     = { version = "0.13.0", features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
 lazy_static        = { workspace = true }
 prometheus         = { version = "0.13.3", features = ["process"] }
 reqwest            = { workspace = true, features = ["json", "blocking"] }
