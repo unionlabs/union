@@ -44,33 +44,24 @@
     in
     {
       _module.args.biome = biome;
-      checks.biome-lint = mkCi (system == "x86_64") (pkgs.stdenv.mkDerivation {
+      checks.biome-lint = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
         name = "biome-lint";
-        src = with unstablePkgs.lib.fileset; toSource {
-          root = ../../.;
-          fileset = intersection
-            (difference ../../. (unions [ ../../galoisd/vendor ../../uniond/vendor ../../app/src/generated ]))
-            (fileFilter
-              (file: (file.name != "package-lock.json") && (builtins.any file.hasExt [
-                "js"
-                "ts"
-                "cjs"
-                "mjs"
-                "jsx"
-                "tsx"
-                "d.ts"
-                "css"
-                "astro"
-                "svelte"
-                "json"
-                "jsonc"
-              ])) ../../.);
-        };
+        description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue files";
+        src = ../../.;
         buildInputs = [ biome ];
         doCheck = true;
         checkPhase = ''
           cd $src
-          biome lint . --error-on-warnings --verbose
+
+          biome lint . \
+            --verbose \
+            --error-on-warnings \
+            --colors="force" \
+            --log-level="info" \
+            --log-kind="pretty" \
+            --diagnostic-level="info"
+
+          echo "biome-lint: OK"
           touch $out
         '';
       });

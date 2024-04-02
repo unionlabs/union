@@ -431,20 +431,6 @@
                 touch $out
               '';
             });
-
-            biomeLint = mkCi false (pkgs.stdenv.mkDerivation {
-              name = "biome-lint";
-              description = "Lint js,ts,jsx,tsx,json,astro,svelte files";
-              dontUnpack = true;
-              src = ./.;
-              buildInputs = [ biome ];
-              doCheck = true;
-              checkPhase = ''
-                cd $src/.
-                biome lint . --error-on-warnings --colors="force" --log-level="info" --log-kind="pretty"
-                touch $out
-              '';
-            });
           };
 
           devShells.default = pkgs.mkShell {
