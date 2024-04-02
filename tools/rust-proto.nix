@@ -372,5 +372,21 @@
           echo "Generation successful!"
         '';
       });
+
+      checks = {
+        rust-proto-check = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
+          name = "rust-proto-is-committed";
+          description = "check that rust protos in git repo are the same as those that are generated in rust-proto derivation";
+          src = ../.;
+          buildInputs = [ pkgs.git ];
+          doCheck = true;
+          checkPhase = ''
+            rust_protos_in_git_repo=./generated/rust/protos
+            rust_protos_in_derivation=${self'.packages.rust-proto}
+            git --no-pager diff --exit-code --no-index $rust_protos_in_git_repo $rust_protos_in_derivation
+            touch $out
+          '';
+        });
+      };
     };
 }
