@@ -56,7 +56,6 @@
           biome lint . \
             --verbose \
             --error-on-warnings \
-            --colors="force" \
             --log-level="info" \
             --log-kind="pretty" \
             --diagnostic-level="info"
