@@ -4,7 +4,7 @@ use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{
-    aggregate, fetch, msg_struct, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
+    aggregate, fetch, queue_msg, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -339,7 +339,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub height: HeightOf<Hc>,

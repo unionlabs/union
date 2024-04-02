@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use macros::apply;
-use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
 use crate::{any_enum, AnyChainIdentified, BlockMessageTypes, ChainExt};
@@ -37,10 +37,10 @@ impl<C: ChainExt> Display for Data<C> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct ChainSpecificData<C: ChainExt>(pub C::Data);
 
-#[msg_struct]
+#[queue_msg]
 pub struct ChainEvent<C: ChainExt> {
     pub client_type: ClientType,
     pub tx_hash: H256,
@@ -49,5 +49,5 @@ pub struct ChainEvent<C: ChainExt> {
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LatestHeight<C: ChainExt>(pub C::Height);

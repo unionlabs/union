@@ -6,7 +6,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    effect, fetch, msg_struct, wait, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
+    effect, fetch, queue_msg, wait, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -259,49 +259,49 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Aggregate<Hc, Tr> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateConnectionOpenTry<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateConnectionOpenAck<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenTry<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateConnectionOpenConfirm<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenAck<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateChannelOpenTry<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenInit,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateChannelOpenAck<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenTry,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateChannelOpenConfirm<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenAck,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateRecvPacket<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: SendPacket,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: RecvPacket,
@@ -311,12 +311,12 @@ pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub at: HeightOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateChannelHandshakeMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub event_height: HeightOf<Hc>,
@@ -338,7 +338,7 @@ pub enum ChannelHandshakeEvent {
     Ack(ChannelOpenAck),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregatePacketMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
@@ -361,36 +361,36 @@ pub enum PacketEvent {
     Recv(RecvPacket),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateFetchCounterpartyStateProof<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_client_id: ClientIdOf<Tr>,
     pub fetch: FetchProof<Tr, Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateUpdateClient<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub client_id: ClientIdOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateUpdateClientFromHeight<Hc: ChainExt, Tr: ChainExt> {
     pub from_height: HeightOf<Tr>,
     pub client_id: ClientIdOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateWaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub wait_for: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateCreateClient<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub config: <Hc as ChainExt>::Config,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 /// Messages that will be re-queued after an update.

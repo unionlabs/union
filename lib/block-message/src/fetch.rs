@@ -4,7 +4,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, fetch, msg_struct, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
+    aggregate, conc, fetch, queue_msg, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
 };
 use unionlabs::ibc::core::client::height::IsHeight;
 
@@ -104,16 +104,16 @@ pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {
     fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockMessageTypes>;
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
     pub to_height: C::Height,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchBlock<C: ChainExt> {
     pub height: C::Height,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct ChainSpecificFetch<C: ChainExt>(pub C::Fetch);

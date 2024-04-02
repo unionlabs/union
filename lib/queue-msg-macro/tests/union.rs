@@ -1,6 +1,6 @@
-use queue_msg_macro::msg_struct;
+use queue_msg_macro::queue_msg;
 
-#[msg_struct]
+#[queue_msg]
 union Union {
     a: u32,
     b: f32,

@@ -16,7 +16,7 @@ use futures::{
     stream::{self, try_unfold},
     Stream, StreamExt, TryStreamExt,
 };
-pub use queue_msg_macro::msg_struct;
+pub use queue_msg_macro::queue_msg;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use unionlabs::{never::Never, MaybeArbitrary};

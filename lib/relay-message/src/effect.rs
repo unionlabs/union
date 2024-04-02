@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{msg_struct, HandleEffect, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{queue_msg, HandleEffect, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -94,12 +94,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Effect<Hc, Tr> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgConnectionOpenInitData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 );
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenTry<
         Tr::StoredClientState<Hc>,
@@ -114,7 +114,7 @@ pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     >,
 );
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenAck<
         Tr::StoredClientState<Hc>,
@@ -124,48 +124,48 @@ pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     >,
 );
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgConnectionOpenConfirmData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>, Tr::StateProof>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgChannelOpenInitData<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub msg: MsgChannelOpenInit,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgChannelOpenTryData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenTry<Tr::StateProof>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgChannelOpenAckData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenAck<Tr::StateProof, Tr::Height>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgChannelOpenConfirmData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenConfirm<Tr::StateProof>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgRecvPacketData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgRecvPacket<Tr::StateProof, Tr::Height>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgAckPacketData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgAcknowledgement<Tr::StateProof, Tr::Height>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
     pub config: Hc::Config,
     pub msg: MsgCreateClient<ClientStateOf<Tr>, ConsensusStateOf<Tr>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
 );

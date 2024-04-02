@@ -189,7 +189,7 @@ pub mod fetch {
 
     use chain_utils::cosmos_sdk::CosmosSdkChain;
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-    use queue_msg::{data, msg_struct, QueueMsg};
+    use queue_msg::{data, queue_msg, QueueMsg};
     use serde::{Deserialize, Serialize};
     use tendermint_rpc::Client;
     use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
@@ -205,7 +205,7 @@ pub mod fetch {
         id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayMessageTypes,
     };
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
         pub path: PathOf<Hc, Tr>,
         pub height: HeightOf<Hc>,
@@ -224,22 +224,22 @@ pub mod fetch {
         Proof,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct FetchTrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct FetchUntrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct FetchTrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct FetchUntrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
@@ -374,30 +374,30 @@ pub mod fetch {
 }
 
 pub mod data {
-    use queue_msg::msg_struct;
+    use queue_msg::queue_msg;
     use unionlabs::tendermint::types::{signed_header::SignedHeader, validator::Validator};
 
     use crate::ChainExt;
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct UntrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub signed_header: SignedHeader,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct TrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub signed_header: SignedHeader,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct TrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub validators: Vec<Validator>,
     }
 
-    #[msg_struct]
+    #[queue_msg]
     pub struct UntrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub validators: Vec<Validator>,

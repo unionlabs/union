@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chain_utils::{Chains, GetChain};
 use macros::apply;
 use queue_msg::{
-    data, defer_absolute, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg,
+    data, defer_absolute, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
 };
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
@@ -80,7 +80,7 @@ impl HandleWait<BlockMessageTypes> for AnyChainIdentified<AnyWait> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct WaitForHeight<C: ChainExt> {
     pub height: HeightOf<C>,
 }

@@ -8,7 +8,7 @@ use futures::FutureExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, msg_struct, QueueMsg,
+    conc, data, fetch, queue_msg, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -351,7 +351,7 @@ const _: () = {
     }
 };
 
-#[msg_struct]
+#[queue_msg]
 pub struct ClientType<#[cover] C: CosmosSdkChainSealed> {
     pub client_type: unionlabs::ClientType,
 }
@@ -390,24 +390,24 @@ pub enum CosmosSdkFetch<C: CosmosSdkChainSealed> {
     FetchClientTypeFromClientId(ClientTypeFromClientId<C>),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchBlocks<C: CosmosSdkChainSealed> {
     pub from_height: HeightOf<C>,
     pub to_height: HeightOf<C>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchTransactions<C: CosmosSdkChain> {
     pub height: HeightOf<C>,
     pub page: NonZeroU32,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct ClientTypeFromConnectionId {
     pub connection_id: ConnectionId,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
     pub client_id: C::ClientId,
 }
@@ -438,7 +438,7 @@ pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
     AggregateEventWithClientType(AggregateEventWithClientType<C>),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateEventWithClientType<C: CosmosSdkChain> {
     pub tx_hash: H256,
     pub height: C::Height,

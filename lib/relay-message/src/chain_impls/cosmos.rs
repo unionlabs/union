@@ -11,7 +11,7 @@ use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    effect, fetch, msg_struct, wait, QueueMsg,
+    effect, fetch, queue_msg, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -573,7 +573,7 @@ const _: () = {
     }
 };
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }

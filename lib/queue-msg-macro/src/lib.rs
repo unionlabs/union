@@ -9,7 +9,7 @@ use syn::{
 };
 
 #[proc_macro_attribute]
-pub fn msg_struct(_: TokenStream, input: TokenStream) -> TokenStream {
+pub fn queue_msg(_: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let result = apply_item(input).unwrap_or_else(|error| error.to_compile_error());

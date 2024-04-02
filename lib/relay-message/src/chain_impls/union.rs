@@ -18,7 +18,7 @@ use protos::{
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, defer_relative, effect, fetch, msg_struct, wait, QueueMsg,
+    data, defer_relative, effect, fetch, queue_msg, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -640,23 +640,23 @@ const _: () = {
     }
 };
 
-#[msg_struct]
+#[queue_msg]
 pub struct ProveResponse<#[cover] Tr: ChainExt> {
     pub prove_response: prove_response::ProveResponse,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub signed_header: SignedHeader,
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }

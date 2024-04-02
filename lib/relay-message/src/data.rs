@@ -1,5 +1,5 @@
 use macros::apply;
-use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -77,45 +77,45 @@ impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct SelfClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub self_client_state: ClientStateOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct SelfConsensusState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub self_consensus_state: ConsensusStateOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LatestHeight<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct Header<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub header: HeaderOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct IbcState<P: IbcPath<Hc, Tr>, Hc: ChainExt, Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub state: P::Output,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct IbcProof<P: IbcPath<Hc, Tr>, Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub proof: Hc::StateProof,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct PacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub fetched_by: FetchPacketAcknowledgement<Hc, Tr>,
     pub ack: Vec<u8>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LightClientSpecificData<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
