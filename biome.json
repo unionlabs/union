@@ -9,10 +9,12 @@
     "enabled": false,
     "include": [
       "*.ts",
+      "*.mts",
       "*.js",
       "*.cjs",
       "*.jsx",
       "*.tsx",
+      "*.vue",
       "*.d.ts",
       "*.json",
       "*.jsonc",
@@ -50,11 +52,13 @@
   "files": {
     "include": [
       "*.ts",
+      "*.mts",
       "*.js",
       "*.cjs",
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.vue",
       "*.json",
       "*.jsonc",
       "*.astro",
@@ -95,11 +99,13 @@
     "attributePosition": "auto",
     "include": [
       "*.ts",
+      "*.mts",
       "*.js",
       "*.cjs",
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.vue",
       "*.json",
       "*.jsonc",
       "*.astro",
@@ -135,7 +141,6 @@
         "useSelfClosingElements": "off",
         "noUnusedTemplateLiteral": "off",
         "useFilenamingConvention": "off",
-        "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "warn",
           "options": { "syntax": "generic" }
@@ -158,7 +163,7 @@
       },
       "performance": {
         "all": true,
-        "noAccumulatingSpread": "off"
+        "noAccumulatingSpread": "warn"
       },
       "correctness": {
         "all": true,
@@ -179,16 +184,21 @@
         "useLiteralKeys": "off",
         "noUselessFragments": "off",
         "noExcessiveCognitiveComplexity": "off"
+      },
+      "security": {
+        "all": true
       }
     },
     "enabled": true,
     "include": [
       "*.ts",
+      "*.mts",
       "*.js",
       "*.cjs",
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.vue",
       "*.json",
       "*.jsonc",
       "*.astro",
@@ -204,6 +214,7 @@
       "vendor",
       "testdata",
       "generated",
+      "*-env.d.ts",
       ".svelte-kit",
       "node_modules",
       "package-lock.json",
@@ -272,6 +283,16 @@
         "rules": {
           "nursery": {
             "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["./app/src/patch.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNodejsImportProtocol": "off"
           }
         }
       }

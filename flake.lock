@@ -26,16 +26,16 @@
     "biome": {
       "flake": false,
       "locked": {
-        "lastModified": 1709906449,
-        "narHash": "sha256-jiVPFHde2votioUn0n9RyBgyOBpATcTstcQAvWHItyo=",
+        "lastModified": 1711385275,
+        "narHash": "sha256-DooUOp+fr5oOrx04SLlTGro8xc2LieVPNtdvDyTLL/s=",
         "owner": "biomejs",
         "repo": "biome",
-        "rev": "560628b380b0b1f61303c8e5ca2175d3b4794089",
+        "rev": "bb59e3c31240636acff272e071612d58e3c3901c",
         "type": "github"
       },
       "original": {
         "owner": "biomejs",
-        "ref": "cli/v1.6.0",
+        "ref": "cli/v1.6.3",
         "repo": "biome",
         "type": "github"
       }
