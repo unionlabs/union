@@ -80,7 +80,7 @@ impl HandleWait<BlockMessageTypes> for AnyChainIdentified<AnyWait> {
     }
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct WaitForHeight<C: ChainExt> {
     pub height: HeightOf<C>,
 }

@@ -1,0 +1,5 @@
+error: expected one of: `struct`, `enum`, `union`
+ --> tests/non-derive.rs:4:1
+  |
+4 | fn function() {}
+  | ^^

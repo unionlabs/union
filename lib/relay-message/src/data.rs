@@ -77,50 +77,45 @@ impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
     }
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct SelfClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub self_client_state: ClientStateOf<Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct SelfConsensusState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub self_consensus_state: ConsensusStateOf<Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct LatestHeight<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct LatestHeight<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct Header<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct Header<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub header: HeaderOf<Hc>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct IbcState<P: IbcPath<Hc, Tr>, Hc: ChainExt, Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub state: P::Output,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct IbcProof<P: IbcPath<Hc, Tr>, Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct IbcProof<P: IbcPath<Hc, Tr>, Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub proof: Hc::StateProof,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct PacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub fetched_by: FetchPacketAcknowledgement<Hc, Tr>,
     pub ack: Vec<u8>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct LightClientSpecificData<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);

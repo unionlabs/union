@@ -1,0 +1,11 @@
+error: queue-msg only supports Struct
+ --> tests/non-struct.rs:4:1
+  |
+4 | enum Enum {
+  | ^^^^
+
+error: queue-msg only supports Struct
+  --> tests/non-struct.rs:10:1
+   |
+10 | union Union {
+   | ^^^^^

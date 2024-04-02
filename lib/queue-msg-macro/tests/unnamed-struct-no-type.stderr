@@ -1,0 +1,5 @@
+error: Only support one parameter
+ --> tests/unnamed-struct-no-type.rs:4:15
+  |
+4 | struct Unnamed();
+  |               ^^

@@ -5,7 +5,6 @@ use enumorph::Enumorph;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::FutureExt;
-use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
@@ -352,9 +351,8 @@ const _: () = {
     }
 };
 
-#[apply(msg_struct)]
-#[cover(C)]
-pub struct ClientType<C: CosmosSdkChainSealed> {
+#[msg_struct]
+pub struct ClientType<#[cover] C: CosmosSdkChainSealed> {
     pub client_type: unionlabs::ClientType,
 }
 
@@ -392,24 +390,24 @@ pub enum CosmosSdkFetch<C: CosmosSdkChainSealed> {
     FetchClientTypeFromClientId(ClientTypeFromClientId<C>),
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchBlocks<C: CosmosSdkChainSealed> {
     pub from_height: HeightOf<C>,
     pub to_height: HeightOf<C>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchTransactions<C: CosmosSdkChain> {
     pub height: HeightOf<C>,
     pub page: NonZeroU32,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct ClientTypeFromConnectionId {
     pub connection_id: ConnectionId,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
     pub client_id: C::ClientId,
 }
@@ -440,7 +438,7 @@ pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
     AggregateEventWithClientType(AggregateEventWithClientType<C>),
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateEventWithClientType<C: CosmosSdkChain> {
     pub tx_hash: H256,
     pub height: C::Height,

@@ -189,7 +189,6 @@ pub mod fetch {
 
     use chain_utils::cosmos_sdk::CosmosSdkChain;
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-    use macros::apply;
     use queue_msg::{data, msg_struct, QueueMsg};
     use serde::{Deserialize, Serialize};
     use tendermint_rpc::Client;
@@ -206,7 +205,7 @@ pub mod fetch {
         id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayMessageTypes,
     };
 
-    #[apply(msg_struct)]
+    #[msg_struct]
     pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
         pub path: PathOf<Hc, Tr>,
         pub height: HeightOf<Hc>,
@@ -225,27 +224,23 @@ pub mod fetch {
         Proof,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Tr)]
-    pub struct FetchTrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct FetchTrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Tr)]
-    pub struct FetchUntrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct FetchUntrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Tr)]
-    pub struct FetchTrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct FetchTrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Tr)]
-    pub struct FetchUntrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct FetchUntrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
     }
 
@@ -379,36 +374,31 @@ pub mod fetch {
 }
 
 pub mod data {
-    use macros::apply;
     use queue_msg::msg_struct;
     use unionlabs::tendermint::types::{signed_header::SignedHeader, validator::Validator};
 
     use crate::ChainExt;
 
-    #[apply(msg_struct)]
-    #[cover(Tr)]
-    pub struct UntrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct UntrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub signed_header: SignedHeader,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Tr)]
-    pub struct TrustedCommit<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct TrustedCommit<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub signed_header: SignedHeader,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Hc, Tr)]
-    pub struct TrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct TrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub validators: Vec<Validator>,
     }
 
-    #[apply(msg_struct)]
-    #[cover(Hc, Tr)]
-    pub struct UntrustedValidators<Hc: ChainExt, Tr: ChainExt> {
+    #[msg_struct]
+    pub struct UntrustedValidators<Hc: ChainExt, #[cover] Tr: ChainExt> {
         pub height: Hc::Height,
         pub validators: Vec<Validator>,
     }

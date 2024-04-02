@@ -7,7 +7,6 @@ use chain_utils::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
-use macros::apply;
 use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use queue_msg::{
     aggregate,
@@ -574,7 +573,7 @@ const _: () = {
     }
 };
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }

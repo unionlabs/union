@@ -10,7 +10,6 @@ use chain_utils::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
-use macros::apply;
 use num_bigint::BigUint;
 use protos::{
     ibc::core::connection::v1::MsgConnectionOpenInit,
@@ -641,24 +640,23 @@ const _: () = {
     }
 };
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct ProveResponse<Tr: ChainExt> {
+#[msg_struct]
+pub struct ProveResponse<#[cover] Tr: ChainExt> {
     pub prove_response: prove_response::ProveResponse,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub signed_header: SignedHeader,
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }

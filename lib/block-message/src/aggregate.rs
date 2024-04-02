@@ -71,10 +71,10 @@ impl<C: ChainExt> Identified<C, Aggregate<C>> {
     }
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct ChainSpecificAggregate<C: ChainExt>(pub C::Aggregate);
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateFetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
 }

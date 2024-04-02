@@ -8,7 +8,6 @@ use enumorph::Enumorph;
 use ethers::providers::Middleware;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
-use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
@@ -410,14 +409,14 @@ pub enum ScrollFetch<Tr: ChainExt> {
     FetchIbcContractRootProof(FetchIbcContractRootProof),
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchRollupContractRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
     pub rollup_contract_address: H160,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchLatestBatchIndexProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
@@ -425,7 +424,7 @@ pub struct FetchLatestBatchIndexProof {
     pub rollup_contract_address: H160,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchScrollFinalizedRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
@@ -433,7 +432,7 @@ pub struct FetchScrollFinalizedRootProof {
     pub rollup_contract_address: H160,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct FetchIbcContractRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
@@ -484,33 +483,29 @@ const _: () = {
     }
 };
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct RollupContractRootProof<Tr: ChainExt> {
+#[msg_struct]
+pub struct RollupContractRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub proof: AccountProof,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct LatestBatchIndexProof<Tr: ChainExt> {
+#[msg_struct]
+pub struct LatestBatchIndexProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub latest_batch_index: u64,
     pub proof: StorageProof,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct ScrollFinalizedRootProof<Tr: ChainExt> {
+#[msg_struct]
+pub struct ScrollFinalizedRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub batch_index: u64,
     pub finalized_state_root: U256,
     pub proof: StorageProof,
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct IbcContractRootProof<Tr: ChainExt> {
+#[msg_struct]
+pub struct IbcContractRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub proof: AccountProof,
 }
@@ -540,7 +535,7 @@ pub enum ScrollAggregate<Tr: ChainExt> {
     AggregateHeader(AggregateHeader<Tr>),
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct AggregateHeader<Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Scroll, Tr>,
 }

@@ -37,10 +37,10 @@ impl<C: ChainExt> Display for Data<C> {
     }
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct ChainSpecificData<C: ChainExt>(pub C::Data);
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct ChainEvent<C: ChainExt> {
     pub client_type: ClientType,
     pub tx_hash: H256,
@@ -49,5 +49,5 @@ pub struct ChainEvent<C: ChainExt> {
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct LatestHeight<C: ChainExt>(pub C::Height);

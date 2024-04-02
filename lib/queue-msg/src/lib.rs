@@ -16,6 +16,7 @@ use futures::{
     stream::{self, try_unfold},
     Stream, StreamExt, TryStreamExt,
 };
+pub use queue_msg_macro::msg_struct;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use unionlabs::{never::Never, MaybeArbitrary};
@@ -849,107 +850,4 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
             None => Ok(None),
         }
     }
-}
-
-#[macro_export]
-macro_rules! msg_struct {
-    (
-        $(#[cover($($CoverTy:ty),+)])?
-        $(#[doc = $doc:tt])*
-        pub struct $Struct:ident$(<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>)? {
-            $(
-                pub $field:ident: $FieldTy:ty,
-            )*
-        }
-    ) => {
-        #[derive(::serde::Serialize, ::serde::Deserialize)]
-        #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-        #[cfg_attr(
-            feature = "arbitrary",
-            derive(arbitrary::Arbitrary),
-            arbitrary(bound = "")
-        )]
-        $(#[doc = $doc])*
-        pub struct $Struct$(<$($generics: $bound$(<$($boundT),+>)?),+>)? {
-            $(
-                pub $field: $FieldTy,
-            )*
-            $(
-                #[serde(skip)]
-                #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-                pub __marker: ::core::marker::PhantomData<fn() -> ($($CoverTy,)+)>,
-            )?
-        }
-        const _: () = {
-            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::fmt::Debug
-            for $Struct$(<$($generics),+>)? {
-                fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                    fmt.debug_struct(stringify!($Struct))
-                        $(.field(stringify!($field), &self.$field))*
-                        .finish()
-                }
-            }
-
-            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::clone::Clone
-            for $Struct$(<$($generics),+>)? {
-                fn clone(&self) -> Self {
-                    Self {
-                        $($field: ::core::clone::Clone::clone(&self.$field),)*
-                        $(
-                            __marker: ::core::marker::PhantomData::<fn() -> ($($CoverTy,)+)>,
-                        )?
-                    }
-                }
-            }
-
-            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::cmp::PartialEq
-            for $Struct $(<$($generics),+>)? {
-                fn eq(&self, other: &Self) -> bool {
-                    let _other = other;
-                    true $(&& self.$field == _other.$field)*
-                }
-            }
-        };
-    };
-
-    (
-        $(#[cover($($CoverTy:ty),+)])?
-        $(#[doc = $doc:tt])*
-        pub struct $Struct:ident$(<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>)?(pub $FieldTy:ty$(,)?);
-    ) => {
-        #[derive(::serde::Serialize, ::serde::Deserialize)]
-        #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields, transparent)]
-        #[cfg_attr(
-            feature = "arbitrary",
-            derive(arbitrary::Arbitrary),
-            arbitrary(bound = "")
-        )]
-        $(#[doc = $doc])*
-        pub struct $Struct $(<$($generics: $bound$(<$($boundT),+>)?),+>)? (pub $FieldTy);
-        const _: () = {
-            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::fmt::Debug
-            for $Struct $(<$($generics),+>)? {
-                fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                    fmt.debug_tuple(stringify!($Struct))
-                        .field(&self.0)
-                        .finish()
-                }
-            }
-
-            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::clone::Clone
-            for $Struct $(<$($generics),+>)? {
-                fn clone(&self) -> Self {
-                    Self(::core::clone::Clone::clone(&self.0))
-                }
-            }
-
-            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::cmp::PartialEq
-            for $Struct $(<$($generics),+>)? {
-                fn eq(&self, other: &Self) -> bool {
-                    self.0 == other.0
-                }
-            }
-        };
-
-    };
 }

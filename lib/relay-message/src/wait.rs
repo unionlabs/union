@@ -156,19 +156,17 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
     }
 }
 
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct WaitForBlock<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct WaitForBlock<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc, Tr)]
-pub struct WaitForTimestamp<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct WaitForTimestamp<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub timestamp: i64,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: Hc::ClientId,
     pub counterparty_client_id: Tr::ClientId,

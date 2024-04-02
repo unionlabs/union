@@ -94,12 +94,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Effect<Hc, Tr> {
     }
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct MsgConnectionOpenInitData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 );
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenTry<
         Tr::StoredClientState<Hc>,
@@ -114,7 +114,7 @@ pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     >,
 );
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenAck<
         Tr::StoredClientState<Hc>,
@@ -124,55 +124,48 @@ pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     >,
 );
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct MsgConnectionOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgConnectionOpenConfirmData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>, Tr::StateProof>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc, Tr)]
-pub struct MsgChannelOpenInitData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgChannelOpenInitData<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub msg: MsgChannelOpenInit,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct MsgChannelOpenTryData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgChannelOpenTryData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenTry<Tr::StateProof>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct MsgChannelOpenAckData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgChannelOpenAckData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenAck<Tr::StateProof, Tr::Height>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct MsgChannelOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgChannelOpenConfirmData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenConfirm<Tr::StateProof>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct MsgRecvPacketData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgRecvPacketData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgRecvPacket<Tr::StateProof, Tr::Height>,
 }
 
-#[apply(msg_struct)]
-#[cover(Hc)]
-pub struct MsgAckPacketData<Hc: ChainExt, Tr: ChainExt> {
+#[msg_struct]
+pub struct MsgAckPacketData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgAcknowledgement<Tr::StateProof, Tr::Height>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
     pub config: Hc::Config,
     pub msg: MsgCreateClient<ClientStateOf<Tr>, ConsensusStateOf<Tr>>,
 }
 
-#[apply(msg_struct)]
+#[msg_struct]
 pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
 );
