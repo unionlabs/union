@@ -74,7 +74,7 @@
         checkPhase = ''
           cd $src
 
-          biome lint . \
+          biome check . \
             --verbose \
             --error-on-warnings \
             --log-level="info" \

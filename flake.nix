@@ -84,7 +84,7 @@
       flake = false;
     };
     biome = {
-      url = "github:biomejs/biome/cli/v1.6.0";
+      url = "github:biomejs/biome/cli/v1.6.3";
       flake = false;
     };
     stargaze = {
