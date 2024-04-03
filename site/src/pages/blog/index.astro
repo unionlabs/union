@@ -4,6 +4,7 @@ import { getCollection } from "astro:content"
 import Card from "#/components/Card.astro"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
+import SocialsSection from "#/components/sections/SocialsSection.astro"
 
 import H3 from "#/components/typography/h3.astro"
 
@@ -16,8 +17,8 @@ let blogEntries = await getCollection("blog", ({ data }) =>
 blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
 ---
 
-<SectionsLayout title='Union Blog'>
-  <LanderSection>
+<SectionsLayout title='Union Blog' gapless>
+  <LanderSection gradient="to-t">
     <IntroHeading main title="Union Blog">
       Our latest partnerships, technical deepdives, and announcements.
     </IntroHeading>
@@ -45,6 +46,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
       }
     </div>
   </LanderSection>
+  <SocialsSection/>
 </SectionsLayout>
 
 <style is:inline>
