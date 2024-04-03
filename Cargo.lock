@@ -598,7 +598,6 @@ dependencies = [
  "chain-utils",
  "contracts",
  "dashmap",
- "derive_more",
  "enumorph",
  "ethers",
  "frame-support-procedural",
@@ -4400,7 +4399,6 @@ name = "queue-msg"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "derive_more",
  "either",
  "enumorph",
  "frame-support-procedural",
@@ -4618,7 +4616,6 @@ dependencies = [
  "chain-utils",
  "contracts",
  "dashmap",
- "derive_more",
  "enumorph",
  "ethers",
  "frame-support-procedural",
@@ -7071,7 +7068,6 @@ dependencies = [
  "arbitrary",
  "block-message",
  "chain-utils",
- "derive_more",
  "hex-literal",
  "queue-msg",
  "relay-message",

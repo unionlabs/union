@@ -1,8 +1,4 @@
-use std::{
-    fmt::{Debug, Display},
-    marker::PhantomData,
-    num::NonZeroU64,
-};
+use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64};
 
 use chain_utils::GetChain;
 use futures::Future;
@@ -68,31 +64,6 @@ impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
 
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
     fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayMessageTypes>>;
-}
-
-impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let path_display = |path: &_| match path {
-            proof::Path::ClientStatePath(_) => "ClientState",
-            proof::Path::ClientConsensusStatePath(_) => "ClientConsensusState",
-            proof::Path::ConnectionPath(_) => "Connection",
-            proof::Path::ChannelEndPath(_) => "ChannelEnd",
-            proof::Path::CommitmentPath(_) => "Commitment",
-            proof::Path::AcknowledgementPath(_) => "Acknowledgement",
-        };
-
-        match self {
-            Fetch::State(fetch) => write!(f, "State({})", path_display(&fetch.path)),
-            Fetch::Proof(fetch) => write!(f, "Proof({})", path_display(&fetch.path)),
-            Fetch::LatestHeight(_) => write!(f, "LatestHeight"),
-            Fetch::LatestClientState(_) => write!(f, "LatestClientState"),
-            Fetch::SelfClientState(_) => write!(f, "SelfClientState"),
-            Fetch::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
-            Fetch::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
-            Fetch::UpdateHeaders(_) => write!(f, "UpdateHeaders"),
-            Fetch::LightClientSpecific(fetch) => write!(f, "LightClientSpecific({})", fetch.0),
-        }
-    }
 }
 
 #[queue_msg]

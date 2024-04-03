@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use chain_utils::GetChain;
 use macros::apply;
 use queue_msg::{queue_msg, HandleEffect, QueueError, QueueMsg, QueueMsgTypes};
@@ -72,25 +70,6 @@ where
 {
     pub async fn handle(self, c: &Hc) -> Result<(), Hc::MsgError> {
         <Hc as DoMsg<Hc, Tr>>::msg(c, self).await
-    }
-}
-
-impl<Hc: ChainExt, Tr: ChainExt> Display for Effect<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Effect::ConnectionOpenInit(_) => write!(f, "ConnectionOpenInit"),
-            Effect::ConnectionOpenTry(_) => write!(f, "ConnectionOpenTry"),
-            Effect::ConnectionOpenAck(_) => write!(f, "ConnectionOpenAck"),
-            Effect::ConnectionOpenConfirm(_) => write!(f, "ConnectionOpenConfirm"),
-            Effect::ChannelOpenInit(_) => write!(f, "ChannelOpenInit"),
-            Effect::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
-            Effect::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
-            Effect::ChannelOpenConfirm(_) => write!(f, "ChannelOpenConfirm"),
-            Effect::RecvPacket(_) => write!(f, "RecvPacket"),
-            Effect::AckPacket(_) => write!(f, "AckPacket"),
-            Effect::CreateClient(_) => write!(f, "CreateClient"),
-            Effect::UpdateClient(_) => write!(f, "UpdateClient"),
-        }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{fmt::Display, marker::PhantomData};
+use std::marker::PhantomData;
 
 use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -330,15 +330,6 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Event::Ibc(_) => write!(f, "Ibc"),
-            Event::Command(cmd) => write!(f, "{cmd}"),
-        }
-    }
-}
-
 #[queue_msg]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
@@ -346,29 +337,19 @@ pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub event: unionlabs::events::IbcEvent<ClientIdOf<Hc>, ClientTypeOf<Hc>, ClientIdOf<Tr>>,
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> Display for IbcEvent<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.event.name())
-    }
-}
-
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(
     bound(serialize = "", deserialize = ""),
     tag = "@type",
     content = "@value",
     rename_all = "snake_case"
 )]
-#[display(fmt = "Command::{}")]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+    arbitrary(bound = "")
 )]
 pub enum Command<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "UpdateClient({client_id})")]
     UpdateClient {
         client_id: ClientIdOf<Hc>,
         #[serde(skip)]

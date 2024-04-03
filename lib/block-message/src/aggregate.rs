@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Display};
+use std::collections::VecDeque;
 
 use frunk::{hlist_pat, HList};
 use macros::apply;
@@ -22,17 +22,6 @@ pub enum Aggregate<C: ChainExt> {
     FetchBlockRange(AggregateFetchBlockRange<C>),
     #[serde(untagged)]
     ChainSpecific(ChainSpecificAggregate<C>),
-}
-
-impl<C: ChainExt> Display for Aggregate<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Aggregate::FetchBlockRange(fetch_block_range) => {
-                write!(f, "FetchBlockRange({}..)", fetch_block_range.from_height)
-            }
-            Aggregate::ChainSpecific(agg) => write!(f, "ChainSpecific({})", agg.0),
-        }
-    }
 }
 
 impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {

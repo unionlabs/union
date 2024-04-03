@@ -128,7 +128,7 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerMsg {
@@ -151,7 +151,7 @@ impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerWait {
@@ -179,7 +179,7 @@ impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerAggregate {
@@ -217,7 +217,7 @@ impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerEvent {
@@ -240,7 +240,7 @@ impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerData {
@@ -392,7 +392,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum VoyagerFetch {
