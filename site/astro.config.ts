@@ -1,4 +1,6 @@
+import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
+import yaml from "@rollup/plugin-yaml"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
@@ -7,22 +9,25 @@ import { markdownConfiguration } from "./markdown.config.ts"
 import starlightLinksValidator from "starlight-links-validator"
 
 const SITE_URL = "https://union.build"
-const PORT = Number(process.env.PORT || 4321)
 
-const ENABLE_DEV_TOOLBAR = process.env.ENABLE_DEV_TOOLBAR === "true"
+const {
+  PORT = 4321,
+  COMETBLS_STORE_PATH,
+  ENABLE_DEV_TOOLBAR = "true"
+} = loadEnv(process.env.NODE_ENV, process.cwd(), "")
 
-// https://astro.build/config
 export default defineConfig({
   site: SITE_URL,
+  build: {},
   output: "static",
   trailingSlash: "ignore",
-  server: ({ command }) => ({ port: PORT }),
+  server: ({ command }) => ({ port: Number(PORT) }),
   redirects: {
     "/feed": "/rss.xml",
     "/logo": "/union-logo.zip"
   },
   markdown: markdownConfiguration,
-  devToolbar: { enabled: ENABLE_DEV_TOOLBAR },
+  devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   integrations: [
     starlight({
       title: "Union",
@@ -152,6 +157,10 @@ export default defineConfig({
     sitemap()
   ],
   vite: {
+    // define: {
+    //   COMETBLS_STORE_PATH: JSON.stringify(COMETBLS_STORE_PATH)
+    // },
+    plugins: [yaml()],
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"]
     }

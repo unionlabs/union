@@ -497,6 +497,8 @@
             ASTRO_TELEMETRY_DISABLED = 1;
             PONDER_TELEMETRY_DISABLED = true;
 
+            COMETBLS_STORE_PATH = "${inputs.cometbls}";
+
             ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 

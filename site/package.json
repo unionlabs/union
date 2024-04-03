@@ -49,6 +49,7 @@
     "@astrojs/language-server": "^2.8.2",
     "@astrojs/ts-plugin": "^1.6.0",
     "@cloudflare/workers-types": "^4.20240314.0",
+    "@rollup/plugin-yaml": "^4.1.2",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/typography": "^0.5.10",
