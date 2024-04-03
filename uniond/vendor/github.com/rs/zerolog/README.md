@@ -547,7 +547,7 @@ and facilitates the unification of logging and tracing in some systems:
 type TracingHook struct{}
 
 func (h TracingHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
-    ctx := e.Ctx()
+    ctx := e.GetCtx()
     spanId := getSpanIdFromContext(ctx) // as per your tracing framework
     e.Str("span-id", spanId)
 }

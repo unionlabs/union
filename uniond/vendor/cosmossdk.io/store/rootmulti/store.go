@@ -496,7 +496,10 @@ func (rs *Store) Commit() types.CommitID {
 	rs.removalMap = make(map[types.StoreKey]bool)
 
 	if err := rs.handlePruning(version); err != nil {
-		panic(err)
+		rs.logger.Error(
+			"failed to prune store, please check your pruning configuration",
+			"err", err,
+		)
 	}
 
 	return types.CommitID{

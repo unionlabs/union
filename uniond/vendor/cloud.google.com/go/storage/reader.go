@@ -87,8 +87,9 @@ func (o *ObjectHandle) NewReader(ctx context.Context) (*Reader, error) {
 // that file will be served back whole, regardless of the requested range as
 // Google Cloud Storage dictates.
 func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64) (r *Reader, err error) {
-	ctx = trace.StartSpan(ctx, "cloud.google.com/go/storage.Object.NewRangeReader")
-	defer func() { trace.EndSpan(ctx, err) }()
+	// This span covers the life of the reader. It is closed via the context
+	// in Reader.Close.
+	ctx = trace.StartSpan(ctx, "cloud.google.com/go/storage.Object.Reader")
 
 	if err := o.validate(); err != nil {
 		return nil, err
@@ -116,6 +117,14 @@ func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64)
 	}
 
 	r, err = o.c.tc.NewRangeReader(ctx, params, opts...)
+
+	// Pass the context so that the span can be closed in Reader.Close, or close the
+	// span now if there is an error.
+	if err == nil {
+		r.ctx = ctx
+	} else {
+		trace.EndSpan(ctx, err)
+	}
 
 	return r, err
 }
@@ -178,16 +187,6 @@ func setConditionsHeaders(headers http.Header, conds *Conditions) error {
 	return nil
 }
 
-// Wrap a request to look similar to an apiary library request, in order to
-// be used by run().
-type readerRequestWrapper struct {
-	req *http.Request
-}
-
-func (w *readerRequestWrapper) Header() http.Header {
-	return w.req.Header
-}
-
 var emptyBody = ioutil.NopCloser(strings.NewReader(""))
 
 // Reader reads a Cloud Storage object.
@@ -204,11 +203,14 @@ type Reader struct {
 	gotCRC             uint32 // running crc
 
 	reader io.ReadCloser
+	ctx    context.Context
 }
 
 // Close closes the Reader. It must be called when done reading.
 func (r *Reader) Close() error {
-	return r.reader.Close()
+	err := r.reader.Close()
+	trace.EndSpan(r.ctx, err)
+	return err
 }
 
 func (r *Reader) Read(p []byte) (int, error) {

@@ -35,6 +35,7 @@ package internal
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"net/url"
 	"os"
@@ -53,6 +54,12 @@ const (
 
 	// Experimental: if true, the code will try MTLS with S2A as the default for transport security. Default value is false.
 	googleAPIUseS2AEnv = "EXPERIMENTAL_GOOGLE_API_USE_S2A"
+
+	universeDomainPlaceholder = "UNIVERSE_DOMAIN"
+)
+
+var (
+	errUniverseNotSupportedMTLS = errors.New("mTLS is not supported in any universe other than googleapis.com")
 )
 
 // getClientCertificateSourceAndEndpoint is a convenience function that invokes
@@ -67,6 +74,14 @@ func getClientCertificateSourceAndEndpoint(settings *DialSettings) (cert.Source,
 	if err != nil {
 		return nil, "", err
 	}
+	// TODO(chrisdsmith): https://github.com/googleapis/google-api-go-client/issues/2359
+	if settings.Endpoint == "" && !settings.IsUniverseDomainGDU() && settings.DefaultEndpointTemplate != "" {
+		// TODO(chrisdsmith): https://github.com/googleapis/google-api-go-client/issues/2359
+		// if settings.DefaultEndpointTemplate == "" {
+		// 	return nil, "", errors.New("internaloption.WithDefaultEndpointTemplate is required if option.WithUniverseDomain is not googleapis.com")
+		// }
+		endpoint = resolvedDefaultEndpoint(settings)
+	}
 	return clientCertSource, endpoint, nil
 }
 
@@ -80,9 +95,7 @@ type transportConfig struct {
 func getTransportConfig(settings *DialSettings) (*transportConfig, error) {
 	clientCertSource, endpoint, err := getClientCertificateSourceAndEndpoint(settings)
 	if err != nil {
-		return &transportConfig{
-			clientCertSource: nil, endpoint: "", s2aAddress: "", s2aMTLSEndpoint: "",
-		}, err
+		return nil, err
 	}
 	defaultTransportConfig := transportConfig{
 		clientCertSource: clientCertSource,
@@ -94,12 +107,10 @@ func getTransportConfig(settings *DialSettings) (*transportConfig, error) {
 	if !shouldUseS2A(clientCertSource, settings) {
 		return &defaultTransportConfig, nil
 	}
-
-	s2aMTLSEndpoint := settings.DefaultMTLSEndpoint
-	// If there is endpoint override, honor it.
-	if settings.Endpoint != "" {
-		s2aMTLSEndpoint = endpoint
+	if !settings.IsUniverseDomainGDU() {
+		return nil, errUniverseNotSupportedMTLS
 	}
+
 	s2aAddress := GetS2AAddress()
 	if s2aAddress == "" {
 		return &defaultTransportConfig, nil
@@ -108,7 +119,7 @@ func getTransportConfig(settings *DialSettings) (*transportConfig, error) {
 		clientCertSource: clientCertSource,
 		endpoint:         endpoint,
 		s2aAddress:       s2aAddress,
-		s2aMTLSEndpoint:  s2aMTLSEndpoint,
+		s2aMTLSEndpoint:  settings.DefaultMTLSEndpoint,
 	}, nil
 }
 
@@ -153,24 +164,41 @@ func isClientCertificateEnabled() bool {
 // WithDefaultEndpoint("https://foo.com/bar/baz") will return "https://myhost:8080/bar/baz"
 func getEndpoint(settings *DialSettings, clientCertSource cert.Source) (string, error) {
 	if settings.Endpoint == "" {
-		mtlsMode := getMTLSMode()
-		if mtlsMode == mTLSModeAlways || (clientCertSource != nil && mtlsMode == mTLSModeAuto) {
+		if isMTLS(clientCertSource) {
+			if !settings.IsUniverseDomainGDU() {
+				return "", errUniverseNotSupportedMTLS
+			}
 			return settings.DefaultMTLSEndpoint, nil
 		}
-		return settings.DefaultEndpoint, nil
+		return resolvedDefaultEndpoint(settings), nil
 	}
 	if strings.Contains(settings.Endpoint, "://") {
 		// User passed in a full URL path, use it verbatim.
 		return settings.Endpoint, nil
 	}
-	if settings.DefaultEndpoint == "" {
+	if resolvedDefaultEndpoint(settings) == "" {
 		// If DefaultEndpoint is not configured, use the user provided endpoint verbatim.
 		// This allows a naked "host[:port]" URL to be used with GRPC Direct Path.
 		return settings.Endpoint, nil
 	}
 
 	// Assume user-provided endpoint is host[:port], merge it with the default endpoint.
-	return mergeEndpoints(settings.DefaultEndpoint, settings.Endpoint)
+	return mergeEndpoints(resolvedDefaultEndpoint(settings), settings.Endpoint)
+}
+
+func isMTLS(clientCertSource cert.Source) bool {
+	mtlsMode := getMTLSMode()
+	return mtlsMode == mTLSModeAlways || (clientCertSource != nil && mtlsMode == mTLSModeAuto)
+}
+
+// resolvedDefaultEndpoint returns the DefaultEndpointTemplate merged with the
+// Universe Domain if the DefaultEndpointTemplate is set, otherwise returns the
+// deprecated DefaultEndpoint value.
+func resolvedDefaultEndpoint(settings *DialSettings) string {
+	if settings.DefaultEndpointTemplate == "" {
+		return settings.DefaultEndpoint
+	}
+	return strings.Replace(settings.DefaultEndpointTemplate, universeDomainPlaceholder, settings.GetUniverseDomain(), 1)
 }
 
 func getMTLSMode() string {
@@ -274,25 +302,15 @@ func shouldUseS2A(clientCertSource cert.Source, settings *DialSettings) bool {
 	if !isGoogleS2AEnabled() {
 		return false
 	}
-	// If DefaultMTLSEndpoint is not set and no endpoint override, skip S2A.
-	if settings.DefaultMTLSEndpoint == "" && settings.Endpoint == "" {
-		return false
-	}
-	// If MTLS is not enabled for this endpoint, skip S2A.
-	if !mtlsEndpointEnabledForS2A() {
+	// If DefaultMTLSEndpoint is not set or has endpoint override, skip S2A.
+	if settings.DefaultMTLSEndpoint == "" || settings.Endpoint != "" {
 		return false
 	}
 	// If custom HTTP client is provided, skip S2A.
 	if settings.HTTPClient != nil {
 		return false
 	}
-	return true
-}
-
-// mtlsEndpointEnabledForS2A checks if the endpoint is indeed MTLS-enabled, so that we can use S2A for MTLS connection.
-var mtlsEndpointEnabledForS2A = func() bool {
-	// TODO(xmenxk): determine this via discovery config.
-	return true
+	return !settings.EnableDirectPath && !settings.EnableDirectPathXds
 }
 
 func isGoogleS2AEnabled() bool {

@@ -6,13 +6,11 @@ package pebble
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"fmt"
 	"io"
 	"math"
 	"runtime/pprof"
-	"slices"
 	"sort"
 	"sync/atomic"
 	"time"
@@ -31,6 +29,7 @@ import (
 	"github.com/cockroachdb/pebble/objstorage/remote"
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/cockroachdb/pebble/vfs"
+	"golang.org/x/exp/constraints"
 )
 
 var errEmptyTable = errors.New("pebble: empty table")
@@ -307,12 +306,19 @@ func (f *fileSizeSplitter) shouldSplitBefore(key *InternalKey, tw *sstable.Write
 		// NB: Subtract 1 from `boundariesObserved` to account for the current
 		// boundary we're considering splitting at. `reached` will have
 		// incremented it at the same time it set `atGrandparentBoundary`.
-		minimumPctOfTargetSize := 50 + 5*min(f.boundariesObserved-1, 8)
+		minimumPctOfTargetSize := 50 + 5*minUint64(f.boundariesObserved-1, 8)
 		if estSize < (minimumPctOfTargetSize*f.targetFileSize)/100 {
 			return noSplit
 		}
 		return splitNow
 	}
+}
+
+func minUint64(a, b uint64) uint64 {
+	if b < a {
+		a = b
+	}
+	return a
 }
 
 func (f *fileSizeSplitter) onNewOutput(key []byte) []byte {
@@ -1277,16 +1283,22 @@ func (c *compaction) newInputIter(
 	newIters tableNewIters, newRangeKeyIter keyspan.TableNewSpanIter, snapshots []uint64,
 ) (_ internalIterator, retErr error) {
 	// Validate the ordering of compaction input files for defense in depth.
+	// TODO(jackson): Some of the CheckOrdering calls may be adapted to pass
+	// ProhibitSplitUserKeys if we thread the active format major version in. Or
+	// if we remove support for earlier FMVs, we can remove the parameter
+	// altogether.
 	if len(c.flushing) == 0 {
 		if c.startLevel.level >= 0 {
 			err := manifest.CheckOrdering(c.cmp, c.formatKey,
-				manifest.Level(c.startLevel.level), c.startLevel.files.Iter())
+				manifest.Level(c.startLevel.level), c.startLevel.files.Iter(),
+				manifest.AllowSplitUserKeys)
 			if err != nil {
 				return nil, err
 			}
 		}
 		err := manifest.CheckOrdering(c.cmp, c.formatKey,
-			manifest.Level(c.outputLevel.level), c.outputLevel.files.Iter())
+			manifest.Level(c.outputLevel.level), c.outputLevel.files.Iter(),
+			manifest.AllowSplitUserKeys)
 		if err != nil {
 			return nil, err
 		}
@@ -1296,7 +1308,9 @@ func (c *compaction) newInputIter(
 			}
 			for _, info := range c.startLevel.l0SublevelInfo {
 				err := manifest.CheckOrdering(c.cmp, c.formatKey,
-					info.sublevel, info.Iter())
+					info.sublevel, info.Iter(),
+					// NB: L0 sublevels have never allowed split user keys.
+					manifest.ProhibitSplitUserKeys)
 				if err != nil {
 					return nil, err
 				}
@@ -1308,7 +1322,8 @@ func (c *compaction) newInputIter(
 			}
 			interLevel := c.extraLevels[0]
 			err := manifest.CheckOrdering(c.cmp, c.formatKey,
-				manifest.Level(interLevel.level), interLevel.files.Iter())
+				manifest.Level(interLevel.level), interLevel.files.Iter(),
+				manifest.AllowSplitUserKeys)
 			if err != nil {
 				return nil, err
 			}
@@ -1323,7 +1338,7 @@ func (c *compaction) newInputIter(
 	// numInputLevels is an approximation of the number of iterator levels. Due
 	// to idiosyncrasies in iterator construction, we may (rarely) exceed this
 	// initial capacity.
-	numInputLevels := max(len(c.flushing), len(c.inputs))
+	numInputLevels := max[int](len(c.flushing), len(c.inputs))
 	iters := make([]internalIterator, 0, numInputLevels)
 	rangeDelIters := make([]keyspan.FragmentIterator, 0, numInputLevels)
 	rangeKeyIters := make([]keyspan.FragmentIterator, 0, numInputLevels)
@@ -2330,6 +2345,7 @@ func (d *DB) maybeScheduleCompactionPicker(
 	// cheap and reduce future compaction work.
 	if !d.opts.private.disableDeleteOnlyCompactions &&
 		len(d.mu.compact.deletionHints) > 0 &&
+		d.mu.compact.compactingCount < maxConcurrentCompactions &&
 		!d.opts.DisableAutomaticCompactions {
 		v := d.mu.versions.currentVersion()
 		snapshots := d.mu.snapshots.toSlice()
@@ -3003,7 +3019,9 @@ func (d *DB) runCompaction(
 	iiter = invalidating.MaybeWrapIfInvariants(iiter)
 	iter := newCompactionIter(c.cmp, c.equal, c.formatKey, d.merge, iiter, snapshots,
 		&c.rangeDelFrag, &c.rangeKeyFrag, c.allowedZeroSeqNum, c.elideTombstone,
-		c.elideRangeTombstone, d.FormatMajorVersion())
+		c.elideRangeTombstone, d.opts.Experimental.IneffectualSingleDeleteCallback,
+		d.opts.Experimental.SingleDeleteInvariantViolationCallback,
+		d.FormatMajorVersion())
 
 	var (
 		createdFiles    []base.DiskFileNum
@@ -3663,7 +3681,7 @@ func (d *DB) scanObsoleteFiles(list []string) {
 		}
 		switch fileType {
 		case fileTypeLog:
-			if diskFileNum >= minUnflushedLogNum {
+			if diskFileNum.FileNum() >= minUnflushedLogNum {
 				continue
 			}
 			fi := fileInfo{fileNum: diskFileNum}
@@ -3672,7 +3690,7 @@ func (d *DB) scanObsoleteFiles(list []string) {
 			}
 			obsoleteLogs = append(obsoleteLogs, fi)
 		case fileTypeManifest:
-			if diskFileNum >= manifestFileNum {
+			if diskFileNum.FileNum() >= manifestFileNum {
 				continue
 			}
 			fi := fileInfo{fileNum: diskFileNum}
@@ -3718,7 +3736,7 @@ func (d *DB) scanObsoleteFiles(list []string) {
 
 	d.mu.log.queue = merge(d.mu.log.queue, obsoleteLogs)
 	d.mu.versions.metrics.WAL.Files = int64(len(d.mu.log.queue))
-	d.mu.versions.obsoleteTables = merge(d.mu.versions.obsoleteTables, obsoleteTables)
+	d.mu.versions.obsoleteTables = mergeFileInfo(d.mu.versions.obsoleteTables, obsoleteTables)
 	d.mu.versions.updateObsoleteTableMetricsLocked()
 	d.mu.versions.obsoleteManifests = merge(d.mu.versions.obsoleteManifests, obsoleteManifests)
 	d.mu.versions.obsoleteOptions = merge(d.mu.versions.obsoleteOptions, obsoleteOptions)
@@ -3778,7 +3796,7 @@ func (d *DB) deleteObsoleteFiles(jobID int) {
 		// log that has not had its contents flushed to an sstable. We can recycle
 		// the prefix of d.mu.log.queue with log numbers less than
 		// minUnflushedLogNum.
-		if d.mu.log.queue[i].fileNum >= d.mu.versions.minUnflushedLogNum {
+		if d.mu.log.queue[i].fileNum.FileNum() >= d.mu.versions.minUnflushedLogNum {
 			obsoleteLogs = d.mu.log.queue[:i]
 			d.mu.log.queue = d.mu.log.queue[i:]
 			d.mu.versions.metrics.WAL.Files -= int64(len(obsoleteLogs))
@@ -3795,8 +3813,9 @@ func (d *DB) deleteObsoleteFiles(jobID int) {
 
 	// Sort the manifests cause we want to delete some contiguous prefix
 	// of the older manifests.
-	slices.SortFunc(d.mu.versions.obsoleteManifests, func(a, b fileInfo) int {
-		return cmp.Compare(a.fileNum, b.fileNum)
+	sort.Slice(d.mu.versions.obsoleteManifests, func(i, j int) bool {
+		return d.mu.versions.obsoleteManifests[i].fileNum.FileNum() <
+			d.mu.versions.obsoleteManifests[j].fileNum.FileNum()
 	})
 
 	var obsoleteManifests []fileInfo
@@ -3831,8 +3850,8 @@ func (d *DB) deleteObsoleteFiles(jobID int) {
 	for _, f := range files {
 		// We sort to make the order of deletions deterministic, which is nice for
 		// tests.
-		slices.SortFunc(f.obsolete, func(a, b fileInfo) int {
-			return cmp.Compare(a.fileNum, b.fileNum)
+		sort.Slice(f.obsolete, func(i, j int) bool {
+			return f.obsolete[i].fileNum.FileNum() < f.obsolete[j].fileNum.FileNum()
 		})
 		for _, fi := range f.obsolete {
 			dir := d.dirname
@@ -3882,10 +3901,43 @@ func merge(a, b []fileInfo) []fileInfo {
 	}
 
 	a = append(a, b...)
-	slices.SortFunc(a, func(a, b fileInfo) int {
-		return cmp.Compare(a.fileNum, b.fileNum)
+	sort.Slice(a, func(i, j int) bool {
+		return a[i].fileNum.FileNum() < a[j].fileNum.FileNum()
 	})
-	return slices.CompactFunc(a, func(a, b fileInfo) bool {
-		return a.fileNum == b.fileNum
+
+	n := 0
+	for i := 0; i < len(a); i++ {
+		if n == 0 || a[i].fileNum != a[n-1].fileNum {
+			a[n] = a[i]
+			n++
+		}
+	}
+	return a[:n]
+}
+
+func mergeFileInfo(a, b []fileInfo) []fileInfo {
+	if len(b) == 0 {
+		return a
+	}
+
+	a = append(a, b...)
+	sort.Slice(a, func(i, j int) bool {
+		return a[i].fileNum.FileNum() < a[j].fileNum.FileNum()
 	})
+
+	n := 0
+	for i := 0; i < len(a); i++ {
+		if n == 0 || a[i].fileNum != a[n-1].fileNum {
+			a[n] = a[i]
+			n++
+		}
+	}
+	return a[:n]
+}
+
+func max[I constraints.Ordered](a, b I) I {
+	if b > a {
+		return b
+	}
+	return a
 }

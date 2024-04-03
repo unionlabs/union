@@ -65,7 +65,7 @@ type Config struct {
 	GlobalLabels [][]string `mapstructure:"global-labels"`
 
 	// MetricsSink defines the type of metrics backend to use.
-	MetricsSink string `mapstructure:"type" default:"mem"`
+	MetricsSink string `mapstructure:"metrics-sink" default:"mem"`
 
 	// StatsdAddr defines the address of a statsd server to send metrics to.
 	// Only utilized if MetricsSink is set to "statsd" or "dogstatsd".

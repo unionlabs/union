@@ -302,8 +302,6 @@ type Iterator struct {
 	// Used for an optimization in external iterators to reduce the number of
 	// merging levels.
 	forwardOnly bool
-	// batchOnlyIter is set to true for Batch.NewBatchOnlyIter.
-	batchOnlyIter bool
 	// closePointIterOnce is set to true if this point iter can only be Close()d
 	// once, _and_ closing i.iter and then i.pointIter would close i.pointIter
 	// twice. This is necessary to track if the point iter is an internal iterator
@@ -449,6 +447,11 @@ const (
 	seekPrefixGELastPositioningOp
 	seekGELastPositioningOp
 	seekLTLastPositioningOp
+	// internalNextOp is a special internal iterator positioning operation used
+	// by CanDeterministicallySingleDelete. It exists for enforcing requirements
+	// around calling CanDeterministicallySingleDelete at most once per external
+	// iterator position.
+	internalNextOp
 	// invalidatedLastPositionOp is similar to unknownLastPositionOp and the
 	// only reason to distinguish this is for the wider set of SeekGE
 	// optimizations we permit for the external iterator Iterator.forwardOnly
@@ -2716,9 +2719,7 @@ func (i *Iterator) CloneWithContext(ctx context.Context, opts CloneOptions) (*It
 	if opts.IterOptions == nil {
 		opts.IterOptions = &i.opts
 	}
-	if i.batchOnlyIter {
-		return nil, errors.Errorf("cannot Clone a batch-only Iterator")
-	}
+
 	readState := i.readState
 	vers := i.version
 	if readState == nil && vers == nil {
@@ -2825,5 +2826,171 @@ func (stats *IteratorStats) SafeFormat(s redact.SafePrinter, verb rune) {
 			stats.RangeKeyStats.Count,
 			stats.RangeKeyStats.ContainedPoints,
 			stats.RangeKeyStats.SkippedPoints)
+	}
+}
+
+// CanDeterministicallySingleDelete takes a valid iterator and examines internal
+// state to determine if a SingleDelete deleting Iterator.Key() would
+// deterministically delete the key. CanDeterministicallySingleDelete requires
+// the iterator to be oriented in the forward direction (eg, the last
+// positioning operation must've been a First, a Seek[Prefix]GE, or a
+// Next[Prefix][WithLimit]).
+//
+// This function does not change the external position of the iterator, and all
+// positioning methods should behave the same as if it was never called. This
+// function will only return a meaningful result the first time it's invoked at
+// an iterator position. This function invalidates the iterator Value's memory,
+// and the caller must not rely on the memory safety of the previous Iterator
+// position.
+//
+// If CanDeterministicallySingleDelete returns true AND the key at the iterator
+// position is not modified between the creation of the Iterator and the commit
+// of a batch containing a SingleDelete over the key, then the caller can be
+// assured that SingleDelete is equivalent to Delete on the local engine, but it
+// may not be true on another engine that received the same writes and with
+// logically equivalent state since this engine may have collapsed multiple SETs
+// into one.
+func CanDeterministicallySingleDelete(it *Iterator) (bool, error) {
+	// This function may only be called once per external iterator position. We
+	// can validate this by checking the last positioning operation.
+	if it.lastPositioningOp == internalNextOp {
+		return false, errors.New("pebble: CanDeterministicallySingleDelete called twice")
+	}
+	validity, kind := it.internalNext()
+	var shadowedBySingleDelete bool
+	for validity == internalNextValid {
+		switch kind {
+		case InternalKeyKindDelete, InternalKeyKindDeleteSized:
+			// A DEL or DELSIZED tombstone is okay. An internal key
+			// sequence like SINGLEDEL; SET; DEL; SET can be handled
+			// deterministically. If there are SETs further down, we
+			// don't care about them.
+			return true, nil
+		case InternalKeyKindSingleDelete:
+			// A SingleDelete is okay as long as when that SingleDelete was
+			// written, it was written deterministically (eg, with its own
+			// CanDeterministicallySingleDelete check). Validate that it was
+			// written deterministically. We'll allow one set to appear after
+			// the SingleDelete.
+			shadowedBySingleDelete = true
+			validity, kind = it.internalNext()
+			continue
+		case InternalKeyKindSet, InternalKeyKindSetWithDelete, InternalKeyKindMerge:
+			// If we observed a single delete, it's allowed to delete 1 key.
+			// We'll keep looping to validate that the internal keys beneath the
+			// already-written single delete are copacetic.
+			if shadowedBySingleDelete {
+				shadowedBySingleDelete = false
+				validity, kind = it.internalNext()
+				continue
+			}
+			// We encountered a shadowed SET, SETWITHDEL, MERGE. A SINGLEDEL
+			// that deleted the KV at the original iterator position could
+			// result in this key becoming visible.
+			return false, nil
+		case InternalKeyKindRangeDelete:
+			// RangeDeletes are handled by the merging iterator and should never
+			// be observed by the top-level Iterator.
+			panic(errors.AssertionFailedf("pebble: unexpected range delete"))
+		case InternalKeyKindRangeKeySet, InternalKeyKindRangeKeyUnset, InternalKeyKindRangeKeyDelete:
+			// Range keys are interleaved at the maximal sequence number and
+			// should never be observed within a user key.
+			panic(errors.AssertionFailedf("pebble: unexpected range key"))
+		default:
+			panic(errors.AssertionFailedf("pebble: unexpected key kind: %s", errors.Safe(kind)))
+		}
+	}
+	if validity == internalNextError {
+		return false, it.Error()
+	}
+	return true, nil
+}
+
+// internalNextValidity enumerates the potential outcomes of a call to
+// internalNext.
+type internalNextValidity int8
+
+const (
+	// internalNextError is returned by internalNext when an error occurred and
+	// the caller is responsible for checking iter.Error().
+	internalNextError internalNextValidity = iota
+	// internalNextExhausted is returned by internalNext when the next internal
+	// key is an internal key with a different user key than Iterator.Key().
+	internalNextExhausted
+	// internalNextValid is returned by internalNext when the internal next
+	// found a shadowed internal key with a user key equal to Iterator.Key().
+	internalNextValid
+)
+
+// internalNext advances internal Iterator state forward to expose the
+// InternalKeyKind of the next internal key with a user key equal to Key().
+//
+// internalNext is a highly specialized operation and is unlikely to be
+// generally useful. See Iterator.Next for how to reposition the iterator to the
+// next key. internalNext requires the Iterator to be at a valid position in the
+// forward direction (the last positioning operation must've been a First, a
+// Seek[Prefix]GE, or a Next[Prefix][WithLimit] and Valid() must return true).
+//
+// internalNext, unlike all other Iterator methods, exposes internal LSM state.
+// internalNext advances the Iterator's internal iterator to the next shadowed
+// key with a user key equal to Key(). When a key is overwritten or deleted, its
+// removal from the LSM occurs lazily as a part of compactions. internalNext
+// allows the caller to see whether an obsolete internal key exists with the
+// current Key(), and what it's key kind is. Note that the existence of an
+// internal key is nondeterministic and dependent on internal LSM state. These
+// semantics are unlikely to be applicable to almost all use cases.
+//
+// If internalNext finds a key that shares the same user key as Key(), it
+// returns internalNextValid and the internal key's kind. If internalNext
+// encounters an error, it returns internalNextError and the caller is expected
+// to call Iterator.Error() to retrieve it. In all other circumstances,
+// internalNext returns internalNextExhausted, indicating that there are no more
+// additional internal keys with the user key Key().
+//
+// internalNext does not change the external position of the iterator, and a
+// Next operation should behave the same as if internalNext was never called.
+// internalNext does invalidate the iterator Value's memory, and the caller must
+// not rely on the memory safety of the previous Iterator position.
+func (i *Iterator) internalNext() (internalNextValidity, base.InternalKeyKind) {
+	i.stats.ForwardStepCount[InterfaceCall]++
+	if i.err != nil {
+		return internalNextError, base.InternalKeyKindInvalid
+	} else if i.iterValidityState != IterValid {
+		return internalNextExhausted, base.InternalKeyKindInvalid
+	}
+	i.lastPositioningOp = internalNextOp
+
+	switch i.pos {
+	case iterPosCurForward:
+		i.iterKey, i.iterValue = i.iter.Next()
+		if i.iterKey == nil {
+			// We check i.iter.Error() here and return an internalNextError enum
+			// variant so that the caller does not need to check i.iter.Error()
+			// in the common case that the next internal key has a new user key.
+			if i.err = i.iter.Error(); i.err != nil {
+				return internalNextError, base.InternalKeyKindInvalid
+			}
+			i.pos = iterPosNext
+			return internalNextExhausted, base.InternalKeyKindInvalid
+		} else if i.comparer.Equal(i.iterKey.UserKey, i.key) {
+			return internalNextValid, i.iterKey.Kind()
+		}
+		i.pos = iterPosNext
+		return internalNextExhausted, base.InternalKeyKindInvalid
+	case iterPosCurReverse, iterPosCurReversePaused, iterPosPrev:
+		i.err = errors.New("switching from reverse to forward via internalNext is prohibited")
+		i.iterValidityState = IterExhausted
+		return internalNextError, base.InternalKeyKindInvalid
+	case iterPosNext, iterPosCurForwardPaused:
+		// The previous method already moved onto the next user key. This is
+		// only possible if
+		//   - the last positioning method was a call to internalNext, and we
+		//     advanced to a new user key.
+		//   - the previous non-internalNext iterator operation encountered a
+		//     range key or merge, forcing an internal Next that found a new
+		//     user key that's not equal to i.Iterator.Key().
+		return internalNextExhausted, base.InternalKeyKindInvalid
+	default:
+		panic("unreachable")
 	}
 }

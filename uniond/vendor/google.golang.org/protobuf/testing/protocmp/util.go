@@ -23,34 +23,34 @@ var (
 	messageReflectType = reflect.TypeOf(Message{})
 )
 
-// FilterEnum filters opt to only be applicable on standalone Enums,
+// FilterEnum filters opt to only be applicable on a standalone [Enum],
 // singular fields of enums, list fields of enums, or map fields of enum values,
 // where the enum is the same type as the specified enum.
 //
 // The Go type of the last path step may be an:
-//   - Enum for singular fields, elements of a repeated field,
-//     values of a map field, or standalone Enums
-//   - []Enum for list fields
-//   - map[K]Enum for map fields
-//   - interface{} for a Message map entry value
+//   - [Enum] for singular fields, elements of a repeated field,
+//     values of a map field, or standalone [Enum] values
+//   - [][Enum] for list fields
+//   - map[K][Enum] for map fields
+//   - interface{} for a [Message] map entry value
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func FilterEnum(enum protoreflect.Enum, opt cmp.Option) cmp.Option {
 	return FilterDescriptor(enum.Descriptor(), opt)
 }
 
-// FilterMessage filters opt to only be applicable on standalone Messages,
+// FilterMessage filters opt to only be applicable on a standalone [Message] values,
 // singular fields of messages, list fields of messages, or map fields of
 // message values, where the message is the same type as the specified message.
 //
 // The Go type of the last path step may be an:
-//   - Message for singular fields, elements of a repeated field,
-//     values of a map field, or standalone Messages
-//   - []Message for list fields
-//   - map[K]Message for map fields
-//   - interface{} for a Message map entry value
+//   - [Message] for singular fields, elements of a repeated field,
+//     values of a map field, or standalone [Message] values
+//   - [][Message] for list fields
+//   - map[K][Message] for map fields
+//   - interface{} for a [Message] map entry value
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func FilterMessage(message proto.Message, opt cmp.Option) cmp.Option {
 	return FilterDescriptor(message.ProtoReflect().Descriptor(), opt)
 }
@@ -62,9 +62,9 @@ func FilterMessage(message proto.Message, opt cmp.Option) cmp.Option {
 //   - T for singular fields
 //   - []T for list fields
 //   - map[K]T for map fields
-//   - interface{} for a Message map entry value
+//   - interface{} for a [Message] map entry value
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func FilterField(message proto.Message, name protoreflect.Name, opt cmp.Option) cmp.Option {
 	md := message.ProtoReflect().Descriptor()
 	return FilterDescriptor(mustFindFieldDescriptor(md, name), opt)
@@ -78,9 +78,9 @@ func FilterField(message proto.Message, name protoreflect.Name, opt cmp.Option) 
 //   - T for singular fields
 //   - []T for list fields
 //   - map[K]T for map fields
-//   - interface{} for a Message map entry value
+//   - interface{} for a [Message] map entry value
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func FilterOneof(message proto.Message, name protoreflect.Name, opt cmp.Option) cmp.Option {
 	md := message.ProtoReflect().Descriptor()
 	return FilterDescriptor(mustFindOneofDescriptor(md, name), opt)
@@ -89,17 +89,17 @@ func FilterOneof(message proto.Message, name protoreflect.Name, opt cmp.Option) 
 // FilterDescriptor ignores the specified descriptor.
 //
 // The following descriptor types may be specified:
-//   - protoreflect.EnumDescriptor
-//   - protoreflect.MessageDescriptor
-//   - protoreflect.FieldDescriptor
-//   - protoreflect.OneofDescriptor
+//   - [protoreflect.EnumDescriptor]
+//   - [protoreflect.MessageDescriptor]
+//   - [protoreflect.FieldDescriptor]
+//   - [protoreflect.OneofDescriptor]
 //
 // For the behavior of each, see the corresponding filter function.
-// Since this filter accepts a protoreflect.FieldDescriptor, it can be used
-// to also filter for extension fields as a protoreflect.ExtensionDescriptor
-// is just an alias to protoreflect.FieldDescriptor.
+// Since this filter accepts a [protoreflect.FieldDescriptor], it can be used
+// to also filter for extension fields as a [protoreflect.ExtensionDescriptor]
+// is just an alias to [protoreflect.FieldDescriptor].
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func FilterDescriptor(desc protoreflect.Descriptor, opt cmp.Option) cmp.Option {
 	f := newNameFilters(desc)
 	return cmp.FilterPath(f.Filter, opt)
@@ -108,7 +108,7 @@ func FilterDescriptor(desc protoreflect.Descriptor, opt cmp.Option) cmp.Option {
 // IgnoreEnums ignores all enums of the specified types.
 // It is equivalent to FilterEnum(enum, cmp.Ignore()) for each enum.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreEnums(enums ...protoreflect.Enum) cmp.Option {
 	var ds []protoreflect.Descriptor
 	for _, e := range enums {
@@ -118,9 +118,9 @@ func IgnoreEnums(enums ...protoreflect.Enum) cmp.Option {
 }
 
 // IgnoreMessages ignores all messages of the specified types.
-// It is equivalent to FilterMessage(message, cmp.Ignore()) for each message.
+// It is equivalent to [FilterMessage](message, [cmp.Ignore]()) for each message.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreMessages(messages ...proto.Message) cmp.Option {
 	var ds []protoreflect.Descriptor
 	for _, m := range messages {
@@ -130,10 +130,10 @@ func IgnoreMessages(messages ...proto.Message) cmp.Option {
 }
 
 // IgnoreFields ignores the specified fields in the specified message.
-// It is equivalent to FilterField(message, name, cmp.Ignore()) for each field
+// It is equivalent to [FilterField](message, name, [cmp.Ignore]()) for each field
 // in the message.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreFields(message proto.Message, names ...protoreflect.Name) cmp.Option {
 	var ds []protoreflect.Descriptor
 	md := message.ProtoReflect().Descriptor()
@@ -147,7 +147,7 @@ func IgnoreFields(message proto.Message, names ...protoreflect.Name) cmp.Option 
 // It is equivalent to FilterOneof(message, name, cmp.Ignore()) for each oneof
 // in the message.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreOneofs(message proto.Message, names ...protoreflect.Name) cmp.Option {
 	var ds []protoreflect.Descriptor
 	md := message.ProtoReflect().Descriptor()
@@ -158,9 +158,9 @@ func IgnoreOneofs(message proto.Message, names ...protoreflect.Name) cmp.Option 
 }
 
 // IgnoreDescriptors ignores the specified set of descriptors.
-// It is equivalent to FilterDescriptor(desc, cmp.Ignore()) for each descriptor.
+// It is equivalent to [FilterDescriptor](desc, [cmp.Ignore]()) for each descriptor.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreDescriptors(descs ...protoreflect.Descriptor) cmp.Option {
 	return cmp.FilterPath(newNameFilters(descs...).Filter, cmp.Ignore())
 }
@@ -348,7 +348,7 @@ func (f *nameFilters) filterValue(v reflect.Value) bool {
 // explicitly set to the default value.
 // This option does not effect elements in a list or entries in a map.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreDefaultScalars() cmp.Option {
 	return cmp.FilterPath(func(p cmp.Path) bool {
 		// Filter for Message maps.
@@ -408,10 +408,10 @@ func equalFloat64(x, y float64) bool {
 }
 
 // IgnoreEmptyMessages ignores messages that are empty or unpopulated.
-// It applies to standalone Messages, singular message fields,
+// It applies to standalone [Message] values, singular message fields,
 // list fields of messages, and map fields of message values.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreEmptyMessages() cmp.Option {
 	return cmp.FilterPath(func(p cmp.Path) bool {
 		vx, vy := p.Last().Values()
@@ -490,7 +490,7 @@ func isEmptyMessage(v reflect.Value) bool {
 
 // IgnoreUnknown ignores unknown fields in all messages.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func IgnoreUnknown() cmp.Option {
 	return cmp.FilterPath(func(p cmp.Path) bool {
 		// Filter for Message maps.
@@ -515,16 +515,16 @@ func IgnoreUnknown() cmp.Option {
 // The element type T can be one of the following:
 //   - Go type for a protobuf scalar kind except for an enum
 //     (i.e., bool, int32, int64, uint32, uint64, float32, float64, string, and []byte)
-//   - E where E is a concrete enum type that implements protoreflect.Enum
-//   - M where M is a concrete message type that implement proto.Message
+//   - E where E is a concrete enum type that implements [protoreflect.Enum]
+//   - M where M is a concrete message type that implement [proto.Message]
 //
 // This option only applies to repeated fields within a protobuf message.
 // It does not operate on higher-order Go types that seem like a repeated field.
 // For example, a []T outside the context of a protobuf message will not be
 // handled by this option. To sort Go slices that are not repeated fields,
-// consider using "github.com/google/go-cmp/cmp/cmpopts".SortSlices instead.
+// consider using [github.com/google/go-cmp/cmp/cmpopts.SortSlices] instead.
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func SortRepeated(lessFunc interface{}) cmp.Option {
 	t, ok := checkTTBFunc(lessFunc)
 	if !ok {
@@ -613,8 +613,8 @@ func checkTTBFunc(lessFunc interface{}) (reflect.Type, bool) {
 //   - Floating-point numbers are sorted in ascending order according to
 //     the total ordering defined by IEEE-754 (section 5.10).
 //   - Strings and bytes are sorted lexicographically in ascending order.
-//   - Enums are sorted in ascending order based on its numeric value.
-//   - Messages are sorted according to some arbitrary ordering
+//   - [Enum] values are sorted in ascending order based on its numeric value.
+//   - [Message] values are sorted according to some arbitrary ordering
 //     which is undefined and may change in future implementations.
 //
 // The ordering chosen for repeated messages is unlikely to be aesthetically
@@ -624,7 +624,7 @@ func checkTTBFunc(lessFunc interface{}) (reflect.Type, bool) {
 //	    ... // user-provided definition for less
 //	}))
 //
-// This must be used in conjunction with Transform.
+// This must be used in conjunction with [Transform].
 func SortRepeatedFields(message proto.Message, names ...protoreflect.Name) cmp.Option {
 	var opts cmp.Options
 	md := message.ProtoReflect().Descriptor()

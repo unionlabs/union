@@ -284,6 +284,9 @@ func WithType(err error, obj interface{}) error {
 // IsOf checks if a received error is caused by one of the target errors.
 // It extends the errors.Is functionality to a list of errors.
 func IsOf(received error, targets ...error) bool {
+	if received == nil {
+		return false
+	}
 	for _, t := range targets {
 		if errors.Is(received, t) {
 			return true

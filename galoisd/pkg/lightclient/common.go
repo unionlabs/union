@@ -70,7 +70,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfVal, MaxVal)
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfSignature, lc.input.NbOfVal)
 	// Ensure that at least one validator/signature are provided
-	lc.api.AssertIsLessOrEqual(1, lc.input.NbOfSignature)
+	lc.api.AssertIsDifferent(0, lc.input.NbOfSignature)
 
 	// Note that because the scalar field modulus is 253 bits wide, the maximum bitmap size is 252
 	// We would need to split the bitmap into multiple public inputs if we wanted to push this limit

@@ -23,6 +23,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+* [#18897](https://github.com/cosmos/cosmos-sdk/pull/18897) Replace panic in pruning to avoid consensus halting. 
+
 ## v1.0.1 (November 28, 2023)
 
 ### Bug Fixes

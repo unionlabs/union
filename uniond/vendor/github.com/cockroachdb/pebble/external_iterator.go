@@ -311,7 +311,7 @@ func finishInitializingExternal(ctx context.Context, it *Iterator) {
 					base.InternalKeySeqNumMax,
 					it.opts.LowerBound, it.opts.UpperBound,
 					&it.hasPrefix, &it.prefixOrFullSeekKey,
-					true /* onlySets */, &it.rangeKey.internal,
+					false /* internalKeys */, &it.rangeKey.internal,
 				)
 				for i := range rangeKeyIters {
 					it.rangeKey.iterConfig.AddLevel(rangeKeyIters[i])

@@ -810,6 +810,11 @@ func (i *twoLevelIterator) NextPrefix(succKey []byte) (*InternalKey, base.LazyVa
 	if key, val := i.singleLevelIterator.NextPrefix(succKey); key != nil {
 		return key, val
 	}
+	// key == nil
+	if i.err != nil {
+		return nil, base.LazyValue{}
+	}
+
 	// Did not find prefix in the existing second-level index block. This is the
 	// slow-path where we seek the iterator.
 	var ikey *InternalKey

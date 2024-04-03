@@ -212,7 +212,7 @@ func (d *compressor) writeBlockSkip(tok *tokens, index int, eof bool) error {
 // Should only be used after a start/reset.
 func (d *compressor) fillWindow(b []byte) {
 	// Do not fill window if we are in store-only or huffman mode.
-	if d.level <= 0 {
+	if d.level <= 0 && d.level > -MinCustomWindowSize {
 		return
 	}
 	if d.fast != nil {

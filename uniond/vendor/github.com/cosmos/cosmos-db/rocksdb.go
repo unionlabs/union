@@ -62,7 +62,7 @@ func NewRocksDB(name string, dir string, opts Options) (*RocksDB, error) {
 }
 
 func NewRocksDBWithOptions(name string, dir string, opts *grocksdb.Options) (*RocksDB, error) {
-	dbPath := filepath.Join(dir, name+".db")
+	dbPath := filepath.Join(dir, name+DBFileSuffix)
 	db, err := grocksdb.OpenDb(opts, dbPath)
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (db *RocksDB) NewBatch() Batch {
 
 // NewBatchWithSize implements DB.
 // It does the same thing as NewBatch because we can't pre-allocate rocksDBBatch
-func (db *RocksDB) NewBatchWithSize(size int) Batch {
+func (db *RocksDB) NewBatchWithSize(_ int) Batch {
 	return newRocksDBBatch(db)
 }
 

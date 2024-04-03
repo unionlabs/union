@@ -93,7 +93,7 @@ HTML and Literal values
 	// edges
 	outside.Edge(insideFour).Edge(insideOne).Edge(insideTwo).Edge(insideThree).Edge(outside)
 
-See also `ext/Subsystem` type for creating composition hierchies.
+See also `ext/Subsystem` type for creating composition hierarchies.
 
 
 ## record example

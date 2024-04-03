@@ -67,7 +67,6 @@ func CreateBackupEngineWithPath(db *DB, path string) (be *BackupEngine, err erro
 	return
 }
 
-
 // CreateNewBackup takes a new backup from db.
 func (b *BackupEngine) CreateNewBackup() (err error) {
 	var cErr *C.char

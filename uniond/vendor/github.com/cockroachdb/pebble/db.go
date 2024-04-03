@@ -77,10 +77,6 @@ type Reader interface {
 	// SeekLT, First or Last.
 	NewIter(o *IterOptions) (*Iterator, error)
 
-	// NewIterWithContext is like NewIter, and additionally accepts a context
-	// for tracing.
-	NewIterWithContext(ctx context.Context, o *IterOptions) (*Iterator, error)
-
 	// Close closes the Reader. It may or may not close any underlying io.Reader
 	// or io.Writer, depending on how the DB was created.
 	//
@@ -844,10 +840,16 @@ func (d *DB) applyInternal(batch *Batch, opts *WriteOptions, noSyncWait bool) er
 	batch.committing = true
 
 	if batch.db == nil {
-		batch.refreshMemTableSize()
+		if err := batch.refreshMemTableSize(); err != nil {
+			return err
+		}
 	}
 	if batch.memTableSize >= d.largeBatchThreshold {
-		batch.flushable = newFlushableBatch(batch, d.opts.Comparer)
+		var err error
+		batch.flushable, err = newFlushableBatch(batch, d.opts.Comparer)
+		if err != nil {
+			return err
+		}
 	}
 	if err := d.commit.Commit(batch, sync, noSyncWait); err != nil {
 		// There isn't much we can do on an error here. The commit pipeline will be
@@ -1000,31 +1002,15 @@ type snapshotIterOpts struct {
 	vers   *version
 }
 
-type batchIterOpts struct {
-	batchOnly bool
-}
-type newIterOpts struct {
-	snapshot snapshotIterOpts
-	batch    batchIterOpts
-}
-
 // newIter constructs a new iterator, merging in batch iterators as an extra
 // level.
 func (d *DB) newIter(
-	ctx context.Context, batch *Batch, internalOpts newIterOpts, o *IterOptions,
+	ctx context.Context, batch *Batch, sOpts snapshotIterOpts, o *IterOptions,
 ) *Iterator {
-	if internalOpts.batch.batchOnly {
-		if batch == nil {
-			panic("batchOnly is true, but batch is nil")
-		}
-		if internalOpts.snapshot.vers != nil {
-			panic("batchOnly is true, but snapshotIterOpts is initialized")
-		}
-	}
 	if err := d.closed.Load(); err != nil {
 		panic(err)
 	}
-	seqNum := internalOpts.snapshot.seqNum
+	seqNum := sOpts.seqNum
 	if o.rangeKeys() {
 		if d.FormatMajorVersion() < FormatRangeKeys {
 			panic(fmt.Sprintf(
@@ -1043,28 +1029,22 @@ func (d *DB) newIter(
 		// DB.mem.queue[0].logSeqNum.
 		panic("OnlyReadGuaranteedDurable is not supported for batches or snapshots")
 	}
+	// Grab and reference the current readState. This prevents the underlying
+	// files in the associated version from being deleted if there is a current
+	// compaction. The readState is unref'd by Iterator.Close().
 	var readState *readState
-	var newIters tableNewIters
-	var newIterRangeKey keyspan.TableNewSpanIter
-	if !internalOpts.batch.batchOnly {
-		// Grab and reference the current readState. This prevents the underlying
-		// files in the associated version from being deleted if there is a current
-		// compaction. The readState is unref'd by Iterator.Close().
-		if internalOpts.snapshot.vers == nil {
-			// NB: loadReadState() calls readState.ref().
-			readState = d.loadReadState()
-		} else {
-			// vers != nil
-			internalOpts.snapshot.vers.Ref()
-		}
+	if sOpts.vers == nil {
+		// NB: loadReadState() calls readState.ref().
+		readState = d.loadReadState()
+	} else {
+		// s.vers != nil
+		sOpts.vers.Ref()
+	}
 
-		// Determine the seqnum to read at after grabbing the read state (current and
-		// memtables) above.
-		if seqNum == 0 {
-			seqNum = d.mu.versions.visibleSeqNum.Load()
-		}
-		newIters = d.newIters
-		newIterRangeKey = d.tableNewRangeKeyIter
+	// Determine the seqnum to read at after grabbing the read state (current and
+	// memtables) above.
+	if seqNum == 0 {
+		seqNum = d.mu.versions.visibleSeqNum.Load()
 	}
 
 	// Bundle various structures under a single umbrella in order to allocate
@@ -1077,15 +1057,14 @@ func (d *DB) newIter(
 		merge:               d.merge,
 		comparer:            *d.opts.Comparer,
 		readState:           readState,
-		version:             internalOpts.snapshot.vers,
+		version:             sOpts.vers,
 		keyBuf:              buf.keyBuf,
 		prefixOrFullSeekKey: buf.prefixOrFullSeekKey,
 		boundsBuf:           buf.boundsBuf,
 		batch:               batch,
-		newIters:            newIters,
-		newIterRangeKey:     newIterRangeKey,
+		newIters:            d.newIters,
+		newIterRangeKey:     d.tableNewRangeKeyIter,
 		seqNum:              seqNum,
-		batchOnlyIter:       internalOpts.batch.batchOnly,
 	}
 	if o != nil {
 		dbi.opts = *o
@@ -1375,24 +1354,20 @@ func (i *Iterator) constructPointIter(
 	if i.batch != nil {
 		numMergingLevels++
 	}
+	numMergingLevels += len(memtables)
 
-	var current *version
-	if !i.batchOnlyIter {
-		numMergingLevels += len(memtables)
-
-		current = i.version
-		if current == nil {
-			current = i.readState.current
+	current := i.version
+	if current == nil {
+		current = i.readState.current
+	}
+	numMergingLevels += len(current.L0SublevelFiles)
+	numLevelIters += len(current.L0SublevelFiles)
+	for level := 1; level < len(current.Levels); level++ {
+		if current.Levels[level].Empty() {
+			continue
 		}
-		numMergingLevels += len(current.L0SublevelFiles)
-		numLevelIters += len(current.L0SublevelFiles)
-		for level := 1; level < len(current.Levels); level++ {
-			if current.Levels[level].Empty() {
-				continue
-			}
-			numMergingLevels++
-			numLevelIters++
-		}
+		numMergingLevels++
+		numLevelIters++
 	}
 
 	if numMergingLevels > cap(mlevels) {
@@ -1430,49 +1405,47 @@ func (i *Iterator) constructPointIter(
 		}
 	}
 
-	if !i.batchOnlyIter {
-		// Next are the memtables.
-		for j := len(memtables) - 1; j >= 0; j-- {
-			mem := memtables[j]
-			mlevels = append(mlevels, mergingIterLevel{
-				iter:         mem.newIter(&i.opts),
-				rangeDelIter: mem.newRangeDelIter(&i.opts),
-			})
+	// Next are the memtables.
+	for j := len(memtables) - 1; j >= 0; j-- {
+		mem := memtables[j]
+		mlevels = append(mlevels, mergingIterLevel{
+			iter:         mem.newIter(&i.opts),
+			rangeDelIter: mem.newRangeDelIter(&i.opts),
+		})
+	}
+
+	// Next are the file levels: L0 sub-levels followed by lower levels.
+	mlevelsIndex := len(mlevels)
+	levelsIndex := len(levels)
+	mlevels = mlevels[:numMergingLevels]
+	levels = levels[:numLevelIters]
+	i.opts.snapshotForHideObsoletePoints = buf.dbi.seqNum
+	addLevelIterForFiles := func(files manifest.LevelIterator, level manifest.Level) {
+		li := &levels[levelsIndex]
+
+		li.init(ctx, i.opts, &i.comparer, i.newIters, files, level, internalOpts)
+		li.initRangeDel(&mlevels[mlevelsIndex].rangeDelIter)
+		li.initBoundaryContext(&mlevels[mlevelsIndex].levelIterBoundaryContext)
+		li.initCombinedIterState(&i.lazyCombinedIter.combinedIterState)
+		mlevels[mlevelsIndex].levelIter = li
+		mlevels[mlevelsIndex].iter = invalidating.MaybeWrapIfInvariants(li)
+
+		levelsIndex++
+		mlevelsIndex++
+	}
+
+	// Add level iterators for the L0 sublevels, iterating from newest to
+	// oldest.
+	for i := len(current.L0SublevelFiles) - 1; i >= 0; i-- {
+		addLevelIterForFiles(current.L0SublevelFiles[i].Iter(), manifest.L0Sublevel(i))
+	}
+
+	// Add level iterators for the non-empty non-L0 levels.
+	for level := 1; level < len(current.Levels); level++ {
+		if current.Levels[level].Empty() {
+			continue
 		}
-
-		// Next are the file levels: L0 sub-levels followed by lower levels.
-		mlevelsIndex := len(mlevels)
-		levelsIndex := len(levels)
-		mlevels = mlevels[:numMergingLevels]
-		levels = levels[:numLevelIters]
-		i.opts.snapshotForHideObsoletePoints = buf.dbi.seqNum
-		addLevelIterForFiles := func(files manifest.LevelIterator, level manifest.Level) {
-			li := &levels[levelsIndex]
-
-			li.init(ctx, i.opts, &i.comparer, i.newIters, files, level, internalOpts)
-			li.initRangeDel(&mlevels[mlevelsIndex].rangeDelIter)
-			li.initBoundaryContext(&mlevels[mlevelsIndex].levelIterBoundaryContext)
-			li.initCombinedIterState(&i.lazyCombinedIter.combinedIterState)
-			mlevels[mlevelsIndex].levelIter = li
-			mlevels[mlevelsIndex].iter = invalidating.MaybeWrapIfInvariants(li)
-
-			levelsIndex++
-			mlevelsIndex++
-		}
-
-		// Add level iterators for the L0 sublevels, iterating from newest to
-		// oldest.
-		for i := len(current.L0SublevelFiles) - 1; i >= 0; i-- {
-			addLevelIterForFiles(current.L0SublevelFiles[i].Iter(), manifest.L0Sublevel(i))
-		}
-
-		// Add level iterators for the non-empty non-L0 levels.
-		for level := 1; level < len(current.Levels); level++ {
-			if current.Levels[level].Empty() {
-				continue
-			}
-			addLevelIterForFiles(current.Levels[level].Iter(), manifest.Level(level))
-		}
+		addLevelIterForFiles(current.Levels[level].Iter(), manifest.Level(level))
 	}
 	buf.merging.init(&i.opts, &i.stats.InternalStats, i.comparer.Compare, i.comparer.Split, mlevels...)
 	if len(mlevels) <= cap(buf.levelsPositioned) {
@@ -1527,7 +1500,7 @@ func (d *DB) NewIter(o *IterOptions) (*Iterator, error) {
 // NewIterWithContext is like NewIter, and additionally accepts a context for
 // tracing.
 func (d *DB) NewIterWithContext(ctx context.Context, o *IterOptions) (*Iterator, error) {
-	return d.newIter(ctx, nil /* batch */, newIterOpts{}, o), nil
+	return d.newIter(ctx, nil /* batch */, snapshotIterOpts{}, o), nil
 }
 
 // NewSnapshot returns a point-in-time view of the current DB state. Iterators
@@ -1792,15 +1765,9 @@ func (d *DB) Compact(start, end []byte, parallelize bool) error {
 	}
 
 	for level := 0; level < maxLevelWithFiles; {
-		for {
-			if err := d.manualCompact(
-				iStart.UserKey, iEnd.UserKey, level, parallelize); err != nil {
-				if errors.Is(err, ErrCancelledCompaction) {
-					continue
-				}
-				return err
-			}
-			break
+		if err := d.manualCompact(
+			iStart.UserKey, iEnd.UserKey, level, parallelize); err != nil {
+			return err
 		}
 		level++
 		if level == numLevels-1 {
@@ -2018,7 +1985,7 @@ func (d *DB) Metrics() *Metrics {
 
 	metrics.LogWriter.FsyncLatency = d.mu.log.metrics.fsyncLatency
 	if err := metrics.LogWriter.Merge(&d.mu.log.metrics.LogWriterMetrics); err != nil {
-		d.opts.Logger.Errorf("metrics error: %s", err)
+		d.opts.Logger.Infof("metrics error: %s", err)
 	}
 	metrics.Flush.WriteThroughput = d.mu.compact.flushWriteThroughput
 	if d.mu.compact.flushing {
@@ -2345,7 +2312,7 @@ func (d *DB) walPreallocateSize() int {
 	return int(size)
 }
 
-func (d *DB) newMemTable(logNum base.DiskFileNum, logSeqNum uint64) (*memTable, *flushableEntry) {
+func (d *DB) newMemTable(logNum FileNum, logSeqNum uint64) (*memTable, *flushableEntry) {
 	size := d.mu.mem.nextSize
 	if d.mu.mem.nextSize < d.opts.MemTableSize {
 		d.mu.mem.nextSize *= 2
@@ -2416,9 +2383,7 @@ func (d *DB) freeMemTable(m *memTable) {
 	m.free()
 }
 
-func (d *DB) newFlushableEntry(
-	f flushable, logNum base.DiskFileNum, logSeqNum uint64,
-) *flushableEntry {
+func (d *DB) newFlushableEntry(f flushable, logNum FileNum, logSeqNum uint64) *flushableEntry {
 	fe := &flushableEntry{
 		flushable:      f,
 		flushed:        make(chan struct{}),
@@ -2502,7 +2467,7 @@ func (d *DB) makeRoomForWrite(b *Batch) error {
 			continue
 		}
 
-		var newLogNum base.DiskFileNum
+		var newLogNum base.FileNum
 		var prevLogSize uint64
 		if !d.opts.DisableWAL {
 			now := time.Now()
@@ -2559,7 +2524,7 @@ func (d *DB) makeRoomForWrite(b *Batch) error {
 }
 
 // Both DB.mu and commitPipeline.mu must be held by the caller.
-func (d *DB) rotateMemtable(newLogNum base.DiskFileNum, logSeqNum uint64, prev *memTable) {
+func (d *DB) rotateMemtable(newLogNum FileNum, logSeqNum uint64, prev *memTable) {
 	// Create a new memtable, scheduling the previous one for flushing. We do
 	// this even if the previous memtable was empty because the DB.Flush
 	// mechanism is dependent on being able to wait for the empty memtable to
@@ -2586,14 +2551,14 @@ func (d *DB) rotateMemtable(newLogNum base.DiskFileNum, logSeqNum uint64, prev *
 
 // Both DB.mu and commitPipeline.mu must be held by the caller. Note that DB.mu
 // may be released and reacquired.
-func (d *DB) recycleWAL() (newLogNum base.DiskFileNum, prevLogSize uint64) {
+func (d *DB) recycleWAL() (newLogNum FileNum, prevLogSize uint64) {
 	if d.opts.DisableWAL {
 		panic("pebble: invalid function call")
 	}
 
 	jobID := d.mu.nextJobID
 	d.mu.nextJobID++
-	newLogNum = d.mu.versions.getNextDiskFileNum()
+	newLogNum = d.mu.versions.getNextFileNum()
 
 	prevLogSize = uint64(d.mu.log.Size())
 
@@ -2615,11 +2580,11 @@ func (d *DB) recycleWAL() (newLogNum base.DiskFileNum, prevLogSize uint64) {
 	metrics := d.mu.log.LogWriter.Metrics()
 	d.mu.Lock()
 	if err := d.mu.log.metrics.Merge(metrics); err != nil {
-		d.opts.Logger.Errorf("metrics error: %s", err)
+		d.opts.Logger.Infof("metrics error: %s", err)
 	}
 	d.mu.Unlock()
 
-	newLogName := base.MakeFilepath(d.opts.FS, d.walDirname, fileTypeLog, newLogNum)
+	newLogName := base.MakeFilepath(d.opts.FS, d.walDirname, fileTypeLog, newLogNum.DiskFileNum())
 
 	// Try to use a recycled log file. Recycling log files is an important
 	// performance optimization as it is faster to sync a file that has
@@ -2700,7 +2665,7 @@ func (d *DB) recycleWAL() (newLogNum base.DiskFileNum, prevLogSize uint64) {
 		panic(err)
 	}
 
-	d.mu.log.queue = append(d.mu.log.queue, fileInfo{fileNum: newLogNum, fileSize: newLogSize})
+	d.mu.log.queue = append(d.mu.log.queue, fileInfo{fileNum: newLogNum.DiskFileNum(), fileSize: newLogSize})
 	d.mu.log.LogWriter = record.NewLogWriter(newLogFile, newLogNum, record.LogWriterConfig{
 		WALFsyncLatency:    d.mu.log.metrics.fsyncLatency,
 		WALMinSyncInterval: d.opts.WALMinSyncInterval,

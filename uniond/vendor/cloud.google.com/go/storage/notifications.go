@@ -21,7 +21,7 @@ import (
 	"regexp"
 
 	"cloud.google.com/go/internal/trace"
-	storagepb "cloud.google.com/go/storage/internal/apiv2/stubs"
+	"cloud.google.com/go/storage/internal/apiv2/storagepb"
 	raw "google.golang.org/api/storage/v1"
 )
 

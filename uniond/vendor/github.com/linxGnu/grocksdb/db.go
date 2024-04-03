@@ -1461,6 +1461,12 @@ func (db *DB) SetOptions(keys, values []string) (err error) {
 	)
 	err = fromCError(cErr)
 
+	// free before return
+	for i := range cKeys {
+		C.free(unsafe.Pointer(cKeys[i]))
+		C.free(unsafe.Pointer(cValues[i]))
+	}
+
 	return
 }
 
@@ -1489,6 +1495,12 @@ func (db *DB) SetOptionsCF(cf *ColumnFamilyHandle, keys, values []string) (err e
 		&cErr,
 	)
 	err = fromCError(cErr)
+
+	// free before return
+	for i := range cKeys {
+		C.free(unsafe.Pointer(cKeys[i]))
+		C.free(unsafe.Pointer(cValues[i]))
+	}
 
 	return
 }
@@ -1847,6 +1859,24 @@ func (db *DB) GetColumnFamilyMetadataCF(cf *ColumnFamilyHandle) (m *ColumnFamily
 	if c := C.rocksdb_get_column_family_metadata_cf(db.c, cf.c); c != nil {
 		m = newColumnFamilyMetadata(c)
 	}
+	return
+}
+
+// WaitForCompact waits for all flush and compactions jobs to finish. Jobs to wait
+// include the unscheduled (queued, but not scheduled yet). If the db is shutting down,
+// Status::ShutdownInProgress will be returned.
+//
+// NOTE: This may also never return if there's sufficient ongoing writes that
+// keeps flush and compaction going without stopping. The user would have to
+// cease all the writes to DB to make this eventually return in a stable
+// state. The user may also use timeout option in WaitForCompactOptions to
+// make this stop waiting and return when timeout expires.
+func (db *DB) WaitForCompact(opts *WaitForCompactOptions) (err error) {
+	var cErr *C.char
+
+	C.rocksdb_wait_for_compact(db.c, opts.p, &cErr)
+	err = fromCError(cErr)
+
 	return
 }
 

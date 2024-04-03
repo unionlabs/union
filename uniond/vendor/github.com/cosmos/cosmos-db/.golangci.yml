@@ -1,5 +1,5 @@
 run:
-  build-tags: 
+  build-tags:
     - rocksdb
   concurrency: 4
   sort-results: true
@@ -9,7 +9,6 @@ run:
 linters:
   disable-all: true
   enable:
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -33,4 +32,3 @@ linters:
     - unconvert
     - unused
     - nolintlint
-

@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/cosmos/cosmos-db/branch/master/graph/badge.svg)](https://codecov.io/gh/cosmos/cosmos-db)
 ![Lint](https://github.com/cosmos/cosmos-db/workflows/Lint/badge.svg?branch=master)
 ![Test](https://github.com/cosmos/cosmos-db/workflows/Test/badge.svg?branch=master)
-[![Discord chat](https://img.shields.io/discord/669268347736686612.svg)](https://discord.gg/AzefAFd)
+[![Discord chat](https://img.shields.io/discord/669268347736686612.svg)](https://discord.gg/cosmosnetwork)
 
 Common database interface for various database backends. Primarily meant for applications built on [Tendermint](https://github.com/tendermint/tendermint), such as the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk), but can be used independently of these as well.
 

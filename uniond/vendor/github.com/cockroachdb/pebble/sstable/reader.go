@@ -6,12 +6,11 @@ package sstable
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"encoding/binary"
 	"io"
 	"os"
-	"slices"
+	"sort"
 	"time"
 
 	"github.com/cespare/xxhash/v2"
@@ -360,7 +359,7 @@ func (r *Reader) newCompactionIter(
 		err := i.init(
 			context.Background(),
 			r, v, nil /* lower */, nil /* upper */, nil,
-			false /* useFilter */, false, /* hideObsoletePoints */
+			false /* useFilter */, v != nil && v.isForeign, /* hideObsoletePoints */
 			nil /* stats */, rp, bufferPool,
 		)
 		if err != nil {
@@ -375,7 +374,7 @@ func (r *Reader) newCompactionIter(
 	i := singleLevelIterPool.Get().(*singleLevelIterator)
 	err := i.init(
 		context.Background(), r, v, nil /* lower */, nil, /* upper */
-		nil, false /* useFilter */, false, /* hideObsoletePoints */
+		nil, false /* useFilter */, v != nil && v.isForeign, /* hideObsoletePoints */
 		nil /* stats */, rp, bufferPool,
 	)
 	if err != nil {
@@ -924,8 +923,8 @@ func (r *Reader) ValidateBlockChecksums() error {
 
 	// Sorting by offset ensures we are performing a sequential scan of the
 	// file.
-	slices.SortFunc(blocks, func(a, b BlockHandle) int {
-		return cmp.Compare(a.Offset, b.Offset)
+	sort.Slice(blocks, func(i, j int) bool {
+		return blocks[i].Offset < blocks[j].Offset
 	})
 
 	// Check all blocks sequentially. Make use of read-ahead, given we are

@@ -1,6 +1,8 @@
 package iavl
 
 import (
+	"sync"
+
 	dbm "github.com/cosmos/cosmos-db"
 )
 
@@ -11,6 +13,7 @@ type BatchWithFlusher struct {
 	db    dbm.DB    // This is only used to create new batch
 	batch dbm.Batch // Batched writing buffer.
 
+	mtx            sync.Mutex
 	flushThreshold int // The threshold to flush the batch to disk.
 }
 
@@ -46,6 +49,9 @@ func (b *BatchWithFlusher) estimateSizeAfterSetting(key []byte, value []byte) (i
 // the batch is flushed to disk, cleared, and a new one is created with buffer pre-allocated to threshold.
 // The addition entry is then added to the batch.
 func (b *BatchWithFlusher) Set(key, value []byte) error {
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
+
 	batchSizeAfter, err := b.estimateSizeAfterSetting(key, value)
 	if err != nil {
 		return err
@@ -67,6 +73,9 @@ func (b *BatchWithFlusher) Set(key, value []byte) error {
 // the batch is flushed to disk, cleared, and a new one is created with buffer pre-allocated to threshold.
 // The deletion entry is then added to the batch.
 func (b *BatchWithFlusher) Delete(key []byte) error {
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
+
 	batchSizeAfter, err := b.estimateSizeAfterSetting(key, []byte{})
 	if err != nil {
 		return err

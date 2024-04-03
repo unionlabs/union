@@ -2,6 +2,7 @@ package aminojson
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -43,6 +44,7 @@ func NewSignModeHandler(options SignModeHandlerOptions) *SignModeHandler {
 		h.encoder = NewEncoder(EncoderOptions{
 			FileResolver: options.FileResolver,
 			TypeResolver: options.TypeResolver,
+			EnumAsString: false, // ensure enum as string is disabled
 		})
 	} else {
 		h.encoder = *options.Encoder
@@ -78,7 +80,7 @@ func (h SignModeHandler) GetSignBytes(_ context.Context, signerData signing.Sign
 
 	f := txData.AuthInfo.Fee
 	if f == nil {
-		return nil, fmt.Errorf("fee cannot be nil when tipper is not signer")
+		return nil, errors.New("fee cannot be nil when tipper is not signer")
 	}
 	fee = &aminojsonpb.AminoSignFee{
 		Amount:  f.Amount,

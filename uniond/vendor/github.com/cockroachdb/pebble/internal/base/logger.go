@@ -19,7 +19,6 @@ import (
 // Logger defines an interface for writing log messages.
 type Logger interface {
 	Infof(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 }
 type defaultLogger struct{}
@@ -31,11 +30,6 @@ var _ Logger = DefaultLogger
 
 // Infof implements the Logger.Infof interface.
 func (defaultLogger) Infof(format string, args ...interface{}) {
-	_ = log.Output(2, fmt.Sprintf(format, args...))
-}
-
-// Errorf implements the Logger.Errorf interface.
-func (defaultLogger) Errorf(format string, args ...interface{}) {
 	_ = log.Output(2, fmt.Sprintf(format, args...))
 }
 
@@ -79,11 +73,6 @@ func (b *InMemLogger) Infof(format string, args ...interface{}) {
 	if n := len(s); n == 0 || s[n-1] != '\n' {
 		b.mu.buf.Write([]byte("\n"))
 	}
-}
-
-// Errorf is part of the Logger interface.
-func (b *InMemLogger) Errorf(format string, args ...interface{}) {
-	b.Infof(format, args...)
 }
 
 // Fatalf is part of the Logger interface.
@@ -135,9 +124,6 @@ var _ LoggerAndTracer = NoopLoggerAndTracer{}
 
 // Infof implements LoggerAndTracer.
 func (l NoopLoggerAndTracer) Infof(format string, args ...interface{}) {}
-
-// Errorf implements LoggerAndTracer.
-func (l NoopLoggerAndTracer) Errorf(format string, args ...interface{}) {}
 
 // Fatalf implements LoggerAndTracer.
 func (l NoopLoggerAndTracer) Fatalf(format string, args ...interface{}) {}

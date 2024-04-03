@@ -27,10 +27,11 @@ type VirtualReader struct {
 
 // Lightweight virtual sstable state which can be passed to sstable iterators.
 type virtualState struct {
-	lower   InternalKey
-	upper   InternalKey
-	fileNum base.FileNum
-	Compare Compare
+	lower     InternalKey
+	upper     InternalKey
+	fileNum   base.FileNum
+	Compare   Compare
+	isForeign bool
 }
 
 func ceilDiv(a, b uint64) uint64 {
@@ -39,16 +40,19 @@ func ceilDiv(a, b uint64) uint64 {
 
 // MakeVirtualReader is used to contruct a reader which can read from virtual
 // sstables.
-func MakeVirtualReader(reader *Reader, meta manifest.VirtualFileMeta) VirtualReader {
+func MakeVirtualReader(
+	reader *Reader, meta manifest.VirtualFileMeta, isForeign bool,
+) VirtualReader {
 	if reader.fileNum != meta.FileBacking.DiskFileNum {
 		panic("pebble: invalid call to MakeVirtualReader")
 	}
 
 	vState := virtualState{
-		lower:   meta.Smallest,
-		upper:   meta.Largest,
-		fileNum: meta.FileNum,
-		Compare: reader.Compare,
+		lower:     meta.Smallest,
+		upper:     meta.Largest,
+		fileNum:   meta.FileNum,
+		Compare:   reader.Compare,
+		isForeign: isForeign,
 	}
 	v := VirtualReader{
 		vState: vState,

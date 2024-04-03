@@ -5,11 +5,12 @@
 package base // import "github.com/cockroachdb/pebble/internal/base"
 
 import (
-	"cmp"
 	"encoding/binary"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/cockroachdb/redact"
 )
 
 const (
@@ -162,6 +163,11 @@ func (k InternalKeyKind) String() string {
 	return fmt.Sprintf("UNKNOWN:%d", k)
 }
 
+// SafeFormat implements redact.SafeFormatter.
+func (k InternalKeyKind) SafeFormat(w redact.SafePrinter, _ rune) {
+	w.Print(redact.SafeString(k.String()))
+}
+
 // InternalKey is a key used for the in-memory and on-disk partial DBs that
 // make up a pebble DB.
 //
@@ -300,8 +306,13 @@ func InternalCompare(userCmp Compare, a, b InternalKey) int {
 	if x := userCmp(a.UserKey, b.UserKey); x != 0 {
 		return x
 	}
-	// Reverse order for trailer comparison.
-	return cmp.Compare(b.Trailer, a.Trailer)
+	if a.Trailer > b.Trailer {
+		return -1
+	}
+	if a.Trailer < b.Trailer {
+		return 1
+	}
+	return 0
 }
 
 // Encode encodes the receiver into the buffer. The buffer must be large enough
@@ -368,6 +379,11 @@ func (k *InternalKey) SetSeqNum(seqNum uint64) {
 // SeqNum returns the sequence number component of the key.
 func (k InternalKey) SeqNum() uint64 {
 	return k.Trailer >> 8
+}
+
+// SeqNumFromTrailer returns the sequence number component of a trailer.
+func SeqNumFromTrailer(t uint64) uint64 {
+	return t >> 8
 }
 
 // Visible returns true if the key is visible at the specified snapshot

@@ -345,3 +345,21 @@ func (opts *ReadOptions) SetIterStartTimestamp(ts []byte) {
 	cTSLen := C.size_t(len(ts))
 	C.rocksdb_readoptions_set_iter_start_ts(opts.c, cTS, cTSLen)
 }
+
+// SetAutoReadaheadSize (Experimental) if auto_readahead_size is set to true, it will auto tune
+// the readahead_size during scans internally.
+// For this feature to enabled, iterate_upper_bound must also be specified.
+//
+// NOTE: - Recommended for forward Scans only.
+//   - In case of backward scans like Prev or SeekForPrev, the
+//     cost of these backward operations might increase and affect the
+//     performace. So this option should not be enabled if workload
+//     contains backward scans.
+//   - If there is a backward scans, this option will be
+//     disabled internally and won't be reset if forward scan is done
+//     again.
+//
+// Default: false
+func (opts *ReadOptions) SetAutoReadaheadSize(enable bool) {
+	C.rocksdb_readoptions_set_auto_readahead_size(opts.c, boolToChar(enable))
+}

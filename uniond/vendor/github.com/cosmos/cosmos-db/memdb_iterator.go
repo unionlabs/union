@@ -105,8 +105,8 @@ func newMemDBIteratorMtxChoice(db *MemDB, start []byte, end []byte, reverse bool
 // Close implements Iterator.
 func (i *memDBIterator) Close() error {
 	i.cancel()
-	for range i.ch { // drain channel
-	}
+	for range i.ch { //nolint:revive
+	} // drain channel
 	i.item = nil
 	return nil
 }

@@ -2723,6 +2723,8 @@ func (*MsgRevokeAllowanceResponse) Descriptor() ([]byte, []int) {
 }
 
 // MsgPruneAllowances prunes expired fee allowances.
+//
+// Since cosmos-sdk 0.50
 type MsgPruneAllowances struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2760,6 +2762,8 @@ func (x *MsgPruneAllowances) GetPruner() string {
 }
 
 // MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
+//
+// Since cosmos-sdk 0.50
 type MsgPruneAllowancesResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

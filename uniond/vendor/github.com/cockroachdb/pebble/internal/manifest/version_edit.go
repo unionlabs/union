@@ -7,11 +7,10 @@ package manifest
 import (
 	"bufio"
 	"bytes"
-	stdcmp "cmp"
 	"encoding/binary"
 	"fmt"
 	"io"
-	"slices"
+	"sort"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -95,7 +94,7 @@ type VersionEdit struct {
 	// mutations that have not been flushed to an sstable.
 	//
 	// This is an optional field, and 0 represents it is not set.
-	MinUnflushedLogNum base.DiskFileNum
+	MinUnflushedLogNum base.FileNum
 
 	// ObsoletePrevLogNum is a historic artifact from LevelDB that is not used by
 	// Pebble, RocksDB, or even LevelDB. Its use in LevelDB was deprecated in
@@ -105,7 +104,7 @@ type VersionEdit struct {
 
 	// The next file number. A single counter is used to assign file numbers
 	// for the WAL, MANIFEST, sstable, and OPTIONS files.
-	NextFileNum uint64
+	NextFileNum base.FileNum
 
 	// LastSeqNum is an upper bound on the sequence numbers that have been
 	// assigned in flushed WALs. Unflushed WALs (that will be replayed during
@@ -176,14 +175,14 @@ func (v *VersionEdit) Decode(r io.Reader) error {
 			v.ComparerName = string(s)
 
 		case tagLogNumber:
-			n, err := d.readUvarint()
+			n, err := d.readFileNum()
 			if err != nil {
 				return err
 			}
-			v.MinUnflushedLogNum = base.DiskFileNum(n)
+			v.MinUnflushedLogNum = n
 
 		case tagNextFileNumber:
-			n, err := d.readUvarint()
+			n, err := d.readFileNum()
 			if err != nil {
 				return err
 			}
@@ -472,11 +471,11 @@ func (v *VersionEdit) string(verbose bool, fmtKey base.FormatKey) string {
 	for df := range v.DeletedFiles {
 		entries = append(entries, df)
 	}
-	slices.SortFunc(entries, func(a, b DeletedFileEntry) int {
-		if v := stdcmp.Compare(a.Level, b.Level); v != 0 {
-			return v
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Level != entries[j].Level {
+			return entries[i].Level < entries[j].Level
 		}
-		return stdcmp.Compare(a.FileNum, b.FileNum)
+		return entries[i].FileNum < entries[j].FileNum
 	})
 	for _, df := range entries {
 		fmt.Fprintf(&buf, "  deleted:       L%d %s\n", df.Level, df.FileNum)
@@ -855,6 +854,7 @@ func AccumulateIncompleteAndApplySingleVE(
 	backingStateMap map[base.DiskFileNum]*FileBacking,
 	addBackingFunc func(*FileBacking),
 	removeBackingFunc func(base.DiskFileNum),
+	orderingInvariants OrderingInvariants,
 ) (_ *Version, zombies map[base.DiskFileNum]uint64, _ error) {
 	if len(ve.RemovedBackingTables) != 0 {
 		panic("pebble: invalid incomplete version edit")
@@ -866,7 +866,7 @@ func AccumulateIncompleteAndApplySingleVE(
 	}
 	zombies = make(map[base.DiskFileNum]uint64)
 	v, err := b.Apply(
-		curr, cmp, formatKey, flushSplitBytes, readCompactionRate, zombies,
+		curr, cmp, formatKey, flushSplitBytes, readCompactionRate, zombies, orderingInvariants,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -907,6 +907,7 @@ func (b *BulkVersionEdit) Apply(
 	flushSplitBytes int64,
 	readCompactionRate int64,
 	zombies map[base.DiskFileNum]uint64,
+	orderingInvariants OrderingInvariants,
 ) (*Version, error) {
 	addZombie := func(state *FileBacking) {
 		if zombies != nil {
@@ -1019,8 +1020,8 @@ func (b *BulkVersionEdit) Apply(
 		// Sort addedFiles by file number. This isn't necessary, but tests which
 		// replay invalid manifests check the error output, and the error output
 		// depends on the order in which files are added to the btree.
-		slices.SortFunc(addedFiles, func(a, b *FileMetadata) int {
-			return stdcmp.Compare(a.FileNum, b.FileNum)
+		sort.Slice(addedFiles, func(i, j int) bool {
+			return addedFiles[i].FileNum < addedFiles[j].FileNum
 		})
 
 		var sm, la *FileMetadata
@@ -1090,7 +1091,7 @@ func (b *BulkVersionEdit) Apply(
 			} else if err := v.InitL0Sublevels(cmp, formatKey, flushSplitBytes); err != nil {
 				return nil, errors.Wrap(err, "pebble: internal error")
 			}
-			if err := CheckOrdering(cmp, formatKey, Level(0), v.Levels[level].Iter()); err != nil {
+			if err := CheckOrdering(cmp, formatKey, Level(0), v.Levels[level].Iter(), orderingInvariants); err != nil {
 				return nil, errors.Wrap(err, "pebble: internal error")
 			}
 			continue
@@ -1111,7 +1112,7 @@ func (b *BulkVersionEdit) Apply(
 					end.Prev()
 				}
 			})
-			if err := CheckOrdering(cmp, formatKey, Level(level), check.Iter()); err != nil {
+			if err := CheckOrdering(cmp, formatKey, Level(level), check.Iter(), orderingInvariants); err != nil {
 				return nil, errors.Wrap(err, "pebble: internal error")
 			}
 		}

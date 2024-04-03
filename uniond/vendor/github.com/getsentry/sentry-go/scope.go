@@ -344,7 +344,7 @@ func (scope *Scope) ApplyToEvent(event *Event, hint *EventHint) *Event {
 	}
 
 	if len(scope.attachments) > 0 {
-		event.attachments = append(event.attachments, scope.attachments...)
+		event.Attachments = append(event.Attachments, scope.attachments...)
 	}
 
 	if len(scope.tags) > 0 {

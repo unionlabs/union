@@ -320,6 +320,44 @@ client (using [Client.SetRetry]). For example:
 		// Handle err.
 	}
 
+# Sending Custom Headers
+
+You can add custom headers to any API call made by this package by using
+[callctx.SetHeaders] on the context which is passed to the method. For example,
+to add a [custom audit logging] header:
+
+	ctx := context.Background()
+	ctx = callctx.SetHeaders(ctx, "x-goog-custom-audit-<key>", "<value>")
+	// Use client as usual with the context and the additional headers will be sent.
+	client.Bucket("my-bucket").Attrs(ctx)
+
+# Experimental gRPC API
+
+This package includes support for the Cloud Storage gRPC API, which is currently
+in preview. This implementation uses gRPC rather than the current JSON & XML
+APIs to make requests to Cloud Storage. If you would like to try the API,
+please contact your GCP account rep for more information. The gRPC API is not
+yet generally available, so it may be subject to breaking changes.
+
+To create a client which will use gRPC, use the alternate constructor:
+
+	ctx := context.Background()
+	client, err := storage.NewGRPCClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// Use client as usual.
+
+If the application is running within GCP, users may get better performance by
+enabling DirectPath (enabling requests to skip some proxy steps). To enable,
+set the environment variable `GOOGLE_CLOUD_ENABLE_DIRECT_PATH_XDS=true` and add
+the following side-effect imports to your application:
+
+	import (
+		_ "google.golang.org/grpc/balancer/rls"
+		_ "google.golang.org/grpc/xds/googledirectpath"
+	)
+
 [Cloud Storage IAM docs]: https://cloud.google.com/storage/docs/access-control/iam
 [XML POST Object docs]: https://cloud.google.com/storage/docs/xml-api/post-object
 [Cloud Storage retry docs]: https://cloud.google.com/storage/docs/retry-strategy
@@ -327,5 +365,6 @@ client (using [Client.SetRetry]). For example:
 [gcloud using application default credentials]: https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login
 [impersonation enabled]: https://cloud.google.com/sdk/gcloud/reference#--impersonate-service-account
 [IAM Service Account Credentials API]: https://console.developers.google.com/apis/api/iamcredentials.googleapis.com/overview
+[custom audit logging]: https://cloud.google.com/storage/docs/audit-logging#add-custom-metadata
 */
 package storage // import "cloud.google.com/go/storage"

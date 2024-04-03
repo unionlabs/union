@@ -872,7 +872,7 @@ func (w *writeWorkers) Start(c *Cache, numWorkers int) {
 					if err != nil {
 						c.metrics.writeBackFailures.Add(1)
 						// TODO(radu): throttle logs.
-						c.logger.Errorf("writing back to cache after miss failed: %v", err)
+						c.logger.Infof("writing back to cache after miss failed: %v", err)
 					}
 				}
 			}

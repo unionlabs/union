@@ -5,10 +5,9 @@
 package remoteobjcat
 
 import (
-	"cmp"
 	"fmt"
 	"io"
-	"slices"
+	"sort"
 	"sync"
 
 	"github.com/cockroachdb/errors"
@@ -115,8 +114,8 @@ func Open(fs vfs.FS, dirname string) (*Catalog, CatalogContents, error) {
 		res.Objects = append(res.Objects, meta)
 	}
 	// Sort the objects so the function is deterministic.
-	slices.SortFunc(res.Objects, func(a, b RemoteObjectMetadata) int {
-		return cmp.Compare(a.FileNum, b.FileNum)
+	sort.Slice(res.Objects, func(i, j int) bool {
+		return res.Objects[i].FileNum.FileNum() < res.Objects[j].FileNum.FileNum()
 	})
 	return c, res, nil
 }
@@ -139,7 +138,7 @@ func (c *Catalog) SetCreatorID(id objstorage.CreatorID) error {
 
 	ve := VersionEdit{CreatorID: id}
 	if err := c.writeToCatalogFileLocked(&ve); err != nil {
-		return errors.Wrapf(err, "pebble: could not write to remote object catalog")
+		return errors.Wrapf(err, "pebble: could not write to remote object catalog: %v", err)
 	}
 	c.mu.creatorID = id
 	return nil
@@ -241,7 +240,7 @@ func (c *Catalog) ApplyBatch(b Batch) error {
 	}
 
 	if err := c.writeToCatalogFileLocked(&b.ve); err != nil {
-		return errors.Wrapf(err, "pebble: could not write to remote object catalog")
+		return errors.Wrapf(err, "pebble: could not write to remote object catalog: %v", err)
 	}
 
 	// Add new objects before deleting any objects. This allows for cases where

@@ -22,13 +22,13 @@ MAIN_LOOP:
 			if v >= 62 {         // only 62 characters in strChars
 				val >>= 6
 				continue
-			} else {
-				chars = append(chars, strChars[v])
-				if len(chars) == length {
-					break MAIN_LOOP
-				}
-				val >>= 6
 			}
+
+			chars = append(chars, strChars[v])
+			if len(chars) == length {
+				break MAIN_LOOP
+			}
+			val >>= 6
 		}
 	}
 

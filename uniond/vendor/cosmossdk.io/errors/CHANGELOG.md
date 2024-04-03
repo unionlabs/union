@@ -31,6 +31,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+## [v1.0.1](https://github.com/cosmos/cosmos-sdk/releases/tag/errors%2Fv1.0.1)
+
+### Improvements
+
+* [#18918](https://github.com/cosmos/cosmos-sdk/pull/18918) Improve `IsOf` by returning earlier when the checked error is nil.
+
 ## [v1.0.0](https://github.com/cosmos/cosmos-sdk/releases/tag/errors%2Fv1.0.0)
 
 ### Features

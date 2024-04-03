@@ -5,8 +5,8 @@
 // Package protogen provides support for writing protoc plugins.
 //
 // Plugins for protoc, the Protocol Buffer compiler,
-// are programs which read a CodeGeneratorRequest message from standard input
-// and write a CodeGeneratorResponse message to standard output.
+// are programs which read a [pluginpb.CodeGeneratorRequest] message from standard input
+// and write a [pluginpb.CodeGeneratorResponse] message to standard output.
 // This package provides support for writing plugins which generate Go code.
 package protogen
 
@@ -44,11 +44,11 @@ const goPackageDocURL = "https://protobuf.dev/reference/go/go-generated#package"
 
 // Run executes a function as a protoc plugin.
 //
-// It reads a CodeGeneratorRequest message from os.Stdin, invokes the plugin
-// function, and writes a CodeGeneratorResponse message to os.Stdout.
+// It reads a [pluginpb.CodeGeneratorRequest] message from [os.Stdin], invokes the plugin
+// function, and writes a [pluginpb.CodeGeneratorResponse] message to [os.Stdout].
 //
 // If a failure occurs while reading or writing, Run prints an error to
-// os.Stderr and calls os.Exit(1).
+// [os.Stderr] and calls [os.Exit](1).
 func (opts Options) Run(f func(*Plugin) error) {
 	if err := run(opts, f); err != nil {
 		fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Base(os.Args[0]), err)
@@ -834,7 +834,7 @@ func newOneof(gen *Plugin, f *File, message *Message, desc protoreflect.OneofDes
 	}
 }
 
-// Extension is an alias of Field for documentation.
+// Extension is an alias of [Field] for documentation.
 type Extension = Field
 
 // A Service describes a service.
@@ -946,7 +946,7 @@ func (gen *Plugin) NewGeneratedFile(filename string, goImportPath GoImportPath) 
 }
 
 // P prints a line to the generated output. It converts each parameter to a
-// string following the same rules as fmt.Print. It never inserts spaces
+// string following the same rules as [fmt.Print]. It never inserts spaces
 // between parameters.
 func (g *GeneratedFile) P(v ...interface{}) {
 	for _, x := range v {
@@ -983,14 +983,14 @@ func (g *GeneratedFile) QualifiedGoIdent(ident GoIdent) string {
 
 // Import ensures a package is imported by the generated file.
 //
-// Packages referenced by QualifiedGoIdent are automatically imported.
+// Packages referenced by [GeneratedFile.QualifiedGoIdent] are automatically imported.
 // Explicitly importing a package with Import is generally only necessary
 // when the import will be blank (import _ "package").
 func (g *GeneratedFile) Import(importPath GoImportPath) {
 	g.manualImports[importPath] = true
 }
 
-// Write implements io.Writer.
+// Write implements [io.Writer].
 func (g *GeneratedFile) Write(p []byte) (n int, err error) {
 	return g.buf.Write(p)
 }
@@ -1000,8 +1000,8 @@ func (g *GeneratedFile) Skip() {
 	g.skip = true
 }
 
-// Unskip reverts a previous call to Skip, re-including the generated file in
-// the plugin output.
+// Unskip reverts a previous call to [GeneratedFile.Skip],
+// re-including the generated file in the plugin output.
 func (g *GeneratedFile) Unskip() {
 	g.skip = false
 }
@@ -1013,7 +1013,7 @@ func (g *GeneratedFile) Unskip() {
 // struct field.  The "T.sel" syntax is used to identify the method or field
 // 'sel' on type 'T'.
 //
-// Deprecated: Use the AnnotateSymbol method instead.
+// Deprecated: Use the [GeneratedFile.AnnotateSymbol] method instead.
 func (g *GeneratedFile) Annotate(symbol string, loc Location) {
 	g.AnnotateSymbol(symbol, Annotation{Location: loc})
 }
@@ -1319,7 +1319,7 @@ func (c Comments) String() string {
 // file for which we are generating bindings.
 //
 // Lookups consult the local type registry first and fall back to the base type
-// registry which defaults to protoregistry.GlobalTypes
+// registry which defaults to protoregistry.GlobalTypes.
 type extensionRegistry struct {
 	base  *protoregistry.Types
 	local *protoregistry.Types

@@ -220,7 +220,7 @@ func writeFile(name, dir string, contents []byte) error {
 // Get a free address for a test CometBFT server
 // protocol is either tcp, http, etc
 func FreeTCPAddr() (addr, port string, closeFn func() error, err error) {
-	l, err := net.Listen("tcp", "localhost:0")
+	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", "", nil, err
 	}

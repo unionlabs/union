@@ -3,7 +3,7 @@ package zerolog
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net"
 	"time"
@@ -23,7 +23,7 @@ func (c Context) Logger() Logger {
 // Only map[string]interface{} and []interface{} are accepted. []interface{} must
 // alternate string keys and arbitrary values, and extraneous ones are ignored.
 func (c Context) Fields(fields interface{}) Context {
-	c.l.context = appendFields(c.l.context, fields)
+	c.l.context = appendFields(c.l.context, fields, c.l.stack)
 	return c
 }
 
@@ -57,7 +57,7 @@ func (c Context) Array(key string, arr LogArrayMarshaler) Context {
 
 // Object marshals an object that implement the LogObjectMarshaler interface.
 func (c Context) Object(key string, obj LogObjectMarshaler) Context {
-	e := newEvent(LevelWriterAdapter{ioutil.Discard}, 0)
+	e := newEvent(LevelWriterAdapter{io.Discard}, 0)
 	e.Object(key, obj)
 	c.l.context = enc.AppendObjectData(c.l.context, e.buf)
 	putEvent(e)
@@ -66,7 +66,7 @@ func (c Context) Object(key string, obj LogObjectMarshaler) Context {
 
 // EmbedObject marshals and Embeds an object that implement the LogObjectMarshaler interface.
 func (c Context) EmbedObject(obj LogObjectMarshaler) Context {
-	e := newEvent(LevelWriterAdapter{ioutil.Discard}, 0)
+	e := newEvent(LevelWriterAdapter{io.Discard}, 0)
 	e.EmbedObject(obj)
 	c.l.context = enc.AppendObjectData(c.l.context, e.buf)
 	putEvent(e)
@@ -163,6 +163,22 @@ func (c Context) Errs(key string, errs []error) Context {
 
 // Err adds the field "error" with serialized err to the logger context.
 func (c Context) Err(err error) Context {
+	if c.l.stack && ErrorStackMarshaler != nil {
+		switch m := ErrorStackMarshaler(err).(type) {
+		case nil:
+		case LogObjectMarshaler:
+			c = c.Object(ErrorStackFieldName, m)
+		case error:
+			if m != nil && !isNilValue(m) {
+				c = c.Str(ErrorStackFieldName, m.Error())
+			}
+		case string:
+			c = c.Str(ErrorStackFieldName, m)
+		default:
+			c = c.Interface(ErrorStackFieldName, m)
+		}
+	}
+
 	return c.AnErr(ErrorFieldName, err)
 }
 
@@ -375,7 +391,16 @@ func (c Context) Durs(key string, d []time.Duration) Context {
 
 // Interface adds the field key with obj marshaled using reflection.
 func (c Context) Interface(key string, i interface{}) Context {
+	if obj, ok := i.(LogObjectMarshaler); ok {
+		return c.Object(key, obj)
+	}
 	c.l.context = enc.AppendInterface(enc.AppendKey(c.l.context, key), i)
+	return c
+}
+
+// Type adds the field key with val's type using reflection.
+func (c Context) Type(key string, val interface{}) Context {
+	c.l.context = enc.AppendType(enc.AppendKey(c.l.context, key), val)
 	return c
 }
 

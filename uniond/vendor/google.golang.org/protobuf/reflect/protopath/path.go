@@ -17,14 +17,14 @@ import (
 // where you would like to "address" some value in a message with just the path
 // and don't have the value information available.
 //
-// This is different from how "github.com/google/go-cmp/cmp".Path operates,
+// This is different from how github.com/google/go-cmp/cmp.Path operates,
 // which combines both path and value information together.
 // Since the cmp package itself is the only one ever constructing a cmp.Path,
 // it will always have the value available.
 
 // Path is a sequence of protobuf reflection steps applied to some root
 // protobuf message value to arrive at the current value.
-// The first step must be a Root step.
+// The first step must be a [Root] step.
 type Path []Step
 
 // TODO: Provide a Parse function that parses something similar to or
@@ -55,8 +55,8 @@ func (p Path) String() string {
 }
 
 // Values is a Path paired with a sequence of values at each step.
-// The lengths of Path and Values must be identical.
-// The first step must be a Root step and
+// The lengths of [Values.Path] and [Values.Values] must be identical.
+// The first step must be a [Root] step and
 // the first value must be a concrete message value.
 type Values struct {
 	Path   Path

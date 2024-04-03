@@ -104,19 +104,19 @@ type versionSet struct {
 
 	// minUnflushedLogNum is the smallest WAL log file number corresponding to
 	// mutations that have not been flushed to an sstable.
-	minUnflushedLogNum base.DiskFileNum
+	minUnflushedLogNum FileNum
 
-	// The next file number. A single counter is used to assign file
-	// numbers for the WAL, MANIFEST, sstable, and OPTIONS files.
-	nextFileNum uint64
+	// The next file number. A single counter is used to assign file numbers
+	// for the WAL, MANIFEST, sstable, and OPTIONS files.
+	nextFileNum FileNum
 
 	// The current manifest file number.
-	manifestFileNum base.DiskFileNum
+	manifestFileNum FileNum
 	manifestMarker  *atomicfs.Marker
 
 	manifestFile          vfs.File
 	manifest              *record.Writer
-	setCurrent            func(base.DiskFileNum) error
+	setCurrent            func(FileNum) error
 	getFormatMajorVersion func() FormatMajorVersion
 
 	writing    bool
@@ -129,7 +129,7 @@ func (vs *versionSet) init(
 	dirname string,
 	opts *Options,
 	marker *atomicfs.Marker,
-	setCurrent func(base.DiskFileNum) error,
+	setCurrent func(FileNum) error,
 	getFMV func() FormatMajorVersion,
 	mu *sync.Mutex,
 ) {
@@ -158,7 +158,7 @@ func (vs *versionSet) create(
 	dirname string,
 	opts *Options,
 	marker *atomicfs.Marker,
-	setCurrent func(base.DiskFileNum) error,
+	setCurrent func(FileNum) error,
 	getFormatMajorVersion func() FormatMajorVersion,
 	mu *sync.Mutex,
 ) error {
@@ -170,7 +170,7 @@ func (vs *versionSet) create(
 	vs.picker = newCompactionPicker(newVersion, vs.opts, nil)
 	// Note that a "snapshot" version edit is written to the manifest when it is
 	// created.
-	vs.manifestFileNum = vs.getNextDiskFileNum()
+	vs.manifestFileNum = vs.getNextFileNum()
 	err = vs.createManifest(vs.dirname, vs.manifestFileNum, vs.minUnflushedLogNum, vs.nextFileNum)
 	if err == nil {
 		if err = vs.manifest.Flush(); err != nil {
@@ -191,7 +191,7 @@ func (vs *versionSet) create(
 
 	vs.opts.EventListener.ManifestCreated(ManifestCreateInfo{
 		JobID:   jobID,
-		Path:    base.MakeFilepath(vs.fs, vs.dirname, fileTypeManifest, vs.manifestFileNum),
+		Path:    base.MakeFilepath(vs.fs, vs.dirname, fileTypeManifest, vs.manifestFileNum.DiskFileNum()),
 		FileNum: vs.manifestFileNum,
 		Err:     err,
 	})
@@ -205,16 +205,16 @@ func (vs *versionSet) create(
 func (vs *versionSet) load(
 	dirname string,
 	opts *Options,
-	manifestFileNum base.DiskFileNum,
+	manifestFileNum FileNum,
 	marker *atomicfs.Marker,
-	setCurrent func(base.DiskFileNum) error,
+	setCurrent func(FileNum) error,
 	getFormatMajorVersion func() FormatMajorVersion,
 	mu *sync.Mutex,
 ) error {
 	vs.init(dirname, opts, marker, setCurrent, getFormatMajorVersion, mu)
 
 	vs.manifestFileNum = manifestFileNum
-	manifestPath := base.MakeFilepath(opts.FS, dirname, fileTypeManifest, vs.manifestFileNum)
+	manifestPath := base.MakeFilepath(opts.FS, dirname, fileTypeManifest, vs.manifestFileNum.DiskFileNum())
 	manifestFilename := opts.FS.PathBase(manifestPath)
 
 	// Read the versionEdits in the manifest file.
@@ -310,6 +310,7 @@ func (vs *versionSet) load(
 	newVersion, err := bve.Apply(
 		nil, vs.cmp, opts.Comparer.FormatKey, opts.FlushSplitBytes,
 		opts.Experimental.ReadCompactionRate, nil, /* zombies */
+		getFormatMajorVersion().orderingInvariants(),
 	)
 	if err != nil {
 		return err
@@ -411,7 +412,7 @@ func (vs *versionSet) logAndApply(
 
 	if ve.MinUnflushedLogNum != 0 {
 		if ve.MinUnflushedLogNum < vs.minUnflushedLogNum ||
-			vs.nextFileNum <= uint64(ve.MinUnflushedLogNum) {
+			vs.nextFileNum <= ve.MinUnflushedLogNum {
 			panic(fmt.Sprintf("pebble: inconsistent versionEdit minUnflushedLogNum %d",
 				ve.MinUnflushedLogNum))
 		}
@@ -444,6 +445,8 @@ func (vs *versionSet) logAndApply(
 	}
 
 	currentVersion := vs.currentVersion()
+	fmv := vs.getFormatMajorVersion()
+	orderingInvariants := fmv.orderingInvariants()
 	var newVersion *version
 
 	// Generate a new manifest if we don't currently have one, or forceRotation
@@ -496,10 +499,10 @@ func (vs *versionSet) logAndApply(
 	if sizeExceeded && !requireRotation {
 		requireRotation = vs.rotationHelper.ShouldRotate(nextSnapshotFilecount)
 	}
-	var newManifestFileNum base.DiskFileNum
+	var newManifestFileNum FileNum
 	var prevManifestFileSize uint64
 	if requireRotation {
-		newManifestFileNum = vs.getNextDiskFileNum()
+		newManifestFileNum = vs.getNextFileNum()
 		prevManifestFileSize = uint64(vs.manifest.Size())
 	}
 
@@ -521,6 +524,7 @@ func (vs *versionSet) logAndApply(
 			ve, currentVersion, vs.cmp, vs.opts.Comparer.FormatKey,
 			vs.opts.FlushSplitBytes, vs.opts.Experimental.ReadCompactionRate,
 			vs.backingState.fileBackingMap, vs.addFileBacking, vs.removeFileBacking,
+			orderingInvariants,
 		)
 		if err != nil {
 			return errors.Wrap(err, "MANIFEST apply failed")
@@ -530,7 +534,7 @@ func (vs *versionSet) logAndApply(
 			if err := vs.createManifest(vs.dirname, newManifestFileNum, minUnflushedLogNum, nextFileNum); err != nil {
 				vs.opts.EventListener.ManifestCreated(ManifestCreateInfo{
 					JobID:   jobID,
-					Path:    base.MakeFilepath(vs.fs, vs.dirname, fileTypeManifest, newManifestFileNum),
+					Path:    base.MakeFilepath(vs.fs, vs.dirname, fileTypeManifest, newManifestFileNum.DiskFileNum()),
 					FileNum: newManifestFileNum,
 					Err:     err,
 				})
@@ -564,7 +568,7 @@ func (vs *versionSet) logAndApply(
 			}
 			vs.opts.EventListener.ManifestCreated(ManifestCreateInfo{
 				JobID:   jobID,
-				Path:    base.MakeFilepath(vs.fs, vs.dirname, fileTypeManifest, newManifestFileNum),
+				Path:    base.MakeFilepath(vs.fs, vs.dirname, fileTypeManifest, newManifestFileNum.DiskFileNum()),
 				FileNum: newManifestFileNum,
 			})
 		}
@@ -605,7 +609,7 @@ func (vs *versionSet) logAndApply(
 	if newManifestFileNum != 0 {
 		if vs.manifestFileNum != 0 {
 			vs.obsoleteManifests = append(vs.obsoleteManifests, fileInfo{
-				fileNum:  vs.manifestFileNum,
+				fileNum:  vs.manifestFileNum.DiskFileNum(),
 				fileSize: prevManifestFileSize,
 			})
 		}
@@ -696,10 +700,10 @@ func (vs *versionSet) incrementCompactionBytes(numBytes int64) {
 
 // createManifest creates a manifest file that contains a snapshot of vs.
 func (vs *versionSet) createManifest(
-	dirname string, fileNum, minUnflushedLogNum base.DiskFileNum, nextFileNum uint64,
+	dirname string, fileNum, minUnflushedLogNum, nextFileNum FileNum,
 ) (err error) {
 	var (
-		filename     = base.MakeFilepath(vs.fs, dirname, fileTypeManifest, fileNum)
+		filename     = base.MakeFilepath(vs.fs, dirname, fileTypeManifest, fileNum.DiskFileNum())
 		manifestFile vfs.File
 		manifest     *record.Writer
 	)
@@ -774,22 +778,16 @@ func (vs *versionSet) createManifest(
 	return nil
 }
 
-func (vs *versionSet) markFileNumUsed(fileNum base.DiskFileNum) {
-	if vs.nextFileNum <= uint64(fileNum) {
-		vs.nextFileNum = uint64(fileNum + 1)
+func (vs *versionSet) markFileNumUsed(fileNum FileNum) {
+	if vs.nextFileNum <= fileNum {
+		vs.nextFileNum = fileNum + 1
 	}
 }
 
-func (vs *versionSet) getNextFileNum() base.FileNum {
+func (vs *versionSet) getNextFileNum() FileNum {
 	x := vs.nextFileNum
 	vs.nextFileNum++
-	return base.FileNum(x)
-}
-
-func (vs *versionSet) getNextDiskFileNum() base.DiskFileNum {
-	x := vs.nextFileNum
-	vs.nextFileNum++
-	return base.DiskFileNum(x)
+	return x
 }
 
 func (vs *versionSet) append(v *version) {
@@ -881,17 +879,17 @@ func (vs *versionSet) updateObsoleteTableMetricsLocked() {
 
 func setCurrentFunc(
 	vers FormatMajorVersion, marker *atomicfs.Marker, fs vfs.FS, dirname string, dir vfs.File,
-) func(base.DiskFileNum) error {
+) func(FileNum) error {
 	if vers < formatVersionedManifestMarker {
 		// Pebble versions before `formatVersionedManifestMarker` used
 		// the CURRENT file to signal which MANIFEST is current. Ignore
 		// the filename read during LocateMarker.
-		return func(manifestFileNum base.DiskFileNum) error {
-			if err := setCurrentFile(dirname, fs, manifestFileNum); err != nil {
+		return func(manifestFileNum FileNum) error {
+			if err := setCurrentFile(dirname, fs, manifestFileNum.DiskFileNum()); err != nil {
 				return err
 			}
 			if err := dir.Sync(); err != nil {
-				// This is a panic here, rather than higher in the call
+				// This is a  panic here, rather than higher in the call
 				// stack, for parity with the atomicfs.Marker behavior.
 				// A panic is always necessary because failed Syncs are
 				// unrecoverable.
@@ -903,11 +901,9 @@ func setCurrentFunc(
 	return setCurrentFuncMarker(marker, fs, dirname)
 }
 
-func setCurrentFuncMarker(
-	marker *atomicfs.Marker, fs vfs.FS, dirname string,
-) func(base.DiskFileNum) error {
-	return func(manifestFileNum base.DiskFileNum) error {
-		return marker.Move(base.MakeFilename(fileTypeManifest, manifestFileNum))
+func setCurrentFuncMarker(marker *atomicfs.Marker, fs vfs.FS, dirname string) func(FileNum) error {
+	return func(manifestFileNum FileNum) error {
+		return marker.Move(base.MakeFilename(fileTypeManifest, manifestFileNum.DiskFileNum()))
 	}
 }
 

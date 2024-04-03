@@ -201,14 +201,6 @@ encodeLoop:
 			if delta >= e.maxMatchOff || delta <= 0 || load3232(src, offset) != first {
 				return
 			}
-			if debugAsserts {
-				if offset >= s {
-					panic(fmt.Sprintf("offset: %d - s:%d - rep: %d - cur :%d - max: %d", offset, s, rep, e.cur, e.maxMatchOff))
-				}
-				if !bytes.Equal(src[s:s+4], src[offset:offset+4]) {
-					panic(fmt.Sprintf("first match mismatch: %v != %v, first: %08x", src[s:s+4], src[offset:offset+4], first))
-				}
-			}
 			// Try to quick reject if we already have a long match.
 			if m.length > 16 {
 				left := len(src) - int(m.s+m.length)
@@ -227,8 +219,10 @@ encodeLoop:
 				}
 			}
 			l := 4 + e.matchlen(s+4, offset+4, src)
-			if true {
+			if m.rep <= 0 {
 				// Extend candidate match backwards as far as possible.
+				// Do not extend repeats as we can assume they are optimal
+				// and offsets change if s == nextEmit.
 				tMin := s - e.maxMatchOff
 				if tMin < 0 {
 					tMin = 0
@@ -239,7 +233,14 @@ encodeLoop:
 					l++
 				}
 			}
-
+			if debugAsserts {
+				if offset >= s {
+					panic(fmt.Sprintf("offset: %d - s:%d - rep: %d - cur :%d - max: %d", offset, s, rep, e.cur, e.maxMatchOff))
+				}
+				if !bytes.Equal(src[s:s+l], src[offset:offset+l]) {
+					panic(fmt.Sprintf("second match mismatch: %v != %v, first: %08x", src[s:s+4], src[offset:offset+4], first))
+				}
+			}
 			cand := match{offset: offset, s: s, length: l, rep: rep}
 			cand.estBits(bitsPerByte)
 			if m.est >= highScore || cand.est-m.est+(cand.s-m.s)*bitsPerByte>>10 < 0 {
@@ -336,24 +337,31 @@ encodeLoop:
 		}
 
 		if debugAsserts {
+			if best.offset >= best.s {
+				panic(fmt.Sprintf("best.offset > s: %d >= %d", best.offset, best.s))
+			}
+			if best.s < nextEmit {
+				panic(fmt.Sprintf("s %d < nextEmit %d", best.s, nextEmit))
+			}
+			if best.offset < s-e.maxMatchOff {
+				panic(fmt.Sprintf("best.offset < s-e.maxMatchOff: %d < %d", best.offset, s-e.maxMatchOff))
+			}
 			if !bytes.Equal(src[best.s:best.s+best.length], src[best.offset:best.offset+best.length]) {
 				panic(fmt.Sprintf("match mismatch: %v != %v", src[best.s:best.s+best.length], src[best.offset:best.offset+best.length]))
 			}
 		}
 
 		// We have a match, we can store the forward value
+		s = best.s
 		if best.rep > 0 {
 			var seq seq
 			seq.matchLen = uint32(best.length - zstdMinMatch)
-			if debugAsserts && s < nextEmit {
-				panic("s < nextEmit")
-			}
 			addLiterals(&seq, best.s)
 
 			// Repeat. If bit 4 is set, this is a non-lit repeat.
 			seq.offset = uint32(best.rep & 3)
 			if debugSequences {
-				println("repeat sequence", seq, "next s:", s)
+				println("repeat sequence", seq, "next s:", best.s, "off:", best.s-best.offset)
 			}
 			blk.sequences = append(blk.sequences, seq)
 
@@ -396,7 +404,6 @@ encodeLoop:
 
 		// A 4-byte match has been found. Update recent offsets.
 		// We'll later see if more than 4 bytes.
-		s = best.s
 		t := best.offset
 		offset1, offset2, offset3 = s-t, offset1, offset2
 
