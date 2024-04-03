@@ -439,6 +439,7 @@ fn array_slice() {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod debug {
     fn debug<T: core::fmt::Debug>(t: T) -> String {
         format!("{t:?}")

@@ -1,8 +1,6 @@
 use std::{collections::VecDeque, marker::PhantomData, num::NonZeroU32};
 
 use chain_utils::cosmos_sdk::{CosmosSdkChain, CosmosSdkChainExt};
-use enumorph::Enumorph;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::FutureExt;
 use queue_msg::{
@@ -10,7 +8,6 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     conc, data, fetch, queue_msg, QueueMsg,
 };
-use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
     events::{
@@ -314,19 +311,8 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChainSealed")
-)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum CosmosSdkData<C: CosmosSdkChainSealed> {
     ClientType(ClientType<C>),
 }
@@ -349,19 +335,8 @@ pub struct ClientType<#[cover] C: CosmosSdkChainSealed> {
 
 // FETCH
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "")
-)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum CosmosSdkFetch<C: CosmosSdkChainSealed> {
     FetchBlocks(FetchBlocks<C>),
     FetchTransactions(FetchTransactions<C>),
@@ -391,19 +366,8 @@ pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
     pub client_id: C::ClientId,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain")
-)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
     AggregateEventWithClientType(AggregateEventWithClientType<C>),
 }

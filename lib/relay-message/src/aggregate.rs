@@ -1,6 +1,5 @@
 use std::{collections::VecDeque, marker::PhantomData};
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
@@ -8,7 +7,6 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     effect, fetch, queue_msg, wait, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     events::{
         ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
@@ -263,15 +261,7 @@ pub struct AggregateChannelHandshakeMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: Ch
     pub channel_handshake_event: ChannelHandshakeEvent,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[queue_msg]
 pub enum ChannelHandshakeEvent {
     Init(ChannelOpenInit),
     Try(ChannelOpenTry),
@@ -287,15 +277,7 @@ pub struct AggregatePacketMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub packet_event: PacketEvent,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[queue_msg]
 pub enum PacketEvent {
     Send(SendPacket),
     Recv(RecvPacket),
@@ -334,21 +316,7 @@ pub struct AggregateCreateClient<Hc: ChainExt, #[cover] Tr: ChainExt> {
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 /// Messages that will be re-queued after an update.
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[queue_msg]
 pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     ConnectionOpenTry(AggregateConnectionOpenTry<Hc, Tr>),
     ConnectionOpenAck(AggregateConnectionOpenAck<Hc, Tr>),
@@ -395,21 +363,21 @@ where
 
         let event_msg = match channel_handshake_event {
             ChannelHandshakeEvent::Init(init) => {
-                AggregateMsgAfterUpdate::from(AggregateChannelOpenTry {
+                AggregateMsgAfterUpdate::ChannelOpenTry(AggregateChannelOpenTry {
                     event_height,
                     event: init,
                     __marker: PhantomData,
                 })
             }
             ChannelHandshakeEvent::Try(try_) => {
-                AggregateMsgAfterUpdate::from(AggregateChannelOpenAck {
+                AggregateMsgAfterUpdate::ChannelOpenAck(AggregateChannelOpenAck {
                     event_height,
                     event: try_,
                     __marker: PhantomData,
                 })
             }
             ChannelHandshakeEvent::Ack(ack) => {
-                AggregateMsgAfterUpdate::from(AggregateChannelOpenConfirm {
+                AggregateMsgAfterUpdate::ChannelOpenConfirm(AggregateChannelOpenConfirm {
                     event_height,
                     event: ack,
                     __marker: PhantomData,

@@ -19,6 +19,7 @@ path = "tests/all-tests.rs"
 
 [dev-dependencies]
 frame-support-procedural = { workspace = true }
+macros.workspace         = true
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true, features = ["std"] }
 trybuild                 = { version = "1.0.49", features = ["diff"] }

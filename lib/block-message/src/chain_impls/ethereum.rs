@@ -17,9 +17,7 @@ use contracts::{
     ibc_handler::{GetChannelCall, GetConnectionCall},
     ibc_packet::{AcknowledgePacketFilter, IBCPacketEvents, RecvPacketFilter, SendPacketFilter},
 };
-use enumorph::Enumorph;
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::StreamExt;
 use queue_msg::{
@@ -551,19 +549,8 @@ where
     )
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum EthereumFetch<C: ChainSpec> {
     FetchEvents(FetchEvents<C>),
     FetchGetLogs(FetchGetLogs),
@@ -605,15 +592,8 @@ pub struct FetchConnection<Hc: EthereumChainExt> {
     pub path: ConnectionPath,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum EthereumAggregate<C: ChainSpec> {
     AggregateWithChannel(AggregateWithChannel<Ethereum<C>>),
     AggregateWithConnection(AggregateWithConnection<Ethereum<C>>),
@@ -641,15 +621,8 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum AggregateWithChannel<Hc: ChainExt + EthereumChain> {
     PacketAcknowledgement(EventInfo<Hc, AcknowledgePacketFilter>),
     SendPacket(EventInfo<Hc, SendPacketFilter>),
@@ -660,15 +633,8 @@ pub enum AggregateWithChannel<Hc: ChainExt + EthereumChain> {
     ChannelOpenConfirm(EventInfo<Hc, ChannelOpenConfirmFilter>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum AggregateWithConnection<Hc: ChainExt + EthereumChain> {
     ConnectionOpenInit(EventInfo<Hc, ConnectionOpenInitFilter>),
     ConnectionOpenTry(EventInfo<Hc, ConnectionOpenTryFilter>),
@@ -967,19 +933,8 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum EthereumData<C: ChainSpec> {
     Channel(ChannelData<Ethereum<C>>),
     Connection(ConnectionData<Ethereum<C>>),
@@ -1001,12 +956,6 @@ pub struct ChannelData<#[cover] Hc: EthereumChainExt> {
     pub channel: Channel,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[queue_msg]
 // REVIEW: Use something other than string here?
 pub struct ConnectionData<Hc: EthereumChainExt>(pub ConnectionEnd<ClientIdOf<Hc>, String, String>);

@@ -5,7 +5,6 @@ use chain_utils::{
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     wasm::Wraps,
 };
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use queue_msg::{
@@ -13,7 +12,6 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     effect, fetch, queue_msg, wait, QueueMsg,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     google::protobuf::any::{mk_any, Any},
@@ -381,21 +379,8 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[allow(clippy::large_enum_variant)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum CosmosDataMsg<Hc: ChainExt, Tr: ChainExt> {
     TrustedCommit(TrustedCommit<Hc, Tr>),
     UntrustedCommit(UntrustedCommit<Hc, Tr>),
@@ -403,21 +388,8 @@ pub enum CosmosDataMsg<Hc: ChainExt, Tr: ChainExt> {
     UntrustedValidators(UntrustedValidators<Hc, Tr>),
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[allow(clippy::large_enum_variant)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum CosmosFetch<Hc: ChainExt, Tr: ChainExt> {
     FetchTrustedCommit(FetchTrustedCommit<Hc, Tr>),
     FetchUntrustedCommit(FetchUntrustedCommit<Hc, Tr>),
@@ -470,21 +442,8 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[allow(clippy::large_enum_variant)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum CosmosAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
     AggregateHeader(AggregateHeader<Hc, Tr>),
 }

@@ -8,7 +8,6 @@ use chain_utils::{
     union::Union,
     wasm::Wraps,
 };
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
 use protos::{
@@ -20,7 +19,6 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     data, defer_relative, effect, fetch, queue_msg, wait, QueueMsg,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
@@ -399,22 +397,8 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[allow(clippy::large_enum_variant)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum UnionDataMsg<Hc: ChainExt, Tr: ChainExt> {
     UntrustedCommit(UntrustedCommit<Hc, Tr>),
     TrustedValidators(TrustedValidators<Hc, Tr>),
@@ -422,24 +406,9 @@ pub enum UnionDataMsg<Hc: ChainExt, Tr: ChainExt> {
     ProveResponse(ProveResponse<Tr>),
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[allow(clippy::large_enum_variant)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum UnionFetch<Hc: ChainExt, Tr: ChainExt> {
-    // FetchTrustedCommit { height: Height },
     FetchUntrustedCommit(FetchUntrustedCommit<Hc, Tr>),
     FetchTrustedValidators(FetchTrustedValidators<Hc, Tr>),
     FetchUntrustedValidators(FetchUntrustedValidators<Hc, Tr>),
@@ -530,21 +499,8 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[allow(clippy::large_enum_variant)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum UnionAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
     AggregateProveRequest(AggregateProveRequest<Hc, Tr>),
     AggregateHeader(AggregateHeader<Hc, Tr>),

@@ -20,131 +20,79 @@ pub fn queue_msg(_: TokenStream, input: TokenStream) -> TokenStream {
 fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
     let derive_input = &mut derive_input.clone();
 
-    match &mut derive_input.data {
-        Struct(data_struct) => {
-            match &mut data_struct.fields {
-                Fields::Named(field_named) => {
-                    let struct_ident = &derive_input.ident.clone();
-
-                    // copy the fields, before we're adding them in 'cover_types' below
-                    let fields = &field_named
-                        .named
-                        .iter()
-                        .map(|field| field.clone().ident.expect("a field Ident for Named field"))
-                        .collect::<Vec<Ident>>();
-
-                    let type_params_to_cover = extract_covered_types(&mut derive_input.generics);
-
-                    let clone_marker_fields = if let Some(type_params_to_cover) =
-                        &type_params_to_cover
-                    {
-                        add_marker_field_to_struct(data_struct, type_params_to_cover);
-
-                        quote! {
-                            __marker: ::core::marker::PhantomData::<fn() -> (#(#type_params_to_cover),*)>
-                        }
-                    } else {
-                        proc_macro2::TokenStream::new()
-                    };
-
-                    let (impl_generics, ty_generics, where_clause) =
-                        &derive_input.generics.split_for_impl();
-
-                    Ok(parse_quote!(
-                        #[derive(::serde::Serialize, ::serde::Deserialize)]
-                        #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-                        #[cfg_attr(
-                            feature = "arbitrary",
-                            derive(arbitrary::Arbitrary),
-                            arbitrary(bound = "")
-                        )]
-
-                        #derive_input
-
-                        const _: () = {
-                            impl #impl_generics ::core::fmt::Debug for #struct_ident #ty_generics #where_clause {
-                                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                                    f.debug_struct(stringify!(#struct_ident))
-                                        #(.field(stringify!(#fields), &self.#fields))*
-                                        .finish()
-                                }
-                            }
-
-                            impl #impl_generics ::core::clone::Clone for #struct_ident #ty_generics #where_clause {
-                                fn clone(&self) -> Self {
-                                    Self {
-                                        #(#fields: ::core::clone::Clone::clone(&self.#fields),)*
-                                        #clone_marker_fields
-                                    }
-                                }
-                            }
-
-                            impl #impl_generics ::core::cmp::PartialEq for #struct_ident #ty_generics #where_clause {
-                                fn eq(&self, other: &Self) -> bool {
-                                    let _other = other;
-                                    true #(&& self.#fields == _other.#fields)*
-                                }
-                            }
-                        };
-                    ))
-                }
-                Fields::Unnamed(field_unnamed) => {
-                    if field_unnamed.unnamed.len() != 1 {
-                        return Err(Error::new(
-                            field_unnamed.span(),
-                            "Only support one parameter",
-                        ));
-                    }
-
-                    let struct_ident = derive_input.ident.clone();
-
-                    let (impl_generics, ty_generics, where_clause) =
-                        &derive_input.generics.split_for_impl();
-
-                    Ok(parse_quote!(
-                        #[derive(::serde::Serialize, ::serde::Deserialize)]
-                        #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields, transparent)]
-                        #[cfg_attr(
-                            feature = "arbitrary",
-                            derive(arbitrary::Arbitrary),
-                            arbitrary(bound = "")
-                        )]
-
-                        #derive_input
-
-                        const _: () = {
-                            impl #impl_generics ::core::fmt::Debug for #struct_ident #ty_generics #where_clause {
-                                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                                    f.debug_tuple(stringify!(#struct_ident))
-                                        .field(&self.0)
-                                        .finish()
-                                }
-                            }
-
-                            impl #impl_generics ::core::clone::Clone for #struct_ident #ty_generics #where_clause {
-                                fn clone(&self) -> Self {
-                                    Self(
-                                        ::core::clone::Clone::clone(&self.0)
-                                    )
-                                }
-                            }
-
-                            impl #impl_generics ::core::cmp::PartialEq for #struct_ident #ty_generics #where_clause {
-                                fn eq(&self, other: &Self) -> bool {
-                                    self.0 == other.0
-                                }
-                            }
-                        };
-                    ))
-                }
-                _ => Err(Error::new_spanned(
-                    data_struct.struct_token,
-                    "queue-msg only supports Named and Unnamed Struct fields",
-                )),
-            }
+    let derives = if derive_input.generics.params.is_empty() {
+        quote! {
+            #[derive(
+                ::macros::Debug,
+                ::core::clone::Clone,
+                ::core::cmp::PartialEq,
+                ::serde::Serialize,
+                ::serde::Deserialize,
+            )]
         }
-        Data::Enum(_) => Ok(parse_quote!(
-            #[derive(::frame_support_procedural::DebugNoBound, ::frame_support_procedural::CloneNoBound, ::frame_support_procedural::PartialEqNoBound, ::serde::Serialize, ::serde::Deserialize)]
+    } else {
+        quote! {
+            #[derive(
+                ::macros::Debug,
+                ::frame_support_procedural::CloneNoBound,
+                ::frame_support_procedural::PartialEqNoBound,
+                ::serde::Serialize,
+                ::serde::Deserialize,
+            )]
+        }
+    };
+
+    match &mut derive_input.data {
+        Struct(data_struct) => match &mut data_struct.fields {
+            Fields::Named(_) => {
+                let type_params_to_cover = extract_covered_types(&mut derive_input.generics);
+
+                if let Some(type_params_to_cover) = &type_params_to_cover {
+                    add_marker_field_to_struct(data_struct, type_params_to_cover);
+                };
+
+                Ok(quote! {
+                    #derives
+
+                    #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+                    #[cfg_attr(
+                        feature = "arbitrary",
+                        derive(arbitrary::Arbitrary),
+                        arbitrary(bound = "")
+                    )]
+
+                    #derive_input
+                })
+            }
+            Fields::Unnamed(field_unnamed) => {
+                if field_unnamed.unnamed.len() != 1 {
+                    return Err(Error::new(
+                        field_unnamed.span(),
+                        "only newtype structs are supported",
+                    ));
+                }
+
+                Ok(quote! {
+                    #derives
+
+                    #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields, transparent)]
+                    #[cfg_attr(
+                        feature = "arbitrary",
+                        derive(arbitrary::Arbitrary),
+                        arbitrary(bound = "")
+                    )]
+
+                    #derive_input
+                })
+            }
+            _ => Err(Error::new_spanned(
+                data_struct.struct_token,
+                "queue-msg only supports Named and Unnamed Struct fields",
+            )),
+        },
+        Data::Enum(_) => Ok(quote! {
+            #derives
+
             #[serde(
                 tag = "@type",
                 content = "@value",
@@ -153,9 +101,10 @@ fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Err
                 deny_unknown_fields
             )]
             #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+            #[allow(clippy::large_enum_variant)]
 
             #derive_input
-        )),
+        }),
         Data::Union(data_union) => Err(Error::new_spanned(
             data_union.union_token,
             "queue-msg only supports Enum and Struct",
@@ -169,6 +118,7 @@ fn add_marker_field_to_struct(data_struct: &mut DataStruct, type_params_to_cover
         Fields::Named(fields_named) => {
             fields_named.named.push(parse_quote! {
                 #[serde(skip)]
+                #[debug(skip)]
                 #[cfg_attr(feature = "arbitrary", arbitrary(default))]
                 pub __marker: ::core::marker::PhantomData<fn() -> (#(#type_params_to_cover),*)>
             });

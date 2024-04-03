@@ -121,27 +121,9 @@ macro_rules! any_enum {
             )*
         }
     ) => {
-        #[derive(
-            ::frame_support_procedural::DebugNoBound,
-            ::frame_support_procedural::CloneNoBound,
-            ::frame_support_procedural::PartialEqNoBound,
-            ::serde::Serialize,
-            ::serde::Deserialize,
-            ::enumorph::Enumorph,
-        )]
-        #[cfg_attr(
-            feature = "arbitrary",
-            derive(arbitrary::Arbitrary),
-            arbitrary(bound = "C: ChainExt")
-        )]
-        #[serde(
-            bound(serialize = "", deserialize = ""),
-            tag = "@type",
-            content = "@value",
-            rename_all = "snake_case"
-        )]
+        #[::queue_msg::queue_msg]
+        #[derive(::enumorph::Enumorph)]
         $(#[doc = $outer_doc])*
-        #[allow(clippy::large_enum_variant)]
         pub enum $Enum<C: ChainExt> {
             $(
                 $(#[doc = $doc])*
