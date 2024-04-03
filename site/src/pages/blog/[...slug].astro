@@ -1,7 +1,7 @@
 ---
 import Layout from "#/layouts/Layout.astro"
 import { getCollection } from "astro:content"
-import Socials from "#/components/Socials.astro"
+import SocialsSection from "#/components/sections/SocialsSection.astro"
 
 export async function getStaticPaths() {
   const blogEntries = await getCollection("blog")
@@ -41,7 +41,7 @@ const { Content } = await entry.render()
 
     <Content />
   </main>
-  <Socials />
+  <SocialsSection />
 </Layout>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
