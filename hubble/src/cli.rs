@@ -1,7 +1,6 @@
 use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
-use hubble::datastore::Datastore;
 use url::Url;
 
 /// Hubble is state machine observer.
@@ -60,12 +59,15 @@ impl IntoIterator for Indexers {
 pub enum IndexerConfig {
     #[serde(rename = "tendermint")]
     Tm(crate::tm::Config),
+    #[serde(rename = "ethereum")]
+    Eth(crate::eth::Config),
 }
 
 impl IndexerConfig {
-    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), color_eyre::eyre::Report> {
+    pub async fn index(self, db: sqlx::PgPool) -> Result<(), color_eyre::eyre::Report> {
         match self {
             Self::Tm(cfg) => cfg.index(db).await,
+            Self::Eth(cfg) => cfg.indexer(db).await?.index().await,
         }
     }
 }

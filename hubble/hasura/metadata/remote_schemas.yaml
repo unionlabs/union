@@ -1,8 +1,0 @@
-- name: faucet
-  definition:
-    url: https://faucet.0xc0dejug.uno/graphql
-    timeout_seconds: 60
-    customization:
-      root_fields_namespace: union
-    forward_client_headers: true
-  comment: ""

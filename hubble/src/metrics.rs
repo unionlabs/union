@@ -8,7 +8,7 @@ lazy_static! {
         Opts::new("events", "Events")
             .namespace("hubble")
             .subsystem("index"),
-        &["chain_id", "block_hash"]
+        &["chain_id"]
     )
     .expect("register EVENT_COLLECTOR");
     pub static ref BLOCK_COLLECTOR: IntCounterVec = IntCounterVec::new(
@@ -18,13 +18,13 @@ lazy_static! {
         &["chain_id"]
     )
     .expect("register BLOCK_COLLECTOR");
-    pub static ref POST_COLLECTOR: IntCounterVec = IntCounterVec::new(
-        Opts::new("requests", "Posts to the datastore")
+    pub static ref TRANSACTION_COLLECTOR: IntCounterVec = IntCounterVec::new(
+        Opts::new("requests", "Transactions")
             .namespace("hubble")
-            .subsystem("datastore"),
+            .subsystem("index"),
         &["chain_id"]
     )
-    .expect("register POST_COLLECTOR");
+    .expect("register TRANSACTION_COLLECTOR");
 }
 
 pub fn register_custom_metrics() {
@@ -35,8 +35,8 @@ pub fn register_custom_metrics() {
         .register(Box::new(BLOCK_COLLECTOR.clone()))
         .expect("BLOCK_COLLECTOR can be registered");
     REGISTRY
-        .register(Box::new(POST_COLLECTOR.clone()))
-        .expect("POST_COLLECTOR can be registered");
+        .register(Box::new(TRANSACTION_COLLECTOR.clone()))
+        .expect("TRANSACTION_COLLECTOR can be registered");
 }
 
 #[axum::debug_handler]

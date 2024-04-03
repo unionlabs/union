@@ -149,7 +149,7 @@ tokio                    = { version = "1.33.0", default-features = false }
 tokio-stream             = { version = "0.1.14", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }
 tonic                    = { version = "0.10", default-features = false }
-tracing                  = { version = "0.1.37", default-features = false }
+tracing                  = { version = "0.1.40", default-features = false }
 tracing-subscriber       = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
 typenum                  = { version = "1.17.0", default-features = false }
 

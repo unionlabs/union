@@ -1,6 +1,0 @@
-version: 3
-endpoint: https://noble-pika-27.hasura.app
-metadata_directory: metadata
-actions:
-  kind: synchronous
-  handler_webhook_baseurl: http://localhost:3000

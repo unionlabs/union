@@ -1,38 +1,25 @@
 # Overview
 
-Hubble spawns multiple indexers inside [tokio](https://tokio.rs/) tasks. Each indexer is configured through a JSON config passed through the CLI:
+Hubble is a multi-stage ETL indexer for various chains. Currently, it supports the:
 
-```
---indexers '[{"type": "tendermint", "url": "http://localhost:26657"}]'
-```
+- CosmosSDK
+- EVM (HTTP)
 
-Each indexer inserts data into a Postgres DB. The migrations are included in the `hasura` directory.
+## Architecture
 
-```mermaid
-erDiagram
-    Hubble ||--|{ Hasura : posts
-    Hasura ||--|{ Timescale : stores
-    User ||--|{ Hasura : queries
-```
+Hubble has two distinct data objects:
 
-## Database Schema
+- Logs: unparsed data obtained from archive nodes. Logs need further extraction before they are consumable.
+- Events: JSON formatted consumable logs.
 
-Hubble is unopinionated regarding database schema. It has three conceptual models, chains, blocks, and events. Events are stored as JSONB, which means that further destructuring and aggregation occurs inside the DB itself. For this, we recommend [Timescale](https://github.com/timescale/timescaledb).
+For certain chains, such as CosmosSDK-based chains, we can omit the log extraction, as they already produce JSON formatted events. For EVM-based chains, a conversion from ethabi to JSON is performed for specific contracts.
 
-As an example, Tendermint's `coin_received` event can be destructured like so:
+### Database Schema
 
-```sql
-CREATE OR REPLACE VIEW "v0"."coin_receiveds" AS
- SELECT events.block_id,
-    events.index,
-    events."time",
-    (((events.data -> 'attributes'::text) -> 0) ->> 'value'::text) AS receiver,
-    ("substring"((((events.data -> 'attributes'::text) -> 1) ->> 'value'::text), '^\d+'::text))::numeric AS amount,
-    "substring"((((events.data -> 'attributes'::text) -> 1) ->> 'value'::text), '[a-zA-Z].*'::text) AS denom
-   FROM v0.events
-  WHERE ((events.data ->> 'type'::text) = 'coin_received'::text);
-```
+Hubble uses the following tables:
 
-DBAs should choose between using views or materialized views.
-
-Data can be aggregated using time_buckets, and subsequently summed into totals, i.e. aggregate transfers into 1h buckets, and then sum over these buckets to obtain the current balances. Use [real-time aggregates](https://docs.timescale.com/use-timescale/latest/continuous-aggregates/real-time-aggregates/) for this.
+- Logs: log storage for extraction, contains block and transaction data.
+- Events: extracted events from logs.
+- Blocks: extracted blocks from logs.
+- Transactions: extracted transactions from logs.
+- Chains: metadata on chains, created once on startup.
