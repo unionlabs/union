@@ -6,10 +6,10 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "solady/utils/LibString.sol";
 import "solidity-stringutils/strings.sol";
 import "../../../core/25-handler/IBCHandler.sol";
+import "../../../lib/Hex.sol";
 import "../../Base.sol";
 import "./IERC20Denom.sol";
 import "./ERC20Denom.sol";
-import "../../../lib/Hex.sol";
 
 // NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
 struct LocalToken {
@@ -155,7 +155,7 @@ library RelayPacketLib {
         return abi.encode(packet.sender, packet.receiver, packet.tokens);
     }
 
-    function decode(bytes memory packet)
+    function decode(bytes calldata packet)
         internal
         pure
         returns (RelayPacket memory)
@@ -259,7 +259,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         string memory counterpartyPortId,
         string memory counterpartyChannelId,
         LocalToken calldata localToken
-    ) internal returns (string memory addressDenom) {
+    ) internal returns (string memory) {
         // Ensure the user properly fund us.
         SafeERC20.safeTransferFrom(
             IERC20(localToken.denom),
@@ -268,7 +268,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             localToken.amount
         );
         // If the token is originating from the counterparty channel, we must have saved it's denom.
-        addressDenom =
+        string memory addressDenom =
             addressToDenom[sourcePort][sourceChannel][localToken.denom];
         if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
@@ -280,6 +280,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             );
             addressDenom = localToken.denom.toHexString();
         }
+        return addressDenom;
     }
 
     function send(

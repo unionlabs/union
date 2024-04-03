@@ -82,4 +82,8 @@ library IBCHeight {
                     && self.revision_height >= other.revision_height
             );
     }
+
+    function zero() internal pure returns (IbcCoreClientV1Height.Data memory) {
+        return fromUint128(0);
+    }
 }
