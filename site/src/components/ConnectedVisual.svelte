@@ -179,7 +179,7 @@
       <path
         d="M 32 0 L 32 32 0 32"
         fill="none"
-        stroke="#1f1f1f"
+        stroke="#0f1013"
         vector-effect="non-scaling-stroke"
         stroke-width="1px"
       />

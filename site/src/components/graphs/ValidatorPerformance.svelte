@@ -72,11 +72,11 @@ onMount(() => {
         // show: true,
         z: -10000,
         lineStyle: {
-          color: "#1f1f1f",
+          color: "#0f1013",
           type: "solid"
         }
       },
-      borderColor: "#1f1f1f",
+      borderColor: "#0f1013",
       backgroundColor: "#000",
       formatter(params: Array<any>) {
         return `
@@ -147,7 +147,7 @@ onMount(() => {
         },
         splitLine: {
           lineStyle: {
-            color: "#1f1f1f"
+            color: "#0e0f12"
           }
         },
         max(value: any) {
