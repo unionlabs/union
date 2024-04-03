@@ -10,11 +10,11 @@ import starlightLinksValidator from "starlight-links-validator"
 
 const SITE_URL = "https://union.build"
 
-const {
-  PORT = 4321,
-  COMETBLS_STORE_PATH,
-  ENABLE_DEV_TOOLBAR = "true"
-} = loadEnv(process.env.NODE_ENV, process.cwd(), "")
+const { PORT = 4321, ENABLE_DEV_TOOLBAR = "true" } = loadEnv(
+  process.env.NODE_ENV,
+  process.cwd(),
+  ""
+)
 
 export default defineConfig({
   site: SITE_URL,
@@ -157,9 +157,6 @@ export default defineConfig({
     sitemap()
   ],
   vite: {
-    // define: {
-    //   COMETBLS_STORE_PATH: JSON.stringify(COMETBLS_STORE_PATH)
-    // },
     plugins: [yaml()],
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"]
