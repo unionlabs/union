@@ -1252,6 +1252,7 @@
           "allowed_clients": [
             "06-solomachine",
             "07-tendermint",
+            "08-wasm",
             "09-localhost"
           ]
         },
