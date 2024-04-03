@@ -4419,6 +4419,7 @@ dependencies = [
 name = "queue-msg-macro"
 version = "0.0.0"
 dependencies = [
+ "frame-support-procedural",
  "proc-macro2",
  "quote",
  "serde",

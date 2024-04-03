@@ -18,11 +18,12 @@ name = "tests"
 path = "tests/all-tests.rs"
 
 [dev-dependencies]
-trybuild = { version = "1.0.49", features = ["diff"] }
+frame-support-procedural = { workspace = true }
+serde                    = { workspace = true, features = ["derive"] }
+serde_json               = { workspace = true, features = ["std"] }
+trybuild                 = { version = "1.0.49", features = ["diff"] }
 
 [dependencies]
 proc-macro2 = "1.0.79"
 quote       = "1.0.35"
-serde       = { workspace = true, features = ["derive"] }
-serde_json  = { workspace = true, features = ["std"] }
 syn         = { version = "2.0.55", features = ["full", "extra-traits", "visit-mut"] }

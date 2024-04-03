@@ -11,7 +11,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, msg_struct, QueueMsg,
+    data, effect, fetch, queue_msg, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -409,14 +409,14 @@ pub enum ScrollFetch<Tr: ChainExt> {
     FetchIbcContractRootProof(FetchIbcContractRootProof),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchRollupContractRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
     pub rollup_contract_address: H160,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchLatestBatchIndexProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
@@ -424,7 +424,7 @@ pub struct FetchLatestBatchIndexProof {
     pub rollup_contract_address: H160,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchScrollFinalizedRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
@@ -432,7 +432,7 @@ pub struct FetchScrollFinalizedRootProof {
     pub rollup_contract_address: H160,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchIbcContractRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
@@ -483,20 +483,20 @@ const _: () = {
     }
 };
 
-#[msg_struct]
+#[queue_msg]
 pub struct RollupContractRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub proof: AccountProof,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LatestBatchIndexProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub latest_batch_index: u64,
     pub proof: StorageProof,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct ScrollFinalizedRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub batch_index: u64,
@@ -504,7 +504,7 @@ pub struct ScrollFinalizedRootProof<#[cover] Tr: ChainExt> {
     pub proof: StorageProof,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct IbcContractRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub proof: AccountProof,
@@ -535,7 +535,7 @@ pub enum ScrollAggregate<Tr: ChainExt> {
     AggregateHeader(AggregateHeader<Tr>),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateHeader<Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Scroll, Tr>,
 }

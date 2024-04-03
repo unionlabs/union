@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
-    defer_absolute, fetch, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg,
+    defer_absolute, fetch, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
     QueueMsgTypes,
 };
 use unionlabs::{
@@ -156,17 +156,17 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct WaitForBlock<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct WaitForTimestamp<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub timestamp: i64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: Hc::ClientId,
     pub counterparty_client_id: Tr::ClientId,

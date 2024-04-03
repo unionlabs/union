@@ -7,7 +7,7 @@ use std::{
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
     hash::H256,
     id::{ChannelId, PortId},
@@ -95,34 +95,34 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchSelfClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchSelfConsensusState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchLatestClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub path: ClientStatePath<Hc::ClientId>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchPacketAcknowledgement<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub tx_hash: H256,
     pub destination_port_id: PortId,
@@ -130,7 +130,7 @@ pub struct FetchPacketAcknowledgement<#[cover] Hc: ChainExt, #[cover] Tr: ChainE
     pub sequence: NonZeroU64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_chain_id: ChainIdOf<Tr>,
     // id of the counterparty client that will be updated with the fetched headers
@@ -139,10 +139,10 @@ pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub update_to: HeightOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchLatestHeight<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {}
 
-#[msg_struct]
+#[queue_msg]
 pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
 impl<Hc, Tr> Fetch<Hc, Tr>

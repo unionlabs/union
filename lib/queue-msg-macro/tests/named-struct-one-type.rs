@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
-use queue_msg_macro::msg_struct;
+use queue_msg_macro::queue_msg;
 use serde::{Deserialize, Serialize};
 
-#[msg_struct]
+#[queue_msg]
 struct Named<
     T: Clone + Debug + Serialize + for<'a> Deserialize<'a> + std::cmp::PartialEq,
     #[cover] U,

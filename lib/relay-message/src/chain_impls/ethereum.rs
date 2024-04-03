@@ -24,7 +24,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, msg_struct, wait, QueueMsg,
+    data, effect, fetch, queue_msg, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -687,7 +687,7 @@ where
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
     pub currently_trusted_slot: u64,
@@ -695,58 +695,58 @@ pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub is_next: bool,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MakeCreateUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
     pub trusted_height: Height,
     pub finality_update: LightClientFinalityUpdate<C>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchLightClientUpdate {
     pub period: u64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchFinalityUpdate {}
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchLightClientUpdates {
     pub trusted_period: u64,
     pub target_period: u64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchBootstrap {
     pub slot: u64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchAccountUpdate {
     pub slot: u64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchBeaconGenesis {}
 
-#[msg_struct]
+#[queue_msg]
 pub struct BootstrapData<C: ChainSpec, #[cover] Tr: ChainExt> {
     pub slot: u64,
     pub bootstrap: LightClientBootstrap<C>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct AccountUpdateData<#[cover] C: ChainSpec, #[cover] Tr: ChainExt> {
     pub slot: u64,
     pub update: AccountUpdate,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct BeaconGenesisData<#[cover] C: ChainSpec, #[cover] Tr: ChainExt> {
     pub genesis: GenesisData,
 }
@@ -869,17 +869,17 @@ pub enum EthereumAggregateMsg<C: ChainSpec, Tr: ChainExt> {
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FinalityUpdate<C: ChainSpec, #[cover] Tr: ChainExt> {
     pub finality_update: LightClientFinalityUpdate<C>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LightClientUpdates<C: ChainSpec, #[cover] Tr: ChainExt> {
     pub light_client_updates: Vec<light_client_update::LightClientUpdate<C>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct LightClientUpdate<C: ChainSpec, #[cover] Tr: ChainExt> {
     pub update: light_client_update::LightClientUpdate<C>,
 }
@@ -1014,13 +1014,13 @@ pub fn mk_function_call<Call: EthCall>(
 
 pub trait EthereumChainExt = ChainExt + EthereumChain;
 
-#[msg_struct]
+#[queue_msg]
 pub struct GetProof<Hc: EthereumChainExt, Tr: ChainExt> {
     pub path: Path<ClientIdOf<Hc>, HeightOf<Tr>>,
     pub height: HeightOf<Hc>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchIbcState<Hc: EthereumChainExt, Tr: ChainExt> {
     pub path: Path<ClientIdOf<Hc>, HeightOf<Tr>>,
     pub height: HeightOf<Hc>,

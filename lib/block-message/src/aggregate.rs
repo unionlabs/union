@@ -4,7 +4,7 @@ use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
-    fetch, msg_struct, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
+    fetch, queue_msg, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
 use unionlabs::ibc::core::client::height::IsHeight;
 
@@ -71,10 +71,10 @@ impl<C: ChainExt> Identified<C, Aggregate<C>> {
     }
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct ChainSpecificAggregate<C: ChainExt>(pub C::Aggregate);
 
-#[msg_struct]
+#[queue_msg]
 pub struct AggregateFetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
 }

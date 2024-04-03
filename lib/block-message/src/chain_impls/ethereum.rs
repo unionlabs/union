@@ -25,7 +25,7 @@ use futures::StreamExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, msg_struct, QueueMsg,
+    conc, data, fetch, queue_msg, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -586,19 +586,19 @@ pub enum EthereumFetch<C: ChainSpec> {
     FetchConnection(FetchConnection<Ethereum<C>>),
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchEvents<C: ChainSpec> {
     pub from_height: HeightOf<Ethereum<C>>,
     pub to_height: HeightOf<Ethereum<C>>,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchGetLogs {
     pub from_slot: u64,
     pub to_slot: u64,
 }
 
-#[msg_struct]
+#[queue_msg]
 /// NOTE: This isn't just fetching one block because sometimes beacon slots are missed. We need to be able to fetch a range of slots to account for this.
 /// The range is `[from_slot..to_slot)`, so to fetch a single block `N`, the range would be `N..N+1`.
 pub struct FetchBeaconBlockRange {
@@ -606,13 +606,13 @@ pub struct FetchBeaconBlockRange {
     pub to_slot: u64,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchChannel<Hc: EthereumChainExt> {
     pub height: Hc::Height,
     pub path: ChannelEndPath,
 }
 
-#[msg_struct]
+#[queue_msg]
 pub struct FetchConnection<Hc: EthereumChainExt> {
     pub height: Hc::Height,
     pub path: ConnectionPath,
@@ -1029,7 +1029,7 @@ const _: () = {
     }
 };
 
-#[msg_struct]
+#[queue_msg]
 pub struct ChannelData<#[cover] Hc: EthereumChainExt> {
     pub channel: Channel,
 }
