@@ -42,7 +42,9 @@ export default {
           800: "#04ACD2",
           900: "#037791",
           950: "#025C70"
-        }
+        },
+        border: "#1C1E21",
+        bg2: "#030711"
       },
       fontFamily: {
         sans: [
