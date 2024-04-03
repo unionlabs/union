@@ -16,10 +16,8 @@ import IntroHeading from "#/components/typography/IntroHeading.astro";
         >
           <Card class="flex flex-col items-center" padded>
             <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
-            <div>
-              <span class=" border-b-[1px] border-white text-semibold">
-                {socialLink.cta} -&gt;
-              </span>
+            <div class="text-accent font-semibold">
+              {socialLink.cta} -&gt;
             </div>
           </Card>
         </a>
