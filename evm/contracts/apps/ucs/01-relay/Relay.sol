@@ -256,8 +256,6 @@ contract UCS01Relay is IBCAppBase, IRelay {
     function sendToken(
         string calldata sourcePort,
         string calldata sourceChannel,
-        string memory counterpartyPortId,
-        string memory counterpartyChannelId,
         LocalToken calldata localToken
     ) internal returns (string memory) {
         // Ensure the user properly fund us.
@@ -291,19 +289,12 @@ contract UCS01Relay is IBCAppBase, IRelay {
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
     ) external override {
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
-            counterpartyEndpoints[sourcePort][sourceChannel];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         uint256 tokensLength = tokens.length;
         for (uint256 i = 0; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
-            normalizedTokens[i].denom = sendToken(
-                sourcePort,
-                sourceChannel,
-                counterparty.port_id,
-                counterparty.channel_id,
-                localToken
-            );
+            normalizedTokens[i].denom =
+                sendToken(sourcePort, sourceChannel, localToken);
             normalizedTokens[i].amount = uint256(localToken.amount);
         }
         string memory sender = msg.sender.toHexString();
@@ -394,7 +385,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             strings.slice memory denomSlice = token.denom.toSlice();
-            // This will trim the denom IFF it is prefixed
+            // This will trim the denom in-place IFF it is prefixed
             strings.slice memory trimedDenom =
                 denomSlice.beyond(prefix.toSlice());
             address receiver = RelayLib.bytesToAddress(packet.receiver);
