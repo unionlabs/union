@@ -6,13 +6,14 @@ interface Props {
   title?: string
   image?: string
   description?: string
+  gapless: boolean
 }
 
-const { url, title, image, description } = Astro.props
+const { url, title, image, description, gapless } = Astro.props
 ---
 
 <Layout {url} {title} {image} {description}>
-  <main class="flex flex-col gap-16 lg:gap-32">
+  <main class:list={["flex flex-col", {"gap-16 lg:gap-32": !gapless}]}>
     <slot />
   </main>
 </Layout>

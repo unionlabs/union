@@ -5,18 +5,18 @@ import IntroHeading from "#/components/typography/IntroHeading.astro";
 ---
 
 <section class="flex flex-col">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-px">
+  <div class="grid grid-cols-2 gap-px divide-x divide-[#1f1f1f]">
     {
       socialLinks.map(socialLink => (
         <a
           href={socialLink.href}
           target="_blank"
           rel="noopener noreferrer"
-          class="flex flex-col flex-1 p-7 text-center w-full"
+          class="flex flex-col flex-1 p-2 md:p-4 text-center w-full"
         >
           <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
-          <div class="mt-4">
-            <span class="mt-16 border-b-[1px] uppercase border-white text-semibold">
+          <div>
+            <span class=" border-b-[1px] uppercase border-white text-semibold">
               {socialLink.cta} -&gt;
             </span>
           </div>

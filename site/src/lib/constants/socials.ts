@@ -10,11 +10,11 @@ export const socialLinks: Array<{
   {
     href: "https://x.com/union_build",
     icon: "x.com",
-    cta: "Follow us on X"
+    cta: "Follow our X"
   },
   {
     href: "https://discord.union.build",
     icon: "discord",
-    cta: "Join our Discord"
+    cta: "Join Discord"
   },
 ]
