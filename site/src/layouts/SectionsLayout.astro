@@ -13,7 +13,17 @@ const { url, title, image, description, gapless } = Astro.props
 ---
 
 <Layout {url} {title} {image} {description}>
-  <main class:list={["flex flex-col", {"gap-16 lg:gap-32": !gapless}]}>
+  <main class:list={["flex flex-col relative", {"gap-16 lg:gap-32": !gapless}]}>
+    <div class="absolute inset-0 -z-20 bg-repeat noise-bg size-full"></div>
     <slot />
   </main>
 </Layout>
+
+
+<style>
+.noise-bg {
+  background-image: url("/src/assets/images/backgrounds/200-30-6-monochrome.png");
+  /*background-image: url("http://noisepng.com/200-30-6-monochrome.png"); */
+}
+
+</style>
