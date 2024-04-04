@@ -11,7 +11,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{
     stream::{self, try_unfold},
     Stream, StreamExt, TryStreamExt,
@@ -47,20 +47,8 @@ pub trait Queue<T: QueueMsgTypes>: Clone + Send + Sync + Sized + 'static {
         R: Send + Sync + 'static;
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[allow(clippy::large_enum_variant)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "T: QueueMsgTypes")
-)]
+#[queue_msg]
+#[debug(bound())]
 pub enum QueueMsg<T: QueueMsgTypes> {
     /// An external event. This could be something like an IBC event, an external command, or anything else that occurs outside of the state machine. Can also be thought of as an "entry point".
     Event(T::Event),
@@ -118,14 +106,7 @@ pub enum QueueMsg<T: QueueMsgTypes> {
     Noop,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[queue_msg]
 pub enum Defer {
     Absolute(u64),
     Relative(u64),

@@ -4,16 +4,13 @@ use chain_utils::{
     ethereum::{EthereumChain, IbcHandlerExt},
     scroll::Scroll,
 };
-use enumorph::Enumorph;
 use ethers::providers::Middleware;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
     data, effect, fetch, queue_msg, QueueMsg,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{Decode, Encode, EthAbi},
     hash::{H160, H256},
@@ -369,18 +366,8 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum ScrollFetch<Tr: ChainExt> {
     FetchGetProof(GetProof<Scroll, Tr>),
     FetchIbcState(FetchIbcState<Scroll, Tr>),
@@ -425,18 +412,8 @@ pub struct FetchIbcContractRootProof {
     pub ibc_contract_address: H160,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum ScrollData<Tr: ChainExt> {
     RollupContractRootProof(RollupContractRootProof<Tr>),
     LatestBatchIndexProof(LatestBatchIndexProof<Tr>),
@@ -484,18 +461,8 @@ pub struct IbcContractRootProof<#[cover] Tr: ChainExt> {
     pub proof: AccountProof,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum ScrollAggregate<Tr: ChainExt> {
     AggregateHeader(AggregateHeader<Tr>),
 }

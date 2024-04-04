@@ -5,8 +5,9 @@ use proc_macro2::{Literal, Span};
 use quote::{format_ident, quote, ToTokens};
 use syn::{
     fold::Fold,
+    parenthesized,
     parse::{discouraged::Speculative, Parse, ParseStream},
-    parse_macro_input, parse_quote,
+    parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, Generics, Ident, Item, ItemEnum,
@@ -55,7 +56,10 @@ fn derive_debug(
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let bounds = mk_where_clause(&data)?;
+    let bounds = match container_attrs.bound {
+        Some(bound) => bound.into_iter().collect(),
+        None => mk_where_clause(&data)?,
+    };
 
     let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
         where_token: parse_quote!(where),
@@ -81,8 +85,8 @@ fn derive_debug(
                     .map(|meta| {
                         let binding = format_ident!("__binding_{idx}");
 
-                        match meta {
-                            Some(DebugMeta::Skip(_)) => None,
+                        match meta.fmt {
+                            Some(DebugMetaFmt::Skip(_)) => None,
                             Some(_) | None => Some(quote! {
                                 #pat_ident: #binding,
                             }),
@@ -103,17 +107,24 @@ fn derive_debug(
             .and_then(|meta| {
                 let binding = format_ident!("__binding_{idx}");
 
-                if let Some(meta) = &meta {
-                    if container_attrs.is_some() {
+                if let Some(meta_fmt) = &meta.fmt {
+                    if container_attrs.fmt.is_some() {
                         return Err(syn::Error::new(
-                            meta.span(),
+                            meta_fmt.span(),
                             "container and field `#[debug(...)]` attributes cannot be combined"
                         ))
                     }
                 }
 
-                let expr = match &meta {
-                    Some(DebugMeta::Format(lit, exprs)) => {
+                if let Some(meta_bound) = &meta.bound {
+                    return Err(syn::Error::new(
+                        meta_bound.span(),
+                        "`#[debug(bound(...))]` is only valid as a container attribute"
+                    ))
+                }
+
+                let expr = match &meta.fmt {
+                    Some(DebugMetaFmt::Format(lit, exprs)) => {
                         let exprs = exprs.iter().map(|expr| {
                             ReplacePath {
                                 from: ident.clone().unwrap_or_else(|| format_ident!("_{idx}")),
@@ -135,10 +146,10 @@ fn derive_debug(
                             DebugAsDisplay(format!(#lit, #(#exprs)*))
                         }}
                     }
-                    Some(DebugMeta::Wrap(path)) => {
+                    Some(DebugMetaFmt::Wrap(path)) => {
                         quote! { (#path)(#binding) }
                     }
-                    Some(DebugMeta::Skip(_)) => {
+                    Some(DebugMetaFmt::Skip(_)) => {
                         quote! {}
                     }
                     None => {
@@ -146,8 +157,8 @@ fn derive_debug(
                     }
                 };
 
-                Ok(match meta {
-                    Some(DebugMeta::Skip(_)) => None,
+                Ok(match meta.fmt {
+                    Some(DebugMetaFmt::Skip(_)) => None,
                     Some(_) | None => Some(match ident {
                         Some(ident) => {
                             quote! {
@@ -168,8 +179,8 @@ fn derive_debug(
         Fields::Unnamed(_) => quote! { f.debug_tuple(stringify!(#ident)); },
     };
 
-    let body = match (data, container_attrs.as_ref()) {
-        (_, Some(DebugMeta::Skip(skip))) => Err(syn::Error::new(
+    let body = match (data, container_attrs.fmt.as_ref()) {
+        (_, Some(DebugMetaFmt::Skip(skip))) => Err(syn::Error::new(
             skip.span(),
             "`skip` is only valid as a field attribute",
         )),
@@ -206,16 +217,28 @@ fn derive_debug(
                      }| {
                         parse_debug_meta(attrs)
                             .and_then(|m| {
-                                m.map_or_else(
-                                    || Ok(()),
-                                    |m| {
-                                        Err(syn::Error::new(
-                                            m.span(),
-                                            // arbitrary limitation bc we don't need it right now and i'm lazy
-                                            "`#[debug(...)]` cannot be used on variants",
-                                        ))
-                                    },
-                                )
+                                m.bound
+                                    .map_or_else(
+                                        || Ok(()),
+                                        |m| {
+                                            Err(syn::Error::new(
+                                                m.span(),
+                                                "`#[debug(bound(...))]` is only valid as a container attribute",
+                                            ))
+                                        },
+                                    )
+                                    .and_then(|()| {
+                                        m.fmt.map_or_else(
+                                            || Ok(()),
+                                            |m| {
+                                                Err(syn::Error::new(
+                                                    m.span(),
+                                                    // arbitrary limitation bc we don't need it right now and i'm lazy
+                                                    "`#[debug(...)]` cannot be used on variants",
+                                                ))
+                                            },
+                                        )
+                                    })
                             })
                             .and_then(|()| -> Result<_, _> {
                                 let field_debugs = fields
@@ -246,21 +269,24 @@ fn derive_debug(
                 }
             })
         }
-        (Data::Struct(_) | Data::Enum(_), Some(DebugMeta::Format(lit, exprs))) => Ok(quote! {
+        (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Format(lit, exprs))) => Ok(quote! {
             write!(f, #lit, #(#exprs)*)
         }),
-        (Data::Struct(_) | Data::Enum(_), Some(DebugMeta::Wrap(path))) => Ok(quote! {
+        (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Wrap(path))) => Ok(quote! {
             ::core::fmt::Debug::fmt((#path)(self), f)
         }),
         (Data::Union(_), _) => panic!(),
     }?;
 
     Ok(quote! {
-        impl #impl_generics ::core::fmt::Debug for #ident #ty_generics #where_clause {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                #body
+        const _: () = {
+            #[automatically_derived]
+            impl #impl_generics ::core::fmt::Debug for #ident #ty_generics #where_clause {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    #body
+                }
             }
-        }
+        };
     })
 }
 
@@ -289,29 +315,54 @@ impl Fold for ReplacePath {
 
 fn parse_debug_meta<'a>(
     attrs: impl IntoIterator<Item = &'a Attribute>,
-) -> Result<Option<DebugMeta>, syn::Error> {
+) -> Result<DebugMeta, syn::Error> {
     attrs
         .into_iter()
         .filter(|attr| attr.path().is_ident("debug"))
         .map(DebugMeta::try_from_attribute)
-        .try_fold(None, |curr, acc| {
-            let acc = acc?;
+        .try_fold(
+            DebugMeta {
+                bound: None,
+                fmt: None,
+            },
+            |curr, acc| {
+                let acc = acc?;
 
-            match (curr, acc) {
-                (None, acc) => Ok(acc),
-                (new @ Some(_), None) => Ok(new),
-                (Some(new), Some(_)) => Err(syn::Error::new(
-                    new.span(),
-                    "only one `#[debug(...)]` attribute is allowed",
-                )),
-            }
-        })
+                let bound = match (curr.bound, acc.bound) {
+                    (None, acc) => acc,
+                    (new @ Some(_), None) => new,
+                    (Some(new), Some(_)) => {
+                        return Err(syn::Error::new(
+                            new.span(),
+                            "only one `#[debug(bound(...))]` attribute is allowed",
+                        ))
+                    }
+                };
+
+                let fmt = match (curr.fmt, acc.fmt) {
+                    (None, acc) => acc,
+                    (new @ Some(_), None) => new,
+                    (Some(new), Some(_)) => {
+                        return Err(syn::Error::new(
+                            new.span(),
+                            "only one `#[debug(...)]` formatting attribute is allowed",
+                        ))
+                    }
+                };
+
+                Ok(DebugMeta { bound, fmt })
+            },
+        )
 }
 
 fn mk_where_clause(data: &Data) -> Result<Vec<WherePredicate>, syn::Error> {
     let f = |Field { ty, attrs, .. }: &Field| {
         parse_debug_meta(attrs.iter())
-            .map(|m| m.is_none().then(|| parse_quote!(#ty: ::core::fmt::Debug)))
+            .map(|m| {
+                m.fmt
+                    .is_none()
+                    .then(|| parse_quote_spanned!(ty.span()=> #ty: ::core::fmt::Debug))
+            })
             .transpose()
     };
 
@@ -328,52 +379,77 @@ fn mk_where_clause(data: &Data) -> Result<Vec<WherePredicate>, syn::Error> {
 }
 
 #[derive(core::fmt::Debug)]
-enum DebugMeta {
+struct DebugMeta {
+    bound: Option<Punctuated<WherePredicate, Token![,]>>,
+    fmt: Option<DebugMetaFmt>,
+}
+
+#[derive(core::fmt::Debug)]
+enum DebugMetaFmt {
     Skip(Span),
     Format(LitStr, Vec<Expr>),
     Wrap(Path),
 }
 
-impl DebugMeta {
+impl DebugMetaFmt {
     fn span(&self) -> Span {
         match self {
-            DebugMeta::Skip(span) => span.span(),
-            DebugMeta::Format(lit, _exprs) => lit.span(),
-            DebugMeta::Wrap(path) => path.span(),
+            Self::Skip(span) => span.span(),
+            Self::Format(lit, _exprs) => lit.span(),
+            Self::Wrap(path) => path.span(),
         }
     }
 }
 
 impl DebugMeta {
-    fn try_from_attribute(attr: &Attribute) -> syn::Result<Option<Self>> {
+    fn try_from_attribute(attr: &Attribute) -> syn::Result<Self> {
         syn::custom_keyword!(skip);
         syn::custom_keyword!(wrap);
+        syn::custom_keyword!(bound);
 
-        let mut debug_meta = None;
+        let mut debug_meta = Self {
+            bound: None,
+            fmt: None,
+        };
 
         attr.parse_args_with(|input: ParseStream| {
-            if let Some(kw) = input.parse::<Option<skip>>()? {
-                if debug_meta.is_some() {
+            if let Some(_kw) = input.parse::<Option<bound>>()? {
+                if debug_meta.bound.is_some() {
                     return Err(syn::Error::new_spanned(
                         attr,
-                        "duplicate #[error(transparent)] attribute",
+                        "duplicate #[debug(bound(...))] attribute",
                     ));
                 }
-                debug_meta = Some(DebugMeta::Skip(kw.span));
+
+                let content;
+                parenthesized!(content in input);
+
+                debug_meta.bound = Some(Punctuated::parse_terminated(&content)?);
+                return Ok(());
+            }
+
+            if let Some(kw) = input.parse::<Option<skip>>()? {
+                if debug_meta.fmt.is_some() {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "duplicate #[debug(skip)] attribute",
+                    ));
+                }
+                debug_meta.fmt = Some(DebugMetaFmt::Skip(kw.span));
                 return Ok(());
             }
 
             if let Some(_kw) = input.parse::<Option<wrap>>()? {
-                if debug_meta.is_some() {
+                if debug_meta.fmt.is_some() {
                     return Err(syn::Error::new_spanned(
                         attr,
-                        "duplicate #[error(transparent)] attribute",
+                        "duplicate #[debug(wrap)] attribute",
                     ));
                 }
 
                 let _eq = input.parse::<Token![=]>()?;
 
-                debug_meta = Some(DebugMeta::Wrap(input.parse()?));
+                debug_meta.fmt = Some(DebugMetaFmt::Wrap(input.parse()?));
                 return Ok(());
             }
 
@@ -389,7 +465,9 @@ impl DebugMeta {
                 Punctuated::<Expr, Token![,]>::parse_terminated(input)?
             };
 
-            let prev = debug_meta.replace(DebugMeta::Format(fmt, args.into_iter().collect()));
+            let prev = debug_meta
+                .fmt
+                .replace(DebugMetaFmt::Format(fmt, args.into_iter().collect()));
 
             assert!(prev.is_none());
 

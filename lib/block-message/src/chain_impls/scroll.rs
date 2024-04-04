@@ -4,12 +4,9 @@ use chain_utils::{
     ethereum::IBCHandlerEvents,
     scroll::{Scroll, SCROLL_REVISION_NUMBER},
 };
-use enumorph::Enumorph;
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::StreamExt;
-use queue_msg::{aggregation::do_aggregate, conc, fetch, QueueMsg};
-use serde::{Deserialize, Serialize};
+use queue_msg::{aggregation::do_aggregate, conc, fetch, queue_msg, QueueMsg};
 use unionlabs::{ethereum::config::Mainnet, ibc::core::client::height::Height, traits::Chain};
 
 use crate::{
@@ -183,9 +180,8 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum ScrollFetch {
     FetchEvents(FetchEvents<Mainnet>),
     FetchGetLogs(FetchGetLogs),
@@ -195,25 +191,14 @@ pub enum ScrollFetch {
     FetchConnection(FetchConnection<Scroll>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[queue_msg]
 pub struct FetchBatchIndex {
     beacon_slot: u64,
     batch_index: u64,
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum ScrollAggregate {
     AggregateWithChannel(AggregateWithChannel<Scroll>),
     AggregateWithConnection(AggregateWithConnection<Scroll>),
@@ -237,9 +222,8 @@ where
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum ScrollData {
     Channel(ChannelData<Scroll>),
     Connection(ConnectionData<Scroll>),

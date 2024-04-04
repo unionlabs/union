@@ -8,11 +8,10 @@ use chain_utils::{
     cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm, Chains,
 };
 use queue_msg::{
-    event, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch, HandleWait,
-    QueueError, QueueMsg, QueueMsgTypes,
+    event, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
+    HandleWait, QueueError, QueueMsg, QueueMsgTypes,
 };
 use relay_message::RelayMessageTypes;
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
     events::{
@@ -128,9 +127,7 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[queue_msg]
 pub enum VoyagerMsg {
     Block(<BlockMessageTypes as QueueMsgTypes>::Effect),
     Relay(<RelayMessageTypes as QueueMsgTypes>::Effect),
@@ -151,9 +148,7 @@ impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[queue_msg]
 pub enum VoyagerWait {
     Block(<BlockMessageTypes as QueueMsgTypes>::Wait),
     Relay(<RelayMessageTypes as QueueMsgTypes>::Wait),
@@ -179,9 +174,7 @@ impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[queue_msg]
 pub enum VoyagerAggregate {
     Block(<BlockMessageTypes as QueueMsgTypes>::Aggregate),
     Relay(<RelayMessageTypes as QueueMsgTypes>::Aggregate),
@@ -217,9 +210,7 @@ impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[queue_msg]
 pub enum VoyagerEvent {
     Block(<BlockMessageTypes as QueueMsgTypes>::Event),
     Relay(<RelayMessageTypes as QueueMsgTypes>::Event),
@@ -240,9 +231,7 @@ impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[queue_msg]
 pub enum VoyagerData {
     Block(<BlockMessageTypes as QueueMsgTypes>::Data),
     Relay(<RelayMessageTypes as QueueMsgTypes>::Data),
@@ -392,9 +381,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[queue_msg]
 pub enum VoyagerFetch {
     Block(<BlockMessageTypes as QueueMsgTypes>::Fetch),
     Relay(<RelayMessageTypes as QueueMsgTypes>::Fetch),

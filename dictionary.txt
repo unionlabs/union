@@ -562,6 +562,7 @@ netgo
 netutil
 networkid
 newacc
+newtype
 nextest
 nextval
 nixbuildnet

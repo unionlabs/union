@@ -1,12 +1,10 @@
 use std::marker::PhantomData;
 
 use chain_utils::GetChain;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{
     aggregate, fetch, queue_msg, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
     proof::{ChannelEndPath, ClientStatePath, ConnectionPath},
@@ -97,10 +95,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [],
                         id(
                             hc.chain_id(),
-                            AggregateMsgAfterUpdate::from(AggregateConnectionOpenTry {
-                                event_height: ibc_event.height,
-                                event: init,
-                            }),
+                            AggregateMsgAfterUpdate::ConnectionOpenTry(
+                                AggregateConnectionOpenTry {
+                                    event_height: ibc_event.height,
+                                    event: init,
+                                },
+                            ),
                         ),
                     ),
                 ]),
@@ -114,7 +114,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::from(AggregateConnectionOpenAck {
+                        AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
                             event_height: ibc_event.height,
                             event: try_,
                         }),
@@ -130,10 +130,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::from(AggregateConnectionOpenConfirm {
-                            event_height: ibc_event.height,
-                            event: ack,
-                        }),
+                        AggregateMsgAfterUpdate::ConnectionOpenConfirm(
+                            AggregateConnectionOpenConfirm {
+                                event_height: ibc_event.height,
+                                event: ack,
+                            },
+                        ),
                     ),
                 ),
                 unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
@@ -337,18 +339,7 @@ pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub event: unionlabs::events::IbcEvent<ClientIdOf<Hc>, ClientTypeOf<Hc>, ClientIdOf<Tr>>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "")
-)]
+#[queue_msg]
 pub enum Command<Hc: ChainExt, Tr: ChainExt> {
     UpdateClient {
         client_id: ClientIdOf<Hc>,

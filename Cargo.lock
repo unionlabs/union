@@ -4405,6 +4405,7 @@ dependencies = [
  "frunk",
  "futures",
  "itertools 0.12.1",
+ "macros",
  "queue-msg-macro",
  "serde",
  "serde_json",
@@ -4418,6 +4419,7 @@ name = "queue-msg-macro"
 version = "0.0.0"
 dependencies = [
  "frame-support-procedural",
+ "macros",
  "proc-macro2",
  "quote",
  "serde",
@@ -7069,6 +7071,7 @@ dependencies = [
  "block-message",
  "chain-utils",
  "hex-literal",
+ "macros",
  "queue-msg",
  "relay-message",
  "serde",

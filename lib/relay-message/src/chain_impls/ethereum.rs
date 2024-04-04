@@ -19,7 +19,6 @@ use ethers::{
     types::Bytes,
     utils::keccak256,
 };
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
@@ -764,20 +763,8 @@ try_from_relayer_msg! {
     ),
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
     FetchFinalityUpdate(FetchFinalityUpdate),
     FetchLightClientUpdates(FetchLightClientUpdates),
@@ -789,21 +776,8 @@ pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
     FetchIbcState(FetchIbcState<Ethereum<C>, Tr>),
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-#[allow(clippy::large_enum_variant)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum EthereumDataMsg<C: ChainSpec, Tr: ChainExt> {
     FinalityUpdate(FinalityUpdate<C, Tr>),
     LightClientUpdates(LightClientUpdates<C, Tr>),
@@ -813,21 +787,8 @@ pub enum EthereumDataMsg<C: ChainSpec, Tr: ChainExt> {
     BeaconGenesis(BeaconGenesisData<C, Tr>),
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
-)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case"
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-#[allow(clippy::large_enum_variant)]
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
 pub enum EthereumAggregateMsg<C: ChainSpec, Tr: ChainExt> {
     CreateUpdate(CreateUpdateData<C, Tr>),
     MakeCreateUpdates(MakeCreateUpdatesData<C, Tr>),
