@@ -75,7 +75,7 @@
           mkBundle {
             name = "testnet-7";
             versions = uniondBundleVersions.complete;
-            genesis = ../networks/genesis/union-testnet-6/genesis.json;
+            genesis = ../networks/genesis/union-testnet-7/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
@@ -88,7 +88,7 @@
             name = "testnet-next";
             versions = uniondBundleVersions.complete;
             nextVersion = "v0.21.0";
-            genesis = ../networks/genesis/union-testnet-6/genesis.json;
+            genesis = ../networks/genesis/union-testnet-7/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
@@ -123,7 +123,7 @@
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-6;
+          default = self.packages.${pkgs.system}.bundle-testnet-7;
         };
         moniker = mkOption { type = types.str; };
         network = mkOption {
