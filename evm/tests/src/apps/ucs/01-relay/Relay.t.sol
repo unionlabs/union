@@ -636,6 +636,9 @@ contract RelayTests is Test {
         string memory sourceChannel,
         string memory destinationPort,
         string memory destinationChannel,
+        address denom,
+        address sender,
+        uint128 amount,
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
@@ -644,6 +647,14 @@ contract RelayTests is Test {
         IRelay r = new UCS01Relay(ibcHandler);
         vm.record();
         vm.prank(address(ibcHandler));
+
+        // Receive a token that hasn't been escrowed
+        Token[] memory tokens = new Token[](1);
+        tokens[0].denom = RelayLib.makeForeignDenom(
+            destinationPort, destinationChannel, denom.toHexString()
+        );
+        tokens[0].amount = amount;
+
         bytes memory acknowledgement = r.onRecvPacket(
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
@@ -651,7 +662,13 @@ contract RelayTests is Test {
                 source_channel: sourceChannel,
                 destination_port: destinationPort,
                 destination_channel: destinationChannel,
-                data: hex"00",
+                data: RelayPacketLib.encode(
+                    RelayPacket({
+                        sender: abi.encodePacked(sender),
+                        receiver: abi.encodePacked(sender),
+                        tokens: tokens
+                    })
+                    ),
                 timeout_height: IbcCoreClientV1Height.Data({
                     revision_number: timeoutRevisionNumber,
                     revision_height: timeoutRevisionHeight
@@ -660,6 +677,7 @@ contract RelayTests is Test {
             }),
             relayer
         );
+
         assertEq(acknowledgement, abi.encodePacked(RelayLib.ACK_FAILURE));
         (bytes32[] memory reads, bytes32[] memory writes) =
             vm.accesses(address(relay));

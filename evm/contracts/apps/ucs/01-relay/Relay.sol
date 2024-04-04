@@ -155,14 +155,16 @@ library RelayPacketLib {
         return abi.encode(packet.sender, packet.receiver, packet.tokens);
     }
 
-    function decode(bytes calldata packet)
+    function decode(bytes calldata stream)
         internal
         pure
-        returns (RelayPacket memory)
+        returns (RelayPacket calldata)
     {
-        (bytes memory sender, bytes memory receiver, Token[] memory tokens) =
-            abi.decode(packet, (bytes, bytes, Token[]));
-        return RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
+        RelayPacket calldata packet;
+        assembly {
+            packet := stream.offset
+        }
+        return packet;
     }
 }
 
@@ -335,7 +337,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         uint64 sequence,
         string memory portId,
         string memory channelId,
-        RelayPacket memory packet
+        RelayPacket calldata packet
     ) internal {
         string memory receiver = packet.receiver.toHexString();
         // We're going to refund, the receiver will be the sender.
@@ -378,7 +380,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         if (msg.sender != address(this)) {
             revert RelayLib.ErrUnauthorized();
         }
-        RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
+        RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.destination_port, ibcPacket.destination_channel
         );
@@ -479,14 +481,13 @@ contract UCS01Relay is IBCAppBase, IRelay {
         ) {
             revert RelayLib.ErrInvalidAcknowledgement();
         }
-        RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.sequence,
                 ibcPacket.source_port,
                 ibcPacket.source_channel,
-                packet
+                RelayPacketLib.decode(ibcPacket.data)
             );
         }
     }
