@@ -43,46 +43,16 @@ library NFTPacketLib {
         );
     }
 
-    function decode(bytes calldata packet)
+    function decode(bytes calldata stream)
         internal
         pure
-        returns (NFTPacket memory)
+        returns (NFTPacket calldata)
     {
-        (
-            string memory classId,
-            string memory classUri,
-            bytes memory classData,
-            string[] memory tokenIds,
-            string[] memory tokenUris,
-            bytes[] memory tokenData,
-            string memory sender,
-            string memory receiver,
-            string memory memo
-        ) = abi.decode(
-            packet,
-            (
-                string,
-                string,
-                bytes,
-                string[],
-                string[],
-                bytes[],
-                string,
-                string,
-                string
-            )
-        );
-        return NFTPacket({
-            classId: classId,
-            classUri: classUri,
-            classData: classData,
-            tokenIds: tokenIds,
-            tokenUris: tokenUris,
-            tokenData: tokenData,
-            sender: sender,
-            receiver: receiver,
-            memo: memo
-        });
+        NFTPacket calldata packet;
+        assembly {
+            packet := stream.offset
+        }
+        return packet;
     }
 }
 
@@ -252,28 +222,46 @@ contract UCS02NFT is IBCAppBase {
         outstanding[sourcePort][sourceChannel][nftClass] -= amount;
     }
 
-    // Internal function
-    // Send the given token over the specified channel.
-    // If token is native, we increase the oustanding amount and escrow it. Otherwise, we burn the amount.
-    // The operation is symmetric with the counterparty, if we burn locally, the remote relay will unescrow. If we escrow locally, the remote relay will mint.
-    function sendToken(
+    function sendRemoteNative(
         string calldata sourcePort,
         string calldata sourceChannel,
+        string calldata receiver,
         address nftClass,
-        uint256 tokenId,
-        bool isSource
-    ) internal returns (string memory) {
-        IERC721Denom(nftClass).safeTransferFrom(
-            msg.sender, address(this), tokenId
-        );
-        if (isSource) {
-            // Token originating from the local chain, increase outstanding and escrow.
-            return tokenId.toHexString();
-        } else {
-            // Token originating from the remote chain, burn the amount.
+        uint256[] calldata tokens
+    ) internal returns (string[] memory) {
+        uint256 tokensLength = tokens.length;
+        string[] memory normalizedTokens = new string[](tokens.length);
+        for (uint256 i = 0; i < tokensLength; i++) {
+            uint256 tokenId = tokens[i];
+            // we could avoid transferring before burning here?
+            IERC721Denom(nftClass).safeTransferFrom(
+                msg.sender, address(this), tokenId
+            );
             IERC721Denom(nftClass).burn(tokenId);
-            return nftTokenToId[sourcePort][sourceChannel][nftClass][tokenId];
+            normalizedTokens[i] =
+                nftTokenToId[sourcePort][sourceChannel][nftClass][tokenId];
         }
+        return normalizedTokens;
+    }
+
+    function sendLocalNative(
+        string calldata sourcePort,
+        string calldata sourceChannel,
+        string calldata receiver,
+        address nftClass,
+        uint256[] calldata tokens
+    ) internal returns (string[] memory) {
+        uint256 tokensLength = tokens.length;
+        string[] memory normalizedTokens = new string[](tokens.length);
+        increaseOutstanding(sourcePort, sourceChannel, nftClass, tokensLength);
+        for (uint256 i = 0; i < tokensLength; i++) {
+            uint256 tokenId = tokens[i];
+            IERC721Denom(nftClass).safeTransferFrom(
+                msg.sender, address(this), tokenId
+            );
+            normalizedTokens[i] = tokenId.toHexString();
+        }
+        return normalizedTokens;
     }
 
     function send(
@@ -287,21 +275,15 @@ contract UCS02NFT is IBCAppBase {
         // If the token is originating from the counterparty channel, we must have saved it's denom.
         string memory nftDenom = nftToDenom[sourcePort][sourceChannel][nftClass];
         bool isSource = bytes(nftDenom).length == 0;
+        string[] memory normalizedTokens;
         if (isSource) {
             nftDenom = nftClass.toHexString();
-        }
-
-        string[] memory normalizedTokens = new string[](tokens.length);
-        uint256 tokensLength = tokens.length;
-        if (isSource) {
-            increaseOutstanding(
-                sourcePort, sourceChannel, nftClass, tokensLength
+            normalizedTokens = sendLocalNative(
+                sourcePort, sourceChannel, receiver, nftClass, tokens
             );
-        }
-        for (uint256 i = 0; i < tokensLength; i++) {
-            uint256 tokenId = tokens[i];
-            normalizedTokens[i] = sendToken(
-                sourcePort, sourceChannel, nftClass, tokenId, isSource
+        } else {
+            normalizedTokens = sendRemoteNative(
+                sourcePort, sourceChannel, receiver, nftClass, tokens
             );
         }
 
@@ -354,6 +336,59 @@ contract UCS02NFT is IBCAppBase {
         }
     }
 
+    function receiveRemoteNative(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        NFTPacket calldata packet,
+        address receiver,
+        string memory nftDenom
+    ) internal returns (address) {
+        address nftClass = denomToNft[ibcPacket.destination_port][ibcPacket
+            .destination_channel][nftDenom];
+        if (nftClass == address(0)) {
+            nftClass = address(new ERC721Denom(nftDenom));
+            denomToNft[ibcPacket.destination_port][ibcPacket.destination_channel][nftDenom]
+            = nftClass;
+            nftToDenom[ibcPacket.destination_port][ibcPacket.destination_channel][nftClass]
+            = nftDenom;
+            emit NFTLib.ClassCreated(
+                ibcPacket.sequence, ibcPacket.source_channel, nftClass
+            );
+        }
+        uint256 tokenIdsLength = packet.tokenIds.length;
+        for (uint256 i = 0; i < tokenIdsLength; i++) {
+            string memory tokenId = packet.tokenIds[i];
+            uint256 localTokenId = uint256(keccak256(bytes(tokenId)));
+            nftIdToToken[ibcPacket.destination_port][ibcPacket
+                .destination_channel][nftClass][tokenId] = localTokenId;
+            IERC721Denom(nftClass).mint(receiver, localTokenId);
+        }
+        return nftClass;
+    }
+
+    function receiveLocalNative(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        NFTPacket calldata packet,
+        address receiver,
+        string memory nftDenom
+    ) internal returns (address) {
+        address nftClass = Hex.hexToAddress(nftDenom);
+        uint256 tokenIdsLength = packet.tokenIds.length;
+        decreaseOutstanding(
+            ibcPacket.destination_port,
+            ibcPacket.destination_channel,
+            nftClass,
+            tokenIdsLength
+        );
+        for (uint256 i = 0; i < tokenIdsLength; i++) {
+            string memory tokenId = packet.tokenIds[i];
+            uint256 localTokenId = Hex.hexToUint256(packet.tokenIds[i]);
+            IERC721Denom(nftClass).safeTransferFrom(
+                address(this), receiver, localTokenId
+            );
+        }
+        return nftClass;
+    }
+
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
@@ -361,15 +396,14 @@ contract UCS02NFT is IBCAppBase {
         if (msg.sender != address(this)) {
             revert NFTLib.ErrUnauthorized();
         }
-        NFTPacket memory packet = NFTPacketLib.decode(ibcPacket.data);
-        // {src_port}/{src_channel}
-        string memory prefix = NFTLib.makeDenomPrefix(
-            ibcPacket.destination_port, ibcPacket.destination_channel
-        );
-        strings.slice memory classIdSlice = packet.classId.toSlice();
+        NFTPacket calldata packet = NFTPacketLib.decode(ibcPacket.data);
+        // {src_port}/{src_channel}/denom
         // This will trim the denom in-place IFF it is prefixed
-        strings.slice memory trimedClassId =
-            classIdSlice.beyond(prefix.toSlice());
+        strings.slice memory trimedClassId = packet.classId.toSlice().beyond(
+            NFTLib.makeDenomPrefix(
+                ibcPacket.destination_port, ibcPacket.destination_channel
+            ).toSlice()
+        );
         address receiver = Hex.hexToAddress(packet.receiver);
         address nftClass;
         if (trimedClassId.equals(packet.classId.toSlice())) {
@@ -378,43 +412,12 @@ contract UCS02NFT is IBCAppBase {
             string memory nftDenom = NFTLib.makeForeignDenom(
                 ibcPacket.source_port, ibcPacket.source_channel, packet.classId
             );
-            nftClass = denomToNft[ibcPacket.destination_port][ibcPacket
-                .destination_channel][nftDenom];
-            if (nftClass == address(0)) {
-                nftClass = address(new ERC721Denom(nftDenom));
-                denomToNft[ibcPacket.destination_port][ibcPacket
-                    .destination_channel][nftDenom] = nftClass;
-                nftToDenom[ibcPacket.destination_port][ibcPacket
-                    .destination_channel][nftClass] = nftDenom;
-                emit NFTLib.ClassCreated(
-                    ibcPacket.sequence, ibcPacket.source_channel, nftClass
-                );
-            }
-            uint256 tokenIdsLength = packet.tokenIds.length;
-            for (uint256 i = 0; i < tokenIdsLength; i++) {
-                string memory tokenId = packet.tokenIds[i];
-                uint256 localTokenId = uint256(keccak256(bytes(tokenId)));
-                nftIdToToken[ibcPacket.destination_port][ibcPacket
-                    .destination_channel][nftClass][tokenId] = localTokenId;
-                IERC721Denom(nftClass).mint(receiver, localTokenId);
-            }
+            receiveRemoteNative(ibcPacket, packet, receiver, nftDenom);
         } else {
             // The NFT was originating from the local chain, it's class is a hex representation of the ERC721 address.
-            nftClass = Hex.hexToAddress(trimedClassId.toString());
-            uint256 tokenIdsLength = packet.tokenIds.length;
-            decreaseOutstanding(
-                ibcPacket.destination_port,
-                ibcPacket.destination_channel,
-                nftClass,
-                tokenIdsLength
+            receiveLocalNative(
+                ibcPacket, packet, receiver, trimedClassId.toString()
             );
-            for (uint256 i = 0; i < tokenIdsLength; i++) {
-                string memory tokenId = packet.tokenIds[i];
-                uint256 localTokenId = Hex.hexToUint256(packet.tokenIds[i]);
-                IERC721Denom(nftClass).safeTransferFrom(
-                    address(this), receiver, localTokenId
-                );
-            }
         }
         emit NFTLib.Received(
             ibcPacket.sequence,
@@ -440,14 +443,13 @@ contract UCS02NFT is IBCAppBase {
         ) {
             revert NFTLib.ErrInvalidAcknowledgement();
         }
-        NFTPacket memory packet = NFTPacketLib.decode(ibcPacket.data);
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == NFTLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.sequence,
                 ibcPacket.source_port,
                 ibcPacket.source_channel,
-                packet
+                NFTPacketLib.decode(ibcPacket.data)
             );
         }
     }
@@ -456,7 +458,7 @@ contract UCS02NFT is IBCAppBase {
         uint64 sequence,
         string memory portId,
         string memory channelId,
-        NFTPacket memory packet
+        NFTPacket calldata packet
     ) internal {
         // We're going to refund, the receiver will be the sender.
         address userToRefund = Hex.hexToAddress(packet.sender);
