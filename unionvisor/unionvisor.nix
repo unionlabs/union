@@ -123,7 +123,7 @@
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-6;
+          default = self.packages.${pkgs.system}.bundle-testnet-7;
         };
         moniker = mkOption { type = types.str; };
         network = mkOption {
