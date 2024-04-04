@@ -25,9 +25,20 @@ pub struct Config {
     pub url: Url,
 }
 
+/// Unit struct describing parametrization of associated types for Evm based chains.
+pub struct Evm;
+
+impl postgres::ChainType for Evm {
+    type BlockHash = String;
+    type BlockHeight = i32;
+    type TransactionHash = String;
+}
+
+pub type PgLog<T> = postgres::Log<Evm, T>;
+
 pub struct Indexer {
     range: Range<u64>,
-    chain_id: postgres::ChainId,
+    chain_id: ChainId,
     tasks: tokio::task::JoinSet<Result<(), Report>>,
     pool: PgPool,
     provider: Provider<Http>,
@@ -163,7 +174,7 @@ async fn index_blocks(
     Ok(())
 }
 
-/// A worker routine which continuously re-indexes the last 20 blocks into `postgres::Logs`.
+/// A worker routine which continuously re-indexes the last 20 blocks into `PgLogs`.
 async fn reindex_blocks(
     pool: PgPool,
     chain_id: ChainId,
@@ -189,7 +200,7 @@ async fn reindex_blocks(
             }));
         inserts
             .try_fold(tx, |mut tx, (_, block)| async move {
-                let log = postgres::Log {
+                let log = PgLog {
                     chain_id: block.chain_id,
                     block_hash: block.hash.clone(),
                     height: block.height,
@@ -307,7 +318,7 @@ impl BlockInsert {
         let mut receipts = provider
             .get_block_receipts(height)
             .await
-            .map_err(|err| FromProviderError::DataNotFound(err))?;
+            .map_err(FromProviderError::DataNotFound)?;
 
         let result: Result<Self, Report> = try {
             let ts = block.time().unwrap_or_default().timestamp();
@@ -366,7 +377,7 @@ impl BlockInsert {
             .map(|tx| tx.events.len() as i32)
             .sum();
 
-        let log = postgres::Log {
+        let log = PgLog {
             chain_id: self.chain_id,
             block_hash: self.hash.clone(),
             height: self.height,
