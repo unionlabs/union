@@ -509,7 +509,15 @@
           "pub_key": null,
           "account_number": 69,
           "sequence": 0
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk",
+          "pub_key": null,
+          "account_number": 70,
+          "sequence": 0
         }
+
       ]
     },
     "authz": {
@@ -1144,6 +1152,15 @@
         },
         {
           "address": "union1khlx3gkk80nn6fcl5vc7ldrp9fjczmqsxfkjd0",
+          "coins": [
+            {
+              "denom": "muno",
+              "amount": "128000000000000"
+            }
+          ]
+        },
+        {
+          "address": "union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk",
           "coins": [
             {
               "denom": "muno",
