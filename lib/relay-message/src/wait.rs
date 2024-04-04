@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
@@ -142,16 +140,6 @@ where
                     ])
                 }
             }
-        }
-    }
-}
-
-impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Wait::Block(block) => write!(f, "Block({})", block.height),
-            Wait::Timestamp(ts) => write!(f, "Timestamp({})", ts.timestamp),
-            Wait::TrustedHeight(th) => write!(f, "TrustedHeight({})", th.height),
         }
     }
 }

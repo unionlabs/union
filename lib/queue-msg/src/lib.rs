@@ -3,7 +3,7 @@
 use std::{
     collections::VecDeque,
     error::Error,
-    fmt::{Debug, Display},
+    fmt::Debug,
     future::Future,
     num::NonZeroU64,
     pin::Pin,
@@ -221,7 +221,6 @@ pub fn aggregate<T: QueueMsgTypes>(
 }
 
 pub trait QueueMsgTypesTraits = Debug
-    + Display
     + Clone
     + PartialEq
     + Serialize
@@ -250,11 +249,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
         store: &'a T::Store,
         depth: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Option<QueueMsg<T>>, QueueError>> + Send + 'a>> {
-        tracing::debug!(
-            depth,
-            %self,
-            "handling message",
-        );
+        tracing::debug!(depth, "handling message");
 
         let fut = async move {
             match self {
@@ -325,7 +320,6 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                                 let retries_left = remaining - 1;
 
                                 tracing::warn!(
-                                    %msg,
                                     retries_left,
                                     ?err,
                                     "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
@@ -336,7 +330,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                                     retry(retries_left, *msg),
                                 ])))
                             } else {
-                                tracing::error!(%msg, "msg failed after all retries");
+                                tracing::error!("msg failed after all retries");
                                 Err(err)
                             }
                         }
@@ -382,75 +376,6 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
         };
 
         Box::pin(fut)
-    }
-}
-
-impl<T: QueueMsgTypes> std::fmt::Display for QueueMsg<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn display_list<I>(f: &mut std::fmt::Formatter<'_>, iter: I) -> Result<(), std::fmt::Error>
-        where
-            I: ExactSizeIterator,
-            I::Item: Display,
-        {
-            let len = iter.len();
-
-            write!(f, "[")?;
-
-            for (idx, msg) in iter.enumerate() {
-                write!(f, "{msg}")?;
-                if idx != len - 1 {
-                    write!(f, ", ")?;
-                }
-            }
-
-            write!(f, "]")?;
-
-            Ok(())
-        }
-
-        match self {
-            QueueMsg::Event(event) => write!(f, "Event({event})"),
-            QueueMsg::Data(data) => write!(f, "Data({data})"),
-            QueueMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
-            QueueMsg::Effect(msg) => write!(f, "Msg({msg})"),
-            QueueMsg::Wait(wait) => write!(f, "Wait({wait})"),
-            QueueMsg::Defer(defer) => match defer {
-                Defer::Absolute(seconds) => write!(f, "DeferUntil(Absolute, {seconds})"),
-                Defer::Relative(seconds) => write!(f, "DeferUntil(Relative, {seconds})"),
-            },
-            QueueMsg::Repeat { times: None, msg } => write!(f, "Repeat({msg})"),
-            QueueMsg::Repeat {
-                times: Some(times),
-                msg,
-            } => write!(f, "Repeat({times}, {msg})"),
-            QueueMsg::Timeout {
-                timeout_timestamp,
-                msg,
-            } => write!(f, "Timeout({timeout_timestamp}, {msg})"),
-            QueueMsg::Sequence(queue) => {
-                write!(f, "Sequence")?;
-                display_list(f, queue.iter())
-            }
-            QueueMsg::Concurrent(msgs) => {
-                write!(f, "Concurrent")?;
-                display_list(f, msgs.iter())
-            }
-            QueueMsg::Retry { remaining, msg } => write!(f, "Retry({remaining}, {msg})"),
-            QueueMsg::Aggregate {
-                queue,
-                data,
-                receiver,
-            } => {
-                write!(f, "Aggregate(",)?;
-                display_list(f, queue.iter())?;
-                write!(f, " -> ",)?;
-                display_list(f, data.iter())?;
-                write!(f, " -> {receiver})",)
-            }
-            QueueMsg::Noop => {
-                write!(f, "Noop")
-            }
-        }
     }
 }
 
@@ -505,102 +430,101 @@ fn flatten_conc<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
     }
 }
 
-#[test]
-fn flatten() {
-    struct EmptyMsgTypes;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-    struct Unit;
+    #[test]
+    fn flatten() {
+        struct EmptyMsgTypes;
 
-    impl Display for Unit {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.write_str("Unit")
+        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+        struct Unit;
+
+        impl HandleEffect<EmptyMsgTypes> for Unit {
+            async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+                Ok(QueueMsg::Noop)
+            }
         }
-    }
 
-    impl HandleEffect<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+        impl HandleEvent<EmptyMsgTypes> for Unit {
+            fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+                Ok(QueueMsg::Noop)
+            }
         }
-    }
 
-    impl HandleEvent<EmptyMsgTypes> for Unit {
-        fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+        impl HandleData<EmptyMsgTypes> for Unit {
+            fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+                Ok(QueueMsg::Noop)
+            }
         }
-    }
 
-    impl HandleData<EmptyMsgTypes> for Unit {
-        fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+        impl HandleFetch<EmptyMsgTypes> for Unit {
+            async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+                Ok(QueueMsg::Noop)
+            }
         }
-    }
 
-    impl HandleFetch<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+        impl HandleWait<EmptyMsgTypes> for Unit {
+            async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+                Ok(QueueMsg::Noop)
+            }
         }
-    }
 
-    impl HandleWait<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+        impl HandleAggregate<EmptyMsgTypes> for Unit {
+            fn handle(self, _: VecDeque<Unit>) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+                Ok(QueueMsg::Noop)
+            }
         }
-    }
 
-    impl HandleAggregate<EmptyMsgTypes> for Unit {
-        fn handle(self, _: VecDeque<Unit>) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+        impl QueueMsgTypes for EmptyMsgTypes {
+            type Event = Unit;
+            type Data = Unit;
+            type Fetch = Unit;
+            type Effect = Unit;
+            type Wait = Unit;
+
+            type Aggregate = Unit;
+
+            type Store = ();
         }
-    }
 
-    impl QueueMsgTypes for EmptyMsgTypes {
-        type Event = Unit;
-        type Data = Unit;
-        type Fetch = Unit;
-        type Effect = Unit;
-        type Wait = Unit;
-
-        type Aggregate = Unit;
-
-        type Store = ();
-    }
-
-    let msg = seq::<EmptyMsgTypes>([
-        defer_absolute(1),
-        seq([defer_absolute(2), seq([defer_absolute(3)])]),
-        seq([defer_absolute(4)]),
-        defer_absolute(5),
-    ]);
-    assert_eq!(
-        flatten_seq(msg),
-        seq([
+        let msg = seq::<EmptyMsgTypes>([
             defer_absolute(1),
-            defer_absolute(2),
-            defer_absolute(3),
-            defer_absolute(4),
-            defer_absolute(5)
-        ])
-    );
+            seq([defer_absolute(2), seq([defer_absolute(3)])]),
+            seq([defer_absolute(4)]),
+            defer_absolute(5),
+        ]);
+        assert_eq!(
+            flatten_seq(msg),
+            seq([
+                defer_absolute(1),
+                defer_absolute(2),
+                defer_absolute(3),
+                defer_absolute(4),
+                defer_absolute(5)
+            ])
+        );
 
-    let msg = seq::<EmptyMsgTypes>([defer_absolute(1)]);
-    assert_eq!(flatten_seq(msg), defer_absolute(1));
+        let msg = seq::<EmptyMsgTypes>([defer_absolute(1)]);
+        assert_eq!(flatten_seq(msg), defer_absolute(1));
 
-    let msg = conc::<EmptyMsgTypes>([defer_absolute(1)]);
-    assert_eq!(flatten_seq(msg), conc([defer_absolute(1)]));
+        let msg = conc::<EmptyMsgTypes>([defer_absolute(1)]);
+        assert_eq!(flatten_seq(msg), conc([defer_absolute(1)]));
 
-    let msg = conc::<EmptyMsgTypes>([seq([defer_absolute(1)])]);
-    assert_eq!(flatten_seq(msg), conc([seq([defer_absolute(1)])]));
+        let msg = conc::<EmptyMsgTypes>([seq([defer_absolute(1)])]);
+        assert_eq!(flatten_seq(msg), conc([seq([defer_absolute(1)])]));
 
-    let msg = seq::<EmptyMsgTypes>([data(Unit)]);
-    assert_eq!(flatten_seq(msg), data(Unit));
+        let msg = seq::<EmptyMsgTypes>([data(Unit)]);
+        assert_eq!(flatten_seq(msg), data(Unit));
 
-    let msg = conc::<EmptyMsgTypes>([seq([data(Unit)])]);
-    assert_eq!(flatten_seq(msg), conc([seq([data(Unit)])]));
+        let msg = conc::<EmptyMsgTypes>([seq([data(Unit)])]);
+        assert_eq!(flatten_seq(msg), conc([seq([data(Unit)])]));
 
-    let msg = conc::<EmptyMsgTypes>([conc([conc([data(Unit)])])]);
-    assert_eq!(flatten_conc(msg), data(Unit));
+        let msg = conc::<EmptyMsgTypes>([conc([conc([data(Unit)])])]);
+        assert_eq!(flatten_conc(msg), data(Unit));
+    }
 }
 
 #[derive(Debug)]
@@ -808,7 +732,7 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
         &mut self,
         item: QueueMsg<T>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
-        tracing::info!(%item, "enqueueing new item");
+        tracing::info!(?item, "enqueueing new item");
         self.0.lock().expect("mutex is poisoned").push_back(item);
         futures::future::ok(())
     }

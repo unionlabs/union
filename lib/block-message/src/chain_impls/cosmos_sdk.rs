@@ -314,15 +314,7 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
@@ -336,7 +328,6 @@ where
     deny_unknown_fields
 )]
 pub enum CosmosSdkData<C: CosmosSdkChainSealed> {
-    #[display(fmt = "ClientType")]
     ClientType(ClientType<C>),
 }
 
@@ -358,19 +349,11 @@ pub struct ClientType<#[cover] C: CosmosSdkChainSealed> {
 
 // FETCH
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChainSealed")
+    arbitrary(bound = "")
 )]
 #[serde(
     tag = "@type",
@@ -380,13 +363,9 @@ pub struct ClientType<#[cover] C: CosmosSdkChainSealed> {
     deny_unknown_fields
 )]
 pub enum CosmosSdkFetch<C: CosmosSdkChainSealed> {
-    #[display(fmt = "FetchBlocks({}..{})", "_0.from_height", "_0.to_height")]
     FetchBlocks(FetchBlocks<C>),
-    #[display(fmt = "FetchTransactions({}, {})", "_0.height", "_0.page")]
     FetchTransactions(FetchTransactions<C>),
-    #[display(fmt = "ClientTypeFromConnectionId({})", "_0.connection_id")]
     FetchClientTypeFromConnectionId(ClientTypeFromConnectionId),
-    #[display(fmt = "ClientTypeFromClientId({})", "_0.client_id")]
     FetchClientTypeFromClientId(ClientTypeFromClientId<C>),
 }
 
@@ -412,15 +391,7 @@ pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
     pub client_id: C::ClientId,
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
@@ -434,7 +405,6 @@ pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
     deny_unknown_fields
 )]
 pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
-    #[display(fmt = "AggregateEventWithClientType")]
     AggregateEventWithClientType(AggregateEventWithClientType<C>),
 }
 

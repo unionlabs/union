@@ -382,13 +382,7 @@ where
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -403,24 +397,14 @@ where
     arbitrary(bound = "Tr: ChainExt")
 )]
 pub enum CosmosDataMsg<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "TrustedCommit")]
     TrustedCommit(TrustedCommit<Hc, Tr>),
-    #[display(fmt = "UntrustedCommit")]
     UntrustedCommit(UntrustedCommit<Hc, Tr>),
-    #[display(fmt = "TrustedValidators")]
     TrustedValidators(TrustedValidators<Hc, Tr>),
-    #[display(fmt = "UntrustedValidators")]
     UntrustedValidators(UntrustedValidators<Hc, Tr>),
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -435,15 +419,10 @@ pub enum CosmosDataMsg<Hc: ChainExt, Tr: ChainExt> {
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub enum CosmosFetch<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "FetchTrustedCommit")]
     FetchTrustedCommit(FetchTrustedCommit<Hc, Tr>),
-    #[display(fmt = "FetchUntrustedCommit")]
     FetchUntrustedCommit(FetchUntrustedCommit<Hc, Tr>),
-    #[display(fmt = "FetchTrustedValidators")]
     FetchTrustedValidators(FetchTrustedValidators<Hc, Tr>),
-    #[display(fmt = "FetchUntrustedValidators")]
     FetchUntrustedValidators(FetchUntrustedValidators<Hc, Tr>),
-    #[display(fmt = "FetchAbciQuery")]
     AbciQuery(FetchAbciQuery<Hc, Tr>),
 }
 
@@ -492,13 +471,7 @@ where
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -513,7 +486,6 @@ where
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub enum CosmosAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<Hc, Tr>),
 }
 

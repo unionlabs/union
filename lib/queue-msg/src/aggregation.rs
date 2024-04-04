@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Display, ops::ControlFlow};
+use std::{collections::VecDeque, fmt::Debug, ops::ControlFlow};
 
 use frunk::{HCons, HNil};
 
@@ -48,24 +48,14 @@ impl<U, T, Tail> HListTryFromIterator<U> for HCons<T, Tail>
 where
     T: TryFrom<U, Error = U> + Into<U>,
     Tail: HListTryFromIterator<U>,
-    // REVIEW: Should debug be used instead?
-    U: Display,
+    U: Debug,
 {
     const LEN: usize = 1 + Tail::LEN;
 
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         match pluck::<T, U>(vec) {
             ControlFlow::Continue(invalid) => {
-                let invalid_str = invalid
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                tracing::error!(
-                    %invalid_str,
-                    "type didn't match"
-                );
+                tracing::error!(?invalid, "type didn't match");
 
                 Err(invalid)
             }
@@ -103,27 +93,20 @@ mod tests {
 
     #[test]
     fn hlist_try_from_iter() {
-        #[derive(Debug, PartialEq, derive_more::Display, enumorph::Enumorph)]
-        #[display(fmt = "{}")]
+        #[derive(Debug, PartialEq, enumorph::Enumorph)]
         pub enum A {
-            #[display(fmt = "{_0}")]
             B(B),
-            #[display(fmt = "{_0}")]
             C(C),
-            #[display(fmt = "{_0}")]
             D(D),
         }
 
-        #[derive(Debug, PartialEq, derive_more::Display)]
-        #[display(fmt = "B")]
+        #[derive(Debug, PartialEq)]
         pub struct B;
 
-        #[derive(Debug, PartialEq, derive_more::Display)]
-        #[display(fmt = "C")]
+        #[derive(Debug, PartialEq)]
         pub struct C;
 
-        #[derive(Debug, PartialEq, derive_more::Display)]
-        #[display(fmt = "D")]
+        #[derive(Debug, PartialEq)]
         pub struct D;
 
         // correct items, correct order

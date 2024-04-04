@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
 use chain_utils::GetChain;
 use futures::Future;
@@ -24,18 +24,6 @@ pub enum Fetch<C: ChainExt> {
 
     #[serde(untagged)]
     ChainSpecific(ChainSpecificFetch<C>),
-}
-
-impl<C: ChainExt> Display for Fetch<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Fetch::FetchBlock(fb) => write!(f, "FetchBlock({})", fb.height),
-            Fetch::FetchBlockRange(fbr) => {
-                write!(f, "FetchBlockRange({}..{})", fbr.from_height, fbr.to_height)
-            }
-            Fetch::ChainSpecific(cs) => write!(f, "{}", cs.0),
-        }
-    }
 }
 
 impl HandleFetch<BlockMessageTypes> for AnyChainIdentified<AnyFetch> {

@@ -1,12 +1,7 @@
 #![feature(trait_alias)]
 #![allow(clippy::type_complexity, async_fn_in_trait)]
 
-use std::{
-    collections::VecDeque,
-    fmt::{Debug, Display},
-    future::Future,
-    marker::PhantomData,
-};
+use std::{collections::VecDeque, fmt::Debug, future::Future, marker::PhantomData};
 
 use chain_utils::{
     cosmos::Cosmos,
@@ -222,7 +217,6 @@ pub type PathOf<Hc, Tr> = proof::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
 
 pub trait AnyLightClient {
     type Inner<Hc: ChainExt, Tr: ChainExt>: Debug
-        + Display
         + Clone
         + PartialEq
         + Serialize
@@ -233,13 +227,7 @@ pub trait AnyLightClient {
 pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[cfg_attr(
     feature = "arbitrary",
@@ -254,37 +242,29 @@ pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
     // The 08-wasm client tracking the state of Ethereum<Mainnet>.
-    #[display(fmt = "EthereumMainnetOnUnion({}, {})", "_0.chain_id", "_0.t")]
     EthereumMainnetOnUnion(
         Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
     ),
     // The solidity client on Ethereum<Mainnet> tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnEthereumMainnet({}, {})", "_0.chain_id", "_0.t")]
     UnionOnEthereumMainnet(
         Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
     ),
 
     // The 08-wasm client tracking the state of Ethereum<Minimal>.
-    #[display(fmt = "EthereumMinimalOnUnion({}, {})", "_0.chain_id", "_0.t")]
     EthereumMinimalOnUnion(
         Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
     ),
     // The solidity client on Ethereum<Minimal> tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnEthereumMinimal({}, {})", "_0.chain_id", "_0.t")]
     UnionOnEthereumMinimal(
         Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
     ),
 
     // The 08-wasm client tracking the state of Scroll.
-    #[display(fmt = "ScrollOnUnion({}, {})", "_0.chain_id", "_0.t")]
     ScrollOnUnion(Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>),
     // The solidity client on Scroll tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnScroll({}, {})", "_0.chain_id", "_0.t")]
     UnionOnScroll(Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>),
 
-    #[display(fmt = "CosmosOnUnion({}, {})", "_0.chain_id", "_0.t")]
     CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
-    #[display(fmt = "UnionOnCosmos({}, {})", "_0.chain_id", "_0.t")]
     UnionOnCosmos(Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>),
 }
 
@@ -413,7 +393,7 @@ pub enum LcError<Hc: ChainExt, Tr: ChainExt> {
     __Marker(PhantomData<fn() -> Tr>),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(macros::Debug, Serialize, Deserialize)]
 #[serde(
     bound(
         serialize = "T: ::serde::Serialize",
@@ -426,12 +406,13 @@ pub enum LcError<Hc: ChainExt, Tr: ChainExt> {
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: Chain, T: arbitrary::Arbitrary<'arbitrary>")
+    arbitrary(bound = "T: arbitrary::Arbitrary<'arbitrary>")
 )]
 pub struct Identified<Hc: Chain, Tr, T> {
     pub chain_id: ChainIdOf<Hc>,
     pub t: T,
     #[serde(skip)]
+    #[debug(skip)]
     #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
@@ -439,23 +420,6 @@ pub struct Identified<Hc: Chain, Tr, T> {
 impl<Hc: Chain, Tr, Data: PartialEq> PartialEq for Identified<Hc, Tr, Data> {
     fn eq(&self, other: &Self) -> bool {
         self.chain_id == other.chain_id && self.t == other.t
-    }
-}
-
-impl<Hc: Chain, Tr, Data: std::error::Error> std::error::Error for Identified<Hc, Tr, Data> {}
-
-impl<Hc: Chain, Tr, Data: std::fmt::Display> std::fmt::Display for Identified<Hc, Tr, Data> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{{}: {}}}", self.chain_id, self.t)
-    }
-}
-
-impl<Hc: Chain, Tr, Data: Debug> Debug for Identified<Hc, Tr, Data> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Identified")
-            .field("chain_id", &self.chain_id)
-            .field("t", &self.t)
-            .finish()
     }
 }
 
@@ -527,25 +491,16 @@ pub struct WasmConfig {
     // pub inner: T,
 }
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[display(fmt = "{_0}")]
 pub struct WasmDataMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[display(fmt = "{_0}")]
 pub struct WasmFetchMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
-#[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[display(fmt = "{_0}")]
 pub struct WasmAggregateMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 impl<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt> DoAggregate for identified!(WasmAggregateMsg<Hc, Tr>)

@@ -400,13 +400,7 @@ where
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -422,24 +416,14 @@ where
     arbitrary(bound = "Tr: ChainExt")
 )]
 pub enum UnionDataMsg<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "UntrustedCommit")]
     UntrustedCommit(UntrustedCommit<Hc, Tr>),
-    #[display(fmt = "TrustedValidators")]
     TrustedValidators(TrustedValidators<Hc, Tr>),
-    #[display(fmt = "UntrustedValidators")]
     UntrustedValidators(UntrustedValidators<Hc, Tr>),
-    #[display(fmt = "ProveResponse")]
     ProveResponse(ProveResponse<Tr>),
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -456,15 +440,10 @@ pub enum UnionDataMsg<Hc: ChainExt, Tr: ChainExt> {
 )]
 pub enum UnionFetch<Hc: ChainExt, Tr: ChainExt> {
     // FetchTrustedCommit { height: Height },
-    #[display(fmt = "FetchUntrustedCommit")]
     FetchUntrustedCommit(FetchUntrustedCommit<Hc, Tr>),
-    #[display(fmt = "FetchTrustedValidators")]
     FetchTrustedValidators(FetchTrustedValidators<Hc, Tr>),
-    #[display(fmt = "FetchUntrustedValidators")]
     FetchUntrustedValidators(FetchUntrustedValidators<Hc, Tr>),
-    #[display(fmt = "FetchProveRequest")]
     FetchProveRequest(FetchProveRequest),
-    #[display(fmt = "FetchAbciQuery")]
     AbciQuery(FetchAbciQuery<Hc, Tr>),
 }
 
@@ -552,13 +531,7 @@ where
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -573,9 +546,7 @@ where
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub enum UnionAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "AggregateProveRequest")]
     AggregateProveRequest(AggregateProveRequest<Hc, Tr>),
-    #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<Hc, Tr>),
 }
 

@@ -183,28 +183,15 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(deny_unknown_fields)]
 pub enum ScrollFetch {
-    #[display(fmt = "FetchEvents")]
     FetchEvents(FetchEvents<Mainnet>),
-    #[display(fmt = "FetchGetLogs({}..{})", "_0.from_slot", "_0.to_slot")]
     FetchGetLogs(FetchGetLogs),
-    #[display(fmt = "FetchBeaconBlockRange")]
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 
-    #[display(fmt = "FetchChannel")]
     FetchChannel(FetchChannel<Scroll>),
-    #[display(fmt = "FetchConnection")]
     FetchConnection(FetchConnection<Scroll>),
 }
 
@@ -217,13 +204,7 @@ pub struct FetchBatchIndex {
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
@@ -234,9 +215,7 @@ pub struct FetchBatchIndex {
     deny_unknown_fields
 )]
 pub enum ScrollAggregate {
-    #[display(fmt = "AggregateWithChannel")]
     AggregateWithChannel(AggregateWithChannel<Scroll>),
-    #[display(fmt = "AggregateWithChannel")]
     AggregateWithConnection(AggregateWithConnection<Scroll>),
 }
 
@@ -258,21 +237,11 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(deny_unknown_fields)]
 pub enum ScrollData {
-    #[display(fmt = "Channel")]
     Channel(ChannelData<Scroll>),
-    #[display(fmt = "Connection")]
     Connection(ConnectionData<Scroll>),
 }
 

@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use chain_utils::{Chains, GetChain};
 use macros::apply;
 use queue_msg::{
@@ -53,14 +51,6 @@ where
                     ])
                 }
             }
-        }
-    }
-}
-
-impl<C: ChainExt> Display for Wait<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Wait::Height(h) => write!(f, "Height({})", h.height),
         }
     }
 }

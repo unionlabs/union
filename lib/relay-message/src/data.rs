@@ -53,30 +53,6 @@ impl HandleData<RelayMessageTypes> for AnyLightClientIdentified<AnyData> {
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Data::SelfClientState(_) => write!(f, "SelfClientState"),
-            Data::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
-            Data::LatestHeight(LatestHeight { height, .. }) => write!(f, "LatestHeight({height})"),
-            Data::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
-            Data::ClientStateProof(_) => write!(f, "ClientStateProof"),
-            Data::ClientConsensusStateProof(_) => write!(f, "ClientConsensusStateProof"),
-            Data::ConnectionProof(_) => write!(f, "ConnectionProof"),
-            Data::ChannelEndProof(_) => write!(f, "ChannelEndProof"),
-            Data::CommitmentProof(_) => write!(f, "CommitmentProof"),
-            Data::AcknowledgementProof(_) => write!(f, "AcknowledgementProof"),
-            Data::ClientState(_) => write!(f, "ClientState"),
-            Data::ClientConsensusState(_) => write!(f, "ClientConsensusState"),
-            Data::Connection(_) => write!(f, "Connection"),
-            Data::ChannelEnd(_) => write!(f, "ChannelEnd"),
-            Data::Commitment(_) => write!(f, "Commitment"),
-            Data::Acknowledgement(_) => write!(f, "Acknowledgement"),
-            Data::LightClientSpecific(data) => write!(f, "LightClientSpecific({})", data.0),
-        }
-    }
-}
-
 #[queue_msg]
 pub struct SelfClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub self_client_state: ClientStateOf<Hc>,

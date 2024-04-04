@@ -15,7 +15,6 @@ beacon-api               = { workspace = true }
 chain-utils              = { workspace = true }
 contracts                = { workspace = true, features = ["providers"] }
 dashmap                  = { workspace = true }
-derive_more              = { workspace = true, features = ["display"] }
 enumorph                 = { workspace = true }
 ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }

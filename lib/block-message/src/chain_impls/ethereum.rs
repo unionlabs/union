@@ -551,15 +551,7 @@ where
     )
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
@@ -573,16 +565,11 @@ where
     deny_unknown_fields
 )]
 pub enum EthereumFetch<C: ChainSpec> {
-    #[display(fmt = "FetchEvents")]
     FetchEvents(FetchEvents<C>),
-    #[display(fmt = "FetchGetLogs")]
     FetchGetLogs(FetchGetLogs),
-    #[display(fmt = "FetchBeaconBlockRange")]
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 
-    #[display(fmt = "FetchChannel")]
     FetchChannel(FetchChannel<Ethereum<C>>),
-    #[display(fmt = "FetchConnection")]
     FetchConnection(FetchConnection<Ethereum<C>>),
 }
 
@@ -618,15 +605,7 @@ pub struct FetchConnection<Hc: EthereumChainExt> {
     pub path: ConnectionPath,
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
     tag = "@type",
@@ -636,9 +615,7 @@ pub struct FetchConnection<Hc: EthereumChainExt> {
     deny_unknown_fields
 )]
 pub enum EthereumAggregate<C: ChainSpec> {
-    #[display(fmt = "AggregateWithChannel")]
     AggregateWithChannel(AggregateWithChannel<Ethereum<C>>),
-    #[display(fmt = "AggregateWithChannel")]
     AggregateWithConnection(AggregateWithConnection<Ethereum<C>>),
 }
 
@@ -990,15 +967,7 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
@@ -1012,9 +981,7 @@ where
     deny_unknown_fields
 )]
 pub enum EthereumData<C: ChainSpec> {
-    #[display(fmt = "Channel")]
     Channel(ChannelData<Ethereum<C>>),
-    #[display(fmt = "Connection")]
     Connection(ConnectionData<Ethereum<C>>),
 }
 

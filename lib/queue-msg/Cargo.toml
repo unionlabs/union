@@ -22,8 +22,7 @@ tracing                  = { workspace = true }
 unionlabs                = { workspace = true }
 
 [dev-dependencies]
-derive_more = { workspace = true, features = ["display"] }
-enumorph    = "0.1.2"
+enumorph = "0.1.2"
 
 [features]
 default = []

@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Display, marker::PhantomData};
+use std::{collections::VecDeque, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
@@ -195,66 +195,6 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
             Aggregate::AckPacket(ack_packet) => do_aggregate(id(chain_id, ack_packet), data),
             Aggregate::WaitForTrustedHeight(agg) => do_aggregate(id(chain_id, agg), data),
             Aggregate::FetchCounterpartyStateproof(agg) => do_aggregate(id(chain_id, agg), data),
-        }
-    }
-}
-
-impl<Hc: ChainExt, Tr: ChainExt> Display for Aggregate<Hc, Tr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Aggregate::ConnectionOpenTry(_) => write!(f, "ConnectionOpenTry"),
-            Aggregate::ConnectionOpenAck(_) => write!(f, "ConnectionOpenAck"),
-            Aggregate::ConnectionOpenConfirm(_) => write!(f, "ConnectionOpenConfirm"),
-            Aggregate::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
-            Aggregate::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
-            Aggregate::ChannelOpenConfirm(_) => write!(f, "ChannelOpenConfirm"),
-            Aggregate::RecvPacket(_) => write!(f, "RecvPacket"),
-            Aggregate::AckPacket(_) => write!(f, "AckPacket"),
-            Aggregate::ConnectionFetchFromChannelEnd(_) => {
-                write!(f, "ConnectionFetchFromChannelEnd")
-            }
-            Aggregate::ChannelHandshakeMsgAfterUpdate(_) => {
-                write!(f, "ChannelHandshakeUpdateClient")
-            }
-            Aggregate::PacketUpdateClient(msg) => {
-                write!(
-                    f,
-                    "PacketUpdateClient::{}",
-                    match msg.packet_event {
-                        PacketEvent::Send(_) => "Send",
-                        PacketEvent::Recv(_) => "Recv",
-                    }
-                )
-            }
-            Aggregate::WaitForTrustedHeight(_) => write!(f, "WaitForTrustedHeight"),
-            Aggregate::FetchCounterpartyStateproof(_) => {
-                write!(f, "FetchCounterpartyStateproof")
-            }
-            Aggregate::UpdateClient(_) => write!(f, "UpdateClient"),
-            Aggregate::UpdateClientFromHeight(_) => write!(f, "UpdateClientFromHeight"),
-            Aggregate::CreateClient(_) => write!(f, "CreateClient"),
-            Aggregate::AggregateMsgAfterUpdate(msg) => {
-                write!(f, "AggregateMsgAfterUpdate::")?;
-                match msg {
-                    AggregateMsgAfterUpdate::ConnectionOpenTry(_) => {
-                        write!(f, "ConnectionOpenTry")
-                    }
-                    AggregateMsgAfterUpdate::ConnectionOpenAck(_) => {
-                        write!(f, "ConnectionOpenAck")
-                    }
-                    AggregateMsgAfterUpdate::ConnectionOpenConfirm(_) => {
-                        write!(f, "ConnectionOpenConfirm")
-                    }
-                    AggregateMsgAfterUpdate::ChannelOpenTry(_) => write!(f, "ChannelOpenTry"),
-                    AggregateMsgAfterUpdate::ChannelOpenAck(_) => write!(f, "ChannelOpenAck"),
-                    AggregateMsgAfterUpdate::ChannelOpenConfirm(_) => {
-                        write!(f, "ChannelOpenConfirm")
-                    }
-                    AggregateMsgAfterUpdate::RecvPacket(_) => write!(f, "RecvPacket"),
-                    AggregateMsgAfterUpdate::AckPacket(_) => write!(f, "AckPacket"),
-                }
-            }
-            Aggregate::LightClientSpecific(agg) => write!(f, "LightClientSpecific({})", agg.0),
         }
     }
 }

@@ -1,9 +1,6 @@
 #![feature(trait_alias)]
 
-use std::{
-    collections::VecDeque,
-    fmt::{Debug, Display},
-};
+use std::{collections::VecDeque, fmt::Debug};
 
 use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -45,13 +42,7 @@ impl QueueMsgTypes for BlockMessageTypes {
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[cfg_attr(
     feature = "arbitrary",
@@ -74,7 +65,6 @@ pub enum AnyChainIdentified<T: AnyChain> {
 
 pub trait AnyChain {
     type Inner<C: ChainExt>: Debug
-        + Display
         + Clone
         + PartialEq
         + Serialize
@@ -113,14 +103,6 @@ pub fn id<C: Chain, T: Debug + Clone + PartialEq>(
     t: T,
 ) -> Identified<C, T> {
     Identified::new(chain_id, t)
-}
-
-impl<C: Chain, Data: std::fmt::Display + Debug + Clone + PartialEq> std::fmt::Display
-    for Identified<C, Data>
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{{}: {}}}", self.chain_id, self.t)
-    }
 }
 
 macro_rules! any_enum {

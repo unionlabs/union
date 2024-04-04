@@ -765,13 +765,7 @@ try_from_relayer_msg! {
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -785,32 +779,18 @@ try_from_relayer_msg! {
     arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
 )]
 pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
-    #[display(fmt = "FinalityUpdate")]
     FetchFinalityUpdate(FetchFinalityUpdate),
-    #[display(fmt = "LightClientUpdates")]
     FetchLightClientUpdates(FetchLightClientUpdates),
-    #[display(fmt = "LightClientUpdate")]
     FetchLightClientUpdate(FetchLightClientUpdate),
-    #[display(fmt = "Bootstrap")]
     FetchBootstrap(FetchBootstrap),
-    #[display(fmt = "AccountUpdate")]
     FetchAccountUpdate(FetchAccountUpdate),
-    #[display(fmt = "BeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis),
-    #[display(fmt = "GetProof::{}", "_0.path")]
     FetchGetProof(GetProof<Ethereum<C>, Tr>),
-    #[display(fmt = "IbcState::{}", "_0.path")]
     FetchIbcState(FetchIbcState<Ethereum<C>, Tr>),
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -825,28 +805,16 @@ pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumDataMsg<C: ChainSpec, Tr: ChainExt> {
-    #[display(fmt = "FinalityUpdate")]
     FinalityUpdate(FinalityUpdate<C, Tr>),
-    #[display(fmt = "LightClientUpdates")]
     LightClientUpdates(LightClientUpdates<C, Tr>),
-    #[display(fmt = "LightClientUpdate")]
     LightClientUpdate(LightClientUpdate<C, Tr>),
-    #[display(fmt = "Bootstrap")]
     Bootstrap(BootstrapData<C, Tr>),
-    #[display(fmt = "AccountUpdate")]
     AccountUpdate(AccountUpdateData<C, Tr>),
-    #[display(fmt = "BeaconGenesis")]
     BeaconGenesis(BeaconGenesisData<C, Tr>),
 }
 
 #[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    enumorph::Enumorph,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -861,11 +829,8 @@ pub enum EthereumDataMsg<C: ChainSpec, Tr: ChainExt> {
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum EthereumAggregateMsg<C: ChainSpec, Tr: ChainExt> {
-    #[display(fmt = "CreateUpdate")]
     CreateUpdate(CreateUpdateData<C, Tr>),
-    #[display(fmt = "MakeCreateUpdates")]
     MakeCreateUpdates(MakeCreateUpdatesData<C, Tr>),
-    #[display(fmt = "MakeCreateUpdatesFromLightClientUpdates")]
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>),
 }
 

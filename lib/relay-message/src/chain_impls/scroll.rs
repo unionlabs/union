@@ -369,15 +369,7 @@ where
     }
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[serde(
     bound(serialize = "", deserialize = ""),
     tag = "@type",
@@ -390,22 +382,16 @@ where
     arbitrary(bound = "")
 )]
 pub enum ScrollFetch<Tr: ChainExt> {
-    #[display(fmt = "GetProof::{}", "_0.path")]
     FetchGetProof(GetProof<Scroll, Tr>),
-    #[display(fmt = "IbcState::{}", "_0.path")]
     FetchIbcState(FetchIbcState<Scroll, Tr>),
 
     // - scroll rollup contract root proof
-    #[display(fmt = "FetchRollupContractRootProof")]
     FetchRollupContractRootProof(FetchRollupContractRootProof),
     // - scroll latest batch index proof against rollup contract
-    #[display(fmt = "FetchLatestBatchIndexProof")]
     FetchLatestBatchIndexProof(FetchLatestBatchIndexProof),
     // - scroll finalized root at batch index against rollup contract
-    #[display(fmt = "FetchScrollFinalizedRootProof")]
     FetchScrollFinalizedRootProof(FetchScrollFinalizedRootProof),
     // - ibc contract root against finalized root on L2
-    #[display(fmt = "FetchIbcContractRootProof")]
     FetchIbcContractRootProof(FetchIbcContractRootProof),
 }
 
@@ -439,15 +425,7 @@ pub struct FetchIbcContractRootProof {
     pub ibc_contract_address: H160,
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[serde(
     bound(serialize = "", deserialize = ""),
     tag = "@type",
@@ -460,13 +438,9 @@ pub struct FetchIbcContractRootProof {
     arbitrary(bound = "")
 )]
 pub enum ScrollData<Tr: ChainExt> {
-    #[display(fmt = "RollupContractRootProof")]
     RollupContractRootProof(RollupContractRootProof<Tr>),
-    #[display(fmt = "LatestBatchIndexProof")]
     LatestBatchIndexProof(LatestBatchIndexProof<Tr>),
-    #[display(fmt = "ScrollFinalizedRootProof")]
     ScrollFinalizedRootProof(ScrollFinalizedRootProof<Tr>),
-    #[display(fmt = "IbcContractRootProof")]
     IbcContractRootProof(IbcContractRootProof<Tr>),
 }
 
@@ -510,15 +484,7 @@ pub struct IbcContractRootProof<#[cover] Tr: ChainExt> {
     pub proof: AccountProof,
 }
 
-#[derive(
-    DebugNoBound,
-    CloneNoBound,
-    PartialEqNoBound,
-    Serialize,
-    Deserialize,
-    derive_more::Display,
-    Enumorph,
-)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, Enumorph)]
 #[serde(
     bound(serialize = "", deserialize = ""),
     tag = "@type",
@@ -531,7 +497,6 @@ pub struct IbcContractRootProof<#[cover] Tr: ChainExt> {
     arbitrary(bound = "")
 )]
 pub enum ScrollAggregate<Tr: ChainExt> {
-    #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<Tr>),
 }
 

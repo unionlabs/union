@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use macros::apply;
 use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
@@ -24,16 +22,6 @@ impl HandleData<BlockMessageTypes> for AnyChainIdentified<AnyData> {
         _store: &<BlockMessageTypes as QueueMsgTypes>::Store,
     ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         Ok(data(self))
-    }
-}
-
-impl<C: ChainExt> Display for Data<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Data::IbcEvent(event) => write!(f, "IbcEvent({})", event.event.name()),
-            Data::LatestHeight(lh) => write!(f, "LatestHeight({})", lh.0),
-            Data::ChainSpecific(cs) => write!(f, "{}", cs.0),
-        }
     }
 }
 
