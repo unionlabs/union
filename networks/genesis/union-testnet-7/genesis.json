@@ -1249,12 +1249,7 @@
         "clients_consensus": [],
         "clients_metadata": [],
         "params": {
-          "allowed_clients": [
-            "06-solomachine",
-            "07-tendermint",
-            "08-wasm",
-            "09-localhost"
-          ]
+          "allowed_clients": ["06-solomachine", "07-tendermint", "08-wasm", "09-localhost"]
         },
         "create_localhost": false,
         "next_client_sequence": "0"
@@ -1293,9 +1288,7 @@
         "port": "icahost",
         "params": {
           "host_enabled": true,
-          "allow_messages": [
-            "*"
-          ]
+          "allow_messages": ["*"]
         }
       }
     },
@@ -1392,9 +1385,7 @@
         "max_bytes": "1048576"
       },
       "validator": {
-        "pub_key_types": [
-          "bn254"
-        ]
+        "pub_key_types": ["bn254"]
       },
       "version": {
         "app": "0"
