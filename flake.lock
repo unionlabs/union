@@ -421,6 +421,23 @@
         "type": "github"
       }
     },
+    "osmosis": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1712018893,
+        "narHash": "sha256-u/1/aMEPt78is4G7/pkjttDLb1IGw3jMP2MW518lLkM=",
+        "owner": "osmosis-labs",
+        "repo": "osmosis",
+        "rev": "7892e2f9e9528bc547c54db2b43cd01eda6a9bc4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "osmosis-labs",
+        "ref": "v24.0.0-rc0",
+        "repo": "osmosis",
+        "type": "github"
+      }
+    },
     "public-awesome-launchpad": {
       "flake": false,
       "locked": {
@@ -460,6 +477,7 @@
         "nixpkgs-go": "nixpkgs-go",
         "nixpkgs-solc": "nixpkgs-solc",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "osmosis": "osmosis",
         "public-awesome-launchpad": "public-awesome-launchpad",
         "rust-overlay": "rust-overlay",
         "stargaze": "stargaze",

@@ -87,10 +87,16 @@
       url = "github:biomejs/biome/cli/v1.6.4";
       flake = false;
     };
+
     stargaze = {
       url = "git+https://github.com/public-awesome/stargaze?ref=feature/sdk-v050&submodules=1";
       flake = false;
     };
+    osmosis = {
+      url = "github:osmosis-labs/osmosis/v24.0.0-rc0";
+      flake = false;
+    };
+
     public-awesome-launchpad = {
       type = "github";
       owner = "public-awesome";
@@ -205,6 +211,7 @@
         ./networks/devnet.nix
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
+        ./networks/osmosis.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
