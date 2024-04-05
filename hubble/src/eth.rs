@@ -130,6 +130,12 @@ async fn index_blocks(
         .try_chunks(200)
         .map_err(|err| err.1)
         .try_fold(pool, |pool, chunk| async {
+            info!(
+                chain_id.canonical,
+                "indexing blocks for chunk: {}..{}",
+                &chunk.first().unwrap(),
+                &chunk.last().unwrap()
+            );
             let tx = pool.begin().await.map_err(Report::from)?;
             let inserts = FuturesOrdered::from_iter(
                 chunk
@@ -145,7 +151,7 @@ async fn index_blocks(
                             return Err(err);
                         }
                         Ok(info) => {
-                            info!(
+                            debug!(
                                 chain_id.canonical,
                                 height = info.height,
                                 hash = info.hash,
@@ -295,7 +301,7 @@ impl BlockInsert {
             match Self::from_provider(chain_id, height, provider).await {
                 Ok(block) => return Ok((count, block)),
                 Err(err) => {
-                    if !err.retryable() && count > max_retries {
+                    if !err.retryable() || count > max_retries {
                         return Err(err.into());
                     }
                     count += 1;

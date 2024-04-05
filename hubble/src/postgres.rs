@@ -59,7 +59,7 @@ pub struct Log<Chain: ChainType, T> {
 }
 
 /// ChainIds track both the database ID of a chain, as well as some canonical representation for
-/// degug logging
+/// debug logging.
 ///
 /// # Implementation Detail
 /// ChainIds contain leaked values, hence care should be taken when creating them.
