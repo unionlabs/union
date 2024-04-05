@@ -1,3 +1,6 @@
+# Note how this is very similar to hubble.nix. Perhaps it makes sense to make some sort of 
+# offchain service flake-part template function
+
 { self, ... }: {
   perSystem = { self', pkgs, crane, ... }:
     let

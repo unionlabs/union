@@ -1,11 +1,13 @@
 [package]
-name = "nostromo"
-version = "0.1.0"
-edition.workspace = true
+edition.workspace      = true
 license-file.workspace = true
-repository.workspace = true
+name                   = "nostromo"
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
+axum  = { workspace = true, features = ["tokio", "http1", "http2"]  }
+tokio = { workspace = true, features = ["full"] }
 
 [lints]
 workspace = true

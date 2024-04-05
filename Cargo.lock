@@ -3649,6 +3649,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "nostromo"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "tokio",
+]
+
+[[package]]
 name = "nu-ansi-term"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
