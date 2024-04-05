@@ -1,7 +1,11 @@
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{routing::get, Router};
+
+enum NftMeta {
+    ERC721(ERC721Meta),
+    SG721(SG721Meta),
+}
+
+struct ERC721Meta {}
 
 #[tokio::main]
 async fn main() {
