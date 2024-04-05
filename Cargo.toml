@@ -42,7 +42,7 @@ members = [
   "lib/block-message",
   "lib/scroll-api",
   "lib/scroll-rpc",
-  "lib/voyager-message",
+  "lib/voyager-message", "nostromo",
 ]
 
 [workspace.package]

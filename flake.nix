@@ -171,6 +171,7 @@
         ./voyager/voyager.nix
         ./lib/ics23/ics23.nix
         ./hubble/hubble.nix
+        ./nostromo/nostromo.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./lib/tendermint-verifier/tendermint-verifier.nix
         ./lib/scroll-verifier/scroll-verifier.nix
