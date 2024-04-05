@@ -392,6 +392,7 @@ govkeeper
 govtypes
 govv1
 govv1beta1
+gowork
 graphqlsp
 graphqurl
 groomlake
@@ -588,6 +589,7 @@ oneof
 openapi
 openapiv
 opsz
+osmosisd
 outdir
 outfile
 overrrides
@@ -880,6 +882,7 @@ unstorage
 unsuffixed
 unvalidated
 unwithdrawn
+uosmo
 upgradability
 upgradeclient
 upgradekeeper
