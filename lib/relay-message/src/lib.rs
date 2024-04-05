@@ -208,13 +208,20 @@ pub trait AnyLightClient {
 
 pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
 
+macro_rules! lc {
+    // A on B
+    ($Tr:ty => $Hc:ty) => {
+        Identified<$Hc, $Tr, InnerOf<T, $Hc, $Tr>>
+    };
+}
+
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
 )]
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "T: AnyLightClient")
+    arbitrary(bound = "")
 )]
 #[serde(
     from = "AnyLightClientIdentifiedSerde<T>",
@@ -223,31 +230,25 @@ pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
-    // The 08-wasm client tracking the state of Ethereum<Mainnet>.
-    EthereumMainnetOnUnion(
-        Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
-    ),
-    // The solidity client on Ethereum<Mainnet> tracking the state of Wasm<Union>.
-    UnionOnEthereumMainnet(
-        Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
-    ),
+    /// The 08-wasm client tracking the state of Ethereum<Mainnet>.
+    EthereumMainnetOnUnion(lc!(Ethereum<Mainnet> => Wasm<Union>)),
+    /// The solidity client on Ethereum<Mainnet> tracking the state of Wasm<Union>.
+    UnionOnEthereumMainnet(lc!(Wasm<Union> => Ethereum<Mainnet>)),
 
-    // The 08-wasm client tracking the state of Ethereum<Minimal>.
-    EthereumMinimalOnUnion(
-        Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
-    ),
-    // The solidity client on Ethereum<Minimal> tracking the state of Wasm<Union>.
-    UnionOnEthereumMinimal(
-        Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
-    ),
+    /// The 08-wasm client tracking the state of Ethereum<Minimal>.
+    EthereumMinimalOnUnion(lc!(Ethereum<Minimal> => Wasm<Union>)),
+    /// The solidity client on Ethereum<Minimal> tracking the state of Wasm<Union>.
+    UnionOnEthereumMinimal(lc!(Wasm<Union> => Ethereum<Minimal>)),
 
-    // The 08-wasm client tracking the state of Scroll.
-    ScrollOnUnion(Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>),
-    // The solidity client on Scroll tracking the state of Wasm<Union>.
-    UnionOnScroll(Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>),
+    /// The 08-wasm client tracking the state of Scroll.
+    ScrollOnUnion(lc!(Scroll => Wasm<Union>)),
+    /// The solidity client on Scroll tracking the state of Wasm<Union>.
+    UnionOnScroll(lc!(Wasm<Union> => Scroll)),
 
-    CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
-    UnionOnCosmos(Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>),
+    /// The 08-wasm client tracking the state of Cosmos.
+    CosmosOnUnion(lc!(Wasm<Cosmos> => Union)),
+    /// The solidity client on Cosmos tracking the state of Wasm<Union>.
+    UnionOnCosmos(lc!(Union => Wasm<Cosmos>)),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -255,64 +256,24 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
 #[allow(clippy::large_enum_variant)]
 enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
     EthereumMainnetOnUnion(
-        Inner<
-            Wasm<Union>,
-            Ethereum<Mainnet>,
-            Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
-        >,
+        Inner<Wasm<Union>, Ethereum<Mainnet>, lc!(Ethereum<Mainnet> => Wasm<Union>)>,
     ),
     UnionOnEthereumMainnet(
-        Inner<
-            Ethereum<Mainnet>,
-            Wasm<Union>,
-            Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
-        >,
+        Inner<Ethereum<Mainnet>, Wasm<Union>, lc!(Wasm<Union> => Ethereum<Mainnet>)>,
     ),
 
     EthereumMinimalOnUnion(
-        Inner<
-            Wasm<Union>,
-            Ethereum<Minimal>,
-            Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
-        >,
+        Inner<Wasm<Union>, Ethereum<Minimal>, lc!(Ethereum<Minimal> => Wasm<Union>)>,
     ),
     UnionOnEthereumMinimal(
-        Inner<
-            Ethereum<Minimal>,
-            Wasm<Union>,
-            Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
-        >,
+        Inner<Ethereum<Minimal>, Wasm<Union>, lc!(Wasm<Union> => Ethereum<Minimal>)>,
     ),
 
-    ScrollOnUnion(
-        Inner<
-            Wasm<Union>,
-            Scroll,
-            Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>,
-        >,
-    ),
-    UnionOnScroll(
-        Inner<
-            Scroll,
-            Wasm<Union>,
-            Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>,
-        >,
-    ),
+    ScrollOnUnion(Inner<Wasm<Union>, Scroll, lc!(Scroll => Wasm<Union>)>),
+    UnionOnScroll(Inner<Scroll, Wasm<Union>, lc!(Wasm<Union> => Scroll)>),
 
-    CosmosOnUnion(
-        Inner<
-            Union,
-            Wasm<Cosmos>,
-            Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>,
-        >,
-    ),
-    UnionOnCosmos(
-        Inner<
-            Wasm<Cosmos>,
-            Union,
-            Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>,
-        >,
-    ),
+    CosmosOnUnion(Inner<Union, Wasm<Cosmos>, lc!(Wasm<Cosmos> => Union)>),
+    UnionOnCosmos(Inner<Wasm<Cosmos>, Union, lc!(Union => Wasm<Cosmos>)>),
 }
 
 impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIdentifiedSerde<T> {
@@ -750,20 +711,20 @@ where
 
 #[derive(Serialize, Deserialize)]
 #[serde(
-    bound(serialize = "S: Serialize", deserialize = "S: for<'d> Deserialize<'d>"),
+    bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>"),
     deny_unknown_fields
 )]
-struct Inner<Hc: Chain, Tr: Chain, S> {
+struct Inner<Hc: Chain, Tr: Chain, T> {
     #[serde(rename = "@host_chain", with = "::unionlabs::traits::from_str_exact")]
     host_chain: Hc::ChainType,
     #[serde(rename = "@tracking", with = "::unionlabs::traits::from_str_exact")]
     tracking: Tr::ChainType,
     #[serde(rename = "@value")]
-    inner: S,
+    inner: T,
 }
 
-impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
-    fn new(s: S) -> Inner<Hc, Tr, S> {
+impl<Hc: Chain, Tr: Chain, T> Inner<Hc, Tr, T> {
+    fn new(s: T) -> Inner<Hc, Tr, T> {
         Self {
             host_chain: Hc::ChainType::default(),
             tracking: Tr::ChainType::default(),

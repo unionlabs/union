@@ -50,6 +50,6 @@ name             = "svelte"
 name   = "astro"
 source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "dfa0893bdc4bdfada102043404758c66e3580568" }
 
-[[grammar]]
-name   = "sql"
-source = { git = "https://github.com/DerekStride/tree-sitter-sql", rev = "b6b1f7f7e70e869c655705c591cbdf3e8a807ad6" }
+# [[grammar]]
+# name   = "sql"
+# source = { git = "https://github.com/DerekStride/tree-sitter-sql", rev = "b6b1f7f7e70e869c655705c591cbdf3e8a807ad6" }
