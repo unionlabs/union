@@ -13,11 +13,12 @@ use relay_message::{
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
     ibc::core::client::height::Height,
-    id::ClientId,
-    proof::{
+    ics24::{
         self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath,
+        CommitmentPath, ConnectionPath, IbcPath, NextSequenceAckPath, NextSequenceRecvPath,
+        NextSequenceSendPath, ReceiptPath,
     },
+    id::ClientId,
     result_unwrap,
     traits::HeightOf,
     QueryHeight,
@@ -74,32 +75,50 @@ pub enum Command {
 #[derive(Debug, Subcommand)]
 pub enum QueryCmd {
     #[command(subcommand)]
-    IbcPath(proof::Path<ClientId, Height>),
+    IbcPath(ics24::Path<ClientId, Height>),
 }
 
 pub async fn any_state_proof_to_json<Hc, Tr>(
     chains: Arc<Chains>,
-    path: proof::Path<Hc::ClientId, Tr::Height>,
+    path: ics24::Path<Hc::ClientId, Tr::Height>,
     c: Hc,
     height: QueryHeight<HeightOf<Hc>>,
 ) -> String
 where
     Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr>,
     Tr: ChainExt,
+
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
+
     Identified<Hc, Tr, IbcState<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
         IsAggregateData,
     Identified<Hc, Tr, IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
         IsAggregateData,
+
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ConnectionPath, Hc, Tr>>: IsAggregateData,
+
     Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
+
     Identified<Hc, Tr, IbcState<CommitmentPath, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<CommitmentPath, Hc, Tr>>: IsAggregateData,
+
     Identified<Hc, Tr, IbcState<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
+
+    Identified<Hc, Tr, IbcState<ReceiptPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<ReceiptPath, Hc, Tr>>: IsAggregateData,
+
+    Identified<Hc, Tr, IbcState<NextSequenceSendPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<NextSequenceSendPath, Hc, Tr>>: IsAggregateData,
+
+    Identified<Hc, Tr, IbcState<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
+
+    Identified<Hc, Tr, IbcState<NextSequenceAckPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<NextSequenceAckPath, Hc, Tr>>: IsAggregateData,
 {
     use serde_json::to_string_pretty as json;
 
@@ -116,7 +135,7 @@ where
     ];
 
     match path {
-        proof::Path::ClientStatePath(path) => json(
+        ics24::Path::ClientState(path) => json(
             &run_to_completion::<_, _, _, InMemoryQueue<_>>(
                 FetchStateProof {
                     path,
@@ -129,7 +148,7 @@ where
             )
             .await,
         ),
-        proof::Path::ClientConsensusStatePath(path) => json(
+        ics24::Path::ClientConsensusState(path) => json(
             &run_to_completion::<_, _, _, InMemoryQueue<_>>(
                 FetchStateProof {
                     path,
@@ -142,7 +161,7 @@ where
             )
             .await,
         ),
-        proof::Path::ConnectionPath(path) => json(
+        ics24::Path::Connection(path) => json(
             &run_to_completion::<_, _, _, InMemoryQueue<_>>(
                 FetchStateProof {
                     path,
@@ -155,7 +174,7 @@ where
             )
             .await,
         ),
-        proof::Path::ChannelEndPath(path) => json(
+        ics24::Path::ChannelEnd(path) => json(
             &run_to_completion::<_, _, _, InMemoryQueue<_>>(
                 FetchStateProof {
                     path,
@@ -168,7 +187,7 @@ where
             )
             .await,
         ),
-        proof::Path::CommitmentPath(path) => json(
+        ics24::Path::Commitment(path) => json(
             &run_to_completion::<_, _, _, InMemoryQueue<_>>(
                 FetchStateProof {
                     path,
@@ -181,7 +200,59 @@ where
             )
             .await,
         ),
-        proof::Path::AcknowledgementPath(path) => json(
+        ics24::Path::Acknowledgement(path) => json(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+                FetchStateProof {
+                    path,
+                    height,
+                    __marker: PhantomData,
+                },
+                chains,
+                (),
+                msgs,
+            )
+            .await,
+        ),
+        ics24::Path::Receipt(path) => json(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+                FetchStateProof {
+                    path,
+                    height,
+                    __marker: PhantomData,
+                },
+                chains,
+                (),
+                msgs,
+            )
+            .await,
+        ),
+        ics24::Path::NextSequenceSend(path) => json(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+                FetchStateProof {
+                    path,
+                    height,
+                    __marker: PhantomData,
+                },
+                chains,
+                (),
+                msgs,
+            )
+            .await,
+        ),
+        ics24::Path::NextSequenceRecv(path) => json(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+                FetchStateProof {
+                    path,
+                    height,
+                    __marker: PhantomData,
+                },
+                chains,
+                (),
+                msgs,
+            )
+            .await,
+        ),
+        ics24::Path::NextSequenceAck(path) => json(
             &run_to_completion::<_, _, _, InMemoryQueue<_>>(
                 FetchStateProof {
                     path,
@@ -203,7 +274,7 @@ where
 struct StateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     #[serde(with = "::serde_utils::string")]
     path: P,
-    state: P::Output,
+    state: P::Value,
     proof: Hc::StateProof,
     height: HeightOf<Hc>,
 }

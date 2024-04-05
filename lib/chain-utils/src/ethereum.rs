@@ -12,7 +12,7 @@ use contracts::{
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
         GetHashedPacketAcknowledgementCommitmentCall,
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, IBCHandler,
+        GetHashedPacketCommitmentReturn, IBCHandler, PacketReceiptsCall, PacketReceiptsReturn,
     },
     ibc_packet::{IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
@@ -41,12 +41,12 @@ use unionlabs::{
             tendermint::fraction::Fraction,
         },
     },
-    id::{ChannelId, ClientId, PortId},
-    option_unwrap, promote,
-    proof::{
+    ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
+    id::{ChannelId, ClientId, PortId},
+    option_unwrap, promote,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
     uint::U256,
 };
@@ -543,7 +543,7 @@ pub trait IbcHandlerExt<M: Middleware> {
         &self,
         execution_block_number: u64,
         path: P,
-    ) -> impl Future<Output = Result<P::Output, ContractError<M>>> + Send
+    ) -> impl Future<Output = Result<P::Value, ContractError<M>>> + Send
     where
         P: EthereumStateRead<Hc, Tr> + 'static,
         Hc: EthereumChain,
@@ -569,7 +569,7 @@ impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
         &self,
         execution_block_number: u64,
         path: P,
-    ) -> Result<P::Output, ContractError<M>>
+    ) -> Result<P::Value, ContractError<M>>
     where
         P: EthereumStateRead<Hc, Tr> + 'static,
         Hc: EthereumChain,
@@ -685,6 +685,7 @@ impl_eth_call_ext! {
     GetChannelCall                               -> GetChannelReturn;
     GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
     GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
+    PacketReceiptsCall                           -> PacketReceiptsReturn;
 }
 
 pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
@@ -701,14 +702,14 @@ where
 
     fn into_eth_call(self) -> Self::EthCall;
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output;
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value;
 }
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientStatePath<ClientIdOf<Hc>>
 where
     Hc: EthereumChain,
     Tr: Chain,
-    Self::Output: Decode<Hc::IbcStateEncoding>,
+    Self::Value: Decode<Hc::IbcStateEncoding>,
 {
     type EthCall = GetClientStateCall;
 
@@ -718,8 +719,8 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
-        <Self::Output as Decode<EthAbi>>::decode(&encoded.0).unwrap()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
+        <Self::Value as Decode<EthAbi>>::decode(&encoded.0).unwrap()
     }
 }
 
@@ -727,7 +728,7 @@ impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientConsensusStatePath<ClientIdOf<H
 where
     Hc: EthereumChain,
     Tr: Chain,
-    Self::Output: Decode<EthAbi>,
+    Self::Value: Decode<EthAbi>,
 {
     type EthCall = GetConsensusStateCall;
 
@@ -738,8 +739,8 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
-        <Self::Output as Decode<EthAbi>>::decode(&encoded.consensus_state_bytes).unwrap()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
+        <Self::Value as Decode<EthAbi>>::decode(&encoded.consensus_state_bytes).unwrap()
     }
 }
 
@@ -756,7 +757,7 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
         encoded.0.try_into().unwrap()
     }
 }
@@ -775,7 +776,7 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
         encoded.0.try_into().unwrap()
     }
 }
@@ -795,7 +796,7 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
         encoded.0.into()
     }
 }
@@ -815,7 +816,7 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
         encoded.0.into()
     }
 }

@@ -6,7 +6,7 @@ use queue_msg::{
 };
 use unionlabs::{
     ibc::core::client::height::IsHeight,
-    proof::ClientStatePath,
+    ics24::ClientStatePath,
     traits::{ChainIdOf, ClientState, HeightOf},
 };
 

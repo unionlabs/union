@@ -47,7 +47,7 @@ use unionlabs::{
             trusted_sync_committee::{ActiveSyncCommittee, TrustedSyncCommittee},
         },
     },
-    proof::{ClientStatePath, Path},
+    ics24::{ClientStatePath, Path},
     traits::{Chain, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
     uint::U256,
     MaybeRecoverableError,
@@ -575,37 +575,61 @@ where
     };
 
     match get_proof.path {
-        Path::ClientStatePath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+        Path::ClientState(path) => Data::from(IbcProof::<_, Hc, Tr> {
             proof,
             height: get_proof.height,
             path,
             __marker: PhantomData,
         }),
-        Path::ClientConsensusStatePath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+        Path::ClientConsensusState(path) => Data::from(IbcProof::<_, Hc, Tr> {
             proof,
             height: get_proof.height,
             path,
             __marker: PhantomData,
         }),
-        Path::ConnectionPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+        Path::Connection(path) => Data::from(IbcProof::<_, Hc, Tr> {
             proof,
             height: get_proof.height,
             path,
             __marker: PhantomData,
         }),
-        Path::ChannelEndPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+        Path::ChannelEnd(path) => Data::from(IbcProof::<_, Hc, Tr> {
             proof,
             height: get_proof.height,
             path,
             __marker: PhantomData,
         }),
-        Path::CommitmentPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+        Path::Commitment(path) => Data::from(IbcProof::<_, Hc, Tr> {
             proof,
             height: get_proof.height,
             path,
             __marker: PhantomData,
         }),
-        Path::AcknowledgementPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+        Path::Acknowledgement(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::Receipt(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::NextSequenceSend(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::NextSequenceRecv(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::NextSequenceAck(path) => Data::from(IbcProof::<_, Hc, Tr> {
             proof,
             height: get_proof.height,
             path,
@@ -629,7 +653,7 @@ where
         .await;
 
     match path {
-        Path::ClientStatePath(path) => Data::from(IbcState {
+        Path::ClientState(path) => Data::from(IbcState {
             state: c
                 .ibc_handler()
                 .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
@@ -638,7 +662,7 @@ where
             height,
             path,
         }),
-        Path::ClientConsensusStatePath(path) => Data::from(IbcState {
+        Path::ClientConsensusState(path) => Data::from(IbcState {
             state: c
                 .ibc_handler()
                 .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
@@ -647,7 +671,7 @@ where
             height,
             path,
         }),
-        Path::ConnectionPath(path) => Data::from(IbcState {
+        Path::Connection(path) => Data::from(IbcState {
             state: c
                 .ibc_handler()
                 .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
@@ -656,7 +680,7 @@ where
             height,
             path,
         }),
-        Path::ChannelEndPath(path) => Data::from(IbcState {
+        Path::ChannelEnd(path) => Data::from(IbcState {
             state: c
                 .ibc_handler()
                 .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
@@ -665,7 +689,7 @@ where
             height,
             path,
         }),
-        Path::CommitmentPath(path) => Data::from(IbcState {
+        Path::Commitment(path) => Data::from(IbcState {
             state: c
                 .ibc_handler()
                 .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
@@ -674,7 +698,7 @@ where
             height,
             path,
         }),
-        Path::AcknowledgementPath(path) => Data::from(IbcState {
+        Path::Acknowledgement(path) => Data::from(IbcState {
             state: c
                 .ibc_handler()
                 .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
@@ -683,6 +707,11 @@ where
             height,
             path,
         }),
+        // unimplemented until https://github.com/unionlabs/union/issues/1663 is resolved
+        Path::Receipt(_path) => todo!(),
+        Path::NextSequenceSend(_path) => todo!(),
+        Path::NextSequenceRecv(_path) => todo!(),
+        Path::NextSequenceAck(_path) => todo!(),
     }
 }
 

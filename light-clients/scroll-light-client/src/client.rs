@@ -24,7 +24,7 @@ use unionlabs::{
             wasm,
         },
     },
-    proof::Path,
+    ics24::Path,
     uint::U256,
 };
 
@@ -261,7 +261,7 @@ fn do_verify_membership(
         .map_err(|_| Error::UnknownIbcPath(path))?;
 
     let canonical_value = match path {
-        Path::ClientStatePath(_) => {
+        Path::ClientState(_) => {
             Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
                 .map_err(|e| Error::DecodeFromProto {
                     reason: format!("{e:?}"),
@@ -269,7 +269,7 @@ fn do_verify_membership(
                 .0
                 .encode_as::<EthAbi>()
         }
-        Path::ClientConsensusStatePath(_) => Any::<
+        Path::ClientConsensusState(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
         >::decode(raw_value.as_ref())
         .map_err(|e| Error::DecodeFromProto {

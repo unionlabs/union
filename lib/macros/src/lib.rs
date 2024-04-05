@@ -1,4 +1,4 @@
-use std::convert;
+use std::{collections::HashMap, convert};
 
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro2::{Literal, Span};
@@ -867,4 +867,153 @@ impl Parse for FromRawAttrs {
             Err(syn::Error::new(meta_span, "`raw(...)` is required"))
         }
     }
+}
+
+#[proc_macro_attribute]
+pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
+    let item_struct = parse_macro_input!(ts as ItemStruct);
+    let path = parse_macro_input!(meta as LitStr);
+
+    let (impl_generics, ty_generics, where_clause) = item_struct.generics.split_for_impl();
+
+    let segments = parse_ibc_path(path.clone());
+
+    let Fields::Named(ref fields) = item_struct.fields else {
+        panic!("expected named fields")
+    };
+
+    assert_eq!(
+        fields
+            .named
+            .iter()
+            .map(|x| x.ident.as_ref().unwrap())
+            .collect::<Vec<_>>(),
+        segments
+            .iter()
+            .filter_map(|x| match x {
+                Segment::Static(_) => None,
+                Segment::Variable(x) => Some(x),
+            })
+            .collect::<Vec<_>>()
+    );
+
+    let fields_map = fields
+        .named
+        .iter()
+        .map(|f| (f.ident.as_ref().unwrap(), &f.ty))
+        .collect::<HashMap<_, _>>();
+
+    let parse_body = segments
+        .iter()
+        .map(|x| match x {
+            Segment::Static(static_seg) => quote! {
+                match it.next() {
+                    Some(segment) => {
+                        if segment != #static_seg {
+                            return Err(PathParseError::InvalidStaticSegment {
+                                expected: #static_seg,
+                                found: segment.to_string(),
+                            })
+                        }
+                    }
+                    None => return Err(PathParseError::MissingStaticSegment(#static_seg)),
+                }
+            },
+            Segment::Variable(variable_seg) => {
+                let ty = fields_map[variable_seg];
+                quote! {
+                    let #variable_seg = match it.next() {
+                        Some(segment) => segment
+                            .parse()
+                            .map_err(|e: <#ty as ::core::str::FromStr>::Err| PathParseError::Parse(e.to_string()))?,
+                        None => return Err(PathParseError::MissingSegment),
+                    };
+                }
+            }
+        })
+        .collect::<proc_macro2::TokenStream>();
+
+    let display_body = segments
+        .iter()
+        .map(|x| match x {
+            Segment::Static(_) => quote! {},
+            Segment::Variable(variable_seg) => quote! {
+                let #variable_seg = &self.#variable_seg;
+            },
+        })
+        .collect::<proc_macro2::TokenStream>();
+
+    let field_pat = segments.iter().filter_map(|seg| match seg {
+        Segment::Static(_) => None,
+        Segment::Variable(var) => Some(var),
+    });
+
+    let ident = &item_struct.ident;
+
+    let serde_ser_bound = item_struct.generics.params.to_token_stream().to_string();
+    let serde_de_bound = item_struct.generics.params.to_token_stream().to_string();
+
+    quote! {
+        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ::clap::Args)]
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+        #[serde(bound(
+            serialize = #serde_ser_bound,
+            deserialize = #serde_de_bound,
+        ))]
+        #item_struct
+
+        const _: () = {
+            #[automatically_derived]
+            impl #impl_generics ::core::fmt::Display for #ident #ty_generics #where_clause {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    #display_body
+
+                    write!(f, #path)
+                }
+            }
+        };
+
+        const _: () = {
+            #[automatically_derived]
+            impl #impl_generics ::core::str::FromStr for #ident #ty_generics #where_clause {
+                type Err = PathParseError;
+
+                fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
+                    let mut it = s.split('/');
+
+                    #parse_body
+
+                    if it.next().is_some() {
+                        return Err(PathParseError::TooManySegments);
+                    }
+
+                    Ok(Self { #(#field_pat),* })
+                }
+            }
+        };
+    }
+    .into()
+}
+
+enum Segment {
+    Static(String),
+    Variable(syn::Ident),
+}
+
+fn parse_ibc_path(path: LitStr) -> Vec<Segment> {
+    path.value()
+        .split('/')
+        .map(|segment| {
+            segment
+                .strip_prefix('{')
+                .map(|s| {
+                    s.strip_suffix('}')
+                        .expect("unclosed `{` in variable interpolation")
+                })
+                .map_or_else(
+                    || Segment::Static(segment.to_string()),
+                    |s| Segment::Variable(Ident::new(s, path.span())),
+                )
+        })
+        .collect()
 }

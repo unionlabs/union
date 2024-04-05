@@ -42,7 +42,7 @@ use unionlabs::{
         },
         lightclients::cometbls,
     },
-    proof::{ChannelEndPath, ConnectionPath},
+    ics24::{ChannelEndPath, ConnectionPath},
     traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
 };
 

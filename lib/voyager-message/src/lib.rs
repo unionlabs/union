@@ -694,7 +694,7 @@ mod tests {
             commitment::merkle_prefix::MerklePrefix,
             connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
         },
-        proof,
+        ics24,
         uint::U256,
         QueryHeight, DELAY_PERIOD,
     };
@@ -750,7 +750,7 @@ mod tests {
         >(
             union_chain_id.clone(),
             relay_message::fetch::Fetch::specific(FetchAbciQuery {
-                path: proof::Path::ClientStatePath(proof::ClientStatePath {
+                path: ics24::Path::ClientState(ics24::ClientStatePath {
                     client_id: parse!("client-id"),
                 }),
                 height: parse!("123-456"),

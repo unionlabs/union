@@ -6,7 +6,7 @@ use queue_msg::{data, QueueMsg};
 use unionlabs::{
     encoding::{Decode, Proto},
     ibc::core::client::height::IsHeight,
-    proof::{ClientStatePath, Path},
+    ics24::{ClientStatePath, Path},
     traits::{Chain, HeightOf},
 };
 
@@ -58,7 +58,7 @@ where
 
     match ty {
         AbciQueryType::State => match path {
-            Path::ClientStatePath(path) => data(id::<Hc, Tr, _>(
+            Path::ClientState(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState::<ClientStatePath<Hc::ClientId>, Hc, Tr> {
                     height,
@@ -66,7 +66,7 @@ where
                     path,
                 },
             )),
-            Path::ClientConsensusStatePath(path) => data(id::<Hc, Tr, _>(
+            Path::ClientConsensusState(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState {
                     height,
@@ -74,7 +74,7 @@ where
                     path,
                 },
             )),
-            Path::ConnectionPath(path) => data(id::<Hc, Tr, _>(
+            Path::Connection(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState {
                     height,
@@ -83,7 +83,7 @@ where
                     path,
                 },
             )),
-            Path::ChannelEndPath(path) => data(id::<Hc, Tr, _>(
+            Path::ChannelEnd(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState {
                     height,
@@ -92,7 +92,7 @@ where
                     path,
                 },
             )),
-            Path::CommitmentPath(path) => data(id::<Hc, Tr, _>(
+            Path::Commitment(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState {
                     height,
@@ -100,11 +100,47 @@ where
                     path,
                 },
             )),
-            Path::AcknowledgementPath(path) => data(id::<Hc, Tr, _>(
+            Path::Acknowledgement(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState {
                     height,
                     state: query_result.value.try_into().unwrap(),
+                    path,
+                },
+            )),
+            Path::Receipt(path) => data(id::<Hc, Tr, _>(
+                c.chain_id(),
+                IbcState {
+                    height,
+                    state: match query_result.value[..] {
+                        [0] => false,
+                        [1] => true,
+                        ref invalid => panic!("not a bool??? {invalid:?}"),
+                    },
+                    path,
+                },
+            )),
+            Path::NextSequenceSend(path) => data(id::<Hc, Tr, _>(
+                c.chain_id(),
+                IbcState {
+                    height,
+                    state: u64::from_be_bytes(query_result.value.try_into().unwrap()),
+                    path,
+                },
+            )),
+            Path::NextSequenceRecv(path) => data(id::<Hc, Tr, _>(
+                c.chain_id(),
+                IbcState {
+                    height,
+                    state: u64::from_be_bytes(query_result.value.try_into().unwrap()),
+                    path,
+                },
+            )),
+            Path::NextSequenceAck(path) => data(id::<Hc, Tr, _>(
+                c.chain_id(),
+                IbcState {
+                    height,
+                    state: u64::from_be_bytes(query_result.value.try_into().unwrap()),
                     path,
                 },
             )),
@@ -125,7 +161,7 @@ where
             .unwrap();
 
             match path {
-                Path::ClientStatePath(path) => data(id::<Hc, Tr, _>(
+                Path::ClientState(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof::<_, Hc, Tr> {
                         proof,
@@ -134,7 +170,7 @@ where
                         __marker: PhantomData,
                     },
                 )),
-                Path::ClientConsensusStatePath(path) => data(id::<Hc, Tr, _>(
+                Path::ClientConsensusState(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof::<_, Hc, Tr> {
                         proof,
@@ -143,7 +179,7 @@ where
                         __marker: PhantomData,
                     },
                 )),
-                Path::ConnectionPath(path) => data(id::<Hc, Tr, _>(
+                Path::Connection(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof::<_, Hc, Tr> {
                         proof,
@@ -152,7 +188,7 @@ where
                         __marker: PhantomData,
                     },
                 )),
-                Path::ChannelEndPath(path) => data(id::<Hc, Tr, _>(
+                Path::ChannelEnd(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof::<_, Hc, Tr> {
                         proof,
@@ -161,7 +197,7 @@ where
                         __marker: PhantomData,
                     },
                 )),
-                Path::CommitmentPath(path) => data(id::<Hc, Tr, _>(
+                Path::Commitment(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof::<_, Hc, Tr> {
                         proof,
@@ -170,9 +206,45 @@ where
                         __marker: PhantomData,
                     },
                 )),
-                Path::AcknowledgementPath(path) => data(id::<Hc, Tr, _>(
+                Path::Acknowledgement(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof::<_, Hc, Tr> {
+                        proof,
+                        height,
+                        path,
+                        __marker: PhantomData,
+                    },
+                )),
+                Path::Receipt(path) => data(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    IbcProof {
+                        proof,
+                        height,
+                        path,
+                        __marker: PhantomData,
+                    },
+                )),
+                Path::NextSequenceSend(path) => data(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    IbcProof {
+                        proof,
+                        height,
+                        path,
+                        __marker: PhantomData,
+                    },
+                )),
+                Path::NextSequenceRecv(path) => data(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    IbcProof {
+                        proof,
+                        height,
+                        path,
+                        __marker: PhantomData,
+                    },
+                )),
+                Path::NextSequenceAck(path) => data(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    IbcProof {
                         proof,
                         height,
                         path,

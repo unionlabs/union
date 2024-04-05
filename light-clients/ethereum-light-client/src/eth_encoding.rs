@@ -15,7 +15,7 @@ pub fn generate_commitment_key(path: &str, slot: U256) -> H256 {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs::proof::ConnectionPath;
+    use unionlabs::ics24::ConnectionPath;
 
     use super::*;
 

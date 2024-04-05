@@ -9,7 +9,7 @@ use crate::{
     encoding::{Decode, DecodeAs, Proto},
     google::protobuf::any::Any,
     ibc::core::client::height::Height,
-    proof::ClientConsensusStatePath,
+    ics24::ClientConsensusStatePath,
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]

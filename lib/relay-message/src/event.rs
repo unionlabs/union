@@ -7,7 +7,7 @@ use queue_msg::{
 };
 use unionlabs::{
     hash::H256,
-    proof::{ChannelEndPath, ClientStatePath, ConnectionPath},
+    ics24::{ChannelEndPath, ClientStatePath, ConnectionPath},
     traits::{ClientIdOf, ClientTypeOf, HeightOf},
 };
 
