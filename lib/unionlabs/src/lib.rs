@@ -63,7 +63,7 @@ pub mod bounded;
 
 pub mod constants;
 
-pub mod proof;
+pub mod ics24;
 
 pub mod validated;
 
@@ -230,6 +230,7 @@ where
 pub type EmptyString<S = String> = Validated<S, EmptyStringValidator>;
 pub type EmptyStringValidator = Bounded<0, 0>;
 
+#[doc(hidden)]
 pub use paste::paste;
 
 #[macro_export]

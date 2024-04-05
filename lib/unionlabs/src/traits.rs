@@ -37,7 +37,7 @@ pub trait Id:
     + Sync
     + 'static
 {
-    type FromStrErr: Error;
+    type FromStrErr: Error + Send + Sync + 'static;
 }
 
 impl Id for String {
@@ -48,7 +48,7 @@ impl Id for String {
 impl<T: Id, V: Validate<T> + 'static> Id for Validated<T, V>
 where
     T::FromStrErr: Error,
-    V::Error: Error,
+    V::Error: Error + Send + Sync + 'static,
 {
     type FromStrErr = <Self as FromStr>::Err;
 }

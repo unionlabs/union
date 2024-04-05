@@ -29,7 +29,7 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
-    proof::{
+    ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath,
     },

@@ -6,8 +6,8 @@ use macros::apply;
 use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
     hash::H256,
+    ics24::{self, ClientStatePath},
     id::{ChannelId, PortId},
-    proof::{self, ClientStatePath},
     traits::{ChainIdOf, ClientIdOf, HeightOf},
     QueryHeight,
 };
@@ -79,13 +79,13 @@ pub struct FetchSelfConsensusState<Hc: ChainExt, #[cover] Tr: ChainExt> {
 #[queue_msg]
 pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
-    pub path: proof::Path<Hc::ClientId, Tr::Height>,
+    pub path: ics24::Path<Hc::ClientId, Tr::Height>,
 }
 
 #[queue_msg]
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
-    pub path: proof::Path<Hc::ClientId, Tr::Height>,
+    pub path: ics24::Path<Hc::ClientId, Tr::Height>,
 }
 
 #[queue_msg]

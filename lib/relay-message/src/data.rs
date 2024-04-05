@@ -1,9 +1,10 @@
 use macros::apply;
 use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
-    proof::{
+    ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath,
+        CommitmentPath, ConnectionPath, IbcPath, NextSequenceAckPath, NextSequenceRecvPath,
+        NextSequenceSendPath, ReceiptPath,
     },
     traits::{ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
@@ -31,6 +32,10 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     ChannelEndProof(IbcProof<ChannelEndPath, Hc, Tr>),
     CommitmentProof(IbcProof<CommitmentPath, Hc, Tr>),
     AcknowledgementProof(IbcProof<AcknowledgementPath, Hc, Tr>),
+    ReceiptProof(IbcProof<ReceiptPath, Hc, Tr>),
+    NextSequenceSendProof(IbcProof<NextSequenceSendPath, Hc, Tr>),
+    NextSequenceRecvProof(IbcProof<NextSequenceRecvPath, Hc, Tr>),
+    NextSequenceAckProof(IbcProof<NextSequenceAckPath, Hc, Tr>),
 
     ClientState(IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>),
     ClientConsensusState(IbcState<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>),
@@ -38,6 +43,10 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     ChannelEnd(IbcState<ChannelEndPath, Hc, Tr>),
     Commitment(IbcState<CommitmentPath, Hc, Tr>),
     Acknowledgement(IbcState<AcknowledgementPath, Hc, Tr>),
+    Receipt(IbcState<ReceiptPath, Hc, Tr>),
+    NextSequenceSend(IbcState<NextSequenceSendPath, Hc, Tr>),
+    NextSequenceRecv(IbcState<NextSequenceRecvPath, Hc, Tr>),
+    NextSequenceAck(IbcState<NextSequenceAckPath, Hc, Tr>),
 
     #[serde(untagged)]
     LightClientSpecific(LightClientSpecificData<Hc, Tr>),
@@ -77,7 +86,7 @@ pub struct Header<Hc: ChainExt, #[cover] Tr: ChainExt> {
 pub struct IbcState<P: IbcPath<Hc, Tr>, Hc: ChainExt, Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
-    pub state: P::Output,
+    pub state: P::Value,
 }
 
 #[queue_msg]

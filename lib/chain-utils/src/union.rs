@@ -17,11 +17,11 @@ use unionlabs::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::cometbls,
     },
-    id::ClientId,
-    proof::{
+    ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
+    id::ClientId,
     signer::CosmosSigner,
     traits::{Chain, ClientState, FromStrExact},
     WasmClientType,
@@ -350,16 +350,16 @@ pub trait AbciStateRead<Tr>: IbcPath<Union, Tr>
 where
     Tr: Chain,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output;
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value;
 }
 
 impl<Tr> AbciStateRead<Tr> for ClientStatePath<<Union as Chain>::ClientId>
 where
     Tr: Chain,
-    Self::Output: Decode<Proto>,
+    Self::Value: Decode<Proto>,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
+        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
@@ -367,10 +367,10 @@ impl<Tr> AbciStateRead<Tr>
     for ClientConsensusStatePath<<Union as Chain>::ClientId, <Tr as Chain>::Height>
 where
     Tr: Chain,
-    Self::Output: Decode<Proto>,
+    Self::Value: Decode<Proto>,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
+        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
@@ -378,8 +378,8 @@ impl<Tr> AbciStateRead<Tr> for ConnectionPath
 where
     Tr: Chain,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
+        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
@@ -387,8 +387,8 @@ impl<Tr> AbciStateRead<Tr> for ChannelEndPath
 where
     Tr: Chain,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
+        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
@@ -396,7 +396,7 @@ impl<Tr> AbciStateRead<Tr> for CommitmentPath
 where
     Tr: Chain,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
         bytes.try_into().unwrap()
     }
 }
@@ -405,7 +405,7 @@ impl<Tr> AbciStateRead<Tr> for AcknowledgementPath
 where
     Tr: Chain,
 {
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
+    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
         bytes.try_into().unwrap()
     }
 }

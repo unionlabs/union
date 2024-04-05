@@ -23,7 +23,7 @@ use unionlabs::{
         },
         lightclients::tendermint,
     },
-    proof::ClientStatePath,
+    ics24::ClientStatePath,
     tendermint::types::validator::Validator,
     traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
     TypeUrl,

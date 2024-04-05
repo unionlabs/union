@@ -28,7 +28,7 @@ use unionlabs::{
         core::client::{height::IsHeight, msg_update_client::MsgUpdateClient},
         lightclients::cometbls,
     },
-    proof::ClientStatePath,
+    ics24::ClientStatePath,
     tendermint::{
         crypto::public_key::PublicKey,
         types::{

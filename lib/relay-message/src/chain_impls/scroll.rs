@@ -21,7 +21,7 @@ use unionlabs::{
             scroll,
         },
     },
-    proof::ClientStatePath,
+    ics24::ClientStatePath,
     traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
 };

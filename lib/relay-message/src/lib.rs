@@ -21,8 +21,8 @@ use unionlabs::{
     google::protobuf::any::{mk_any, Any, IntoAny},
     hash::H256,
     ibc::{core::client::height::IsHeight, lightclients::wasm},
+    ics24,
     never::Never,
-    proof,
     traits::{
         Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
         HeightOf,
@@ -195,7 +195,7 @@ macro_rules! any_enum {
 }
 pub(crate) use any_enum;
 
-pub type PathOf<Hc, Tr> = proof::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
+pub type PathOf<Hc, Tr> = ics24::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
 
 pub trait AnyLightClient {
     type Inner<Hc: ChainExt, Tr: ChainExt>: Debug
