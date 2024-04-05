@@ -31,14 +31,14 @@ func ConvertExistenceProof(p *cmtprotocrypto.Proof, key, value []byte) (*ics23.E
 // this is adapted from merkle/hash.go:leafHash()
 // and merkle/simple_map.go:KVPair.Bytes()
 func convertLeafOp() *ics23.LeafOp {
-	prefix := []byte{0}
+	var prefix [16]byte
 
 	return &ics23.LeafOp{
-		Hash:         ics23.HashOp_SHA256,
-		PrehashKey:   ics23.HashOp_NO_HASH,
-		PrehashValue: ics23.HashOp_SHA256,
-		Length:       ics23.LengthOp_VAR_PROTO,
-		Prefix:       prefix,
+		Hash:         ics23.HashOp_MiMC,
+		PrehashKey:   ics23.HashOp_SHA256,
+		PrehashValue: ics23.HashOp_NO_HASH, // since this is already mimc'ed
+		Length:       ics23.LengthOp_NO_PREFIX,
+		Prefix:       prefix[:],
 	}
 }
 
@@ -54,12 +54,12 @@ func convertInnerOps(p *cmtprotocrypto.Proof) ([]*ics23.InnerOp, error) {
 		auntRight := path[i]
 
 		// combine with: 0x01 || lefthash || righthash
-		inner := &ics23.InnerOp{Hash: ics23.HashOp_SHA256}
+		inner := &ics23.InnerOp{Hash: ics23.HashOp_MiMC}
 		if auntRight {
-			inner.Prefix = []byte{1}
+			inner.Prefix = []byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 			inner.Suffix = aunt
 		} else {
-			inner.Prefix = append([]byte{1}, aunt...)
+			inner.Prefix = append([]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, aunt...)
 		}
 		inners = append(inners, inner)
 	}

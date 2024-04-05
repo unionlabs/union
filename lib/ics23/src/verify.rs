@@ -406,7 +406,10 @@ fn verify_existence_proof(
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs::{cosmos::ics23::commitment_proof::CommitmentProof, encoding::Decode};
+    use unionlabs::{
+        cosmos::ics23::commitment_proof::CommitmentProof, encoding::Decode,
+        ibc::core::commitment::merkle_proof::MerkleProof,
+    };
 
     use super::*;
     use crate::proof_specs::TENDERMINT_PROOF_SPEC;
@@ -496,5 +499,17 @@ mod tests {
         let key = hex!("ffffffff");
 
         assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()));
+    }
+
+    #[test]
+    fn print_proof() {
+        let proof = base64::decode("CpsCCpgCCiBjbGllbnRzLzA5LWxvY2FsaG9zdC9jbGllbnRTdGF0ZRI0CiovaWJjLmxpZ2h0Y2xpZW50cy5sb2NhbGhvc3QudjIuQ2xpZW50U3RhdGUSBgoECAEQERoYCAoQARgBKhAAAAAAAQAAAAAAAAARAAAAIjQIChIwAQAAAAIAAAAAAAAAEQAAAChJq+DP7KV6wXk7dOq7GBynY2i3GTZ+f6LDol5I9D47IjYIChIQAgAAAAQAAAAAAAAAEQAAABogIfSbsSt3Te87Ae/aQxRmey2g9PptFSlgauL7rZcmelgiNggKEhADAAAABwAAAAAAAAARAAAAGiAm9g7qD5rIQ8+RkXEC/EXlxsT0h32nDXbzVWvBDWkV5wrUAgrRAgoDaWJjEiAImkdwqyP2ljk+gE9AymRW37AHaORZ+eVWr5Z8DuorKBoWCAoQASoQAAAAAAAAAAAAAAAAAAAAACI0CAoSMAEAAAAAAAAAAAAAAAAAAAAk89aNOLfj+ESWPASQMmBgtuW5w/sTuwa+XMvLgVBNlSI2CAoSEAEAAAAAAAAAAAAAAAAAAAAaIAivxXKle6ODJRn5TWgT4o4lfwx4WHiQ7P3mDxcINlaBIjQIChIwAQAAAAAAAAAAAAAAAAAAACVcbtp+5UiSrldVAR74NR/AzpGahi4gipniUrZyWASKIjQIChIwAQAAAAAAAAAAAAAAAAAAABtfM31vBT87n6ljcZEqFUvFBfrc+jce9XbpPpJJsfEGIjYIChIQAQAAAAAAAAAAAAAAAAAAABogLrm/GoxeMUQFpHtTJ1cVrEQDTfm5fhvadTwrafVRFZ0=").unwrap();
+
+        let commitment_proof = MerkleProof::decode(&proof).unwrap();
+
+        println!(
+            "Commitment:\n{}",
+            serde_json::to_string(&commitment_proof).unwrap()
+        );
     }
 }

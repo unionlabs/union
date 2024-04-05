@@ -15,5 +15,6 @@ wrapper_enum! {
         Blake2b512 = 7,
         Blake2s256 = 8,
         Blake3 = 9,
+        MiMC = 10,
     }
 }

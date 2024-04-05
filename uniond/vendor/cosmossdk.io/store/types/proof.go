@@ -44,8 +44,24 @@ func NewIavlCommitmentOp(key []byte, proof *ics23.CommitmentProof) CommitmentOp 
 
 func NewSimpleMerkleCommitmentOp(key []byte, proof *ics23.CommitmentProof) CommitmentOp {
 	return CommitmentOp{
-		Type:  ProofOpSimpleMerkleCommitment,
-		Spec:  ics23.TendermintSpec,
+		Type: ProofOpSimpleMerkleCommitment,
+		// Spec:  ics23.TendermintSpec,
+		Spec: &ics23.ProofSpec{
+			LeafSpec: &ics23.LeafOp{
+				Prefix:       []byte{0},
+				PrehashKey:   ics23.HashOp_SHA256,
+				Hash:         ics23.HashOp_MiMC,
+				PrehashValue: ics23.HashOp_SHA256,
+				Length:       ics23.LengthOp_NO_PREFIX,
+			},
+			InnerSpec: &ics23.InnerSpec{
+				ChildOrder:      []int32{0, 1},
+				MinPrefixLength: 16,
+				MaxPrefixLength: 16,
+				ChildSize:       32, // (no length byte)
+				Hash:            ics23.HashOp_MiMC,
+			},
+		},
 		Key:   key,
 		Proof: proof,
 	}

@@ -21,3 +21,4 @@ hex-literal = { workspace = true }
 protos      = { workspace = true, features = ["cosmos+ics23+v1", "serde"] }
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
+base64 = { workspace = true }

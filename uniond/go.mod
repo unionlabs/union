@@ -226,13 +226,18 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
+	cosmossdk.io/store => /home/aeryz/dev/union/cosmos-sdk/store
+	// github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
+	github.com/cometbft/cometbft => /home/aeryz/dev/union/cometbls
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240403200438-f6c82bcd6b6c
-	github.com/cosmos/iavl => github.com/aeryz/iavl v0.0.0-20240216153102-7bc76b0fbf29
+	// github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240403221859-1083b72b39a3
+	github.com/cosmos/cosmos-sdk => /home/aeryz/dev/union/cosmos-sdk
+	github.com/cosmos/iavl => github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b
+
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
 	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa
+	github.com/cosmos/ics23/go => github.com/aeryz/ics23/go v0.0.0-20240403192124-01760c87dc23
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 )

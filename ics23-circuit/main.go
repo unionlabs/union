@@ -4,6 +4,7 @@ import (
 	// "encoding/hex"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -56,13 +57,31 @@ type NonExistCircuit struct {
 	Root  frontend.Variable
 }
 
+type ChainedMembershipCircuit struct {
+	AppHash      frontend.Variable
+	Iavl         ExistenceProof
+	SimpleMerkle ExistenceProof
+}
+
+func (circuit *ChainedMembershipCircuit) Define(api frontend.API) error {
+	lsb := api.ToBinary(circuit.SimpleMerkle.HashedValue[1], 128)
+	msb := api.ToBinary(circuit.SimpleMerkle.HashedValue[0], 128)
+	lsb = append(lsb, msb...)
+	root := api.FromBinary(lsb...)
+
+	valid := circuit.Iavl.Verify(api, root)
+	api.AssertIsEqual(valid, 1)
+
+	valid = circuit.SimpleMerkle.Verify(api, circuit.AppHash)
+	api.AssertIsEqual(valid, 1)
+
+	return nil
+}
+
 func (proof *ExistenceProof) Verify(api frontend.API, root frontend.Variable) frontend.Variable {
 	hFunc, _ := mimc.NewMiMC(api)
 	hFunc.Write(proof.LeafPrefix, proof.HashedKey[0], proof.HashedKey[1], proof.HashedValue[0], proof.HashedValue[1])
 	calcRoot := hFunc.Sum()
-	// api.Println(111)
-	// api.Println(calcRoot)
-	// api.Println(0)
 
 	for i := 0; i < MaxPathDepth; i++ {
 		hFunc.Reset()
@@ -112,6 +131,138 @@ func (circuit *Ics23Circuit) Define(api frontend.API) error {
 	api.AssertIsEqual(valid, 1)
 
 	return nil
+}
+
+func prepareChainedCircuit() ChainedMembershipCircuit {
+	iavl := prepareIavlCircuit()
+	tm := prepareTmCircuit()
+
+	return ChainedMembershipCircuit{
+		AppHash:      tm.Root,
+		Iavl:         iavl.Proof,
+		SimpleMerkle: tm.Proof,
+	}
+}
+
+func prepareTmCircuit() Ics23Circuit {
+	// root := "KOMHrmSUNXtF38kaGir3OU2R5DmuGEfSRUgWja0CIbo="
+	root := "LxDbIBQiBvCYeEX+zMg/E2OaLowhclgUsp3yBLrEw40="
+	// root := "2dc7a004065c5461a6610d6a8bc53bb06e9bd92d1e2a01b7c01e9b33b7e87731"
+	key := "696263"
+	value := "089a4770ab23f696393e804f40ca6456dfb00768e459f9e556af967c0eea2b28"
+
+	leafPrefix := "00000000000000000000000000000000"
+
+	path := [][2]string{
+		{"0100000000000000000000000000000024f3d68d38b7e3f844963c0490326060b6e5b9c3fb13bb06be5ccbcb81504d95", ""},
+		{"01000000000000000000000000000000", "08afc572a57ba3832519f94d6813e28e257f0c78587890ecfde60f1708365681"},
+		{"01000000000000000000000000000000255c6eda7ee54892ae5755011ef8351fc0ce919a862e208a99e252b67258048a", ""},
+		{"010000000000000000000000000000001b5f337d6f053f3b9fa96371912a154bc505fadcfa371ef576e93e9249b1f106", ""},
+		{"01000000000000000000000000000000", "2eb9bf1a8c5e314405a47b53275715ac44034df9b97e1bda753c2b69f551159d"},
+	}
+
+	var proof ExistenceProof
+	decodedKey, _ := hex.DecodeString(key)
+	hashedKey := sha256.Sum256(decodedKey)
+	decodedVal, _ := hex.DecodeString(value)
+	// hashedVal := sha256.Sum256(decodedVal)
+	proof.HashedKey = [2]frontend.Variable{hashedKey[:16], hashedKey[16:]}
+	// proof.HashedValue = [2]frontend.Variable{hashedVal[:16], hashedVal[16:]}
+	proof.HashedValue = [2]frontend.Variable{decodedVal[:16], decodedVal[16:]}
+	for i, inner := range path {
+		var inn Inner
+		if len(inner[1]) == 0 {
+			dPrefix, _ := hex.DecodeString(inner[0])
+			inn.Prefix = [3]frontend.Variable{dPrefix[:16], dPrefix[16:32], dPrefix[32:48]}
+			inn.Suffix = [2]frontend.Variable{0, 0}
+			inn.PrefixLen = 3
+			inn.SuffixLen = 0
+		} else {
+			dPrefix, _ := hex.DecodeString(inner[0])
+			dSuffix, _ := hex.DecodeString(inner[1])
+			inn.Prefix = [3]frontend.Variable{dPrefix[:16], 0, 0}
+			inn.Suffix = [2]frontend.Variable{dSuffix[:16], dSuffix[16:]}
+			inn.PrefixLen = 1
+			inn.SuffixLen = 2
+		}
+		proof.Path[i] = inn
+	}
+
+	for i := len(path); i < MaxPathDepth; i++ {
+		proof.Path[i].Prefix = [3]frontend.Variable{0, 0, 0}
+		proof.Path[i].Suffix = [2]frontend.Variable{0, 0}
+		proof.Path[i].PrefixLen = 0
+		proof.Path[i].SuffixLen = 0
+	}
+	proof.PathLen = len(path)
+	dLeafPrefix, _ := hex.DecodeString(leafPrefix)
+	proof.LeafPrefix = dLeafPrefix
+
+	dRoot, _ := base64.StdEncoding.DecodeString(root)
+	// dRoot, _ := hex.DecodeString(root)
+	return Ics23Circuit{
+		Proof: proof,
+		Root:  dRoot,
+	}
+}
+
+func prepareIavlCircuit() Ics23Circuit {
+	// root := "JPzOBsVpRHIWGcFd5Fv8deMWDckcgSonuZWEIPZAKsI="
+	root := "089a4770ab23f696393e804f40ca6456dfb00768e459f9e556af967c0eea2b28"
+	key := "636c69656e74732f30392d6c6f63616c686f73742f636c69656e745374617465"
+	value := "0a2a2f6962632e6c69676874636c69656e74732e6c6f63616c686f73742e76322e436c69656e74537461746512060a0408011011"
+
+	leafPrefix := "00000000010000000000000011000000"
+
+	path := [][2]string{
+		{"010000000200000000000000110000002849abe0cfeca57ac1793b74eabb181ca76368b719367e7fa2c3a25e48f43e3b", ""},
+		{"02000000040000000000000011000000", "21f49bb12b774def3b01efda4314667b2da0f4fa6d1529606ae2fbad97267a58"},
+		{"03000000070000000000000011000000", "26f60eea0f9ac843cf91917102fc45e5c6c4f4877da70d76f3556bc10d6915e7"},
+	}
+
+	var proof ExistenceProof
+	decodedKey, _ := hex.DecodeString(key)
+	hashedKey := sha256.Sum256(decodedKey)
+	decodedVal, _ := hex.DecodeString(value)
+	hashedVal := sha256.Sum256(decodedVal)
+	proof.HashedKey = [2]frontend.Variable{hashedKey[:16], hashedKey[16:]}
+	proof.HashedValue = [2]frontend.Variable{hashedVal[:16], hashedVal[16:]}
+	for i, inner := range path {
+		var inn Inner
+		if len(inner[1]) == 0 {
+			dPrefix, _ := hex.DecodeString(inner[0])
+			inn.Prefix = [3]frontend.Variable{dPrefix[:16], dPrefix[16:32], dPrefix[32:48]}
+			inn.Suffix = [2]frontend.Variable{0, 0}
+			inn.PrefixLen = 3
+			inn.SuffixLen = 0
+		} else {
+			dPrefix, _ := hex.DecodeString(inner[0])
+			dSuffix, _ := hex.DecodeString(inner[1])
+			inn.Prefix = [3]frontend.Variable{dPrefix[:16], 0, 0}
+			inn.Suffix = [2]frontend.Variable{dSuffix[:16], dSuffix[16:]}
+			inn.PrefixLen = 1
+			inn.SuffixLen = 2
+		}
+		proof.Path[i] = inn
+	}
+
+	for i := len(path); i < MaxPathDepth; i++ {
+		proof.Path[i].Prefix = [3]frontend.Variable{0, 0, 0}
+		proof.Path[i].Suffix = [2]frontend.Variable{0, 0}
+		proof.Path[i].PrefixLen = 0
+		proof.Path[i].SuffixLen = 0
+	}
+	proof.PathLen = len(path)
+	dLeafPrefix, _ := hex.DecodeString(leafPrefix)
+	proof.LeafPrefix = dLeafPrefix
+
+	// dRoot, _ := base64.StdEncoding.DecodeString(root)
+	dRoot, _ := hex.DecodeString(root)
+	return Ics23Circuit{
+		Proof: proof,
+		Root:  dRoot,
+	}
+
 }
 
 func prepareNonCircuit() NonExistCircuit {
@@ -596,14 +747,14 @@ func prepareCircuit() Ics23Circuit {
 
 func main() {
 	// compiles our circuit into a R1CS
-	var circuit Ics23Circuit
+	var circuit ChainedMembershipCircuit
 	ccs, _ := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
 
 	// groth16 zkSNARK: Setup
 	pk, vk, _ := groth16.Setup(ccs)
 
 	// witness definition
-	assignment := prepareCircuit()
+	assignment := prepareChainedCircuit()
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	publicWitness, _ := witness.Public()
 
@@ -611,18 +762,18 @@ func main() {
 	proof, _ := groth16.Prove(ccs, pk, witness)
 	groth16.Verify(proof, vk, publicWitness)
 
-	var nonCircuit NonExistCircuit
-	ccs, _ = frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &nonCircuit)
+	// var nonCircuit NonExistCircuit
+	// ccs, _ = frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &nonCircuit)
 
-	// groth16 zkSNARK: Setup
-	pk, vk, _ = groth16.Setup(ccs)
+	// // groth16 zkSNARK: Setup
+	// pk, vk, _ = groth16.Setup(ccs)
 
-	// witness definition
-	assignment2 := prepareNonCircuit()
-	witness, _ = frontend.NewWitness(&assignment2, ecc.BN254.ScalarField())
-	publicWitness, _ = witness.Public()
+	// // witness definition
+	// assignment2 := prepareNonCircuit()
+	// witness, _ = frontend.NewWitness(&assignment2, ecc.BN254.ScalarField())
+	// publicWitness, _ = witness.Public()
 
-	// groth16: Prove & Verify
-	proof, _ = groth16.Prove(ccs, pk, witness)
-	groth16.Verify(proof, vk, publicWitness)
+	// // groth16: Prove & Verify
+	// proof, _ = groth16.Prove(ccs, pk, witness)
+	// groth16.Verify(proof, vk, publicWitness)
 }

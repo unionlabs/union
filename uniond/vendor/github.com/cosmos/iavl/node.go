@@ -12,6 +12,7 @@ import (
 	"io"
 	"math"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/cosmos/iavl/cache"
 
 	"github.com/cosmos/iavl/internal/color"
@@ -423,9 +424,21 @@ func (node *Node) _hash(version int64) []byte {
 		return node.hash
 	}
 
-	h := sha256.New()
-	if err := node.writeHashBytes(h, version); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufPool.Put(buf)
+	if err := node.writeHashBytes(buf, version); err != nil {
 		return nil
+	}
+	h := mimc.NewMiMC()
+	for {
+		var bytesBlock [32]byte
+		inbytes := buf.Next(16)
+		if len(inbytes) == 0 {
+			break
+		}
+		copy(bytesBlock[16:32], inbytes)
+		h.Write(bytesBlock[:])
 	}
 	node.hash = h.Sum(nil)
 
@@ -438,17 +451,34 @@ func (node *Node) _hash(version int64) []byte {
 // to conform with RFC-6962.
 func (node *Node) hashWithCount(version int64) []byte {
 	if node == nil {
-		return sha256.New().Sum(nil)
+		var bytes [32]byte
+		b, err := mimc.Sum(bytes[:])
+		if err != nil {
+			panic(err)
+		}
+		return b
 	}
 	if node.hash != nil {
 		return node.hash
 	}
 
-	h := sha256.New()
-	if err := node.writeHashBytesRecursively(h, version); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufPool.Put(buf)
+	h := mimc.NewMiMC()
+	if err := node.writeHashBytesRecursively(buf, version); err != nil {
 		// writeHashBytesRecursively doesn't return an error unless h.Write does,
 		// and hash.Hash.Write doesn't.
 		panic(err)
+	}
+	for {
+		var bytesBlock [32]byte
+		inbytes := buf.Next(16)
+		if len(inbytes) == 0 {
+			break
+		}
+		copy(bytesBlock[16:32], inbytes)
+		h.Write(bytesBlock[:])
 	}
 	node.hash = h.Sum(nil)
 
@@ -496,57 +526,64 @@ func (node *Node) validate() error {
 // Writes the node's hash to the given io.Writer. This function expects
 // child hashes to be already set.
 func (node *Node) writeHashBytes(w io.Writer, version int64) error {
-	err := encoding.EncodeVarint(w, int64(node.subtreeHeight))
-	if err != nil {
-		return fmt.Errorf("writing height, %w", err)
-	}
-	err = encoding.EncodeVarint(w, node.size)
-	if err != nil {
-		return fmt.Errorf("writing size, %w", err)
-	}
-	err = encoding.EncodeVarint(w, version)
-	if err != nil {
-		return fmt.Errorf("writing version, %w", err)
-	}
+
+	varintBuf := make([]byte, 8)
+
+	binary.LittleEndian.PutUint32(varintBuf, uint32(node.subtreeHeight))
+	w.Write(varintBuf[:4])
+	binary.LittleEndian.PutUint64(varintBuf, uint64(node.size))
+	w.Write(varintBuf)
+	// TODO(aeryz): We need to check whether this is ok to do. Normally this is `i64` but we need preimage to be in size
+	// 16n.
+	binary.LittleEndian.PutUint32(varintBuf, uint32(version))
+	w.Write(varintBuf[:4])
+	// err := encoding.EncodeVarint(w, int64(node.subtreeHeight))
+	// if err != nil {
+	// 	return fmt.Errorf("writing height, %w", err)
+	// }
+	// err = encoding.EncodeVarint(w, node.size)
+	// if err != nil {
+	// 	return fmt.Errorf("writing size, %w", err)
+	// }
+	// err = encoding.EncodeVarint(w, version)
+	// if err != nil {
+	// 	return fmt.Errorf("writing version, %w", err)
+	// }
 
 	// Key is not written for inner nodes, unlike writeBytes.
 
 	if node.isLeaf() {
-		err = encoding.EncodeBytes(w, node.key)
-		if err != nil {
-			return fmt.Errorf("writing key, %w", err)
-		}
+		keyHash := sha256.Sum256(node.key)
+		w.Write(keyHash[:])
+		// err := encoding.EncodeBytes(w, node.key)
+		// if err != nil {
+		// 	return fmt.Errorf("writing key, %w", err)
+		// }
 
 		// Indirection needed to provide proofs without values.
 		// (e.g. ProofLeafNode.ValueHash)
 		valueHash := sha256.Sum256(node.value)
+		w.Write(valueHash[:])
 
-		err = encoding.Encode32BytesHash(w, valueHash[:])
-		if err != nil {
-			return fmt.Errorf("writing value, %w", err)
-		}
+		// err = encoding.Encode32BytesHash(w, valueHash[:])
+		// if err != nil {
+		// 	return fmt.Errorf("writing value, %w", err)
+		// }
 	} else {
-		if (node.leftNode == nil && len(node.leftNodeKey) != 32) || (node.rightNode == nil && len(node.rightNodeKey) != 32) {
+		if node.leftNode == nil || node.rightNode == nil {
 			return ErrEmptyChild
 		}
-		// If left/rightNodeKey is 32 bytes, it is a legacy node whose value is just the hash.
-		// We may have skipped fetching leftNode/rightNode.
-		if len(node.leftNodeKey) == 32 {
-			err = encoding.Encode32BytesHash(w, node.leftNodeKey)
-		} else {
-			err = encoding.Encode32BytesHash(w, node.leftNode.hash)
-		}
-		if err != nil {
-			return fmt.Errorf("writing left hash, %w", err)
-		}
-		if len(node.rightNodeKey) == 32 {
-			err = encoding.Encode32BytesHash(w, node.rightNodeKey)
-		} else {
-			err = encoding.Encode32BytesHash(w, node.rightNode.hash)
-		}
-		if err != nil {
-			return fmt.Errorf("writing right hash, %w", err)
-		}
+		// we don't prefix the hash length anymore
+		w.Write(node.leftNode.hash)
+		w.Write(node.rightNode.hash)
+		// err = encoding.Encode32BytesHash(w, node.leftNode.hash)
+		// if err != nil {
+		// 	return fmt.Errorf("writing left hash, %w", err)
+		// }
+		// err = encoding.Encode32BytesHash(w, node.rightNode.hash)
+		// if err != nil {
+		// 	return fmt.Errorf("writing right hash, %w", err)
+		// }
 	}
 
 	return nil
