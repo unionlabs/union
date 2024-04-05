@@ -675,13 +675,16 @@ mod tests {
     use relay_message::{
         aggregate::AggregateCreateClient,
         chain_impls::{
-            cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
+            cosmos_sdk::{
+                fetch::{AbciQueryType, FetchAbciQuery},
+                wasm::WasmConfig,
+            },
             ethereum::EthereumConfig,
         },
         effect::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
         event::IbcEvent,
         fetch::{FetchSelfClientState, FetchSelfConsensusState},
-        RelayMessageTypes, WasmConfig,
+        RelayMessageTypes,
     };
     use unionlabs::{
         ethereum::config::Minimal,

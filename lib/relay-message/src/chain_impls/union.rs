@@ -4,16 +4,13 @@ use std::{
 };
 
 use chain_utils::{
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain},
     union::Union,
     wasm::Wraps,
 };
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
-use protos::{
-    ibc::core::connection::v1::MsgConnectionOpenInit,
-    union::galois::api::v3::union_prover_api_client,
-};
+use protos::union::galois::api::v3::union_prover_api_client;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
@@ -23,11 +20,8 @@ use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
     encoding::{Decode, Encode, Proto},
-    google::protobuf::any::{mk_any, Any},
-    ibc::{
-        core::client::{height::IsHeight, msg_update_client::MsgUpdateClient},
-        lightclients::cometbls,
-    },
+    google::protobuf::any::IntoAny,
+    ibc::{core::client::msg_update_client::MsgUpdateClient, lightclients::cometbls},
     ics24::ClientStatePath,
     tendermint::{
         crypto::public_key::PublicKey,
@@ -37,7 +31,7 @@ use unionlabs::{
             simple_validator::SimpleValidator,
         },
     },
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf},
     union::galois::{
         poll_request::PollRequest,
         poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
@@ -52,24 +46,21 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate},
     chain_impls::cosmos_sdk::{
         data::{TrustedValidators, UntrustedCommit, UntrustedValidators},
+        do_msg,
         fetch::{
             fetch_trusted_validators, fetch_untrusted_commit, fetch_untrusted_validators,
-            AbciQueryType, FetchAbciQuery, FetchTrustedValidators, FetchUntrustedCommit,
-            FetchUntrustedValidators,
+            FetchAbciQuery, FetchTrustedValidators, FetchUntrustedCommit, FetchUntrustedValidators,
         },
-        fetch_abci_query,
+        fetch_abci_query, CosmosSdkChainSealed,
     },
     data::{AnyData, Data, IbcState},
-    effect::{
-        AnyEffect, Effect, MsgConnectionOpenAckData, MsgConnectionOpenInitData,
-        MsgConnectionOpenTryData, MsgUpdateClientData,
-    },
+    effect::{AnyEffect, Effect, MsgUpdateClientData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
     id, identified, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
-    AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes, Wasm, WasmConfig,
+    AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchUpdateHeaders, DoMsg, Identified,
+    RelayMessageTypes,
 };
 
 impl ChainExt for Union {
@@ -82,318 +73,30 @@ impl ChainExt for Union {
     type Config = ();
 }
 
-impl ChainExt for Wasm<Union> {
-    type Data<Tr: ChainExt> = UnionDataMsg<Wasm<Union>, Tr>;
-    type Fetch<Tr: ChainExt> = UnionFetch<Wasm<Union>, Tr>;
-    type Aggregate<Tr: ChainExt> = UnionAggregateMsg<Wasm<Union>, Tr>;
+impl CosmosSdkChainSealed for Union {}
 
-    type MsgError = BroadcastTxCommitError;
-
-    type Config = WasmConfig;
-}
-
-// TODO: Deduplicate this implementation between union and cosmos, its literally just a copy-paste right now
-impl<Tr: ChainExt, Hc: ChainExt + Wraps<Self>> DoMsg<Hc, Tr> for Union
+impl<Tr: ChainExt> DoMsg<Union, Tr> for Union
 where
     ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
     ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
     HeaderOf<Tr>: Encode<Proto> + TypeUrl,
 
-    ConsensusStateOf<Hc>: Encode<Proto> + TypeUrl,
-
-    ClientStateOf<Hc>: Encode<Proto> + TypeUrl,
-    // HeaderOf<Hc>: IntoProto,
-    // <HeaderOf<Hc> as Proto>::Proto: TypeUrl,
-    Tr::StoredClientState<Hc>: Into<protos::google::protobuf::Any>,
+    Tr::StoredClientState<Union>: IntoAny,
     Tr::StateProof: Encode<Proto>,
 {
-    async fn msg(&self, msg: Effect<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
-        self.signers
-            .with(|signer| async {
-                let msg_any = match msg.clone() {
-                    Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
-                        mk_any(&MsgConnectionOpenInit {
-                            client_id: data.client_id.to_string(),
-                            counterparty: Some(data.counterparty.into()),
-                            version: Some(data.version.into()),
-                            signer: signer.to_string(),
-                            delay_period: data.delay_period,
-                        })
-                    }
-                    Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
-                    {
-                        #[allow(deprecated)]
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
-                            client_id: data.client_id.to_string(),
-                            previous_connection_id: String::new(),
-                            client_state: Some(data.client_state.into()),
-                            counterparty: Some(data.counterparty.into()),
-                            delay_period: data.delay_period,
-                            counterparty_versions: data
-                                .counterparty_versions
-                                .into_iter()
-                                .map(Into::into)
-                                .collect(),
-                            proof_height: Some(data.proof_height.into_height().into()),
-                            proof_init: data.proof_init.encode(),
-                            proof_client: data.proof_client.encode(),
-                            proof_consensus: data.proof_consensus.encode(),
-                            consensus_height: Some(data.consensus_height.into_height().into()),
-                            signer: signer.to_string(),
-                            host_consensus_state_proof: vec![],
-                        })
-                    }
-                    Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(data.client_state.into()),
-                            proof_height: Some(data.proof_height.into_height().into()),
-                            proof_client: data.proof_client.encode(),
-                            proof_consensus: data.proof_consensus.encode(),
-                            consensus_height: Some(data.consensus_height.into_height().into()),
-                            signer: signer.to_string(),
-                            host_consensus_state_proof: vec![],
-                            connection_id: data.connection_id.to_string(),
-                            counterparty_connection_id: data.counterparty_connection_id.to_string(),
-                            version: Some(data.version.into()),
-                            proof_try: data.proof_try.encode(),
-                        })
-                    }
-                    Effect::ConnectionOpenConfirm(data) => mk_any(
-                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
-                            connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack.encode(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        },
-                    ),
-                    Effect::ChannelOpenInit(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
-                            port_id: data.msg.port_id.to_string(),
-                            channel: Some(data.msg.channel.into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Effect::ChannelOpenTry(data) =>
-                    {
-                        #[allow(deprecated)]
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
-                            port_id: data.msg.port_id.to_string(),
-                            channel: Some(data.msg.channel.into()),
-                            counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init.encode(),
-                            proof_height: Some(data.msg.proof_height.into()),
-                            previous_channel_id: String::new(),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Effect::ChannelOpenAck(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
-                            port_id: data.msg.port_id.to_string(),
-                            channel_id: data.msg.channel_id.to_string(),
-                            counterparty_version: data.msg.counterparty_version,
-                            counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try.encode(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Effect::ChannelOpenConfirm(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
-                            port_id: data.msg.port_id.to_string(),
-                            channel_id: data.msg.channel_id.to_string(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                            proof_ack: data.msg.proof_ack.encode(),
-                        })
-                    }
-                    Effect::RecvPacket(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
-                            packet: Some(data.msg.packet.into()),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                            proof_commitment: data.msg.proof_commitment.encode(),
-                        })
-                    }
-                    Effect::AckPacket(data) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
-                            packet: Some(data.msg.packet.into()),
-                            acknowledgement: data.msg.acknowledgement,
-                            proof_acked: data.msg.proof_acked.encode(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Effect::CreateClient(data) => {
-                        mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
-                            client_state: Some(Any(data.msg.client_state).into()),
-                            consensus_state: Some(Any(data.msg.consensus_state).into()),
-                            signer: signer.to_string(),
-                        })
-                    }
-                    Effect::UpdateClient(MsgUpdateClientData(data)) => {
-                        mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
-                            signer: signer.to_string(),
-                            client_id: data.client_id.to_string(),
-                            client_message: Some(Any(data.client_message).into()),
-                        })
-                    }
-                };
-
-                let tx_hash = self.broadcast_tx_commit(signer, [msg_any]).await?;
-
-                tracing::info!("cosmos tx {:?} => {:?}", tx_hash, msg);
-
-                Ok(())
-            })
-            .await
-    }
-}
-
-impl<Tr, Hc> DoFetchState<Hc, Tr> for Union
-where
-    Tr: ChainExt,
-    Hc: ChainExt<
-            StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof,
-            Fetch<Tr> = UnionFetch<Hc, Tr>,
-        > + Wraps<Self>,
-
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
-    // required by fetch_abci_query, can be removed once that's been been removed
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-    Tr::SelfClientState: Decode<Proto>,
-    Tr::SelfConsensusState: Decode<Proto>,
-
-    Hc::StoredClientState<Tr>: Decode<Proto>,
-    Hc::StoredConsensusState<Tr>: Decode<Proto>,
-
-    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-{
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
-        seq([
-            wait(id(
-                hc.chain_id(),
-                WaitForBlock {
-                    // height: at.increment(),
-                    height: at,
-                    __marker: PhantomData,
-                },
-            )),
-            fetch(id::<Hc, Tr, _>(
-                hc.chain_id(),
-                Fetch::specific(FetchAbciQuery {
-                    path,
-                    height: at,
-                    ty: AbciQueryType::State,
-                }),
-            )),
-        ])
-    }
-
-    async fn query_client_state(
-        hc: &Hc,
-        client_id: Hc::ClientId,
-        height: Hc::Height,
-    ) -> Hc::StoredClientState<Tr> {
-        let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
-            hc,
-            ClientStatePath { client_id }.into(),
-            height,
-            AbciQueryType::State,
+    async fn msg(&self, msg: Effect<Union, Tr>) -> Result<(), BroadcastTxCommitError> {
+        do_msg(
+            self,
+            msg,
+            |(), client_state, consensus_state| {
+                (
+                    client_state.into_any().into(),
+                    consensus_state.into_any().into(),
+                )
+            },
+            |client_message| client_message.into_any().into(),
         )
         .await
-        else {
-            panic!()
-        };
-
-        Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(relayer_msg)
-            .unwrap()
-            .t
-            .state
-    }
-}
-
-impl<Tr: ChainExt, Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>> + Wraps<Self>> DoFetchProof<Hc, Tr>
-    for Union
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
-{
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
-        seq([
-            wait(id(
-                hc.chain_id(),
-                WaitForBlock {
-                    // height: at.increment(),
-                    height: at,
-                    __marker: PhantomData,
-                },
-            )),
-            fetch(id::<Hc, Tr, _>(
-                hc.chain_id(),
-                Fetch::specific(FetchAbciQuery::<Hc, Tr> {
-                    path,
-                    height: at,
-                    ty: AbciQueryType::Proof,
-                }),
-            )),
-        ])
-    }
-}
-
-impl<Tr, Hc> DoFetchUpdateHeaders<Hc, Tr> for Union
-where
-    Tr: ChainExt,
-    Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>
-        + Wraps<Self>,
-
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
-{
-    fn fetch_update_headers(
-        hc: &Hc,
-        update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
-        seq([
-            wait(id(
-                hc.chain_id(),
-                WaitForBlock {
-                    height: update_info.update_to,
-                    __marker: PhantomData,
-                },
-            )),
-            aggregate(
-                [
-                    fetch(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        Fetch::specific(FetchUntrustedCommit {
-                            height: update_info.update_to,
-                            __marker: PhantomData,
-                        }),
-                    )),
-                    fetch(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        Fetch::specific(FetchUntrustedValidators {
-                            height: update_info.update_to,
-                            __marker: PhantomData,
-                        }),
-                    )),
-                    fetch(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        Fetch::specific(FetchTrustedValidators {
-                            height: update_info.update_from,
-                            __marker: PhantomData,
-                        }),
-                    )),
-                ],
-                [],
-                id(
-                    hc.chain_id(),
-                    Aggregate::specific(AggregateProveRequest { req: update_info }),
-                ),
-            ),
-        ])
     }
 }
 
@@ -403,7 +106,7 @@ pub enum UnionDataMsg<Hc: ChainExt, Tr: ChainExt> {
     UntrustedCommit(UntrustedCommit<Hc, Tr>),
     TrustedValidators(TrustedValidators<Hc, Tr>),
     UntrustedValidators(UntrustedValidators<Hc, Tr>),
-    ProveResponse(ProveResponse<Tr>),
+    ProveResponse(ProveResponse<Hc, Tr>),
 }
 
 #[queue_msg]
@@ -499,6 +202,62 @@ where
     }
 }
 
+impl<Tr, Hc> DoFetchUpdateHeaders<Hc, Tr> for Union
+where
+    Tr: ChainExt,
+    Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>
+        + Wraps<Self>,
+
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
+{
+    fn fetch_update_headers(
+        hc: &Hc,
+        update_info: FetchUpdateHeaders<Hc, Tr>,
+    ) -> QueueMsg<RelayMessageTypes> {
+        seq([
+            wait(id(
+                hc.chain_id(),
+                WaitForBlock {
+                    height: update_info.update_to,
+                    __marker: PhantomData,
+                },
+            )),
+            aggregate(
+                [
+                    fetch(id::<Hc, Tr, _>(
+                        hc.chain_id(),
+                        Fetch::specific(FetchUntrustedCommit {
+                            height: update_info.update_to,
+                            __marker: PhantomData,
+                        }),
+                    )),
+                    fetch(id::<Hc, Tr, _>(
+                        hc.chain_id(),
+                        Fetch::specific(FetchUntrustedValidators {
+                            height: update_info.update_to,
+                            __marker: PhantomData,
+                        }),
+                    )),
+                    fetch(id::<Hc, Tr, _>(
+                        hc.chain_id(),
+                        Fetch::specific(FetchTrustedValidators {
+                            height: update_info.update_from,
+                            __marker: PhantomData,
+                        }),
+                    )),
+                ],
+                [],
+                id(
+                    hc.chain_id(),
+                    Aggregate::specific(AggregateProveRequest { req: update_info }),
+                ),
+            ),
+        ])
+    }
+}
+
 #[queue_msg]
 #[derive(enumorph::Enumorph)]
 pub enum UnionAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
@@ -515,7 +274,7 @@ where
     identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
     identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
-    Identified<Hc, Tr, ProveResponse<Tr>>: IsAggregateData,
+    Identified<Hc, Tr, ProveResponse<Hc, Tr>>: IsAggregateData,
 
     identified!(AggregateProveRequest<Hc, Tr>): UseAggregate<RelayMessageTypes>,
     identified!(AggregateHeader<Hc, Tr>): UseAggregate<RelayMessageTypes>,
@@ -541,34 +300,19 @@ where
     }
 }
 
-const _: () = {
-    try_from_relayer_msg! {
-        chain = Union,
-        generics = (Tr: ChainExt),
-        msgs = UnionDataMsg(
-            UntrustedCommit(UntrustedCommit<Union, Tr>),
-            TrustedValidators(TrustedValidators<Union, Tr>),
-            UntrustedValidators(UntrustedValidators<Union, Tr>),
-            ProveResponse(ProveResponse<Tr>),
-        ),
-    }
-};
-
-const _: () = {
-    try_from_relayer_msg! {
-        chain = Wasm<Union>,
-        generics = (Tr: ChainExt),
-        msgs = UnionDataMsg(
-            UntrustedCommit(UntrustedCommit<Wasm<Union>, Tr>),
-            TrustedValidators(TrustedValidators<Wasm<Union>, Tr>),
-            UntrustedValidators(UntrustedValidators<Wasm<Union>, Tr>),
-            ProveResponse(ProveResponse<Tr>),
-        ),
-    }
-};
+try_from_relayer_msg! {
+    chain = Union,
+    generics = (Tr: ChainExt),
+    msgs = UnionDataMsg(
+        UntrustedCommit(UntrustedCommit<Union, Tr>),
+        TrustedValidators(TrustedValidators<Union, Tr>),
+        UntrustedValidators(UntrustedValidators<Union, Tr>),
+        ProveResponse(ProveResponse<Union, Tr>),
+    ),
+}
 
 #[queue_msg]
-pub struct ProveResponse<#[cover] Tr: ChainExt> {
+pub struct ProveResponse<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub prove_response: prove_response::ProveResponse,
 }
 
@@ -780,11 +524,11 @@ where
     Hc: ChainExt<Header = <Union as Chain>::Header>,
     Tr: ChainExt,
 
-    Identified<Hc, Tr, ProveResponse<Tr>>: IsAggregateData,
+    Identified<Hc, Tr, ProveResponse<Hc, Tr>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Hc>)>,
 {
-    type AggregatedData = HList![Identified<Hc, Tr, ProveResponse<Tr>>];
+    type AggregatedData = HList![Identified<Hc, Tr, ProveResponse<Hc, Tr>>];
 
     fn aggregate(
         Identified {

@@ -1,22 +1,296 @@
 use std::{fmt::Debug, marker::PhantomData};
 
-use chain_utils::cosmos_sdk::CosmosSdkChain;
+use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
 use prost::Message;
-use queue_msg::{data, QueueMsg};
+use queue_msg::{data, fetch, seq, wait, QueueMsg};
 use unionlabs::{
-    encoding::{Decode, Proto},
+    encoding::{Decode, Encode, Proto},
+    google::protobuf::any::{mk_any, IntoAny},
     ibc::core::client::height::IsHeight,
     ics24::{ClientStatePath, Path},
-    traits::{Chain, HeightOf},
+    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    TypeUrl,
 };
 
 use crate::{
-    chain_impls::cosmos_sdk::fetch::AbciQueryType,
+    chain_impls::cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
     data::{AnyData, Data, IbcProof, IbcState},
+    effect::{
+        Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
+        MsgChannelOpenInitData, MsgChannelOpenTryData, MsgConnectionOpenAckData,
+        MsgConnectionOpenConfirmData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
+        MsgCreateClientData, MsgRecvPacketData, MsgUpdateClientData,
+    },
+    fetch::{AnyFetch, Fetch},
     id, identified,
     use_aggregate::IsAggregateData,
-    AnyLightClientIdentified, ChainExt, Identified, RelayMessageTypes,
+    wait::{AnyWait, Wait, WaitForBlock},
+    AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState, Identified, PathOf,
+    RelayMessageTypes,
 };
+
+pub trait CosmosSdkChainSealed: CosmosSdkChain + ChainExt {}
+
+pub async fn do_msg<Hc, Tr>(
+    hc: &Hc,
+    msg: Effect<Hc, Tr>,
+    // We need to be able to customize the encoding of the client/consensus states and client messages (header) since Wasm<_> needs to wrap them in wasm.v1.*; but since the rest of the logic is exactly the same, the following two functions are used as hooks to allow for the behaviour to be otherwise reused.
+    mk_create_client_states: fn(
+        Hc::Config,
+        ClientStateOf<Tr>,
+        ConsensusStateOf<Tr>,
+    )
+        -> (protos::google::protobuf::Any, protos::google::protobuf::Any),
+    mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
+) -> Result<(), BroadcastTxCommitError>
+where
+    Hc: CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
+    Tr: ChainExt,
+
+    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
+    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
+    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
+
+    ConsensusStateOf<Hc>: Encode<Proto> + TypeUrl,
+    ClientStateOf<Hc>: Encode<Proto> + TypeUrl,
+
+    Tr::StoredClientState<Hc>: IntoAny,
+    Tr::StateProof: Encode<Proto>,
+{
+    hc.signers()
+        .with(|signer| async {
+            let msg_any = match msg.clone() {
+                Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+                        client_id: data.client_id.to_string(),
+                        counterparty: Some(data.counterparty.into()),
+                        version: Some(data.version.into()),
+                        signer: signer.to_string(),
+                        delay_period: data.delay_period,
+                    })
+                }
+                Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => {
+                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+                        client_id: data.client_id.to_string(),
+                        client_state: Some(data.client_state.into_any().into()),
+                        counterparty: Some(data.counterparty.into()),
+                        delay_period: data.delay_period,
+                        counterparty_versions: data
+                            .counterparty_versions
+                            .into_iter()
+                            .map(Into::into)
+                            .collect(),
+                        proof_height: Some(data.proof_height.into_height().into()),
+                        proof_init: data.proof_init.encode(),
+                        proof_client: data.proof_client.encode(),
+                        proof_consensus: data.proof_consensus.encode(),
+                        consensus_height: Some(data.consensus_height.into_height().into()),
+                        signer: signer.to_string(),
+                        host_consensus_state_proof: vec![],
+                        ..Default::default()
+                    })
+                }
+                Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
+                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+                        client_state: Some(data.client_state.into_any().into()),
+                        proof_height: Some(data.proof_height.into_height().into()),
+                        proof_client: data.proof_client.encode(),
+                        proof_consensus: data.proof_consensus.encode(),
+                        consensus_height: Some(data.consensus_height.into_height().into()),
+                        signer: signer.to_string(),
+                        host_consensus_state_proof: vec![],
+                        connection_id: data.connection_id.to_string(),
+                        counterparty_connection_id: data.counterparty_connection_id.to_string(),
+                        version: Some(data.version.into()),
+                        proof_try: data.proof_try.encode(),
+                    })
+                }
+                Effect::ConnectionOpenConfirm(MsgConnectionOpenConfirmData { msg, __marker }) => {
+                    mk_any(
+                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+                            connection_id: msg.connection_id.to_string(),
+                            proof_ack: msg.proof_ack.encode(),
+                            proof_height: Some(msg.proof_height.into_height().into()),
+                            signer: signer.to_string(),
+                        },
+                    )
+                }
+                Effect::ChannelOpenInit(MsgChannelOpenInitData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
+                        port_id: msg.port_id.to_string(),
+                        channel: Some(msg.channel.into()),
+                        signer: signer.to_string(),
+                    })
+                }
+                Effect::ChannelOpenTry(MsgChannelOpenTryData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
+                        port_id: msg.port_id.to_string(),
+                        channel: Some(msg.channel.into()),
+                        counterparty_version: msg.counterparty_version,
+                        proof_init: msg.proof_init.encode(),
+                        proof_height: Some(msg.proof_height.into()),
+                        signer: signer.to_string(),
+                        ..Default::default()
+                    })
+                }
+                Effect::ChannelOpenAck(MsgChannelOpenAckData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
+                        port_id: msg.port_id.to_string(),
+                        channel_id: msg.channel_id.to_string(),
+                        counterparty_version: msg.counterparty_version,
+                        counterparty_channel_id: msg.counterparty_channel_id.to_string(),
+                        proof_try: msg.proof_try.encode(),
+                        proof_height: Some(msg.proof_height.into_height().into()),
+                        signer: signer.to_string(),
+                    })
+                }
+                Effect::ChannelOpenConfirm(MsgChannelOpenConfirmData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+                        port_id: msg.port_id.to_string(),
+                        channel_id: msg.channel_id.to_string(),
+                        proof_height: Some(msg.proof_height.into_height().into()),
+                        signer: signer.to_string(),
+                        proof_ack: msg.proof_ack.encode(),
+                    })
+                }
+                Effect::RecvPacket(MsgRecvPacketData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
+                        packet: Some(msg.packet.into()),
+                        proof_height: Some(msg.proof_height.into_height().into()),
+                        signer: signer.to_string(),
+                        proof_commitment: msg.proof_commitment.encode(),
+                    })
+                }
+                Effect::AckPacket(MsgAckPacketData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
+                        packet: Some(msg.packet.into()),
+                        acknowledgement: msg.acknowledgement,
+                        proof_acked: msg.proof_acked.encode(),
+                        proof_height: Some(msg.proof_height.into_height().into()),
+                        signer: signer.to_string(),
+                    })
+                }
+                Effect::CreateClient(MsgCreateClientData { msg, config }) => {
+                    let (client_state, consensus_state) =
+                        mk_create_client_states(config, msg.client_state, msg.consensus_state);
+
+                    mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
+                        client_state: Some(client_state),
+                        consensus_state: Some(consensus_state),
+                        signer: signer.to_string(),
+                    })
+                }
+                Effect::UpdateClient(MsgUpdateClientData(msg)) => {
+                    mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
+                        signer: signer.to_string(),
+                        client_id: msg.client_id.to_string(),
+                        client_message: Some(mk_client_message(msg.client_message)),
+                    })
+                }
+            };
+
+            let tx_hash = hc.broadcast_tx_commit(signer, [msg_any]).await?;
+
+            tracing::info!("cosmos tx {:?} => {:?}", tx_hash, msg);
+
+            Ok(())
+        })
+        .await
+}
+
+impl<Hc, Tr> DoFetchState<Hc, Tr> for Hc
+where
+    Hc: CosmosSdkChainSealed + ChainExt,
+    Hc::StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof>,
+    <Hc::StateProof as TryFrom<protos::ibc::core::commitment::v1::MerkleProof>>::Error: Debug,
+    Tr: ChainExt,
+
+    Hc::Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>,
+
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
+    // required by fetch_abci_query, can be removed once that's been been removed
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    Tr::SelfClientState: Decode<Proto>,
+    Tr::SelfConsensusState: Decode<Proto>,
+
+    Hc::StoredClientState<Tr>: Decode<Proto>,
+    Hc::StoredConsensusState<Tr>: Decode<Proto>,
+
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
+{
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
+        seq([
+            wait(id(
+                hc.chain_id(),
+                WaitForBlock {
+                    // height: at.increment(),
+                    height: at,
+                    __marker: PhantomData,
+                },
+            )),
+            fetch(id::<Hc, Tr, _>(
+                hc.chain_id(),
+                Fetch::specific(FetchAbciQuery {
+                    path,
+                    height: at,
+                    ty: AbciQueryType::State,
+                }),
+            )),
+        ])
+    }
+
+    async fn query_client_state(
+        hc: &Hc,
+        client_id: Hc::ClientId,
+        height: Hc::Height,
+    ) -> Hc::StoredClientState<Tr> {
+        let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
+            hc,
+            ClientStatePath { client_id }.into(),
+            height,
+            AbciQueryType::State,
+        )
+        .await
+        else {
+            panic!()
+        };
+
+        Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(relayer_msg)
+            .unwrap()
+            .t
+            .state
+    }
+}
+
+impl<Hc, Tr> DoFetchProof<Hc, Tr> for Hc
+where
+    Hc: ChainExt + CosmosSdkChainSealed,
+    Tr: ChainExt,
+    Hc::Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
+{
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
+        seq([
+            wait(id(
+                hc.chain_id(),
+                WaitForBlock {
+                    height: at,
+                    __marker: PhantomData,
+                },
+            )),
+            fetch(id::<Hc, Tr, _>(
+                hc.chain_id(),
+                Fetch::specific(FetchAbciQuery::<Hc, Tr> {
+                    path,
+                    height: at,
+                    ty: AbciQueryType::Proof,
+                }),
+            )),
+        ])
+    }
+}
 
 pub async fn fetch_abci_query<Hc, Tr>(
     c: &Hc,
@@ -654,5 +928,166 @@ pub mod tendermint_helpers {
         height: ::tendermint::block::Height,
     ) -> BoundedI64<0, { i64::MAX }> {
         i64::from(height).try_into().unwrap()
+    }
+}
+
+pub mod wasm {
+    use chain_utils::{
+        cosmos::Cosmos,
+        cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain},
+        union::Union,
+        wasm::Wasm,
+    };
+    use queue_msg::QueueMsg;
+    use serde::{Deserialize, Serialize};
+    use unionlabs::{
+        encoding::{Encode, Proto},
+        google::protobuf::any::{Any, IntoAny},
+        hash::H256,
+        ibc::lightclients::wasm,
+        traits::{ClientState, ClientStateOf, ConsensusStateOf, HeaderOf},
+        TypeUrl,
+    };
+
+    use crate::{
+        chain_impls::{
+            cosmos::{CosmosAggregateMsg, CosmosDataMsg, CosmosFetch},
+            cosmos_sdk::{
+                data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
+                do_msg, CosmosSdkChainSealed,
+            },
+            union::{ProveResponse, UnionAggregateMsg, UnionDataMsg, UnionFetch},
+        },
+        effect::Effect,
+        fetch::FetchUpdateHeaders,
+        ChainExt, DoFetchUpdateHeaders, DoMsg, RelayMessageTypes,
+    };
+
+    impl ChainExt for Wasm<Union> {
+        type Data<Tr: ChainExt> = UnionDataMsg<Wasm<Union>, Tr>;
+        type Fetch<Tr: ChainExt> = UnionFetch<Wasm<Union>, Tr>;
+        type Aggregate<Tr: ChainExt> = UnionAggregateMsg<Wasm<Union>, Tr>;
+
+        type MsgError = BroadcastTxCommitError;
+
+        type Config = WasmConfig;
+    }
+
+    const _: () = {
+        try_from_relayer_msg! {
+            chain = Wasm<Union>,
+            generics = (Tr: ChainExt),
+            msgs = UnionDataMsg(
+                UntrustedCommit(UntrustedCommit<Wasm<Union>, Tr>),
+                TrustedValidators(TrustedValidators<Wasm<Union>, Tr>),
+                UntrustedValidators(UntrustedValidators<Wasm<Union>, Tr>),
+                ProveResponse(ProveResponse<Wasm<Union>, Tr>),
+            ),
+        }
+    };
+
+    impl ChainExt for Wasm<Cosmos> {
+        type Data<Tr: ChainExt> = CosmosDataMsg<Wasm<Cosmos>, Tr>;
+        type Fetch<Tr: ChainExt> = CosmosFetch<Wasm<Cosmos>, Tr>;
+        type Aggregate<Tr: ChainExt> = CosmosAggregateMsg<Wasm<Cosmos>, Tr>;
+
+        type MsgError = BroadcastTxCommitError;
+
+        type Config = WasmConfig;
+    }
+
+    const _: () = {
+        try_from_relayer_msg! {
+            chain = Wasm<Cosmos>,
+            generics = (Tr: ChainExt),
+            msgs = CosmosDataMsg(
+                TrustedCommit(TrustedCommit<Wasm<Cosmos>, Tr>),
+                UntrustedCommit(UntrustedCommit<Wasm<Cosmos>, Tr>),
+                TrustedValidators(TrustedValidators<Wasm<Cosmos>, Tr>),
+                UntrustedValidators(UntrustedValidators<Wasm<Cosmos>, Tr>),
+            ),
+        }
+    };
+
+    impl<Hc> CosmosSdkChainSealed for Wasm<Hc>
+    where
+        Wasm<Hc>: ChainExt,
+        Hc: CosmosSdkChainSealed,
+    {
+    }
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+    pub struct WasmConfig {
+        pub checksum: H256,
+        // pub inner: T,
+    }
+
+    impl<Hc, Tr> DoFetchUpdateHeaders<Self, Tr> for Wasm<Hc>
+    where
+        Wasm<Hc>: ChainExt,
+        Hc: ChainExt + CosmosSdkChain + DoFetchUpdateHeaders<Self, Tr>,
+        Tr: ChainExt,
+    {
+        fn fetch_update_headers(
+            hc: &Self,
+            update_info: FetchUpdateHeaders<Self, Tr>,
+        ) -> QueueMsg<RelayMessageTypes> {
+            Hc::fetch_update_headers(
+                hc,
+                FetchUpdateHeaders {
+                    counterparty_chain_id: update_info.counterparty_chain_id,
+                    counterparty_client_id: update_info.counterparty_client_id,
+                    update_from: update_info.update_from,
+                    update_to: update_info.update_to,
+                },
+            )
+        }
+    }
+
+    impl<Hc, Tr> DoMsg<Wasm<Hc>, Tr> for Wasm<Hc>
+    where
+        Wasm<Hc>: ChainExt<MsgError = BroadcastTxCommitError, Config = WasmConfig>,
+        Hc: CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
+        Tr: ChainExt,
+
+        ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
+        ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
+        HeaderOf<Tr>: Encode<Proto> + TypeUrl,
+
+        ConsensusStateOf<Wasm<Hc>>: Encode<Proto> + TypeUrl,
+        ClientStateOf<Wasm<Hc>>: Encode<Proto> + TypeUrl,
+
+        Tr::StoredClientState<Wasm<Hc>>: IntoAny,
+        Tr::StateProof: Encode<Proto>,
+    {
+        async fn msg(&self, msg: Effect<Wasm<Hc>, Tr>) -> Result<(), Self::MsgError> {
+            do_msg(
+                self,
+                msg,
+                |config, client_state, consensus_state| {
+                    (
+                        Any(wasm::client_state::ClientState {
+                            latest_height: client_state.height().into(),
+                            data: client_state,
+                            checksum: config.checksum,
+                        })
+                        .into(),
+                        Any(wasm::consensus_state::ConsensusState {
+                            data: consensus_state,
+                        })
+                        .into(),
+                    )
+                },
+                |client_message| {
+                    Any(wasm::client_message::ClientMessage {
+                        data: client_message,
+                    })
+                    .into()
+                },
+            )
+            .await
+        }
     }
 }

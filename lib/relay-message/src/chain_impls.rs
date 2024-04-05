@@ -23,77 +23,82 @@ macro_rules! try_from_relayer_msg {
                             $d ($d Variant:ident($d Ty:ty),)+
                         ),
                     ) => {
-                        $d (
-                            impl <$($generics)+> TryFrom<queue_msg::QueueMsg<crate::RelayMessageTypes>> for Identified<$d Chain, Tr, $d Ty>
-                            where
-                                identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
-                            {
-                                type Error = queue_msg::QueueMsg<crate::RelayMessageTypes>;
-                                fn try_from(value: queue_msg::QueueMsg<crate::RelayMessageTypes>) -> Result<Identified<$d Chain, Tr, $d Ty>, queue_msg::QueueMsg<crate::RelayMessageTypes>> {
-                                    match value {
-                                        queue_msg::QueueMsg::Data(data) => {
-                                            let Identified {
-                                                chain_id,
-                                                t,
-                                                __marker: _,
-                                            } = data.try_into().map_err(queue_msg::QueueMsg::Data)?;
+                        const _: () = {
+                            use crate::{AnyLightClientIdentified, RelayMessageTypes, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
+                            use queue_msg::QueueMsg;
 
-                                            match t {
-                                                crate::Data::LightClientSpecific(
-                                                    crate::data::LightClientSpecificData($d Enum::$d Variant(
+                            $d (
+                                impl <$($generics)+> TryFrom<QueueMsg<RelayMessageTypes>> for Identified<$d Chain, Tr, $d Ty>
+                                where
+                                    identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
+                                {
+                                    type Error = QueueMsg<RelayMessageTypes>;
+                                    fn try_from(value: QueueMsg<RelayMessageTypes>) -> Result<Identified<$d Chain, Tr, $d Ty>, QueueMsg<RelayMessageTypes>> {
+                                        match value {
+                                            QueueMsg::Data(data) => {
+                                                let Identified {
+                                                    chain_id,
                                                     t,
-                                                ))) => Ok(crate::id(chain_id, t)),
-                                                _ => Err(queue_msg::QueueMsg::Data(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t))))
-                                            }
+                                                    __marker: _,
+                                                } = data.try_into().map_err(QueueMsg::Data)?;
 
-                                        },
-                                        _ => Err(value),
+                                                match t {
+                                                    Data::LightClientSpecific(
+                                                        LightClientSpecificData($d Enum::$d Variant(
+                                                        t,
+                                                    ))) => Ok(id(chain_id, t)),
+                                                    _ => Err(QueueMsg::Data(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t))))
+                                                }
+
+                                            },
+                                            _ => Err(value),
+                                        }
                                     }
                                 }
-                            }
 
-                            impl <$($generics)+> From<Identified<$d Chain, Tr, $d Ty>> for crate::AnyLightClientIdentified<crate::data::AnyData>
-                            where
-                                AnyLightClientIdentified<AnyData>: From<identified!(Data<$d Chain, Tr>)>
-                            {
-                                fn from(Identified { chain_id, t, __marker: _ }: Identified<$d Chain, Tr, $d Ty>) -> crate::AnyLightClientIdentified<crate::data::AnyData> {
-                                    crate::AnyLightClientIdentified::from(crate::id(
-                                        chain_id,
-                                        Data::LightClientSpecific(crate::data::LightClientSpecificData($d Enum::$d Variant(
-                                            t,
-                                        ))),
-                                    ))
-                                }
-                            }
-
-                            impl <$($generics)+> TryFrom<crate::AnyLightClientIdentified<crate::data::AnyData>> for Identified<$d Chain, Tr, $d Ty>
-                            where
-                                identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
-                            {
-                                type Error = crate::AnyLightClientIdentified<crate::data::AnyData>;
-
-                                fn try_from(value: crate::AnyLightClientIdentified<crate::data::AnyData>) -> Result<Identified<$d Chain, Tr, $d Ty>, crate::AnyLightClientIdentified<crate::data::AnyData>> {
-                                    let Identified {
-                                        chain_id,
-                                        t,
-                                        __marker: _,
-                                    } = value.try_into()?;
-
-                                    match t {
-                                        Data::LightClientSpecific(crate::data::LightClientSpecificData($d Enum::$d Variant(
-                                            t,
-                                        ))) => Ok(crate::id(chain_id, t)),
-                                        _ => Err(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t)))
+                                impl <$($generics)+> From<Identified<$d Chain, Tr, $d Ty>> for AnyLightClientIdentified<AnyData>
+                                where
+                                    AnyLightClientIdentified<AnyData>: From<identified!(Data<$d Chain, Tr>)>
+                                {
+                                    fn from(Identified { chain_id, t, __marker: _ }: Identified<$d Chain, Tr, $d Ty>) -> AnyLightClientIdentified<AnyData> {
+                                        AnyLightClientIdentified::from(id(
+                                            chain_id,
+                                            Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
+                                                t,
+                                            ))),
+                                        ))
                                     }
                                 }
-                            }
-                        )+
 
-                        // impl From<<$d Chain as LightClient>::$d LcMsg> for $d Specific<$d Chain> {
-                        //     fn from(msg: <$d Chain as LightClient>::$d LcMsg) -> Self {
-                        //         Self(msg)
-                        //     }
-                        // }
+                                impl <$($generics)+> TryFrom<AnyLightClientIdentified<AnyData>> for Identified<$d Chain, Tr, $d Ty>
+                                where
+                                    identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
+                                {
+                                    type Error = AnyLightClientIdentified<AnyData>;
+
+                                    fn try_from(value: AnyLightClientIdentified<AnyData>) -> Result<Identified<$d Chain, Tr, $d Ty>, AnyLightClientIdentified<AnyData>> {
+                                        let Identified {
+                                            chain_id,
+                                            t,
+                                            __marker: _,
+                                        } = value.try_into()?;
+
+                                        match t {
+                                            Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
+                                                t,
+                                            ))) => Ok(id(chain_id, t)),
+                                            _ => Err(Into::<AnyLightClientIdentified<AnyData>>::into(id(chain_id, t)))
+                                        }
+                                    }
+                                }
+                            )+
+
+                            // impl From<<$d Chain as LightClient>::$d LcMsg> for $d Specific<$d Chain> {
+                            //     fn from(msg: <$d Chain as LightClient>::$d LcMsg) -> Self {
+                            //         Self(msg)
+                            //     }
+                            // }
+                        };
                     };
                 }
             }
