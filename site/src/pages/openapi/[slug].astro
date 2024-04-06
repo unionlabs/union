@@ -10,6 +10,9 @@ const openApiSchemaUrl = `/openapi/${slug}.json`
   <head>
     <meta charset="UTF-8" />
     <title>{`Union ${slug.toLocaleUpperCase()} API`}</title>
+    <meta property="og:locale" content="en_US" />
+    <meta name="robots" content="index, follow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link
       rel="stylesheet"
       type="text/css"
@@ -28,19 +31,21 @@ const openApiSchemaUrl = `/openapi/${slug}.json`
         charset="UTF-8"></script>
       <script is:inline define:vars={{ openApiSchemaUrl }}>
         // @ts-ignore
-        window.onload = () => window.ui =
+        window.onload = () =>
           // @ts-ignore
-          SwaggerUIBundle({
+          (window.ui =
             // @ts-ignore
-            url: openApiSchemaUrl,
-            deepLinking: true,
-            dom_id: '#swagger-ui',
-            layout: 'StandaloneLayout',
-            // @ts-ignore
-            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-            // @ts-ignore
-            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-          })
+            SwaggerUIBundle({
+              // @ts-ignore
+              url: openApiSchemaUrl,
+              deepLinking: true,
+              dom_id: '#swagger-ui',
+              layout: 'StandaloneLayout',
+              // @ts-ignore
+              plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+              // @ts-ignore
+              presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+            }))
       </script>
     </main>
 

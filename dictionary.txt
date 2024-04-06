@@ -11,20 +11,13 @@ Boneh
 CCTP
 CFLAGS
 CMOV
-Certus
-Npcwo
 Celestia
+Certus
 Chainer
 Cleper
 Codehash
 Coeff
 Cofactor
-prevotes
-precommits
-IHAVENOIDEA
-cosmoshub
-proxied
-timedelta
 Configurator
 Connor
 Cosmoverse
@@ -62,6 +55,7 @@ Hyperlane
 IAVL
 IBC's
 IERC
+IHAVENOIDEA
 IIBC
 IOSVG
 Infima
@@ -92,6 +86,7 @@ NIXBUILDNET
 Neue
 Nonexist
 Noto
+Npcwo
 PINGPONG
 PRECOMMIT
 PREVOTE
@@ -300,6 +295,7 @@ corestoretypes
 coreutils
 cosmjs
 cosmosgen
+cosmoshub
 cosmosproto
 cosmossdk
 cosmrs
@@ -662,11 +658,13 @@ postcss
 postgrespassword
 posthandler
 precommit
+precommits
 prehash
 preimage
 preimages
 preprocessors
 prevote
+prevotes
 println
 privval
 profdata
@@ -679,6 +677,7 @@ protos
 provercmd
 provergrpc
 provergrpcapi
+proxied
 pruningtypes
 prysm
 prysmaticlabs
@@ -849,6 +848,7 @@ tfmodule
 tftypes
 thiserror
 tikv
+timedelta
 timescaledb
 tkey
 tkeys
