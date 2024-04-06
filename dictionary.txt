@@ -589,6 +589,7 @@ oneof
 openapi
 openapiv
 opsz
+osmo
 osmosisd
 outdir
 outfile

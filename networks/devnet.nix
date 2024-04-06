@@ -51,7 +51,7 @@
       };
 
       devnet-osmosis = mkCosmosDevnet {
-        node = self'.packages.starsd;
+        node = self'.packages.osmosisd;
         chainId = "osmosis-devnet-1";
         chainName = "osmosis";
         denom = "uosmo";
@@ -65,6 +65,7 @@
           self'.packages.ucs01-relay
         ];
         portIncrease = 200;
+        sdkVersion = 47;
       };
 
       devnet-simd = mkCosmosDevnet {

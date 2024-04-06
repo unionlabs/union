@@ -14,7 +14,7 @@
 , cosmwasmContracts ? [ ]
 , startCommandOverwrite ? null
 , extraPackages ? [ ]
-, ...
+, sdkVersion ? 50
 }:
 assert (builtins.isString chainId);
 assert (builtins.isString chainName);
@@ -22,6 +22,10 @@ assert (builtins.isString denom);
 assert (builtins.isString keyType);
 assert (builtins.isInt portIncrease);
 assert (builtins.isInt validatorCount);
+assert (pkgs.lib.assertOneOf
+  "sdkVersion"
+  sdkVersion
+  [ 47 50 ]);
 let
   devKeyMnemonics = {
     alice = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
@@ -66,13 +70,7 @@ let
       ''
         export HOME=$(pwd)
 
-        cat ${mkNodeMnemonic idx} | ${nodeBin} \
-          init \
-          testnet \
-          --default-denom ${denom} \
-          --chain-id ${chainId} \
-          --home . \
-          --recover 2> /dev/null
+        cp -r --no-preserve=mode ${initHome idx}/* .
 
         cp ${mkNodeKey idx} ./config/node_key.json
         ${nodeBin} tendermint show-node-id --home . | tr -d '\n' > $out
@@ -86,13 +84,7 @@ let
       ''
         export HOME=$(pwd)
 
-        cat ${mkNodeMnemonic idx} | ${nodeBin} \
-          init \
-          testnet \
-          --default-denom ${denom} \
-          --chain-id ${chainId} \
-          --home . \
-          --recover 2> /dev/null
+        cp -r --no-preserve=mode ${initHome idx}/* .
 
         mv ./config/priv_validator_key.json $out
         echo "created valkey-${toString idx}: $(cat $out)"
@@ -104,7 +96,7 @@ let
       "${chainName}-valgentx_${toString idx}"
       {
         buildInputs = [ pkgs.jq ];
-        src = addAllKeysToKeyringAndGenesis initHome;
+        src = addAllKeysToKeyringAndGenesis (initHome idx);
       }
       ''
         export HOME=$(pwd)
@@ -113,9 +105,9 @@ let
 
         echo "validator pubkey: $PUBKEY"
 
+        # gentx was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          genesis \
-          gentx \
+          ${if sdkVersion >= 50 then "genesis" else ""} gentx \
           valoper-${toString idx} \
           1000000000000000000000${denom} \
           --chain-id ${chainId} \
@@ -127,19 +119,23 @@ let
           --output-document $out
       '';
 
-  initHome = pkgs.runCommand
+  initHome = idx: pkgs.runCommand
     "${chainName}-genesis-home"
     { buildInputs = [ ]; }
     ''
       export HOME=$(pwd)
       mkdir -p $out
 
-      ${nodeBin} \
+      cat ${mkNodeMnemonic (if idx == null then 0 else idx)} | ${nodeBin} \
         init \
-        testnet \
-        --default-denom ${denom} \
+        testnet ${pkgs.lib.optionalString (sdkVersion >= 50) ''--default-denom ${denom}''} \
         --chain-id ${chainId} \
-        --home $out
+        --home $out \
+        --recover 2>/dev/null
+
+      ${pkgs.lib.optionalString (sdkVersion < 50) ''
+        sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
+      ''} 2>/dev/null
     '';
 
   addDevKeyToKeyringAndGenesis = name: mnemonic: home:
@@ -151,15 +147,17 @@ let
         mkdir -p $out
         cp --no-preserve=mode -r ${home}/* $out
 
+        ls -al $out
+
         # Add the dev account
         echo ${mnemonic} | ${nodeBin} keys add \
           --recover ${name} \
           --keyring-backend test \
           --home $out
 
+        # add-genesis-account was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          genesis \
-          add-genesis-account \
+          ${if sdkVersion >= 50 then "genesis" else ""} add-genesis-account \
           ${name} \
           10000000000000000000000000${denom} \
           --keyring-backend test \
@@ -183,9 +181,9 @@ let
           --keyring-backend test \
           --home $out
 
+        # add-genesis-account was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          genesis \
-          add-genesis-account \
+          ${if sdkVersion >= 50 then "genesis" else ""} add-genesis-account \
           valoper-${toString idx} \
           10000000000000000000000000${denom} \
           --keyring-backend test \
@@ -195,7 +193,7 @@ let
   addAllKeysToKeyringAndGenesis = home:
     pkgs.lib.foldl
       (home: f: f home)
-      initHome
+      home
       (
         pkgs.lib.flatten [
           (pkgs.lib.mapAttrsToList addDevKeyToKeyringAndGenesis devKeyMnemonics)
@@ -554,7 +552,7 @@ let
 
   genesisHome = pkgs.lib.foldl
     (home: f: f home)
-    initHome
+    (initHome null)
     (
       pkgs.lib.flatten [
         addAllKeysToKeyringAndGenesis
@@ -590,10 +588,16 @@ let
     '') validatorCount)}
 
     echo "collecting"
-    ${nodeBin} genesis collect-gentxs --home . 2> /dev/null
+    # collect-gentxs was moved to a subcommand of genesis in sdk v50
+    ${nodeBin} ${if sdkVersion >= 50 then "genesis" else ""} collect-gentxs --home . 2> /dev/null
 
     echo "validating"
-    ${nodeBin} genesis validate --home .
+    ${if sdkVersion < 50 then ''
+      ${nodeBin} validate-genesis --home .
+    '' else ''
+      ${nodeBin} genesis validate --home .
+    ''}
+    
   '';
 
   mkValidatorHome = idx:
@@ -615,6 +619,7 @@ let
 
         # All nodes connect to node 0
         sed -i "s/persistent_peers = \".*\"/persistent_peers = \"$(cat ${mkNodeId 0})@${chainName}-0:26656\"/" $out/config/config.toml
+        sed -i 's/chain-id = ""/chain-id = "${chainId}"/' $out/config/client.toml
 
         cat $out/config/config.toml | grep "persistent_peers ="
       '';
@@ -627,7 +632,7 @@ let
           pkgs.coreutils
           node
           (mkValidatorHome idx)
-        ] ++ (extraPackages);
+        ] ++ extraPackages;
       };
       service = {
         tty = true;
