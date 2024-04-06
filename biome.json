@@ -50,6 +50,7 @@
     }
   },
   "files": {
+    "maxSize": 3048576,
     "include": [
       "*.ts",
       "*.mts",
