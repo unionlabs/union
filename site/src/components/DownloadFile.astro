@@ -1,24 +1,41 @@
 ---
-/**
- * Local filepath of the file to download.
- * If there's a static file you should store it in `/public/<filename>`,
- * and then pass the filepath as `/<filename>`.
- */
 interface Props {
-  filepath: string
-  filename?: string
+  source: "local" | "external"
+  link: string
+  filename: string
   class?: string
 }
 
-let { filepath, filename, class: suppliedClass } = Astro.props
-
-filename = filename || filepath.split("/").pop()
+const { source, link, filename, class: suppliedClass } = Astro.props
 ---
 
 <a
-  href={filepath}
+  href={link}
   download={filename}
   class:list={[suppliedClass]}
+  data-source={source}
+  data-link={link}
 >
   {filename}
 </a>
+
+<script>
+  import { downloadObjectAsFile } from '#/lib/utilities.ts'
+
+  const downloadFileElement = document.querySelector('a[data-link]')
+  const linkValue = downloadFileElement?.dataset.link
+  const source = downloadFileElement?.dataset.source
+
+  if (source === 'external' && linkValue && linkValue?.startsWith('http')) {
+    downloadFileElement.addEventListener(
+      'click',
+      async event => {
+        event.preventDefault()
+        const response = await fetch(linkValue)
+        const data = (await response.json()) as Record<string, any>
+        downloadObjectAsFile({ filename: downloadFileElement.download, data })
+      },
+      { once: true },
+    )
+  }
+</script>

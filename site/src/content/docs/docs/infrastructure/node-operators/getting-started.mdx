@@ -106,7 +106,7 @@ uniond init $MONIKER --chain-id $CHAIN_ID
 
 Next, edit `~/.union/config/config.toml`. We'll set the seeds to ensure your node can connect to the peer-to-peer network.
 
-For <FunctionResult result={'`' + import.meta.env.CHAIN_ID_VERSION + '`'} /> replace `seeds = ""` with:
+For <code><FunctionResult result={import.meta.env.CHAIN_ID_VERSION} /></code> replace `seeds = ""` with:
 
 <Code
   lang='toml'

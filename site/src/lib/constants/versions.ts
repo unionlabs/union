@@ -20,7 +20,3 @@ export function getSeedsParts(chainId = import.meta.env.CHAIN_ID_VERSION) {
   const [addressPart, port] = address.split(":")
   return { nodeId, address: addressPart, port }
 }
-
-console.log(
-  Object.entries(versions).map(([chainId, data], index) => console.log({ chainId, data, index }))
-)

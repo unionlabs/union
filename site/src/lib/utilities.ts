@@ -15,3 +15,17 @@ export function isKeyOf<T extends object>(obj: T, key: keyof any): key is keyof 
   if (!key) return false
   return key in obj
 }
+
+export function downloadObjectAsFile({
+  filename,
+  data
+}: { filename: string; data: Record<string, any> }) {
+  const blob = new Blob([JSON.stringify(data)])
+  const jsonObjectURL = window.URL.createObjectURL(blob)
+  const temporaryAnchor = document.createElement("a")
+  temporaryAnchor.setAttribute("download", filename)
+  temporaryAnchor.setAttribute("href", jsonObjectURL)
+  temporaryAnchor.click()
+  URL.revokeObjectURL(jsonObjectURL)
+  temporaryAnchor.remove()
+}

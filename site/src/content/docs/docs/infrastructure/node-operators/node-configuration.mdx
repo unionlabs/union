@@ -23,7 +23,7 @@ Located in `config/client.toml`, this file is host to client settings.
 
 Update this value to ensure that your client is supplied with the correct chain ID.
 
-For the Union Testnet, this value should be <FunctionResult result={'`"' + import.meta.env.CHAIN_ID_VERSION + '"`'} />.
+For the Union Testnet, this value should be <code><FunctionResult result={import.meta.env.CHAIN_ID_VERSION} /></code>.
 
 <Code
   lang='toml'
@@ -32,8 +32,6 @@ For the Union Testnet, this value should be <FunctionResult result={'`"' + impor
     chain-id = "${import.meta.env.CHAIN_ID_VERSION}"
   `)}
 />
-
-<FunctionResult result={``} />
 
 ### Host/Port for the Tendermint RPC
 
@@ -126,7 +124,7 @@ external_address = "example.com:26656"
 
 Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
-Seed nodes help orchestrate initial connections to the network. For <FunctionResult result={'`' + import.meta.env.CHAIN_ID_VERSION + '`'} />, the seed nodes are:
+Seed nodes help orchestrate initial connections to the network. For <code><FunctionResult result={import.meta.env.CHAIN_ID_VERSION} /></code>, the seed nodes are:
 
 <Code
   lang='toml'
