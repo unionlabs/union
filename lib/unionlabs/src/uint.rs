@@ -8,7 +8,6 @@ use core::{
 
 use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
-use tree_hash::TreeHash;
 
 use crate::{
     encoding::{Decode, Encode, Proto},
@@ -17,21 +16,9 @@ use crate::{
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
 #[derive(
-    ::macros::Debug,
-    Clone,
-    Copy,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Serialize,
-    Deserialize,
-    ssz::Encode,
-    ssz::Decode,
+    ::macros::Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[ssz(struct_behaviour = "transparent")]
 #[repr(transparent)]
 #[debug("U256({})", self)]
 pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
@@ -269,21 +256,68 @@ impl Decode<Proto> for U256 {
     }
 }
 
-impl TreeHash for U256 {
+impl ssz::Encode for U256 {
+    fn is_ssz_fixed_len() -> bool {
+        true
+    }
+
+    fn ssz_fixed_len() -> usize {
+        32
+    }
+
+    fn ssz_bytes_len(&self) -> usize {
+        32
+    }
+
+    fn ssz_append(&self, buf: &mut Vec<u8>) {
+        let n = <Self as ssz::Encode>::ssz_fixed_len();
+        let s = buf.len();
+
+        buf.resize(s + n, 0);
+        self.0.to_little_endian(&mut buf[s..]);
+    }
+}
+
+impl ssz::Decode for U256 {
+    fn is_ssz_fixed_len() -> bool {
+        true
+    }
+
+    fn ssz_fixed_len() -> usize {
+        32
+    }
+
+    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::DecodeError> {
+        let len = bytes.len();
+        let expected = <Self as ssz::Decode>::ssz_fixed_len();
+
+        if len == expected {
+            Ok(Self(primitive_types::U256::from_little_endian(bytes)))
+        } else {
+            Err(ssz::DecodeError::InvalidByteLength { len, expected })
+        }
+    }
+}
+
+impl tree_hash::TreeHash for U256 {
     fn tree_hash_type() -> tree_hash::TreeHashType {
-        primitive_types::U256::tree_hash_type()
+        tree_hash::TreeHashType::Basic
     }
 
     fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
-        self.0.tree_hash_packed_encoding()
+        let mut result = [0; 32];
+        self.0.to_little_endian(&mut result);
+        tree_hash::PackedEncoding::from_slice(&result)
     }
 
     fn tree_hash_packing_factor() -> usize {
-        primitive_types::U256::tree_hash_packing_factor()
+        1
     }
 
     fn tree_hash_root(&self) -> tree_hash::Hash256 {
-        self.0.tree_hash_root()
+        let mut result = [0; 32];
+        self.0.to_little_endian(&mut result[..]);
+        result
     }
 }
 

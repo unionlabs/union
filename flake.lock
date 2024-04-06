@@ -147,6 +147,19 @@
         "type": "github"
       }
     },
+    "ethereum-consensus-specs": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1712638258,
+        "narHash": "sha256-yzjxOWyYwsExeI+xe2Mmj2sHApzhDXwBhTnFywGRYhQ=",
+        "type": "tarball",
+        "url": "https://github.com/ethereum/consensus-spec-tests/releases/download/v1.4.0/general.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/ethereum/consensus-spec-tests/releases/download/v1.4.0/general.tar.gz"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
@@ -465,6 +478,7 @@
         "cosmosproto": "cosmosproto",
         "cosmossdk": "cosmossdk",
         "crane": "crane",
+        "ethereum-consensus-specs": "ethereum-consensus-specs",
         "flake-parts": "flake-parts_2",
         "foundry": "foundry",
         "get-flake": "get-flake",

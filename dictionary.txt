@@ -5,6 +5,7 @@ Acknowledgemets
 Acks
 Axelar
 Beriker
+Bitfield
 Bitvector
 Boneh
 CCTP
@@ -42,8 +43,10 @@ GOPATH
 GOPRIVATE
 Getenv
 Groomlake
+HASHSIZE
 HKTs
 HMAC
+Halfnode
 Hashable
 Hasher
 Hhvf
@@ -69,6 +72,9 @@ Lightshift
 Mathjax
 Maxblocks
 Merkle
+Merkleize
+Merkleizes
+Merklization
 Mgoogle
 Mimc
 Misbehaviour
@@ -105,6 +111,7 @@ Rushi
 Rustup
 SEPOLIA
 SIGINT
+SMALLVEC
 SSWU
 SVDW
 Secp
@@ -200,9 +207,15 @@ benluelo
 bhapi
 bigtestnet
 binaryen
+bindgen
 bindir
 biomejs
 bitarray
+bitfield
+bitfield's
+bitfields
+bitlist
+bitsize
 bitslice
 bitvec
 bitvector
@@ -218,6 +231,7 @@ bootnode
 builtins
 bumpp
 byteorder
+bytevec
 cachix
 canonicalization
 canonicalize
@@ -257,6 +271,7 @@ cometbn254
 comettypes
 commitizen
 commitmenttypes
+committes
 composability
 concat
 configurator
@@ -293,6 +308,7 @@ crisiskeeper
 crisistypes
 crossorigin
 cryptware
+ctxt
 ctypes
 curr
 dalek
@@ -354,6 +370,7 @@ fetchurl
 fetchzip
 fields
 fileset
+flamegraph
 floorlog
 fmtlib
 foldl
@@ -450,6 +467,7 @@ icahostkeeper
 icahosttypes
 icatypes
 identifing
+idents
 iflag
 ilog
 imap
@@ -459,6 +477,7 @@ incentivizes
 includedir
 infima
 informations
+inplace
 interchain
 interchainaccounts
 interfacetype
@@ -529,6 +548,9 @@ maxpeers
 mdast
 mdsvex
 merkle
+merkleize
+merkleize        
+merklizer
 metadatas
 metas
 mgoogle
@@ -611,6 +633,7 @@ paren
 partset
 passthru
 patchelf
+paulhauner
 pedersen
 permissioned
 permissionless
@@ -722,6 +745,7 @@ secp
 sepolia
 sequi
 serde
+serialization
 serverconfig
 servertypes
 seti
@@ -740,10 +764,12 @@ simtestutil
 simtypes
 slashingkeeper
 slashingtypes
+smallvec
 snapshotter
 snapshottypes
 solomachine
 spearbit
+specialized
 spents
 splitn
 spotlightjs
@@ -752,6 +778,7 @@ sqlx
 squoosh
 srcs
 sslmode
+ssse
 stablecoins
 stakeflow
 stakingcli
@@ -894,6 +921,7 @@ upgradekeeper
 upgradetypes
 urql
 ursi
+usizes
 ustars
 utilised
 utilising

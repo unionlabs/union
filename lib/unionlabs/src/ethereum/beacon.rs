@@ -1,7 +1,9 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
-use ssz::{Decode, Encode};
-use ssz_types::{FixedVector, VariableList};
+use ssz::{
+    types::{FixedVector, VariableList},
+    Decode, Encode,
+};
 use tree_hash::TreeHash;
 use typenum::U;
 

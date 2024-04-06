@@ -114,6 +114,11 @@
       flake = false;
     };
 
+    ethereum-consensus-specs = {
+      url = "https://github.com/ethereum/consensus-spec-tests/releases/download/v1.4.0/general.tar.gz";
+      flake = false;
+    };
+
     # uniond versions
     v0_19_0 = {
       url = "github:unionlabs/union/release-v0.19.0";
@@ -492,6 +497,7 @@
             PONDER_TELEMETRY_DISABLED = true;
 
             ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+            ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
             RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
 

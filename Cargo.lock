@@ -1946,7 +1946,6 @@ name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
  "bytes",
- "ethereum_ssz",
  "hash-db",
  "hash256-std-hasher",
  "hex",
@@ -1961,56 +1960,12 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "sha3",
- "ssz_types",
+ "ssz",
  "thiserror",
- "tree_hash",
+ "tree-hash",
  "trie-db",
  "typenum",
  "unionlabs",
-]
-
-[[package]]
-name = "ethereum_hashing"
-version = "1.0.0-beta.2"
-source = "git+https://github.com/unionlabs/ethereum_hashing?branch=no-std-support#186baeb3838606c224a8da5845744d68851c0143"
-dependencies = [
- "cpufeatures",
- "lazy_static",
- "ring 0.16.20",
- "sha2 0.10.8",
-]
-
-[[package]]
-name = "ethereum_serde_utils"
-version = "0.5.1"
-source = "git+https://github.com/unionlabs/ethereum_serde_utils?branch=no-std-support#5b7a58eb4505933fd1c395f8e66e77445eb07812"
-dependencies = [
- "ethereum-types",
- "hex",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "ethereum_ssz"
-version = "0.5.3"
-source = "git+https://github.com/unionlabs/ethereum_ssz?branch=vec-isnt-valid-ssz#4fa29fbffdba5381e906001b9fde64e1604df5d3"
-dependencies = [
- "ethereum-types",
- "ethereum_ssz_derive",
- "itertools 0.10.5",
- "smallvec",
-]
-
-[[package]]
-name = "ethereum_ssz_derive"
-version = "0.5.3"
-source = "git+https://github.com/unionlabs/ethereum_ssz?branch=vec-isnt-valid-ssz#4fa29fbffdba5381e906001b9fde64e1604df5d3"
-dependencies = [
- "darling",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -5329,6 +5284,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml"
+version = "0.9.34+deprecated"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
+dependencies = [
+ "indexmap 2.2.6",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5446,6 +5414,12 @@ name = "smallvec"
 version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
+
+[[package]]
+name = "snap"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 
 [[package]]
 name = "socket2"
@@ -5738,19 +5712,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "ssz_types"
-version = "0.5.4"
-source = "git+https://github.com/unionlabs/ssz_types?branch=try-from-instead-of-from#dbbcd2e47a802f9ffc7e937024ada5c6da41d883"
+name = "ssz"
+version = "0.5.3"
 dependencies = [
  "arbitrary",
  "derivative",
- "ethereum_serde_utils",
- "ethereum_ssz",
  "itertools 0.10.5",
  "serde",
+ "serde-utils",
+ "serde_json",
+ "serde_yaml",
  "smallvec",
- "tree_hash",
+ "snap",
+ "ssz-derive",
+ "tree-hash",
  "typenum",
+ "unionlabs",
+]
+
+[[package]]
+name = "ssz-derive"
+version = "0.5.3"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "ssz",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -6617,20 +6605,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree_hash"
+name = "tree-hash"
 version = "0.5.2"
-source = "git+https://github.com/unionlabs/tree_hash?branch=use-unionlabs-ssz#5f6b1bde170c456b0416422ecb6d9ac33d2ddcce"
 dependencies = [
- "ethereum-types",
- "ethereum_hashing",
+ "lazy_static",
+ "rand 0.8.5",
+ "sha2 0.10.8",
  "smallvec",
- "tree_hash_derive",
+ "ssz",
+ "tree-hash-derive",
 ]
 
 [[package]]
-name = "tree_hash_derive"
+name = "tree-hash-derive"
 version = "0.5.2"
-source = "git+https://github.com/unionlabs/tree_hash?branch=use-unionlabs-ssz#5f6b1bde170c456b0416422ecb6d9ac33d2ddcce"
 dependencies = [
  "darling",
  "quote",
@@ -6859,7 +6847,6 @@ dependencies = [
  "derive_more",
  "either",
  "enumorph",
- "ethereum_ssz",
  "ethers",
  "ethers-contract-derive",
  "ethers-core",
@@ -6883,12 +6870,12 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
- "ssz_types",
+ "ssz",
  "static_assertions",
  "subtle-encoding",
  "thiserror",
  "tracing",
- "tree_hash",
+ "tree-hash",
  "typenum",
  "uint",
  "wasmparser",
@@ -6912,6 +6899,12 @@ dependencies = [
  "tracing-subscriber",
  "tracing-test",
 ]
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "untrusted"

@@ -1,6 +1,8 @@
 use macros::model;
-use ssz::{Decode, Encode};
-use ssz_types::{fixed_vector, FixedVector};
+use ssz::{
+    types::{fixed_vector, FixedVector},
+    Decode, Encode,
+};
 use tree_hash::TreeHash;
 use typenum::U;
 

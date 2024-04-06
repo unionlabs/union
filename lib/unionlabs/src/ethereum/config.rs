@@ -1,7 +1,7 @@
 use core::{fmt::Debug, str::FromStr};
 
 use serde::{Deserialize, Serialize};
-use typenum::Unsigned;
+use typenum::{NonZero, Unsigned};
 
 use crate::{
     ethereum::Version,
@@ -80,7 +80,7 @@ macro_rules! consts_traits {
             pub trait $CONST: 'static {
                 // Extra traits are required because the builtin derives bound all generic
                 // types unconditionally
-                type $CONST: Unsigned + Debug + Clone + PartialEq + Send + Sync + Unpin;
+                type $CONST: Unsigned + NonZero + Debug + Clone + PartialEq + Send + Sync + Unpin;
             }
 
             impl $CONST for Minimal {

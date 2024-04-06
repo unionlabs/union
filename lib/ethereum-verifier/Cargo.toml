@@ -11,8 +11,7 @@ test-include = ["lib/ethereum-verifier/src/test/"]
 
 [dependencies]
 ssz       = { workspace = true }
-ssz_types = { workspace = true }
-tree_hash = { workspace = true }
+tree-hash = { workspace = true }
 
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true }

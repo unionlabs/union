@@ -1,5 +1,5 @@
 use macros::model;
-use ssz_types::{fixed_vector, variable_list, FixedVector, VariableList};
+use ssz::types::{fixed_vector, variable_list, FixedVector, VariableList};
 use tree_hash::TreeHash;
 
 use crate::{
