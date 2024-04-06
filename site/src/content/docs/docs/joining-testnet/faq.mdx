@@ -4,13 +4,15 @@ sidebar:
   order: 9
 ---
 
+import FunctionResult from '#/components/FunctionResult.astro'
+
 As we continue onboarding validators and expanding the testnet, we'll populate this page with FAQs in regard to becoming a validator on the Union Testnet.
 
 ### How can I become a validator?
 
 We started our testnet with the goal of onboarding 64 validators. The sign-up form for these first 64 slots has been closed.
 
-We have now expanded `union-testnet-6` to support 128 validators. Those interested can submit their Union address to the Subo Survey Bot on [our Discord](https://discord.gg/union-build) to have a chance of being selected as a validator and receiving tokens from the Union team. The Subo "Union Testnet Validator Intake Form" is set to close on February 19th, 2024.
+We have now expanded <FunctionResult result={'`' + import.meta.env.CHAIN_ID_VERSION + '`'} /> to support 128 validators. Those interested can submit their Union address to the Subo Survey Bot on [our Discord](https://discord.gg/union-build) to have a chance of being selected as a validator and receiving tokens from the Union team. The Subo "Union Testnet Validator Intake Form" is set to close on February 19th, 2024.
 
 ### Do you have any public REST/RPC/gRPC endpoints?
 

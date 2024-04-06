@@ -4,7 +4,8 @@ sidebar:
   order: 4
 ---
 
-import { Steps } from "@astrojs/starlight/components";
+import { dedent } from "ts-dedent"
+import { Steps, Code } from "@astrojs/starlight/components";
 
 Before trying to create a validator, ensure you have the following task complete:
 
@@ -66,11 +67,14 @@ Then, run the `create-validator` command.
 
 Then you can submit this file using the `create-validator` sub-command:
 
-```sh frame="none"
-uniond tx staking create-validator $VALIDATOR_JSON_PATH \
-	--from $KEY_NAME \
-	--chain-id union-testnet-6
-```
+<Code
+	lang='sh'
+	code={dedent(`
+		uniond tx staking create-validator $VALIDATOR_JSON_PATH \\
+			--from $KEY_NAME \\
+			--chain-id ${import.meta.env.CHAIN_ID_VERSION}
+	`)}
+/>
 
 _Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`_
 
@@ -82,15 +86,17 @@ If you've followed our instructions for setting up either of our Docker images, 
 
 For example, when creating a validator with `unionvisor`, you can
 
-```sh frame="none"
-touch ~/.unionvisor/validator.json
-
-# Then after editing the json content
-
-uniond tx staking create-validator /.unionvisor/validator.json \
-	--from $KEY_NAME \
-	--chain-id union-testnet-6
-```
+<Code
+	lang='sh'
+	code={dedent(`
+		touch ~/.unionvisor/validator.json
+		
+		# Then after editing the json content
+		uniond tx staking create-validator /.unionvisor/validator.json \\
+			--from $KEY_NAME \\
+			--chain-id ${import.meta.env.CHAIN_ID_VERSION}
+	`)}
+/>
 
 :::
 

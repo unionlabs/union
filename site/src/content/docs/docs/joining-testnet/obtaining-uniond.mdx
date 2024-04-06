@@ -23,7 +23,7 @@ To get the `uniond` image, you can visit [our container](https://github.com/orgs
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
 
-_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
+_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion().current} />_
 
 ## Running uniond
 
@@ -98,7 +98,7 @@ For example, in `zsh`, you can add the following alias to your `.zshrc`:
 alias uniond='docker run -v ~/.union:/.union -v /tmp:/tmp --network host -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION --home /.union'
 ```
 
-_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
+_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion().current} />_
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
 

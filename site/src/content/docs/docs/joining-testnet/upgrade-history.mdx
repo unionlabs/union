@@ -4,36 +4,34 @@ sidebar:
   order: 10
 ---
 
+import { dedent } from "ts-dedent"
+import versions from "~root/versions/versions.json";
 import Badge from "@astrojs/starlight/components/Badge.astro";
+import { Steps, Card, Code } from "@astrojs/starlight/components";
 
 Here you can find records of Union network binary upgrades.
 
-## union-testnet-4
-
-<Badge text="Deprecated" variant="caution" />
-
-The network `union-testnet-4` has had two binary upgrades since genesis.
-
-| Upgrade | Height  |
-| ------- | ------- |
-| v0.14.0 | genesis |
-| v0.15.0 | 236668  |
-| v0.17.0 | 631650  |
-
-## union-testnet-5
-
-<Badge text="Deprecated" variant="caution" />
-
-The network `union-testnet-5` has not had any binary upgrades since genesis.
-
-| Upgrade | Height  |
-| ------- | ------- |
-| v0.18.0 | genesis |
-
-## union-testnet-6
-
-The network `union-testnet-6` has not had any binary upgrades since genesis.
-
-| Upgrade | Height  |
-| ------- | ------- |
-| v0.19.0 | genesis |
+{
+  Object.entries(versions).map(([chainId, data]) => (
+    <div>
+      <h2 id={chainId}>
+        <a href={`#${chainId}`}>{chainId}</a>
+      </h2>
+      {import.meta.env.CHAIN_ID_VERSION !== chainId && <Badge text="Deprecated" variant="caution" />}
+      <p>
+        The network {chainId} has had two binary upgrades since genesis.
+      </p>
+      <table>
+        <thead><tr><th>Upgrade</th><th>Height</th></tr>
+        </thead>
+        <tbody>
+          {data.versions.map((version, index) => (
+          <tr>
+            <td>{version}</td><td>{data.heights[index]}</td>
+          </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ))
+}

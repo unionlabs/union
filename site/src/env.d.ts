@@ -13,6 +13,7 @@ interface EnvironmentVariables {
   /* These are injected by default by Cloudflare Pages */
   readonly CF_PAGES_URL: string
   readonly CF_PAGES_COMMIT_SHA: string
+  readonly CHAIN_ID_VERSION: `union-testnet-${"4" | "5" | "6" | "7"}`
 }
 
 // Node.js environment variables types

@@ -4,8 +4,10 @@ sidebar:
   order: 5
 ---
 
+import { dedent } from "ts-dedent"
 import { Code } from "@astrojs/starlight/components"
 import { chainVersion } from '#/lib/constants/versions.ts'
+import FunctionResult from '#/components/FunctionResult.astro'
 
 After successfully running your node with `uniond`, you can refer to this guide to aid you in configuring your node.
 
@@ -21,12 +23,17 @@ Located in `config/client.toml`, this file is host to client settings.
 
 Update this value to ensure that your client is supplied with the correct chain ID.
 
-For the Union Testnet, this value should be `"union-testnet-6"`.
+For the Union Testnet, this value should be <FunctionResult result={'`"' + import.meta.env.CHAIN_ID_VERSION + '"`'} />.
 
-```toml
-# The network chain ID
-chain-id = "union-testnet-6"
-```
+<Code
+  lang='toml'
+  code={dedent(`
+    # The network chain ID
+    chain-id = "${import.meta.env.CHAIN_ID_VERSION}"
+  `)}
+/>
+
+<FunctionResult result={``} />
 
 ### Host/Port for the Tendermint RPC
 
@@ -119,11 +126,11 @@ external_address = "example.com:26656"
 
 Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
-Seed nodes help orchestrate initial connections to the network. For union-testnet-6, the seed nodes are:
+Seed nodes help orchestrate initial connections to the network. For <FunctionResult result={'`' + import.meta.env.CHAIN_ID_VERSION + '`'} />, the seed nodes are:
 
 <Code
   lang='toml'
-  code={`seeds = "${chainVersion({ chainId: 'union-testnet-6' }).seeds}"`} 
+  code={`seeds = "${chainVersion().seeds}"`} 
 />
 
 

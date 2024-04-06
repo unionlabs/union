@@ -11,6 +11,11 @@ const PORT = Number(process.env.PORT || 4321)
 
 const ENABLE_DEV_TOOLBAR = process.env.ENABLE_DEV_TOOLBAR === "true"
 
+/** This reflects the current chain id */
+Object.assign(process.env, {
+  CHAIN_ID_VERSION: "union-testnet-7"
+})
+
 // https://astro.build/config
 export default defineConfig({
   site: SITE_URL,

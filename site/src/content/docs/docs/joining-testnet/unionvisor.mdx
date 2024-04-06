@@ -13,15 +13,15 @@ Unionvisor is a utility for managing `uniond` deployments. It manages running, u
 
 ## Obtaining Unionvisor
 
-We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for `union-testnet-6` is `bundle-testnet-6`. You can obtain the Unionvisor bundle for `union-testnet-6` from our [GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/bundle-testnet-6).
+We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for <FunctionResult result={'`' + import.meta.env.CHAIN_ID_VERSION + '`'} /> is `bundle-testnet-7`. You can obtain the Unionvisor bundle for <FunctionResult result={'`' + import.meta.env.CHAIN_ID_VERSION + '`'} /> from our [GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/bundle-testnet-7).
 
 Alternatively, you can run the following command:
 
 ```sh frame="none"
-docker pull ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
+docker pull ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION
 ```
 
-_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
+_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion().current} />_
 
 ## Running Unionvisor
 
@@ -53,10 +53,10 @@ To do this, we'll be using Docker volumes.
     docker run \\
       --volume ~/.unionvisor:/.unionvisor \\
       --volume /tmp:/tmp \\
-      -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION \\
+      -it ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION \\
       init --moniker $MONIKER \\
-      --network union-testnet-6 \\
-      --seeds "${chainVersion({chainId: 'union-testnet-6'}).seeds}"
+      --network ${import.meta.env.CHAIN_ID_VERSION} \\
+      --seeds "${chainVersion().seeds}"
   `)}
 />
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -85,7 +85,7 @@ After the above command is done running, you should have a `.unionvisor` folder 
   - data
     - priv_validator_state.json
 - versions
-  - <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />- uniond
+  - <FunctionResult result={chainVersion().current} />- uniond
 
 </FileTree>
 
@@ -116,10 +116,10 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh frame="none"
-alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION --log-level off call --'
+alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION --log-level off call --'
 ```
 
-_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
+_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion().current} />_
 
 :::note
 
@@ -139,7 +139,7 @@ A minimal Docker Compose file for Unionvisor looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
+    image: ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION
     volumes:
       - ~/.unionvisor:/.unionvisor
       - /tmp:/tmp

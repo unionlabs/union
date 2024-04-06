@@ -1,22 +1,26 @@
 {
   "union-testnet-4": {
     "versions": ["v0.14.0", "v0.15.0", "v0.16.0", "v0.17.0"],
+    "heights": ["genesis", "236668", "-", "631650"],
     "current": "v0.17.0",
     "seeds": "8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
   },
   "union-testnet-5": {
     "versions": ["v0.18.0"],
+    "heights": ["genesis"],
     "current": "v0.18.0",
     "seeds": "daa56ac6573c6427ecef438d4c248d72b206597b@union.testnet.4.seed.poisonphang.com:26656"
   },
   "union-testnet-6": {
     "versions": ["v0.19.0"],
+    "heights": ["genesis"],
     "current": "v0.19.0",
     "seeds": "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
   },
   "union-testnet-7": {
     "versions": ["v0.20.0", "v0.21.0"],
+    "heights": ["genesis"],
     "current": "v0.20.0",
-    "seeds": ""
+    "seeds": "35f462b92e7d007650700d4550c14cb2ff806b6c@testnet.bonlulu.uno:26656"
   }
 }
