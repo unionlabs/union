@@ -1,0 +1,15 @@
+---
+import OpenApiLayout from "#/layouts/OpenApiLayout.astro"
+
+export const getStaticPaths = () => [{ params: { slug: "rpc" } }, { params: { slug: "rest" } }]
+
+const { slug } = Astro.params
+
+const openApiSchemaURL = `${Astro.url.origin}/openapi/${slug}.json`
+console.log(openApiSchemaURL)
+---
+
+<OpenApiLayout
+  title={`Union ${slug.toLocaleUpperCase()} API`}
+  schemaUrl={openApiSchemaURL}
+/>

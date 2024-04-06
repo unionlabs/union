@@ -49,7 +49,6 @@
     "@astrojs/language-server": "^2.8.2",
     "@astrojs/ts-plugin": "^1.6.0",
     "@cloudflare/workers-types": "^4.20240314.0",
-    "@rollup/plugin-yaml": "^4.1.2",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/typography": "^0.5.10",
@@ -63,7 +62,8 @@
     "ts-dedent": "^2.2.0",
     "typed-query-selector": "^2.11.1",
     "typescript": "^5.4.2",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "vite": "^5.2.8"
   },
   "overrides": {
     "sharp": "$sharp"

@@ -18,8 +18,14 @@ const blogCollection = defineCollection({
     })
 })
 
+const openApiCollection = defineCollection({
+  type: "data",
+  schema: z.object({ name: z.string() })
+})
+
 export const collections = {
   blog: blogCollection,
   docs: defineCollection({ schema: docsSchema() }),
-  i18n: defineCollection({ type: "data", schema: i18nSchema() })
+  i18n: defineCollection({ type: "data", schema: i18nSchema() }),
+  "open-api": openApiCollection
 }

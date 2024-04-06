@@ -3,14 +3,6 @@
 
 declare const COMETBLS_STORE_PATH: string
 
-declare module "*.yml" {
-  export default ''
-}
-
-declare module "*.yaml" {
-  export default ''
-}
-
 interface EventTarget {
   value?: string
 }

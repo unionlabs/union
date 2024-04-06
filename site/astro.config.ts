@@ -1,6 +1,5 @@
 import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
-import yaml from "@rollup/plugin-yaml"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
@@ -18,7 +17,6 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "true" } = loadEnv(
 
 export default defineConfig({
   site: SITE_URL,
-  build: {},
   output: "static",
   trailingSlash: "ignore",
   server: ({ command }) => ({ port: Number(PORT) }),
@@ -157,7 +155,6 @@ export default defineConfig({
     sitemap()
   ],
   vite: {
-    plugins: [yaml()],
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"]
     }
