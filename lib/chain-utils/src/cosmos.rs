@@ -6,6 +6,7 @@ use std::{
 use bip32::secp256k1::ecdsa;
 use futures::Future;
 use ics23::ibc_api::SDK_SPECS;
+use protos::cosmos::auth::v1beta1::Bech32PrefixRequest;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
@@ -360,13 +361,24 @@ impl Cosmos {
                 source: Some(err),
             })?;
 
+        let prefix = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
+            config.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .bech32_prefix(Bech32PrefixRequest {})
+        .await
+        .unwrap()
+        .into_inner()
+        .bech32_prefix;
+
         Ok(Self {
             signers: Pool::new(
                 config
                     .signers
                     .into_iter()
                     // TODO: Make this configurable or fetch it from the chain
-                    .map(|signer| CosmosSigner::new(signer.value(), "wasm".to_string())),
+                    .map(|signer| CosmosSigner::new(signer.value(), prefix.clone())),
             ),
             tm_client,
             chain_id,
