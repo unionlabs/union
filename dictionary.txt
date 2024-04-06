@@ -32,6 +32,7 @@ Devs
 Disket
 Distinctio
 Djuric
+FLUSHCOMPLETE
 Fatalf
 Feegrant
 Feiock
@@ -170,6 +171,7 @@ aitlahcen
 alloc
 amcl
 ankr
+anypb
 anys
 appchain
 appchains
