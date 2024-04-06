@@ -1,15 +1,95 @@
 ---
-import OpenApiLayout from "#/layouts/OpenApiLayout.astro"
-
 export const getStaticPaths = () => [{ params: { slug: "rpc" } }, { params: { slug: "rest" } }]
 
 const { slug } = Astro.params
-
-const openApiSchemaURL = `${Astro.url.origin}/openapi/${slug}.json`
-console.log(openApiSchemaURL)
+const openApiSchemaUrl = `/openapi/${slug}.json`
 ---
 
-<OpenApiLayout
-  title={`Union ${slug.toLocaleUpperCase()} API`}
-  schemaUrl={openApiSchemaURL}
-/>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{`Union ${slug.toLocaleUpperCase()} API`}</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/swagger-ui-dist@5.13.0/swagger-ui.css"
+    />
+  </head>
+  <body>
+    <main id="swagger-ui">
+      <script
+        is:inline
+        src="https://unpkg.com/swagger-ui-dist@5.13.0/swagger-ui-bundle.js"
+        charset="UTF-8"></script>
+      <script
+        is:inline
+        src="https://unpkg.com/swagger-ui-dist@5.13.0/swagger-ui-standalone-preset.js"
+        charset="UTF-8"></script>
+      <script is:inline define:vars={{ openApiSchemaUrl }}>
+        // @ts-ignore
+        window.onload = () => window.ui =
+          // @ts-ignore
+          SwaggerUIBundle({
+            // @ts-ignore
+            url: openApiSchemaUrl,
+            deepLinking: true,
+            dom_id: '#swagger-ui',
+            layout: 'StandaloneLayout',
+            // @ts-ignore
+            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+            // @ts-ignore
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          })
+      </script>
+    </main>
+
+    <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+
+      *::-webkit-scrollbar {
+        height: 0.3rem;
+        width: 0rem;
+      }
+
+      *::-webkit-scrollbar-track {
+        -ms-overflow-style: none;
+        overflow: -moz-scrollbars-none;
+      }
+
+      *::-webkit-scrollbar-thumb {
+        -ms-overflow-style: none;
+        overflow: -moz-scrollbars-none;
+      }
+
+      @supports (scrollbar-gutter: stable) {
+        html {
+          overflow-y: auto;
+          scrollbar-gutter: stable;
+        }
+      }
+
+      html {
+        box-sizing: border-box;
+        overflow: -moz-scrollbars-vertical;
+        overflow-y: scroll;
+        margin: 0;
+        background: #ffffff;
+      }
+
+      .errors-wrapper {
+        display: none !important;
+      }
+
+      .swagger-ui .scheme-container {
+        height: min-content !important;
+        padding: 0 !important;
+        background: red !important;
+      }
+    </style>
+  </body>
+</html>
