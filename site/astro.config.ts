@@ -9,7 +9,7 @@ import starlightLinksValidator from "starlight-links-validator"
 
 const SITE_URL = "https://union.build"
 
-const { PORT = 4321, ENABLE_DEV_TOOLBAR = "true" } = loadEnv(
+const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   process.env.NODE_ENV,
   process.cwd(),
   ""
