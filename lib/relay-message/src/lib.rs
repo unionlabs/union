@@ -233,6 +233,9 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
     CosmosOnUnion(lc!(Wasm<Cosmos> => Union)),
     /// The solidity client on Cosmos tracking the state of Wasm<Union>.
     UnionOnCosmos(lc!(Union => Wasm<Cosmos>)),
+
+    /// The 08-wasm client tracking the state of Cosmos.
+    CosmosOnCosmos(lc!(Cosmos => Cosmos)),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -258,6 +261,7 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
 
     CosmosOnUnion(Inner<Union, Wasm<Cosmos>, lc!(Wasm<Cosmos> => Union)>),
     UnionOnCosmos(Inner<Wasm<Cosmos>, Union, lc!(Union => Wasm<Cosmos>)>),
+    CosmosOnCosmos(Inner<Cosmos, Cosmos, lc!(Cosmos => Cosmos)>),
 }
 
 impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIdentifiedSerde<T> {
@@ -279,6 +283,7 @@ impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIden
             AnyLightClientIdentified::UnionOnScroll(t) => Self::UnionOnScroll(Inner::new(t)),
             AnyLightClientIdentified::CosmosOnUnion(t) => Self::CosmosOnUnion(Inner::new(t)),
             AnyLightClientIdentified::UnionOnCosmos(t) => Self::UnionOnCosmos(Inner::new(t)),
+            AnyLightClientIdentified::CosmosOnCosmos(t) => Self::CosmosOnCosmos(Inner::new(t)),
         }
     }
 }
@@ -302,6 +307,7 @@ impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClien
             AnyLightClientIdentifiedSerde::UnionOnScroll(t) => Self::UnionOnScroll(t.inner),
             AnyLightClientIdentifiedSerde::CosmosOnUnion(t) => Self::CosmosOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnCosmos(t) => Self::UnionOnCosmos(t.inner),
+            AnyLightClientIdentifiedSerde::CosmosOnCosmos(t) => Self::CosmosOnCosmos(t.inner),
         }
     }
 }
@@ -501,6 +507,14 @@ macro_rules! any_lc {
                 type Hc = chain_utils::wasm::Wasm<chain_utils::cosmos::Cosmos>;
                 #[allow(dead_code)]
                 type Tr = chain_utils::union::Union;
+
+                $expr
+            }
+            AnyLightClientIdentified::CosmosOnCosmos($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::cosmos::Cosmos;
+                #[allow(dead_code)]
+                type Tr = chain_utils::cosmos::Cosmos;
 
                 $expr
             }

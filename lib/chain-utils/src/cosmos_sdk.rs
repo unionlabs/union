@@ -146,7 +146,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             body_bytes: tx::v1beta1::TxBody {
                 messages: messages.clone().into_iter().collect(),
                 // TODO(benluelo): What do we want to use as our memo?
-                memo: String::new(),
+                memo: format!("Voyager ${}", env!("CARGO_PKG_VERSION")),
                 timeout_height: 123_123_123,
                 extension_options: vec![],
                 non_critical_extension_options: vec![],
@@ -172,9 +172,9 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                     amount: vec![protos::cosmos::base::v1beta1::Coin {
                         // TODO: This needs to be configurable
                         denom: self.fee_denom(),
-                        amount: "1".to_string(),
+                        amount: "150000".to_string(),
                     }],
-                    gas_limit: 5_000_000_000,
+                    gas_limit: 60_000_000,
                     payer: String::new(),
                     granter: String::new(),
                 }),

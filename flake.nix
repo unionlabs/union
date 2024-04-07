@@ -89,7 +89,7 @@
     };
 
     stargaze = {
-      url = "git+https://github.com/public-awesome/stargaze?ref=feature/sdk-v050&submodules=1";
+      url = "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
       flake = false;
     };
     osmosis = {

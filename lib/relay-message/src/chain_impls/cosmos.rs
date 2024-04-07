@@ -24,7 +24,7 @@ use unionlabs::{
     },
     ics24::ClientStatePath,
     tendermint::types::validator::Validator,
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf},
     TypeUrl,
 };
 
@@ -35,8 +35,8 @@ use crate::{
         do_msg,
         fetch::{
             fetch_trusted_commit, fetch_trusted_validators, fetch_untrusted_commit,
-            fetch_untrusted_validators, AbciQueryType, FetchAbciQuery, FetchTrustedCommit,
-            FetchTrustedValidators, FetchUntrustedCommit, FetchUntrustedValidators,
+            fetch_untrusted_validators, FetchAbciQuery, FetchTrustedCommit, FetchTrustedValidators,
+            FetchUntrustedCommit, FetchUntrustedValidators,
         },
         fetch_abci_query, CosmosSdkChainSealed,
     },
@@ -46,8 +46,8 @@ use crate::{
     id, identified, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
-    AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes,
+    AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchUpdateHeaders, DoMsg, Identified,
+    RelayMessageTypes,
 };
 
 impl ChainExt for Cosmos {
@@ -84,93 +84,6 @@ where
             |client_message| client_message.into_any().into(),
         )
         .await
-    }
-}
-
-impl<
-        Tr: ChainExt,
-        Hc: Wraps<Self> + ChainExt<StateProof = MerkleProof, Fetch<Tr> = CosmosFetch<Hc, Tr>>,
-    > DoFetchState<Hc, Tr> for Cosmos
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
-    // required by fetch_abci_query, can be removed once that's been been removed
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-    Tr::SelfClientState: Decode<Proto>,
-    Tr::SelfConsensusState: Decode<Proto>,
-
-    Hc::StoredClientState<Tr>: Decode<Proto>,
-    Hc::StoredConsensusState<Tr>: Decode<Proto>,
-
-    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-{
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
-        seq([
-            wait(id(
-                hc.chain_id(),
-                WaitForBlock {
-                    height: at,
-                    __marker: PhantomData,
-                },
-            )),
-            fetch(id::<Hc, Tr, _>(
-                hc.chain_id(),
-                Fetch::specific(FetchAbciQuery {
-                    path,
-                    height: at,
-                    ty: AbciQueryType::State,
-                }),
-            )),
-        ])
-    }
-
-    async fn query_client_state(
-        hc: &Hc,
-        client_id: Hc::ClientId,
-        height: Hc::Height,
-    ) -> Hc::StoredClientState<Tr> {
-        let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
-            hc,
-            ClientStatePath { client_id }.into(),
-            height,
-            AbciQueryType::State,
-        )
-        .await
-        else {
-            panic!()
-        };
-
-        Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(relayer_msg)
-            .unwrap()
-            .t
-            .state
-    }
-}
-
-impl<Tr: ChainExt, Hc: Wraps<Self> + ChainExt<Fetch<Tr> = CosmosFetch<Hc, Tr>>> DoFetchProof<Hc, Tr>
-    for Cosmos
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
-{
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
-        seq([
-            wait(id(
-                hc.chain_id(),
-                WaitForBlock {
-                    height: at,
-                    __marker: PhantomData,
-                },
-            )),
-            fetch(id::<Hc, Tr, _>(
-                hc.chain_id(),
-                Fetch::specific(FetchAbciQuery::<Hc, Tr> {
-                    path,
-                    height: at,
-                    ty: AbciQueryType::Proof,
-                }),
-            )),
-        ])
     }
 }
 
