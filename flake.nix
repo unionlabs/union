@@ -489,6 +489,8 @@
 
             ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
 
+            RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
+
             shellHook = ''
               alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
             '';
