@@ -14,7 +14,7 @@ use ics721::{
 };
 use thiserror::Error;
 
-pub const UCS_NFT_IBC_VERSION: &str = "ucs02-1";
+pub const UCS_NFT_IBC_VERSION: &str = "ucs02-nft-1";
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -26,6 +26,8 @@ pub enum ContractError {
     EthAbiDecoding,
     #[error("Tried to open a channel between two different protocols: {src:?} <-> {dst:?}")]
     IbcVersionMismatch { src: Version, dst: Version },
+    #[error("We expected an UCS02 acknowledgement, but got: {acknowledgement}")]
+    InvalidAcknowledgement { acknowledgement: Binary },
 }
 
 #[cw_serde]
@@ -204,7 +206,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: ics721::msg::InstantiateMsg,
 ) -> StdResult<Response> {
-    sg_ics721::state::SgIcs721Contract::default().instantiate(deps, env, info, msg)
+    ics721_base::state::Ics721Contract::default().instantiate(deps, env, info, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -214,7 +216,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ics721::msg::ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    sg_ics721::state::SgIcs721Contract::default()
+    ics721_base::state::Ics721Contract::default()
         .execute(deps.branch(), env, info, msg)
         .map(|mut response| {
             response.messages = response
@@ -261,7 +263,7 @@ pub fn execute(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: ics721::msg::QueryMsg) -> StdResult<Binary> {
-    sg_ics721::state::SgIcs721Contract::default().query(deps, env, msg)
+    ics721_base::state::Ics721Contract::default().query(deps, env, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -270,14 +272,14 @@ pub fn migrate(
     env: Env,
     msg: ics721::msg::MigrateMsg,
 ) -> Result<Response, ContractError> {
-    sg_ics721::state::SgIcs721Contract::default()
+    ics721_base::state::Ics721Contract::default()
         .migrate(deps, env, msg)
         .map_err(Into::into)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
-    sg_ics721::state::SgIcs721Contract::default()
+    ics721_base::state::Ics721Contract::default()
         .reply(deps, env, reply)
         .map_err(Into::into)
 }
@@ -312,7 +314,7 @@ pub fn ibc_channel_close(
     env: Env,
     msg: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    sg_ics721::state::SgIcs721Contract::default()
+    ics721_base::state::Ics721Contract::default()
         .ibc_channel_close(deps, env, msg)
         .map_err(Into::into)
 }
@@ -337,7 +339,7 @@ pub fn ibc_packet_receive(
         }
     };
     match receive_ibc_packet() {
-        Ok(msg) => sg_ics721::state::SgIcs721Contract::default().ibc_packet_receive(deps, env, msg),
+        Ok(msg) => ics721_base::state::Ics721Contract::default().ibc_packet_receive(deps, env, msg),
         Err(error) => Ok(IbcReceiveResponse::new()
             .add_attribute("method", "ibc_packet_receive")
             .add_attribute("error", error.to_string())
@@ -349,9 +351,32 @@ pub fn ibc_packet_receive(
 pub fn ibc_packet_ack(
     deps: DepsMut,
     env: Env,
-    ack: IbcPacketAckMsg,
-) -> Result<IbcBasicResponse, ics721::ContractError> {
-    sg_ics721::state::SgIcs721Contract::default().ibc_packet_ack(deps, env, ack)
+    mut msg: IbcPacketAckMsg,
+) -> Result<IbcBasicResponse, ContractError> {
+    let version = CHANNEL_VERSION
+        .load(deps.storage, &msg.original_packet.dest.channel_id)
+        .expect("impossible");
+    let normalized_msg = match version {
+        Version::ICS721 => msg,
+        Version::UCS02 => {
+            // Decode eth abi encoded NFT packet, reencode in JSON
+            msg.original_packet.data = to_json_binary(&UCS02NonFungibleTokenPacketData::decode(&msg.original_packet.data)?.0)?;
+            // Decode eth abi encoded ACK, reencode in JSON
+            msg.acknowledgement.data = match msg.acknowledgement.data.as_ref() {
+                [0] => ics721::ibc_helpers::ack_fail("evm execution reverted".into()),
+                [1] => ics721::ibc_helpers::ack_success(),
+                _ => {
+                    return Err(ContractError::InvalidAcknowledgement {
+                        acknowledgement: msg.acknowledgement.data,
+                    })
+                }
+            };
+            msg
+        }
+    };
+    ics721_base::state::Ics721Contract::default()
+        .ibc_packet_ack(deps, env, normalized_msg)
+        .map_err(Into::into)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -360,5 +385,5 @@ pub fn ibc_packet_timeout(
     env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcBasicResponse, ics721::ContractError> {
-    sg_ics721::state::SgIcs721Contract::default().ibc_packet_timeout(deps, env, msg)
+    ics721_base::state::Ics721Contract::default().ibc_packet_timeout(deps, env, msg)
 }

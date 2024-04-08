@@ -21,9 +21,9 @@ cosmwasm-std    = { workspace = true, features = ["stargate"] }
 cw-storage-plus = { workspace = true }
 dlmalloc        = { workspace = true, features = ["global"] }
 ethabi          = { workspace = true }
-ics721          = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "3114fb4291619e5421bd42699969b79d5bf6674f" }
+ics721          = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "dd5b7add6fdc81e633084031f8512e5e909dd42a" }
 serde           = { workspace = true, features = ["derive"] }
-sg-ics721       = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "3114fb4291619e5421bd42699969b79d5bf6674f", features = ["library"] }
+ics721-base       = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "dd5b7add6fdc81e633084031f8512e5e909dd42a", features = ["library"] }
 thiserror       = { workspace = true }
 
 [dev-dependencies]
