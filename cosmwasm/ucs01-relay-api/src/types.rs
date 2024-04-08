@@ -146,6 +146,7 @@ pub struct Ics20Packet {
     pub amount: Uint256,
     pub sender: String,
     pub receiver: String,
+    #[serde(default)]
     pub memo: String,
 }
 
