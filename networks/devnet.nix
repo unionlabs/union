@@ -19,6 +19,14 @@
               jailed_validator_threshold = "10";
             };
             slashing.params = { signed_blocks_window = "10"; };
+            tokenfactory.params = {
+              denom_creation_fee = [
+                {
+                  denom = "muno";
+                  amount = "10000000";
+                }
+              ];
+            };
           };
         };
         lightClients = [
@@ -66,6 +74,18 @@
         ];
         portIncrease = 200;
         sdkVersion = 47;
+        genesisOverwrites = {
+          app_state = {
+            tokenfactory.params = {
+              denom_creation_fee = [
+                {
+                  denom = "uosmo";
+                  amount = "10000000";
+                }
+              ];
+            };
+          };
+        };
       };
 
       devnet-simd = mkCosmosDevnet {
