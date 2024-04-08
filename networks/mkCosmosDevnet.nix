@@ -308,7 +308,12 @@ let
         cp --no-preserve=mode -r ${home}/* $out
 
         jq \
-         '.app_state.ibc.client_genesis.params.allowed_clients = ["*"]' \
+         '.app_state.ibc.client_genesis.params.allowed_clients = [
+            "06-solomachine",
+            "07-tendermint",
+            "08-wasm",
+            "09-localhost"
+          ]' \
           $out/config/genesis.json | sponge $out/config/genesis.json
       '';
 
