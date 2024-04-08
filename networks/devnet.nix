@@ -5,7 +5,14 @@
 
       mkCosmosDevnet = import ./mkCosmosDevnet.nix { inherit pkgs dbg; };
 
-      devnet-union = mkCosmosDevnet {
+      cosmwasmContracts = [
+          self'.packages.ucs00-pingpong
+          self'.packages.ucs01-relay
+          self'.packages.ucs02-nft
+          self'.packages.cw721-base
+      ];
+
+      devnet-union = dbg (mkCosmosDevnet {
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
         chainName = "union";
@@ -34,12 +41,9 @@
           self'.packages.ethereum-light-client-mainnet
           self'.packages.scroll-light-client
         ];
-        cosmwasmContracts = [
-          self'.packages.ucs00-pingpong
-          self'.packages.ucs01-relay
-        ];
+        inherit cosmwasmContracts;
         portIncrease = 0;
-      };
+      });
 
       devnet-stargaze = mkCosmosDevnet {
         node = self'.packages.starsd;
@@ -51,10 +55,7 @@
         lightClients = [
           self'.packages.cometbls-light-client
         ];
-        cosmwasmContracts = [
-          self'.packages.ucs00-pingpong
-          self'.packages.ucs01-relay
-        ];
+        inherit cosmwasmContracts;
         portIncrease = 100;
       };
 
@@ -98,10 +99,7 @@
         lightClients = [
           self'.packages.cometbls-light-client
         ];
-        cosmwasmContracts = [
-          self'.packages.ucs00-pingpong
-          self'.packages.ucs01-relay
-        ];
+        inherit cosmwasmContracts;
         portIncrease = 100;
       };
 

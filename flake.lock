@@ -127,6 +127,23 @@
         "url": "ssh://git@github.com/unionlabs/cosmos-sdk"
       }
     },
+    "cosmwasm-nfts": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1712337367,
+        "narHash": "sha256-4mHJbIELGbHDdsrPu/cUsHqDb+j5O59AaIMHd4XtS2I=",
+        "owner": "hussein-aitlahcen",
+        "repo": "cw-nfts",
+        "rev": "f2d7a07df63504ff8cbf0aad4140e56b3f5bfc3e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hussein-aitlahcen",
+        "repo": "cw-nfts",
+        "rev": "f2d7a07df63504ff8cbf0aad4140e56b3f5bfc3e",
+        "type": "github"
+      }
+    },
     "crane": {
       "inputs": {
         "nixpkgs": [
@@ -454,17 +471,17 @@
     "public-awesome-launchpad": {
       "flake": false,
       "locked": {
-        "lastModified": 1706642300,
-        "narHash": "sha256-d7gHq83I3ShVwetSIUABFgZX/+DTj6Eq9LKjjVB7LFE=",
+        "lastModified": 1712246273,
+        "narHash": "sha256-3LosNwpnJPf51Rq3trcMOk8FfVnzPflODOIAd+BGYqU=",
         "owner": "public-awesome",
         "repo": "launchpad",
-        "rev": "85bed1c59d6aca8c63830f67611754771d8d6ee9",
+        "rev": "a14454cd2ee914af5ce10cd4cc94a9b6bfe660f6",
         "type": "github"
       },
       "original": {
         "owner": "public-awesome",
-        "ref": "v3.5.1",
         "repo": "launchpad",
+        "rev": "a14454cd2ee914af5ce10cd4cc94a9b6bfe660f6",
         "type": "github"
       }
     },
@@ -477,6 +494,7 @@
         "cometbls": "cometbls",
         "cosmosproto": "cosmosproto",
         "cosmossdk": "cosmossdk",
+        "cosmwasm-nfts": "cosmwasm-nfts",
         "crane": "crane",
         "ethereum-consensus-specs": "ethereum-consensus-specs",
         "flake-parts": "flake-parts_2",
