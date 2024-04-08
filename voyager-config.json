@@ -98,18 +98,6 @@
         },
         {
           "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        },
-        {
-          "raw": "0x007c467d778a10ca5975f306c23fbb3e904b6d26cb1eefe861a2b21771e56608"
-        },
-        {
-          "raw": "0xd015be9181c7a575c701552fd8c1ba22ae6b8528d0f15db42062e387c77e529f"
-        },
-        {
-          "raw": "0xc85dc3662b72c79d0d484b4599dd8389a08b157b997682455dcb746066eab3b0"
-        },
-        {
-          "raw": "0xc14641f65d26bb81202fdf6c9b36584ccca64a52f47b236117a9ece5b920013c"
         }
       ],
       "fee_denom": "stake",
@@ -137,18 +125,6 @@
         },
         {
           "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        },
-        {
-          "raw": "0x007c467d778a10ca5975f306c23fbb3e904b6d26cb1eefe861a2b21771e56608"
-        },
-        {
-          "raw": "0xd015be9181c7a575c701552fd8c1ba22ae6b8528d0f15db42062e387c77e529f"
-        },
-        {
-          "raw": "0xc85dc3662b72c79d0d484b4599dd8389a08b157b997682455dcb746066eab3b0"
-        },
-        {
-          "raw": "0xc14641f65d26bb81202fdf6c9b36584ccca64a52f47b236117a9ece5b920013c"
         }
       ],
       "fee_denom": "uosmo",
@@ -157,7 +133,7 @@
     },
     "stargaze-devnet": {
       "chain_type": "cosmos",
-      "enabled": true,
+      "enabled": false,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -176,18 +152,6 @@
         },
         {
           "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        },
-        {
-          "raw": "0x007c467d778a10ca5975f306c23fbb3e904b6d26cb1eefe861a2b21771e56608"
-        },
-        {
-          "raw": "0xd015be9181c7a575c701552fd8c1ba22ae6b8528d0f15db42062e387c77e529f"
-        },
-        {
-          "raw": "0xc85dc3662b72c79d0d484b4599dd8389a08b157b997682455dcb746066eab3b0"
-        },
-        {
-          "raw": "0xc14641f65d26bb81202fdf6c9b36584ccca64a52f47b236117a9ece5b920013c"
         }
       ],
       "fee_denom": "ustars",

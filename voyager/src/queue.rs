@@ -13,7 +13,7 @@ use axum::{
     routing::{get, post},
     Json,
 };
-use chain_utils::Chains;
+use chain_utils::{AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
 use queue_msg::{Engine, InMemoryQueue, Queue, QueueMsg, QueueMsgTypes};
@@ -25,10 +25,7 @@ use tokio::task::JoinSet;
 use unionlabs::traits::{Chain, ClientState, FromStrExact};
 use voyager_message::VoyagerMessageTypes;
 
-use crate::{
-    chain::{AnyChain, AnyChainTryFromConfigError},
-    config::{ChainConfig, Config},
-};
+use crate::config::{ChainConfig, Config};
 
 type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 

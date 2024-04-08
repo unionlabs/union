@@ -3,14 +3,24 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use bip32::secp256k1::ecdsa;
 use crossbeam_queue::ArrayQueue;
 use futures::Future;
+use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::config::{Mainnet, Minimal},
+    ethereum::config::{Mainnet, Minimal, PresetBaseKind},
+    hash::H160,
     traits::{Chain, ChainIdOf, FromStrExact},
 };
 
-use crate::{cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm};
+use crate::{
+    cosmos::{Cosmos, CosmosInitError},
+    ethereum::{Ethereum, EthereumInitError},
+    private_key::PrivateKey,
+    scroll::{Scroll, ScrollInitError},
+    union::{Union, UnionInitError},
+    wasm::Wasm,
+};
 
 pub mod cosmos;
 pub mod ethereum;
@@ -155,5 +165,79 @@ impl GetChain<Ethereum<Minimal>> for Chains {
 impl GetChain<Ethereum<Mainnet>> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Ethereum<Mainnet>>) -> Option<Ethereum<Mainnet>> {
         self.ethereum_mainnet.get(chain_id).cloned()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "chain_type")]
+pub enum ChainConfigType {
+    Union(union::Config),
+    Cosmos(cosmos::Config),
+    Ethereum(EthereumChainConfig),
+    Scroll(scroll::Config),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EthereumChainConfig {
+    pub preset_base: PresetBaseKind,
+
+    /// The address of the `IBCHandler` smart contract.
+    pub ibc_handler_address: H160,
+
+    /// The signer that will be used to submit transactions by voyager.
+    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+
+    // TODO(benluelo): Use `Url` or something similar
+    /// The RPC endpoint for the execution chain.
+    pub eth_rpc_api: String,
+    /// The RPC endpoint for the beacon chain.
+    pub eth_beacon_rpc_api: String,
+}
+
+pub enum AnyChain {
+    Union(Union),
+    Cosmos(Cosmos),
+    EthereumMainnet(Ethereum<Mainnet>),
+    EthereumMinimal(Ethereum<Minimal>),
+    Scroll(Scroll),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AnyChainTryFromConfigError {
+    #[error("error initializing a union chain")]
+    Union(#[from] UnionInitError),
+    #[error("error initializing a cosmos chain")]
+    Cosmos(#[from] CosmosInitError),
+    #[error("error initializing an ethereum chain")]
+    Ethereum(#[from] EthereumInitError),
+    #[error("error initializing a scroll chain")]
+    Scroll(#[from] ScrollInitError),
+}
+
+impl AnyChain {
+    pub async fn try_from_config(
+        config: ChainConfigType,
+    ) -> Result<Self, AnyChainTryFromConfigError> {
+        Ok(match config {
+            ChainConfigType::Union(union) => Self::Union(Union::new(union).await?),
+            ChainConfigType::Cosmos(cosmos) => Self::Cosmos(Cosmos::new(cosmos).await?),
+            ChainConfigType::Ethereum(ethereum) => {
+                let config = crate::ethereum::Config {
+                    ibc_handler_address: ethereum.ibc_handler_address,
+                    signers: ethereum.signers,
+                    eth_rpc_api: ethereum.eth_rpc_api,
+                    eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
+                };
+                match ethereum.preset_base {
+                    PresetBaseKind::Minimal => {
+                        Self::EthereumMinimal(Ethereum::<Minimal>::new(config).await?)
+                    }
+                    PresetBaseKind::Mainnet => {
+                        Self::EthereumMainnet(Ethereum::<Mainnet>::new(config).await?)
+                    }
+                }
+            }
+            ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),
+        })
     }
 }

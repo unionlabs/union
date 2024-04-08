@@ -9,7 +9,10 @@
 
 use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode, sync::Arc};
 
-use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm};
+use chain_utils::{
+    cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm, AnyChain,
+    ChainConfigType, EthereumChainConfig,
+};
 use clap::Parser;
 use queue_msg::QueueMsg;
 use sqlx::{query_as, PgPool};
@@ -22,9 +25,8 @@ use voyager_message::VoyagerMessageTypes;
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{ChainConfigType, Config, EthereumChainConfig, GetChainError},
+    config::{Config, GetChainError},
     queue::{
         chains_from_config, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError,
     },
@@ -34,8 +36,6 @@ pub mod cli;
 pub mod config;
 
 pub mod queue;
-
-pub mod chain;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> ExitCode {
