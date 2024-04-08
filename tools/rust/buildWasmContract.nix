@@ -100,6 +100,7 @@ in
     , contractFileNameWithoutExt ? package
       # list of fns taking the file path as an argument and producing arbitrary shell script
     , checks ? [ ]
+    , maxSize ? DEFAULT_MAX_SIZE
     }:
     let
       craneLib' = craneLib.overrideToolchain (rust.mkBuildStdToolchain { target = CARGO_BUILD_TARGET; });
@@ -122,7 +123,7 @@ in
         cargoExtraArgs = (cargoBuildExtraArgs features) + " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${CARGO_BUILD_TARGET} -j1 " + (pkgs.lib.optionalString (package != null) " -p ${package}");
         RUSTFLAGS = rustflags;
 
-        installPhaseCommand = cargoBuildInstallPhase { inherit features contractFileNameWithoutExt checks; };
+        installPhaseCommand = cargoBuildInstallPhase { inherit features contractFileNameWithoutExt checks maxSize; };
       };
     in
     craneLib'.buildPackage (attrs // {
