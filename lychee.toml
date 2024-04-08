@@ -5,7 +5,6 @@ exclude = [
   '^https://grpc.testnet.bonlulu.uno/',
   '^http://myserver.com:1111/',
   '^https://x.com/',
-  '^(?!.*_astro).*$',
 ]
 
 exclude_all_private = true
