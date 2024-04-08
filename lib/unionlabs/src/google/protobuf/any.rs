@@ -17,12 +17,22 @@ use crate::{
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Any<T>(pub T);
 
+/// Provides a way to convert a type `T` into an [`Any`], even if `T` is itself an [`Any`].
+///
+/// ```rust
+/// # use unionlabs::google::protobuf::duration::Duration;
+/// # use unionlabs::google::protobuf::any::{Any, IntoAny};
+///
+/// let duration = Duration::new(1, 2).expect("valid duration");
+/// let _: Any<Duration> = duration.into_any();
+/// let _: Any<Duration> = Any(duration).into_any();
+/// ```
 pub trait IntoAny {
-    type T: Encode<crate::encoding::Proto> + TypeUrl;
+    type T: Encode<Proto> + TypeUrl;
     fn into_any(self) -> Any<Self::T>;
 }
 
-impl<T: TypeUrl + Encode<crate::encoding::Proto>> IntoAny for T {
+impl<T: TypeUrl + Encode<Proto>> IntoAny for T {
     type T = T;
 
     fn into_any(self) -> Any<Self::T> {
@@ -30,7 +40,7 @@ impl<T: TypeUrl + Encode<crate::encoding::Proto>> IntoAny for T {
     }
 }
 
-impl<T: TypeUrl + Encode<crate::encoding::Proto>> IntoAny for Any<T> {
+impl<T: TypeUrl + Encode<Proto>> IntoAny for Any<T> {
     type T = T;
 
     fn into_any(self) -> Any<Self::T> {
@@ -145,7 +155,7 @@ pub enum TryFromAnyError<E> {
 
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
 where
-    T: Decode<crate::encoding::Proto> + TypeUrl,
+    T: Decode<Proto> + TypeUrl,
 {
     type Error = TryFromAnyError<T::Error>;
 
@@ -179,48 +189,49 @@ impl<T: Decode<Proto> + TypeUrl> Decode<Proto> for Any<T> {
 
 #[must_use]
 pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobuf::Any {
-    mk_any_from_bytes::<T>(t.encode_to_vec())
-}
-
-#[must_use]
-pub fn mk_any_from_bytes<T: prost::Name>(bz: Vec<u8>) -> protos::google::protobuf::Any {
+    let bz = t.encode_to_vec();
     protos::google::protobuf::Any {
         type_url: T::type_url(),
         value: bz,
     }
 }
 
-#[test]
-fn test_flatten() {
-    use crate::google::protobuf::{duration::Duration, timestamp::Timestamp};
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    trait Foo {
-        type Bar;
+    #[test]
+    fn test_flatten() {
+        use crate::google::protobuf::{duration::Duration, timestamp::Timestamp};
+
+        trait Foo {
+            type Bar;
+        }
+
+        struct A;
+        struct B;
+
+        impl Foo for A {
+            type Bar = Timestamp;
+        }
+
+        impl Foo for B {
+            type Bar = Any<Duration>;
+        }
+
+        fn wrap_any_one_level<T>(bar: T::Bar) -> Any<<T::Bar as IntoAny>::T>
+        where
+            T: Foo,
+            T::Bar: IntoAny,
+        {
+            bar.into_any()
+        }
+
+        let _: Any<Timestamp> = wrap_any_one_level::<A>(Timestamp {
+            seconds: crate::bounded::BoundedI64::new(1).unwrap(),
+            nanos: crate::bounded::BoundedI32::new(2).unwrap(),
+        });
+
+        let _: Any<Duration> = wrap_any_one_level::<B>(Any(Duration::new(3, 4).unwrap()));
     }
-
-    struct A;
-    struct B;
-
-    impl Foo for A {
-        type Bar = Timestamp;
-    }
-
-    impl Foo for B {
-        type Bar = Any<Duration>;
-    }
-
-    fn wrap_any_one_level<T>(bar: T::Bar) -> Any<<T::Bar as IntoAny>::T>
-    where
-        T: Foo,
-        T::Bar: IntoAny,
-    {
-        bar.into_any()
-    }
-
-    let _: Any<Timestamp> = wrap_any_one_level::<A>(Timestamp {
-        seconds: crate::bounded::BoundedI64::new(1).unwrap(),
-        nanos: crate::bounded::BoundedI32::new(2).unwrap(),
-    });
-
-    let _: Any<Duration> = wrap_any_one_level::<B>(Any(Duration::new(3, 4).unwrap()));
 }

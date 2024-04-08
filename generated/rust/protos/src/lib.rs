@@ -1,4 +1,4 @@
-#![allow(clippy::all)]
+#![allow(clippy::all, rustdoc::all)]
 // @generated
 pub mod capability {
     #[cfg(feature = "capability+v1")]

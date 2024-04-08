@@ -333,8 +333,8 @@
 
           ${fixup-scripts}
 
-          # prepend clippy allow to root lib.rs file
-          echo -e "#![allow(clippy::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
+          # prepend clippy and rustdoc allow to root lib.rs file
+          echo -e "#![allow(clippy::all, rustdoc::all)]\n$(cat ./src/lib.rs)" > ./src/lib.rs
 
           # format generated files
           # echo 'formatter = { rust = { options = []}}' > treefmt.toml

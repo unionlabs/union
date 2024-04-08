@@ -57,19 +57,28 @@ pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
 // NOTE: ClientType bound is temporary until I figure out a better way to deal with client types
+/// An Ethereum-based chain. This can be any chain that is based off of and settles on Ethereum (i.e. Ethereum mainnet/ Sepolia, L2s such as Scroll).
 pub trait EthereumChain:
     Chain<IbcStateEncoding = EthAbi, StateProof = StorageProof, ClientType = String>
 {
+    /// Fetch the execution height associated with the given beacon slot. For [`Ethereum`], this will simply be the execution block number, but for L2s this will fetch the settled height at the L1 block number.
     fn execution_height_of_beacon_slot(&self, slot: u64) -> impl Future<Output = u64>;
 
+    /// The provider connected to this chain's [JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/).
     fn provider(&self) -> Arc<Provider<Ws>>;
 
+    /// The address of the [`IBCHandler`] smart contract deployed natively on this chain.
     fn ibc_handler_address(&self) -> H160;
+}
 
+pub trait EthereumChainExt: EthereumChain {
+    /// Convenience method to construct an [`IBCHandler`] instance for this chain.
     fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
         IBCHandler::new(self.ibc_handler_address(), self.provider())
     }
 }
+
+impl<T: EthereumChain> EthereumChainExt for T {}
 
 impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
     async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {

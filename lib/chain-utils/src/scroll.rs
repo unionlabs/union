@@ -2,12 +2,7 @@ use std::{error::Error, num::NonZeroU64, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
 use contracts::ibc_handler::IBCHandler;
-use ethers::{
-    middleware::{NonceManagerMiddleware, SignerMiddleware},
-    providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
-    signers::LocalWallet,
-    utils::secret_key_to_address,
-};
+use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use futures::{FutureExt, TryFutureExt};
 use scroll_api::ScrollClient;
 use serde::{Deserialize, Serialize};
@@ -17,13 +12,14 @@ use unionlabs::{
     hash::{H160, H256},
     ibc::{core::client::height::Height, lightclients::scroll},
     id::{ChannelId, PortId},
-    traits::{Chain, ClientState, FromStrExact},
+    traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     uint::U256,
 };
 
 use crate::{
     ethereum::{
-        self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware, Readonly,
+        self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
     union::Union,
@@ -37,7 +33,7 @@ pub const SCROLL_REVISION_NUMBER: u64 = 0;
 pub struct Scroll {
     pub chain_id: U256,
 
-    // The provider on scroll chain.
+    /// The provider on scroll chain.
     pub provider: Arc<Provider<Ws>>,
 
     pub ibc_handlers: Pool<IBCHandler<EthereumSignerMiddleware>>,
@@ -51,7 +47,7 @@ pub struct Scroll {
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
-    pub l1_client_id: String,
+    pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
     pub union_grpc_url: String,
 }
 
@@ -69,7 +65,7 @@ pub struct Config {
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
-    pub l1_client_id: String,
+    pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
     pub l1: ethereum::Config<Readonly>,
     pub scroll_api: String,
     pub union_grpc_url: String,
@@ -110,23 +106,14 @@ impl Scroll {
         let chain_id = provider.get_chainid().await?;
         tracing::info!(?chain_id);
 
-        let ibc_handlers = config.signers.into_iter().map(|signer| {
-            let signing_key: ecdsa::SigningKey = signer.value();
-            let address = secret_key_to_address(&signing_key);
-
-            let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id.as_u64());
-
-            let signer_middleware = Arc::new(SignerMiddleware::new(
-                NonceManagerMiddleware::new(provider.clone(), address),
-                wallet.clone(),
-            ));
-
-            IBCHandler::new(config.ibc_handler_address, signer_middleware.clone())
-        });
-
         Ok(Self {
             chain_id: U256(chain_id),
-            ibc_handlers: Pool::new(ibc_handlers),
+            ibc_handlers: ReadWrite::new(
+                config.signers,
+                config.ibc_handler_address,
+                chain_id.as_u64(),
+                provider.clone(),
+            ),
             ibc_handler_address: config.ibc_handler_address,
             provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
@@ -225,7 +212,7 @@ impl Chain for Scroll {
         )
         .await?
         .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: self.l1_client_id.clone(),
+            client_id: self.l1_client_id.to_string(),
         })
         .await?
         .into_inner()
@@ -258,7 +245,7 @@ impl Chain for Scroll {
 
     async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
         scroll::client_state::ClientState {
-            l1_client_id: self.l1_client_id.clone(),
+            l1_client_id: self.l1_client_id.to_string(),
             chain_id: self.chain_id(),
             latest_batch_index: self
                 .batch_index_of_beacon_slot(height.revision_height)

@@ -2,8 +2,8 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync
 
 use chain_utils::{
     ethereum::{
-        Ethereum, EthereumChain, EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt,
-        ETHEREUM_REVISION_NUMBER,
+        Ethereum, EthereumChain, EthereumChainExt as _, EthereumSignerMiddleware, IbcHandlerErrors,
+        IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
     },
     Pool,
 };
