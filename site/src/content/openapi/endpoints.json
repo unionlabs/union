@@ -1,6 +1,7 @@
 {
   "grpc": [
     "https://grpc.testnet.bonlulu.uno",
+    "https://grpc.testnet.val.poisonphang.com",
     "https://union-testnet-grpc.polkachu.com:24690",
     "https://grpc-testnet-union.nodeist.net",
     "https://grpc-t.union.nodestake.org:443",
@@ -8,6 +9,7 @@
   ],
   "rpc": [
     "https://rpc.testnet.bonlulu.uno",
+    "https://rpc.testnet.val.poisonphang.com",
     "https://union-testnet-rpc.polkachu.com",
     "https://rpc-testnet-union.nodeist.net",
     "https://rpc-t.union.nodestake.org",
@@ -15,6 +17,7 @@
   ],
   "rest": [
     "https://api.testnet.bonlulu.uno",
+    "https://api.testnet.val.poisonphang.com",
     "https://union-testnet-api.polkachu.com",
     "https://api-testnet-union.nodeist.net",
     "https://api-t.union.nodestake.org",
@@ -29,6 +32,7 @@
   "explorers": [
     "https://testnet.bonlulu.uno/union",
     "https://testnet.union.explorers.guru",
+    "https://testnet.val.poisonphang.com/union",
     "https://stakeflow.io/union-testnet",
     "https://test.explorer.ist/union",
     "https://explorer.nodestake.org/union-testnet"
