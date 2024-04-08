@@ -263,6 +263,18 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                 },
                             ))
                         }
+                        unionlabs::ClientType::Tendermint => {
+                            event::<RelayMessageTypes>(relay_message::id::<Cosmos, Cosmos, _>(
+                                chain_id,
+                                relay_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Cosmos, Cosmos>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
                         _ => unimplemented!(),
                     },
                 ),
@@ -675,13 +687,16 @@ mod tests {
     use relay_message::{
         aggregate::AggregateCreateClient,
         chain_impls::{
-            cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
+            cosmos_sdk::{
+                fetch::{AbciQueryType, FetchAbciQuery},
+                wasm::WasmConfig,
+            },
             ethereum::EthereumConfig,
         },
         effect::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
         event::IbcEvent,
         fetch::{FetchSelfClientState, FetchSelfConsensusState},
-        RelayMessageTypes, WasmConfig,
+        RelayMessageTypes,
     };
     use unionlabs::{
         ethereum::config::Minimal,
@@ -711,8 +726,10 @@ mod tests {
     fn msg_serde() {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
-        let cosmos_chain_id: String = parse!("simd-devnet-1");
+        let simd_chain_id: String = parse!("simd-devnet-1");
         let scroll_chain_id: U256 = parse!("534351");
+        let stargaze_chain_id: String = parse!("stargaze-devnet-1");
+        let osmosis_chain_id: String = parse!("osmosis-devnet-1");
 
         println!("---------------------------------------");
         println!("Union - Eth (Sending to Union) Connection Open: ");
@@ -900,7 +917,7 @@ mod tests {
             None,
             seq([
                 event(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                    cosmos_chain_id.clone(),
+                    simd_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
                         __marker: PhantomData,
@@ -1044,14 +1061,14 @@ mod tests {
             aggregate(
                 [
                     fetch(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                        cosmos_chain_id.clone(),
+                        simd_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
                     fetch(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                        cosmos_chain_id.clone(),
+                        simd_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
@@ -1086,13 +1103,71 @@ mod tests {
                 ],
                 [],
                 relay_message::id::<Wasm<Cosmos>, Union, _>(
-                    cosmos_chain_id,
+                    simd_chain_id,
                     AggregateCreateClient {
                         config: WasmConfig {
                             checksum: H256(hex!(
                                 "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
                             )),
                         },
+                        __marker: PhantomData,
+                    },
+                ),
+            ),
+        ]));
+
+        println!("---------------------------------------");
+        println!("Cosmos - Cosmos Create Both Client: ");
+        println!("---------------------------------------");
+        print_json::<RelayMessageTypes>(seq([
+            aggregate(
+                [
+                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
+                        stargaze_chain_id.clone(),
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    )),
+                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
+                        stargaze_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    )),
+                ],
+                [],
+                relay_message::id::<Cosmos, Cosmos, _>(
+                    osmosis_chain_id.clone(),
+                    AggregateCreateClient {
+                        config: (),
+                        __marker: PhantomData,
+                    },
+                ),
+            ),
+            aggregate(
+                [
+                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
+                        osmosis_chain_id.clone(),
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    )),
+                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
+                        osmosis_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    )),
+                ],
+                [],
+                relay_message::id::<Cosmos, Cosmos, _>(
+                    stargaze_chain_id.clone(),
+                    AggregateCreateClient {
+                        config: (),
                         __marker: PhantomData,
                     },
                 ),

@@ -298,9 +298,9 @@ let
   #       $out/config/genesis.json | sponge $out/config/genesis.json
   #   '';
 
-  add08WasmToAllowedClients = home:
+  enableAllClients = home:
     pkgs.runCommand
-      "${chainName}-add-ibc-connection-to-genesis"
+      "${chainName}-enable-all-clients"
       { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
       ''
         export HOME=$(pwd)
@@ -308,7 +308,7 @@ let
         cp --no-preserve=mode -r ${home}/* $out
 
         jq \
-         '.app_state.ibc.client_genesis.params.allowed_clients += ["08-wasm"]' \
+         '.app_state.ibc.client_genesis.params.allowed_clients = ["*"]' \
           $out/config/genesis.json | sponge $out/config/genesis.json
       '';
 
@@ -563,7 +563,7 @@ let
         (builtins.map addLightClientCodeToGenesis lightClients)
 
         # add ibc contracts
-        add08WasmToAllowedClients
+        enableAllClients
 
         (addIbcContractCodesToGenesis cosmwasmContracts)
 

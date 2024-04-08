@@ -4,7 +4,7 @@
       starsd = goPkgs.pkgsStatic.buildGoModule ({
         name = "starsd";
         src = inputs.stargaze;
-        vendorHash = "sha256-f5buWJFAeqWsoCo2mHehJO9t4pQ1EYCBOM1BDKhucJw=";
+        vendorHash = "sha256-yg2RT1NnUaqlU8Gvlx5ZxHotSMZbBnicsAj5Jzi0BXo=";
         doCheck = false;
         doInstallCheck = false;
         meta.mainProgram = "starsd";

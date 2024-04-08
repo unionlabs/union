@@ -266,6 +266,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                             .await
                         }
 
+                        (AnyChain::Cosmos(cosmos), ChainConfigType::Cosmos(_)) => {
+                            any_state_proof_to_json::<Cosmos, Cosmos>(chains, path, cosmos, at)
+                                .await
+                        }
+
                         _ => panic!("unsupported"),
                     };
 
