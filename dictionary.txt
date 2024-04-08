@@ -12,6 +12,7 @@ CFLAGS
 CMOV
 Celestia
 Chainer
+Cleper
 Codehash
 Coeff
 Cofactor
@@ -138,6 +139,7 @@ Woestijne
 Wrapf
 XMSB
 YMSB
+Yair
 ZKTRIE
 Zerg
 aarch
