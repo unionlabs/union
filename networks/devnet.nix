@@ -6,10 +6,10 @@
       mkCosmosDevnet = import ./mkCosmosDevnet.nix { inherit pkgs dbg; };
 
       cosmwasmContracts = [
-          self'.packages.ucs00-pingpong
-          self'.packages.ucs01-relay
-          self'.packages.ucs02-nft
-          self'.packages.cw721-base
+        self'.packages.ucs00-pingpong
+        self'.packages.ucs01-relay
+        self'.packages.ucs02-nft
+        self'.packages.cw721-base
       ];
 
       devnet-union = dbg (mkCosmosDevnet {

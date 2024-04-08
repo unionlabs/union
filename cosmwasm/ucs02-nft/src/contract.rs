@@ -360,7 +360,9 @@ pub fn ibc_packet_ack(
         Version::ICS721 => msg,
         Version::UCS02 => {
             // Decode eth abi encoded NFT packet, reencode in JSON
-            msg.original_packet.data = to_json_binary(&UCS02NonFungibleTokenPacketData::decode(&msg.original_packet.data)?.0)?;
+            msg.original_packet.data = to_json_binary(
+                &UCS02NonFungibleTokenPacketData::decode(&msg.original_packet.data)?.0,
+            )?;
             // Decode eth abi encoded ACK, reencode in JSON
             msg.acknowledgement.data = match msg.acknowledgement.data.as_ref() {
                 [0] => ics721::ibc_helpers::ack_fail("evm execution reverted".into()),

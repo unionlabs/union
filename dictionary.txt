@@ -701,6 +701,7 @@ redelegate
 redelegating
 redelegation
 redelegations
+reencode
 reentrancy
 reflectionv
 regclass
