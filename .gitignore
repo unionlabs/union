@@ -54,3 +54,5 @@ cache
 
 .idea
 .biome
+
+.envrc.local
