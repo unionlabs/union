@@ -764,7 +764,7 @@ github.com/cosmos/gogoproto/sortkeys
 github.com/cosmos/gogoproto/types
 github.com/cosmos/gogoproto/vanity
 github.com/cosmos/gogoproto/vanity/command
-# github.com/cosmos/iavl v1.0.1 => github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b
+# github.com/cosmos/iavl v1.0.1 => /home/aeryz/dev/cosmos/iavl
 ## explicit; go 1.21
 github.com/cosmos/iavl
 github.com/cosmos/iavl/cache
@@ -1803,7 +1803,7 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/cometbft/cometbft => /home/aeryz/dev/union/cometbls
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 # github.com/cosmos/cosmos-sdk => /home/aeryz/dev/union/cosmos-sdk
-# github.com/cosmos/iavl => github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b
+# github.com/cosmos/iavl => /home/aeryz/dev/cosmos/iavl
 # github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
 # github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa
 # github.com/cosmos/ics23/go => github.com/aeryz/ics23/go v0.0.0-20240403192124-01760c87dc23

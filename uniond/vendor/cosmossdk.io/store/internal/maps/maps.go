@@ -313,7 +313,13 @@ func leafHash(leaf []byte) []byte {
 	var bytes [16]byte
 	h := mimc.NewMiMC()
 	paddedMiMC(h, bytes[:])
-	paddedMiMC(h, leaf)
+
+	// This is sha256'ed key and sha256'ed value, instead of doing 4x16, we do 2x32 by ignoring the MSB
+	var bytes32 [32]byte
+	copy(bytes32[1:32], leaf[1:32])
+	h.Write(bytes32[:])
+	copy(bytes32[1:32], leaf[33:64])
+	h.Write(bytes32[:])
 
 	return h.Sum(nil)
 }
@@ -326,8 +332,11 @@ func innerHash(left []byte, right []byte) []byte {
 
 	h := mimc.NewMiMC()
 	paddedMiMC(h, bytes[:])
-	paddedMiMC(h, left)
-	paddedMiMC(h, right)
+	// Left and right are directly written since they are MiMC
+	h.Write(left[:])
+	h.Write(right[:])
+	// paddedMiMC(h, left)
+	// paddedMiMC(h, right)
 	return h.Sum(nil)
 }
 

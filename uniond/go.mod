@@ -233,7 +233,8 @@ replace (
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 	// github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240403221859-1083b72b39a3
 	github.com/cosmos/cosmos-sdk => /home/aeryz/dev/union/cosmos-sdk
-	github.com/cosmos/iavl => github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b
+	// github.com/cosmos/iavl => github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b
+	github.com/cosmos/iavl => /home/aeryz/dev/cosmos/iavl
 
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
 	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa

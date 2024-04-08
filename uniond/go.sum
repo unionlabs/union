@@ -246,8 +246,6 @@ github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrd
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/adlio/schema v1.3.3 h1:oBJn8I02PyTB466pZO1UZEn1TV5XLlifBSyMrmHl/1I=
 github.com/adlio/schema v1.3.3/go.mod h1:1EsRssiv9/Ce2CMzq5DoL7RiMshhuigQxrR4DMV9fHg=
-github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b h1:eOlKid0zqENlhTwk+DfbGbZBp6I79HkGflqmX/HpwLQ=
-github.com/aeryz/iavl v0.0.0-20240403221517-8838595bd04b/go.mod h1:bx4ClRHnDEXgdsRVpbDVOBYRT9MIR7/OFIvSm8iEjyM=
 github.com/aeryz/ics23/go v0.0.0-20240403192124-01760c87dc23 h1:NZBqjS/Rr3RNw83kBU3CSkVOPaUp1rQs3Nn+l/wMoWk=
 github.com/aeryz/ics23/go v0.0.0-20240403192124-01760c87dc23/go.mod h1:aC1eH2NSSz9PJ+RSZkQ6LxX9o4tgzgF0sytMPQyo7uM=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=

@@ -431,15 +431,26 @@ func (node *Node) _hash(version int64) []byte {
 		return nil
 	}
 	h := mimc.NewMiMC()
-	for {
-		var bytesBlock [32]byte
-		inbytes := buf.Next(16)
-		if len(inbytes) == 0 {
-			break
-		}
-		copy(bytesBlock[16:32], inbytes)
+	// 16 bits prefix is common
+	var bytesBlock [32]byte
+	copy(bytesBlock[16:32], buf.Next(16))
+	h.Write(bytesBlock[:])
+	if node.isLeaf() {
+		// 31 bits for sha256 hashed key, this reduces the bit security by 1
+		buf.Next(1)
+		copy(bytesBlock[1:32], buf.Next(31))
 		h.Write(bytesBlock[:])
+		// 31 bits for sha256 hashed value, this reduces the bit security by 1
+		buf.Next(1)
+		copy(bytesBlock[1:32], buf.Next(31))
+		h.Write(bytesBlock[:])
+	} else {
+		// MiMC left hash
+		h.Write(buf.Next(32))
+		// MiMC right hash
+		h.Write(buf.Next(32))
 	}
+	// TODO(aeryz) assert buf == 0 here
 	node.hash = h.Sum(nil)
 
 	return node.hash
@@ -471,15 +482,26 @@ func (node *Node) hashWithCount(version int64) []byte {
 		// and hash.Hash.Write doesn't.
 		panic(err)
 	}
-	for {
-		var bytesBlock [32]byte
-		inbytes := buf.Next(16)
-		if len(inbytes) == 0 {
-			break
-		}
-		copy(bytesBlock[16:32], inbytes)
+	// 16 bits prefix is common
+	var bytesBlock [32]byte
+	copy(bytesBlock[16:32], buf.Next(16))
+	h.Write(bytesBlock[:])
+	if node.isLeaf() {
+		// 31 bits for sha256 hashed key, this reduces the bit security by 1
+		buf.Next(1)
+		copy(bytesBlock[1:32], buf.Next(31))
 		h.Write(bytesBlock[:])
+		// 31 bits for sha256 hashed value, this reduces the bit security by 1
+		buf.Next(1)
+		copy(bytesBlock[1:32], buf.Next(31))
+		h.Write(bytesBlock[:])
+	} else {
+		// MiMC left hash
+		h.Write(buf.Next(32))
+		// MiMC right hash
+		h.Write(buf.Next(32))
 	}
+	// TODO(aeryz) assert buf == 0 here
 	node.hash = h.Sum(nil)
 
 	return node.hash
