@@ -226,11 +226,11 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
+	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
-	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa
+	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240408193244-9289688332be
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

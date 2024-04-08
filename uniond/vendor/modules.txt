@@ -384,7 +384,7 @@ github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
 ## explicit; go 1.19
 github.com/cockroachdb/tokenbucket
-# github.com/cometbft/cometbft v0.38.5 => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
+# github.com/cometbft/cometbft v0.38.5 => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
 ## explicit; go 1.21
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/kvstore
@@ -787,7 +787,7 @@ github.com/cosmos/ibc-go/modules/light-clients/08-wasm/client/cli
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types
-# github.com/cosmos/ibc-go/v8 v8.0.0 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa
+# github.com/cosmos/ibc-go/v8 v8.0.0 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240408193244-9289688332be
 ## explicit; go 1.21
 github.com/cosmos/ibc-go/v8/internal/logging
 github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts
@@ -1798,9 +1798,9 @@ rsc.io/tmplfunc/internal/parse
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
 # github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
-# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa
+# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240408193244-9289688332be
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
