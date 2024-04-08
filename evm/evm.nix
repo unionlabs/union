@@ -217,6 +217,26 @@
           rm -rf "$OUT"
         '';
       });
+
+      deploy-ucs02 = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
+        name = "evm-${network}-ucs02";
+        runtimeInputs = [ pkgs.jq wrappedForge ];
+        text = ''
+          OUT="$(mktemp -d)"
+          cd "$OUT"
+          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+
+          ${deploy-contracts { rpc-url = rpc-url;
+                           private-key = private-key; } [{
+                           path = "apps/ucs/02-nft/NFT.sol";
+                           name = "UCS02NFT";
+                           args = ''--constructor-args "$IBC_HANDLER_ADDRESS"''; }]}
+
+          echo "{\"ucs02_address\": \"$UCS02NFT\" }"
+
+          rm -rf "$OUT"
+        '';
+      });
     in
     {
       packages = {
@@ -371,6 +391,11 @@
       builtins.listToAttrs (
         builtins.map
           (args: { name = "eth-${args.network}-ucs01-deploy"; value = deploy-ucs01 args; })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "eth-${args.network}-ucs02-nft"; value = deploy-ucs02 args; })
           networks
       );
     };
