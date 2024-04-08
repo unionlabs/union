@@ -211,15 +211,6 @@ impl<C: ChainSpec> FromStrExact for EthereumChainType<C> {
     };
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum IBCHandlerEvents {
-    PacketEvent(IBCPacketEvents),
-    ConnectionEvent(IBCConnectionEvents),
-    ChannelEvent(IBCChannelHandshakeEvents),
-    ClientEvent(IBCClientEvents),
-    OwnableEvent(OwnershipTransferredFilter),
-}
-
 macro_rules! try_decode {
     ($($expr:expr),+) => {
         $(
@@ -230,18 +221,27 @@ macro_rules! try_decode {
     };
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum IBCHandlerEvents {
+    PacketEvent(IBCPacketEvents),
+    ConnectionEvent(IBCConnectionEvents),
+    ChannelEvent(IBCChannelHandshakeEvents),
+    ClientEvent(IBCClientEvents),
+    OwnableEvent(OwnershipTransferredFilter),
+}
+
 impl EthLogDecode for IBCHandlerEvents {
     fn decode_log(log: &ethers::abi::RawLog) -> Result<Self, ethers::abi::Error>
     where
         Self: Sized,
     {
-        try_decode!(
+        try_decode! {
             IBCPacketEvents::decode_log(log).map(IBCHandlerEvents::PacketEvent),
             IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent),
             IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent),
             IBCClientEvents::decode_log(log).map(IBCHandlerEvents::ClientEvent),
             OwnershipTransferredFilter::decode_log(log).map(IBCHandlerEvents::OwnableEvent)
-        );
+        };
         Err(ethers::abi::Error::InvalidData)
     }
 }
@@ -257,24 +257,14 @@ pub enum IbcHandlerErrors {
 
 impl AbiDecode for IbcHandlerErrors {
     fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ethers::abi::AbiError> {
-        let packet_error = IBCPacketErrors::decode(&bytes).map(IbcHandlerErrors::PacketErrors);
-        let conn_error =
-            IBCConnectionErrors::decode(&bytes).map(IbcHandlerErrors::ConnectionErrors);
-        let chan_error =
-            IBCChannelHandshakeErrors::decode(&bytes).map(IbcHandlerErrors::ChannelErrors);
-        let client_error = IBCClientErrors::decode(&bytes).map(IbcHandlerErrors::ClientErrors);
-        let cometbls_client_error =
-            CometblsClientErrors::decode(&bytes).map(IbcHandlerErrors::CometblsClientErrors);
-        [
-            packet_error,
-            conn_error,
-            chan_error,
-            client_error,
-            cometbls_client_error,
-        ]
-        .into_iter()
-        .find(|error| error.is_ok())
-        .ok_or(ethers::abi::Error::InvalidData)?
+        try_decode! {
+            IBCPacketErrors::decode(&bytes).map(IbcHandlerErrors::PacketErrors),
+            IBCConnectionErrors::decode(&bytes).map(IbcHandlerErrors::ConnectionErrors),
+            IBCChannelHandshakeErrors::decode(&bytes).map(IbcHandlerErrors::ChannelErrors),
+            IBCClientErrors::decode(&bytes).map(IbcHandlerErrors::ClientErrors),
+            CometblsClientErrors::decode(&bytes).map(IbcHandlerErrors::CometblsClientErrors)
+        };
+        Err(ethers::abi::Error::InvalidData.into())
     }
 }
 
@@ -507,24 +497,6 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
         })
     }
 }
-
-// impl<C: ChainSpec> ReadonlyEvm<C> {
-//     pub async fn new(config: ReadonlyConfig) -> Result<Self, EvmInitError> {
-//         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
-
-//         let chain_id = provider.get_chainid().await?;
-
-//         Ok(Self {
-//             chain_id: U256(chain_id),
-//             readonly_ibc_handler: DevnetOwnableIBCHandler::new(
-//                 config.ibc_handler_address.clone(),
-//                 provider.clone().into(),
-//             ),
-//             provider,
-//             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
-//         })
-//     }
-// }
 
 impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
     pub fn make_height(&self, height: impl Into<u64>) -> Height {

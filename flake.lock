@@ -513,11 +513,11 @@
     "stargaze": {
       "flake": false,
       "locked": {
-        "lastModified": 1711996189,
-        "narHash": "sha256-nk1OP/8TLle/tg+DCBw+IE170VBUl8aO0Pn5D6petd0=",
+        "lastModified": 1712533498,
+        "narHash": "sha256-lt5+KTTieUbel6cBPeyXAVTPYj2u8WWCN3NCBt2lU/0=",
         "ref": "main",
-        "rev": "14980464279f3f07faab8ce0320dbb9c902b6500",
-        "revCount": 1567,
+        "rev": "2f2d5332d152d5cd7d89860962017584670d9d1e",
+        "revCount": 1569,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
