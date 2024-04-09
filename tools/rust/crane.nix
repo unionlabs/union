@@ -143,24 +143,30 @@
             #
             # note that to make this easier, we define all local dependencies as workspace dependencies.
             getWorkspaceDeps = dir:
-              # TODO(benluelo): use lib.pipe
-              unique
-                (flatten (lib.mapAttrsToList
-                  (name: value:
-                    let
-                      path = workspaceCargoToml.workspace.dependencies.${name}.path;
-                    in
-                    (getWorkspaceDeps path) ++ [ path ])
-                  (lib.filterAttrs
-                    (dependency: value:
-                      # dep is not this crate (to prevent infinite recurison)...
-                      dependency != crateInfo.pname
-                      # ...and dep is a workspace dependency...
-                      && (value.workspace or false)
-                      # ...and that workspace dependency is a path dependency
-                      && (builtins.hasAttr "path" workspaceCargoToml.workspace.dependencies.${dependency}))
-                    ((crateCargoToml dir).dependencies // (crateCargoToml dir).dev-dependencies or { })
-                  ))) ++ [ dir ];
+              let
+                go = dir': foundSoFar:
+                  lib.pipe ((crateCargoToml dir').dependencies // (crateCargoToml dir').dev-dependencies or { }) [
+                    (lib.filterAttrs
+                      (dependency: value:
+                        # ...and dep is a workspace dependency...
+                        (value.workspace or false)
+                        # ...and that workspace dependency is a path dependency...
+                        && (builtins.hasAttr "path" workspaceCargoToml.workspace.dependencies.${dependency})
+                        # ...and that workspace dependency has not been found yet (to prevent infinite recursion)
+                        && !(builtins.elem workspaceCargoToml.workspace.dependencies.${dependency}.path foundSoFar)
+                      ))
+                    (lib.mapAttrsToList
+                      (name: value:
+                        let
+                          path = workspaceCargoToml.workspace.dependencies.${name}.path;
+                        in
+                        (go path (unique (foundSoFar ++ [ path ]))) ++ [ path ]))
+                    (lib.trivial.concat [ dir' ])
+                    flatten
+                    unique
+                  ];
+              in
+              go dir [ ];
 
             workspaceDepsForCrate =
               assert lib.assertMsg

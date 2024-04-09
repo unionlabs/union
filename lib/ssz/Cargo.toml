@@ -12,7 +12,7 @@ name = "ssz"
 arbitrary             = { workspace = true, features = ["derive"], optional = true }
 derivative            = "2.1.1"
 itertools             = "0.10.3"
-lazy_static          = { workspace = true }
+lazy_static           = { workspace = true }
 serde                 = { workspace = true, features = ["derive"] }
 serde-utils.workspace = true
 sha2.workspace        = true
