@@ -519,7 +519,7 @@ github.com/cosmos/cosmos-db
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/anyutil
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.50.2 => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
+# github.com/cosmos/cosmos-sdk v0.50.5 => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
 ## explicit; go 1.21
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/baseapp/internal/protocompat
