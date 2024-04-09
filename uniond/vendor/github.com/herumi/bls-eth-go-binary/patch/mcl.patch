@@ -1,0 +1,15 @@
+--- src/bls/ffi/go/bls/mcl.go	2021-04-28 14:25:51.929725397 +0900
++++ bls/mcl.go	2021-04-28 18:13:51.972947460 +0900
+@@ -1,10 +1,8 @@
+ package bls
+ 
+ /*
+-#cgo bn256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=4
+-#cgo bn384 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6
+-#cgo bn384_256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6 -DMCLBN_FR_UNIT_SIZE=4
+-#include <mcl/bn.h>
++#cgo CFLAGS:-I./include
++#include <mcl/bn_c384_256.h>
+ */
+ import "C"
+ import "fmt"

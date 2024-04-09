@@ -1,0 +1,21 @@
+#!/bin/sh -e
+
+JAVA_PACKAGE=supranational.blst
+
+cd `dirname $0`
+
+#unset _JAVA_OPTIONS
+
+. ./build.sh "$@"
+
+if [ ! -f runnable.class  -o runnable.java  -nt runnable.class ]; then
+    (set -x; "$JAVA_HOME"/bin/javac runnable.java)
+fi
+
+if [ -f $JAVA_PACKAGE.jar ]; then
+    PSEP=`"$JAVA_HOME"/bin/java -XshowSettings:properties -version 2>&1 | \
+          awk 'BEGIN { FS="=[ \t]*" } /path\.separator/ { print $2 }'`
+    (set -x; "$JAVA_HOME"/bin/java -classpath $JAVA_PACKAGE.jar$PSEP. runnable)
+else
+    (set -x; "$JAVA_HOME"/bin/java -Djava.library.path=. runnable)
+fi

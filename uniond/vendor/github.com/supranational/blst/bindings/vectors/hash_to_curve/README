@@ -1,0 +1,3 @@
+These files are downloaded from https://github.com/cfrg/draft-irtf-cfrg-hash-to-curve/tree/master/poc/vectors, commit 6d40f98.
+
+Note the file names cannot have ":" in them as this is incompatible with Windows.

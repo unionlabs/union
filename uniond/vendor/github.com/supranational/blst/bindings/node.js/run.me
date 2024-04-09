@@ -1,0 +1,62 @@
+#!/bin/sh -e
+#
+# Even though blst.swg works with current node.js version, v16.x at the
+# moment of this writing, SWIG 4.0 can generate wrapper only up to 10.x.
+# Till SWIG 4.1 is released, build from https://github.com/swig/swig
+# yourself, or download pre-generated blst_wrap.cpp from
+# https://github.com/supranational/blst/issues/32.
+
+cd `dirname $0`
+
+NODE=`which ${NODE:-node} 2>&1` || NODE=`which nodejs`
+
+include=`dirname $NODE`/../include
+if [ ! -d $include ]; then
+    echo "$include not found" 1>&2
+    exit 1
+fi
+include=`(cd $include/nodejs || cd $include; pwd) 2>/dev/null`
+[ -f $include/node/node.h ]          && INCS="-I$include/node"
+[ -f $include/src/node.h ]           && INCS="$INCS -I$include/src"
+[ -f $include/deps/v8/include/v8.h ] && INCS="$INCS -I$include/deps/v8/include"
+
+if [ ! -f ../libblst.a -o ../blst.h -nt ../libblst.a ]; then
+    (cd ..; ../build.sh -fvisibility=hidden "$@")
+fi
+
+if [ ! -f blst_wrap.cpp -o ../blst.swg -nt blst_wrap.cpp \
+                        -o ../blst.hpp -nt blst_wrap.cpp \
+                        -o ../blst.h   -nt blst_wrap.cpp ]; then
+    #swig -version | awk -F'[. ]' '/Version/ {print $3}'
+    (set -x; swig -c++ -javascript -node -DV8_VERSION=0x060000 \
+                  -outdir . -o blst_wrap.cpp ../blst.swg)
+fi
+
+if [ ! -f blst.node -o blst_wrap.cpp -nt blst.node \
+                    -o ../libblst.a  -nt blst.node ]; then
+    # figure out minimally required C++ standard and enforce it...
+    nodever=`$NODE -e 'console.log(parseInt(process.versions["node"]))'`
+    if [ $nodever -gt 18 ]; then
+        min=17
+    elif [ $nodever -gt 14 ]; then
+        min=14
+    else
+        min=11
+    fi
+    STD=`c++ -dM -E -x c++ /dev/null | \
+         awk '{ if($2=="__cplusplus" && $3<"20'$min'") print "-std=c++'$min'"; }'`
+    case `uname -s` in
+    Darwin) (set -x; c++ ${STD} -bundle -o blst.node -fPIC -fvisibility=hidden \
+                         ${INCS} -I.. -DBUILDING_NODE_EXTENSION \
+                         -O -Wall -Wno-unused-result blst_wrap.cpp \
+                         ../libblst.a -bundle_loader $NODE)
+            ;;
+    *)      (set -x; c++ ${STD} -shared -o blst.node -fPIC -fvisibility=hidden \
+                         ${INCS} -I.. -DBUILDING_NODE_EXTENSION \
+                         -O -Wall -Wno-unused-result blst_wrap.cpp \
+                         ../libblst.a -Wl,-Bsymbolic)
+            ;;
+    esac
+fi
+
+env NODE_PATH=.: $NODE runnable.js
