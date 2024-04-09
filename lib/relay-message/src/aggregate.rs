@@ -34,7 +34,7 @@ use unionlabs::{
         CommitmentPath, ConnectionPath,
     },
     traits::{ChainIdOf, ClientIdOf, ClientState, HeightOf},
-    DELAY_PERIOD,
+    QueryHeight, DELAY_PERIOD,
 };
 
 use crate::{
@@ -49,8 +49,8 @@ use crate::{
         MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
     },
     fetch::{
-        AnyFetch, Fetch, FetchLatestClientState, FetchLatestHeight, FetchPacketAcknowledgement,
-        FetchProof, FetchState, FetchUpdateHeaders,
+        AnyFetch, Fetch, FetchLatestHeight, FetchPacketAcknowledgement, FetchProof, FetchState,
+        FetchUpdateHeaders,
     },
     id, identified,
     use_aggregate::IsAggregateData,
@@ -411,11 +411,12 @@ where
     aggregate(
         [fetch(id::<Hc, Tr, _>(
             chain_id.clone(),
-            FetchLatestClientState {
+            FetchState {
+                at: QueryHeight::Latest,
                 path: ClientStatePath {
                     client_id: client_id.clone(),
-                },
-                __marker: PhantomData,
+                }
+                .into(),
             },
         ))],
         [],
@@ -485,11 +486,12 @@ where
             [aggregate(
                 [fetch(id::<Hc, Tr, _>(
                     this_chain_id.clone().clone(),
-                    FetchLatestClientState {
+                    FetchState {
+                        at: QueryHeight::Latest,
                         path: ClientStatePath {
                             client_id: connection.client_id.clone(),
-                        },
-                        __marker: PhantomData,
+                        }
+                        .into(),
                     },
                 ))],
                 [],
@@ -536,7 +538,7 @@ where
         fetch(id::<Hc, Tr, _>(
             this_chain_id,
             FetchState {
-                at,
+                at: QueryHeight::Specific(at),
                 path: ConnectionPath {
                     connection_id: channel.connection_hops[0].clone(),
                 }
@@ -784,7 +786,7 @@ where
                         fetch(id::<Hc, Tr, _>(
                             this_chain_id.clone(),
                             FetchState {
-                                at: trusted_client_state_fetched_at_height,
+                                at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
                                 path: ConnectionPath {
                                     connection_id: event.connection_id.clone(),
                                 }
@@ -869,7 +871,7 @@ where
                         fetch(id::<Hc, Tr, _>(
                             this_chain_id.clone(),
                             FetchState {
-                                at: trusted_client_state_fetched_at_height,
+                                at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
                                 path: ConnectionPath {
                                     connection_id: event.connection_id.clone(),
                                 }
@@ -973,7 +975,9 @@ where
                             [fetch(id::<Hc, Tr, _>(
                                 this_chain_id.clone(),
                                 FetchState {
-                                    at: trusted_client_state_fetched_at_height,
+                                    at: QueryHeight::Specific(
+                                        trusted_client_state_fetched_at_height,
+                                    ),
                                     path: ChannelEndPath {
                                         port_id: event.port_id.clone(),
                                         channel_id: event.channel_id.clone(),
@@ -1004,7 +1008,7 @@ where
                         fetch(id::<Hc, Tr, _>(
                             this_chain_id.clone(),
                             FetchState {
-                                at: trusted_client_state_fetched_at_height,
+                                at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
                                 path: ChannelEndPath {
                                     port_id: event.port_id.clone(),
                                     channel_id: event.channel_id.clone(),
@@ -1070,7 +1074,7 @@ where
                         fetch(id::<Hc, Tr, _>(
                             this_chain_id.clone(),
                             FetchState {
-                                at: trusted_client_state_fetched_at_height,
+                                at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
                                 path: ChannelEndPath {
                                     port_id: event.port_id.clone(),
                                     channel_id: event.channel_id.clone(),
@@ -1136,7 +1140,7 @@ where
                         fetch(id::<Hc, Tr, _>(
                             this_chain_id.clone(),
                             FetchState {
-                                at: trusted_client_state_fetched_at_height,
+                                at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
                                 path: ChannelEndPath {
                                     port_id: event.port_id.clone(),
                                     channel_id: event.channel_id.clone(),
