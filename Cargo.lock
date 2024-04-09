@@ -5737,7 +5737,6 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
- "ssz",
  "syn 1.0.109",
 ]
 
