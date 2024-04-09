@@ -2980,6 +2980,7 @@ dependencies = [
  "sqlx",
  "tendermint",
  "tendermint-rpc",
+ "thiserror",
  "tikv-jemallocator",
  "time",
  "tokio",

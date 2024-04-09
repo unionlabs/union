@@ -28,6 +28,19 @@ pub struct Config {
     pub until: Option<u64>,
 }
 
+/// Unit struct describing parametrization of associated types for CosmosSDK based chains.
+pub struct CosmosSDK;
+
+impl postgres::ChainType for CosmosSDK {
+    type BlockHash = String;
+    type BlockHeight = i32;
+    type TransactionHash = String;
+}
+
+pub type PgBlock = postgres::Block<CosmosSDK>;
+pub type PgTransaction = postgres::Transaction<CosmosSDK>;
+pub type PgEvent = postgres::Event<CosmosSDK>;
+
 impl Config {
     /// The batch size for the fast sync protocol. This corresponds to the maximum number of headers returned over a node's RPC.
     pub const BATCH_SIZE: u32 = 20;
@@ -149,7 +162,7 @@ async fn batch_sync(
     let submit_blocks = postgres::insert_batch_blocks(
         tx,
         stream::iter(headers.block_metas.clone().into_iter().map(|meta| {
-            postgres::Block {
+            PgBlock {
                 chain_id,
                 hash: meta.header.hash().to_string(),
                 height: meta.header.height.value() as i32,
@@ -199,7 +212,7 @@ async fn batch_sync(
                         let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
                         events.extend(tx.tx_result.events.into_iter().enumerate().map(
                             |(i, event)| {
-                                let event = postgres::Event {
+                                let event = PgEvent {
                                     chain_id,
                                     block_hash: block_hash.clone(),
                                     block_height,
@@ -215,7 +228,7 @@ async fn batch_sync(
                                 event
                             },
                         ));
-                        postgres::Transaction {
+                        PgTransaction {
                             chain_id,
                             block_hash: block_hash.clone(),
                             block_height,
@@ -226,12 +239,15 @@ async fn batch_sync(
                         }
                     })
                     .collect::<Vec<_>>();
-            events.extend(finalize_block_events.into_iter().enumerate().map(|(i, e)| {
-                postgres::Event {
-                    block_index: i as i32 + block_index,
-                    ..e
-                }
-            }));
+            events.extend(
+                finalize_block_events
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, e)| PgEvent {
+                        block_index: i as i32 + block_index,
+                        ..e
+                    }),
+            );
             txs
         });
     postgres::insert_batch_transactions(tx, stream::iter(transactions)).await?;
@@ -270,7 +286,7 @@ async fn sync_next(
             }
         }
         Ok(block) => (
-            postgres::Block {
+            PgBlock {
                 chain_id,
                 hash: header.hash().to_string(),
                 height: block_height.value().try_into().unwrap(),
@@ -300,7 +316,7 @@ async fn sync_next(
                 .iter()
                 .enumerate()
                 .for_each(|(i, event)| {
-                    events.push(postgres::Event {
+                    events.push(PgEvent {
                         chain_id,
                         block_hash: header.hash().to_string(),
                         block_height: block_height.value().try_into().unwrap(),
@@ -312,7 +328,7 @@ async fn sync_next(
                     });
                     block_index += 1;
                 });
-            postgres::Transaction {
+            PgTransaction {
                 chain_id,
                 block_hash: header.hash().to_string(),
                 block_height: block_height.value().try_into().unwrap(),
@@ -330,7 +346,7 @@ async fn sync_next(
         .into_iter()
         .chain(finalize_events)
         .enumerate()
-        .map(|(i, e)| postgres::Event {
+        .map(|(i, e)| PgEvent {
             block_index: i as i32,
             ..e
         });
@@ -392,27 +408,17 @@ async fn fetch_transactions_for_block(
 
 pub trait BlockExt {
     /// Returns the non-tx related events from a block formatted for insertion.
-    fn events(
-        self,
-        chain_id: ChainId,
-        block_hash: String,
-        time: OffsetDateTime,
-    ) -> Vec<postgres::Event>;
+    fn events(self, chain_id: ChainId, block_hash: String, time: OffsetDateTime) -> Vec<PgEvent>;
 }
 
 impl BlockExt for BlockResponse {
-    fn events(
-        self,
-        chain_id: ChainId,
-        block_hash: String,
-        time: OffsetDateTime,
-    ) -> Vec<postgres::Event> {
+    fn events(self, chain_id: ChainId, block_hash: String, time: OffsetDateTime) -> Vec<PgEvent> {
         let block_height: i32 = self.height.value().try_into().unwrap();
         let begin_block_events = self
             .begin_block_events
             .unwrap_or_default()
             .into_iter()
-            .map(|e| postgres::Event {
+            .map(|e| PgEvent {
                 chain_id,
                 block_hash: block_hash.clone(),
                 block_height,
@@ -422,7 +428,7 @@ impl BlockExt for BlockResponse {
                 transaction_index: None,
                 block_index: 0,
             });
-        let end_block_events = self.end_block_events.into_iter().map(|e| postgres::Event {
+        let end_block_events = self.end_block_events.into_iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
             block_height,
@@ -432,20 +438,17 @@ impl BlockExt for BlockResponse {
             transaction_index: None,
             block_index: 0,
         });
-        let finalize_block_events =
-            self.finalize_block_events
-                .into_iter()
-                .map(|e| postgres::Event {
-                    chain_id,
-                    block_hash: block_hash.clone(),
-                    block_height,
-                    time,
-                    data: serde_json::to_value(e).unwrap().replace_escape_chars(),
-                    transaction_hash: None,
-                    transaction_index: None,
-                    block_index: 0,
-                });
-        let validator_updates = self.validator_updates.into_iter().map(|e| postgres::Event {
+        let finalize_block_events = self.finalize_block_events.into_iter().map(|e| PgEvent {
+            chain_id,
+            block_hash: block_hash.clone(),
+            block_height,
+            time,
+            data: serde_json::to_value(e).unwrap().replace_escape_chars(),
+            transaction_hash: None,
+            transaction_index: None,
+            block_index: 0,
+        });
+        let validator_updates = self.validator_updates.into_iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
             block_height,
@@ -457,21 +460,18 @@ impl BlockExt for BlockResponse {
             transaction_index: None,
             block_index: 0,
         });
-        let consensus_param_updates =
-            self.consensus_param_updates
-                .into_iter()
-                .map(|e| postgres::Event {
-                    chain_id,
-                    block_hash: block_hash.clone(),
-                    block_height,
-                    time,
-                    data: serde_json::to_value(WithType::consensus_param_update(e))
-                        .unwrap()
-                        .replace_escape_chars(),
-                    transaction_hash: None,
-                    transaction_index: None,
-                    block_index: 0,
-                });
+        let consensus_param_updates = self.consensus_param_updates.into_iter().map(|e| PgEvent {
+            chain_id,
+            block_hash: block_hash.clone(),
+            block_height,
+            time,
+            data: serde_json::to_value(WithType::consensus_param_update(e))
+                .unwrap()
+                .replace_escape_chars(),
+            transaction_hash: None,
+            transaction_index: None,
+            block_index: 0,
+        });
 
         begin_block_events
             .chain(end_block_events)

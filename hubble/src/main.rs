@@ -1,4 +1,5 @@
 #![feature(more_qualified_paths)]
+#![feature(try_blocks)]
 #![allow(clippy::manual_async_fn, clippy::needless_lifetimes)]
 
 use axum::{routing::get, Router};

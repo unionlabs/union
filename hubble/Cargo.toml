@@ -31,6 +31,7 @@ serde_json         = { workspace = true }
 sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }
 tendermint         = { workspace = true, features = ["std"] }
 tendermint-rpc     = { workspace = true, features = ["http-client", "tokio"] }
+thiserror          = { workspace = true }
 time               = { version = "0.3.30", features = ["serde"] }
 tokio              = { workspace = true, features = ["full"] }
 tracing            = { workspace = true }

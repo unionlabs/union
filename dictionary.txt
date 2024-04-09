@@ -690,6 +690,7 @@ repellendus
 repr
 reqwest
 restaking
+retryable
 rgba
 ripemd
 rlib
