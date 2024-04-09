@@ -1,9 +1,7 @@
-`ethereum_ssz`
-================
+[SSZ](https://github.com/ethereum/consensus-specs/blob/dev/ssz/simple-serialize.md) implementation in rust.
 
-SimpleSerialize (SSZ) implementation optimized for speed and security.
+This code is based off of work done by [Sigma Prime](https://github.com/sigp). It is heavily modified, the original sources can be found here:
 
-Maintained by Sigma Prime for use in Lighthouse, with an eye to being useful in the Rust
-Ethereum ecosystem more broadly. We welcome new contributors!
-
-Please see the [docs](https://docs.rs/ethereum_ssz) for more information.
+https://github.com/sigp/ethereum_ssz
+https://github.com/sigp/tree_hash
+https://github.com/sigp/ssz_types
