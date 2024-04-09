@@ -232,7 +232,7 @@ library Hex {
     function hexToUint256(string memory s) internal pure returns (uint256) {
         bytes memory b = bytes(s);
         uint256 number = 0;
-        for (uint256 i = 0; i < b.length; i++) {
+        for (uint256 i = 2; i < b.length; i++) {
             number = number << 4;
             number |= atoi(b[i]);
         }

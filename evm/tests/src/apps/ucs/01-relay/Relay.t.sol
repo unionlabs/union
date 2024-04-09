@@ -245,6 +245,10 @@ contract RelayTests is Test {
         assertEq(Hex.hexToAddress(addr.toHexString()), addr);
     }
 
+    function test_hexToUint256(uint256 v) public {
+        assertEq(Hex.hexToUint256(v.toHexString()), v);
+    }
+
     function test_openInit_onlyIBC(
         string memory sourcePort,
         string memory sourceChannel,
