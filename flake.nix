@@ -185,6 +185,7 @@
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
         ./lib/ics23/ics23.nix
+        ./lib/ssz/ssz.nix
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./lib/tendermint-verifier/tendermint-verifier.nix
@@ -315,7 +316,7 @@
                     keygen = self'.packages.keygen;
                     # this pr (https://github.com/numtide/treefmt/pull/250) was merged one day after v0.6.1 was cut, so in order to use the --hidden flag we need to build latest
                     # expression taken from here https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/treefmt/default.nix
-                    treefmt = dbg (super.rustPlatform.buildRustPackage rec {
+                    treefmt = super.rustPlatform.buildRustPackage rec {
                       pname = "treefmt";
                       version = "955ae4f3570c4523258c2e1044066f1702339e03";
 
@@ -331,7 +332,7 @@
                       meta = {
                         mainProgram = "treefmt";
                       };
-                    });
+                    };
                     solc =
                       let
                         jsoncppVersion = "1.9.3";

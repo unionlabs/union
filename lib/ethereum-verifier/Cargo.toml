@@ -10,7 +10,7 @@ workspace = true
 test-include = ["lib/ethereum-verifier/src/test/"]
 
 [dependencies]
-ssz       = { workspace = true }
+ssz = { workspace = true }
 
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true }

@@ -153,18 +153,20 @@
                     (getWorkspaceDeps path) ++ [ path ])
                   (lib.filterAttrs
                     (dependency: value:
-                      # dep is a workspace dependency...
-                      (value.workspace or false)
+                      # dep is not this crate (to prevent infinite recurison)...
+                      dependency != crateInfo.pname
+                      # ...and dep is a workspace dependency...
+                      && (value.workspace or false)
                       # ...and that workspace dependency is a path dependency
                       && (builtins.hasAttr "path" workspaceCargoToml.workspace.dependencies.${dependency}))
-                    (crateCargoToml dir).dependencies
+                    ((crateCargoToml dir).dependencies // (crateCargoToml dir).dev-dependencies or { })
                   ))) ++ [ dir ];
 
             workspaceDepsForCrate =
               assert lib.assertMsg
                 (builtins.isString crateDirFromRoot)
                 "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}";
-              (dbg (getWorkspaceDeps crateDirFromRoot));
+              (getWorkspaceDeps crateDirFromRoot);
 
             workspaceDepsForCrateCargoTomls = readMemberCargoTomls workspaceDepsForCrate;
 
@@ -356,14 +358,14 @@
             );
 
           allCraneIncludes =
-            unique ((getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "include") ++
-              (getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "test-include"));
+            dbg (unique ((getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "include") ++
+              (getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "test-include")));
         in
         mkCleanSrc {
           name = "cargo-workspace-src";
           srcFilter =
             with { inherit (lib) hasPrefix; };
-            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (dbg (allCraneIncludes ++ allIncludes)));
+            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (allCraneIncludes ++ allIncludes));
         };
     in
     {
@@ -417,6 +419,8 @@
             patchShebangs $(pwd)/unionvisor/src/testdata
           '';
           ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+          ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
+
           buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
             lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
           );
