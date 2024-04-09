@@ -247,78 +247,62 @@ impl Chain for Cosmos {
 
     async fn read_ack(
         &self,
-        block_hash: H256,
+        tx_hash: H256,
         destination_channel_id: unionlabs::id::ChannelId,
         destination_port_id: unionlabs::id::PortId,
         sequence: NonZeroU64,
     ) -> Vec<u8> {
-        let block_height = self
-            .tm_client
-            .block_by_hash(block_hash.0.to_vec().try_into().unwrap())
-            .await
-            .unwrap()
-            .block
-            .unwrap()
-            .header
-            .height;
-
         tracing::info!(
-            "Querying ack for {}/{}/{} at {}",
+            "Querying ack for {}/{}/{} from tx {tx_hash}",
             destination_port_id,
             destination_channel_id,
             sequence,
-            block_height
         );
 
-        let wa =
-            self.tm_client
-                .tx_search(
-                    tendermint_rpc::query::Query::eq("tx.height", u64::from(block_height)),
-                    false,
-                    1,
-                    255,
-                    tendermint_rpc::Order::Ascending,
-                )
-                .await
-                .unwrap()
-                .txs
-                .into_iter()
-                .find_map(|tx| {
-                    tx.tx_result.events.into_iter().find_map(|event| {
-                        let maybe_ack = WriteAcknowledgement::try_from(
-                            unionlabs::tendermint::abci::event::Event {
-                                ty: event.kind,
-                                attributes: event.attributes.into_iter().map(|attr| {
-                                    unionlabs::tendermint::abci::event_attribute::EventAttribute {
-                                        key: attr.key,
-                                        value: attr.value,
-                                        index: attr.index,
-                                    }
-                                }).collect()
-                            },
-                        );
-                        match maybe_ack {
-                            Ok(ok)
-                                if ok.packet_sequence == sequence
-                                    && ok.packet_dst_port == destination_port_id
-                                    && ok.packet_dst_channel == destination_channel_id =>
-                            {
-                                Some(ok)
-                            }
-                            Ok(ok) => {
-                                tracing::debug!("Found ack not matching our packet {:?}", ok);
-                                None
-                            }
-                            Err(TryFromTendermintEventError::IncorrectType { .. }) => None,
-                            Err(err) => {
-                                panic!("{err:#?}")
-                            }
-                        }
-                    })
-                })
-                .unwrap();
-
-        wa.packet_ack_hex
+        self.tm_client
+            // TODO: Use tx_search here
+            .tx(tx_hash.0.to_vec().try_into().unwrap(), false)
+            .await
+            .unwrap()
+            .tx_result
+            .events
+            .into_iter()
+            .find_map(|event| {
+                let maybe_ack =
+                    WriteAcknowledgement::try_from(unionlabs::tendermint::abci::event::Event {
+                        ty: event.kind,
+                        attributes: event
+                            .attributes
+                            .into_iter()
+                            .map(|attr| {
+                                unionlabs::tendermint::abci::event_attribute::EventAttribute {
+                                    key: attr.key,
+                                    value: attr.value,
+                                    index: attr.index,
+                                }
+                            })
+                            .collect(),
+                    });
+                match maybe_ack {
+                    Ok(ok)
+                        if ok.packet_sequence == sequence
+                            && ok.packet_dst_port == destination_port_id
+                            && ok.packet_dst_channel == destination_channel_id =>
+                    {
+                        Some(ok)
+                    }
+                    Ok(ok) => {
+                        tracing::debug!("Found ack not matching our packet {:?}", ok);
+                        None
+                    }
+                    Err(TryFromTendermintEventError::IncorrectType { .. }) => None,
+                    Err(err) => {
+                        panic!("{err:#?}")
+                    }
+                }
+            })
+            .unwrap()
+            .packet_ack_hex
     }
 }
 

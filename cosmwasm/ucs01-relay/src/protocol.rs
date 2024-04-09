@@ -412,7 +412,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     }
 
     fn ack_success() -> Self::Ack {
-        Ics20Ack::Result(b"1".into())
+        Ics20Ack::Result(vec![1].into())
     }
 
     fn ack_failure(error: String) -> Self::Ack {

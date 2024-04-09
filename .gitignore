@@ -48,7 +48,6 @@ bun.lockb
 .nfs*
 cache
 .svelte-kit
-build
 .eslintcache
 .prettiercache
 .code-workspace

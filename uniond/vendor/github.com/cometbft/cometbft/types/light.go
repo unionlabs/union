@@ -161,6 +161,43 @@ func (sh SignedHeader) ValidateBasic(chainID string) error {
 	return nil
 }
 
+// NOTE: I hate to do this but it's the easiest solution until we can fully switch to wasm clients
+// ValidateBasic does basic consistency checks and makes sure the header
+// and commit are consistent.
+//
+// NOTE: This does not actually check the cryptographic signatures.  Make sure
+// to use a Verifier to validate the signatures actually provide a
+// significantly strong proof for this header's validity.
+func (sh SignedHeader) ValidateBasicLegacy(chainID string) error {
+	if sh.Header == nil {
+		return errors.New("missing header")
+	}
+	if sh.Commit == nil {
+		return errors.New("missing commit")
+	}
+
+	if err := sh.Header.ValidateBasic(); err != nil {
+		return fmt.Errorf("invalid header: %w", err)
+	}
+	if err := sh.Commit.ValidateBasic(); err != nil {
+		return fmt.Errorf("invalid commit: %w", err)
+	}
+
+	if sh.ChainID != chainID {
+		return fmt.Errorf("header belongs to another chain %q, not %q", sh.ChainID, chainID)
+	}
+
+	// Make sure the header is consistent with the commit.
+	if sh.Commit.Height != sh.Height {
+		return fmt.Errorf("header and commit height mismatch: %d vs %d", sh.Height, sh.Commit.Height)
+	}
+	if hhash, chash := sh.Header.HashSha256(), sh.Commit.BlockID.Hash; !bytes.Equal(hhash, chash) {
+		return fmt.Errorf("commit signs block %X, header is block %X", chash, hhash)
+	}
+
+	return nil
+}
+
 // String returns a string representation of SignedHeader.
 func (sh SignedHeader) String() string {
 	return sh.StringIndented("")

@@ -146,6 +146,7 @@ pub struct Ics20Packet {
     pub amount: Uint256,
     pub sender: String,
     pub receiver: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub memo: String,
 }
 

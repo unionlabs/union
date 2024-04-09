@@ -257,8 +257,14 @@ func verifyNewHeaderAndValsCommon(
 	now time.Time,
 	maxClockDrift time.Duration,
 	isLegacy bool) error {
-	if err := untrustedHeader.ValidateBasic(trustedHeader.ChainID); err != nil {
-		return fmt.Errorf("untrustedHeader.ValidateBasic failed: %w", err)
+	if isLegacy {
+		if err := untrustedHeader.ValidateBasicLegacy(trustedHeader.ChainID); err != nil {
+			return fmt.Errorf("untrustedHeader.ValidateBasic failed: %w", err)
+		}
+	} else {
+		if err := untrustedHeader.ValidateBasic(trustedHeader.ChainID); err != nil {
+			return fmt.Errorf("untrustedHeader.ValidateBasic failed: %w", err)
+		}
 	}
 
 	if untrustedHeader.Height <= trustedHeader.Height {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -492,6 +493,49 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 		uncons(h.LastResultsHash),
 		uncons(h.EvidenceHash),
 		uncons(h.ProposerAddress),
+	})
+}
+
+// Hash returns the hash of the header.
+// It computes a Merkle tree from the header fields
+// ordered as they appear in the Header.
+// Returns nil if ValidatorHash is missing,
+// since a Header is not valid unless there is
+// a ValidatorsHash (corresponding to the validator set).
+func (h *Header) HashSha256() cmtbytes.HexBytes {
+	if h == nil || len(h.ValidatorsHash) == 0 {
+		return nil
+	}
+	hbz, err := h.Version.Marshal()
+	if err != nil {
+		return nil
+	}
+
+	pbt, err := gogotypes.StdTimeMarshal(h.Time)
+	if err != nil {
+		return nil
+	}
+
+	pbbi := h.LastBlockID.ToProto()
+	bzbi, err := pbbi.Marshal()
+	if err != nil {
+		return nil
+	}
+	return merkle.HashFromByteSlices([][]byte{
+		hbz,
+		cdcEncode(h.ChainID),
+		cdcEncode(h.Height),
+		pbt,
+		bzbi,
+		cdcEncode(h.LastCommitHash),
+		cdcEncode(h.DataHash),
+		cdcEncode(h.ValidatorsHash),
+		cdcEncode(h.NextValidatorsHash),
+		cdcEncode(h.ConsensusHash),
+		cdcEncode(h.AppHash),
+		cdcEncode(h.LastResultsHash),
+		cdcEncode(h.EvidenceHash),
+		cdcEncode(h.ProposerAddress),
 	})
 }
 
