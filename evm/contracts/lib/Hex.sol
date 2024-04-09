@@ -218,7 +218,7 @@ library Hex {
         return address(bytes20(left) | (bytes20(right) >> 32));
     }
 
-    function numberFromAscII(bytes1 b) internal pure returns (uint8 res) {
+    function atoi(bytes1 b) internal pure returns (uint8 res) {
         if (b >= "0" && b <= "9") {
             return uint8(b) - uint8(bytes1("0"));
         } else if (b >= "A" && b <= "F") {
@@ -234,7 +234,7 @@ library Hex {
         uint256 number = 0;
         for (uint256 i = 0; i < b.length; i++) {
             number = number << 4;
-            number |= numberFromAscII(b[i]);
+            number |= atoi(b[i]);
         }
         return number;
     }
