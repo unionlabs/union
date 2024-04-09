@@ -15,7 +15,7 @@
     "seeds": "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
   },
   "union-testnet-7": {
-    "versions": ["v0.20.0"],
+    "versions": ["v0.20.0", "v0.21.0"],
     "current": "v0.20.0",
     "seeds": ""
   }
