@@ -82,7 +82,6 @@ impl Config {
         }
 
         info!("continuing regular sync protocol");
-
         let mut retry_count = 0;
         loop {
             debug!("starting regular sync protocol");
@@ -91,6 +90,7 @@ impl Config {
             let mut tx = pool.begin().await?;
             match sync_next(&client, &mut tx, chain_id, height).await? {
                 Some(h) => {
+                    info!("indexed block {}", &block_height);
                     height = h;
                     retry_count = 0;
                     tx.commit().await?;
@@ -261,7 +261,6 @@ async fn sync_next(
     chain_id: ChainId,
     block_height: Height,
 ) -> Result<Option<Height>, Report> {
-    info!("indexing block {}", &block_height);
     // If we're caught up indexing to the latest height, this will error. In that case,
     // we retry until we obtain the next header.
     debug!("fetching block header for height: {}", &block_height);
