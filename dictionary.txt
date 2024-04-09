@@ -179,6 +179,7 @@ appmodule
 appparams
 arbtest
 arethetypeswrong
+argjson
 arion
 arkworks
 arnaucube
@@ -472,6 +473,7 @@ icahost
 icahostkeeper
 icahosttypes
 icatypes
+identifer
 identifing
 idents
 iflag
@@ -773,6 +775,7 @@ simtestutil
 simtypes
 slashingkeeper
 slashingtypes
+slurpfile
 smallvec
 snapshotter
 snapshottypes
