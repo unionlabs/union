@@ -42,12 +42,10 @@ serde-utils              = { workspace = true }
 serde_json               = { workspace = true, optional = true }
 sha2                     = { workspace = true }
 ssz                      = { workspace = true }
-ssz_types                = { workspace = true }
 static_assertions        = "1.1.0"
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 tracing                  = { workspace = true }
-tree_hash                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 uint                     = "*"
 wasmparser               = { version = "0.113" }
@@ -62,7 +60,7 @@ default = ["ethabi", "std", "ethabi"]
 
 ethabi = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
 grpc   = ["protos/client"]
-std    = ["tree_hash/detect-cpufeatures", "ethers-core/std"]
+std    = ["ethers-core/std"]
 
-arbitrary = ["dep:arbitrary", "primitive-types/arbitrary", "ssz_types/arbitrary"]
+arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
 fuzzing   = ["arbitrary", "serde_json"]

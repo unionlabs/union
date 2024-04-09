@@ -1,6 +1,6 @@
 use hash_db::HashDB;
 use memory_db::{HashKey, MemoryDB};
-use tree_hash::TreeHash;
+use ssz::TreeHash;
 use trie_db::{Trie, TrieDBBuilder};
 use typenum::Unsigned;
 use unionlabs::{

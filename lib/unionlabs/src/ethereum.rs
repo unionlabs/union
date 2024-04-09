@@ -2,9 +2,10 @@ use core::fmt::Debug;
 
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};
-use ssz::{Decode, Encode};
-use ssz_types::{BitList, FixedVector, VariableList};
-use tree_hash::TreeHash;
+use ssz::{
+    types::{BitList, FixedVector, VariableList},
+    Decode, Encode, TreeHash,
+};
 
 use self::config::MAX_BLOB_COMMITMENTS_PER_BLOCK;
 use crate::{

@@ -143,28 +143,36 @@
             #
             # note that to make this easier, we define all local dependencies as workspace dependencies.
             getWorkspaceDeps = dir:
-              # TODO(benluelo): use lib.pipe
-              unique
-                (flatten (lib.mapAttrsToList
-                  (name: value:
-                    let
-                      path = workspaceCargoToml.workspace.dependencies.${name}.path;
-                    in
-                    (getWorkspaceDeps path) ++ [ path ])
-                  (lib.filterAttrs
-                    (dependency: value:
-                      # dep is a workspace dependency...
-                      (value.workspace or false)
-                      # ...and that workspace dependency is a path dependency
-                      && (builtins.hasAttr "path" workspaceCargoToml.workspace.dependencies.${dependency}))
-                    (crateCargoToml dir).dependencies
-                  ))) ++ [ dir ];
+              let
+                go = dir': foundSoFar:
+                  lib.pipe ((crateCargoToml dir').dependencies // (crateCargoToml dir').dev-dependencies or { }) [
+                    (lib.filterAttrs
+                      (dependency: value:
+                        # ...and dep is a workspace dependency...
+                        (value.workspace or false)
+                        # ...and that workspace dependency is a path dependency...
+                        && (builtins.hasAttr "path" workspaceCargoToml.workspace.dependencies.${dependency})
+                        # ...and that workspace dependency has not been found yet (to prevent infinite recursion)
+                        && !(builtins.elem workspaceCargoToml.workspace.dependencies.${dependency}.path foundSoFar)
+                      ))
+                    (lib.mapAttrsToList
+                      (name: value:
+                        let
+                          path = workspaceCargoToml.workspace.dependencies.${name}.path;
+                        in
+                        (go path (unique (foundSoFar ++ [ path ]))) ++ [ path ]))
+                    (lib.trivial.concat [ dir' ])
+                    flatten
+                    unique
+                  ];
+              in
+              go dir [ ];
 
             workspaceDepsForCrate =
               assert lib.assertMsg
                 (builtins.isString crateDirFromRoot)
                 "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}";
-              (dbg (getWorkspaceDeps crateDirFromRoot));
+              (getWorkspaceDeps crateDirFromRoot);
 
             workspaceDepsForCrateCargoTomls = readMemberCargoTomls workspaceDepsForCrate;
 
@@ -356,14 +364,14 @@
             );
 
           allCraneIncludes =
-            unique ((getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "include") ++
-              (getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "test-include"));
+            dbg (unique ((getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "include") ++
+              (getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "test-include")));
         in
         mkCleanSrc {
           name = "cargo-workspace-src";
           srcFilter =
             with { inherit (lib) hasPrefix; };
-            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (dbg (allCraneIncludes ++ allIncludes)));
+            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (allCraneIncludes ++ allIncludes));
         };
     in
     {
@@ -417,6 +425,8 @@
             patchShebangs $(pwd)/unionvisor/src/testdata
           '';
           ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+          ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
+
           buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
             lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
           );

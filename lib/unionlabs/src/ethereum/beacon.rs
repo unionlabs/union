@@ -1,8 +1,9 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
-use ssz::{Decode, Encode};
-use ssz_types::{FixedVector, VariableList};
-use tree_hash::TreeHash;
+use ssz::{
+    types::{FixedVector, VariableList},
+    Decode, Encode, TreeHash,
+};
 use typenum::U;
 
 use super::{config::MAX_BLOB_COMMITMENTS_PER_BLOCK, KZGCommitment};

@@ -108,21 +108,21 @@ macro_rules! hex_string_array_wrapper {
 
             // arrays and `FixedVector`s are effectively the exact same type, implement
             // the former in terms of the latter
-            impl ::tree_hash::TreeHash for $Struct {
-                fn tree_hash_type() -> tree_hash::TreeHashType {
-                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_type()
+            impl ::ssz::tree_hash::TreeHash for $Struct {
+                fn tree_hash_type() -> ::ssz::tree_hash::TreeHashType {
+                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_type()
                 }
 
-                fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
-                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packed_encoding(&self.0.into())
+                fn tree_hash_packed_encoding(&self) -> ::ssz::tree_hash::PackedEncoding {
+                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packed_encoding(&self.0.into())
                 }
 
                 fn tree_hash_packing_factor() -> usize {
-                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packing_factor()
+                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packing_factor()
                 }
 
-                fn tree_hash_root(&self) -> tree_hash::Hash256 {
-                    ssz_types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_root(&self.0.into())
+                fn tree_hash_root(&self) -> ::ssz::tree_hash::Hash256 {
+                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_root(&self.0.into())
                 }
             }
 

@@ -2,47 +2,57 @@
 resolver = "2"
 # NOTE: All paths must be listed out (i.e. no globs) since ifd is still broken in nix (still can't import the output of `cargo metadata` :( ). See crane.nix for where this is used.
 members = [
+  "cosmwasm/token-factory-api",
+  "cosmwasm/ucs00-pingpong",
+  "cosmwasm/ucs01-relay",
+  "cosmwasm/ucs01-relay-api",
+
+  "e2e/ensure-blocks",
+
+  "fuzz",
+
+  "generated/rust/contracts",
+  "generated/rust/protos",
+
+  "hubble",
+
   "lib/beacon-api",
+  "lib/block-message",
   "lib/chain-utils",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-verifier",
   "lib/ics-008-wasm-client",
+  "lib/ics23",
+  "lib/macros",
   "lib/pg-queue",
+  "lib/poseidon-rs",
+  "lib/queue-msg",
+  "lib/queue-msg-macro",
+  "lib/scroll-api",
+  "lib/scroll-rpc",
+  "lib/scroll-verifier",
   "lib/serde-utils",
+  "lib/ssz",
+  "lib/ssz-derive",
   "lib/tendermint-verifier",
   "lib/unionlabs",
-  "lib/ics23",
-  "fuzz",
-  "tools/generate-rust-sol-bindings",
+  "lib/voyager-message",
+  "lib/zktrie-rs",
+
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
-  "light-clients/tendermint-light-client",
   "light-clients/scroll-light-client",
-  "e2e/ensure-blocks",
-  "generated/rust/protos",
-  "generated/rust/contracts",
+  "light-clients/tendermint-light-client",
+
+  "tools/generate-rust-sol-bindings",
+  "tools/keygen",
+  "tools/parse-wasm-client-type",
+  "tools/tidy",
+
   "ucli",
   "unionvisor",
   "voyager",
-  "cosmwasm/token-factory-api",
-  "cosmwasm/ucs00-pingpong",
-  "cosmwasm/ucs01-relay-api",
-  "cosmwasm/ucs01-relay",
-  "hubble",
-  "tools/parse-wasm-client-type",
   "zerg",
-  "tools/tidy",
-  "tools/keygen",
-  "lib/queue-msg",
-  "lib/queue-msg-macro",
-  "lib/macros",
-  "lib/poseidon-rs",
-  "lib/zktrie-rs",
-  "lib/scroll-verifier",
-  "lib/block-message",
-  "lib/scroll-api",
-  "lib/scroll-rpc",
-  "lib/voyager-message",
 ]
 
 [workspace.package]
@@ -77,6 +87,8 @@ scroll-api                = { path = "lib/scroll-api", default-features = false 
 scroll-rpc                = { path = "lib/scroll-rpc", default-features = false }
 scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }
+ssz                       = { path = "lib/ssz", default-features = false }
+ssz-derive                = { path = "lib/ssz-derive", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }
 token-factory-api         = { path = "cosmwasm/token-factory-api", default-features = false }
 ucs01-relay               = { path = "cosmwasm/ucs01-relay", default-features = false }
@@ -86,13 +98,6 @@ voyager-message           = { path = "lib/voyager-message", default-features = f
 zktrie                    = { path = "lib/zktrie-rs", default-features = false }
 
 # external dependencies
-
-# ssz
-# cspell:disable-next-line (isnt)
-ssz       = { package = "ethereum_ssz", git = "https://github.com/unionlabs/ethereum_ssz", branch = "vec-isnt-valid-ssz", default-features = false }
-ssz_types = { git = "https://github.com/unionlabs/ssz_types", branch = "try-from-instead-of-from", default-features = false }
-tree_hash = { git = "https://github.com/unionlabs/tree_hash", branch = "use-unionlabs-ssz", default-features = false }
-
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 
 tendermint       = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
@@ -126,7 +131,7 @@ ethabi                   = { version = "18.0.0", default-features = false }
 frame-support-procedural = { version = "22.0.0", default-features = false }
 frunk                    = { version = "0.4.2", default-features = false }
 futures                  = { version = "0.3.28", default-features = false }
-hex                      = { version = "0.4", default-features = false }
+hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
@@ -138,7 +143,7 @@ rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.3", default-features = false }
 serde                    = { version = "1.0.0", default-features = false }
 serde-json-wasm          = { version = "1.0.0", default-features = false }
-serde_json               = { version = "1.0.0", default-features = false }
+serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }     # serde-json requires one of "std" or "alloc"
 sha2                     = { version = "0.10.7", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }

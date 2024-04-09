@@ -1,6 +1,5 @@
 use macros::model;
-use ssz_types::BitVector;
-use tree_hash::TreeHash;
+use ssz::{types::BitVector, TreeHash};
 
 use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
@@ -12,7 +11,7 @@ use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COM
 ))]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
-    // TODO: Change debug print for this type in ssz_types
+    // TODO: Change debug print for this type in ssz::types
     #[debug("BitVector({})", sync_committee_bits.iter().map(|b| if b { '1' } else { '0' }).collect::<String>())]
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,
     pub sync_committee_signature: BlsSignature,
@@ -42,7 +41,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
 
 #[derive(Debug)]
 pub enum TryFromSyncAggregateError {
-    Bits(ssz_types::Error),
+    Bits(ssz::types::Error),
     Signature(InvalidLength),
 }
 
