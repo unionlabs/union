@@ -17,11 +17,11 @@ let
           --vmdebug \
           --verbosity=4 \
           --http \
-          --http.api=eth,debug,net,web3,admin,engine \
+          --http.api=eth,debug,net,web3,admin,engine,txpool \
           --http.addr=0.0.0.0 \
           --http.vhosts="*" \
           --ws \
-          --ws.api=eth,debug,net,web3,admin,engine \
+          --ws.api=eth,debug,net,web3,admin,engine,txpool \
           --ws.addr=0.0.0.0 \
           --authrpc.vhosts="*" \
           --authrpc.addr=0.0.0.0 \
