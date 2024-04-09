@@ -71,9 +71,14 @@ pub mod hash;
 
 pub mod encoding;
 
+/// Stable replacement for [`!`].
+pub mod never;
+
 /// Various identifier types used throughout the IBC stack.
 pub mod id;
+
 pub mod signer;
+
 pub mod traits;
 
 // TODO: Replace with something like <https://github.com/recmo/uint>
@@ -81,62 +86,11 @@ pub mod uint;
 
 pub(crate) mod macros;
 
-pub mod errors {
-    use core::fmt::Debug;
+pub mod errors;
 
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    #[error("unknown enum variant `{0}`")]
-    pub struct UnknownEnumVariant<T>(pub T);
-
-    /// A protobuf field was none unexpectedly.
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    #[error("missing field `{0}`")]
-    pub struct MissingField(pub &'static str);
-
-    /// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.
-    ///
-    /// `Self::Error` is expected to have a `MissingField(`[`MissingField`]`)` variant.
-    macro_rules! required {
-        ($struct_var:ident.$field:ident) => {
-            $struct_var
-                .$field
-                .ok_or(<Self::Error>::MissingField(MissingField(stringify!(
-                    $field
-                ))))
-        };
-    }
-
-    // https://stackoverflow.com/questions/26731243/how-do-i-use-a-macro-across-module-files
-    pub(crate) use required;
-
-    // Expected one length, but found another.
-    #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-    #[error("invalid length: expected {expected}, found {found}")]
-    pub struct InvalidLength {
-        // TODO: Make this generic with this enum as individual types
-        pub expected: ExpectedLength,
-        pub found: usize,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
-    pub enum ExpectedLength {
-        #[display(fmt = "exactly {_0}")]
-        Exact(usize),
-        #[display(fmt = "less than {_0}")]
-        LessThan(usize),
-        #[display(fmt = "between ({_0}, {_1})")]
-        Between(usize, usize),
-        #[display(fmt = "greater than or equal to ({_0})")]
-        Gte(usize),
-    }
-
-    #[derive(Debug, PartialEq, Eq, thiserror::Error)]
-    #[error("invalid value: expected {expected}, found {found}")]
-    pub struct InvalidValue<T> {
-        pub expected: T,
-        pub found: T,
-    }
-}
+#[cfg(any(feature = "fuzzing", test))]
+#[allow(clippy::missing_panics_doc)]
+pub mod test_utils;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TryFromProtoBytesError<E> {
@@ -146,45 +100,6 @@ pub enum TryFromProtoBytesError<E> {
 
 pub trait TypeUrl {
     fn type_url() -> String;
-}
-
-#[cfg(any(feature = "fuzzing", test))]
-#[allow(clippy::missing_panics_doc)]
-pub mod test_utils {
-    use core::{
-        fmt::{Debug, Display},
-        str::FromStr,
-    };
-
-    use crate::encoding::{Decode, Encode, Proto};
-
-    pub fn assert_proto_roundtrip<T>(t: &T)
-    where
-        T: Encode<Proto> + Decode<Proto> + Debug + Clone + PartialEq,
-    {
-        let try_from_proto = T::decode(&t.clone().encode()).unwrap();
-
-        assert_eq!(t, &try_from_proto, "proto roundtrip failed");
-    }
-
-    pub fn assert_json_roundtrip<T>(t: &T)
-    where
-        T: serde::Serialize + for<'a> serde::Deserialize<'a> + Debug + PartialEq,
-    {
-        let from_json = serde_json::from_str::<T>(&serde_json::to_string(&t).unwrap()).unwrap();
-
-        assert_eq!(t, &from_json, "json roundtrip failed");
-    }
-
-    pub fn assert_string_roundtrip<T>(t: &T)
-    where
-        T: Display + FromStr + Debug + PartialEq,
-        <T as FromStr>::Err: Debug,
-    {
-        let from_str = t.to_string().parse::<T>().unwrap();
-
-        assert_eq!(t, &from_str, "string roundtrip failed");
-    }
 }
 
 #[cfg(feature = "ethabi")]
@@ -378,22 +293,6 @@ where
     T::Owned: for<'a> arbitrary::Arbitrary<'a>,
 {
     u.arbitrary::<T::Owned>().map(alloc::borrow::Cow::Owned)
-}
-
-pub mod never {
-    use core::fmt::Display;
-
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-    pub enum Never {}
-
-    impl Display for Never {
-        fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            match *self {}
-        }
-    }
 }
 
 pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {

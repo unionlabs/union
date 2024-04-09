@@ -702,6 +702,7 @@ rsplit
 ruint
 runtimeservices
 rustc
+rustdoc
 rustfilt
 rustflags
 rustfmt

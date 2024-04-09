@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, marker::PhantomData};
 
 use chain_utils::{
-    ethereum::{EthereumChain, IbcHandlerExt},
+    ethereum::{EthereumChain, EthereumChainExt, IbcHandlerExt},
     scroll::Scroll,
 };
 use ethers::providers::Middleware;

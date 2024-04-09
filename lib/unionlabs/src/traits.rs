@@ -53,6 +53,7 @@ where
     type FromStrErr = <Self as FromStr>::Err;
 }
 
+/// [`Serialize`] and [`Deserialize`] only as exactly [`Self::EXPECTING`].
 pub trait FromStrExact: Default + Sized {
     const EXPECTING: &'static str;
 }
@@ -86,6 +87,7 @@ pub mod from_str_exact {
     }
 }
 
+/// Trait alias for traits commonly used together throughout this crate.
 pub trait Member = Debug
     + Clone
     + PartialEq
@@ -97,28 +99,37 @@ pub trait Member = Debug
     + MaybeArbitrary
     + 'static;
 
-/// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
-/// various other [`Chain`]s, all sharing a common config.
+/// Represents a chain.
 pub trait Chain: Sized + Send + Sync + 'static {
     /// Expected to be unique across all implementations. Note that Wasm<_> implements this by passing through to the host chain, as `Wasm<A> <-> Wasm<B>` and `A <-> B` simultaneously is not currently supported.
     type ChainType: FromStrExact;
+
+    /// The client state of this chain.
     type SelfClientState: Member
         + TypeUrl // hack
         // TODO: Bound ChainId in the same way
         + ClientState<Height = Self::Height>;
-    type SelfConsensusState: Member + ConsensusState + TypeUrl; // hack
 
+    /// The consensus state of this chain.
+    type SelfConsensusState: Member
+        + TypeUrl // hack
+        + ConsensusState;
+
+    /// The block header (aka light client update message) for this chain.
+    type Header: Member + Header;
+
+    /// Some chains store the counterparty client state differently than just storing the state directly, for example wrapping it in [`Any`].
     type StoredClientState<Tr: Chain>: Member
         + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>;
+    /// Some chains store the counterparty consensus state differently than just storing the state directly, for example wrapping it in [`Any`].
     type StoredConsensusState<Tr: Chain>: Member;
-
-    type Header: Member + Header;
 
     // this is just Height
     type Height: Member + IsHeight + MaybeArbitrary;
 
     type ClientId: Member + Id + MaybeArbitrary;
 
+    /// The encoding this chain uses in it's IBC store.
     type IbcStateEncoding: Encoding;
 
     type StateProof: Member;
@@ -130,14 +141,15 @@ pub trait Chain: Sized + Send + Sync + 'static {
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId;
 
-    // fn encode_stored_client_state(cs: &Self::StoredClientState)
-
+    /// Query the latest finalized height of this chain.
     fn query_latest_height(&self) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_;
 
+    /// Query the latest (non-finalized) height of this chain.
     fn query_latest_height_as_destination(
         &self,
     ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_;
 
+    /// Query the latest finalized timestamp of this chain.
     fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_;
 
     /// The client state on this chain at the specified `Height`.
@@ -152,6 +164,9 @@ pub trait Chain: Sized + Send + Sync + 'static {
         height: Self::Height,
     ) -> impl Future<Output = Self::SelfConsensusState> + '_;
 
+    /// Read the acknowledgement for a packet, as raw bytes.
+    ///
+    /// NOTE: This is required because the ack isn't provided in the [`RecvPacket`](crate::events::RecvPacket) event, but is instead written as a separate [`WriteAcknowledgement`](crate::events::WriteAcknowledgement) event.
     fn read_ack(
         &self,
         tx_hash: H256,
@@ -159,12 +174,6 @@ pub trait Chain: Sized + Send + Sync + 'static {
         destination_port_id: PortId,
         sequence: NonZeroU64,
     ) -> impl Future<Output = Vec<u8>> + '_;
-
-    // fn fetch_ibc_state<P: IbcPath<Self, Tr>, Tr: Chain>(
-    //     &self,
-    //     path: P,
-    //     height: Self::Height,
-    // ) -> impl Future<Output = P::Output>;
 }
 
 pub trait ClientState {

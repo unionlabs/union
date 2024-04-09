@@ -2,7 +2,8 @@ use std::{collections::VecDeque, marker::PhantomData};
 
 use beacon_api::client::BeaconApiClient;
 use chain_utils::ethereum::{
-    Ethereum, EthereumChain, IBCHandlerEvents, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
+    Ethereum, EthereumChain, EthereumChainExt as _, IBCHandlerEvents, IbcHandlerExt,
+    ETHEREUM_REVISION_NUMBER,
 };
 use contracts::{
     ibc_channel_handshake::{

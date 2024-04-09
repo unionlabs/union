@@ -25,9 +25,9 @@ macro_rules! hex_string_array_wrapper {
             impl $Struct {
                 pub const BYTES_LEN: usize = $N;
 
-                #[doc = concat!("The [`Display`] impl for [`", stringify!($Struct), "`]")]
+                #[doc = concat!("The [`Display`](core::fmt::Display) impl for [`", stringify!($Struct), "`]")]
                 /// prefixes the output with `0x`, which may not be desirable in all contexts.
-                /// This fn serves as a convenience around [`hex::encode(&self)`].
+                /// This fn serves as a convenience around [`hex::encode(&self)`](hex::encode).
                 #[must_use]
                 pub fn to_string_unprefixed(&self) -> String {
                     hex::encode(&self)
