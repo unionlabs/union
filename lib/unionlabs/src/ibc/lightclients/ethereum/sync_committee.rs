@@ -1,9 +1,8 @@
 use macros::model;
 use ssz::{
     types::{fixed_vector, FixedVector},
-    Decode, Encode,
+    Decode, Encode, TreeHash,
 };
-use tree_hash::TreeHash;
 
 use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 

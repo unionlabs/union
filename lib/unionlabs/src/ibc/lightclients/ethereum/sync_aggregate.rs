@@ -1,6 +1,5 @@
 use macros::model;
-use ssz::types::BitVector;
-use tree_hash::TreeHash;
+use ssz::{types::BitVector, TreeHash};
 
 use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 

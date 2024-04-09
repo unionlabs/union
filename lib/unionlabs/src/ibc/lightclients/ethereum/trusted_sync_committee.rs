@@ -1,7 +1,6 @@
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use ssz::{Decode, Encode};
-use tree_hash::TreeHash;
+use ssz::{Decode, Encode, TreeHash};
 
 use crate::{
     errors::{required, MissingField},

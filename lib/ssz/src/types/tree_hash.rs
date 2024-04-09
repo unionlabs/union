@@ -1,5 +1,6 @@
-use tree_hash::{Hash256, MerkleHasher, TreeHash, TreeHashType, BYTES_PER_CHUNK};
 use typenum::Unsigned;
+
+use crate::tree_hash::{Hash256, MerkleHasher, TreeHash, TreeHashType, BYTES_PER_CHUNK};
 
 /// A helper function providing common functionality between the `TreeHash` implementations for
 /// `FixedVector` and `VariableList`.

@@ -16,15 +16,15 @@ serde                 = { workspace = true, features = ["derive"] }
 serde-utils.workspace = true
 smallvec              = { version = "1.6.1", features = ["const_generics"] }
 ssz-derive            = { workspace = true }
-tree-hash             = { workspace = true }
 typenum               = { workspace = true, features = ["const-generics"] }
+lazy_static      = "1.4.0"
+sha2.workspace   = true
 
 [features]
 arbitrary = ["dep:arbitrary"]
 
 [dev-dependencies]
-serde_json          = { workspace = true, features = ["arbitrary_precision"] }
+serde_json          = { workspace = true }
 serde_yaml          = "0.9.34"
 snap                = "1.1.1"
-tree-hash.workspace = true
 unionlabs.workspace = true

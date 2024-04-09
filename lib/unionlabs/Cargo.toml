@@ -46,7 +46,6 @@ static_assertions        = "1.1.0"
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 tracing                  = { workspace = true }
-tree-hash                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 uint                     = "*"
 wasmparser               = { version = "0.113" }

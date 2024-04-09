@@ -4,9 +4,8 @@ use hex_literal::hex;
 use serde::{Deserialize, Serialize};
 use ssz::{
     types::{BitList, FixedVector, VariableList},
-    Decode, Encode,
+    Decode, Encode, TreeHash,
 };
-use tree_hash::TreeHash;
 
 use self::config::MAX_BLOB_COMMITMENTS_PER_BLOCK;
 use crate::{

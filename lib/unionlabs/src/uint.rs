@@ -299,22 +299,22 @@ impl ssz::Decode for U256 {
     }
 }
 
-impl tree_hash::TreeHash for U256 {
-    fn tree_hash_type() -> tree_hash::TreeHashType {
-        tree_hash::TreeHashType::Basic
+impl ssz::tree_hash::TreeHash for U256 {
+    fn tree_hash_type() -> ssz::tree_hash::TreeHashType {
+        ssz::tree_hash::TreeHashType::Basic
     }
 
-    fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
+    fn tree_hash_packed_encoding(&self) -> ssz::tree_hash::PackedEncoding {
         let mut result = [0; 32];
         self.0.to_little_endian(&mut result);
-        tree_hash::PackedEncoding::from_slice(&result)
+        ssz::tree_hash::PackedEncoding::from_slice(&result)
     }
 
     fn tree_hash_packing_factor() -> usize {
         1
     }
 
-    fn tree_hash_root(&self) -> tree_hash::Hash256 {
+    fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
         let mut result = [0; 32];
         self.0.to_little_endian(&mut result[..]);
         result

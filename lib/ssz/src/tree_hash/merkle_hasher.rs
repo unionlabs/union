@@ -3,7 +3,7 @@ use std::mem;
 use sha2::Digest;
 use smallvec::{smallvec, SmallVec};
 
-use crate::{get_zero_hash, Hash256, HASHSIZE};
+use crate::tree_hash::{get_zero_hash, Hash256, HASHSIZE};
 
 type SmallVec8<T> = SmallVec<[T; 8]>;
 
@@ -362,7 +362,7 @@ impl MerkleHasher {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::merkleize_padded;
+    use crate::tree_hash::merkleize_padded;
 
     /// This test is just to ensure that the stack size of the `Context` remains the same. We choose
     /// our smallvec size based upon this, so it's good to know if it suddenly changes in size.

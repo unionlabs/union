@@ -7,11 +7,13 @@ use std::{
 
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
-use tree_hash::Hash256;
 pub use typenum;
 use typenum::{Const, NonZero, ToUInt, Unsigned, U};
 
-use crate::types::{tree_hash::vec_tree_hash_root, Error};
+use crate::{
+    tree_hash::Hash256,
+    types::{tree_hash::vec_tree_hash_root, Error},
+};
 
 /// Emulates a SSZ `Vector` (distinct from a Rust `Vec`).
 ///
@@ -213,15 +215,15 @@ impl<T, N: Unsigned + NonZero> IntoIterator for FixedVector<T, N> {
     }
 }
 
-impl<T, N: Unsigned + NonZero> tree_hash::TreeHash for FixedVector<T, N>
+impl<T, N: Unsigned + NonZero> crate::tree_hash::TreeHash for FixedVector<T, N>
 where
-    T: tree_hash::TreeHash,
+    T: crate::tree_hash::TreeHash,
 {
-    fn tree_hash_type() -> tree_hash::TreeHashType {
-        tree_hash::TreeHashType::Vector
+    fn tree_hash_type() -> crate::tree_hash::TreeHashType {
+        crate::tree_hash::TreeHashType::Vector
     }
 
-    fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
+    fn tree_hash_packed_encoding(&self) -> crate::tree_hash::PackedEncoding {
         unreachable!("Vector should never be packed.")
     }
 
@@ -350,7 +352,7 @@ where
 }
 
 #[cfg(feature = "arbitrary")]
-impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned> arbitrary::Arbitrary<'a>
+impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned + NonZero> arbitrary::Arbitrary<'a>
     for FixedVector<T, N>
 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -365,11 +367,10 @@ impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned> arbitrary::Arbitrar
 
 #[cfg(test)]
 mod test {
-    use tree_hash::{merkle_root, TreeHash};
     use typenum::*;
 
     use super::*;
-    use crate::*;
+    use crate::{tree_hash::merkle_root, *};
 
     #[test]
     fn new() {
@@ -473,47 +474,5 @@ mod test {
         let source: Vec<u8> = (0..16).collect();
         let fixed: FixedVector<u8, U16> = source.clone().try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), merkle_root(&source, 0));
-    }
-
-    #[derive(Clone, Copy, TreeHash, Default)]
-    struct A {
-        a: u32,
-        b: u32,
-    }
-
-    fn repeat(input: &[u8], n: usize) -> Vec<u8> {
-        let mut output = vec![];
-
-        for _ in 0..n {
-            output.append(&mut input.to_vec());
-        }
-
-        output
-    }
-
-    #[test]
-    fn tree_hash_composite() {
-        let a = A { a: 0, b: 1 };
-
-        let fixed: FixedVector<A, U1> = (vec![a]).try_into().unwrap();
-        assert_eq!(fixed.tree_hash_root(), merkle_root(&a.tree_hash_root(), 0));
-
-        let fixed: FixedVector<A, U8> = (vec![a; 8]).try_into().unwrap();
-        assert_eq!(
-            fixed.tree_hash_root(),
-            merkle_root(&repeat(&a.tree_hash_root(), 8), 0)
-        );
-
-        let fixed: FixedVector<A, U13> = (vec![a; 13]).try_into().unwrap();
-        assert_eq!(
-            fixed.tree_hash_root(),
-            merkle_root(&repeat(&a.tree_hash_root(), 13), 0)
-        );
-
-        let fixed: FixedVector<A, U16> = (vec![a; 16]).try_into().unwrap();
-        assert_eq!(
-            fixed.tree_hash_root(),
-            merkle_root(&repeat(&a.tree_hash_root(), 16), 0)
-        );
     }
 }

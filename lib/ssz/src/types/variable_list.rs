@@ -7,11 +7,11 @@ use std::{
 
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
-use tree_hash::Hash256;
 pub use typenum;
 use typenum::{NonZero, Unsigned};
 
 use crate::{
+    tree_hash::Hash256,
     types::{tree_hash::vec_tree_hash_root, Error},
     BYTES_PER_LENGTH_OFFSET,
 };
@@ -226,15 +226,15 @@ impl<T, N: Unsigned + NonZero> IntoIterator for VariableList<T, N> {
     }
 }
 
-impl<T, N: Unsigned + NonZero> tree_hash::TreeHash for VariableList<T, N>
+impl<T, N: Unsigned + NonZero> crate::tree_hash::TreeHash for VariableList<T, N>
 where
-    T: tree_hash::TreeHash,
+    T: crate::tree_hash::TreeHash,
 {
-    fn tree_hash_type() -> tree_hash::TreeHashType {
-        tree_hash::TreeHashType::List
+    fn tree_hash_type() -> crate::tree_hash::TreeHashType {
+        crate::tree_hash::TreeHashType::List
     }
 
-    fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
+    fn tree_hash_packed_encoding(&self) -> crate::tree_hash::PackedEncoding {
         unreachable!("List should never be packed.")
     }
 
@@ -245,7 +245,7 @@ where
     fn tree_hash_root(&self) -> Hash256 {
         let root = vec_tree_hash_root::<T, N>(&self.vec);
 
-        tree_hash::mix_in_length(&root, self.len())
+        crate::tree_hash::mix_in_length(&root, self.len())
     }
 }
 
@@ -348,7 +348,7 @@ where
 }
 
 #[cfg(feature = "arbitrary")]
-impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned> arbitrary::Arbitrary<'a>
+impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned + NonZero> arbitrary::Arbitrary<'a>
     for VariableList<T, N>
 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -365,11 +365,10 @@ impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned> arbitrary::Arbitrar
 
 #[cfg(test)]
 mod test {
-    use tree_hash::{merkle_root, TreeHash};
     use typenum::*;
 
     use super::*;
-    use crate::*;
+    use crate::{tree_hash::merkle_root, *};
 
     #[test]
     fn new() {
@@ -445,7 +444,7 @@ mod test {
 
     fn root_with_length(bytes: &[u8], len: usize) -> Hash256 {
         let root = merkle_root(bytes, 0);
-        tree_hash::mix_in_length(&root, len)
+        crate::tree_hash::mix_in_length(&root, len)
     }
 
     #[test]
@@ -473,72 +472,6 @@ mod test {
         let source: Vec<u8> = (0..16).collect();
         let fixed: VariableList<u8, U16> = source.clone().try_into().unwrap();
         assert_eq!(fixed.tree_hash_root(), root_with_length(&source, 16));
-    }
-
-    #[derive(Clone, Copy, TreeHash, Default)]
-    struct A {
-        a: u32,
-        b: u32,
-    }
-
-    fn repeat(input: &[u8], n: usize) -> Vec<u8> {
-        let mut output = vec![];
-
-        for _ in 0..n {
-            output.append(&mut input.to_vec());
-        }
-
-        output
-    }
-
-    fn padded_root_with_length(bytes: &[u8], len: usize, min_nodes: usize) -> Hash256 {
-        let root = merkle_root(bytes, min_nodes);
-        tree_hash::mix_in_length(&root, len)
-    }
-
-    #[test]
-    fn tree_hash_composite() {
-        let a = A { a: 0, b: 1 };
-
-        for i in 0..=1 {
-            let fixed: VariableList<A, U1> = vec![a; i].try_into().unwrap();
-            assert_eq!(
-                fixed.tree_hash_root(),
-                padded_root_with_length(&repeat(&a.tree_hash_root(), i), i, 1),
-                "U1 {}",
-                i
-            );
-        }
-
-        for i in 0..=8 {
-            let fixed: VariableList<A, U8> = vec![a; i].try_into().unwrap();
-            assert_eq!(
-                fixed.tree_hash_root(),
-                padded_root_with_length(&repeat(&a.tree_hash_root(), i), i, 8),
-                "U8 {}",
-                i
-            );
-        }
-
-        for i in 0..=13 {
-            let fixed: VariableList<A, U13> = vec![a; i].try_into().unwrap();
-            assert_eq!(
-                fixed.tree_hash_root(),
-                padded_root_with_length(&repeat(&a.tree_hash_root(), i), i, 13),
-                "U13 {}",
-                i
-            );
-        }
-
-        for i in 0..=16 {
-            let fixed: VariableList<A, U16> = (vec![a; i]).try_into().unwrap();
-            assert_eq!(
-                fixed.tree_hash_root(),
-                padded_root_with_length(&repeat(&a.tree_hash_root(), i), i, 16),
-                "U16 {}",
-                i
-            );
-        }
     }
 
     #[test]

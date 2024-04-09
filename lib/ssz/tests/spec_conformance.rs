@@ -6,9 +6,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ::tree_hash::TreeHash;
 use serde::Deserialize;
-use ssz::types::FixedVector;
+use ssz::{tree_hash::TreeHash, types::FixedVector};
 use typenum::{Const, NonZero, ToUInt, Unsigned, U};
 use unionlabs::hash::H256;
 
@@ -26,11 +25,11 @@ type uint256 = unionlabs::uint::U256;
 struct uint128(#[serde(with = "::serde_utils::string")] u128);
 
 impl TreeHash for uint128 {
-    fn tree_hash_type() -> tree_hash::TreeHashType {
+    fn tree_hash_type() -> ssz::tree_hash::TreeHashType {
         u128::tree_hash_type()
     }
 
-    fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
+    fn tree_hash_packed_encoding(&self) -> ssz::tree_hash::PackedEncoding {
         self.0.tree_hash_packed_encoding()
     }
 
@@ -38,7 +37,7 @@ impl TreeHash for uint128 {
         u128::tree_hash_packing_factor()
     }
 
-    fn tree_hash_root(&self) -> tree_hash::Hash256 {
+    fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
         self.0.tree_hash_root()
     }
 }
@@ -271,12 +270,7 @@ struct Meta {
 
 fn variable_list_test<T, const N: usize>(path: &Path)
 where
-    T: serde::de::DeserializeOwned
-        + ssz::Encode
-        + ssz::Decode
-        + ::tree_hash::TreeHash
-        + PartialEq
-        + Debug,
+    T: serde::de::DeserializeOwned + ssz::Encode + ssz::Decode + ssz::TreeHash + PartialEq + Debug,
     Const<N>: ToUInt,
     U<N>: Unsigned + NonZero,
 {

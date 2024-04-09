@@ -6,7 +6,7 @@ use core::{
 
 use macros::model;
 use serde::{Deserialize, Serialize};
-use tree_hash::TreeHash;
+use ssz::TreeHash;
 
 #[derive(ssz::Encode, ssz::Decode, TreeHash, Default, Copy)]
 #[model(proto(raw(protos::ibc::core::client::v1::Height), into, from))]

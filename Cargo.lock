@@ -1962,7 +1962,6 @@ dependencies = [
  "sha3",
  "ssz",
  "thiserror",
- "tree-hash",
  "trie-db",
  "typenum",
  "unionlabs",
@@ -5718,14 +5717,15 @@ dependencies = [
  "arbitrary",
  "derivative",
  "itertools 0.10.5",
+ "lazy_static",
  "serde",
  "serde-utils",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.8",
  "smallvec",
  "snap",
  "ssz-derive",
- "tree-hash",
  "typenum",
  "unionlabs",
 ]
@@ -6605,27 +6605,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree-hash"
-version = "0.5.2"
-dependencies = [
- "lazy_static",
- "rand 0.8.5",
- "sha2 0.10.8",
- "smallvec",
- "ssz",
- "tree-hash-derive",
-]
-
-[[package]]
-name = "tree-hash-derive"
-version = "0.5.2"
-dependencies = [
- "darling",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "trie-db"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6875,7 +6854,6 @@ dependencies = [
  "subtle-encoding",
  "thiserror",
  "tracing",
- "tree-hash",
  "typenum",
  "uint",
  "wasmparser",

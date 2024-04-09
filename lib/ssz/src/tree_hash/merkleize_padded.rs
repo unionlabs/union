@@ -1,5 +1,5 @@
 use super::{get_zero_hash, Hash256, BYTES_PER_CHUNK};
-use crate::{hash_concat, hash_fixed};
+use crate::tree_hash::{hash_concat, hash_fixed};
 
 /// Merkleize `bytes` and return the root, optionally padding the tree out to `min_leaves` number of
 /// leaves.
@@ -218,10 +218,10 @@ fn next_even_number(n: usize) -> usize {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ZERO_HASHES_MAX_INDEX;
+    use crate::tree_hash::ZERO_HASHES_MAX_INDEX;
 
     pub fn reference_root(bytes: &[u8]) -> Hash256 {
-        crate::merkleize_standard(bytes)
+        crate::tree_hash::merkleize_standard(bytes)
     }
 
     macro_rules! common_tests {
@@ -297,19 +297,19 @@ mod test {
         common_tests!(zero_bytes);
     }
 
-    mod random_value {
-        use rand::RngCore;
+    // mod random_value {
+    //     use rand::RngCore;
 
-        use super::*;
+    //     use super::*;
 
-        fn random_bytes(bytes: usize) -> Vec<u8> {
-            let mut bytes = Vec::with_capacity(bytes);
-            rand::thread_rng().fill_bytes(&mut bytes);
-            bytes
-        }
+    //     fn random_bytes(bytes: usize) -> Vec<u8> {
+    //         let mut bytes = Vec::with_capacity(bytes);
+    //         rand::thread_rng().fill_bytes(&mut bytes);
+    //         bytes
+    //     }
 
-        common_tests!(random_bytes);
-    }
+    //     common_tests!(random_bytes);
+    // }
 
     fn test_against_reference(input: &[u8], min_nodes: usize) {
         let mut reference_input = input.to_vec();

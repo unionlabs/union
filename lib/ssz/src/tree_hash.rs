@@ -6,11 +6,8 @@ mod merkleize_standard;
 pub use merkle_hasher::{Error, MerkleHasher};
 pub use merkleize_padded::merkleize_padded;
 pub use merkleize_standard::merkleize_standard;
-
-extern crate tree_hash_derive;
 use sha2::{Digest, Sha256};
 use smallvec::SmallVec;
-pub use tree_hash_derive::TreeHash;
 
 pub const BYTES_PER_CHUNK: usize = 32;
 pub const HASHSIZE: usize = 32;
@@ -21,7 +18,7 @@ pub const SMALLVEC_SIZE: usize = 32;
 pub type Hash256 = [u8; 32];
 pub type PackedEncoding = SmallVec<[u8; SMALLVEC_SIZE]>;
 
-// TODO: Return a H256
+// TODO: use hash_fixed
 pub fn hash(input: &[u8]) -> Vec<u8> {
     Sha256::new().chain_update(input).finalize().to_vec()
 }

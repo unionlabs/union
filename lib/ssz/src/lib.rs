@@ -39,6 +39,8 @@ mod encode;
 pub mod legacy;
 mod union_selector;
 
+pub mod tree_hash;
+
 pub use decode::{
     impls::decode_list_of_variable_length_items, read_offset, split_union_bytes,
     try_from_iter::TryFromIter, Decode, DecodeError, SszDecoder, SszDecoderBuilder,
@@ -48,6 +50,7 @@ pub use encode::{
     impls::{sequence_ssz_append, sequence_ssz_bytes_len},
     Encode, SszEncoder,
 };
+pub use tree_hash::TreeHash;
 pub use union_selector::UnionSelector;
 
 extern crate ssz_derive;
