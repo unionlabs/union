@@ -6,13 +6,21 @@
  * ```mdx
  * import { multiply } from '#/utilities.ts'
  *
- * <FunctionResult result={multiply(2, 3)} />
+ * <FunctionResult result={multiply(2, 3)} /> // 6
+ *
+ * <FunctionResult result={multiply(2, 3)} asInlineCode /> // `<code>6</code>`
  * ```
  */
 
 interface Props {
   result: string | number | boolean
+  asInlineCode?: boolean
 }
+
+const { result, asInlineCode = false } = Astro.props
+const output = asInlineCode ? `<code>${result}</code>` : result
 ---
 
-{Astro.props.result}
+<Fragment set:html={output} />
+
+

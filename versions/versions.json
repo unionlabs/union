@@ -15,12 +15,12 @@
     "versions": ["v0.19.0"],
     "heights": ["genesis"],
     "current": "v0.19.0",
-    "seeds": "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
+    "seeds": "2f731af0b27c16fc3c71341fab88903544525090@testnet.seed.poisonphang.com:26656"
   },
   "union-testnet-7": {
     "versions": ["v0.20.0", "v0.21.0"],
     "heights": ["genesis"],
     "current": "v0.20.0",
-    "seeds": "35f462b92e7d007650700d4550c14cb2ff806b6c@testnet.bonlulu.uno:26656"
+    "seeds": "c2bf0d5b2ad3a1df0f4e9cc32debffa239c0af90@testnet.seed.poisonphang.com:26656"
   }
 }

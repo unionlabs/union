@@ -7,19 +7,21 @@ sidebar:
 import { dedent } from "ts-dedent"
 import { chainVersion } from '#/lib/constants/versions.ts'
 import FunctionResult from '#/components/FunctionResult.astro'
-import { Code, FileTree } from "@astrojs/starlight/components";
+import { Code, FileTree } from '@astrojs/starlight/components'
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
 
 ## Obtaining Unionvisor
 
-We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for <code><FunctionResult result={import.meta.env.CHAIN_ID_VERSION} /></code> is `bundle-testnet-7`. You can obtain the Unionvisor bundle for <code><FunctionResult result={import.meta.env.CHAIN_ID_VERSION} /></code> from our [GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/bundle-testnet-7).
+We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for <FunctionResult result={import.meta.env.CHAIN_ID_VERSION} asInlineCode /> is <FunctionResult result={import.meta.env.CHAIN_ID_VERSION.replace('union', 'bundle')} asInlineCode />. You can obtain the Unionvisor bundle for <FunctionResult result={import.meta.env.CHAIN_ID_VERSION} asInlineCode /> from our <FunctionResult result={`<a href="https://github.com/orgs/unionlabs/packages/container/package/${import.meta.env.CHAIN_ID_VERSION.replace('union', 'bundle')}">GitHub Container Registry</a>`} />.
 
 Alternatively, you can run the following command:
 
-```sh frame="none"
-docker pull ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION
-```
+<Code
+  lang='sh'
+  frame='code'
+  code={`docker pull ghcr.io/unionlabs/${import.meta.env.CHAIN_ID_VERSION.replace('union', 'bundle')}:$UNIONVISOR_VERSION`} 
+/>
 
 _Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion().current} />_
 
@@ -53,7 +55,7 @@ To do this, we'll be using Docker volumes.
     docker run \\
       --volume ~/.unionvisor:/.unionvisor \\
       --volume /tmp:/tmp \\
-      -it ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION \\
+      -it ghcr.io/unionlabs/${import.meta.env.CHAIN_ID_VERSION.replace('union', 'bundle')}:$UNIONVISOR_VERSION \\
       init --moniker $MONIKER \\
       --network ${import.meta.env.CHAIN_ID_VERSION} \\
       --seeds "${chainVersion().seeds}"
@@ -115,9 +117,11 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
-```sh frame="none"
-alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION --log-level off call --'
-```
+<Code
+  lang='sh'
+  frame='code'
+  code={`alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/${import.meta.env.CHAIN_ID_VERSION.replace('union', 'bundle')}:$UNIONVISOR_VERSION --log-level off call --'`} 
+/>
 
 _Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion().current} />_
 
@@ -136,18 +140,21 @@ To run a node using Unionvisor, you'll also need to expose ports to the containe
 
 A minimal Docker Compose file for Unionvisor looks like this:
 
-```yaml
-services:
+<Code
+  lang='yaml'
+  frame='code'
+  code={dedent(`
+  services:
   node:
-    image: ghcr.io/unionlabs/bundle-testnet-7:$UNIONVISOR_VERSION
+    image: ghcr.io/unionlabs/${import.meta.env.CHAIN_ID_VERSION.replace('union', 'bundle')}:$UNIONVISOR_VERSION
     volumes:
       - ~/.unionvisor:/.unionvisor
       - /tmp:/tmp
     network_mode: "host"
     restart: unless-stopped
     command: run --poll-interval 1000
-```
-
+  `)}
+/>
 This will mount our chain configuration and settings folder while also exposing ports `26657`, `1317`, and `9093`.
 
 After creating a `compose.yml` file with the contents above, you'll be able to start your Union node with `docker compose`.

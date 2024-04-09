@@ -89,12 +89,12 @@ For example, when creating a validator with `unionvisor`, you can
 <Code
 	lang='sh'
 	code={dedent(`
-		touch ~/.unionvisor/validator.json
-		
-		# Then after editing the json content
-		uniond tx staking create-validator /.unionvisor/validator.json \\
-			--from $KEY_NAME \\
-			--chain-id ${import.meta.env.CHAIN_ID_VERSION}
+	touch ~/.unionvisor/validator.json
+	
+	# Then after editing the json content
+	uniond tx staking create-validator /.unionvisor/validator.json \\
+		--from $KEY_NAME \\
+		--chain-id ${import.meta.env.CHAIN_ID_VERSION}
 	`)}
 />
 
