@@ -7,7 +7,7 @@ use unionlabs::{
             msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
             msg_channel_open_confirm::MsgChannelOpenConfirm,
             msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket,
+            msg_recv_packet::MsgRecvPacket, msg_timeout::MsgTimeout,
         },
         client::{msg_create_client::MsgCreateClient, msg_update_client::MsgUpdateClient},
         connection::{
@@ -38,6 +38,7 @@ pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
 
     RecvPacket(MsgRecvPacketData<Hc, Tr>),
     AckPacket(MsgAckPacketData<Hc, Tr>),
+    TimeoutPacket(MsgTimeoutData<Hc, Tr>),
 
     CreateClient(MsgCreateClientData<Hc, Tr>),
     UpdateClient(MsgUpdateClientData<Hc, Tr>),
@@ -136,6 +137,11 @@ pub struct MsgRecvPacketData<#[cover] Hc: ChainExt, Tr: ChainExt> {
 #[queue_msg]
 pub struct MsgAckPacketData<#[cover] Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgAcknowledgement<Tr::StateProof, Tr::Height>,
+}
+
+#[queue_msg]
+pub struct MsgTimeoutData<#[cover] Hc: ChainExt, Tr: ChainExt> {
+    pub msg: MsgTimeout<Tr::StateProof, Tr::Height>,
 }
 
 #[queue_msg]

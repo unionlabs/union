@@ -245,29 +245,122 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                     QueueMsg::Noop
                 }
-                unionlabs::events::IbcEvent::RecvPacket(packet) => aggregate(
-                    [fetch(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        FetchState {
-                            at: ibc_event.height,
-                            path: ConnectionPath {
-                                connection_id: packet.connection_id.clone(),
-                            }
-                            .into(),
-                        },
-                    ))],
-                    [],
-                    id(
-                        hc.chain_id(),
-                        AggregatePacketMsgAfterUpdate {
-                            update_to: ibc_event.height,
-                            event_height: ibc_event.height,
-                            tx_hash: ibc_event.tx_hash,
-                            packet_event: PacketEvent::Recv(packet),
-                            __marker: PhantomData,
-                        },
-                    ),
-                ),
+                unionlabs::events::IbcEvent::RecvPacket(packet) => {
+                    // in parallel, run height timeout, timestamp timeout, and send packet
+                    let aggregate_timeout_packet: QueueMsg<RelayMessageTypes> = aggregate(
+                        [fetch(id::<Hc, Tr, _>(
+                            hc.chain_id(),
+                            FetchState {
+                                at: QueryHeight::Specific(ibc_event.height),
+                                path: ConnectionPath {
+                                    connection_id: send.connection_id.clone(),
+                                }
+                                .into(),
+                            },
+                        ))],
+                        [],
+                        id(
+                            hc.chain_id(),
+                            AggregatePacketMsgAfterUpdate {
+                                update_to: ibc_event.height,
+                                event_height: ibc_event.height,
+                                tx_hash: ibc_event.tx_hash,
+                                packet_event: PacketEvent::Timeout(Packet {
+                                    sequence: send.packet_sequence,
+                                    source_port: send.packet_src_port.clone(),
+                                    source_channel: send.packet_src_channel.clone(),
+                                    destination_port: send.packet_dst_port.clone(),
+                                    destination_channel: send.packet_dst_channel.clone(),
+                                    data: send.packet_data_hex.clone(),
+                                    timeout_height: send.packet_timeout_height,
+                                    timeout_timestamp: send.packet_timeout_timestamp,
+                                }),
+                                __marker: PhantomData,
+                            },
+                        ),
+                    );
+
+                    conc(
+                        [
+                            (send.packet_timeout_height != Height::default()).then(|| {
+                                seq([
+                                    wait(id(
+                                        hc.chain_id(),
+                                        WaitForHeight {
+                                            height: send.packet_timeout_height.into(),
+                                            __marker: PhantomData,
+                                        },
+                                    )),
+                                    aggregate_timeout_packet.clone(),
+                                ])
+                            }),
+                            (send.packet_timeout_timestamp != 0).then(|| {
+                                seq([
+                                    wait(id(
+                                        hc.chain_id(),
+                                        WaitForTimestamp {
+                                            timestamp: send
+                                                .packet_timeout_timestamp
+                                                .try_into()
+                                                .unwrap(),
+                                            __marker: PhantomData,
+                                        },
+                                    )),
+                                    aggregate_timeout_packet,
+                                ])
+                            }),
+                            Some(aggregate(
+                                [fetch(id::<Hc, Tr, _>(
+                                    hc.chain_id(),
+                                    FetchState {
+                                        at: QueryHeight::Specific(ibc_event.height),
+                                        path: ConnectionPath {
+                                            connection_id: send.connection_id.clone(),
+                                        }
+                                        .into(),
+                                    },
+                                ))],
+                                [],
+                                id(
+                                    hc.chain_id(),
+                                    AggregatePacketMsgAfterUpdate {
+                                        update_to: ibc_event.height,
+                                        event_height: ibc_event.height,
+                                        tx_hash: ibc_event.tx_hash,
+                                        packet_event: PacketEvent::Send(send),
+                                        __marker: PhantomData,
+                                    },
+                                ),
+                            )),
+                        ]
+                        .into_iter()
+                        .flatten(),
+                    );
+
+                    aggregate(
+                        [fetch(id::<Hc, Tr, _>(
+                            hc.chain_id(),
+                            FetchState {
+                                at: ibc_event.height,
+                                path: ConnectionPath {
+                                    connection_id: packet.connection_id.clone(),
+                                }
+                                .into(),
+                            },
+                        ))],
+                        [],
+                        id(
+                            hc.chain_id(),
+                            AggregatePacketMsgAfterUpdate {
+                                update_to: ibc_event.height,
+                                event_height: ibc_event.height,
+                                tx_hash: ibc_event.tx_hash,
+                                packet_event: PacketEvent::Recv(packet),
+                                __marker: PhantomData,
+                            },
+                        ),
+                    )
+                }
                 unionlabs::events::IbcEvent::SendPacket(packet) => aggregate(
                     [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
