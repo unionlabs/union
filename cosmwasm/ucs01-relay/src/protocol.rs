@@ -1,10 +1,11 @@
 use cosmwasm_std::{
     wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcEndpoint, IbcOrder,
-    MessageInfo, Uint128, Uint512,
+    MessageInfo, TransactionInfo, Uint128, Uint512,
 };
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
+    middleware::{self, Memo, PacketForward},
     protocol::TransferProtocol,
     types::{
         make_foreign_denom, DenomOrigin, EncodingError, Ics20Ack, Ics20Packet, TransferPacket,
@@ -13,8 +14,9 @@ use ucs01_relay_api::{
 };
 
 use crate::{
+    contract::execute_transfer,
     error::ContractError,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, TransferMsg},
     state::{
         ChannelInfo, Hash, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH, HASH_LENGTH, HASH_TO_FOREIGN_DENOM,
     },
@@ -494,6 +496,23 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     ) -> Result<Self::Packet, ucs01_relay_api::types::EncodingError> {
         Ics20Packet::try_from(packet)
     }
+
+    fn packet_forward(
+        &mut self,
+        packet: Self::Packet,
+        forward: ucs01_relay_api::middleware::PacketForward,
+        processed: bool,
+    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+        todo!()
+    }
+
+    fn forward_transfer_packet(
+        &mut self,
+        packet: Self::Packet,
+        forward: middleware::PacketForward,
+    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+        todo!()
+    }
 }
 
 pub struct Ucs01Protocol<'a> {
@@ -640,6 +659,102 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             })?,
             packet.tokens,
         ))
+    }
+
+    fn packet_forward(
+        &mut self,
+        packet: Self::Packet,
+        forward: PacketForward,
+        processed: bool,
+    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+        // Override the receiving address for intermediate transfers on this chain with the contract address
+        let override_addr = match self
+            .common
+            .deps
+            .api
+            .addr_canonicalize(self.self_addr().as_str())
+        {
+            Ok(addr) => addr,
+            Err(error) => {
+                return Self::receive_error(error);
+            }
+        };
+
+        // If not already processed by other middleware, receive tokens into the contract address.
+        if !processed {
+            match self.receive_transfer(&override_addr.into(), packet.tokens().to_vec()) {
+                Ok(_) => {}
+                Err(error) => {
+                    return Self::receive_error(error);
+                }
+            }
+        }
+
+        // Normalize tokens for transfer
+        let tokens: Vec<Coin> = packet
+            .tokens()
+            .iter()
+            .map(|transfer_token| -> Coin {
+                let transfer_token = self
+                    .normalize_for_ibc_transfer(transfer_token.clone())
+                    .expect("can normalize denom");
+                Coin {
+                    denom: transfer_token.denom,
+                    amount: transfer_token
+                        .amount
+                        .try_into()
+                        .expect("CosmWasm require transferred amount to be Uint128..."),
+                }
+            })
+            .collect();
+
+        // Forward the packet
+        let _ = self.forward_transfer_packet(tokens, forward);
+
+        // TODO: Once updated to cosmwasm 2.1, return nil ack
+        todo!("Return nil ack")
+    }
+
+    fn forward_transfer_packet(
+        &mut self,
+        tokens: Vec<Coin>,
+        forward: PacketForward,
+    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+        // Pay fees
+        // TODO: determine fee logic
+
+        let msg_info = MessageInfo {
+            sender: self.self_addr().to_owned(),
+            funds: tokens,
+        };
+
+        let timeout = forward.get_effective_timeout();
+
+        // Prepare forward message
+        let memo = match forward.next {
+            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next }).unwrap(),
+            None => "".to_owned(),
+        };
+
+        let transfer_msg = TransferMsg {
+            channel: forward.channel.value(),
+            receiver: forward.receiver.value(),
+            timeout: Some(timeout),
+            memo,
+        };
+
+        // Send forward message
+        let _ = execute_transfer(
+            self.common.deps.branch(),
+            self.common.env.clone(),
+            msg_info,
+            transfer_msg,
+        );
+
+        // TODO: Store information necessary for refunding on failure ack
+
+        // TODO: Once updated to cosmwasm 2.1, defer to async ack
+        todo!("Defer to async ack")
     }
 }
 

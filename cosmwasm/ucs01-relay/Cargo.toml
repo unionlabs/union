@@ -24,9 +24,11 @@ cw-storage-plus   = { version = "2.0.0" }
 cw2               = { version = "2.0.0" }
 dlmalloc          = { workspace = true, features = ["global"] }
 ethabi            = { workspace = true }
+go-parse-duration = { workspace = true }
 hex               = { workspace = true }
 schemars          = { workspace = true }
 semver            = "1"
+serde-json-wasm   = { workspace = true }
 serde             = { workspace = true, features = ["derive"] }
 sha2              = { workspace = true }
 thiserror         = { workspace = true }
