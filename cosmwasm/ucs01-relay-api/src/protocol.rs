@@ -281,7 +281,7 @@ pub trait TransferProtocol {
             if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
                 match memo {
                     Memo::Forward { forward } => {
-                        return Ok(Self::packet_forward(self, packet, forward))
+                        return Ok(Self::packet_forward(self, packet, forward, false))
                     }
                     Memo::None {} => {}
                 };
@@ -332,9 +332,14 @@ pub trait TransferProtocol {
         &mut self,
         packet: Self::Packet,
         forward: PacketForward,
-    ) -> IbcReceiveResponse<Self::CustomMsg> {
-        todo!()
-    }
+        processed: bool,
+    ) -> IbcReceiveResponse<Self::CustomMsg>;
+
+    fn forward_transfer_packet(
+        &mut self,
+        tokens: Vec<Coin>,
+        forward: PacketForward,
+    ) -> IbcReceiveResponse<Self::CustomMsg>;
 }
 
 #[cfg(test)]
