@@ -137,10 +137,18 @@ async fn index_blocks(
                 &chunk.last().unwrap()
             );
             let tx = pool.begin().await.map_err(Report::from)?;
+
             let inserts = FuturesOrdered::from_iter(
                 chunk
                     .into_iter()
-                    .map(|height| BlockInsert::from_provider_retried(chain_id, height, &provider)),
+                    .enumerate()
+                    // At some point we reach the state where i = 0 block hasn't been created yet, meaning it
+                    // takes ±12s to become available. i = 1 -> ±24s etc.
+                    .map(|(i, height)| {
+                        // The retry wait is 1s in `from_provider_retried`.
+                        let max_retries = i * 20;
+                        BlockInsert::from_provider_retried(chain_id, height, &provider, max_retries)
+                    }),
             );
 
             let tx = inserts
@@ -200,10 +208,9 @@ async fn reindex_blocks(
 
         let tx = pool.begin().await?;
         let chunk = (current - 20)..current;
-        let inserts =
-            FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-                BlockInsert::from_provider_retried(chain_id, height as u64, &provider)
-            }));
+        let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
+            BlockInsert::from_provider_retried(chain_id, height as u64, &provider, 1000)
+        }));
         inserts
             .try_fold(tx, |mut tx, (_, block)| async move {
                 let log = PgLog {
@@ -294,9 +301,9 @@ impl BlockInsert {
         chain_id: ChainId,
         height: u64,
         provider: &Provider<Http>,
+        max_retries: usize,
     ) -> Result<(usize, Self), Report> {
         let mut count = 0;
-        let max_retries = 100;
         loop {
             match Self::from_provider(chain_id, height, provider).await {
                 Ok(block) => return Ok((count, block)),

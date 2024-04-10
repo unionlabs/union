@@ -141,7 +141,7 @@ where
         "
         INSERT INTO v0.logs (chain_id, block_hash, data, height, time) 
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (chain_id, block_hash, height)
+        ON CONFLICT (chain_id, block_hash)
         DO UPDATE
         SET chain_id = $1, block_hash = $2, data = $3, height = $4, time = $5
         ",

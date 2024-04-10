@@ -64,25 +64,23 @@ impl Config {
             .get_inner_logged();
         let mut height = Height::from(sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(&pool).await?.map(|block| block.height + 1).unwrap_or_default() as u32);
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
-        while let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
-            info!("starting fast sync protocol up to: {}", up_to);
+        if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
+            info!(?chain_id.canonical, "starting fast sync protocol up to: {}", up_to);
             loop {
                 let batch_end =
                     std::cmp::min(up_to.value(), height.value() + Self::BATCH_SIZE as u64);
                 if batch_end - height.value() != 20 {
-                    info!("re-evaluating fast sync protocol");
                     break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
                 }
 
-                info!("fast syncing for batch: {}..{}", height, batch_end);
+                info!(?chain_id.canonical, "fast syncing for batch: {}..{}", height, batch_end);
                 let mut tx = pool.begin().await?;
                 height = batch_sync(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?;
                 tx.commit().await?;
             }
         }
 
-        info!("continuing regular sync protocol");
-
+        info!(?chain_id.canonical, "continuing regular sync protocol");
         let mut retry_count = 0;
         loop {
             debug!("starting regular sync protocol");
@@ -91,6 +89,7 @@ impl Config {
             let mut tx = pool.begin().await?;
             match sync_next(&client, &mut tx, chain_id, height).await? {
                 Some(h) => {
+                    info!(?chain_id.canonical, "indexed block {}", &height);
                     height = h;
                     retry_count = 0;
                     tx.commit().await?;
@@ -138,7 +137,7 @@ async fn should_fast_sync_up_to(
     current: Height,
 ) -> Result<Option<Height>, Report> {
     let latest = client.latest_block().await?.block.header.height;
-    if latest.value() - current.value() > batch_size.into() {
+    if latest.value() - current.value() >= batch_size.into() {
         Ok(Some(latest))
     } else {
         Ok(None)
@@ -261,7 +260,6 @@ async fn sync_next(
     chain_id: ChainId,
     block_height: Height,
 ) -> Result<Option<Height>, Report> {
-    info!("indexing block {}", &block_height);
     // If we're caught up indexing to the latest height, this will error. In that case,
     // we retry until we obtain the next header.
     debug!("fetching block header for height: {}", &block_height);
@@ -354,8 +352,7 @@ async fn sync_next(
     postgres::insert_batch_transactions(tx, stream::iter(txs)).await?;
     postgres::insert_batch_events(tx, stream::iter(events)).await?;
 
-    info!("found {} events for block {}", events_len, &block_height);
-    debug!("storing events for block {}", &block_height);
+    debug!("found {} events for block {}", events_len, &block_height);
     Ok(Some(block_height.increment()))
 }
 
