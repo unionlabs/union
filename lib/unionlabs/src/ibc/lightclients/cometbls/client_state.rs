@@ -1,7 +1,5 @@
 use macros::model;
 
-// #[cfg(feature = "ethabi")]
-// use crate::InlineFields;
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
