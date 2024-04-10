@@ -222,7 +222,7 @@ contract CometblsClient is ILightClient {
         uint64 delayPeriodTime,
         uint64 delayPeriodBlocks,
         bytes calldata proof,
-        bytes memory prefix,
+        bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {

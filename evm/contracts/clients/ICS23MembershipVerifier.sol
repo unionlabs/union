@@ -9,37 +9,39 @@ library ICS23MembershipVerifier {
     function verifyMembership(
         bytes32 root,
         bytes calldata proof,
-        bytes memory prefix,
+        bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
     ) internal pure returns (bool) {
-        bytes[] memory fullPath = new bytes[](2);
-        fullPath[0] = prefix;
-        fullPath[1] = path;
+        UnionIcs23.ExistenceProof[2] calldata existenceProof;
+        assembly {
+            existenceProof := proof.offset
+        }
         return Ics23.verifyChainedMembership(
-            abi.decode(proof, (UnionIcs23.ExistenceProof[2])),
+            existenceProof,
             root,
-            fullPath,
+            prefix,
+            path,
             value
         ) == Ics23.VerifyChainedMembershipError.None;
     }
 
-    function verifyNonMembership(
-        bytes32 root,
-        bytes calldata proof,
-        bytes calldata prefix,
-        bytes calldata path
-    ) internal pure returns (bool) {
-        bytes[] memory fullPath = new bytes[](2);
-        fullPath[0] = prefix;
-        fullPath[1] = path;
-        (
-            UnionIcs23.NonExistenceProof memory nonexist,
-            UnionIcs23.ExistenceProof memory exist
-        ) = abi.decode(
-            proof, (UnionIcs23.NonExistenceProof, UnionIcs23.ExistenceProof)
-        );
-        return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)
+    struct NonMembershipProof {
+        UnionIcs23.NonExistenceProof nonexist;
+        UnionIcs23.ExistenceProof exist;
+    }
+
+        function verifyNonMembership(
+                                     bytes32 root,
+                                     bytes calldata proof,
+                                     bytes calldata prefix,
+                                     bytes calldata path
+        ) internal pure returns (bool) {
+        NonMembershipProof calldata nonexistenceProof;
+        assembly {
+            nonexistenceProof := proof.offset
+        }
+        return Ics23.verifyChainedNonMembership(nonexistenceProof.nonexist, nonexistenceProof.exist, root, prefix, path)
             == Ics23.VerifyChainedNonMembershipError.None;
     }
 }

@@ -31,10 +31,11 @@ library Ics23 {
     }
 
     function verifyChainedNonMembership(
-        UnionIcs23.NonExistenceProof memory nonExistProof,
-        UnionIcs23.ExistenceProof memory existProof,
+        UnionIcs23.NonExistenceProof calldata nonExistProof,
+        UnionIcs23.ExistenceProof calldata existProof,
         bytes32 root,
-        bytes[] memory path
+        bytes calldata prefix,
+        bytes calldata key
     ) internal pure returns (VerifyChainedNonMembershipError) {
         (bytes32 subroot, Proof.CalculateRootError rCode) =
             Proof.calculateRoot(nonExistProof);
@@ -42,7 +43,6 @@ library Ics23 {
             return VerifyChainedNonMembershipError.InvalidProofRoot;
         }
 
-        bytes memory key = path[1];
         Proof.VerifyNonExistenceError vCode = Proof.verify(
             nonExistProof, UnionIcs23.getIavlProofSpec(), subroot, key
         );
@@ -87,7 +87,7 @@ library Ics23 {
         Proof.VerifyExistenceError mCode = Proof.verifyNoRootCheck(
             existProof,
             UnionIcs23.getTendermintProofSpec(),
-            path[0],
+            prefix,
             abi.encodePacked(subroot)
         );
 
@@ -132,10 +132,11 @@ library Ics23 {
     }
 
     function verifyChainedMembership(
-        UnionIcs23.ExistenceProof[2] memory proofs,
+        UnionIcs23.ExistenceProof[2] calldata proofs,
         bytes32 root,
-        bytes[] memory path,
-        bytes memory value
+        bytes calldata prefix,
+        bytes calldata key,
+        bytes calldata value
     ) internal pure returns (VerifyChainedMembershipError) {
         (bytes32 subroot, Proof.CalculateRootError rCode) =
             Proof.calculateRoot(proofs[0]);
@@ -146,7 +147,7 @@ library Ics23 {
         // We don't want the above root calculation to be done again. Since we calculated it, we also don't
         // need to check it against anything.
         Proof.VerifyExistenceError vCode = Proof.verifyNoRootCheck(
-            proofs[0], UnionIcs23.getIavlProofSpec(), path[1], value
+            proofs[0], UnionIcs23.getIavlProofSpec(), key, value
         );
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
@@ -157,7 +158,7 @@ library Ics23 {
             proofs[1],
             UnionIcs23.getTendermintProofSpec(),
             root,
-            path[0],
+            prefix,
             abi.encodePacked(subroot)
         );
 
@@ -191,16 +192,16 @@ library Ics23 {
     }
 
     function isLeft(
-        UnionIcs23.ExistenceProof memory left,
-        bytes memory key
+        UnionIcs23.ExistenceProof calldata left,
+        bytes calldata key
     ) private pure returns (bool) {
         // CosmosIcs23V1ExistenceProof.isNil does not work
         return UnionIcs23.empty(left) || Ops.compare(left.key, key) < 0;
     }
 
     function isRight(
-        UnionIcs23.ExistenceProof memory right,
-        bytes memory key
+        UnionIcs23.ExistenceProof calldata right,
+        bytes calldata key
     ) private pure returns (bool) {
         // CosmosIcs23V1ExistenceProof.isNil does not work
         return UnionIcs23.empty(right) || Ops.compare(right.key, key) > 0;
@@ -216,9 +217,9 @@ library Ops {
 
     // LeafOp operations
     function applyLeafOp(
-        bytes memory prefix,
-        bytes memory key,
-        bytes memory value
+        bytes calldata prefix,
+        bytes calldata key,
+        bytes calldata value
     ) internal pure returns (bytes32, ApplyLeafOpError) {
         //require(key.length > 0); // dev: Leaf op needs key
         if (key.length == 0) return ("", ApplyLeafOpError.KeyLength);
@@ -256,7 +257,7 @@ library Ops {
 
     // InnerOp operations
     function applyOp(
-        UnionIcs23.InnerOp memory innerOp,
+        UnionIcs23.InnerOp calldata innerOp,
         bytes32 child
     ) internal pure returns (bytes32, ApplyInnerOpError) {
         //require(child.length > 0); // dev: Inner op needs child value
@@ -269,8 +270,8 @@ library Ops {
     }
 
     function compare(
-        bytes memory a,
-        bytes memory b
+        bytes calldata a,
+        bytes calldata b
     ) internal pure returns (int256) {
         uint256 minLen = Math.min(a.length, b.length);
         for (uint256 i = 0; i < minLen; i++) {
@@ -305,9 +306,9 @@ library Proof {
     }
 
     function verifyNoRootCheck(
-        UnionIcs23.ExistenceProof memory proof,
+        UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
-        bytes memory key,
+        bytes calldata key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -328,10 +329,10 @@ library Proof {
 
     // ExistenceProof
     function verify(
-        UnionIcs23.ExistenceProof memory proof,
+        UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
         bytes32 commitmentRoot,
-        bytes memory key,
+        bytes calldata key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -366,7 +367,7 @@ library Proof {
         EmptyProof
     }
 
-    function calculateRoot(UnionIcs23.ExistenceProof memory proof)
+    function calculateRoot(UnionIcs23.ExistenceProof calldata proof)
         internal
         pure
         returns (bytes32, CalculateRootError)
@@ -400,7 +401,7 @@ library Proof {
     }
 
     function checkAgainstSpec(
-        UnionIcs23.ExistenceProof memory proof,
+        UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec
     ) internal pure returns (CheckAgainstSpecError) {
         // LeafOp.isNil does not work
@@ -419,7 +420,7 @@ library Proof {
 
         uint256 max = spec.maxPrefixLength + spec.childSize;
         for (uint256 i = 0; i < proof.path.length; i++) {
-            UnionIcs23.InnerOp memory innerOp = proof.path[i];
+            UnionIcs23.InnerOp calldata innerOp = proof.path[i];
 
             // innerOp.prefix is hardcoded to be 0 in both specs
             if (
@@ -446,13 +447,13 @@ library Proof {
 
     // CosmosIcs23V1NonExistenceProof
     function verify(
-        UnionIcs23.NonExistenceProof memory proof,
+        UnionIcs23.NonExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
         bytes32 commitmentRoot,
-        bytes memory key
+        bytes calldata key
     ) internal pure returns (VerifyNonExistenceError) {
-        bytes memory leftKey;
-        bytes memory rightKey;
+        bytes calldata leftKey = proof.left.key;
+        bytes calldata rightKey = proof.right.key;
         // CosmosIcs23V1ExistenceProof.isNil does not work
         if (UnionIcs23.empty(proof.left) == false) {
             VerifyExistenceError eCode = verify(
@@ -465,8 +466,6 @@ library Proof {
             if (eCode != VerifyExistenceError.None) {
                 return VerifyNonExistenceError.VerifyLeft;
             }
-
-            leftKey = proof.left.key;
         }
         if (UnionIcs23.empty(proof.right) == false) {
             VerifyExistenceError eCode = verify(
@@ -479,8 +478,6 @@ library Proof {
             if (eCode != VerifyExistenceError.None) {
                 return VerifyNonExistenceError.VerifyRight;
             }
-
-            rightKey = proof.right.key;
         }
         // If both proofs are missing, this is not a valid proof
         //require(leftKey.length > 0 || rightKey.length > 0); // dev: both left and right proofs missing
@@ -524,7 +521,7 @@ library Proof {
         return VerifyNonExistenceError.None;
     }
 
-    function calculateRoot(UnionIcs23.NonExistenceProof memory proof)
+    function calculateRoot(UnionIcs23.NonExistenceProof calldata proof)
         internal
         pure
         returns (bytes32, CalculateRootError)
@@ -543,7 +540,7 @@ library Proof {
     // length must be <= path.length
     function isLeftMost(
         UnionIcs23.ProofSpec memory spec,
-        UnionIcs23.InnerOp[] memory path,
+        UnionIcs23.InnerOp[] calldata path,
         uint256 length
     ) private pure returns (bool) {
         (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
@@ -559,7 +556,7 @@ library Proof {
     // length must be <= path.length
     function isRightMost(
         UnionIcs23.ProofSpec memory spec,
-        UnionIcs23.InnerOp[] memory path,
+        UnionIcs23.InnerOp[] calldata path,
         uint256 length
     ) private pure returns (bool) {
         (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
@@ -575,8 +572,8 @@ library Proof {
 
     function isLeftStep(
         UnionIcs23.ProofSpec memory spec,
-        UnionIcs23.InnerOp memory left,
-        UnionIcs23.InnerOp memory right
+        UnionIcs23.InnerOp calldata left,
+        UnionIcs23.InnerOp calldata right
     ) private pure returns (bool) {
         (uint256 leftIdx, OrderFromPaddingError lCode) =
             orderFromPadding(spec, left);
@@ -591,8 +588,8 @@ library Proof {
 
     function isLeftNeighbor(
         UnionIcs23.ProofSpec memory spec,
-        UnionIcs23.InnerOp[] memory left,
-        UnionIcs23.InnerOp[] memory right
+        UnionIcs23.InnerOp[] calldata left,
+        UnionIcs23.InnerOp[] calldata right
     ) private pure returns (bool) {
         uint256 leftIdx = left.length - 1;
         uint256 rightIdx = right.length - 1;
@@ -630,7 +627,7 @@ library Proof {
 
     function orderFromPadding(
         UnionIcs23.ProofSpec memory spec,
-        UnionIcs23.InnerOp memory op
+        UnionIcs23.InnerOp calldata op
     ) private pure returns (uint256, OrderFromPaddingError) {
         for (uint256 branch = 0; branch < 2; branch++) {
             (uint256 minp, uint256 maxp, uint256 suffix) =
@@ -660,7 +657,7 @@ library Proof {
     }
 
     function hasPadding(
-        UnionIcs23.InnerOp memory op,
+        UnionIcs23.InnerOp calldata op,
         uint256 minPrefix,
         uint256 maxPrefix,
         uint256 suffix
