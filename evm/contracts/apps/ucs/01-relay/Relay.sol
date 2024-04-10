@@ -382,7 +382,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         }
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
-            ibcPacket.destination_port, ibcPacket.destination_channel
+            ibcPacket.source_port, ibcPacket.source_channel
         );
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
@@ -412,7 +412,9 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 // In this branch the token was originating from the
                 // counterparty chain. We need to mint the amount.
                 denom = RelayLib.makeForeignDenom(
-                    ibcPacket.source_port, ibcPacket.source_channel, token.denom
+                    ibcPacket.destination_port,
+                    ibcPacket.destination_channel,
+                    token.denom
                 );
                 denomAddress = denomToAddress[ibcPacket.destination_port][ibcPacket
                     .destination_channel][denom];
