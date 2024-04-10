@@ -109,38 +109,6 @@ pub enum TryFromEthAbiBytesError<E> {
     Decode(ethers_core::abi::AbiError),
 }
 
-/// Due to the broken eth abi rust library, some structures with dynamically
-/// sized types are incorrectly encoded (missing a dynamic tuple wrapper)
-#[cfg(feature = "ethabi")]
-pub struct InlineFields<T>(pub T);
-
-#[cfg(feature = "ethabi")]
-impl<T> ethers_core::abi::AbiEncode for InlineFields<T>
-where
-    T: ethers_core::abi::AbiEncode,
-{
-    fn encode(self) -> Vec<u8> {
-        // Prefixed by the offset at which the 'dynamic' tuple is starting
-        ethers_core::abi::AbiEncode::encode(crate::uint::U256::from(32))
-            .into_iter()
-            .chain(self.0.encode())
-            .collect::<Vec<_>>()
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl<T> ethers_core::abi::AbiDecode for InlineFields<T>
-where
-    T: ethers_core::abi::AbiDecode,
-{
-    fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ethers_core::abi::AbiError> {
-        // Wipe the prefix
-        Ok(Self(T::decode(
-            bytes.as_ref().iter().copied().skip(32).collect::<Vec<_>>(),
-        )?))
-    }
-}
-
 /// An empty string. Will only parse/serialize to/from `""`.
 pub type EmptyString<S = String> = Validated<S, EmptyStringValidator>;
 pub type EmptyStringValidator = Bounded<0, 0>;

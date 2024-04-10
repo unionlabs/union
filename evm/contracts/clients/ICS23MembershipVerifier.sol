@@ -9,19 +9,22 @@ library ICS23MembershipVerifier {
     function verifyMembership(
         bytes32 root,
         bytes calldata proof,
-        bytes memory prefix,
+        bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
     ) internal pure returns (bool) {
-        bytes[] memory fullPath = new bytes[](2);
-        fullPath[0] = prefix;
-        fullPath[1] = path;
+        UnionIcs23.ExistenceProof[2] calldata existenceProof;
+        assembly {
+            existenceProof := proof.offset
+        }
         return Ics23.verifyChainedMembership(
-            abi.decode(proof, (UnionIcs23.ExistenceProof[2])),
-            root,
-            fullPath,
-            value
+            existenceProof, root, prefix, path, value
         ) == Ics23.VerifyChainedMembershipError.None;
+    }
+
+    struct NonMembershipProof {
+        UnionIcs23.NonExistenceProof nonexist;
+        UnionIcs23.ExistenceProof exist;
     }
 
     function verifyNonMembership(
@@ -30,16 +33,16 @@ library ICS23MembershipVerifier {
         bytes calldata prefix,
         bytes calldata path
     ) internal pure returns (bool) {
-        bytes[] memory fullPath = new bytes[](2);
-        fullPath[0] = prefix;
-        fullPath[1] = path;
-        (
-            UnionIcs23.NonExistenceProof memory nonexist,
-            UnionIcs23.ExistenceProof memory exist
-        ) = abi.decode(
-            proof, (UnionIcs23.NonExistenceProof, UnionIcs23.ExistenceProof)
-        );
-        return Ics23.verifyChainedNonMembership(nonexist, exist, root, fullPath)
-            == Ics23.VerifyChainedNonMembershipError.None;
+        NonMembershipProof calldata nonexistenceProof;
+        assembly {
+            nonexistenceProof := proof.offset
+        }
+        return Ics23.verifyChainedNonMembership(
+            nonexistenceProof.nonexist,
+            nonexistenceProof.exist,
+            root,
+            prefix,
+            path
+        ) == Ics23.VerifyChainedNonMembershipError.None;
     }
 }

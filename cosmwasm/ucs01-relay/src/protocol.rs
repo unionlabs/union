@@ -103,7 +103,7 @@ fn decrease_outstanding(
 fn normalize_for_ibc_transfer(
     mut hash_to_denom: impl FnMut(Hash) -> Result<Option<String>, ContractError>,
     contract_address: &str,
-    counterparty_endpoint: &IbcEndpoint,
+    endpoint: &IbcEndpoint,
     token: TransferToken,
 ) -> Result<TransferToken, ContractError> {
     let normalized_denom = match token
@@ -119,10 +119,13 @@ fn normalize_for_ibc_transfer(
                     .try_into()
                     .expect("impossible"),
             )? {
-                // Check whether it's a remotely created denom by switching
-                // to the remote POV and using the DenomOrigin parser.
-                match DenomOrigin::from((normalized_denom.as_ref(), counterparty_endpoint)) {
+                // This is the POV of the counterparty chain, where we transfer from A to B. It's a similar check than in receive_phase1.
+                // If the denom is prefixed by the source chain path (A), it means it was local (originating from B and minted on A).
+                // If the denom isn't prefixed by the source chain path (A), it means it was remote (originating from A chain).
+                match DenomOrigin::from((normalized_denom.as_ref(), endpoint)) {
+                    // If the token is from B, send back the preimage
                     DenomOrigin::Local { .. } => normalized_denom,
+                    // If the token is from A, send the image
                     DenomOrigin::Remote { .. } => token.denom,
                 }
             } else {
@@ -165,7 +168,7 @@ trait OnReceive {
                 let amount = amount
                     .try_into()
                     .expect("CosmWasm require transferred amount to be Uint128...");
-                match DenomOrigin::from((denom.as_str(), endpoint)) {
+                match DenomOrigin::from((denom.as_str(), counterparty_endpoint)) {
                     DenomOrigin::Local { denom } => {
                         self.local_unescrow(&endpoint.channel_id, denom, amount)?;
                         Ok(vec![BankMsg::Send {
@@ -495,7 +498,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                     .map_err(Into::into)
             },
             self.common.env.contract.address.as_str(),
-            &self.common.channel.counterparty_endpoint,
+            &self.common.channel.endpoint,
             token,
         )
     }
@@ -797,10 +800,10 @@ mod tests {
                     source_endpoint_1.clone(),
                     conflicting_destination.clone(),
                     cosmwasm_std::IbcOrder::Unordered,
-                    "ucs01-0".to_string(),
+                    "ucs01-relay-1".to_string(),
                     "connection-1".to_string(),
                 ),
-                counterparty_version: "ucs01-0".to_string(),
+                counterparty_version: "ucs01-relay-1".to_string(),
             },
         )
         .unwrap();
@@ -813,10 +816,10 @@ mod tests {
                     source_endpoint_2.clone(),
                     conflicting_destination.clone(),
                     cosmwasm_std::IbcOrder::Unordered,
-                    "ucs01-0".to_string(),
+                    "ucs01-relay-1".to_string(),
                     "connection-1".to_string(),
                 ),
-                counterparty_version: "ucs01-0".to_string(),
+                counterparty_version: "ucs01-relay-1".to_string(),
             },
         )
         .unwrap();
@@ -1036,7 +1039,7 @@ mod tests {
                 },
                 "receiver",
                 vec![TransferToken {
-                    denom: "wasm.0xDEADC0DE/channel-1/local-denom".into(),
+                    denom: "transfer/channel-34/local-denom".into(),
                     amount: Uint256::from(119u128)
                 }],
             ),

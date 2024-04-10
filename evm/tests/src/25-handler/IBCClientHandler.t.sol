@@ -44,12 +44,12 @@ contract TestCometblsClient is CometblsClient {
 
     constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
 
-    function verifyProof(
-        uint256[8] memory proof,
-        uint256[2] memory proofCommitment,
-        uint256[2] calldata proofCommitmentPOK,
-        uint256[2] calldata input
-    ) external override returns (bool) {
+    function verifyZKP(
+        bytes calldata zkpBytes,
+        string memory chainId,
+        bytes32 trustedValidatorsHash,
+        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
+    ) public override returns (bool) {
         bool ok = validProof > 0;
         if (validProof > 0) {
             validProof -= 1;

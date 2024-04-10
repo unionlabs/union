@@ -1,7 +1,5 @@
 use macros::model;
 
-// #[cfg(feature = "ethabi")]
-// use crate::InlineFields;
 use crate::{
     errors::{required, InvalidLength, MissingField},
     hash::H256,
@@ -69,13 +67,6 @@ impl From<ConsensusState> for contracts::glue::OptimizedConsensusState {
     }
 }
 
-// #[cfg(feature = "ethabi")]
-// impl From<ConsensusState> for InlineFields<contracts::glue::OptimizedConsensusState> {
-//     fn from(value: ConsensusState) -> Self {
-//         Self(value.into())
-//     }
-// }
-
 #[cfg(feature = "ethabi")]
 impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
     type Error = TryFromConsensusStateError;
@@ -90,14 +81,3 @@ impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
         })
     }
 }
-
-// #[cfg(feature = "ethabi")]
-// impl TryFrom<InlineFields<contracts::glue::OptimizedConsensusState>> for ConsensusState {
-//     type Error = TryFromConsensusStateError;
-
-//     fn try_from(
-//         value: InlineFields<contracts::glue::OptimizedConsensusState>,
-//     ) -> Result<Self, Self::Error> {
-//         value.0.try_into()
-//     }
-// }

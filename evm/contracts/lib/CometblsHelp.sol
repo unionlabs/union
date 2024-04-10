@@ -57,31 +57,6 @@ library CometblsHelp {
         }
     }
 
-    function merkleRoot(TendermintTypesHeader.Data memory h)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return MerkleTree.optimizedBlockRoot(
-            [
-                MerkleTree.leafHash(TendermintVersionConsensus.encode(h.version)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.chain_id)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.height)),
-                MerkleTree.leafHash(GoogleProtobufTimestamp.encode(h.time)),
-                MerkleTree.leafHash(TendermintTypesBlockID.encode(h.last_block_id)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.last_commit_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.data_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.validators_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.next_validators_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.consensus_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.app_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.last_results_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
-                MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
-            ]
-        );
-    }
-
     function optimize(
         UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState
     ) internal pure returns (OptimizedConsensusState memory) {
@@ -92,60 +67,61 @@ library CometblsHelp {
         });
     }
 
-    function canonicalize(
-        TendermintTypesCommit.Data memory commit,
-        string memory chainId,
-        bytes32 expectedBlockHash
-    ) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
-        return TendermintTypesCanonicalVote.Data({
-            type_: TendermintTypesTypesGlobalEnums
-                .SignedMsgType
-                .SIGNED_MSG_TYPE_PRECOMMIT,
-            height: commit.height,
-            round: commit.round,
-            block_id: TendermintTypesCanonicalBlockID.Data({
-                hash: abi.encodePacked(expectedBlockHash),
-                part_set_header: TendermintTypesCanonicalPartSetHeader.Data({
-                    total: commit.block_id.part_set_header.total,
-                    hash: commit.block_id.part_set_header.hash
-                })
-            }),
-            chain_id: chainId
-        });
-    }
-
-    function marshalHeaderEthABI(
+    function marshalEthABIMemory(
         UnionIbcLightclientsCometblsV1Header.Data memory header
     ) internal pure returns (bytes memory) {
-        return abi.encode(header);
+        return abi.encode(
+            header.signed_header,
+            header.trusted_height,
+            header.zero_knowledge_proof
+        );
     }
 
     function marshalEthABI(
-        UnionIbcLightclientsCometblsV1Header.Data memory header
+        UnionIbcLightclientsCometblsV1Header.Data calldata header
     ) internal pure returns (bytes memory) {
-        return abi.encode(header);
+        return abi.encode(
+            header.signed_header,
+            header.trusted_height,
+            header.zero_knowledge_proof
+        );
     }
 
-    function unmarshalHeaderEthABI(bytes memory bz)
+    function unmarshalEthABI(bytes calldata bz)
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1Header.Data memory header)
+        returns (UnionIbcLightclientsCometblsV1Header.Data calldata)
     {
-        return abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data));
+        UnionIbcLightclientsCometblsV1Header.Data calldata header;
+        assembly {
+            header := bz.offset
+        }
+        return header;
     }
 
     function marshalEthABI(
         UnionIbcLightclientsCometblsV1ClientState.Data memory clientState
     ) internal pure returns (bytes memory) {
-        return abi.encode(clientState);
+        return abi.encode(
+            clientState.chain_id,
+            clientState.trusting_period,
+            clientState.unbonding_period,
+            clientState.max_clock_drift,
+            clientState.frozen_height,
+            clientState.latest_height
+        );
     }
 
-    function unmarshalClientStateEthABI(bytes memory bz)
+    function unmarshalClientStateEthABI(bytes calldata bz)
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory)
+        returns (UnionIbcLightclientsCometblsV1ClientState.Data calldata)
     {
-        return abi.decode(bz, (UnionIbcLightclientsCometblsV1ClientState.Data));
+        UnionIbcLightclientsCometblsV1ClientState.Data calldata clientState;
+        assembly {
+            clientState := bz.offset
+        }
+        return clientState;
     }
 
     function marshalEthABI(OptimizedConsensusState memory consensusState)
@@ -153,15 +129,23 @@ library CometblsHelp {
         pure
         returns (bytes memory)
     {
-        return abi.encode(consensusState);
+        return abi.encode(
+            consensusState.timestamp,
+            consensusState.appHash,
+            consensusState.nextValidatorsHash
+        );
     }
 
-    function unmarshalConsensusStateEthABI(bytes memory bz)
+    function unmarshalConsensusStateEthABI(bytes calldata bz)
         internal
         pure
-        returns (OptimizedConsensusState memory consensusState)
+        returns (OptimizedConsensusState calldata)
     {
-        return abi.decode(bz, (OptimizedConsensusState));
+        OptimizedConsensusState calldata consensusState;
+        assembly {
+            consensusState := bz.offset
+        }
+        return consensusState;
     }
 
     function marshalToCommitmentEthABI(

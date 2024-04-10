@@ -655,7 +655,7 @@ contract RelayTests is Test {
         // Receive a token that hasn't been escrowed
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = RelayLib.makeForeignDenom(
-            destinationPort, destinationChannel, denom.toHexString()
+            sourcePort, sourceChannel, denom.toHexString()
         );
         tokens[0].amount = amount;
 
@@ -737,7 +737,7 @@ contract RelayTests is Test {
 
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = RelayLib.makeForeignDenom(
-            destinationPort, destinationChannel, denomAddress.toHexString()
+            sourcePort, sourceChannel, denomAddress.toHexString()
         );
         tokens[0].amount = amount;
 
@@ -924,7 +924,9 @@ contract RelayTests is Test {
             address denomAddress = relay.getDenomAddress(
                 destinationPort,
                 destinationChannel,
-                RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+                RelayLib.makeForeignDenom(
+                    destinationPort, destinationChannel, denomName
+                )
             );
 
             LocalToken[] memory localTokens = new LocalToken[](1);
@@ -1029,7 +1031,9 @@ contract RelayTests is Test {
             address denomAddress = relay.getDenomAddress(
                 destinationPort,
                 "channel-1",
-                RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+                RelayLib.makeForeignDenom(
+                    destinationPort, "channel-1", denomName
+                )
             );
 
             LocalToken[] memory localTokens = new LocalToken[](1);
@@ -1262,7 +1266,9 @@ contract RelayTests is Test {
         address denomAddress = relay.getDenomAddress(
             destinationPort,
             destinationChannel,
-            RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+            RelayLib.makeForeignDenom(
+                destinationPort, destinationChannel, denomName
+            )
         );
 
         sendRemoteToken(
@@ -1406,7 +1412,9 @@ contract RelayTests is Test {
         address denomAddress = relay.getDenomAddress(
             destinationPort,
             destinationChannel,
-            RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+            RelayLib.makeForeignDenom(
+                destinationPort, destinationChannel, denomName
+            )
         );
 
         sendRemoteToken(
@@ -1530,7 +1538,9 @@ contract RelayTests is Test {
         address denomAddress = relay.getDenomAddress(
             destinationPort,
             destinationChannel,
-            RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+            RelayLib.makeForeignDenom(
+                destinationPort, destinationChannel, denomName
+            )
         );
 
         sendRemoteToken(

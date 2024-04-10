@@ -95,19 +95,17 @@ impl From<MerkleProof> for protos::ibc::core::commitment::v1::MerkleProof {
 #[cfg(feature = "ethabi")]
 impl crate::encoding::Encode<crate::encoding::EthAbi> for MerkleProof {
     fn encode(self) -> Vec<u8> {
-        use ethers::abi::{Token, Tokenizable};
+        use ethers::abi::Tokenizable;
 
         use crate::union::ics23::{
             existence_proof::ExistenceProofEthAbi, non_existence_proof::NonExistenceProofEthAbi,
         };
 
         match self {
-            MerkleProof::Membership(a, b) => {
-                ethers::abi::ethabi::encode(&[Token::FixedArray(vec![
-                    ExistenceProofEthAbi::from(a).into_token(),
-                    ExistenceProofEthAbi::from(b).into_token(),
-                ])])
-            }
+            MerkleProof::Membership(a, b) => ethers::abi::ethabi::encode(&[
+                ExistenceProofEthAbi::from(a).into_token(),
+                ExistenceProofEthAbi::from(b).into_token(),
+            ]),
             MerkleProof::NonMembership(a, b) => ethers::abi::ethabi::encode(&[
                 NonExistenceProofEthAbi::from(a).into_token(),
                 ExistenceProofEthAbi::from(b).into_token(),
@@ -118,7 +116,7 @@ impl crate::encoding::Encode<crate::encoding::EthAbi> for MerkleProof {
 
 #[cfg(test)]
 mod tests {
-    use ethers::abi::{ethabi, AbiType, ParamType, Token, Tokenizable};
+    use ethers::abi::{ethabi, AbiType, Token, Tokenizable};
 
     use super::*;
     use crate::{
@@ -144,19 +142,16 @@ mod tests {
             MerkleProof::Membership(exist_1, exist_2) => {
                 println!("{}", hex::encode(&ethabi_bz));
 
-                let [tokens]: [Token; 1] = ethabi::decode(
-                    &[ParamType::FixedArray(
-                        Box::new(ExistenceProofEthAbi::param_type()),
-                        2,
-                    )],
+                let [exist_1_tokens, exist_2_tokens]: [Token; 2] = ethabi::decode(
+                    &[
+                        ExistenceProofEthAbi::param_type(),
+                        ExistenceProofEthAbi::param_type(),
+                    ],
                     &ethabi_bz,
                 )
                 .unwrap()
                 .try_into()
                 .unwrap();
-
-                let [exist_1_tokens, exist_2_tokens] =
-                    tokens.into_fixed_array().unwrap().try_into().unwrap();
 
                 let exist_1_ethabi = ExistenceProofEthAbi::from_token(exist_1_tokens).unwrap();
                 let exist_2_ethabi = ExistenceProofEthAbi::from_token(exist_2_tokens).unwrap();

@@ -1,7 +1,5 @@
 use macros::model;
 
-// #[cfg(feature = "ethabi")]
-// use crate::InlineFields;
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
@@ -14,7 +12,7 @@ use crate::{
         from
     ),
     ethabi(
-        raw(crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>),
+        raw(contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData),
         into,
         from
     )
@@ -78,15 +76,6 @@ impl From<ClientState> for contracts::glue::UnionIbcLightclientsCometblsV1Client
 }
 
 #[cfg(feature = "ethabi")]
-impl From<ClientState>
-    for crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>
-{
-    fn from(value: ClientState) -> Self {
-        Self(value.into())
-    }
-}
-
-#[cfg(feature = "ethabi")]
 impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for ClientState {
     type Error = TryFromClientStateError;
 
@@ -101,18 +90,5 @@ impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for
             frozen_height: value.frozen_height.into(),
             latest_height: value.latest_height.into(),
         })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>>
-    for ClientState
-{
-    type Error = TryFromClientStateError;
-
-    fn try_from(
-        value: crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>,
-    ) -> Result<Self, Self::Error> {
-        value.0.try_into()
     }
 }

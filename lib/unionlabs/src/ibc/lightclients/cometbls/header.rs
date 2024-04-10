@@ -17,7 +17,7 @@ use crate::{
         from
     ),
     ethabi(
-        raw(crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>),
+        raw(contracts::glue::UnionIbcLightclientsCometblsV1HeaderData),
         into,
         from
     )
@@ -41,15 +41,13 @@ impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {
 }
 
 #[cfg(feature = "ethabi")]
-impl From<Header>
-    for crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>
-{
+impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData {
     fn from(value: Header) -> Self {
-        Self(contracts::glue::UnionIbcLightclientsCometblsV1HeaderData {
+        Self {
             signed_header: value.signed_header.into(),
             trusted_height: value.trusted_height.into(),
             zero_knowledge_proof: value.zero_knowledge_proof.into(),
-        })
+        }
     }
 }
 
@@ -82,22 +80,19 @@ pub enum TryFromEthAbiHeaderError {
 }
 
 #[cfg(feature = "ethabi")]
-impl TryFrom<crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>>
-    for Header
-{
+impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData> for Header {
     type Error = TryFromEthAbiHeaderError;
 
     fn try_from(
-        value: crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>,
+        value: contracts::glue::UnionIbcLightclientsCometblsV1HeaderData,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             signed_header: value
-                .0
                 .signed_header
                 .try_into()
                 .map_err(TryFromEthAbiHeaderError::SignedHeader)?,
-            trusted_height: value.0.trusted_height.into(),
-            zero_knowledge_proof: value.0.zero_knowledge_proof.to_vec(),
+            trusted_height: value.trusted_height.into(),
+            zero_knowledge_proof: value.zero_knowledge_proof.to_vec(),
         })
     }
 }

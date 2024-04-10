@@ -1,12 +1,10 @@
 use macros::model;
 
 use crate::cosmos::ics23::commitment_proof::{CommitmentProof, TryFromCommitmentProofError};
-// #[cfg(feature = "ethabi")]
-// use crate::InlineFields;
 
 #[model(
     proto(raw(protos::ibc::core::commitment::v1::MerkleProof), into, from),
-    ethabi(raw(crate::InlineFields<contracts::glue::IbcCoreCommitmentV1MerkleProofData>), from)
+    ethabi(raw(contracts::glue::IbcCoreCommitmentV1MerkleProofData), from)
 )]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
@@ -48,14 +46,5 @@ impl From<MerkleProof> for contracts::glue::IbcCoreCommitmentV1MerkleProofData {
         contracts::glue::IbcCoreCommitmentV1MerkleProofData {
             proofs: value.proofs.into_iter().map(Into::into).collect::<Vec<_>>(),
         }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<MerkleProof>
-    for crate::InlineFields<contracts::glue::IbcCoreCommitmentV1MerkleProofData>
-{
-    fn from(value: MerkleProof) -> Self {
-        crate::InlineFields(value.into())
     }
 }
