@@ -121,7 +121,7 @@ library Verifier {
     /// @return y The Y coordinate of the resulting G1 point.
     function publicInputMSM(
         uint256[2] calldata proofCommitment,
-        uint256[2] calldata input
+        uint256[2] memory input
     ) internal view returns (bool success, uint256 x, uint256 y) {
         // Note: The ECMUL precompile does not reject unreduced values, so we check this.
         // Note: Unrolling this loop does not cost much extra in code-size, the bulk of the
@@ -146,7 +146,7 @@ library Verifier {
 
             mstore(g, PUB_0_X)
             mstore(add(g, 0x20), PUB_0_Y)
-            s := calldataload(input)
+            s := mload(input)
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
             success :=
@@ -155,7 +155,7 @@ library Verifier {
                 and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
             mstore(g, PUB_1_X)
             mstore(add(g, 0x20), PUB_1_Y)
-            s := calldataload(add(input, 32))
+            s := mload(add(input, 32))
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
             success :=
@@ -183,7 +183,7 @@ library Verifier {
         uint256[8] calldata proof,
         uint256[2] calldata proofCommitment,
         uint256[2] calldata proofCommitmentPOK,
-        uint256[2] calldata input
+        uint256[2] memory input
     ) internal view returns (bool) {
         (bool success, uint256 x, uint256 y) =
             publicInputMSM(proofCommitment, input);

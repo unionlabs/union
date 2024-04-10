@@ -132,6 +132,6 @@ library Cometbls {
                 revision_height: trustedHeight
             }),
             zero_knowledge_proof: zkp
-        }).marshalHeaderEthABI();
+        }).marshalEthABIMemory();
     }
 }

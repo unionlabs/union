@@ -64,9 +64,9 @@ contract CometblsClient is ILightClient {
             bool ok
         )
     {
-        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+        UnionIbcLightclientsCometblsV1ClientState.Data calldata clientState =
             clientStateBytes.unmarshalClientStateEthABI();
-        OptimizedConsensusState memory consensusState =
+        OptimizedConsensusState calldata consensusState =
             consensusStateBytes.unmarshalConsensusStateEthABI();
         if (
             clientState.latest_height.revision_height == 0
@@ -94,7 +94,7 @@ contract CometblsClient is ILightClient {
     }
 
     function verifyHeader(
-        UnionIbcLightclientsCometblsV1Header.Data memory header,
+        UnionIbcLightclientsCometblsV1Header.Data calldata header,
         OptimizedConsensusState storage consensusState,
         UnionIbcLightclientsCometblsV1ClientState.Data storage clientState
     ) internal returns (uint64, uint64, bytes32) {
@@ -170,8 +170,8 @@ contract CometblsClient is ILightClient {
         onlyIBC
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
-        UnionIbcLightclientsCometblsV1Header.Data memory header =
-            clientMessageBytes.unmarshalHeaderEthABI();
+        UnionIbcLightclientsCometblsV1Header.Data calldata header =
+            clientMessageBytes.unmarshalEthABI();
         UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
             clientStates[clientId];
         OptimizedConsensusState storage consensusState =
@@ -361,19 +361,25 @@ contract CometblsClient is ILightClient {
         return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }
 
+    struct ZKP {
+        uint256[8] proof;
+        uint256[2] proofCommitment;
+        uint256[2] proofCommitmentPOK;
+    }
+
     function verifyZKP(
-        bytes memory zkp,
+        bytes calldata zkpBytes,
         string memory chainId,
         bytes32 trustedValidatorsHash,
         UnionIbcLightclientsCometblsV1LightHeader.Data memory header
-    ) public returns (bool) {
-        (
-            uint256[8] memory proof,
-            uint256[2] memory proofCommitment,
-            uint256[2] memory proofCommitmentPOK
-        ) = abi.decode(zkp, (uint256[8], uint256[2], uint256[2]));
+    ) public virtual returns (bool) {
+        ZKP calldata zkp;
+        assembly {
+            zkp := zkpBytes.offset
+        }
 
-        uint256 commitmentHash = hashToField(abi.encodePacked(proofCommitment));
+        uint256 commitmentHash =
+            hashToField(abi.encodePacked(zkp.proofCommitment));
 
         uint256 l = bytes(chainId).length;
         bytes memory paddedChainId = new bytes(32 - l).concat(bytes(chainId));
@@ -399,19 +405,8 @@ contract CometblsClient is ILightClient {
             commitmentHash
         ];
 
-        return this.verifyProof(
-            proof, proofCommitment, proofCommitmentPOK, publicInputs
-        );
-    }
-
-    function verifyProof(
-        uint256[8] calldata proof,
-        uint256[2] calldata proofCommitment,
-        uint256[2] calldata proofCommitmentPOK,
-        uint256[2] calldata publicInputs
-    ) external virtual returns (bool) {
         return Verifier.verifyProof(
-            proof, proofCommitment, proofCommitmentPOK, publicInputs
+            zkp.proof, zkp.proofCommitment, zkp.proofCommitmentPOK, publicInputs
         );
     }
 
