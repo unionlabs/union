@@ -25,6 +25,7 @@ ics721          = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev 
 ics721-base     = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "dd5b7add6fdc81e633084031f8512e5e909dd42a", features = ["library"] }
 serde           = { workspace = true, features = ["derive"] }
 thiserror       = { workspace = true }
+unionlabs       = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
