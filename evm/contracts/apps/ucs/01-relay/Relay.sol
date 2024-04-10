@@ -6,10 +6,10 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "solady/utils/LibString.sol";
 import "solidity-stringutils/strings.sol";
 import "../../../core/25-handler/IBCHandler.sol";
+import "../../../lib/Hex.sol";
 import "../../Base.sol";
 import "./IERC20Denom.sol";
 import "./ERC20Denom.sol";
-import "../../../lib/Hex.sol";
 
 // NOTE: uint128 limitation from cosmwasm_std Coin type for transfers.
 struct LocalToken {
@@ -69,7 +69,7 @@ library RelayLib {
 
     IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
         IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
-    string public constant VERSION = "ucs01-0";
+    string public constant VERSION = "ucs01-relay-1";
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
@@ -155,14 +155,16 @@ library RelayPacketLib {
         return abi.encode(packet.sender, packet.receiver, packet.tokens);
     }
 
-    function decode(bytes memory packet)
+    function decode(bytes calldata stream)
         internal
         pure
-        returns (RelayPacket memory)
+        returns (RelayPacket calldata)
     {
-        (bytes memory sender, bytes memory receiver, Token[] memory tokens) =
-            abi.decode(packet, (bytes, bytes, Token[]));
-        return RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
+        RelayPacket calldata packet;
+        assembly {
+            packet := stream.offset
+        }
+        return packet;
     }
 }
 
@@ -256,10 +258,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
     function sendToken(
         string calldata sourcePort,
         string calldata sourceChannel,
-        string memory counterpartyPortId,
-        string memory counterpartyChannelId,
         LocalToken calldata localToken
-    ) internal returns (string memory addressDenom) {
+    ) internal returns (string memory) {
         // Ensure the user properly fund us.
         SafeERC20.safeTransferFrom(
             IERC20(localToken.denom),
@@ -268,7 +268,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             localToken.amount
         );
         // If the token is originating from the counterparty channel, we must have saved it's denom.
-        addressDenom =
+        string memory addressDenom =
             addressToDenom[sourcePort][sourceChannel][localToken.denom];
         if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
@@ -280,6 +280,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             );
             addressDenom = localToken.denom.toHexString();
         }
+        return addressDenom;
     }
 
     function send(
@@ -290,19 +291,12 @@ contract UCS01Relay is IBCAppBase, IRelay {
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
     ) external override {
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
-            counterpartyEndpoints[sourcePort][sourceChannel];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         uint256 tokensLength = tokens.length;
         for (uint256 i = 0; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
-            normalizedTokens[i].denom = sendToken(
-                sourcePort,
-                sourceChannel,
-                counterparty.port_id,
-                counterparty.channel_id,
-                localToken
-            );
+            normalizedTokens[i].denom =
+                sendToken(sourcePort, sourceChannel, localToken);
             normalizedTokens[i].amount = uint256(localToken.amount);
         }
         string memory sender = msg.sender.toHexString();
@@ -343,7 +337,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         uint64 sequence,
         string memory portId,
         string memory channelId,
-        RelayPacket memory packet
+        RelayPacket calldata packet
     ) internal {
         string memory receiver = packet.receiver.toHexString();
         // We're going to refund, the receiver will be the sender.
@@ -386,14 +380,14 @@ contract UCS01Relay is IBCAppBase, IRelay {
         if (msg.sender != address(this)) {
             revert RelayLib.ErrUnauthorized();
         }
-        RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
+        RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.destination_port, ibcPacket.destination_channel
         );
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             strings.slice memory denomSlice = token.denom.toSlice();
-            // This will trim the denom IFF it is prefixed
+            // This will trim the denom in-place IFF it is prefixed
             strings.slice memory trimedDenom =
                 denomSlice.beyond(prefix.toSlice());
             address receiver = RelayLib.bytesToAddress(packet.receiver);
@@ -487,14 +481,13 @@ contract UCS01Relay is IBCAppBase, IRelay {
         ) {
             revert RelayLib.ErrInvalidAcknowledgement();
         }
-        RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.sequence,
                 ibcPacket.source_port,
                 ibcPacket.source_channel,
-                packet
+                RelayPacketLib.decode(ibcPacket.data)
             );
         }
     }

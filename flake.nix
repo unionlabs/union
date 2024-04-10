@@ -101,10 +101,16 @@
       type = "github";
       owner = "public-awesome";
       repo = "launchpad";
-      ref = "v3.5.1";
+      rev = "a14454cd2ee914af5ce10cd4cc94a9b6bfe660f6";
       flake = false;
     };
-
+    cosmwasm-nfts = {
+      type = "github";
+      owner = "hussein-aitlahcen";
+      repo = "cw-nfts";
+      rev = "f2d7a07df63504ff8cbf0aad4140e56b3f5bfc3e";
+      flake = false;
+    };
     cometbls = {
       url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
       flake = false;

@@ -33,15 +33,6 @@
         else
           { }
       ));
-
-      # cspell:disable-next-line
-      # this is broken right now due to an outdated transitive dependency to `bnum` (https://github.com/public-awesome/launchpad/blob/b584245bcc7ff07d9b384df1ccc4e3e2466d92db/Cargo.lock#L507-L511)
-      # if this is still not fixed by the time we need this contract, we can build this with a different nightly version (channel).
-      # sg721 = crane.buildRemoteWasmContract {
-      #   src = inputs.public-awesome-launchpad;
-      #   version = inputs.public-awesome-launchpad.rev;
-      #   package = "sg721";
-      # };
     };
   };
 }
