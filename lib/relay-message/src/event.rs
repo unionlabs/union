@@ -9,6 +9,7 @@ use unionlabs::{
     hash::H256,
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath},
     traits::{ClientIdOf, ClientTypeOf, HeightOf},
+    QueryHeight,
 };
 
 use crate::{
@@ -20,7 +21,7 @@ use crate::{
         PacketEvent,
     },
     any_enum, any_lc,
-    fetch::{AnyFetch, Fetch, FetchLatestClientState, FetchState},
+    fetch::{AnyFetch, Fetch, FetchState},
     id, identified, seq,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, RelayMessageTypes,
@@ -149,7 +150,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             FetchState {
-                                at: ibc_event.height,
+                                at: QueryHeight::Specific(ibc_event.height),
                                 path: ChannelEndPath {
                                     port_id: init.port_id.clone(),
                                     channel_id: init.channel_id.clone(),
@@ -181,7 +182,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             FetchState {
-                                at: ibc_event.height,
+                                at: QueryHeight::Specific(ibc_event.height),
                                 path: ChannelEndPath {
                                     port_id: try_.port_id.clone(),
                                     channel_id: try_.channel_id.clone(),
@@ -213,7 +214,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             FetchState {
-                                at: ibc_event.height,
+                                at: QueryHeight::Specific(ibc_event.height),
                                 path: ChannelEndPath {
                                     port_id: ack.port_id.clone(),
                                     channel_id: ack.channel_id.clone(),
@@ -249,7 +250,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         FetchState {
-                            at: ibc_event.height,
+                            at: QueryHeight::Specific(ibc_event.height),
                             path: ConnectionPath {
                                 connection_id: packet.connection_id.clone(),
                             }
@@ -272,7 +273,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         FetchState {
-                            at: ibc_event.height,
+                            at: QueryHeight::Specific(ibc_event.height),
                             path: ConnectionPath {
                                 connection_id: packet.connection_id.clone(),
                             }
@@ -311,11 +312,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 } => aggregate(
                     [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
-                        FetchLatestClientState {
+                        FetchState {
+                            at: QueryHeight::Latest,
                             path: ClientStatePath {
                                 client_id: client_id.clone(),
-                            },
-                            __marker: PhantomData,
+                            }
+                            .into(),
                         },
                     ))],
                     [],

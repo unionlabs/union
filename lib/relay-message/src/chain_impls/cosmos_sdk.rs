@@ -19,7 +19,7 @@ use crate::{
         Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
         MsgChannelOpenInitData, MsgChannelOpenTryData, MsgConnectionOpenAckData,
         MsgConnectionOpenConfirmData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
-        MsgCreateClientData, MsgRecvPacketData, MsgUpdateClientData,
+        MsgCreateClientData, MsgRecvPacketData, MsgTimeoutData, MsgUpdateClientData,
     },
     fetch::{AnyFetch, Fetch},
     id, identified,
@@ -167,6 +167,15 @@ where
                         acknowledgement: msg.acknowledgement,
                         proof_acked: msg.proof_acked.encode(),
                         proof_height: Some(msg.proof_height.into_height().into()),
+                        signer: signer.to_string(),
+                    })
+                }
+                Effect::TimeoutPacket(MsgTimeoutData { msg, __marker }) => {
+                    mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
+                        packet: Some(msg.packet.into()),
+                        proof_unreceived: msg.proof_unreceived.encode(),
+                        proof_height: Some(msg.proof_height.into_height().into()),
+                        next_sequence_recv: msg.next_sequence_recv,
                         signer: signer.to_string(),
                     })
                 }

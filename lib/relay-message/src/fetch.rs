@@ -6,7 +6,7 @@ use macros::apply;
 use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
 use unionlabs::{
     hash::H256,
-    ics24::{self, ClientStatePath},
+    ics24::{self},
     id::{ChannelId, PortId},
     traits::{ChainIdOf, ClientIdOf, HeightOf},
     QueryHeight,
@@ -30,8 +30,6 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
     Proof(FetchProof<Hc, Tr>),
 
     LatestHeight(FetchLatestHeight<Hc, Tr>),
-
-    LatestClientState(FetchLatestClientState<Hc, Tr>),
 
     SelfClientState(FetchSelfClientState<Hc, Tr>),
     SelfConsensusState(FetchSelfConsensusState<Hc, Tr>),
@@ -84,13 +82,8 @@ pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
 
 #[queue_msg]
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
-    pub at: HeightOf<Hc>,
+    pub at: QueryHeight<HeightOf<Hc>>,
     pub path: ics24::Path<Hc::ClientId, Tr::Height>,
-}
-
-#[queue_msg]
-pub struct FetchLatestClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
-    pub path: ClientStatePath<Hc::ClientId>,
 }
 
 #[queue_msg]
@@ -127,7 +120,16 @@ where
     pub async fn handle(self, c: Hc) -> QueueMsg<RelayMessageTypes> {
         match self {
             Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
-            Fetch::State(msg) => Hc::state(&c, msg.at, msg.path),
+            Fetch::State(msg) => match msg.at {
+                QueryHeight::Latest => fetch(id(
+                    c.chain_id(),
+                    FetchState {
+                        at: QueryHeight::Specific(c.query_latest_height().await.unwrap()),
+                        path: msg.path,
+                    },
+                )),
+                QueryHeight::Specific(at) => Hc::state(&c, at, msg.path),
+            },
             Fetch::LatestHeight(FetchLatestHeight { __marker: _ }) => data(id(
                 c.chain_id(),
                 LatestHeight {
@@ -205,15 +207,6 @@ where
                 Hc::fetch_update_headers(&c, fetch_update_headers)
             }
             Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => c.do_fetch(fetch).await,
-            Fetch::LatestClientState(FetchLatestClientState { path, __marker }) => {
-                fetch(id::<Hc, Tr, _>(
-                    c.chain_id(),
-                    FetchState {
-                        at: c.query_latest_height().await.unwrap(),
-                        path: path.into(),
-                    },
-                ))
-            }
         }
     }
 }

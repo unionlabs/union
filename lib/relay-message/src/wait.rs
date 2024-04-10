@@ -8,6 +8,7 @@ use unionlabs::{
     ibc::core::client::height::IsHeight,
     ics24::ClientStatePath,
     traits::{ChainIdOf, ClientState, HeightOf},
+    QueryHeight,
 };
 
 use crate::{
@@ -117,7 +118,7 @@ where
                     fetch(id::<Tr, Hc, _>(
                         counterparty_chain_id,
                         FetchState {
-                            at: trusted_client_state.height(),
+                            at: QueryHeight::Specific(trusted_client_state.height()),
                             path: ClientStatePath {
                                 client_id: counterparty_client_id.clone(),
                             }

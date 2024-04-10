@@ -10,7 +10,8 @@ use chain_utils::{
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
     ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
-    ConnectionOpenTryCall, CreateClientCall, IBCHandler, RecvPacketCall, UpdateClientCall,
+    ConnectionOpenTryCall, CreateClientCall, IBCHandler, RecvPacketCall, TimeoutPacketCall,
+    UpdateClientCall,
 };
 use ethers::{
     abi::AbiEncode,
@@ -244,6 +245,17 @@ where
                         acknowledgement: data.msg.acknowledgement.into(),
                         proof: data.msg.proof_acked.encode().into(),
                         proof_height: data.msg.proof_height.into_height().into(),
+                    },
+                },
+            ),
+            Effect::TimeoutPacket(data) => mk_function_call(
+                ibc_handler,
+                TimeoutPacketCall {
+                    msg: contracts::ibc_handler::MsgPacketTimeout {
+                        packet: data.msg.packet.into(),
+                        proof: data.msg.proof_unreceived.encode().into(),
+                        proof_height: data.msg.proof_height.into_height().into(),
+                        next_sequence_recv: data.msg.next_sequence_recv,
                     },
                 },
             ),

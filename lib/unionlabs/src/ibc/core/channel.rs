@@ -12,3 +12,4 @@ pub mod msg_channel_open_try;
 
 pub mod msg_acknowledgement;
 pub mod msg_recv_packet;
+pub mod msg_timeout;
