@@ -18,11 +18,7 @@ library ICS23MembershipVerifier {
             existenceProof := proof.offset
         }
         return Ics23.verifyChainedMembership(
-            existenceProof,
-            root,
-            prefix,
-            path,
-            value
+            existenceProof, root, prefix, path, value
         ) == Ics23.VerifyChainedMembershipError.None;
     }
 
@@ -31,17 +27,22 @@ library ICS23MembershipVerifier {
         UnionIcs23.ExistenceProof exist;
     }
 
-        function verifyNonMembership(
-                                     bytes32 root,
-                                     bytes calldata proof,
-                                     bytes calldata prefix,
-                                     bytes calldata path
-        ) internal pure returns (bool) {
+    function verifyNonMembership(
+        bytes32 root,
+        bytes calldata proof,
+        bytes calldata prefix,
+        bytes calldata path
+    ) internal pure returns (bool) {
         NonMembershipProof calldata nonexistenceProof;
         assembly {
             nonexistenceProof := proof.offset
         }
-        return Ics23.verifyChainedNonMembership(nonexistenceProof.nonexist, nonexistenceProof.exist, root, prefix, path)
-            == Ics23.VerifyChainedNonMembershipError.None;
+        return Ics23.verifyChainedNonMembership(
+            nonexistenceProof.nonexist,
+            nonexistenceProof.exist,
+            root,
+            prefix,
+            path
+        ) == Ics23.VerifyChainedNonMembershipError.None;
     }
 }

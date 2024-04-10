@@ -419,7 +419,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 denomAddress = denomToAddress[ibcPacket.destination_port][ibcPacket
                     .destination_channel][denom];
                 if (denomAddress == address(0)) {
-                    denomAddress = address(new ERC20Denom(denom));
+                    denomAddress = address(new ERC20Denom(token.denom));
                     denomToAddress[ibcPacket.destination_port][ibcPacket
                         .destination_channel][denom] = denomAddress;
                     addressToDenom[ibcPacket.destination_port][ibcPacket
