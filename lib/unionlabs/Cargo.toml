@@ -15,7 +15,7 @@ bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
 contracts                = { workspace = true, optional = true }
-cosmwasm-std             = { workspace = true, features = ["stargate"] }
+cosmwasm-std             = { workspace = true }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 enumorph                 = { workspace = true }
@@ -53,10 +53,9 @@ wasmparser               = { version = "0.113" }
 [dev-dependencies]
 rand       = "0.8.5"
 serde_json = { workspace = true }
-# unionlabs  = { path = ".", features = ["arbitrary"] } # enable the "arbitrary" feature for tests
 
 [features]
-default = ["ethabi", "std", "ethabi"]
+default = ["ethabi", "std", "stargate"]
 
 ethabi = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
 grpc   = ["protos/client"]
@@ -64,3 +63,5 @@ std    = ["ethers-core/std"]
 
 arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
 fuzzing   = ["arbitrary", "serde_json"]
+
+stargate = ["cosmwasm-std/stargate"]
