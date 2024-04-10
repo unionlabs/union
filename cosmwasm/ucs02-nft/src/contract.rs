@@ -94,17 +94,17 @@ pub struct UCS02NonFungibleTokenPacketData {
     /// Owner
     pub class_owner: String,
     /// Uniquely identifies the collection which the tokens being
-    /// transfered belong to on the sending chain. Must be non-empty.
+    /// transferred belong to on the sending chain. Must be non-empty.
     pub class_id: ics721::ClassId,
     /// Collection name
     pub class_name: String,
     /// Collection symbol
     pub class_symbol: String,
     /// Uniquely identifies the tokens in the NFT collection being
-    /// transfered. This MUST be non-empty.
+    /// transferred. This MUST be non-empty.
     pub token_ids: Vec<U256>,
     /// Optional URL that points to metadata for each token being
-    /// transfered. `tokenUris[N]` should hold the metadata for
+    /// transferred. `tokenUris[N]` should hold the metadata for
     /// `tokenIds[N]` and both lists should have the same if
     /// provided. Must be non-empty if provided.
     pub token_uris: Option<Vec<String>>,
@@ -128,7 +128,7 @@ pub enum TryFromNonFungibleTokenPacketDataError {
 impl TryFrom<NonFungibleTokenPacketData> for UCS02NonFungibleTokenPacketData {
     type Error = TryFromNonFungibleTokenPacketDataError;
     fn try_from(value: NonFungibleTokenPacketData) -> Result<Self, Self::Error> {
-        // We only support ics721/sg_ics721 collectiondata compatible nfts
+        // We only support ics721/sg_ics721 collection data compatible nfts
         let class_data = value.class_data.as_ref();
         let (owner, name, symbol) = match from_json::<ics721::state::CollectionData>(
             class_data.unwrap_or(&Default::default()),
@@ -153,7 +153,7 @@ impl TryFrom<NonFungibleTokenPacketData> for UCS02NonFungibleTokenPacketData {
                 .token_ids
                 .into_iter()
                 .map(|token_id| {
-                    // Sadly, ics721 do not impl asref/deref for tokenid :')
+                    // Sadly, ics721 do not impl asref/deref for token id :')
                     U256::from_str(&String::from(token_id.clone())).map_err(|_| {
                         TryFromNonFungibleTokenPacketDataError::InvalidTokenId {
                             token_id: token_id.into(),
