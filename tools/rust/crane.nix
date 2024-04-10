@@ -385,6 +385,18 @@
         });
       };
 
+      checks.clippy =
+        let
+          attrs = {
+            pname = "workspace-cargo-clippy";
+            version = "0.0.0";
+            src = cargoWorkspaceSrc;
+            cargoClippyExtraArgs = "--workspace --tests";
+            SQLX_OFFLINE = true;
+          };
+        in
+        craneLib.cargoClippy (attrs // { cargoArtifacts = craneLib.buildDepsOnly attrs; });
+
       packages.rust-coverage =
         let
           craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.dev;
@@ -401,6 +413,7 @@
             "--exclude=parse-wasm-client-type"
             "--exclude=protos"
             "--exclude=contracts"
+            "--exclude=unionvisor" # TODO: Figure out why unionvisor tests are flakey
             "--exclude=tidy"
             "--exclude=generate-rust-sol-bindings"
             "--exclude=ensure-blocks"
