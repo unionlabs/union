@@ -1,16 +1,8 @@
 use core::fmt::Debug;
 
-use cosmwasm_std::{to_json_vec, Binary, ContractResult, Deps, Env, QueryRequest, SystemResult};
-use prost::Message;
-use protos::cosmos::base::tendermint::v1beta1::AbciQueryResponse;
+use cosmwasm_std::{Binary, Deps, QueryRequest};
 
-use crate::{
-    bls::BlsPublicKey,
-    encoding::{Decode, DecodeAs, Proto},
-    google::protobuf::any::Any,
-    ibc::core::client::height::Height,
-    ics24::ClientConsensusStatePath,
-};
+use crate::bls::BlsPublicKey;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
@@ -75,7 +67,21 @@ pub fn query_aggregate_public_keys(
         .map_err(|_| Error::InvalidAggregatePublicKey)
 }
 
+#[cfg(feature = "stargate")]
+use {
+    crate::{
+        encoding::{Decode, DecodeAs, Proto},
+        google::protobuf::any::Any,
+        ibc::core::client::height::Height,
+        ics24::ClientConsensusStatePath,
+    },
+    cosmwasm_std::{to_json_vec, ContractResult, Env, SystemResult},
+    prost::Message,
+    protos::cosmos::base::tendermint::v1beta1::AbciQueryResponse,
+};
+
 #[allow(clippy::missing_panics_doc)]
+#[cfg(feature = "stargate")]
 pub fn query_consensus_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
