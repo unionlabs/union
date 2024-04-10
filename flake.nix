@@ -418,8 +418,6 @@
                 uniondOpenApiYml = ./uniond/docs/static/openapi.yml;
                 cometblsOpenApiYml = "${inputs.cometbls}/rpc/openapi/openapi.yaml";
                 ibcGoOpenApiYml = "${inputs.ibc-go}/docs/client/swagger-ui/swagger.yaml";
-                # cometbls = "${inputs.cometbls}";
-                # ibcGoOpenApiYml = "${inputs.ibc-go}";
               };
 
               # Used as the salt when executing `instantiate2` in CosmWasm.
