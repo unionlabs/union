@@ -194,6 +194,7 @@
         ./typescript-sdk/typescript-sdk.nix
         ./app/app.nix
         ./site/site.nix
+        ./site/openapi.nix
         ./indexer/indexer.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
@@ -413,6 +414,12 @@
                 cosmossdk = inputs.cosmossdk;
               };
 
+              openapi = {
+                uniondOpenApiYml = ./uniond/docs/static/openapi.yml;
+                cometblsOpenApiYml = "${inputs.cometbls}/rpc/openapi/openapi.yaml";
+                ibcGoOpenApiYml = "${inputs.ibc-go}/docs/client/swagger-ui/swagger.yaml";
+              };
+
               # Used as the salt when executing `instantiate2` in CosmWasm.
               cw-instantiate2-salt = "61616161";
             };
@@ -495,7 +502,9 @@
             PUPPETEER_SKIP_DOWNLOAD = 1; # avoid npm install downloading chromium
             NODE_OPTIONS = "--no-warnings"; # avoid useless warnings from nodejs
             ASTRO_TELEMETRY_DISABLED = 1;
-            PONDER_TELEMETRY_DISABLED = true;
+
+            IBC_GO_STORE_PATH = "${inputs.ibc-go}";
+            COMETBLS_STORE_PATH = "${inputs.cometbls}";
 
             ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";

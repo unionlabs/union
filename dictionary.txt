@@ -12,6 +12,7 @@ CCTP
 CFLAGS
 CMOV
 Celestia
+Certus
 Chainer
 Cleper
 Codehash
@@ -31,6 +32,7 @@ Devs
 Disket
 Distinctio
 Djuric
+FLUSHCOMPLETE
 Fatalf
 Feegrant
 Feiock
@@ -54,6 +56,7 @@ Hyperlane
 IAVL
 IBC's
 IERC
+IHAVENOIDEA
 IIBC
 IOSVG
 Infima
@@ -84,6 +87,7 @@ NIXBUILDNET
 Neue
 Nonexist
 Noto
+Npcwo
 PINGPONG
 PRECOMMIT
 PREVOTE
@@ -167,6 +171,7 @@ aitlahcen
 alloc
 amcl
 ankr
+anypb
 anys
 appchain
 appchains
@@ -174,6 +179,7 @@ appmodule
 appparams
 arbtest
 arethetypeswrong
+argjson
 arion
 arkworks
 arnaucube
@@ -292,6 +298,7 @@ corestoretypes
 coreutils
 cosmjs
 cosmosgen
+cosmoshub
 cosmosproto
 cosmossdk
 cosmrs
@@ -466,6 +473,7 @@ icahost
 icahostkeeper
 icahosttypes
 icatypes
+identifer
 identifing
 idents
 iflag
@@ -654,11 +662,13 @@ postcss
 postgrespassword
 posthandler
 precommit
+precommits
 prehash
 preimage
 preimages
 preprocessors
 prevote
+prevotes
 println
 privval
 profdata
@@ -671,6 +681,7 @@ protos
 provercmd
 provergrpc
 provergrpcapi
+proxied
 pruningtypes
 prysm
 prysmaticlabs
@@ -764,6 +775,7 @@ simtestutil
 simtypes
 slashingkeeper
 slashingtypes
+slurpfile
 smallvec
 snapshotter
 snapshottypes
@@ -841,6 +853,7 @@ tfmodule
 tftypes
 thiserror
 tikv
+timedelta
 timescaledb
 tkey
 tkeys

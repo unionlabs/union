@@ -62,7 +62,8 @@
     "ts-dedent": "^2.2.0",
     "typed-query-selector": "^2.11.1",
     "typescript": "^5.4.2",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "vite": "^5.2.8"
   },
   "overrides": {
     "sharp": "$sharp"

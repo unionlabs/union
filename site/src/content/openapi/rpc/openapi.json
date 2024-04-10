@@ -1,0 +1,3549 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "CometBFT RPC",
+    "version": "v0.38.x"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:26657"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Info",
+      "description": "Informations about the node APIs"
+    },
+    {
+      "name": "Tx",
+      "description": "Transactions broadcast APIs"
+    },
+    {
+      "name": "ABCI",
+      "description": "ABCI APIs"
+    },
+    {
+      "name": "Evidence",
+      "description": "Evidence APIs"
+    },
+    {
+      "name": "Unsafe",
+      "description": "Unsafe APIs"
+    }
+  ],
+  "paths": {
+    "/broadcast_tx_sync": {
+      "get": {
+        "summary": "Returns with the response from CheckTx. Does not wait for DeliverTx result.",
+        "tags": ["Tx"],
+        "operationId": "broadcast_tx_sync",
+        "description": "If you want to be sure that the transaction is included in a block, you can\nsubscribe for the result using JSONRPC via a websocket. See\nhttps://docs.cometbft.com/v0.38.x/core/subscription.html\nIf you haven't received anything after a couple of blocks, resend it. If the\nsame happens again, send it to some other node. A few reasons why it could\nhappen:\n\n1. malicious node can drop or pretend it had committed your tx\n2. malicious proposer (not necessary the one you're communicating with) can\ndrop transactions, which might become valid in the future\n(https://github.com/tendermint/tendermint/issues/3322)\n\n\nPlease refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)\nfor additional details\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tx",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "456",
+            "description": "The transaction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Empty",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastTxResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/broadcast_tx_async": {
+      "get": {
+        "summary": "Returns right away, with no response. Does not wait for CheckTx nor DeliverTx results.",
+        "tags": ["Tx"],
+        "operationId": "broadcast_tx_async",
+        "description": "If you want to be sure that the transaction is included in a block, you can\nsubscribe for the result using JSONRPC via a websocket. See\nhttps://docs.cometbft.com/v0.38.x/core/subscription.html\nIf you haven't received anything after a couple of blocks, resend it. If the\nsame happens again, send it to some other node. A few reasons why it could\nhappen:\n\n1. malicious node can drop or pretend it had committed your tx\n2. malicious proposer (not necessary the one you're communicating with) can\ndrop transactions, which might become valid in the future\n(https://github.com/tendermint/tendermint/issues/3322)\n3. node can be offline\n\nPlease refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)\nfor additional details\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tx",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "123"
+            },
+            "description": "The transaction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "empty answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastTxResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/broadcast_tx_commit": {
+      "get": {
+        "summary": "Returns with the responses from CheckTx and DeliverTx.",
+        "tags": ["Tx"],
+        "operationId": "broadcast_tx_commit",
+        "description": "IMPORTANT: use only for testing and development. In production, use\nBroadcastTxSync or BroadcastTxAsync. You can subscribe for the transaction\nresult using JSONRPC via a websocket. See\nhttps://docs.cometbft.com/v0.38.x/core/subscription.html\n\nCONTRACT: only returns error if mempool.CheckTx() errs or if we timeout\nwaiting for tx to commit.\n\nIf CheckTx or DeliverTx fail, no error will be returned, but the returned result\nwill contain a non-OK ABCI code.\n\nPlease refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)\nfor additional details\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tx",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "785"
+            },
+            "description": "The transaction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "empty answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastTxCommitResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check_tx": {
+      "get": {
+        "summary": "Checks the transaction without executing it.",
+        "tags": ["Tx"],
+        "operationId": "check_tx",
+        "description": "The transaction won't be added to the mempool.\n\nPlease refer to [formatting/encoding rules](https://docs.cometbft.com/v0.38.x/core/using-cometbft.html#formatting)\nfor additional details\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tx",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "785"
+            },
+            "description": "The transaction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ABCI application's CheckTx response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckTxResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Node heartbeat",
+        "tags": ["Info"],
+        "operationId": "health",
+        "description": "Get node health. Returns empty result (200 OK) on success, no response - in case of an error.\n",
+        "responses": {
+          "200": {
+            "description": "Gets Node Health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "summary": "Node Status",
+        "operationId": "status",
+        "tags": ["Info"],
+        "description": "Get CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.\n",
+        "responses": {
+          "200": {
+            "description": "Status of the node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/net_info": {
+      "get": {
+        "summary": "Network information",
+        "operationId": "net_info",
+        "tags": ["Info"],
+        "description": "Get network info.\n",
+        "responses": {
+          "200": {
+            "description": "empty answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetInfoResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dial_seeds": {
+      "get": {
+        "summary": "Dial Seeds (Unsafe)",
+        "operationId": "dial_seeds",
+        "tags": ["Unsafe"],
+        "description": "Dial a peer, this route in under unsafe, and has to manually enabled to use\n\n  **Example:** curl 'localhost:26657/dial_seeds?seeds=\\[\"f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656\",\"0491d373a8e0fcf1023aaf18c51d6a1d0d4f31bd@5.6.7.8:26656\"\\]'\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "peers",
+            "description": "list of seed nodes to dial",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "example": "f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dialing seeds in progress. See /net_info for details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dialResp"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dial_peers": {
+      "get": {
+        "summary": "Add Peers/Persistent Peers (unsafe)",
+        "operationId": "dial_peers",
+        "tags": ["Unsafe"],
+        "description": "Set a persistent peer, this route in under unsafe, and has to manually enabled to use.\n\n**Example:** curl 'localhost:26657/dial_peers?peers=\\[\"f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656\",\"0491d373a8e0fcf1023aaf18c51d6a1d0d4f31bd@5.6.7.8:26656\"\\]&persistent=false'\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "persistent",
+            "description": "Have the peers you are dialing be persistent",
+            "schema": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "unconditional",
+            "description": "Have the peers you are dialing be unconditional",
+            "schema": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "private",
+            "description": "Have the peers you are dialing be private",
+            "schema": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "peers",
+            "description": "array of peers to dial",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "example": "f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dialing seeds in progress. See /net_info for details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dialResp"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "empty error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blockchain": {
+      "get": {
+        "summary": "Get block headers (max: 20) for minHeight <= height <= maxHeight.",
+        "operationId": "blockchain",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "minHeight",
+            "description": "Minimum block height to return",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxHeight",
+            "description": "Maximum block height to return",
+            "schema": {
+              "type": "integer",
+              "example": 2
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get block headers for minHeight <= height <= maxHeight.\n\nAt most 20 items will be returned.\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Block headers, returned in descending order (highest first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockchainResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/header": {
+      "get": {
+        "summary": "Get header at a specified height",
+        "operationId": "header",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "height",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            },
+            "description": "height to return. If no height is provided, it will fetch the latest header."
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get Header.\n\nIf the `height` field is set to a non-default value, upon success, the\n`Cache-Control` header will be set with the default maximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Header informations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockHeader"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/header_by_hash": {
+      "get": {
+        "summary": "Get header by hash",
+        "operationId": "header_by_hash",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hash",
+            "description": "header hash",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED"
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get Header By Hash.\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Header informations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockHeader"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/block": {
+      "get": {
+        "summary": "Get block at a specified height",
+        "operationId": "block",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "height",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            },
+            "description": "height to return. If no height is provided, it will fetch the latest block."
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get Block.\n\nIf the `height` field is set to a non-default value, upon success, the\n`Cache-Control` header will be set with the default maximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Block informations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/block_by_hash": {
+      "get": {
+        "summary": "Get block by hash",
+        "operationId": "block_by_hash",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hash",
+            "description": "block hash",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED"
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get Block By Hash.\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Block informations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/block_results": {
+      "get": {
+        "summary": "Get block results at a specified height",
+        "operationId": "block_results",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "height",
+            "description": "height to return. If no height is provided, it will fetch information regarding the latest block.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get block_results.\n\nIf the `height` field is set to a non-default value, upon success, the\n`Cache-Control` header will be set with the default maximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Block results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResultsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/commit": {
+      "get": {
+        "summary": "Get commit results at a specified height",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "height",
+            "description": "height to return. If no height is provided, it will fetch commit informations regarding the latest block.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get Commit.\n\nIf the `height` field is set to a non-default value, upon success, the\n`Cache-Control` header will be set with the default maximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Commit results.\n\ncanonical switches from false to true for block H once block H+1 has been committed. Until then it's subjective and only reflects what this node has seen so far.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommitResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/validators": {
+      "get": {
+        "summary": "Get validator set at a specified height",
+        "operationId": "validators",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "height",
+            "description": "height to return. If no height is provided, it will fetch validator set which corresponds to the latest block.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "Page number (1-based)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "per_page",
+            "description": "Number of entries per page (max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 30,
+              "default": 30
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get Validators. Validators are sorted first by voting power\n(descending), then by address (ascending).\n\nIf the `height` field is set to a non-default value, upon success, the\n`Cache-Control` header will be set with the default maximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Commit results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidatorsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/genesis": {
+      "get": {
+        "summary": "Get Genesis",
+        "operationId": "genesis",
+        "tags": ["Info"],
+        "description": "Get genesis.\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Genesis results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenesisResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/genesis_chunked": {
+      "get": {
+        "summary": "Get Genesis in multiple chunks",
+        "operationId": "genesis_chunked",
+        "tags": ["Info"],
+        "description": "Get genesis document in multiple chunks to make it easier to iterate\nthrough larger genesis structures. Each chunk is produced by converting\nthe genesis document to JSON and then splitting the resulting payload\ninto 16MB blocks, and then Base64-encoding each block.\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "chunk",
+            "description": "Sequence number of the chunk to download.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Genesis chunk response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenesisChunkedResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dump_consensus_state": {
+      "get": {
+        "summary": "Get consensus state",
+        "operationId": "dump_consensus_state",
+        "tags": ["Info"],
+        "description": "Get consensus state.\n\nNot safe to call from inside the ABCI application during a block execution.\n",
+        "responses": {
+          "200": {
+            "description": "Complete consensus state.\n\nSee https://pkg.go.dev/github.com/cometbft/cometbft/types?tab=doc#Vote.String for Vote string description.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DumpConsensusResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consensus_state": {
+      "get": {
+        "summary": "Get consensus state",
+        "operationId": "consensus_state",
+        "tags": ["Info"],
+        "description": "Get consensus state.\n\nNot safe to call from inside the ABCI application during a block execution.\n",
+        "responses": {
+          "200": {
+            "description": "consensus state results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsensusStateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consensus_params": {
+      "get": {
+        "summary": "Get consensus parameters",
+        "operationId": "consensus_params",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "height",
+            "description": "height to return. If no height is provided, it will fetch commit informations regarding the latest block.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "example": 1
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get consensus parameters.\n\nIf the `height` field is set to a non-default value, upon success, the\n`Cache-Control` header will be set with the default maximum age.\n",
+        "responses": {
+          "200": {
+            "description": "consensus parameters results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsensusParamsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/unconfirmed_txs": {
+      "get": {
+        "summary": "Get the list of unconfirmed transactions",
+        "operationId": "unconfirmed_txs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "Maximum number of unconfirmed transactions to return (max 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "example": 1
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get list of unconfirmed transactions\n",
+        "responses": {
+          "200": {
+            "description": "List of unconfirmed transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnconfirmedTransactionsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/num_unconfirmed_txs": {
+      "get": {
+        "summary": "Get data about unconfirmed transactions",
+        "operationId": "num_unconfirmed_txs",
+        "tags": ["Info"],
+        "description": "Get data about unconfirmed transactions\n",
+        "responses": {
+          "200": {
+            "description": "status about unconfirmed transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NumUnconfirmedTransactionsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tx_search": {
+      "get": {
+        "summary": "Search for transactions",
+        "description": "Search for transactions w/ their results.\n\nSee /subscribe for the query syntax.\n",
+        "operationId": "tx_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "description": "Query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"tx.height=1000\""
+            }
+          },
+          {
+            "in": "query",
+            "name": "prove",
+            "description": "Include proofs of the transactions inclusion in the block",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "example": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "Page number (1-based)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "per_page",
+            "description": "Number of entries per page (max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "example": 30
+            }
+          },
+          {
+            "in": "query",
+            "name": "order_by",
+            "description": "Order in which transactions are sorted (\"asc\" or \"desc\"), by height & index. If empty, default sorting will be still applied.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "asc",
+              "example": "asc"
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "responses": {
+          "200": {
+            "description": "List of unconfirmed transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxSearchResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/block_search": {
+      "get": {
+        "summary": "Search for blocks by FinalizeBlock events",
+        "description": "Search for blocks by FinalizeBlock events.\n\nSee /subscribe for the query syntax.\n",
+        "operationId": "block_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "description": "Query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"block.height > 1000 AND valset.changed > 0\""
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "Page number (1-based)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "per_page",
+            "description": "Number of entries per page (max: 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "example": 30
+            }
+          },
+          {
+            "in": "query",
+            "name": "order_by",
+            "description": "Order in which blocks are sorted (\"asc\" or \"desc\"), by height. If empty, default sorting will be still applied.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "example": "asc"
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "responses": {
+          "200": {
+            "description": "List of paginated blocks matching the search criteria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockSearchResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tx": {
+      "get": {
+        "summary": "Get transactions by hash",
+        "operationId": "tx",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "hash",
+            "description": "hash of transaction to retrieve",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED"
+            }
+          },
+          {
+            "in": "query",
+            "name": "prove",
+            "description": "Include proofs of the transaction's inclusion in the block",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "example": true,
+              "default": false
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Get a transaction\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Get a transaction`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/abci_info": {
+      "get": {
+        "summary": "Get info about the application.",
+        "operationId": "abci_info",
+        "tags": ["ABCI"],
+        "description": "Get info about the application.\n\nUpon success, the `Cache-Control` header will be set with the default\nmaximum age.\n",
+        "responses": {
+          "200": {
+            "description": "Get some info about the application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ABCIInfoResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/abci_query": {
+      "get": {
+        "summary": "Query the application for some information.",
+        "operationId": "abci_query",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "description": "Path to the data (\"/a/b/c\")",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"/a/b/c\""
+            }
+          },
+          {
+            "in": "query",
+            "name": "data",
+            "description": "Data",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "IHAVENOIDEA"
+            }
+          },
+          {
+            "in": "query",
+            "name": "height",
+            "description": "Height (0 means latest)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 1,
+              "default": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "prove",
+            "description": "Include proofs of the transactions inclusion in the block",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "example": true,
+              "default": false
+            }
+          }
+        ],
+        "tags": ["ABCI"],
+        "description": "Query the application for some information.\n",
+        "responses": {
+          "200": {
+            "description": "Response of the submitted query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ABCIQueryResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/broadcast_evidence": {
+      "get": {
+        "summary": "Broadcast evidence of the misbehavior.",
+        "operationId": "broadcast_evidence",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "evidence",
+            "description": "JSON evidence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "JSON_EVIDENCE_encoded"
+            }
+          }
+        ],
+        "tags": ["Info"],
+        "description": "Broadcast evidence of the misbehavior.\n",
+        "responses": {
+          "200": {
+            "description": "Broadcast evidence of the misbehavior.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastEvidenceResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JSONRPC": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          }
+        }
+      },
+      "EmptyResponse": {
+        "description": "Empty Response",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JSONRPC"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          }
+        ]
+      },
+      "ErrorResponse": {
+        "description": "Error Response",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JSONRPC"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "example": "Description of failure"
+              }
+            }
+          }
+        ]
+      },
+      "ProtocolVersion": {
+        "type": "object",
+        "properties": {
+          "p2p": {
+            "type": "string",
+            "example": "7"
+          },
+          "block": {
+            "type": "string",
+            "example": "10"
+          },
+          "app": {
+            "type": "string",
+            "example": "0"
+          }
+        }
+      },
+      "PubKey": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "tendermint/PubKeyEd25519"
+          },
+          "value": {
+            "type": "string",
+            "example": "A6DoBUypNtUAyEHWtQ9bFjfNg8Bo9CrnkUGl6k6OHN4="
+          }
+        }
+      },
+      "NodeInfo": {
+        "type": "object",
+        "properties": {
+          "protocol_version": {
+            "$ref": "#/components/schemas/ProtocolVersion"
+          },
+          "id": {
+            "type": "string",
+            "example": "5576458aef205977e18fd50b274e9b5d9014525a"
+          },
+          "listen_addr": {
+            "type": "string",
+            "example": "tcp:0.0.0.0:26656"
+          },
+          "network": {
+            "type": "string",
+            "example": "cosmoshub-2"
+          },
+          "version": {
+            "type": "string",
+            "example": "0.32.1"
+          },
+          "channels": {
+            "type": "string",
+            "example": "4020212223303800"
+          },
+          "moniker": {
+            "type": "string",
+            "example": "moniker-node"
+          },
+          "other": {
+            "type": "object",
+            "properties": {
+              "tx_index": {
+                "type": "string",
+                "example": "on"
+              },
+              "rpc_address": {
+                "type": "string",
+                "example": "tcp:0.0.0.0:26657"
+              }
+            }
+          }
+        }
+      },
+      "SyncInfo": {
+        "type": "object",
+        "properties": {
+          "latest_block_hash": {
+            "type": "string",
+            "example": "790BA84C3545FCCC49A5C629CEE6EA58A6E875C3862175BDC11EE7AF54703501"
+          },
+          "latest_app_hash": {
+            "type": "string",
+            "example": "C9AEBB441B787D9F1D846DE51F3826F4FD386108B59B08239653ABF59455C3F8"
+          },
+          "latest_block_height": {
+            "type": "string",
+            "example": "1262196"
+          },
+          "latest_block_time": {
+            "type": "string",
+            "example": "2019-08-01T11:52:22.818762194Z"
+          },
+          "earliest_block_hash": {
+            "type": "string",
+            "example": "790BA84C3545FCCC49A5C629CEE6EA58A6E875C3862175BDC11EE7AF54703501"
+          },
+          "earliest_app_hash": {
+            "type": "string",
+            "example": "C9AEBB441B787D9F1D846DE51F3826F4FD386108B59B08239653ABF59455C3F8"
+          },
+          "earliest_block_height": {
+            "type": "string",
+            "example": "1262196"
+          },
+          "earliest_block_time": {
+            "type": "string",
+            "example": "2019-08-01T11:52:22.818762194Z"
+          },
+          "catching_up": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "ValidatorInfo": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "example": "5D6A51A8E9899C44079C6AF90618BA0369070E6E"
+          },
+          "pub_key": {
+            "$ref": "#/components/schemas/PubKey"
+          },
+          "voting_power": {
+            "type": "string",
+            "example": "0"
+          }
+        }
+      },
+      "Status": {
+        "description": "Status Response",
+        "type": "object",
+        "properties": {
+          "node_info": {
+            "$ref": "#/components/schemas/NodeInfo"
+          },
+          "sync_info": {
+            "$ref": "#/components/schemas/SyncInfo"
+          },
+          "validator_info": {
+            "$ref": "#/components/schemas/ValidatorInfo"
+          }
+        }
+      },
+      "StatusResponse": {
+        "description": "Status Response",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JSONRPC"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "$ref": "#/components/schemas/Status"
+              }
+            }
+          }
+        ]
+      },
+      "Monitor": {
+        "type": "object",
+        "properties": {
+          "Active": {
+            "type": "boolean",
+            "example": true
+          },
+          "Start": {
+            "type": "string",
+            "example": "2019-07-31T14:31:28.66Z"
+          },
+          "Duration": {
+            "type": "string",
+            "example": "168901060000000"
+          },
+          "Idle": {
+            "type": "string",
+            "example": "168901040000000"
+          },
+          "Bytes": {
+            "type": "string",
+            "example": "5"
+          },
+          "Samples": {
+            "type": "string",
+            "example": "1"
+          },
+          "InstRate": {
+            "type": "string",
+            "example": "0"
+          },
+          "CurRate": {
+            "type": "string",
+            "example": "0"
+          },
+          "AvgRate": {
+            "type": "string",
+            "example": "0"
+          },
+          "PeakRate": {
+            "type": "string",
+            "example": "0"
+          },
+          "BytesRem": {
+            "type": "string",
+            "example": "0"
+          },
+          "TimeRem": {
+            "type": "string",
+            "example": "0"
+          },
+          "Progress": {
+            "type": "integer",
+            "example": 0
+          }
+        }
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "integer",
+            "example": 48
+          },
+          "SendQueueCapacity": {
+            "type": "string",
+            "example": "1"
+          },
+          "SendQueueSize": {
+            "type": "string",
+            "example": "0"
+          },
+          "Priority": {
+            "type": "string",
+            "example": "5"
+          },
+          "RecentlySent": {
+            "type": "string",
+            "example": "0"
+          }
+        }
+      },
+      "ConnectionStatus": {
+        "type": "object",
+        "properties": {
+          "Duration": {
+            "type": "string",
+            "example": "168901057956119"
+          },
+          "SendMonitor": {
+            "$ref": "#/components/schemas/Monitor"
+          },
+          "RecvMonitor": {
+            "$ref": "#/components/schemas/Monitor"
+          },
+          "Channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Channel"
+            }
+          }
+        }
+      },
+      "Peer": {
+        "type": "object",
+        "properties": {
+          "node_info": {
+            "$ref": "#/components/schemas/NodeInfo"
+          },
+          "is_outbound": {
+            "type": "boolean",
+            "example": true
+          },
+          "connection_status": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "remote_ip": {
+            "type": "string",
+            "example": "95.179.155.35"
+          }
+        }
+      },
+      "NetInfo": {
+        "type": "object",
+        "properties": {
+          "listening": {
+            "type": "boolean",
+            "example": true
+          },
+          "listeners": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "Listener(@)"
+            }
+          },
+          "n_peers": {
+            "type": "string",
+            "example": "1"
+          },
+          "peers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Peer"
+            }
+          }
+        }
+      },
+      "NetInfoResponse": {
+        "description": "NetInfo Response",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JSONRPC"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "$ref": "#/components/schemas/NetInfo"
+              }
+            }
+          }
+        ]
+      },
+      "BlockMeta": {
+        "type": "object",
+        "properties": {
+          "block_id": {
+            "$ref": "#/components/schemas/BlockID"
+          },
+          "block_size": {
+            "type": "integer",
+            "example": 1000000
+          },
+          "header": {
+            "$ref": "#/components/schemas/BlockHeader"
+          },
+          "num_txs": {
+            "type": "string",
+            "example": "54"
+          }
+        }
+      },
+      "Blockchain": {
+        "type": "object",
+        "required": ["last_height", "block_metas"],
+        "properties": {
+          "last_height": {
+            "type": "string",
+            "example": "1276718"
+          },
+          "block_metas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockMeta"
+            }
+          }
+        }
+      },
+      "BlockchainResponse": {
+        "description": "Blockchain info",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JSONRPC"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "$ref": "#/components/schemas/Blockchain"
+              }
+            }
+          }
+        ]
+      },
+      "Commit": {
+        "required": [
+          "type",
+          "height",
+          "round",
+          "block_id",
+          "timestamp",
+          "validator_address",
+          "validator_index",
+          "signature"
+        ],
+        "properties": {
+          "type": {
+            "type": "integer",
+            "example": 2
+          },
+          "height": {
+            "type": "string",
+            "example": "1262085"
+          },
+          "round": {
+            "type": "integer",
+            "example": 0
+          },
+          "block_id": {
+            "$ref": "#/components/schemas/BlockID"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2019-08-01T11:39:38.867269833Z"
+          },
+          "validator_address": {
+            "type": "string",
+            "example": "000001E443FD237E4B616E2FA69DF4EE3D49A94F"
+          },
+          "validator_index": {
+            "type": "integer",
+            "example": 0
+          },
+          "signature": {
+            "type": "string",
+            "example": "DBchvucTzAUEJnGYpNvMdqLhBAHG4Px8BsOBB3J3mAFCLGeuG7uJqy+nVngKzZdPhPi8RhmE/xcw/M9DOJjEDg=="
+          }
+        }
+      },
+      "Block": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/BlockHeader"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "yQHwYl3uCkKoo2GaChRnd+THLQ2RM87nEZrE19910Z28ABIUWW/t8AtIMwcyU0sT32RcMDI9GF0aEAoFdWF0b20SBzEwMDAwMDASEwoNCgV1YXRvbRIEMzEwMRCd8gEaagom61rphyEDoJPxlcjRoNDtZ9xMdvs+lRzFaHe2dl2P5R2yVCWrsHISQKkqX5H1zXAIJuC57yw0Yb03Fwy75VRip0ZBtLiYsUqkOsPUoQZAhDNP+6LY+RUwz/nVzedkF0S29NZ32QXdGv0="
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            }
+          },
+          "last_commit": {
+            "type": "object",
+            "properties": {
+              "height": {
+                "type": "integer"
+              },
+              "round": {
+                "type": "integer"
+              },
+              "block_id": {
+                "$ref": "#/components/schemas/BlockID"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Commit"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Evidence": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "time": {
+            "type": "integer"
+          },
+          "total_voting_power": {
+            "type": "integer"
+          },
+          "validator": {
+            "$ref": "#/components/schemas/Validator"
+          }
+        }
+      },
+      "BlockComplete": {
+        "type": "object",
+        "properties": {
+          "block_id": {
+            "$ref": "#/components/schemas/BlockID"
+          },
+          "block": {
+            "$ref": "#/components/schemas/Block"
+          }
+        }
+      },
+      "BlockResponse": {
+        "description": "Block info",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JSONRPC"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "$ref": "#/components/schemas/BlockComplete"
+              }
+            }
+          }
+        ]
+      },
+      "BlockResultsResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "type": "object",
+            "required": ["height"],
+            "properties": {
+              "height": {
+                "type": "string",
+                "example": "12"
+              },
+              "txs_results": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "0"
+                    },
+                    "data": {
+                      "type": "string",
+                      "example": ""
+                    },
+                    "log": {
+                      "type": "string",
+                      "example": "not enough gas"
+                    },
+                    "info": {
+                      "type": "string",
+                      "example": ""
+                    },
+                    "gas_wanted": {
+                      "type": "string",
+                      "example": "100"
+                    },
+                    "gas_used": {
+                      "type": "string",
+                      "example": "100"
+                    },
+                    "events": {
+                      "type": "array",
+                      "nullable": true,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "app"
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "nullable": false,
+                            "items": {
+                              "$ref": "#/components/schemas/Event"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "codespace": {
+                      "type": "string",
+                      "example": "ibc"
+                    }
+                  }
+                }
+              },
+              "finalize_block_events": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "app"
+                    },
+                    "attributes": {
+                      "type": "array",
+                      "nullable": false,
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    }
+                  }
+                }
+              },
+              "validator_updates": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "pub_key": {
+                      "type": "object",
+                      "required": ["type", "value"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "tendermint/PubKeyEd25519"
+                        },
+                        "value": {
+                          "type": "string",
+                          "example": "9tK9IT+FPdf2qm+5c2qaxi10sWP+3erWTKgftn2PaQM="
+                        }
+                      }
+                    },
+                    "power": {
+                      "type": "string",
+                      "example": "300"
+                    }
+                  }
+                }
+              },
+              "consensus_param_updates": {
+                "$ref": "#/components/schemas/ConsensusParams"
+              }
+            }
+          }
+        }
+      },
+      "CommitResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["signed_header", "canonical"],
+            "properties": {
+              "signed_header": {
+                "required": ["header", "commit"],
+                "properties": {
+                  "header": {
+                    "$ref": "#/components/schemas/BlockHeader"
+                  },
+                  "commit": {
+                    "required": ["height", "round", "block_id", "signatures"],
+                    "properties": {
+                      "height": {
+                        "type": "string",
+                        "example": "1311801"
+                      },
+                      "round": {
+                        "type": "integer",
+                        "example": 0
+                      },
+                      "block_id": {
+                        "$ref": "#/components/schemas/BlockID"
+                      },
+                      "signatures": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "block_id_flag": {
+                              "type": "integer",
+                              "example": 2
+                            },
+                            "validator_address": {
+                              "type": "string",
+                              "example": "000001E443FD237E4B616E2FA69DF4EE3D49A94F"
+                            },
+                            "timestamp": {
+                              "type": "string",
+                              "example": "2019-04-22T17:01:58.376629719Z"
+                            },
+                            "signature": {
+                              "type": "string",
+                              "example": "14jaTQXYRt8kbLKEhdHq7AXycrFImiLuZx50uOjs2+Zv+2i7RTG/jnObD07Jo2ubZ8xd7bNBJMqkgtkd0oQHAw=="
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "canonical": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "ValidatorsResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["block_height", "validators"],
+            "properties": {
+              "block_height": {
+                "type": "string",
+                "example": "55"
+              },
+              "validators": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidatorPriority"
+                }
+              },
+              "count": {
+                "type": "string",
+                "example": "1"
+              },
+              "total": {
+                "type": "string",
+                "example": "25"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "GenesisResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "type": "object",
+            "required": ["genesis"],
+            "properties": {
+              "genesis": {
+                "type": "object",
+                "required": [
+                  "genesis_time",
+                  "chain_id",
+                  "initial_height",
+                  "consensus_params",
+                  "validators",
+                  "app_hash"
+                ],
+                "properties": {
+                  "genesis_time": {
+                    "type": "string",
+                    "example": "2019-04-22T17:00:00Z"
+                  },
+                  "chain_id": {
+                    "type": "string",
+                    "example": "cosmoshub-2"
+                  },
+                  "initial_height": {
+                    "type": "string",
+                    "example": "2"
+                  },
+                  "consensus_params": {
+                    "$ref": "#/components/schemas/ConsensusParams"
+                  },
+                  "validators": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "B00A6323737F321EB0B8D59C6FD497A14B60938A"
+                        },
+                        "pub_key": {
+                          "required": ["type", "value"],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "example": "tendermint/PubKeyEd25519"
+                            },
+                            "value": {
+                              "type": "string",
+                              "example": "cOQZvh/h9ZioSeUMZB/1Vy1Xo5x2sjrVjlE/qHnYifM="
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "power": {
+                          "type": "string",
+                          "example": "9328525"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Certus One"
+                        }
+                      }
+                    }
+                  },
+                  "app_hash": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "app_state": {
+                    "properties": {},
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "GenesisChunkedResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["chunk", "total", "data"],
+            "properties": {
+              "chunk": {
+                "type": "integer",
+                "example": 0
+              },
+              "total": {
+                "type": "integer",
+                "example": 1
+              },
+              "data": {
+                "type": "string",
+                "example": "Z2VuZXNpcwo="
+              }
+            }
+          }
+        }
+      },
+      "DumpConsensusResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["round_state", "peers"],
+            "properties": {
+              "round_state": {
+                "required": [
+                  "height",
+                  "round",
+                  "step",
+                  "start_time",
+                  "commit_time",
+                  "validators",
+                  "proposal",
+                  "proposal_block",
+                  "proposal_block_parts",
+                  "locked_round",
+                  "locked_block",
+                  "locked_block_parts",
+                  "valid_round",
+                  "valid_block",
+                  "valid_block_parts",
+                  "votes",
+                  "commit_round",
+                  "last_commit",
+                  "last_validators",
+                  "triggered_timeout_precommit"
+                ],
+                "properties": {
+                  "height": {
+                    "type": "string",
+                    "example": "1311801"
+                  },
+                  "round": {
+                    "type": "integer",
+                    "example": 0
+                  },
+                  "step": {
+                    "type": "integer",
+                    "example": 3
+                  },
+                  "start_time": {
+                    "type": "string",
+                    "example": "2019-08-05T11:28:49.064658805Z"
+                  },
+                  "commit_time": {
+                    "type": "string",
+                    "example": "2019-08-05T11:28:44.064658805Z"
+                  },
+                  "validators": {
+                    "required": ["validators", "proposer"],
+                    "properties": {
+                      "validators": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/ValidatorPriority"
+                        }
+                      },
+                      "proposer": {
+                        "$ref": "#/components/schemas/ValidatorPriority"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "locked_round": {
+                    "type": "integer",
+                    "example": -1
+                  },
+                  "valid_round": {
+                    "type": "string",
+                    "example": "-1"
+                  },
+                  "votes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "round": {
+                          "type": "string",
+                          "example": "0"
+                        },
+                        "prevotes": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "nil-Vote",
+                            "Vote{19:46A3F8B8393B 1311801/00/1(Prevote) 000000000000 64CE682305CB @ 2019-08-05T11:28:47.374703444Z}"
+                          ]
+                        },
+                        "prevotes_bit_array": {
+                          "type": "string",
+                          "example": "BA{100:___________________x________________________________________________________________________________} 209706/170220253 = 0.00"
+                        },
+                        "precommits": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": ["nil-Vote"]
+                        },
+                        "precommits_bit_array": {
+                          "type": "string",
+                          "example": "BA{100:____________________________________________________________________________________________________} 0/170220253 = 0.00"
+                        }
+                      }
+                    }
+                  },
+                  "commit_round": {
+                    "type": "integer",
+                    "example": -1
+                  },
+                  "last_commit": {
+                    "nullable": true,
+                    "required": ["votes", "votes_bit_array", "peer_maj_23s"],
+                    "properties": {
+                      "votes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": [
+                          "Vote{0:000001E443FD 1311800/00/2(Precommit) 3071ADB27D1A 77EE1B6B6847 @ 2019-08-05T11:28:43.810128139Z}"
+                        ]
+                      },
+                      "votes_bit_array": {
+                        "type": "string",
+                        "example": "BA{100:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx} 170220253/170220253 = 1.00"
+                      },
+                      "peer_maj_23s": {
+                        "properties": {},
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "last_validators": {
+                    "required": ["validators", "proposer"],
+                    "properties": {
+                      "validators": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/ValidatorPriority"
+                        }
+                      },
+                      "proposer": {
+                        "$ref": "#/components/schemas/ValidatorPriority"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "triggered_timeout_precommit": {
+                    "type": "boolean",
+                    "example": false
+                  }
+                },
+                "type": "object"
+              },
+              "peers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "node_address": {
+                      "type": "string",
+                      "example": "357f6a6c1d27414579a8185060aa8adf9815c43c@68.183.41.207:26656"
+                    },
+                    "peer_state": {
+                      "required": ["round_state", "stats"],
+                      "properties": {
+                        "round_state": {
+                          "required": [
+                            "height",
+                            "round",
+                            "step",
+                            "start_time",
+                            "proposal",
+                            "proposal_block_parts_header",
+                            "proposal_block_parts",
+                            "proposal_pol_round",
+                            "proposal_pol",
+                            "prevotes",
+                            "precommits",
+                            "last_commit_round",
+                            "last_commit",
+                            "catchup_commit_round",
+                            "catchup_commit"
+                          ],
+                          "properties": {
+                            "height": {
+                              "type": "string",
+                              "example": "1311801"
+                            },
+                            "round": {
+                              "type": "string",
+                              "example": "0"
+                            },
+                            "step": {
+                              "type": "integer",
+                              "example": 3
+                            },
+                            "start_time": {
+                              "type": "string",
+                              "example": "2019-08-05T11:28:49.21730864Z"
+                            },
+                            "proposal": {
+                              "type": "boolean",
+                              "example": false
+                            },
+                            "proposal_block_parts_header": {
+                              "required": ["total", "hash"],
+                              "properties": {
+                                "total": {
+                                  "type": "integer",
+                                  "example": 0
+                                },
+                                "hash": {
+                                  "type": "string",
+                                  "example": ""
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "proposal_pol_round": {
+                              "nullable": true,
+                              "type": "integer",
+                              "example": -1
+                            },
+                            "proposal_pol": {
+                              "nullable": true,
+                              "type": "string",
+                              "example": "____________________________________________________________________________________________________"
+                            },
+                            "prevotes": {
+                              "nullable": true,
+                              "type": "string",
+                              "example": "___________________x________________________________________________________________________________"
+                            },
+                            "precommits": {
+                              "nullable": true,
+                              "type": "string",
+                              "example": "____________________________________________________________________________________________________"
+                            },
+                            "last_commit_round": {
+                              "nullable": true,
+                              "type": "integer",
+                              "example": 0
+                            },
+                            "last_commit": {
+                              "nullable": true,
+                              "type": "string",
+                              "example": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            },
+                            "catchup_commit_round": {
+                              "type": "integer",
+                              "nullable": true,
+                              "example": -1
+                            },
+                            "catchup_commit": {
+                              "nullable": true,
+                              "type": "string",
+                              "example": "____________________________________________________________________________________________________"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "stats": {
+                          "required": ["votes", "block_parts"],
+                          "properties": {
+                            "votes": {
+                              "type": "string",
+                              "example": "1159558"
+                            },
+                            "block_parts": {
+                              "type": "string",
+                              "example": "4786"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "ConsensusStateResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["round_state"],
+            "properties": {
+              "round_state": {
+                "required": [
+                  "height/round/step",
+                  "start_time",
+                  "proposal_block_hash",
+                  "locked_block_hash",
+                  "valid_block_hash",
+                  "height_vote_set",
+                  "proposer"
+                ],
+                "properties": {
+                  "height/round/step": {
+                    "type": "string",
+                    "example": "1262197/0/8"
+                  },
+                  "start_time": {
+                    "type": "string",
+                    "example": "2019-08-01T11:52:38.962730289Z"
+                  },
+                  "proposal_block_hash": {
+                    "type": "string",
+                    "example": "634ADAF1F402663BEC2ABC340ECE8B4B45AA906FA603272ACC5F5EED3097E009"
+                  },
+                  "locked_block_hash": {
+                    "type": "string",
+                    "example": "634ADAF1F402663BEC2ABC340ECE8B4B45AA906FA603272ACC5F5EED3097E009"
+                  },
+                  "valid_block_hash": {
+                    "type": "string",
+                    "example": "634ADAF1F402663BEC2ABC340ECE8B4B45AA906FA603272ACC5F5EED3097E009"
+                  },
+                  "height_vote_set": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "round": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "prevotes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}",
+                            "nil-Vote"
+                          ]
+                        },
+                        "prevotes_bit_array": {
+                          "type": "string",
+                          "example": "BA{100:xxxxxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx} 169753436/170151262 = 1.00"
+                        },
+                        "precommits": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "Vote{5:18C78D135C9D 1262197/00/2(Precommit) 634ADAF1F402 8B5EFFFEABCD @ 2019-08-01T11:52:36.25600005Z}",
+                            "nil-Vote"
+                          ]
+                        },
+                        "precommits_bit_array": {
+                          "type": "string",
+                          "example": "BA{100:xxxxxx_xxxxx_xxxx_x_xxx_xx_xx_xx__x_x_x__xxxxxxxxxxxxxx_xxxx_xx_xxxxxx_xxxxxxxx_xxxx_xxx_x_xxxx__xxx} 118726247/170151262 = 0.70"
+                        }
+                      }
+                    }
+                  },
+                  "proposer": {
+                    "type": "object",
+                    "properties": {
+                      "address": {
+                        "type": "string",
+                        "example": "D540AB022088612AC74B287D076DBFBC4A377A2E"
+                      },
+                      "index": {
+                        "type": "integer",
+                        "example": 0
+                      }
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "ConsensusParamsResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "type": "object",
+            "required": ["block_height", "consensus_params"],
+            "properties": {
+              "block_height": {
+                "type": "string",
+                "example": "1"
+              },
+              "consensus_params": {
+                "$ref": "#/components/schemas/ConsensusParams"
+              }
+            }
+          }
+        }
+      },
+      "NumUnconfirmedTransactionsResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["n_txs", "total", "total_bytes"],
+            "properties": {
+              "n_txs": {
+                "type": "string",
+                "example": "31"
+              },
+              "total": {
+                "type": "string",
+                "example": "82"
+              },
+              "total_bytes": {
+                "type": "string",
+                "example": "19974"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "UnconfirmedTransactionsResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["n_txs", "total", "total_bytes", "txs"],
+            "properties": {
+              "n_txs": {
+                "type": "string",
+                "example": "82"
+              },
+              "total": {
+                "type": "string",
+                "example": "82"
+              },
+              "total_bytes": {
+                "type": "string",
+                "example": "19974"
+              },
+              "txs": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "example": [
+                  "gAPwYl3uCjCMTXENChSMnIkb5ZpYHBKIZqecFEV2tuZr7xIUA75/FmYq9WymsOBJ0XSJ8yV8zmQKMIxNcQ0KFIyciRvlmlgcEohmp5wURXa25mvvEhQbrvwbvlNiT+Yjr86G+YQNx7kRVgowjE1xDQoUjJyJG+WaWBwSiGannBRFdrbma+8SFK2m+1oxgILuQLO55n8mWfnbIzyPCjCMTXENChSMnIkb5ZpYHBKIZqecFEV2tuZr7xIUQNGfkmhTNMis4j+dyMDIWXdIPiYKMIxNcQ0KFIyciRvlmlgcEohmp5wURXa25mvvEhS8sL0D0wwgGCItQwVowak5YB38KRIUCg4KBXVhdG9tEgUxMDA1NBDoxRgaagom61rphyECn8x7emhhKdRCB2io7aS/6Cpuq5NbVqbODmqOT3jWw6kSQKUresk+d+Gw0BhjiggTsu8+1voW+VlDCQ1GRYnMaFOHXhyFv7BCLhFWxLxHSAYT8a5XqoMayosZf9mANKdXArA="
+                ]
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "TxSearchResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["txs", "total_count"],
+            "properties": {
+              "txs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "hash": {
+                      "type": "string",
+                      "example": "D70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED"
+                    },
+                    "height": {
+                      "type": "string",
+                      "example": "1000"
+                    },
+                    "index": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "tx_result": {
+                      "required": ["log", "gas_wanted", "gas_used", "tags"],
+                      "properties": {
+                        "log": {
+                          "type": "string",
+                          "example": "[{\"msg_index\":\"0\",\"success\":true,\"log\":\"\"}]"
+                        },
+                        "gas_wanted": {
+                          "type": "string",
+                          "example": "200000"
+                        },
+                        "gas_used": {
+                          "type": "string",
+                          "example": "28596"
+                        },
+                        "tags": {
+                          "$ref": "#/components/schemas/Event"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "tx": {
+                      "type": "string",
+                      "example": "5wHwYl3uCkaoo2GaChQmSIu8hxpJxLcCuIi8fiHN4TMwrRIU/Af1cEG7Rcs/6LjTl7YjRSymJfYaFAoFdWF0b20SCzE0OTk5OTk1MDAwEhMKDQoFdWF0b20SBDUwMDAQwJoMGmoKJuta6YchAwswBShaB1wkZBctLIhYqBC3JrAI28XGzxP+rVEticGEEkAc+khTkKL9CDE47aDvjEHvUNt+izJfT4KVF2v2JkC+bmlH9K08q3PqHeMI9Z5up+XMusnTqlP985KF+SI5J3ZOIhhNYWRlIGJ5IENpcmNsZSB3aXRoIGxvdmU="
+                    },
+                    "proof": {
+                      "required": ["RootHash", "Data", "Proof"],
+                      "properties": {
+                        "RootHash": {
+                          "type": "string",
+                          "example": "72FE6BF6D4109105357AECE0A82E99D0F6288854D16D8767C5E72C57F876A14D"
+                        },
+                        "Data": {
+                          "type": "string",
+                          "example": "5wHwYl3uCkaoo2GaChQmSIu8hxpJxLcCuIi8fiHN4TMwrRIU/Af1cEG7Rcs/6LjTl7YjRSymJfYaFAoFdWF0b20SCzE0OTk5OTk1MDAwEhMKDQoFdWF0b20SBDUwMDAQwJoMGmoKJuta6YchAwswBShaB1wkZBctLIhYqBC3JrAI28XGzxP+rVEticGEEkAc+khTkKL9CDE47aDvjEHvUNt+izJfT4KVF2v2JkC+bmlH9K08q3PqHeMI9Z5up+XMusnTqlP985KF+SI5J3ZOIhhNYWRlIGJ5IENpcmNsZSB3aXRoIGxvdmU="
+                        },
+                        "Proof": {
+                          "required": ["total", "index", "leaf_hash", "aunts"],
+                          "properties": {
+                            "total": {
+                              "type": "string",
+                              "example": "2"
+                            },
+                            "index": {
+                              "type": "string",
+                              "example": "0"
+                            },
+                            "leaf_hash": {
+                              "type": "string",
+                              "example": "eoJxKCzF3m72Xiwb/Q43vJ37/2Sx8sfNS9JKJohlsYI="
+                            },
+                            "aunts": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "example": ["eWb+HG/eMmukrQj4vNGyFYb3nKQncAWacq4HF5eFzDY="]
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "total_count": {
+                "type": "string",
+                "example": "2"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "TxResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["hash", "height", "index", "tx_result", "tx"],
+            "properties": {
+              "hash": {
+                "type": "string",
+                "example": "D70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED"
+              },
+              "height": {
+                "type": "string",
+                "example": "1000"
+              },
+              "index": {
+                "type": "integer",
+                "example": 0
+              },
+              "tx_result": {
+                "required": ["log", "gas_wanted", "gas_used", "tags"],
+                "properties": {
+                  "log": {
+                    "type": "string",
+                    "example": "[{\"msg_index\":\"0\",\"success\":true,\"log\":\"\"}]"
+                  },
+                  "gas_wanted": {
+                    "type": "string",
+                    "example": "200000"
+                  },
+                  "gas_used": {
+                    "type": "string",
+                    "example": "28596"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Event"
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              "tx": {
+                "type": "string",
+                "example": "5wHwYl3uCkaoo2GaChQmSIu8hxpJxLcCuIi8fiHN4TMwrRIU/Af1cEG7Rcs/6LjTl7YjRSymJfYaFAoFdWF0b20SCzE0OTk5OTk1MDAwEhMKDQoFdWF0b20SBDUwMDAQwJoMGmoKJuta6YchAwswBShaB1wkZBctLIhYqBC3JrAI28XGzxP+rVEticGEEkAc+khTkKL9CDE47aDvjEHvUNt+izJfT4KVF2v2JkC+bmlH9K08q3PqHeMI9Z5up+XMusnTqlP985KF+SI5J3ZOIhhNYWRlIGJ5IENpcmNsZSB3aXRoIGxvdmU="
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "ABCIInfoResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["response"],
+            "properties": {
+              "response": {
+                "required": ["data", "app_version", "version"],
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "example": "{\"size\":0}"
+                  },
+                  "version": {
+                    "type": "string",
+                    "example": "0.16.1"
+                  },
+                  "app_version": {
+                    "type": "string",
+                    "example": "1314126"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "ABCIQueryResponse": {
+        "type": "object",
+        "required": ["error", "result", "id", "jsonrpc"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": ""
+          },
+          "result": {
+            "required": ["response"],
+            "properties": {
+              "response": {
+                "required": ["log", "height", "proof", "value", "key", "index", "code"],
+                "properties": {
+                  "log": {
+                    "type": "string",
+                    "example": "exists"
+                  },
+                  "height": {
+                    "type": "string",
+                    "example": "0"
+                  },
+                  "proof": {
+                    "type": "string",
+                    "example": "010114FED0DAD959F36091AD761C922ABA3CBF1D8349990101020103011406AA2262E2F448242DF2C2607C3CDC705313EE3B0001149D16177BC71E445476174622EA559715C293740C"
+                  },
+                  "value": {
+                    "type": "string",
+                    "example": "61626364"
+                  },
+                  "key": {
+                    "type": "string",
+                    "example": "61626364"
+                  },
+                  "index": {
+                    "type": "string",
+                    "example": "-1"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "0"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          }
+        }
+      },
+      "BroadcastEvidenceResponse": {
+        "type": "object",
+        "required": ["id", "jsonrpc"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": ""
+          },
+          "result": {
+            "type": "string",
+            "example": ""
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          }
+        }
+      },
+      "BroadcastTxCommitResponse": {
+        "type": "object",
+        "required": ["error", "result", "id", "jsonrpc"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": ""
+          },
+          "result": {
+            "required": ["height", "hash", "deliver_tx", "check_tx"],
+            "properties": {
+              "height": {
+                "type": "string",
+                "example": "26682"
+              },
+              "hash": {
+                "type": "string",
+                "example": "75CA0F856A4DA078FC4911580360E70CEFB2EBEE"
+              },
+              "deliver_tx": {
+                "required": ["log", "data", "code"],
+                "properties": {
+                  "log": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "data": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "0"
+                  }
+                },
+                "type": "object"
+              },
+              "check_tx": {
+                "required": ["log", "data", "code"],
+                "properties": {
+                  "log": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "data": {
+                    "type": "string",
+                    "example": ""
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "0"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          }
+        }
+      },
+      "CheckTxResponse": {
+        "type": "object",
+        "required": ["error", "result", "id", "jsonrpc"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": ""
+          },
+          "result": {
+            "required": ["log", "data", "code"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "0"
+              },
+              "data": {
+                "type": "string",
+                "example": ""
+              },
+              "log": {
+                "type": "string",
+                "example": ""
+              },
+              "info": {
+                "type": "string",
+                "example": ""
+              },
+              "gas_wanted": {
+                "type": "string",
+                "example": "1"
+              },
+              "gas_used": {
+                "type": "string",
+                "example": "0"
+              },
+              "events": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "app"
+                    },
+                    "attributes": {
+                      "type": "array",
+                      "nullable": false,
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    }
+                  }
+                }
+              },
+              "codespace": {
+                "type": "string",
+                "example": "bank"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          }
+        }
+      },
+      "BroadcastTxResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result", "error"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["code", "data", "log", "hash"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "0"
+              },
+              "data": {
+                "type": "string",
+                "example": ""
+              },
+              "log": {
+                "type": "string",
+                "example": ""
+              },
+              "codespace": {
+                "type": "string",
+                "example": "ibc"
+              },
+              "hash": {
+                "type": "string",
+                "example": "0D33F2F03A5234F38706E43004489E061AC40A2E"
+              }
+            },
+            "type": "object"
+          },
+          "error": {
+            "type": "string",
+            "example": ""
+          }
+        }
+      },
+      "dialResp": {
+        "type": "object",
+        "properties": {
+          "Log": {
+            "type": "string",
+            "example": "Dialing seeds in progress. See /net_info for details"
+          }
+        }
+      },
+      "BlockSearchResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "result"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "example": "2.0"
+          },
+          "id": {
+            "type": "integer",
+            "example": 0
+          },
+          "result": {
+            "required": ["blocks", "total_count"],
+            "properties": {
+              "blocks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BlockComplete"
+                }
+              },
+              "total_count": {
+                "type": "integer",
+                "example": 2
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "ValidatorPriority": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "example": "000001E443FD237E4B616E2FA69DF4EE3D49A94F"
+          },
+          "pub_key": {
+            "required": ["type", "value"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "tendermint/PubKeyEd25519"
+              },
+              "value": {
+                "type": "string",
+                "example": "9tK9IT+FPdf2qm+5c2qaxi10sWP+3erWTKgftn2PaQM="
+              }
+            },
+            "type": "object"
+          },
+          "voting_power": {
+            "type": "string",
+            "example": "239727"
+          },
+          "proposer_priority": {
+            "type": "string",
+            "example": "-11896414"
+          }
+        }
+      },
+      "Validator": {
+        "type": "object",
+        "properties": {
+          "pub_key": {
+            "$ref": "#/components/schemas/PubKey"
+          },
+          "voting_power": {
+            "type": "integer"
+          },
+          "address": {
+            "type": "string"
+          }
+        }
+      },
+      "ConsensusParams": {
+        "type": "object",
+        "nullable": true,
+        "required": ["block", "evidence", "validator"],
+        "properties": {
+          "block": {
+            "type": "object",
+            "required": ["max_bytes", "max_gas", "time_iota_ms"],
+            "properties": {
+              "max_bytes": {
+                "type": "string",
+                "example": "22020096"
+              },
+              "max_gas": {
+                "type": "string",
+                "example": "1000"
+              },
+              "time_iota_ms": {
+                "type": "string",
+                "example": "1000"
+              }
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "required": ["max_age"],
+            "properties": {
+              "max_age": {
+                "type": "string",
+                "example": "100000"
+              }
+            }
+          },
+          "validator": {
+            "type": "object",
+            "required": ["pub_key_types"],
+            "properties": {
+              "pub_key_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": ["ed25519"]
+              }
+            }
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "action"
+          },
+          "value": {
+            "type": "string",
+            "example": "send"
+          },
+          "index": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "BlockHeader": {
+        "required": [
+          "version",
+          "chain_id",
+          "height",
+          "time",
+          "last_block_id",
+          "last_commit_hash",
+          "data_hash",
+          "validators_hash",
+          "next_validators_hash",
+          "consensus_hash",
+          "app_hash",
+          "last_results_hash",
+          "evidence_hash",
+          "proposer_address"
+        ],
+        "properties": {
+          "version": {
+            "required": ["block", "app"],
+            "properties": {
+              "block": {
+                "type": "string",
+                "example": "10"
+              },
+              "app": {
+                "type": "string",
+                "example": "0"
+              }
+            },
+            "type": "object"
+          },
+          "chain_id": {
+            "type": "string",
+            "example": "cosmoshub-2"
+          },
+          "height": {
+            "type": "string",
+            "example": "12"
+          },
+          "time": {
+            "type": "string",
+            "example": "2019-04-22T17:01:51.701356223Z"
+          },
+          "last_block_id": {
+            "$ref": "#/components/schemas/BlockID"
+          },
+          "last_commit_hash": {
+            "type": "string",
+            "example": "21B9BC845AD2CB2C4193CDD17BFC506F1EBE5A7402E84AD96E64171287A34812"
+          },
+          "data_hash": {
+            "type": "string",
+            "example": "970886F99E77ED0D60DA8FCE0447C2676E59F2F77302B0C4AA10E1D02F18EF73"
+          },
+          "validators_hash": {
+            "type": "string",
+            "example": "D658BFD100CA8025CFD3BECFE86194322731D387286FBD26E059115FD5F2BCA0"
+          },
+          "next_validators_hash": {
+            "type": "string",
+            "example": "D658BFD100CA8025CFD3BECFE86194322731D387286FBD26E059115FD5F2BCA0"
+          },
+          "consensus_hash": {
+            "type": "string",
+            "example": "0F2908883A105C793B74495EB7D6DF2EEA479ED7FC9349206A65CB0F9987A0B8"
+          },
+          "app_hash": {
+            "type": "string",
+            "example": "223BF64D4A01074DC523A80E76B9BBC786C791FB0A1893AC5B14866356FCFD6C"
+          },
+          "last_results_hash": {
+            "type": "string",
+            "example": ""
+          },
+          "evidence_hash": {
+            "type": "string",
+            "example": ""
+          },
+          "proposer_address": {
+            "type": "string",
+            "example": "D540AB022088612AC74B287D076DBFBC4A377A2E"
+          }
+        },
+        "type": "object"
+      },
+      "BlockID": {
+        "required": ["hash", "parts"],
+        "properties": {
+          "hash": {
+            "type": "string",
+            "example": "112BC173FD838FB68EB43476816CD7B4C6661B6884A9E357B417EE957E1CF8F7"
+          },
+          "parts": {
+            "required": ["total", "hash"],
+            "properties": {
+              "total": {
+                "type": "integer",
+                "example": 1
+              },
+              "hash": {
+                "type": "string",
+                "example": "38D4B26B5B725C4F13571EFE022C030390E4C33C8CF6F88EDD142EA769642DBD"
+              }
+            },
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
