@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    fs::create_dir_all,
+    fs::{self, create_dir_all},
     io,
     path::{Path, PathBuf},
     process::{Child, ExitStatus},
@@ -54,8 +54,11 @@ impl Supervisor {
     ) -> Result<(), SpawnError> {
         let program = self.symlinker.current_validated()?;
         info!(
-            "Running uniond version {:?}",
-            program.0.clone().into_os_string()
+            "running {:?} pointing to {:?}",
+            program.0.clone().into_os_string(),
+            fs::read_link(program.0.clone())
+                .expect("uniond is not a link!")
+                .into_os_string()
         );
         let mut command = std::process::Command::new(program.0);
         let command = command
