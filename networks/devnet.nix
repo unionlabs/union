@@ -104,7 +104,7 @@
       };
 
       devnet-union-minimal = mkCosmosDevnet {
-        node = (get-flake inputs.v0_19_0).packages.${system}.uniond;
+        node = (get-flake inputs.v0_21_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
         chainName = "union-minimal";
         denom = "muno";
