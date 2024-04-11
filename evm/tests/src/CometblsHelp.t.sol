@@ -16,15 +16,19 @@ import {
 import {CometblsClient} from "../../contracts/clients/CometblsClientV2.sol";
 
 contract CometblsHelpProxy {
+    CometblsClient client;
+
+    constructor() {
+        client = new CometblsClient();
+    }
+
     function verifyZKP(
         bytes memory zkp,
         string memory chainId,
         bytes32 trustedValidatorsHash,
         UnionIbcLightclientsCometblsV1LightHeader.Data memory header
     ) public returns (bool) {
-        return new CometblsClient(address(0)).verifyZKP(
-            zkp, chainId, trustedValidatorsHash, header
-        );
+        return client.verifyZKP(zkp, chainId, trustedValidatorsHash, header);
     }
 
     function optimize(
@@ -37,7 +41,7 @@ contract CometblsHelpProxy {
 contract CometblsHelpTests is Test {
     CometblsHelpProxy proxy;
 
-    constructor() {
+    function setUp() public {
         proxy = new CometblsHelpProxy();
     }
 

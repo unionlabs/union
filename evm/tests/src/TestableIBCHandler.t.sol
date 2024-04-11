@@ -8,9 +8,9 @@ contract TestableIBCHandler is OwnableIBCHandler {
         address ibcConnection,
         address ibcChannelHandshake,
         address ibcPacket
-    )
-        OwnableIBCHandler(ibcClient, ibcConnection, ibcChannelHandshake, ibcPacket)
-    {}
+    ) {
+        initialize(ibcClient, ibcConnection, ibcChannelHandshake, ibcPacket);
+    }
 
     function setConnection(
         string memory connectionId,

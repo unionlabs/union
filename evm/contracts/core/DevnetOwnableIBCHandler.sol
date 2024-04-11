@@ -9,6 +9,10 @@ import "./DevnetIBCHandlerInit.sol";
 contract DevnetOwnableIBCHandler is OwnableIBCHandler {
     address ibcHandlerInit;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @dev The arguments of constructor must satisfy the followings:
      * @param ibcClient is the address of a contract that implements `IIBCClient`.
@@ -16,13 +20,16 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
      * @param ibcChannel is the address of a contract that implements `IIBCChannelHandshake`.
      * @param ibcPacket is the address of a contract that implements `IIBCPacket`.
      */
-    constructor(
+    function initialize(
         address ibcClient,
         address ibcConnection,
         address ibcChannel,
         address ibcPacket,
         address ibcHandlerInit_
-    ) OwnableIBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {
+    ) public initializer {
+        OwnableIBCHandler.initialize(
+            ibcClient, ibcConnection, ibcChannel, ibcPacket
+        );
         ibcHandlerInit = ibcHandlerInit_;
     }
 

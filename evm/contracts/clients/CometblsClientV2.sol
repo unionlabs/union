@@ -1,5 +1,13 @@
 pragma solidity ^0.8.23;
 
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
+import "@openzeppelin/utils/Context.sol";
+import "solidity-bytes-utils/BytesLib.sol";
+
 import "../core/02-client/ILightClient.sol";
 import "../core/02-client/IBCHeight.sol";
 import "../proto/ibc/core/client/v1/client.sol";
@@ -14,8 +22,6 @@ import "../lib/ICS23.sol";
 import "./ICS23MembershipVerifier.sol";
 import "./Verifier.sol";
 
-import "solidity-bytes-utils/BytesLib.sol";
-
 library CometblsClientLib {
     error ErrUnauthorized();
     error ErrTrustedConsensusStateNotFound();
@@ -28,7 +34,13 @@ library CometblsClientLib {
     error ErrInvalidUntrustedValidatorsHash();
 }
 
-contract CometblsClient is ILightClient {
+contract CometblsClient is
+    ILightClient,
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable
+{
     using BytesLib for bytes;
     using IBCHeight for IbcCoreClientV1Height.Data;
     using CometblsHelp for TendermintTypesHeader.Data;
@@ -37,6 +49,8 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for OptimizedConsensusState;
     using CometblsHelp for bytes;
 
+    address private ibcHandler;
+
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) private
         clientStates;
     mapping(string => mapping(uint128 => OptimizedConsensusState)) private
@@ -44,9 +58,11 @@ contract CometblsClient is ILightClient {
     mapping(string => mapping(uint128 => ProcessedMoment)) private
         processedMoments;
 
-    address private ibcHandler;
+    constructor() {
+        _disableInitializers();
+    }
 
-    constructor(address ibcHandler_) {
+    function initialize(address ibcHandler_) public initializer {
         ibcHandler = ibcHandler_;
     }
 
@@ -332,7 +348,6 @@ contract CometblsClient is ILightClient {
     }
 
     // ZKP VERIFICATION
-
     uint256 constant PRIME_R =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;
@@ -409,6 +424,12 @@ contract CometblsClient is ILightClient {
             zkp.proof, zkp.proofCommitment, zkp.proofCommitmentPOK, publicInputs
         );
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 
     function _onlyIBC() private view {
         if (msg.sender != ibcHandler) {

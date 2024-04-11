@@ -2,7 +2,18 @@ pragma solidity ^0.8.23;
 
 import "solidity-bytes-utils/BytesLib.sol";
 import "solady/utils/LibString.sol";
+import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
+import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
+import {IBCConnection} from
+    "../../../contracts/core/03-connection/IBCConnection.sol";
+import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
+import {IBCChannelHandshake} from
+    "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {
+    IBCPacket,
+    IBCPacketLib
+} from "../../../contracts/core/04-channel/IBCPacket.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCChannelLib} from
     "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
@@ -49,8 +60,6 @@ contract TestCometblsClient is CometblsClient {
     function pushValidMembership() public {
         validMembership += 1;
     }
-
-    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
 
     function verifyZKP(
         bytes calldata zkpBytes,
@@ -130,8 +139,32 @@ contract IBCChannelHandlerTest is TestPlus {
     );
 
     function setUp() public {
-        handler = new IBCHandler_Testable();
-        client = new TestCometblsClient(address(handler));
+        handler = IBCHandler_Testable(
+            address(
+                new ERC1967Proxy(
+                    address(new IBCHandler_Testable()),
+                    abi.encodeCall(
+                        IBCHandler.initialize,
+                        (
+                            address(new IBCClient()),
+                            address(new IBCConnection()),
+                            address(new IBCChannelHandshake()),
+                            address(new IBCPacket())
+                        )
+                    )
+                )
+            )
+        );
+        client = TestCometblsClient(
+            address(
+                new ERC1967Proxy(
+                    address(new TestCometblsClient()),
+                    abi.encodeCall(
+                        CometblsClient.initialize, (address(handler))
+                    )
+                )
+            )
+        );
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
         portId = address(app).toHexString();

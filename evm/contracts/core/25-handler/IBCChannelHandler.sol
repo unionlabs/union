@@ -10,11 +10,7 @@ import "../05-port/ModuleManager.sol";
  * @dev IBCChannelHandler is a contract that calls a contract that implements `IIBCChannelHandshake` with delegatecall.
  */
 abstract contract IBCChannelHandler is IIBCChannelHandshake {
-    address immutable ibcChannel;
-
-    constructor(address _ibcChannel) {
-        ibcChannel = _ibcChannel;
-    }
+    address ibcChannel;
 
     function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
         external

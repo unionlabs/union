@@ -1,6 +1,5 @@
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/utils/Context.sol";
 import "./IIBCModule.sol";
 import "../24-host/IBCStore.sol";
 import "../../lib/Hex.sol";
@@ -13,7 +12,7 @@ library ModuleManagerLib {
 /**
  * @dev ModuleManager is an abstract contract that provides the functions defined in [ICS 5](https://github.com/cosmos/ibc/tree/main/spec/core/ics-005-port-allocation) and [ICS 26](https://github.com/cosmos/ibc/blob/main/spec/core/ics-005-port-module/README.md).
  */
-abstract contract ModuleManager is IBCStore, Context {
+abstract contract ModuleManager is IBCStore {
     /**
      * @dev lookupModuleByPort will return the IBCModule along with the capability associated with a given portID
      */
@@ -69,7 +68,7 @@ abstract contract ModuleManager is IBCStore, Context {
         view
         returns (bool)
     {
-        return _msgSender() == capabilities[name];
+        return msg.sender == capabilities[name];
     }
 
     /**
