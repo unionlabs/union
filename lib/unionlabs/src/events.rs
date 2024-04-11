@@ -17,13 +17,14 @@ macro_rules! event {
                         $(#[doc = $doc:literal])*
                         $(#[parse($parse:expr)])?
                         $(#[serde($serde:meta)])?
+                        $(#[debug($debug:meta)])?
                         $field:ident: $field_ty:ty
                     ),+$(,)?
                 },
             )+
         }
     ) => {
-        #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+        #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
         #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         pub enum $Enum$(<$($generics),*>)? {
@@ -63,13 +64,14 @@ macro_rules! event {
         }
 
         $(
-            #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+            #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
             #[serde(deny_unknown_fields)]
             #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
             pub struct $Struct$(<$($struct_generics),+>)? {
                 $(
                     $(#[doc = $doc])*
                     $(#[serde($serde)])?
+                    $(#[debug($debug)])?
                     pub $field: $field_ty,
                 )+
             }
@@ -328,6 +330,8 @@ pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
     )]
     WriteAcknowledgement {
         #[parse(hex::decode)]
+        #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
         #[parse(Height::from_str)]
         packet_timeout_height: Height,
@@ -344,6 +348,8 @@ pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
         #[parse(ChannelId::from_str)]
         packet_dst_channel: ChannelId,
         #[parse(hex::decode)]
+        #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_ack_hex: Vec<u8>,
         #[parse(ConnectionId::from_str)]
         connection_id: ConnectionId,
@@ -353,6 +359,7 @@ pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
     RecvPacket {
         #[parse(hex::decode)]
         #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
         #[parse(Height::from_str)]
         packet_timeout_height: Height,
@@ -378,6 +385,7 @@ pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
     SendPacket {
         #[parse(hex::decode)]
         #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
         #[parse(Height::from_str)]
         // TODO: Make this generic height instead of concrete

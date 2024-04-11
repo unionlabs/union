@@ -6913,6 +6913,7 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "dlmalloc",
  "ethabi",
+ "hex",
  "serde",
  "serde_json",
  "thiserror",

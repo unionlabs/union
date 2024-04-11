@@ -200,6 +200,7 @@ pub fn parse_wasm_client_type(
     bound(serialize = "", deserialize = "")
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+// REVIEW: Add a variant "greater than" to indicate that any height >= H is valid? Might help with optimization passes
 pub enum QueryHeight<H: IsHeight> {
     Latest,
     Specific(H),

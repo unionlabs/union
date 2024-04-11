@@ -276,15 +276,10 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use tracing_test::traced_test;
 
     use super::*;
-    use crate::{
-        bundle::{log_bundle, Bundle},
-        testdata,
-    };
+    use crate::{bundle::Bundle, testdata};
 
     #[test]
     #[traced_test]

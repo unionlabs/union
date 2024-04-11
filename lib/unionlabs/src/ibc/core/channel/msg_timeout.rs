@@ -1,3 +1,5 @@
+use core::num::NonZeroU64;
+
 use macros::model;
 
 use crate::ibc::core::{channel::packet::Packet, client::height::IsHeight};
@@ -11,5 +13,5 @@ pub struct MsgTimeout<ProofUnreceived, ProofHeight: IsHeight> {
     pub packet: Packet,
     pub proof_unreceived: ProofUnreceived,
     pub proof_height: ProofHeight,
-    pub next_sequence_recv: u64,
+    pub next_sequence_recv: NonZeroU64,
 }

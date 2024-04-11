@@ -23,13 +23,13 @@ pub struct InnerOpEthAbi {
     pub suffix: ethers::types::Bytes,
 }
 
-const EXPECTED_HASH: HashOp = HashOp::Sha256;
+const EXPECTED_HASH_OP: HashOp = HashOp::Sha256;
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromInnerOpError {
     #[error("unable to decode cosmos::ics23::InnerOp")]
     Cosmos(#[from] crate::cosmos::ics23::inner_op::TryFromInnerOpError),
-    #[error("hash must be {}, found {0}", EXPECTED_HASH)]
+    #[error("hash must be {}, found {0}", EXPECTED_HASH_OP)]
     InvalidHash(HashOp),
 }
 
@@ -40,7 +40,7 @@ impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
         let value = crate::cosmos::ics23::inner_op::InnerOp::try_from(value)?;
 
         ensure(
-            value.hash == EXPECTED_HASH,
+            value.hash == EXPECTED_HASH_OP,
             TryFromInnerOpError::InvalidHash(value.hash),
         )?;
 
@@ -54,7 +54,7 @@ impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
 impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
     fn from(value: InnerOp) -> Self {
         crate::cosmos::ics23::inner_op::InnerOp {
-            hash: EXPECTED_HASH,
+            hash: EXPECTED_HASH_OP,
             prefix: value.prefix,
             suffix: value.suffix,
         }

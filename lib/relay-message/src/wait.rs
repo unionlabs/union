@@ -1,7 +1,9 @@
+use std::marker::PhantomData;
+
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
-    defer_absolute, fetch, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
+    data, defer_absolute, fetch, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
     QueueMsgTypes,
 };
 use unionlabs::{
@@ -13,6 +15,7 @@ use unionlabs::{
 
 use crate::{
     any_enum, any_lc,
+    data::{AnyData, Data, LatestHeight},
     fetch::{AnyFetch, Fetch, FetchState},
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayMessageTypes,
 };
@@ -20,7 +23,7 @@ use crate::{
 #[apply(any_enum)]
 #[any = AnyWait]
 pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
-    Block(WaitForBlock<Hc, Tr>),
+    Height(WaitForHeight<Hc, Tr>),
     Timestamp(WaitForTimestamp<Hc, Tr>),
     TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
 }
@@ -46,13 +49,14 @@ impl HandleWait<RelayMessageTypes> for AnyLightClientIdentified<AnyWait> {
 impl<Hc, Tr> Wait<Hc, Tr>
 where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
     pub async fn handle(self, c: &Hc) -> QueueMsg<RelayMessageTypes> {
         match self {
-            Wait::Block(WaitForBlock { height, __marker }) => {
+            Wait::Height(WaitForHeight { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
 
                 assert_eq!(
@@ -69,7 +73,7 @@ where
                         defer_absolute(now() + 1),
                         wait(id::<Hc, Tr, _>(
                             c.chain_id(),
-                            WaitForBlock { height, __marker }.into(),
+                            WaitForHeight { height, __marker }.into(),
                         )),
                     ])
                 }
@@ -81,7 +85,14 @@ where
                 let chain_ts = c.query_latest_timestamp().await.unwrap();
 
                 if chain_ts >= timestamp {
-                    QueueMsg::Noop
+                    // TODO: Figure out a way to fetch a height at a specific timestamp
+                    data(id(
+                        c.chain_id(),
+                        LatestHeight::<Hc, Tr> {
+                            height: c.query_latest_height().await.unwrap(),
+                            __marker: PhantomData,
+                        },
+                    ))
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
@@ -115,9 +126,10 @@ where
                         height
                     );
 
-                    fetch(id::<Tr, Hc, _>(
+                    // the height has been reached, fetch the counterparty client state on `Tr` at the trusted height
+                    fetch(id(
                         counterparty_chain_id,
-                        FetchState {
+                        FetchState::<Tr, Hc> {
                             at: QueryHeight::Specific(trusted_client_state.height()),
                             path: ClientStatePath {
                                 client_id: counterparty_client_id.clone(),
@@ -146,7 +158,7 @@ where
 }
 
 #[queue_msg]
-pub struct WaitForBlock<Hc: ChainExt, #[cover] Tr: ChainExt> {
+pub struct WaitForHeight<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
 }
 
@@ -155,9 +167,12 @@ pub struct WaitForTimestamp<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub timestamp: i64,
 }
 
+/// Wait for the client `.client_id` on `Hc` to trust a height >= `.height`, returning the counterparty's client state at that height when it's reached.
 #[queue_msg]
 pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
+    /// The id of the client on `Hc` who's [`ClientState::height()`] we're waiting to be >= `.height`.
     pub client_id: Hc::ClientId,
+    /// The id of the counterparty client on `Tr`, who's state will be fetched at [`ClientState::height()`] when `.client_id` on `Hc` trusts a height >= `.height`.
     pub counterparty_client_id: Tr::ClientId,
     pub counterparty_chain_id: ChainIdOf<Tr>,
     pub height: Tr::Height,

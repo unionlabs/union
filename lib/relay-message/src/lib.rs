@@ -530,13 +530,13 @@ mod sanity_checks {
     use unionlabs::ethereum::config::Mainnet;
 
     use crate::{
-        aggregate::AggregateConnectionOpenTry, chain_impls::union::UnionFetch, fetch::DoFetch,
+        aggregate::AggregateMsgConnectionOpenTry, chain_impls::union::UnionFetch, fetch::DoFetch,
         DoFetchState, RelayMessageTypes,
     };
 
     assert_impl_all!(Wasm<Cosmos>: DoFetchState<Wasm<Cosmos>, Union>);
 
-    assert_impl_all!(identified!(AggregateConnectionOpenTry<Wasm<Cosmos>, Union>): UseAggregate<RelayMessageTypes>);
+    assert_impl_all!(identified!(AggregateMsgConnectionOpenTry<Wasm<Cosmos>, Union>): UseAggregate<RelayMessageTypes>);
 
     assert_impl_all!(UnionFetch<Wasm<Union>, Ethereum<Mainnet>>: DoFetch<Wasm<Union>>);
 }

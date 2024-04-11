@@ -24,7 +24,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, queue_msg, wait, QueueMsg,
+    data, effect, fetch, queue_msg, void, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -255,7 +255,7 @@ where
                         packet: data.msg.packet.into(),
                         proof: data.msg.proof_unreceived.encode().into(),
                         proof_height: data.msg.proof_height.into_height().into(),
-                        next_sequence_recv: data.msg.next_sequence_recv,
+                        next_sequence_recv: data.msg.next_sequence_recv.get(),
                     },
                 },
             ),
@@ -1076,7 +1076,7 @@ where
         };
 
         seq([
-            wait(id(
+            void(wait(id(
                 req.counterparty_chain_id.clone(),
                 WaitForTimestamp {
                     timestamp: (genesis.genesis_time
@@ -1085,7 +1085,7 @@ where
                         .unwrap(),
                     __marker: PhantomData,
                 },
-            )),
+            ))),
             effect(id::<Tr, Ethereum<C>, _>(
                 req.counterparty_chain_id,
                 MsgUpdateClientData(MsgUpdateClient {

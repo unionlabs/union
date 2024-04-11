@@ -150,8 +150,7 @@ where
                     .collect::<Vec<_>>()
                     .await
                     .into_iter()
-                    .filter(|x| x.is_some())
-                    .map(|x| x.unwrap())
+                    .flatten()
                     .collect::<Vec<_>>(),
                 )
             }
