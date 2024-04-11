@@ -11,7 +11,7 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond-release" or .attr == "galoisd" or .attr == "uniond-release-image" or .attr == "galoisd-image" or .attr == "bundle-testnet-7-image")' # ensure to append this list if you want to release more artifacts
+      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond-release" or .attr == "galoisd" or .attr == "uniond-release-image" or .attr == "galoisd-image" or .attr == "bundle-testnet-8-image")' # ensure to append this list if you want to release more artifacts
 
   dl-images:
     runs-on: ubuntu-latest
@@ -19,7 +19,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [uniond-release, galoisd, bundle-testnet-7]
+        package: [uniond-release, galoisd, bundle-testnet-8]
         system: [aarch64-linux, x86_64-linux]
     steps:
       - uses: actions/download-artifact@v4
@@ -87,7 +87,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [uniond-release, galoisd, bundle-testnet-7]
+        package: [uniond-release, galoisd, bundle-testnet-8]
     services:
       registry:
         image: registry:2

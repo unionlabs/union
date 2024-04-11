@@ -1,1 +1,0 @@
-A Unionvisor bundle containing everything you need to create a supervised node running on `union-testnet-7`. Unionvisor will supervise the `uniond` program ensuring it's updated at the correct upgrade height present on network.
