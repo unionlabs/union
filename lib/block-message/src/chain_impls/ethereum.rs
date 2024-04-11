@@ -137,13 +137,22 @@ where
 
                         tracing::debug!(?log, "raw log");
 
-                        let event = IBCHandlerEvents::decode_log(&log.into())
-                            .expect("failed to decode ibc handler event");
-
-                        mk_aggregate_event(c, event, event_height, tx_hash).await
+                        match IBCHandlerEvents::decode_log(&log.into()) {
+                            Ok(event) => {
+                                Some(mk_aggregate_event(c, event, event_height, tx_hash).await)
+                            }
+                            Err(e) => {
+                                tracing::warn!("could not decode evm event {}", e);
+                                None
+                            }
+                        }
                     })
                     .collect::<Vec<_>>()
-                    .await,
+                    .await
+                    .into_iter()
+                    .filter(|x| x.is_some())
+                    .map(|x| x.unwrap())
+                    .collect::<Vec<_>>(),
                 )
             }
             EthereumFetch::FetchBeaconBlockRange(beacon_block_range) => {
