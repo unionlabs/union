@@ -10,7 +10,7 @@
           partitionType = "count";
           preConfigureHooks = [
             ''
-              cp -r ${self'.packages.uniond}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
+              cp -r ${self'.packages.uniond-release}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
             ''
             ''
               echo 'patching testdata'
@@ -42,13 +42,13 @@
           (version: {
             name =
               "${meta.versions_directory}/${version}/${meta.binary_name}";
-            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
+            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond-release;
           })
           versions
         ++ # add `nextVersion` to the bundle if supplied
         pkgs.lib.lists.optional (nextVersion != "") ({
           name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
-          path = pkgs.lib.getExe self'.packages.uniond;
+          path = pkgs.lib.getExe self'.packages.uniond-release;
         }));
 
       mkUnionvisorImage = unionvisorBundle: pkgs.dockerTools.buildImage {
