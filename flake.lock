@@ -598,11 +598,11 @@
     "v0_21_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1712684484,
-        "narHash": "sha256-YlKzcmBqt9kanjJRYJY4Z8//1MHL4BiUJafR89RH0Ow=",
+        "lastModified": 1712846288,
+        "narHash": "sha256-LCgcWeCvvAUhF9t4pIuDLDJvViTHePHkdfjVajnVXNg=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "bed32d0cb25e073ebae37018c6c2d510651855e0",
+        "rev": "5f00012ec8fd88639368a121ff5261b0c6b5fb32",
         "type": "github"
       },
       "original": {
