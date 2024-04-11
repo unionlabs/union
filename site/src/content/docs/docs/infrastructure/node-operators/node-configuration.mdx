@@ -21,11 +21,11 @@ Located in `config/client.toml`, this file is host to client settings.
 
 Update this value to ensure that your client is supplied with the correct chain ID.
 
-For the Union Testnet, this value should be `"union-testnet-7"`.
+For the Union Testnet, this value should be `"union-testnet-8"`.
 
 ```toml
 # The network chain ID
-chain-id = "union-testnet-7"
+chain-id = "union-testnet-8"
 ```
 
 ### Host/Port for the Tendermint RPC
@@ -119,11 +119,11 @@ external_address = "example.com:26656"
 
 Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
-Seed nodes help orchestrate initial connections to the network. For union-testnet-7, the seed nodes are:
+Seed nodes help orchestrate initial connections to the network. For union-testnet-8, the seed nodes are:
 
 <Code
   lang='toml'
-  code={`seeds = "${chainVersion({ chainId: 'union-testnet-7' }).seeds}"`} 
+  code={`seeds = "${chainVersion({ chainId: 'union-testnet-8' }).seeds}"`} 
 />
 
 
