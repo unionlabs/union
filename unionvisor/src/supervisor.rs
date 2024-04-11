@@ -281,7 +281,10 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
-    use crate::{bundle::Bundle, testdata};
+    use crate::{
+        bundle::{log_bundle, Bundle},
+        testdata,
+    };
 
     #[test]
     #[traced_test]

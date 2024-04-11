@@ -13,7 +13,7 @@ use tracing::{field::display as as_display, info};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
-    bundle::{Bundle, NewBundleError, ValidateVersionPathError},
+    bundle::{log_bundle, Bundle, NewBundleError, ValidateVersionPathError},
     init::{self, SetSeedsError},
     logging::LogFormat,
     supervisor::{self, RuntimeError},
@@ -208,7 +208,9 @@ impl RunCmd {
     fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<(), RunError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
-        info!(target: "unionvisor", "running with bundle: {bundle}");
+
+        log_bundle(&bundle);
+
         let symlinker = Symlinker::new(root.clone(), bundle);
         supervisor::run_and_upgrade(
             root,

@@ -9,7 +9,7 @@ use std::{
 use color_eyre::owo_colors::OwoColorize;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tracing::{debug, error, field::display as as_display};
+use tracing::{debug, error, field::display as as_display, info};
 
 /// Bundles should have the following structure on the filesystem:
 ///
@@ -127,11 +127,11 @@ pub struct BundleMeta {
 
 impl Display for Bundle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "BUNDLE INFO")?;
-        writeln!(f, "┏━━━━━━━━━━━")?;
-        writeln!(f, "┃ bundle: {self:?}")?;
-        writeln!(f, "┃ genesis: {:?}", self.genesis_json().into_os_string())?;
-        writeln!(f, "┃ versions:")?;
+        // writeln!(f, "BUNDLE INFO")?;
+        // writeln!(f, "┏━━━━━━━━━━━")?;
+        // writeln!(f, "┃ bundle: {self:?}")?;
+        // writeln!(f, "┃ genesis: {:?}", self.genesis_json().into_os_string())?;
+        // writeln!(f, "┃ versions:")?;
 
         let versions =
             fs::read_dir(self.versions_path()).expect("can't read contents of versions path");
@@ -193,6 +193,19 @@ impl Bundle {
         let fallback_version = &self.meta.fallback_version.clone();
         self.path_to(fallback_version).validate()
     }
+}
+
+pub fn log_bundle(bundle: &Bundle) {
+    let versions = fs::read_dir(bundle.versions_path())
+        .expect("can't read contents of versions path")
+        .map(|v| {
+            v.expect("can't read version in dir")
+                .path()
+                .into_os_string()
+        })
+        .collect::<Vec<_>>();
+
+    info!(target: "unionvisor", ?bundle, genesis=?bundle.genesis_json().into_os_string(), ?versions, "running with bundle" );
 }
 
 #[derive(Debug, Error)]
