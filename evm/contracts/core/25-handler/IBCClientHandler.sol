@@ -7,11 +7,7 @@ import "../02-client/IIBCClient.sol";
  * @dev IBCClientHandler is a contract that calls a contract that implements `IIBCClient` with delegatecall.
  */
 abstract contract IBCClientHandler is IIBCClient {
-    address immutable ibcClient;
-
-    constructor(address _ibcClient) {
-        ibcClient = _ibcClient;
-    }
+    address ibcClient;
 
     /**
      * @dev registerClient registers a new client type into the client registry

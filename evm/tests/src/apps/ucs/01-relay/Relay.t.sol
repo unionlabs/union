@@ -4,6 +4,7 @@ import "forge-std/Test.sol";
 import "solidity-stringutils/strings.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "../../../../../contracts/lib/Hex.sol";
 import "../../../../../contracts/apps/Base.sol";
 import "../../../../../contracts/apps/ucs/01-relay/Relay.sol";
@@ -24,15 +25,6 @@ import {IBCPacket} from "../../../../../contracts/core/04-channel/IBCPacket.sol"
 contract IBCHandlerFake is IBCHandler {
     IbcCoreChannelV1Packet.Data[] packets;
     uint64 sequence;
-
-    constructor()
-        IBCHandler(
-            address(new IBCClient()),
-            address(new IBCConnection()),
-            address(new IBCChannelHandshake()),
-            address(new IBCPacket())
-        )
-    {}
 
     function sendPacket(
         string calldata sourcePort,
@@ -75,7 +67,22 @@ contract RelayTests is Test {
     IRelay relay;
 
     function setUp() public {
-        ibcHandler = new IBCHandlerFake();
+        ibcHandler = IBCHandlerFake(
+            address(
+                new ERC1967Proxy(
+                    address(new IBCHandlerFake()),
+                    abi.encodeCall(
+                        IBCHandler.initialize,
+                        (
+                            address(new IBCClient()),
+                            address(new IBCConnection()),
+                            address(new IBCChannelHandshake()),
+                            address(new IBCPacket())
+                        )
+                    )
+                )
+            )
+        );
         relay = new UCS01Relay(ibcHandler);
     }
 

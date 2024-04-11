@@ -8,11 +8,7 @@ import "../03-connection/IIBCConnection.sol";
  * @dev IBCConnectionHandler is a contract that calls a contract that implements `IIBCConnectionHandshake` with delegatecall.
  */
 abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
-    address immutable ibcConnection;
-
-    constructor(address _ibcConnection) {
-        ibcConnection = _ibcConnection;
-    }
+    address ibcConnection;
 
     function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata msg_)
         external

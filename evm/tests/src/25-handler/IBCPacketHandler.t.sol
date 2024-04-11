@@ -2,6 +2,7 @@ pragma solidity ^0.8.23;
 
 import "solady/utils/LibString.sol";
 import "solidity-bytes-utils/BytesLib.sol";
+import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
@@ -11,11 +12,11 @@ import {IBCConnection} from
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
 import {IBCChannelHandshake} from
     "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
-import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCPacket.sol";
 import {
     IBCPacket,
     IBCPacketLib
 } from "../../../contracts/core/04-channel/IBCPacket.sol";
+import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCPacket.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IbcCoreClientV1Height as ClientHeight} from
     "../../../contracts/proto/MockClient.sol";
@@ -48,16 +49,7 @@ import
 
 import "../TestPlus.sol";
 
-contract IBCHandlerFake is IBCHandler {
-    constructor()
-        IBCHandler(
-            address(new IBCClient()),
-            address(new IBCConnection()),
-            address(new IBCChannelHandshake()),
-            address(new IBCPacket())
-        )
-    {}
-}
+contract IBCHandlerFake is IBCHandler {}
 
 contract TestCometblsClient is CometblsClient {
     uint256 validMembership = 0;
@@ -152,7 +144,22 @@ contract IBCPacketHandlerTest is TestPlus {
     string channelId;
 
     function setUp() public {
-        handler = new IBCHandlerFake();
+        handler = IBCHandlerFake(
+            address(
+                new ERC1967Proxy(
+                    address(new IBCHandlerFake()),
+                    abi.encodeCall(
+                        IBCHandler.initialize,
+                        (
+                            address(new IBCClient()),
+                            address(new IBCConnection()),
+                            address(new IBCChannelHandshake()),
+                            address(new IBCPacket())
+                        )
+                    )
+                )
+            )
+        );
         client = new TestCometblsClient(address(handler));
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
