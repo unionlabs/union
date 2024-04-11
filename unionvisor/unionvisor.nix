@@ -125,6 +125,11 @@
           type = types.package;
           default = self.packages.${pkgs.system}.bundle-testnet-7;
         };
+        logFormat = mkOption {
+          type = types.str;
+          default = "json";
+          example = "plain";
+        };
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
@@ -210,11 +215,11 @@
                 ''
                   ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                   cd /var/lib/unionvisor
-                  unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
+                  unionvisor --log-format ${cfg.logFormat} init --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty}
 
                   ${configSymLinkCommands}
                 
-                  unionvisor run
+                  unionvisor --log-format ${cfg.logFormat} run
                 '';
             };
           in
@@ -230,3 +235,6 @@
       };
     };
 }
+
+
+
