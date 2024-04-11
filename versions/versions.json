@@ -18,5 +18,10 @@
     "versions": ["v0.21.0"],
     "current": "v0.21.0",
     "seeds": ""
+  },
+  "union-testnet-8": {
+    "versions": ["v0.21.0"],
+    "current": "v0.21.0",
+    "seeds": ""
   }
 }
