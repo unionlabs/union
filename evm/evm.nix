@@ -22,8 +22,8 @@
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
         repo = "forge-std";
-        rev = "36c303b7ffdd842d06b1ec2744c9b9b5fb3083f3";
-        hash = "sha256-m2i738jsKdjQLDer8WU/ga5GY/5idbpbfnhIyiyEW2w=";
+        rev = "v1.8.1";
+        hash = "sha256-s/J7odpWysj4U93knIRA28aZqXworZH6IVIjIXD78Yc=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
@@ -32,11 +32,17 @@
         rev = "v5.0.1";
         hash = "sha256-R6drJeVBM4OvFd4CS8iiXIilDeymmd6fbU++LN+4u20=";
       };
-      protobuf3 = pkgs.fetchFromGitHub {
-        owner = "celestiaorg";
-        repo = "protobuf3-solidity-lib";
-        rev = "bc4e75a0bf6e365e820929eb293ef9b6d6d69678";
-        hash = "sha256-+HHUYhWDNRgA7x7p3Z0l0lS1e6pkJh4ZOSCCS4jQZQk=";
+      openzeppelin-upgradeable = pkgs.fetchFromGitHub {
+        owner = "OpenZeppelin";
+        repo = "openzeppelin-contracts-upgradeable";
+        rev = "v5.0.1";
+        hash = "sha256-2qky5f6aIe42A9P2CM+/WR4lSTQYcmIJKpSg76H63jw=";
+      };
+      openzeppelin-foundry-upgrades = pkgs.fetchFromGitHub {
+        owner = "OpenZeppelin";
+        repo = "openzeppelin-foundry-upgrades";
+        rev = "v0.2.1";
+        hash = "sha256-tQ6J5X/kpsGqHfapkDkaS2apbjL+I63vgQEk1vQI/c0=";
       };
       linkedLibs = pkgs.linkFarm "evm-libraries" [
         {
@@ -56,24 +62,42 @@
           path = "${forge-std}/src";
         }
         {
-          name = "ds-test";
-          path = "${forge-std}/lib/ds-test/src";
-        }
-        {
           name = "@openzeppelin";
           path = "${openzeppelin}/contracts";
         }
         {
-          name = "@protobuf";
-          path = "${protobuf3}/contracts";
+          name = "@openzeppelin-upgradeable";
+          path = "${openzeppelin-upgradeable}/contracts";
+        }
+        {
+          name = "@openzeppelin-foundry-upgradeable";
+          path = "${openzeppelin-foundry-upgrades}/src";
         }
       ];
       libraries = pkgs.stdenv.mkDerivation {
         name = "libraries";
-        phases = [ "installPhase" ];
+        phases = [ "installPhase" "fixupPhase" ];
+        src = "${linkedLibs}";
         installPhase = ''
           mkdir $out
-          cp -rL ${linkedLibs}/* $out
+          cp -rL $src/* $out
+        '';
+        fixupPhase = ''
+          substituteInPlace $out/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
+            --replace 'openzeppelin/contracts' 'openzeppelin'
+
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
+            --replace 'openzeppelin/contracts' 'openzeppelin'
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
+            --replace 'solidity-stringutils/src' 'solidity-stringutils'
+
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
+            --replace 'solidity-stringutils/src' 'solidity-stringutils'
+
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
+            --replace 'openzeppelin/contracts' 'openzeppelin'
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
+            --replace 'solidity-stringutils/src' 'solidity-stringutils'
         '';
       };
       evmSources = nix-filter {
@@ -99,6 +123,7 @@
         [profile.test]
         test = "${evmSources}/tests/src"
         optimizer = false
+        ast = true
       '';
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
