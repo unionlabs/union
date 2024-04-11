@@ -5,6 +5,7 @@ sidebar:
 ---
 
 import { Steps } from "@astrojs/starlight/components";
+import { Tabs, TabItem } from "@astrojs/starlight/components"
 
 Before trying to create a validator, ensure you have the following task complete:
 
@@ -34,13 +35,15 @@ As we get closer to a mainnet release, we will update staking and slashing param
 
 Now that you're ready to create your validator, you can follow the steps below:
 
-```sh title="Create a validator.json file"
+### 1) Create a Validator JSON File
+
+```sh frame="none"
 touch validator.json
 ```
 
 Add the following content to the file:
 
-```json
+```json title="validator.json"
 {
 	"pubkey": <PUBKEY>,
 	"amount": "1000000muno",
@@ -62,12 +65,36 @@ Replacing:
 - `<MONIKER>` with your moniker
 - And the optional content with your preferred details
 
-Then, run the `create-validator` command.
+### 2) Create a Proof of Possession
+
+:::note
+
+This step is currently specific to the Union network, other Cosmos based chains do not currently replicate this process.
+
+:::
+
+Assuming your private validator key is in the default location:
+
+<Tabs>
+  <TabItem label='uniond-release'>
+    ```sh frame="none"
+	export POSSESSION_PROOF=$(uniond prove-possession $(jq -r 'priv_key.value' ~/.union/config/priv_validator_key.json))
+	```
+  </TabItem>
+  <TabItem label='Unionvisor'>
+    ```sh frame="none"
+	export POSSESSION_PROOF=$(uniond prove-possession $(jq -r 'priv_key.value' ~/.unionvisor/home/config/priv_validator_key.json))
+	```
+  </TabItem>
+</Tabs>
+
+
+### 3) Run the `create-validator` Command
 
 Then you can submit this file using the `create-validator` sub-command:
 
 ```sh frame="none"
-uniond tx staking create-validator $VALIDATOR_JSON_PATH \
+uniond tx staking create-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
 	--from $KEY_NAME \
 	--chain-id union-testnet-8
 ```
@@ -87,7 +114,7 @@ touch ~/.unionvisor/validator.json
 
 # Then after editing the json content
 
-uniond tx staking create-validator /.unionvisor/validator.json \
+uniond tx staking create-validator /.unionvisor/validator.json $POSSESSION_PROOF \
 	--from $KEY_NAME \
 	--chain-id union-testnet-8
 ```
