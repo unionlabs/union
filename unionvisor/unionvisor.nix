@@ -215,7 +215,7 @@
                 ''
                   ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                   cd /var/lib/unionvisor
-                  unionvisor --log-format ${cfg.logFormat} init --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty}
+                  unionvisor --log-format ${cfg.logFormat} init --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
 
                   ${configSymLinkCommands}
                 
