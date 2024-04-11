@@ -514,8 +514,6 @@
         "rust-overlay": "rust-overlay",
         "stargaze": "stargaze",
         "treefmt-nix": "treefmt-nix",
-        "v0_19_0": "v0_19_0",
-        "v0_20_0": "v0_20_0",
         "v0_21_0": "v0_21_0",
         "wasmd": "wasmd",
         "wasmvm": "wasmvm",
@@ -597,48 +595,14 @@
         "type": "github"
       }
     },
-    "v0_19_0": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1707732360,
-        "narHash": "sha256-kPG7lbBe3rVIrHyTJMeSknIZwAD+FK3T2mAt9foVRXM=",
-        "owner": "unionlabs",
-        "repo": "union",
-        "rev": "d8f2eb410091e23568a4fecfee571bf24129fd6e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "unionlabs",
-        "ref": "release-v0.19.0",
-        "repo": "union",
-        "type": "github"
-      }
-    },
-    "v0_20_0": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1712323633,
-        "narHash": "sha256-wNhlEkAhq39WlOnlS6wUzR7T9VG9AD+uMKWaVVGYe/c=",
-        "owner": "unionlabs",
-        "repo": "union",
-        "rev": "e15cb300f11e0571164ea5e4fe56ee6844724008",
-        "type": "github"
-      },
-      "original": {
-        "owner": "unionlabs",
-        "ref": "release-v0.20.0",
-        "repo": "union",
-        "type": "github"
-      }
-    },
     "v0_21_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1712676277,
-        "narHash": "sha256-1eGLpjn74VwCsOMvDAI/n9N6/vaMLKrr1Ws8G0Yqf7o=",
+        "lastModified": 1712684484,
+        "narHash": "sha256-YlKzcmBqt9kanjJRYJY4Z8//1MHL4BiUJafR89RH0Ow=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "5651650302f5d09987f2524b686ac55b8839d243",
+        "rev": "bed32d0cb25e073ebae37018c6c2d510651855e0",
         "type": "github"
       },
       "original": {

@@ -126,14 +126,6 @@
     };
 
     # uniond versions
-    v0_19_0 = {
-      url = "github:unionlabs/union/release-v0.19.0";
-      flake = false;
-    };
-    v0_20_0 = {
-      url = "github:unionlabs/union/release-v0.20.0";
-      flake = false;
-    };
     v0_21_0 = {
       url = "github:unionlabs/union/release-v0.21.0";
       flake = false;
