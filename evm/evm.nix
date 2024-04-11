@@ -29,14 +29,14 @@
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
-        rev = "v5.0.1";
-        hash = "sha256-R6drJeVBM4OvFd4CS8iiXIilDeymmd6fbU++LN+4u20=";
+        rev = "v5.0.2";
+        hash = "sha256-Ln721yNPzbtn36/meSmaszF6iCsJUP7iG35Je5x8x1Q=";
       };
       openzeppelin-upgradeable = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts-upgradeable";
-        rev = "v5.0.1";
-        hash = "sha256-2qky5f6aIe42A9P2CM+/WR4lSTQYcmIJKpSg76H63jw=";
+        rev = "v5.0.2";
+        hash = "sha256-/TCv1EF3HPldTsXKThuc3L2DmlyodiduSMwYymR5idM=";
       };
       openzeppelin-foundry-upgrades = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
