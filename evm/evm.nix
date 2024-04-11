@@ -120,6 +120,11 @@
         optimizer = true
         optimizer_runs = 10_000_000
 
+        [profile.script]
+        src = "${evmSources}/scripts"
+        optimizer = true
+        optimizer_runs = 10_000_000
+
         [profile.test]
         test = "${evmSources}/tests/src"
         optimizer = false
@@ -398,6 +403,15 @@
           text = ''
             ${ensureAtRepositoryRoot}
             FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report
+          '';
+        };
+
+        forge-deploy = pkgs.writeShellApplication {
+          name = "forge-deploy";
+          runtimeInputs = [ self'.packages.forge ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script evm/scripts/Deploy.s.sol:DeployIBCStack -vvv --rpc-url http://localhost:8545 --broadcast
           '';
         };
 
