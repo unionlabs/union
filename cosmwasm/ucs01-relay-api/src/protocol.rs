@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use thiserror::Error;
 
 use crate::{
-    middleware::{Memo, PacketForward},
+    middleware::{InFlightPfmPacket, Memo, PacketForward},
     types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
 
@@ -262,6 +262,7 @@ pub trait TransferProtocol {
     fn receive(
         &mut self,
         raw_packet: impl Into<Binary> + Clone,
+        packet_sequence: u64,
     ) -> IbcReceiveResponse<Self::CustomMsg> {
         let mut handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
             let packet = Self::Packet::try_from(raw_packet.clone().into())?;
@@ -332,6 +333,7 @@ pub trait TransferProtocol {
         &mut self,
         packet: Self::Packet,
         forward: PacketForward,
+        packet_sequence: u64,
         processed: bool,
     ) -> IbcReceiveResponse<Self::CustomMsg>;
 
@@ -339,6 +341,9 @@ pub trait TransferProtocol {
         &mut self,
         tokens: Vec<Coin>,
         forward: PacketForward,
+        in_flight_packet: Option<InFlightPfmPacket>,
+        nonrefundable: bool,
+        packet_sequence: u64,
     ) -> IbcReceiveResponse<Self::CustomMsg>;
 }
 

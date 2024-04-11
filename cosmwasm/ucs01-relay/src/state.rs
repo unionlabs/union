@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{IbcEndpoint, Uint512};
 use cw_controllers::Admin;
 use cw_storage_plus::{Item, KeyDeserialize, Map, Prefixer, PrimaryKey};
+use ucs01_relay_api::middleware::InFlightPfmPacket;
 
 pub const ADMIN: Admin = Admin::new("admin");
 
@@ -13,12 +14,59 @@ pub const CHANNEL_INFO: Map<&str, ChannelInfo> = Map::new("channel_info");
 /// indexed by (channel_id, denom) maintaining the balance of the channel in that currency
 pub const CHANNEL_STATE: Map<(&str, &str), ChannelState> = Map::new("channel_state");
 
+/// In flight PFM packets, stored for refund information.
+/// Indexed by `PfmRefuntPacketKey` (channel_id, port_id, sequence).
+pub const IN_FLIGHT_PFM_PACKETS: Map<PfmRefuntPacketKey, InFlightPfmPacket> =
+    Map::new("in_flight_pfm_packets");
+
 // TokenFactory limitation
 // MaxSubdenomLength = 44
 // HASH_LENGTH = (MaxSubdenomLength - size_of("0x")) / 2 = 42
 pub const HASH_LENGTH: usize = 21;
 
 pub type Hash = [u8; HASH_LENGTH];
+
+/// Used for indexing in flight packets for refunds.
+#[derive(Debug, Clone)]
+pub struct PfmRefuntPacketKey {
+    pub channel_id: String,
+    pub port_id: String,
+    pub sequence: u64,
+}
+
+impl<'a> Prefixer<'a> for PfmRefuntPacketKey {
+    fn prefix(&self) -> Vec<cw_storage_plus::Key> {
+        let mut res = self.sequence.prefix();
+        res.extend(self.port_id.prefix());
+        res.extend(self.channel_id.prefix());
+        res
+    }
+}
+
+impl KeyDeserialize for PfmRefuntPacketKey {
+    type Output = <(String, String, u64) as KeyDeserialize>::Output;
+
+    fn from_vec(value: Vec<u8>) -> cosmwasm_std::StdResult<Self::Output> {
+        <(String, String, u64) as KeyDeserialize>::from_vec(value)
+    }
+}
+
+impl<'a> PrimaryKey<'a> for PfmRefuntPacketKey {
+    type Prefix = <(String, String, u64) as PrimaryKey<'a>>::Prefix;
+
+    type SubPrefix = <(String, String, u64) as PrimaryKey<'a>>::SubPrefix;
+
+    type Suffix = <(String, String, u64) as PrimaryKey<'a>>::Suffix;
+
+    type SuperSuffix = <(String, String, u64) as PrimaryKey<'a>>::SuperSuffix;
+
+    fn key(&self) -> Vec<cw_storage_plus::Key> {
+        let mut res = self.sequence.prefix();
+        res.extend(self.port_id.prefix());
+        res.extend(self.channel_id.prefix());
+        res
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct IbcEndpointKey(IbcEndpoint);

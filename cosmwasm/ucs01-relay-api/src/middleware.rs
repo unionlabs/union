@@ -1,3 +1,4 @@
+use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use unionlabs::{
@@ -15,6 +16,21 @@ pub fn default_pfm_timeout() -> String {
 
 pub fn default_pfm_retries() -> u8 {
     DEFAULT_PFM_RETRIES
+}
+
+/// Information about an in flight packet, used to process retries and refunds.
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub struct InFlightPfmPacket {
+    pub nonrefundable: bool,
+    pub original_sender_addr: Addr,
+    pub packet_data: String,
+    pub packet_src_channel_id: String,
+    pub packet_src_port_id: String,
+    pub refund_channel_id: String,
+    pub refund_port_id: String,
+    pub refund_sequence: u64,
+    pub retries_remaining: u32,
+    pub timeout: u64,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -81,27 +97,4 @@ impl<T: Into<String> + From<String>> Validate<T> for NotEmptyString {
             Ok(s.into())
         }
     }
-}
-
-/// Returns the receiver address for a given channel and original sender.
-///
-/// It overrides the receiver address to be a hash of the channel/origSender so that
-/// the receiver address is deterministic and can be used to identify the sender on the
-/// initial chain.
-pub fn get_receiver(channel_id: ChannelId, original_sender: String) -> String {
-    let sender_string = format!("{0}/{1}", channel_id.value(), original_sender);
-    let sender_hash = account_hash(PFM_MODULE_NAME.to_owned(), sender_string.as_bytes());
-    todo!()
-}
-
-fn account_hash(typ: String, key: &[u8]) -> Vec<u8> {
-    let mut hasher = Sha256::new();
-    hasher.update(typ.as_bytes());
-    let th = hasher.finalize();
-
-    let mut hasher = Sha256::new();
-    hasher.update(th);
-    hasher.update(key);
-
-    hasher.finalize()[..].into()
 }
