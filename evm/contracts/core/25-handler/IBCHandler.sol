@@ -59,34 +59,4 @@ abstract contract IBCHandler is
         override
         onlyOwner
     {}
-
-    function _msgSender()
-        internal
-        view
-        virtual
-        override(Context, ContextUpgradeable)
-        returns (address sender)
-    {
-        return ContextUpgradeable._msgSender();
-    }
-
-    function _msgData()
-        internal
-        view
-        virtual
-        override(Context, ContextUpgradeable)
-        returns (bytes calldata)
-    {
-        return ContextUpgradeable._msgData();
-    }
-
-    function _contextSuffixLength()
-        internal
-        view
-        virtual
-        override(Context, ContextUpgradeable)
-        returns (uint256)
-    {
-        return ContextUpgradeable._contextSuffixLength();
-    }
 }

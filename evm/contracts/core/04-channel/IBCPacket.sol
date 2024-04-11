@@ -244,7 +244,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             msg_.packet.destination_port, msg_.packet.destination_channel
         );
         bytes memory acknowledgement =
-            module.onRecvPacket(msg_.packet, _msgSender());
+            module.onRecvPacket(msg_.packet, msg.sender);
         if (acknowledgement.length > 0) {
             _writeAcknowledgement(
                 msg_.packet.destination_port,
@@ -404,9 +404,8 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         IIBCModule module = lookupModuleByChannel(
             msg_.packet.source_port, msg_.packet.source_channel
         );
-
         module.onAcknowledgementPacket(
-            msg_.packet, msg_.acknowledgement, _msgSender()
+            msg_.packet, msg_.acknowledgement, msg.sender
         );
 
         emit IBCPacketLib.AcknowledgePacket(msg_.packet, msg_.acknowledgement);
@@ -547,7 +546,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         IIBCModule module = lookupModuleByChannel(
             msg_.packet.source_port, msg_.packet.source_channel
         );
-        module.onTimeoutPacket(msg_.packet, _msgSender());
+        module.onTimeoutPacket(msg_.packet, msg.sender);
 
         emit IBCPacketLib.TimeoutPacket(msg_.packet);
     }

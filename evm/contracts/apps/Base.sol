@@ -1,6 +1,5 @@
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/utils/Context.sol";
 import "../core/05-port/IIBCModule.sol";
 
 library IBCAppLib {
@@ -10,7 +9,7 @@ library IBCAppLib {
 /**
  * @dev Base contract of the IBC App protocol
  */
-abstract contract IBCAppBase is Context, IIBCModule {
+abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev Throws if called by any account other than the IBC contract.
      */
@@ -28,7 +27,7 @@ abstract contract IBCAppBase is Context, IIBCModule {
      * @dev Throws if the sender is not the IBC contract.
      */
     function _checkIBC() internal view virtual {
-        if (ibcAddress() != _msgSender()) {
+        if (ibcAddress() != msg.sender) {
             revert IBCAppLib.ErrNotIBC();
         }
     }

@@ -4,8 +4,10 @@ import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
-import {IBCConnectionLib, IBCConnection} from
-    "../../../contracts/core/03-connection/IBCConnection.sol";
+import {
+    IBCConnectionLib,
+    IBCConnection
+} from "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
 import {IBCChannelHandshake} from
     "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
@@ -45,8 +47,6 @@ import "../TestPlus.sol";
 contract TestCometblsClient is CometblsClient {
     uint256 calls;
     mapping(uint256 => bool) validMembershipProof;
-
-    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
 
     function reset() public {
         calls = 0;
@@ -126,8 +126,16 @@ contract IBCConnectionHandlerTests is TestPlus {
                 )
             )
         );
-
-        client = new TestCometblsClient(address(handler));
+        client = TestCometblsClient(
+            address(
+                new ERC1967Proxy(
+                    address(new TestCometblsClient()),
+                    abi.encodeCall(
+                        CometblsClient.initialize, (address(handler))
+                    )
+                )
+            )
+        );
         handler.registerClient(CLIENT_TYPE, client);
     }
 

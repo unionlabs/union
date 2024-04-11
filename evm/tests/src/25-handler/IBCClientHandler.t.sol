@@ -53,8 +53,6 @@ contract TestCometblsClient is CometblsClient {
         validMembership += 1;
     }
 
-    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
-
     function verifyZKP(
         bytes calldata zkpBytes,
         string memory chainId,
@@ -140,10 +138,26 @@ contract IBCClientHandlerTests is TestPlus {
                 )
             )
         );
-
-        client = new TestCometblsClient(address(handler));
-        client2 = new TestCometblsClient(address(handler));
-
+        client = TestCometblsClient(
+            address(
+                new ERC1967Proxy(
+                    address(new TestCometblsClient()),
+                    abi.encodeCall(
+                        CometblsClient.initialize, (address(handler))
+                    )
+                )
+            )
+        );
+        client2 = TestCometblsClient(
+            address(
+                new ERC1967Proxy(
+                    address(new TestCometblsClient()),
+                    abi.encodeCall(
+                        CometblsClient.initialize, (address(handler))
+                    )
+                )
+            )
+        );
         vm.warp(1);
     }
 

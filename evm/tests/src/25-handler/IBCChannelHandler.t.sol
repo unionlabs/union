@@ -61,8 +61,6 @@ contract TestCometblsClient is CometblsClient {
         validMembership += 1;
     }
 
-    constructor(address ibcHandler_) CometblsClient(ibcHandler_) {}
-
     function verifyZKP(
         bytes calldata zkpBytes,
         string memory chainId,
@@ -157,7 +155,16 @@ contract IBCChannelHandlerTest is TestPlus {
                 )
             )
         );
-        client = new TestCometblsClient(address(handler));
+        client = TestCometblsClient(
+            address(
+                new ERC1967Proxy(
+                    address(new TestCometblsClient()),
+                    abi.encodeCall(
+                        CometblsClient.initialize, (address(handler))
+                    )
+                )
+            )
+        );
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
         portId = address(app).toHexString();
