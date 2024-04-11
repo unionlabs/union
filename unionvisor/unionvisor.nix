@@ -69,13 +69,13 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-testnet-7-image = mkUnionvisorImage self'.packages.bundle-testnet-7;
+        bundle-testnet-8-image = mkUnionvisorImage self'.packages.bundle-testnet-8;
 
-        bundle-testnet-7 =
+        bundle-testnet-8 =
           mkBundle {
-            name = "testnet-7";
+            name = "testnet-8";
             versions = uniondBundleVersions.complete;
-            genesis = ../networks/genesis/union-testnet-7/genesis.json;
+            genesis = ../networks/genesis/union-testnet-8/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
@@ -88,7 +88,7 @@
             name = "testnet-next";
             versions = uniondBundleVersions.complete;
             nextVersion = "v0.22.0";
-            genesis = ../networks/genesis/union-testnet-7/genesis.json;
+            genesis = ../networks/genesis/union-testnet-8/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
@@ -123,7 +123,7 @@
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-7;
+          default = self.packages.${pkgs.system}.bundle-testnet-8;
         };
         logFormat = mkOption {
           type = types.str;

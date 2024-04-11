@@ -35,6 +35,7 @@
     "networks/genesis/union-testnet-5/**",
     "networks/genesis/union-testnet-6/**",
     "networks/genesis/union-testnet-7/**",
+    "networks/genesis/union-testnet-8/**",
     "site/public/genesis.json",
     "hubble/hasura/**",
     "site/src/lib/abi/**",

@@ -1,0 +1,50 @@
+{
+  "body": {
+    "messages": [
+      {
+        "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
+        "description": {
+          "moniker": "bonlulu",
+          "identity": "",
+          "website": "",
+          "security_contact": "",
+          "details": ""
+        },
+        "commission": {
+          "rate": "0.100000000000000000",
+          "max_rate": "0.200000000000000000",
+          "max_change_rate": "0.010000000000000000"
+        },
+        "min_self_delegation": "1",
+        "delegator_address": "",
+        "validator_address": "unionvaloper1v39zvpn9ff7quu9lxsawdwpg60lyfpz8s49u5d",
+        "pubkey": {
+          "@type": "/cosmos.crypto.bn254.PubKey",
+          "key": "3RV5+KMiihaJgnJ99kwA+e14rYW4bqDP4Vkqd7OBQIg="
+        },
+        "value": { "denom": "muno", "amount": "1000000000000" }
+      }
+    ],
+    "memo": "bcfe201a94afef92ca3e464097f5dda17c22ac3a@198.19.249.52:26656",
+    "timeout_height": "0",
+    "extension_options": [],
+    "non_critical_extension_options": []
+  },
+  "auth_info": {
+    "signer_infos": [
+      {
+        "public_key": {
+          "@type": "/cosmos.crypto.secp256k1.PubKey",
+          "key": "A9v4EiCzKQluwJJjGUNw9ygxzh+77D24d1LdigmF0ok6"
+        },
+        "mode_info": { "single": { "mode": "SIGN_MODE_DIRECT" } },
+        "sequence": "0"
+      }
+    ],
+    "fee": { "amount": [], "gas_limit": "200000", "payer": "", "granter": "" },
+    "tip": null
+  },
+  "signatures": [
+    "sszSGJyRVc1XQvxRo8pvLWGwncpbgQJFg4YmFrjGCDs7uwHraMwSrADTqMnZPgRkhn0r2a0hnIrmrLdKDtwk2w=="
+  ]
+}
