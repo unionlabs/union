@@ -1,12 +1,10 @@
 use std::{
     ffi::OsString,
-    fmt::Display,
     fs, io,
     path::PathBuf,
     process::{Command, Stdio},
 };
 
-use color_eyre::owo_colors::OwoColorize;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{debug, error, field::display as as_display, info};
@@ -117,33 +115,6 @@ pub struct BundleMeta {
     fallback_version: String,
     /// The directory containing a directory for each version
     versions_directory: PathBuf,
-}
-
-// pub enum BinaryAvailability {
-//     NotFound,
-//     PermissionDenied,
-//     Ok,
-// }
-
-impl Display for Bundle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // writeln!(f, "BUNDLE INFO")?;
-        // writeln!(f, "┏━━━━━━━━━━━")?;
-        // writeln!(f, "┃ bundle: {self:?}")?;
-        // writeln!(f, "┃ genesis: {:?}", self.genesis_json().into_os_string())?;
-        // writeln!(f, "┃ versions:")?;
-
-        let versions =
-            fs::read_dir(self.versions_path()).expect("can't read contents of versions path");
-        for version in versions {
-            let version = version
-                .expect("can't read version dir entry")
-                .path()
-                .into_os_string();
-            writeln!(f, "┃ - {version:?}")?;
-        }
-        writeln!(f, "┗━━━━━━━━━━━")
-    }
 }
 
 impl Bundle {

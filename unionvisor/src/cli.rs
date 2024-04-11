@@ -208,9 +208,7 @@ impl RunCmd {
     fn run(&self, root: impl Into<PathBuf>, logformat: LogFormat) -> Result<(), RunError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
-
         log_bundle(&bundle);
-
         let symlinker = Symlinker::new(root.clone(), bundle);
         supervisor::run_and_upgrade(
             root,
