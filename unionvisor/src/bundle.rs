@@ -7,7 +7,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tracing::{debug, error, field::display as as_display};
+use tracing::{debug, error, field::display as as_display, info};
 
 /// Bundles should have the following structure on the filesystem:
 ///
@@ -117,12 +117,6 @@ pub struct BundleMeta {
     versions_directory: PathBuf,
 }
 
-// pub enum BinaryAvailability {
-//     NotFound,
-//     PermissionDenied,
-//     Ok,
-// }
-
 impl Bundle {
     /// Constructs a new [`Bundle`] based on a path.
     /// Will read `bundle/meta.json` and error if invalid.
@@ -149,11 +143,15 @@ impl Bundle {
     pub fn path_to(&self, version: impl Into<OsString>) -> UnvalidatedVersionPath {
         let version = version.into();
         UnvalidatedVersionPath::new(
-            self.path
-                .join(&self.meta.versions_directory)
+            self.versions_path()
                 .join(version)
                 .join(&self.meta.binary_name),
         )
+    }
+
+    /// Provides the full path the the versions directory
+    pub fn versions_path(&self) -> PathBuf {
+        self.path.join(&self.meta.versions_directory)
     }
 
     /// Returns a [`PathBuf`] to the Bundle's genesis.json
@@ -166,6 +164,19 @@ impl Bundle {
         let fallback_version = &self.meta.fallback_version.clone();
         self.path_to(fallback_version).validate()
     }
+}
+
+pub fn log_bundle(bundle: &Bundle) {
+    let versions = fs::read_dir(bundle.versions_path())
+        .expect("can't read contents of versions path")
+        .map(|v| {
+            v.expect("can't read version in dir")
+                .path()
+                .into_os_string()
+        })
+        .collect::<Vec<_>>();
+
+    info!(target: "unionvisor", ?bundle, genesis=?bundle.genesis_json().into_os_string(), ?versions, "running with bundle" );
 }
 
 #[derive(Debug, Error)]

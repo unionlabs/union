@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    fs::create_dir_all,
+    fs::{self, create_dir_all},
     io,
     path::{Path, PathBuf},
     process::{Child, ExitStatus},
@@ -53,6 +53,13 @@ impl Supervisor {
         args: I,
     ) -> Result<(), SpawnError> {
         let program = self.symlinker.current_validated()?;
+        info!(
+            "running {:?} pointing to {:?}",
+            program.0.clone().into_os_string(),
+            fs::read_link(program.0.clone())
+                .expect("uniond is not a link!")
+                .into_os_string()
+        );
         let mut command = std::process::Command::new(program.0);
         let command = command
             .args(vec!["--log_format", logformat.as_str()])
@@ -274,7 +281,10 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
-    use crate::{bundle::Bundle, testdata};
+    use crate::{
+        bundle::{log_bundle, Bundle},
+        testdata,
+    };
 
     #[test]
     #[traced_test]
