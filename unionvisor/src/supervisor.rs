@@ -53,6 +53,10 @@ impl Supervisor {
         args: I,
     ) -> Result<(), SpawnError> {
         let program = self.symlinker.current_validated()?;
+        info!(
+            "Running uniond version {:?}",
+            program.0.clone().into_os_string()
+        );
         let mut command = std::process::Command::new(program.0);
         let command = command
             .args(vec!["--log_format", logformat.as_str()])
