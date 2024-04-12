@@ -4,6 +4,8 @@ import Card from '#/components/Card.astro'
 import ButtonA from '#/components/ButtonA.astro'
 import H3 from '#/components/typography/h3.astro'
 
+const BLOG_POST_COUNT = 4;
+
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
   return { slug, data }
@@ -11,32 +13,37 @@ const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
 
 publishedBlogPosts.sort((a, b) => Number(a.data.date) - Number(b.data.date))
 
-const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
+const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLOG_POST_COUNT);
 ---
 
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <Card padded>
-    <a class="flex flex-col items-start gap-2" href={`/blog/${latestBlogPost.slug}`}>
+    <a class="flex flex-col items-start gap-2 size-full" href={`/blog/${latestBlogPost.slug}`}>
       <H3>{latestBlogPost.data.title}</H3>
       <p class="text-pretty text-lg text-left text-gray-400 mb-4">{latestBlogPost.data.description}</p>
-      <ButtonA href={`/blog/${latestBlogPost.slug}`} fake>read more</ButtonA>
+      <div class="w-full flex flex-1 items-end">
+        <ButtonA href={`/blog/${latestBlogPost.slug}`} fake>read full post</ButtonA>
+      </div>
     </a>
   </Card>
 
   <Card
-    class="w-full flex flex-col divide divide-y divide-solid divide-border/30"
+    class="w-full flex flex-col items-start justify-start divide divide-y divide-solid divide-border/30"
   >
     {
       blogPosts.map(post => (
         <a
           href={`/blog/${post.slug}`}
-          class="justify-center size-full flex flex-col text-left flex-start p-4"
+          class="justify-center w-full flex flex-col text-left flex-start p-4 md:px-6"
         >
           <p class="text-xl font-bold">{post.data.title}</p>
           <p class="text-accent font-semibold">Read More {'->'}</p>
         </a>
       ))
     }
+    <div class="p-4 md:p-6 w-full flex flex-1 items-end">
+      <ButtonA href={`/blog`}>See all posts</ButtonA>
+    </div>
   </Card>
 </div>
