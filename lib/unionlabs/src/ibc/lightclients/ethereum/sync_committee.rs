@@ -1,12 +1,10 @@
 use macros::model;
-use ssz::{
-    types::{fixed_vector, FixedVector},
-    Decode, Encode, TreeHash,
-};
+use ssz::{types::Vector, Ssz};
+use typenum::Unsigned;
 
 use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(Encode, Decode, TreeHash)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::SyncCommittee),
     into,
@@ -15,7 +13,7 @@ use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COM
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     #[serde(with = "::serde_utils::hex_string_list")]
-    pub pubkeys: FixedVector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,
+    pub pubkeys: Vector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,
     #[serde(with = "::serde_utils::hex_string")]
     pub aggregate_pubkey: BlsPublicKey,
 }
@@ -36,7 +34,7 @@ pub enum TryFromSyncCommitteeError {
     /// One of the `pubkeys` had an invalid length
     PubKey(InvalidLength),
     /// Invalid amount of `pubkeys`
-    PubKeys(fixed_vector::TryFromVecError),
+    PubKeys(InvalidLength),
     /// The `aggregate_pubkey` had an invalid length
     AggregatePubKey(InvalidLength),
 }
@@ -58,7 +56,14 @@ impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum:
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(TryFromSyncCommitteeError::PubKey)?
                 .try_into()
-                .map_err(TryFromSyncCommitteeError::PubKeys)?,
+                .map_err(|vec: Vec<_>| {
+                    TryFromSyncCommitteeError::PubKeys(InvalidLength {
+                        expected: crate::errors::ExpectedLength::Exact(
+                            C::SYNC_COMMITTEE_SIZE::USIZE,
+                        ),
+                        found: vec.len(),
+                    })
+                })?,
             aggregate_pubkey: value
                 .aggregate_pubkey
                 .try_into()

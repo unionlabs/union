@@ -1,17 +1,18 @@
 use macros::model;
 use ssz::{
-    types::{fixed_vector, variable_list, FixedVector, VariableList},
-    TreeHash,
+    types::{List, Vector},
+    Ssz,
 };
+use typenum::Unsigned;
 
 use crate::{
-    errors::InvalidLength,
+    errors::{ExpectedLength, InvalidLength},
     ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
     hash::{H160, H256},
     uint::U256,
 };
 
-#[derive(ssz::Encode, ssz::Decode, TreeHash)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::AccountUpdate),
     into,
@@ -24,7 +25,7 @@ pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DAT
     pub receipts_root: H256,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug("{}", serde_utils::to_hex(&logs_bloom))]
-    pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
+    pub logs_bloom: Vector<u8, C::BYTES_PER_LOGS_BLOOM>,
     pub prev_randao: H256,
     #[serde(with = "::serde_utils::string")]
     pub block_number: u64,
@@ -36,7 +37,7 @@ pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DAT
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug("{}", serde_utils::to_hex(&extra_data))]
-    pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
+    pub extra_data: List<u8, C::MAX_EXTRA_DATA_BYTES>,
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
     #[serde(default)]
@@ -70,7 +71,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
 }
 
 #[model]
-#[derive(ssz::Encode, ssz::Decode, TreeHash)]
+#[derive(Ssz)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
@@ -79,7 +80,7 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub receipts_root: H256,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug("{}", serde_utils::to_hex(&logs_bloom))]
-    pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
+    pub logs_bloom: Vector<u8, C::BYTES_PER_LOGS_BLOOM>,
     pub prev_randao: H256,
     #[serde(with = "::serde_utils::string")]
     pub block_number: u64,
@@ -91,7 +92,7 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug("{}", serde_utils::to_hex(&extra_data))]
-    pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
+    pub extra_data: List<u8, C::MAX_EXTRA_DATA_BYTES>,
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
     #[serde(default)]
@@ -138,9 +139,9 @@ pub enum TryFromExecutionPayloadHeaderError {
     FeeRecipient(InvalidLength),
     StateRoot(InvalidLength),
     ReceiptsRoot(InvalidLength),
-    LogsBloom(fixed_vector::TryFromVecError),
+    LogsBloom(InvalidLength),
     PrevRandao(InvalidLength),
-    ExtraData(variable_list::TryFromVecError),
+    ExtraData(InvalidLength),
     BaseFeePerGas(InvalidLength),
     BlockHash(InvalidLength),
     TransactionsRoot(InvalidLength),
@@ -173,10 +174,12 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .receipts_root
                 .try_into()
                 .map_err(TryFromExecutionPayloadHeaderError::ReceiptsRoot)?,
-            logs_bloom: value
-                .logs_bloom
-                .try_into()
-                .map_err(TryFromExecutionPayloadHeaderError::LogsBloom)?,
+            logs_bloom: value.logs_bloom.try_into().map_err(|vec: Vec<_>| {
+                TryFromExecutionPayloadHeaderError::LogsBloom(InvalidLength {
+                    expected: ExpectedLength::Exact(C::BYTES_PER_LOGS_BLOOM::USIZE),
+                    found: vec.len(),
+                })
+            })?,
             prev_randao: value
                 .prev_randao
                 .try_into()
@@ -185,10 +188,12 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
             gas_limit: value.gas_limit,
             gas_used: value.gas_used,
             timestamp: value.timestamp,
-            extra_data: value
-                .extra_data
-                .try_into()
-                .map_err(TryFromExecutionPayloadHeaderError::ExtraData)?,
+            extra_data: value.extra_data.try_into().map_err(|vec: Vec<_>| {
+                TryFromExecutionPayloadHeaderError::ExtraData(InvalidLength {
+                    expected: ExpectedLength::Exact(C::MAX_EXTRA_DATA_BYTES::USIZE),
+                    found: vec.len(),
+                })
+            })?,
             base_fee_per_gas: U256::try_from_be_bytes(&value.base_fee_per_gas)
                 .map_err(TryFromExecutionPayloadHeaderError::BaseFeePerGas)?,
             block_hash: value

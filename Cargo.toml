@@ -39,6 +39,7 @@ members = [
   "lib/scroll-verifier",
   "lib/serde-utils",
   "lib/ssz",
+  "lib/ssz/tests-generator",
   "lib/ssz-derive",
   "lib/tendermint-verifier",
   "lib/unionlabs",

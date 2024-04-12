@@ -1,4 +1,5 @@
 use core::marker::PhantomData;
+use std::num::NonZeroUsize;
 
 use derivative::Derivative;
 use serde::{
@@ -11,7 +12,7 @@ use typenum::Unsigned;
 use crate::{
     tree_hash::Hash256,
     types::{tree_hash::bitfield_bytes_tree_hash_root, Error},
-    Decode, Encode,
+    DecodeError, Ssz,
 };
 
 /// Maximum number of bytes to store on the stack in a bitfield's `SmallVec`.
@@ -21,12 +22,11 @@ use crate::{
 pub const SMALLVEC_LEN: usize = 32;
 
 /// A marker trait applied to `Variable` and `Fixed` that defines the behaviour of a `Bitfield`.
-pub trait BitfieldBehaviour: Clone {}
+pub trait BitfieldBehaviour {}
 
 /// A marker struct used to declare SSZ `Variable` behaviour on a `Bitfield`.
 ///
 /// See the [`Bitfield`](struct.Bitfield.html) docs for usage.
-#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Variable<N> {
     _phantom: PhantomData<N>,
 }
@@ -34,7 +34,6 @@ pub struct Variable<N> {
 /// A marker struct used to declare SSZ `Fixed` behaviour on a `Bitfield`.
 ///
 /// See the [`Bitfield`](struct.Bitfield.html) docs for usage.
-#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Fixed<N> {
     _phantom: PhantomData<N>,
 }
@@ -77,7 +76,7 @@ pub type BitVector<N> = Bitfield<Fixed<N>>;
 /// type BitList8 = BitList<typenum::U8>;
 ///
 /// // Creating a `BitList` with a larger-than-`N` capacity returns `None`.
-/// assert!(BitList8::with_capacity(9).is_err());
+/// assert!(BitList8::with_capacity(9).is_none());
 ///
 /// let mut bitlist = BitList8::with_capacity(4).unwrap();  // `BitList` permits a capacity of less than the maximum.
 /// assert!(bitlist.set(3, true).is_ok());  // Setting inside the instantiation capacity is permitted.
@@ -120,24 +119,17 @@ impl<N: Unsigned + Clone> Bitfield<Variable<N>> {
     /// All bits are initialized to `false`.
     ///
     /// Returns `None` if `num_bits > N`.
-    pub fn with_capacity(num_bits: usize) -> Result<Self, Error> {
-        if num_bits <= N::to_usize() {
-            Ok(Self {
+    #[must_use]
+    pub fn with_capacity(num_bits: usize) -> Option<Self> {
+        if num_bits <= N::USIZE {
+            Some(Self {
                 bytes: smallvec![0; bytes_for_bit_len(num_bits)],
                 len: num_bits,
                 _phantom: PhantomData,
             })
         } else {
-            Err(Error::OutOfBounds {
-                i: Self::max_len(),
-                len: Self::max_len(),
-            })
+            None
         }
-    }
-
-    /// Equal to `N` regardless of the value supplied to `with_capacity`.
-    pub fn max_len() -> usize {
-        N::to_usize()
     }
 
     /// Consumes `self`, returning a serialized representation.
@@ -156,6 +148,7 @@ impl<N: Unsigned + Clone> Bitfield<Variable<N>> {
     ///
     /// assert_eq!(b.into_bytes(), SmallVec::from_buf([0b0001_0000]));
     /// ```
+    #[must_use]
     pub fn into_bytes(self) -> SmallVec<[u8; SMALLVEC_LEN]> {
         let len = self.len();
         let mut bytes = self.bytes;
@@ -180,9 +173,7 @@ impl<N: Unsigned + Clone> Bitfield<Variable<N>> {
 
     /// Instantiates a new instance from `bytes`. Consumes the same format that `self.into_bytes()`
     /// produces (SSZ).
-    ///
-    /// Returns `None` if `bytes` are not a valid encoding.
-    pub fn from_bytes(bytes: SmallVec<[u8; SMALLVEC_LEN]>) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: SmallVec<[u8; SMALLVEC_LEN]>) -> Result<Self, BitlistFromBytesError> {
         let bytes_len = bytes.len();
         let mut initial_bitfield: Bitfield<Variable<N>> = {
             let num_bits = bytes.len() * 8;
@@ -191,17 +182,17 @@ impl<N: Unsigned + Clone> Bitfield<Variable<N>> {
 
         let len = initial_bitfield
             .highest_set_bit()
-            .ok_or(Error::MissingLengthInformation)?;
+            .ok_or(BitlistFromBytesError::MissingLengthInformation)?;
 
         // The length bit should be in the last byte, or else it means we have too many bytes.
         if len / 8 + 1 != bytes_len {
-            return Err(Error::InvalidByteCount {
+            return Err(BitlistFromBytesError::InvalidByteCount {
                 given: bytes_len,
                 expected: len / 8 + 1,
             });
         }
 
-        if len <= Self::max_len() {
+        if len <= N::USIZE {
             initial_bitfield
                 .set(len, false)
                 .expect("Bit has been confirmed to exist");
@@ -212,62 +203,45 @@ impl<N: Unsigned + Clone> Bitfield<Variable<N>> {
 
             Self::from_raw_bytes(bytes, len)
         } else {
-            Err(Error::OutOfBounds {
-                i: Self::max_len(),
-                len: Self::max_len(),
-            })
+            Err(OutOfBounds {
+                i: N::USIZE,
+                len: N::USIZE,
+            }
+            .into())
         }
     }
+}
 
-    /// Compute the intersection of two BitLists of potentially different lengths.
-    ///
-    /// Return a new BitList with length equal to the shorter of the two inputs.
-    pub fn intersection(&self, other: &Self) -> Self {
-        let min_len = std::cmp::min(self.len(), other.len());
-        let mut result = Self::with_capacity(min_len).expect("min len always less than N");
-        // Bitwise-and the bytes together, starting from the left of each vector. This takes care
-        // of masking out any entries beyond `min_len` as well, assuming the bitfield doesn't
-        // contain any set bits beyond its length.
-        for i in 0..result.bytes.len() {
-            result.bytes[i] = self.bytes[i] & other.bytes[i];
-        }
-        result
-    }
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum BitlistFromBytesError {
+    #[error("the length cannot be known as there is not a set bit")]
+    MissingLengthInformation,
+    #[error("excess bits set to true")]
+    ExcessBits,
+    #[error("invalid number of bytes ({given}) for a given bit length (expected: {expected})")]
+    InvalidByteCount { given: usize, expected: usize },
+    #[error(transparent)]
+    OutOfBounds(#[from] OutOfBounds),
+}
 
-    /// Compute the union of two BitLists of potentially different lengths.
-    ///
-    /// Return a new BitList with length equal to the longer of the two inputs.
-    pub fn union(&self, other: &Self) -> Self {
-        let max_len = std::cmp::max(self.len(), other.len());
-        let mut result = Self::with_capacity(max_len).expect("max len always less than N");
-        for i in 0..result.bytes.len() {
-            result.bytes[i] =
-                self.bytes.get(i).copied().unwrap_or(0) | other.bytes.get(i).copied().unwrap_or(0);
-        }
-        result
-    }
-
-    /// Returns `true` if `self` is a subset of `other` and `false` otherwise.
-    pub fn is_subset(&self, other: &Self) -> bool {
-        self.difference(other).is_zero()
-    }
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("index out of bounds: the length is {len}, but the index is {i}")]
+pub struct OutOfBounds {
+    pub len: usize,
+    pub i: usize,
 }
 
 impl<N: Unsigned + Clone> Bitfield<Fixed<N>> {
     /// Instantiate a new `Bitfield` with a fixed-length of `N` bits.
     ///
     /// All bits are initialized to `false`.
+    #[must_use]
     pub fn new() -> Self {
         Self {
-            bytes: smallvec![0; bytes_for_bit_len(Self::capacity())],
-            len: Self::capacity(),
+            bytes: smallvec![0; bytes_for_bit_len(N::USIZE)],
+            len: N::USIZE,
             _phantom: PhantomData,
         }
-    }
-
-    /// Returns `N`, the number of bits in `Self`.
-    pub fn capacity() -> usize {
-        N::to_usize()
     }
 
     /// Consumes `self`, returning a serialized representation.
@@ -283,6 +257,7 @@ impl<N: Unsigned + Clone> Bitfield<Fixed<N>> {
     ///
     /// assert_eq!(BitVector4::new().into_bytes(), SmallVec::from_buf([0b0000_0000]));
     /// ```
+    #[must_use]
     pub fn into_bytes(self) -> SmallVec<[u8; SMALLVEC_LEN]> {
         self.into_raw_bytes()
     }
@@ -291,39 +266,8 @@ impl<N: Unsigned + Clone> Bitfield<Fixed<N>> {
     /// produces (SSZ).
     ///
     /// Returns `None` if `bytes` are not a valid encoding.
-    pub fn from_bytes(bytes: SmallVec<[u8; SMALLVEC_LEN]>) -> Result<Self, Error> {
-        Self::from_raw_bytes(bytes, Self::capacity())
-    }
-
-    /// Compute the intersection of two fixed-length `Bitfield`s.
-    ///
-    /// Return a new fixed-length `Bitfield`.
-    pub fn intersection(&self, other: &Self) -> Self {
-        let mut result = Self::new();
-        // Bitwise-and the bytes together, starting from the left of each vector. This takes care
-        // of masking out any entries beyond `min_len` as well, assuming the bitfield doesn't
-        // contain any set bits beyond its length.
-        for i in 0..result.bytes.len() {
-            result.bytes[i] = self.bytes[i] & other.bytes[i];
-        }
-        result
-    }
-
-    /// Compute the union of two fixed-length `Bitfield`s.
-    ///
-    /// Return a new fixed-length `Bitfield`.
-    pub fn union(&self, other: &Self) -> Self {
-        let mut result = Self::new();
-        for i in 0..result.bytes.len() {
-            result.bytes[i] =
-                self.bytes.get(i).copied().unwrap_or(0) | other.bytes.get(i).copied().unwrap_or(0);
-        }
-        result
-    }
-
-    /// Returns `true` if `self` is a subset of `other` and `false` otherwise.
-    pub fn is_subset(&self, other: &Self) -> bool {
-        self.difference(other).is_zero()
+    pub fn from_bytes(bytes: SmallVec<[u8; SMALLVEC_LEN]>) -> Result<Self, BitlistFromBytesError> {
+        Self::from_raw_bytes(bytes, N::USIZE)
     }
 }
 
@@ -347,9 +291,9 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
                 .ok_or(Error::OutOfBounds { i, len })?;
 
             if value {
-                *byte |= 1 << (i % 8)
+                *byte |= 1 << (i % 8);
             } else {
-                *byte &= !(1 << (i % 8))
+                *byte &= !(1 << (i % 8));
             }
 
             Ok(())
@@ -375,21 +319,25 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
     }
 
     /// Returns the number of bits stored in `self`.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// Returns `true` if `self.len() == 0`.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// Returns the underlying bytes representation of the bitfield.
+    #[must_use]
     pub fn into_raw_bytes(self) -> SmallVec<[u8; SMALLVEC_LEN]> {
         self.bytes
     }
 
     /// Returns a view into the underlying bytes representation of the bitfield.
+    #[must_use]
     pub fn as_slice(&self) -> &[u8] {
         &self.bytes
     }
@@ -402,7 +350,10 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
     /// - `bytes` is not the minimal required bytes to represent a bitfield of `bit_len` bits.
     /// - `bit_len` is not a multiple of 8 and `bytes` contains set bits that are higher than, or
     /// equal to `bit_len`.
-    fn from_raw_bytes(bytes: SmallVec<[u8; SMALLVEC_LEN]>, bit_len: usize) -> Result<Self, Error> {
+    fn from_raw_bytes(
+        bytes: SmallVec<[u8; SMALLVEC_LEN]>,
+        bit_len: usize,
+    ) -> Result<Self, BitlistFromBytesError> {
         if bit_len == 0 {
             if bytes.len() == 1 && bytes[0] == 0 {
                 // A bitfield with `bit_len` 0 can only be represented by a single zero byte.
@@ -412,11 +363,11 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
                     _phantom: PhantomData,
                 })
             } else {
-                Err(Error::ExcessBits)
+                Err(BitlistFromBytesError::ExcessBits)
             }
         } else if bytes.len() != bytes_for_bit_len(bit_len) {
             // The number of bytes must be the minimum required to represent `bit_len`.
-            Err(Error::InvalidByteCount {
+            Err(BitlistFromBytesError::InvalidByteCount {
                 given: bytes.len(),
                 expected: bytes_for_bit_len(bit_len),
             })
@@ -431,13 +382,14 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
                     _phantom: PhantomData,
                 })
             } else {
-                Err(Error::ExcessBits)
+                Err(BitlistFromBytesError::ExcessBits)
             }
         }
     }
 
     /// Returns the `Some(i)` where `i` is the highest index with a set bit. Returns `None` if
     /// there are no set bits.
+    #[must_use]
     pub fn highest_set_bit(&self) -> Option<usize> {
         self.bytes
             .iter()
@@ -448,6 +400,7 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
     }
 
     /// Returns an iterator across bitfield `bool` values, starting at the lowest index.
+    #[must_use]
     pub fn iter(&self) -> BitIter<'_, T> {
         BitIter {
             bitfield: self,
@@ -456,62 +409,41 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
     }
 
     /// Returns true if no bits are set.
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         self.bytes.iter().all(|byte| *byte == 0)
     }
 
     /// Returns the number of bits that are set to `true`.
+    #[must_use]
     pub fn num_set_bits(&self) -> usize {
         self.bytes
             .iter()
             .map(|byte| byte.count_ones() as usize)
             .sum()
     }
+}
 
-    /// Compute the difference of this Bitfield and another of potentially different length.
-    pub fn difference(&self, other: &Self) -> Self {
-        let mut result = self.clone();
-        result.difference_inplace(other);
-        result
-    }
+impl<'a, T: BitfieldBehaviour> IntoIterator for &'a Bitfield<T> {
+    type IntoIter = BitIter<'a, T>;
+    type Item = bool;
 
-    /// Compute the difference of this Bitfield and another of potentially different length.
-    pub fn difference_inplace(&mut self, other: &Self) {
-        let min_byte_len = std::cmp::min(self.bytes.len(), other.bytes.len());
-
-        for i in 0..min_byte_len {
-            self.bytes[i] &= !other.bytes[i];
-        }
-    }
-
-    /// Shift the bits to higher indices, filling the lower indices with zeroes.
-    ///
-    /// The amount to shift by, `n`, must be less than or equal to `self.len()`.
-    pub fn shift_up(&mut self, n: usize) -> Result<(), Error> {
-        if n <= self.len() {
-            // Shift the bits up (starting from the high indices to avoid overwriting)
-            for i in (n..self.len()).rev() {
-                self.set(i, self.get(i - n)?)?;
-            }
-            // Zero the low bits
-            for i in 0..n {
-                self.set(i, false).unwrap();
-            }
-            Ok(())
-        } else {
-            Err(Error::OutOfBounds {
-                i: n,
-                len: self.len(),
-            })
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
 /// Returns the minimum required bytes to represent a given number of bits.
 ///
 /// `bit_len == 0` requires a single byte.
-fn bytes_for_bit_len(bit_len: usize) -> usize {
-    std::cmp::max(1, (bit_len + 7) / 8)
+const fn bytes_for_bit_len(bit_len: usize) -> usize {
+    let v2 = (bit_len + 7) / 8;
+
+    if v2 >= 1 {
+        v2
+    } else {
+        1
+    }
 }
 
 /// An iterator over the bits in a `Bitfield`.
@@ -530,65 +462,66 @@ impl<'a, T: BitfieldBehaviour> Iterator for BitIter<'a, T> {
     }
 }
 
-impl<N: Unsigned + Clone> Encode for Bitfield<Variable<N>> {
-    fn is_ssz_fixed_len() -> bool {
-        false
+impl<N: Unsigned + Clone> Ssz for Bitfield<Variable<N>> {
+    const SSZ_FIXED_LEN: Option<NonZeroUsize> = None;
+
+    const TREE_HASH_TYPE: crate::tree_hash::TreeHashType = crate::tree_hash::TreeHashType::List;
+
+    fn tree_hash_root(&self) -> Hash256 {
+        // Note: we use `as_slice` because it does _not_ have the length-delimiting bit set (or
+        // present).
+        let root = bitfield_bytes_tree_hash_root::<N>(self.as_slice());
+        crate::tree_hash::mix_in_length(&root, self.len())
     }
 
-    fn ssz_bytes_len(&self) -> usize {
+    fn ssz_bytes_len(&self) -> NonZeroUsize {
         // We could likely do better than turning this into bytes and reading the length, however
         // it is kept this way for simplicity.
-        self.clone().into_bytes().len()
+        self.clone()
+            .into_bytes()
+            .len()
+            .try_into()
+            .expect("encoded length should be > 0")
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(&self.clone().into_bytes())
+        buf.extend_from_slice(&self.clone().into_bytes());
+    }
+
+    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_bytes(bytes.to_smallvec())
+            .map_err(|e| DecodeError::BytesInvalid(format!("BitList failed to decode: {:?}", e)))
     }
 }
 
-impl<N: Unsigned + Clone> Decode for Bitfield<Variable<N>> {
-    fn is_ssz_fixed_len() -> bool {
-        false
+impl<N: Unsigned + Clone> Ssz for Bitfield<Fixed<N>> {
+    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some({
+        match NonZeroUsize::new(bytes_for_bit_len(N::USIZE)) {
+            Some(some) => some,
+            None => unreachable!(),
+        }
+    });
+
+    const TREE_HASH_TYPE: crate::tree_hash::TreeHashType = crate::tree_hash::TreeHashType::Vector;
+
+    fn tree_hash_root(&self) -> Hash256 {
+        bitfield_bytes_tree_hash_root::<N>(self.as_slice())
     }
 
-    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, crate::DecodeError> {
-        Self::from_bytes(bytes.to_smallvec()).map_err(|e| {
-            crate::DecodeError::BytesInvalid(format!("BitList failed to decode: {:?}", e))
-        })
-    }
-}
-
-impl<N: Unsigned + Clone> Encode for Bitfield<Fixed<N>> {
-    fn is_ssz_fixed_len() -> bool {
-        true
-    }
-
-    fn ssz_bytes_len(&self) -> usize {
-        self.as_slice().len()
-    }
-
-    fn ssz_fixed_len() -> usize {
-        bytes_for_bit_len(N::to_usize())
+    fn ssz_bytes_len(&self) -> NonZeroUsize {
+        self.as_slice()
+            .len()
+            .try_into()
+            .expect("encoded length should be > 0")
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
-        buf.extend_from_slice(&self.clone().into_bytes())
-    }
-}
-
-impl<N: Unsigned + Clone> Decode for Bitfield<Fixed<N>> {
-    fn is_ssz_fixed_len() -> bool {
-        true
+        buf.extend_from_slice(&self.clone().into_bytes());
     }
 
-    fn ssz_fixed_len() -> usize {
-        bytes_for_bit_len(N::to_usize())
-    }
-
-    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, crate::DecodeError> {
-        Self::from_bytes(bytes.to_smallvec()).map_err(|e| {
-            crate::DecodeError::BytesInvalid(format!("BitVector failed to decode: {:?}", e))
-        })
+    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_bytes(bytes.to_smallvec())
+            .map_err(|e| DecodeError::BytesInvalid(format!("BitVector failed to decode: {:?}", e)))
     }
 }
 
@@ -636,49 +569,10 @@ impl<'de, N: Unsigned + Clone> Deserialize<'de> for Bitfield<Fixed<N>> {
     }
 }
 
-impl<N: Unsigned + Clone> crate::tree_hash::TreeHash for Bitfield<Variable<N>> {
-    fn tree_hash_type() -> crate::tree_hash::TreeHashType {
-        crate::tree_hash::TreeHashType::List
-    }
-
-    fn tree_hash_packed_encoding(&self) -> crate::tree_hash::PackedEncoding {
-        unreachable!("List should never be packed.")
-    }
-
-    fn tree_hash_packing_factor() -> usize {
-        unreachable!("List should never be packed.")
-    }
-
-    fn tree_hash_root(&self) -> Hash256 {
-        // Note: we use `as_slice` because it does _not_ have the length-delimiting bit set (or
-        // present).
-        let root = bitfield_bytes_tree_hash_root::<N>(self.as_slice());
-        crate::tree_hash::mix_in_length(&root, self.len())
-    }
-}
-
-impl<N: Unsigned + Clone> crate::tree_hash::TreeHash for Bitfield<Fixed<N>> {
-    fn tree_hash_type() -> crate::tree_hash::TreeHashType {
-        crate::tree_hash::TreeHashType::Vector
-    }
-
-    fn tree_hash_packed_encoding(&self) -> crate::tree_hash::PackedEncoding {
-        unreachable!("Vector should never be packed.")
-    }
-
-    fn tree_hash_packing_factor() -> usize {
-        unreachable!("Vector should never be packed.")
-    }
-
-    fn tree_hash_root(&self) -> Hash256 {
-        bitfield_bytes_tree_hash_root::<N>(self.as_slice())
-    }
-}
-
 #[cfg(feature = "arbitrary")]
 impl<N: 'static + Unsigned> arbitrary::Arbitrary<'_> for Bitfield<Fixed<N>> {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let size = N::to_usize();
+        let size = N::USIZE;
         let mut vec = smallvec![0u8; size];
         u.fill_buffer(&mut vec)?;
         Ok(Self::from_bytes(vec).map_err(|_| arbitrary::Error::IncorrectFormat)?)
@@ -688,7 +582,7 @@ impl<N: 'static + Unsigned> arbitrary::Arbitrary<'_> for Bitfield<Fixed<N>> {
 #[cfg(feature = "arbitrary")]
 impl<N: 'static + Unsigned> arbitrary::Arbitrary<'_> for Bitfield<Variable<N>> {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let max_size = N::to_usize();
+        let max_size = N::USIZE;
         let rand = usize::arbitrary(u)?;
         let size = std::cmp::min(rand, max_size);
         let mut vec = smallvec![0u8; size];
@@ -758,82 +652,6 @@ mod bitvector {
     }
 
     #[test]
-    fn intersection() {
-        let a = BitVector16::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let b = BitVector16::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
-        let c = BitVector16::from_raw_bytes(smallvec![0b1000, 0b0001], 16).unwrap();
-
-        assert_eq!(a.intersection(&b), c);
-        assert_eq!(b.intersection(&a), c);
-        assert_eq!(a.intersection(&c), c);
-        assert_eq!(b.intersection(&c), c);
-        assert_eq!(a.intersection(&a), a);
-        assert_eq!(b.intersection(&b), b);
-        assert_eq!(c.intersection(&c), c);
-    }
-
-    #[test]
-    fn intersection_diff_length() {
-        let a = BitVector16::from_bytes(smallvec![0b0010_1110, 0b0010_1011]).unwrap();
-        let b = BitVector16::from_bytes(smallvec![0b0010_1101, 0b0000_0001]).unwrap();
-        let c = BitVector16::from_bytes(smallvec![0b0010_1100, 0b0000_0001]).unwrap();
-
-        assert_eq!(a.len(), 16);
-        assert_eq!(b.len(), 16);
-        assert_eq!(c.len(), 16);
-        assert_eq!(a.intersection(&b), c);
-        assert_eq!(b.intersection(&a), c);
-    }
-
-    #[test]
-    fn subset() {
-        let a = BitVector16::from_raw_bytes(smallvec![0b1000, 0b0001], 16).unwrap();
-        let b = BitVector16::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let c = BitVector16::from_raw_bytes(smallvec![0b1100, 0b1001], 16).unwrap();
-
-        assert_eq!(a.len(), 16);
-        assert_eq!(b.len(), 16);
-        assert_eq!(c.len(), 16);
-
-        // a vector is always a subset of itself
-        assert!(a.is_subset(&a));
-        assert!(b.is_subset(&b));
-        assert!(c.is_subset(&c));
-
-        assert!(a.is_subset(&b));
-        assert!(a.is_subset(&c));
-        assert!(b.is_subset(&c));
-
-        assert!(!b.is_subset(&a));
-        assert!(!c.is_subset(&a));
-        assert!(!c.is_subset(&b));
-    }
-
-    #[test]
-    fn union() {
-        let a = BitVector16::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let b = BitVector16::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
-        let c = BitVector16::from_raw_bytes(smallvec![0b1111, 0b1001], 16).unwrap();
-
-        assert_eq!(a.union(&b), c);
-        assert_eq!(b.union(&a), c);
-        assert_eq!(a.union(&a), a);
-        assert_eq!(b.union(&b), b);
-        assert_eq!(c.union(&c), c);
-    }
-
-    #[test]
-    fn union_diff_length() {
-        let a = BitVector16::from_bytes(smallvec![0b0010_1011, 0b0010_1110]).unwrap();
-        let b = BitVector16::from_bytes(smallvec![0b0000_0001, 0b0010_1101]).unwrap();
-        let c = BitVector16::from_bytes(smallvec![0b0010_1011, 0b0010_1111]).unwrap();
-
-        assert_eq!(a.len(), c.len());
-        assert_eq!(a.union(&b), c);
-        assert_eq!(b.union(&a), c);
-    }
-
-    #[test]
     fn ssz_round_trip() {
         assert_round_trip(BitVector0::new());
 
@@ -870,7 +688,7 @@ mod bitvector {
         assert_round_trip(b);
     }
 
-    fn assert_round_trip<T: Encode + Decode + PartialEq + std::fmt::Debug>(t: T) {
+    fn assert_round_trip<T: Ssz + PartialEq + std::fmt::Debug>(t: T) {
         assert_eq!(T::from_ssz_bytes(&t.as_ssz_bytes()).unwrap(), t);
     }
 
@@ -882,7 +700,7 @@ mod bitvector {
                 bitfield.set(j, true).expect("should set bit in bounds");
             }
             let bytes = bitfield.as_ssz_bytes();
-            assert_eq!(bitfield.ssz_bytes_len(), bytes.len(), "i = {}", i);
+            assert_eq!(bitfield.ssz_bytes_len().get(), bytes.len(), "i = {}", i);
         }
     }
 
@@ -1045,7 +863,7 @@ mod bitlist {
         }
     }
 
-    fn assert_round_trip<T: Encode + Decode + PartialEq + std::fmt::Debug>(t: T) {
+    fn assert_round_trip<T: Ssz + PartialEq + std::fmt::Debug>(t: T) {
         assert_eq!(T::from_ssz_bytes(&t.as_ssz_bytes()).unwrap(), t);
     }
 
@@ -1131,14 +949,14 @@ mod bitlist {
     #[test]
     fn set_unset() {
         for i in 0..8 * 5 {
-            test_set_unset(i)
+            test_set_unset(i);
         }
     }
 
     #[test]
     fn bytes_round_trip() {
         for i in 0..8 * 5 {
-            test_bytes_round_trip(i)
+            test_bytes_round_trip(i);
         }
     }
 
@@ -1239,143 +1057,6 @@ mod bitlist {
     }
 
     #[test]
-    fn intersection() {
-        let a = BitList1024::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let b = BitList1024::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
-        let c = BitList1024::from_raw_bytes(smallvec![0b1000, 0b0001], 16).unwrap();
-
-        assert_eq!(a.intersection(&b), c);
-        assert_eq!(b.intersection(&a), c);
-        assert_eq!(a.intersection(&c), c);
-        assert_eq!(b.intersection(&c), c);
-        assert_eq!(a.intersection(&a), a);
-        assert_eq!(b.intersection(&b), b);
-        assert_eq!(c.intersection(&c), c);
-    }
-
-    #[test]
-    fn subset() {
-        let a = BitList1024::from_raw_bytes(smallvec![0b1000, 0b0001], 16).unwrap();
-        let b = BitList1024::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let c = BitList1024::from_raw_bytes(smallvec![0b1100, 0b1001], 16).unwrap();
-
-        assert_eq!(a.len(), 16);
-        assert_eq!(b.len(), 16);
-        assert_eq!(c.len(), 16);
-
-        // a vector is always a subset of itself
-        assert!(a.is_subset(&a));
-        assert!(b.is_subset(&b));
-        assert!(c.is_subset(&c));
-
-        assert!(a.is_subset(&b));
-        assert!(a.is_subset(&c));
-        assert!(b.is_subset(&c));
-
-        assert!(!b.is_subset(&a));
-        assert!(!c.is_subset(&a));
-        assert!(!c.is_subset(&b));
-
-        let d = BitList1024::from_raw_bytes(smallvec![0b1100, 0b1001, 0b1010], 24).unwrap();
-        assert!(d.is_subset(&d));
-
-        assert!(a.is_subset(&d));
-        assert!(b.is_subset(&d));
-        assert!(c.is_subset(&d));
-
-        // A bigger length bitlist cannot be a subset of a smaller length bitlist
-        assert!(!d.is_subset(&a));
-        assert!(!d.is_subset(&b));
-        assert!(!d.is_subset(&c));
-
-        let e = BitList1024::from_raw_bytes(smallvec![0b1100, 0b1001, 0b0000], 24).unwrap();
-        assert!(e.is_subset(&c));
-        assert!(c.is_subset(&e));
-    }
-
-    #[test]
-    fn intersection_diff_length() {
-        let a = BitList1024::from_bytes(smallvec![0b0010_1110, 0b0010_1011]).unwrap();
-        let b = BitList1024::from_bytes(smallvec![0b0010_1101, 0b0000_0001]).unwrap();
-        let c = BitList1024::from_bytes(smallvec![0b0010_1100, 0b0000_0001]).unwrap();
-        let d = BitList1024::from_bytes(smallvec![0b0010_1110, 0b1111_1111, 0b1111_1111]).unwrap();
-
-        assert_eq!(a.len(), 13);
-        assert_eq!(b.len(), 8);
-        assert_eq!(c.len(), 8);
-        assert_eq!(d.len(), 23);
-        assert_eq!(a.intersection(&b), c);
-        assert_eq!(b.intersection(&a), c);
-        assert_eq!(a.intersection(&d), a);
-        assert_eq!(d.intersection(&a), a);
-    }
-
-    #[test]
-    fn union() {
-        let a = BitList1024::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let b = BitList1024::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
-        let c = BitList1024::from_raw_bytes(smallvec![0b1111, 0b1001], 16).unwrap();
-
-        assert_eq!(a.union(&b), c);
-        assert_eq!(b.union(&a), c);
-        assert_eq!(a.union(&a), a);
-        assert_eq!(b.union(&b), b);
-        assert_eq!(c.union(&c), c);
-    }
-
-    #[test]
-    fn union_diff_length() {
-        let a = BitList1024::from_bytes(smallvec![0b0010_1011, 0b0010_1110]).unwrap();
-        let b = BitList1024::from_bytes(smallvec![0b0000_0001, 0b0010_1101]).unwrap();
-        let c = BitList1024::from_bytes(smallvec![0b0010_1011, 0b0010_1111]).unwrap();
-        let d = BitList1024::from_bytes(smallvec![0b0010_1011, 0b1011_1110, 0b1000_1101]).unwrap();
-
-        assert_eq!(a.len(), c.len());
-        assert_eq!(a.union(&b), c);
-        assert_eq!(b.union(&a), c);
-        assert_eq!(a.union(&d), d);
-        assert_eq!(d.union(&a), d);
-    }
-
-    #[test]
-    fn difference() {
-        let a = BitList1024::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
-        let b = BitList1024::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
-        let a_b = BitList1024::from_raw_bytes(smallvec![0b0100, 0b0000], 16).unwrap();
-        let b_a = BitList1024::from_raw_bytes(smallvec![0b0011, 0b1000], 16).unwrap();
-
-        assert_eq!(a.difference(&b), a_b);
-        assert_eq!(b.difference(&a), b_a);
-        assert!(a.difference(&a).is_zero());
-    }
-
-    #[test]
-    fn difference_diff_length() {
-        let a = BitList1024::from_raw_bytes(smallvec![0b0110, 0b1100, 0b0011], 24).unwrap();
-        let b = BitList1024::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
-        let a_b = BitList1024::from_raw_bytes(smallvec![0b0100, 0b0100, 0b0011], 24).unwrap();
-        let b_a = BitList1024::from_raw_bytes(smallvec![0b1001, 0b0001], 16).unwrap();
-
-        assert_eq!(a.difference(&b), a_b);
-        assert_eq!(b.difference(&a), b_a);
-    }
-
-    #[test]
-    fn shift_up() {
-        let mut a = BitList1024::from_raw_bytes(smallvec![0b1100_1111, 0b1101_0110], 16).unwrap();
-        let mut b = BitList1024::from_raw_bytes(smallvec![0b1001_1110, 0b1010_1101], 16).unwrap();
-
-        a.shift_up(1).unwrap();
-        assert_eq!(a, b);
-        a.shift_up(15).unwrap();
-        assert!(a.is_zero());
-
-        b.shift_up(16).unwrap();
-        assert!(b.is_zero());
-        assert!(b.shift_up(17).is_err());
-    }
-
-    #[test]
     fn num_set_bits() {
         let a = BitList1024::from_raw_bytes(smallvec![0b1100, 0b0001], 16).unwrap();
         let b = BitList1024::from_raw_bytes(smallvec![0b1011, 0b1001], 16).unwrap();
@@ -1404,7 +1085,7 @@ mod bitlist {
                 bitfield.set(j, true).expect("should set bit in bounds");
             }
             let bytes = bitfield.as_ssz_bytes();
-            assert_eq!(bitfield.ssz_bytes_len(), bytes.len(), "i = {}", i);
+            assert_eq!(bitfield.ssz_bytes_len().get(), bytes.len(), "i = {}", i);
         }
     }
 

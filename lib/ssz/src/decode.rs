@@ -2,20 +2,32 @@ use std::cmp::Ordering;
 
 use smallvec::{smallvec, SmallVec};
 
-use super::*;
+use super::{Ssz, UnionSelector, BYTES_PER_LENGTH_OFFSET, MAX_UNION_SELECTOR};
 
 type SmallVec8<T> = SmallVec<[T; 8]>;
 
 pub mod impls;
-pub mod try_from_iter;
+use std::fmt::Debug;
+
+/// Partial variant of `std::iter::FromIterator`.
+///
+/// This trait is implemented for types which can be constructed from an iterator of decoded SSZ
+/// values, but which may refuse values once a length limit is reached.
+pub(crate) trait TryFromIter<T>: Sized {
+    type Error;
+
+    fn try_from_iter<I>(iter: I) -> Result<Self, Self::Error>
+    where
+        I: IntoIterator<Item = T>;
+}
 
 /// Returned when SSZ decoding fails.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum DecodeError {
-    /// The bytes supplied were too short to be decoded into the specified type.
-    InvalidByteLength { len: usize, expected: usize },
-    /// The given bytes were too short to be read as a length prefix.
-    InvalidLengthPrefix { len: usize, expected: usize },
+    #[error("invalid byte length, expected {expected} but found {found}")]
+    InvalidByteLength { found: usize, expected: usize },
+    #[error("invalid prefix byte length, expected {expected} but found {found}")]
+    InvalidLengthPrefix { found: usize, expected: usize },
     /// A length offset pointed to a byte that was out-of-bounds (OOB).
     ///
     /// A bytes may be OOB for the following reasons:
@@ -24,34 +36,44 @@ pub enum DecodeError {
     /// - When decoding variable length items, the 1st offset points "backwards" into the fixed
     /// length items (i.e., `length[0] < BYTES_PER_LENGTH_OFFSET`).
     /// - When decoding variable-length items, the `n`'th offset was less than the `n-1`'th offset.
+    #[error("offset {i} is out of bounds")]
     OutOfBoundsByte { i: usize },
     /// An offset points “backwards” into the fixed-bytes portion of the message, essentially
     /// double-decoding bytes that will also be decoded as fixed-length.
     ///
     /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#1-Offset-into-fixed-portion
+    #[error("tried to read offset {0} into fixed-size portion")]
     OffsetIntoFixedPortion(usize),
     /// The first offset does not point to the byte that follows the fixed byte portion,
     /// essentially skipping a variable-length byte.
     ///
     /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#2-Skip-first-variable-byte
+    #[error("first offset {0} does not point to the byte that follows the fixed-size portion")]
     OffsetSkipsVariableBytes(usize),
     /// An offset points to bytes prior to the previous offset. Depending on how you look at it,
     /// this either double-decodes bytes or makes the first offset a negative-length.
     ///
     /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#3-Offsets-are-decreasing
+    #[error("offset {0} points to bytes prior to the previous offset")]
     OffsetsAreDecreasing(usize),
     /// An offset references byte indices that do not exist in the source bytes.
     ///
     /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#4-Offsets-are-out-of-bounds
+    #[error("offset {0} points beyond the end of the source data")]
     OffsetOutOfBounds(usize),
     /// A variable-length list does not have a fixed portion that is cleanly divisible by
     /// `BYTES_PER_LENGTH_OFFSET`.
+    #[error(
+        "List length fixed-size portion not a multiple of {BYTES_PER_LENGTH_OFFSET} (found {0})"
+    )]
     InvalidListFixedBytesLen(usize),
-    /// Some item has a `ssz_fixed_len` of zero. This is illegal.
-    ZeroLengthItem,
     /// The given bytes were invalid for some application-level reason.
+    #[error("invalid bytes: {0}")]
     BytesInvalid(String),
+    #[error("invalid vector length, expected {expected} but found {found}")]
+    InvalidVectorLength { expected: usize, found: usize },
     /// The given union selector is out of bounds.
+    #[error("union selector {0} is > {MAX_UNION_SELECTOR}")]
     UnionSelectorInvalid(u8),
 }
 
@@ -72,7 +94,7 @@ pub enum DecodeError {
 /// The checks here are derived from this document:
 ///
 /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view
-pub fn sanitize_offset(
+pub(crate) fn sanitize_offset(
     offset: usize,
     previous_offset: Option<usize>,
     num_bytes: usize,
@@ -91,32 +113,6 @@ pub fn sanitize_offset(
     } else {
         Ok(offset)
     }
-}
-
-/// Provides SSZ decoding (de-serialization) via the `from_ssz_bytes(&bytes)` method.
-///
-/// See `examples/` for manual implementations or the crate root for implementations using
-/// `#[derive(Decode)]`.
-pub trait Decode: Sized {
-    /// Returns `true` if this object has a fixed-length.
-    ///
-    /// I.e., there are no variable length items in this object or any of it's contained objects.
-    fn is_ssz_fixed_len() -> bool;
-
-    /// The number of bytes this object occupies in the fixed-length portion of the SSZ bytes.
-    ///
-    /// By default, this is set to `BYTES_PER_LENGTH_OFFSET` which is suitable for variable length
-    /// objects, but not fixed-length objects. Fixed-length objects _must_ return a value which
-    /// represents their length.
-    fn ssz_fixed_len() -> usize {
-        BYTES_PER_LENGTH_OFFSET
-    }
-
-    /// Attempts to decode `Self` from `bytes`, returning a `DecodeError` on failure.
-    ///
-    /// The supplied bytes must be the exact length required to decode `Self`, excess bytes will
-    /// result in an error.
-    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, DecodeError>;
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -141,6 +137,7 @@ pub struct SszDecoderBuilder<'a> {
 impl<'a> SszDecoderBuilder<'a> {
     /// Instantiate a new builder that should build a `SszDecoder` over the given `bytes` which
     /// are assumed to be the SSZ encoding of some object.
+    #[must_use]
     pub fn new(bytes: &'a [u8]) -> Self {
         Self {
             bytes,
@@ -150,51 +147,17 @@ impl<'a> SszDecoderBuilder<'a> {
         }
     }
 
-    /// Registers a variable-length object as the next item in `bytes`, without specifying the
-    /// actual type.
-    ///
-    /// ## Notes
-    ///
-    /// Use of this function is generally discouraged since it cannot detect if some type changes
-    /// from variable to fixed length.
-    ///
-    /// Use `Self::register_type` wherever possible.
-    pub fn register_anonymous_variable_length_item(&mut self) -> Result<(), DecodeError> {
-        struct Anonymous;
-
-        impl Decode for Anonymous {
-            fn is_ssz_fixed_len() -> bool {
-                false
-            }
-
-            fn from_ssz_bytes(_bytes: &[u8]) -> Result<Self, DecodeError> {
-                unreachable!("Anonymous should never be decoded")
-            }
-        }
-
-        self.register_type::<Anonymous>()
-    }
-
     /// Declares that some type `T` is the next item in `bytes`.
-    pub fn register_type<T: Decode>(&mut self) -> Result<(), DecodeError> {
-        self.register_type_parameterized(T::is_ssz_fixed_len(), T::ssz_fixed_len())
-    }
-
-    /// Declares that a type with the given parameters is the next item in `bytes`.
-    pub fn register_type_parameterized(
-        &mut self,
-        is_ssz_fixed_len: bool,
-        ssz_fixed_len: usize,
-    ) -> Result<(), DecodeError> {
-        if is_ssz_fixed_len {
+    pub fn register_type<T: Ssz>(&mut self) -> Result<(), DecodeError> {
+        if let Some(fixed_len) = T::SSZ_FIXED_LEN {
             let start = self.items_index;
-            self.items_index += ssz_fixed_len;
+            self.items_index += fixed_len.get();
 
             let slice =
                 self.bytes
                     .get(start..self.items_index)
                     .ok_or(DecodeError::InvalidByteLength {
-                        len: self.bytes.len(),
+                        found: self.bytes.len(),
                         expected: self.items_index,
                     })?;
 
@@ -242,13 +205,13 @@ impl<'a> SszDecoderBuilder<'a> {
             // Handle the last offset, pushing a slice from it's start through to the end of
             // `self.bytes`.
             if let Some(last) = self.offsets.last() {
-                self.items[last.position] = &self.bytes[last.offset..]
+                self.items[last.position] = &self.bytes[last.offset..];
             }
         } else {
             // If the container is fixed-length, ensure there are no excess bytes.
             if self.items_index != self.bytes.len() {
                 return Err(DecodeError::InvalidByteLength {
-                    len: self.bytes.len(),
+                    found: self.bytes.len(),
                     expected: self.items_index,
                 });
             }
@@ -271,13 +234,13 @@ impl<'a> SszDecoderBuilder<'a> {
 /// ## Example
 ///
 /// ```rust
-/// use ssz::{Decode, Encode, SszDecoder, SszDecoderBuilder};
-/// use ssz::types::{typenum::U8, VariableList};
+/// use ssz::{Ssz, decode::{SszDecoder, SszDecoderBuilder}};
+/// use ssz::types::{typenum::U8, List};
 ///
-/// #[derive(PartialEq, Debug, Encode, Decode)]
+/// #[derive(PartialEq, Debug, Ssz)]
 /// struct Foo {
 ///     a: u64,
-///     b: VariableList<u16, U8>,
+///     b: List<u16, U8>,
 /// }
 ///
 /// fn ssz_decoding_example() {
@@ -291,7 +254,7 @@ impl<'a> SszDecoderBuilder<'a> {
 ///     let mut builder = SszDecoderBuilder::new(&bytes);
 ///
 ///     builder.register_type::<u64>().unwrap();
-///     builder.register_type::<VariableList<u16, U8>>().unwrap();
+///     builder.register_type::<List<u16, U8>>().unwrap();
 ///
 ///     let mut decoder = builder.build().unwrap();
 ///
@@ -314,16 +277,8 @@ impl<'a> SszDecoder<'a> {
     /// # Panics
     ///
     /// Panics when attempting to decode more items than actually exist.
-    pub fn decode_next<T: Decode>(&mut self) -> Result<T, DecodeError> {
-        self.decode_next_with(|slice| T::from_ssz_bytes(slice))
-    }
-
-    /// Decodes the next item using the provided function.
-    pub fn decode_next_with<T, F>(&mut self, f: F) -> Result<T, DecodeError>
-    where
-        F: FnOnce(&'a [u8]) -> Result<T, DecodeError>,
-    {
-        f(self.items.remove(0))
+    pub fn decode_next<T: Ssz>(&mut self) -> Result<T, DecodeError> {
+        T::from_ssz_bytes(self.items.remove(0))
     }
 }
 
@@ -337,15 +292,11 @@ impl<'a> SszDecoder<'a> {
 /// - `bytes` is empty.
 /// - the union selector is not a valid value (i.e., larger than the maximum number of variants.
 pub fn split_union_bytes(bytes: &[u8]) -> Result<(UnionSelector, &[u8]), DecodeError> {
-    let selector = bytes
-        .first()
-        .copied()
-        .ok_or(DecodeError::OutOfBoundsByte { i: 0 })
-        .and_then(UnionSelector::new)?;
-    let body = bytes
-        .get(1..)
-        .ok_or(DecodeError::OutOfBoundsByte { i: 1 })?;
-    Ok((selector, body))
+    let (selector, tail) = bytes
+        .split_first()
+        .ok_or(DecodeError::OutOfBoundsByte { i: 0 })?;
+
+    Ok((UnionSelector::new(*selector)?, tail))
 }
 
 /// Reads a `BYTES_PER_LENGTH_OFFSET`-byte length from `bytes`, where `bytes.len() >=
@@ -353,7 +304,7 @@ pub fn split_union_bytes(bytes: &[u8]) -> Result<(UnionSelector, &[u8]), DecodeE
 pub fn read_offset(bytes: &[u8]) -> Result<usize, DecodeError> {
     decode_offset(bytes.get(0..BYTES_PER_LENGTH_OFFSET).ok_or(
         DecodeError::InvalidLengthPrefix {
-            len: bytes.len(),
+            found: bytes.len(),
             expected: BYTES_PER_LENGTH_OFFSET,
         },
     )?)
@@ -366,7 +317,10 @@ fn decode_offset(bytes: &[u8]) -> Result<usize, DecodeError> {
     let expected = BYTES_PER_LENGTH_OFFSET;
 
     if len != expected {
-        Err(DecodeError::InvalidLengthPrefix { len, expected })
+        Err(DecodeError::InvalidLengthPrefix {
+            found: len,
+            expected,
+        })
     } else {
         let mut array: [u8; BYTES_PER_LENGTH_OFFSET] = std::default::Default::default();
         array.clone_from_slice(bytes);

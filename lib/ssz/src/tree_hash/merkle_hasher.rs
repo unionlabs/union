@@ -167,6 +167,7 @@ impl MerkleHasher {
     ///
     /// If `num_leaves == 0`, a tree of depth 1 will be created. If no leaves are provided it will
     /// return a root of `[0; 32]`.
+    #[must_use]
     pub fn with_leaves(num_leaves: usize) -> Self {
         let depth = get_depth(num_leaves.next_power_of_two()) + 1;
         Self::with_depth(depth)
@@ -206,10 +207,10 @@ impl MerkleHasher {
 
             if self.buffer.is_empty() && slice.len() == HASHSIZE {
                 self.process_leaf(slice.try_into().expect("size is checked above"))?;
-                ptr += HASHSIZE
+                ptr += HASHSIZE;
             } else if self.buffer.len() + slice.len() < HASHSIZE {
                 self.buffer.extend_from_slice(slice);
-                ptr += HASHSIZE
+                ptr += HASHSIZE;
             } else {
                 let buf_len = self.buffer.len();
                 let required = HASHSIZE - buf_len;
@@ -221,7 +222,7 @@ impl MerkleHasher {
                 self.process_leaf(leaf)?;
                 self.buffer = smallvec![];
 
-                ptr += required
+                ptr += required;
             }
         }
 
@@ -244,11 +245,11 @@ impl MerkleHasher {
             return Err(Error::MaximumLeavesExceeded { max_leaves });
         } else if self.next_leaf == 1 {
             // A tree of depth one has a root that is equal to the first given leaf.
-            self.root = Some(leaf)
+            self.root = Some(leaf);
         } else if self.next_leaf % 2 == 0 {
-            self.process_left_node(self.next_leaf, Preimage::Slice(&leaf))
+            self.process_left_node(self.next_leaf, Preimage::Slice(&leaf));
         } else {
-            self.process_right_node(self.next_leaf, Preimage::Slice(&leaf))
+            self.process_right_node(self.next_leaf, Preimage::Slice(&leaf));
         }
 
         self.next_leaf += 1;
@@ -269,7 +270,7 @@ impl MerkleHasher {
         if !self.buffer.is_empty() {
             let mut leaf = [0; HASHSIZE];
             leaf[..self.buffer.len()].copy_from_slice(&self.buffer);
-            self.process_leaf(leaf)?
+            self.process_leaf(leaf)?;
         }
 
         // If the tree is incomplete, we must complete it by providing zero-hashes.
@@ -289,7 +290,7 @@ impl MerkleHasher {
                 //
                 // Once we supply this first zero-hash leaf then all future operations will be
                 // triggered via the `process_right_node` branch.
-                self.process_left_node(self.next_leaf, self.zero_hash(self.next_leaf))
+                self.process_left_node(self.next_leaf, self.zero_hash(self.next_leaf));
             }
         }
     }
@@ -301,7 +302,7 @@ impl MerkleHasher {
     /// In this scenario, the only option is to push a new half-node.
     fn process_left_node(&mut self, id: usize, preimage: Preimage) {
         self.half_nodes
-            .push(HalfNode::new(get_parent(id), preimage))
+            .push(HalfNode::new(get_parent(id), preimage));
     }
 
     /// Process a node that will become the right-hand node of some parent. The supplied `id` is
@@ -431,7 +432,7 @@ mod test {
                 out
             })
             .collect::<Vec<_>>();
-        compare_with_reference(&leaves, depth)
+        compare_with_reference(&leaves, depth);
     }
 
     /// Compares the `MerkleHasher::with_depth` and `MerkleHasher::with_leaves` generate consistent

@@ -1,4 +1,4 @@
-use super::*;
+use super::{hash_fixed, Hash256, HASHSIZE, MERKLE_HASH_CHUNK};
 
 /// Merkleizes bytes and returns the root, using a simple algorithm that does not optimize to avoid
 /// processing or storing padding bytes.
@@ -17,6 +17,7 @@ use super::*;
 ///  - Duplicates the input `bytes`.
 ///  - Stores all internal nodes, even if they are padding.
 ///  - Does not free up unused memory during operation.
+#[must_use]
 pub fn merkleize_standard(bytes: &[u8]) -> Hash256 {
     // If the bytes are just one chunk (or less than one chunk) just return them.
     if bytes.len() <= HASHSIZE {
@@ -37,18 +38,18 @@ pub fn merkleize_standard(bytes: &[u8]) -> Hash256 {
 
     assert_eq!(o.len(), num_bytes);
 
-    let empty_chunk_hash = hash(&[0; MERKLE_HASH_CHUNK]);
+    let empty_chunk_hash = hash_fixed(&[0; MERKLE_HASH_CHUNK]);
 
     let mut i = nodes * HASHSIZE;
     let mut j = internal_nodes * HASHSIZE;
 
     while i >= MERKLE_HASH_CHUNK {
         i -= MERKLE_HASH_CHUNK;
-
         j -= HASHSIZE;
+
         let hash = match o.get(i..i + MERKLE_HASH_CHUNK) {
             // All bytes are available, hash as usual.
-            Some(slice) => hash(slice),
+            Some(slice) => hash_fixed(slice),
             // Unable to get all the bytes.
             None => {
                 match o.get(i..) {
@@ -56,10 +57,10 @@ pub fn merkleize_standard(bytes: &[u8]) -> Hash256 {
                     Some(slice) => {
                         let mut bytes = slice.to_vec();
                         bytes.resize(MERKLE_HASH_CHUNK, 0);
-                        hash(&bytes)
+                        hash_fixed(&bytes)
                     }
                     // Unable to get any bytes, use the empty-chunk hash.
-                    None => empty_chunk_hash.clone(),
+                    None => empty_chunk_hash,
                 }
             }
         };

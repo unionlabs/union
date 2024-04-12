@@ -1,9 +1,9 @@
 use macros::model;
-use ssz::{Decode, Encode, TreeHash};
+use ssz::Ssz;
 
 use crate::{errors::InvalidLength, hash::H256};
 
-#[derive(Encode, Decode, TreeHash)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader),
     into,

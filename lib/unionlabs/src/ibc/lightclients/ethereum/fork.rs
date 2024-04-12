@@ -1,5 +1,5 @@
 use macros::model;
-use ssz::{Decode, Encode};
+use ssz::Ssz;
 
 use crate::{errors::InvalidLength, ethereum::Version};
 
@@ -11,7 +11,7 @@ use crate::{errors::InvalidLength, ethereum::Version};
     )
 )]
 // REVIEW: Are these derives used?
-#[derive(Encode, Decode)]
+#[derive(Ssz)]
 #[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Fork), into, from))]
 pub struct Fork {
     pub version: Version,

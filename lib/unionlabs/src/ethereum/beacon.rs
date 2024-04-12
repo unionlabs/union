@@ -1,8 +1,8 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{
-    types::{FixedVector, VariableList},
-    Decode, Encode, TreeHash,
+    types::{List, Vector},
+    Ssz,
 };
 use typenum::U;
 
@@ -31,7 +31,7 @@ use crate::{
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct BeaconBlock<
     C: MAX_PROPOSER_SLASHINGS
@@ -90,7 +90,7 @@ impl<
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#beaconblockbody>
-#[derive(Encode, Decode, TreeHash)]
+#[derive(Ssz)]
 #[model]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct BeaconBlockBody<
@@ -112,21 +112,19 @@ pub struct BeaconBlockBody<
 > {
     pub randao_reveal: BlsSignature,
     pub eth1_data: Eth1Data,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub graffiti: [u8; 32],
-    pub proposer_slashings: VariableList<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
-    pub attester_slashings: VariableList<AttesterSlashing<C>, C::MAX_ATTESTER_SLASHINGS>,
-    pub attestations: VariableList<Attestation<C>, C::MAX_ATTESTATIONS>,
-    pub deposits: VariableList<Deposit<C>, C::MAX_DEPOSITS>,
-    pub voluntary_exits: VariableList<SignedVoluntaryExit, C::MAX_VOLUNTARY_EXITS>,
+    pub graffiti: H256,
+    pub proposer_slashings: List<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
+    pub attester_slashings: List<AttesterSlashing<C>, C::MAX_ATTESTER_SLASHINGS>,
+    pub attestations: List<Attestation<C>, C::MAX_ATTESTATIONS>,
+    pub deposits: List<Deposit<C>, C::MAX_DEPOSITS>,
+    pub voluntary_exits: List<SignedVoluntaryExit, C::MAX_VOLUNTARY_EXITS>,
     pub sync_aggregate: SyncAggregate<C>,
     pub execution_payload: ExecutionPayload<C>,
-    pub bls_to_execution_changes:
-        VariableList<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
-    pub blob_kzg_commitments: VariableList<KZGCommitment, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
+    pub bls_to_execution_changes: List<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
+    pub blob_kzg_commitments: List<KZGCommitment, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
 }
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 pub struct BlsToExecutionChange {
     #[serde(with = "::serde_utils::string")]
     pub validator_index: u64,
@@ -134,14 +132,14 @@ pub struct BlsToExecutionChange {
     pub to_execution_address: H160,
 }
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 pub struct SignedBlsToExecutionChange {
     message: BlsToExecutionChange,
     signature: BlsSignature,
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#executionpayload>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 pub struct ExecutionPayload<
     C: BYTES_PER_LOGS_BLOOM
         + MAX_EXTRA_DATA_BYTES
@@ -155,7 +153,7 @@ pub struct ExecutionPayload<
     pub state_root: H256,
     pub receipts_root: H256,
     #[serde(with = "::serde_utils::hex_string")]
-    pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
+    pub logs_bloom: Vector<u8, C::BYTES_PER_LOGS_BLOOM>,
     /// 'difficulty' in the yellow paper
     pub prev_randao: H256,
     /// 'number' in the yellow paper
@@ -168,17 +166,14 @@ pub struct ExecutionPayload<
     #[serde(with = "::serde_utils::string")]
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
-    pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
+    pub extra_data: List<u8, C::MAX_EXTRA_DATA_BYTES>,
     pub base_fee_per_gas: U256,
     /// Extra payload fields
     /// Hash of execution block
     pub block_hash: H256,
     #[serde(with = "::serde_utils::hex_string_list")]
-    pub transactions: VariableList<
-        VariableList<u8, C::MAX_BYTES_PER_TRANSACTION>,
-        C::MAX_TRANSACTIONS_PER_PAYLOAD,
-    >,
-    pub withdrawals: VariableList<Withdrawal, C::MAX_WITHDRAWALS_PER_PAYLOAD>,
+    pub transactions: List<List<u8, C::MAX_BYTES_PER_TRANSACTION>, C::MAX_TRANSACTIONS_PER_PAYLOAD>,
+    pub withdrawals: List<Withdrawal, C::MAX_WITHDRAWALS_PER_PAYLOAD>,
     // blob_gas_used: uint64  # [New in Deneb:EIP4844]
     #[serde(default, with = "::serde_utils::string")]
     pub blob_gas_used: u64,
@@ -219,7 +214,7 @@ impl<
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 pub struct Withdrawal {
     #[serde(with = "::serde_utils::string")]
     pub index: u64,
@@ -231,7 +226,7 @@ pub struct Withdrawal {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#lightclientbootstrap>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct LightClientBootstrap<
@@ -241,8 +236,7 @@ pub struct LightClientBootstrap<
     /// Current sync committee corresponding to `beacon_header.state_root`
     pub current_sync_committee: SyncCommittee<C>,
     // TODO: Update tree_hash to support const generic arrays
-    pub current_sync_committee_branch:
-        FixedVector<H256, U<{ floorlog2(CURRENT_SYNC_COMMITTEE_INDEX) }>>,
+    pub current_sync_committee_branch: Vector<H256, U<{ floorlog2(CURRENT_SYNC_COMMITTEE_INDEX) }>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

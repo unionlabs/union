@@ -3,6 +3,7 @@
 use core::{
     fmt::Display,
     iter::Sum,
+    num::NonZeroUsize,
     ops::{Add, AddAssign, Div, Rem},
     str::FromStr,
 };
@@ -13,6 +14,7 @@ use serde_utils::HEX_ENCODING_PREFIX;
 use crate::{
     encoding::{Decode, Encode, Proto},
     errors::{ExpectedLength, InvalidLength},
+    option_unwrap,
 };
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
@@ -76,6 +78,10 @@ mod ethabi {
 
 impl U256 {
     pub const MAX: Self = Self::from_limbs([u64::MAX; 4]);
+    pub const ZERO: Self = Self::from_limbs([0; 4]);
+
+    // one day...
+    // pub const fn from_const_str<const STR: &'static str>() -> Self {}
 }
 
 impl From<u64> for U256 {
@@ -156,6 +162,11 @@ impl U256 {
     #[must_use]
     pub const fn from_limbs(limbs: [u64; 4]) -> Self {
         Self(primitive_types::U256(limbs))
+    }
+
+    #[must_use]
+    pub const fn as_limbs(&self) -> [u64; 4] {
+        self.0 .0
     }
 
     #[must_use]
@@ -267,68 +278,42 @@ impl Decode<Proto> for U256 {
     }
 }
 
-impl ssz::Encode for U256 {
-    fn is_ssz_fixed_len() -> bool {
-        true
-    }
+impl ssz::Ssz for U256 {
+    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some(option_unwrap!(NonZeroUsize::new(32)));
 
-    fn ssz_fixed_len() -> usize {
-        32
-    }
-
-    fn ssz_bytes_len(&self) -> usize {
-        32
-    }
-
-    fn ssz_append(&self, buf: &mut Vec<u8>) {
-        let n = <Self as ssz::Encode>::ssz_fixed_len();
-        let s = buf.len();
-
-        buf.resize(s + n, 0);
-        self.0.to_little_endian(&mut buf[s..]);
-    }
-}
-
-impl ssz::Decode for U256 {
-    fn is_ssz_fixed_len() -> bool {
-        true
-    }
-
-    fn ssz_fixed_len() -> usize {
-        32
-    }
-
-    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::DecodeError> {
-        let len = bytes.len();
-        let expected = <Self as ssz::Decode>::ssz_fixed_len();
-
-        if len == expected {
-            Ok(Self(primitive_types::U256::from_little_endian(bytes)))
-        } else {
-            Err(ssz::DecodeError::InvalidByteLength { len, expected })
-        }
-    }
-}
-
-impl ssz::tree_hash::TreeHash for U256 {
-    fn tree_hash_type() -> ssz::tree_hash::TreeHashType {
-        ssz::tree_hash::TreeHashType::Basic
-    }
-
-    fn tree_hash_packed_encoding(&self) -> ssz::tree_hash::PackedEncoding {
-        let mut result = [0; 32];
-        self.0.to_little_endian(&mut result);
-        ssz::tree_hash::PackedEncoding::from_slice(&result)
-    }
-
-    fn tree_hash_packing_factor() -> usize {
-        1
-    }
+    const TREE_HASH_TYPE: ssz::tree_hash::TreeHashType =
+        ssz::tree_hash::TreeHashType::Basic { size: 32 };
 
     fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
         let mut result = [0; 32];
         self.0.to_little_endian(&mut result[..]);
         result
+    }
+
+    fn ssz_bytes_len(&self) -> NonZeroUsize {
+        option_unwrap!(NonZeroUsize::new(32))
+    }
+
+    fn ssz_append(&self, buf: &mut Vec<u8>) {
+        let n = 32;
+        let s = buf.len();
+
+        buf.resize(s + n, 0);
+        self.0.to_little_endian(&mut buf[s..]);
+    }
+
+    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::decode::DecodeError> {
+        let len = bytes.len();
+        let expected = 32;
+
+        if len == expected {
+            Ok(Self(primitive_types::U256::from_little_endian(bytes)))
+        } else {
+            Err(ssz::decode::DecodeError::InvalidByteLength {
+                found: len,
+                expected,
+            })
+        }
     }
 }
 

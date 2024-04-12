@@ -1,4 +1,4 @@
-use ssz::{Decode, DecodeError, Encode};
+use ssz::{decode::DecodeError, Ssz};
 
 macro_rules! list {
     ($($tt:tt)*) => {
@@ -8,18 +8,16 @@ macro_rules! list {
 
 mod round_trip {
     use ssz::types::{
-        typenum::{U10, U4, U8},
-        VariableList,
+        typenum::{U10, U4},
+        List,
     };
 
     use super::*;
 
-    fn round_trip<T: Encode + Decode + std::fmt::Debug + PartialEq>(
-        items: impl IntoIterator<Item = T>,
-    ) {
+    fn round_trip<T: Ssz + std::fmt::Debug + PartialEq>(items: impl IntoIterator<Item = T>) {
         for item in items {
             let encoded = &item.as_ssz_bytes();
-            assert_eq!(item.ssz_bytes_len(), encoded.len());
+            assert_eq!(item.ssz_bytes_len().get(), encoded.len());
             assert_eq!(T::from_ssz_bytes(encoded), Ok(item));
         }
     }
@@ -30,41 +28,13 @@ mod round_trip {
     }
 
     #[test]
-    fn option_u16() {
-        round_trip([None, Some(2u16)]);
-    }
-
-    #[test]
     fn u8_array_4() {
         round_trip([[0_u8, 0, 0, 0], [1, 0, 0, 0], [1, 2, 3, 4], [1, 2, 0, 4]]);
     }
 
-    // #[test]
-    // fn h256() {
-    //     round_trip([H256::zero(), H256::from([1; 32]), H256::random()]);
-    // }
-
-    // #[test]
-    // fn vec_of_h256() {
-    //     round_trip::<VariableList<H256, U4>>([
-    //         list![],
-    //         list![H256::zero(), H256::from([1; 32]), H256::random()],
-    //     ]);
-    // }
-
-    // #[test]
-    // fn option_vec_h256() {
-    //     round_trip::<Option<VariableList<H256, U3>>>([
-    //         None,
-    //         Some(list![]),
-    //         Some(list![H256::zero(), H256::from([1; 32]), H256::random()]),
-    //     ]);
-    // }
-
     #[test]
     fn vec_u16() {
-        round_trip::<VariableList<u16, typenum::U64>>(vec![
-            list![],
+        round_trip::<List<u16, typenum::U64>>(vec![
             list![255],
             list![0, 1, 2],
             list![100; 64],
@@ -74,21 +44,19 @@ mod round_trip {
 
     #[test]
     fn vec_of_vec_u16() {
-        round_trip::<VariableList<VariableList<u16, U10>, U10>>(vec![
-            list![],
-            list![list![]],
+        round_trip::<List<List<u16, U10>, U10>>(vec![
+            list![list![1]],
             list![list![1, 2, 3]],
-            list![list![], list![]],
-            list![list![], list![1, 2, 3]],
+            list![list![1738]],
+            list![list![1], list![1, 2, 3]],
             list![list![1, 2, 3], list![1, 2, 3]],
-            list![list![1, 2, 3], list![], list![1, 2, 3]],
-            list![list![], list![], list![1, 2, 3]],
-            list![list![], list![1], list![1, 2, 3]],
-            list![list![], list![1], list![1, 2, 3]],
+            list![list![420], list![1337], list![1, 2, 3]],
+            list![list![69], list![1], list![1, 2, 3]],
+            list![list![100], list![1], list![1, 2, 3]],
         ]);
     }
 
-    #[derive(Debug, PartialEq, Encode, Decode)]
+    #[derive(Debug, PartialEq, Ssz)]
     struct FixedLen {
         a: u16,
         b: u64,
@@ -131,7 +99,7 @@ mod round_trip {
         assert_eq!(
             FixedLen::from_ssz_bytes(&bytes),
             Err(DecodeError::InvalidByteLength {
-                len: 15,
+                found: 15,
                 expected: 14,
             })
         );
@@ -145,13 +113,15 @@ mod round_trip {
             FixedLen { a: 1, b: 0, c: 1 },
         ];
 
+        dbg!(FixedLen::SSZ_FIXED_LEN);
+
         round_trip(items);
     }
 
-    #[derive(Debug, PartialEq, Encode, Decode)]
+    #[derive(Debug, PartialEq, Ssz)]
     struct VariableLen {
         a: u16,
-        b: VariableList<u16, U4>,
+        b: List<u16, U4>,
         c: u32,
     }
 
@@ -207,7 +177,7 @@ mod round_trip {
         let items: Vec<VariableLen> = vec![
             VariableLen {
                 a: 0,
-                b: list![],
+                b: list![42],
                 c: 0,
             },
             VariableLen {
@@ -225,7 +195,7 @@ mod round_trip {
         let expected_encodings = [
             //   00..................................09
             //  | u16--| vec offset-----| u32------------| vec payload --------|
-            vec![00, 00, 10, 00, 00, 00, 00, 00, 00, 00],
+            vec![00, 00, 10, 00, 00, 00, 00, 00, 00, 00, 42, 00],
             vec![01, 00, 10, 00, 00, 00, 01, 00, 00, 00, 00, 00],
             vec![
                 01, 00, 10, 00, 00, 00, 01, 00, 00, 00, 00, 00, 01, 00, 02, 00,
@@ -247,7 +217,7 @@ mod round_trip {
         let items: Vec<VariableLen> = vec![
             VariableLen {
                 a: 0,
-                b: list![],
+                b: list![42],
                 c: 0,
             },
             VariableLen {
@@ -270,12 +240,12 @@ mod round_trip {
         round_trip(items);
     }
 
-    #[derive(Debug, PartialEq, Encode, Decode)]
+    #[derive(Debug, PartialEq, Ssz)]
     struct ThreeVariableLen {
         a: u16,
-        b: VariableList<u16, U4>,
-        c: VariableList<u16, U4>,
-        d: VariableList<u16, U4>,
+        b: List<u16, U4>,
+        c: List<u16, U4>,
+        d: List<u16, U4>,
     }
 
     #[test]
@@ -304,85 +274,4 @@ mod round_trip {
             Err(DecodeError::OffsetsAreDecreasing(14))
         );
     }
-
-    #[test]
-    fn tuple_u8_u16() {
-        let vec: Vec<(u8, u16)> = vec![
-            (0, 0),
-            (0, 1),
-            (1, 0),
-            (u8::MAX, u16::MAX),
-            (0, u16::MAX),
-            (u8::MAX, 0),
-            (42, 12301),
-        ];
-
-        round_trip(vec);
-    }
-
-    #[test]
-    #[allow(clippy::type_complexity)]
-    fn tuple_vec_vec() {
-        let vec: Vec<(
-            u64,
-            VariableList<u8, U8>,
-            VariableList<VariableList<u16, U8>, U8>,
-        )> = vec![
-            (0, list![], list![list![]]),
-            (99, list![101], list![list![], list![]]),
-            (
-                42,
-                list![12, 13, 14],
-                list![list![99, 98, 97, 96], list![42, 44, 46, 48, 50]],
-            ),
-        ];
-
-        round_trip(vec);
-    }
-
-    // #[test]
-    // fn btree_map_fixed() {
-    //     let data = vec![
-    //         BTreeMap::new(),
-    //         BTreeMap::from_iter(vec![(0u8, 0u16), (1, 2), (2, 4), (4, 6)]),
-    //     ];
-    //     round_trip(data);
-    // }
-
-    // #[test]
-    // fn btree_map_variable_value() {
-    //     let data = vec![
-    //         BTreeMap::new(),
-    //         BTreeMap::from_iter(vec![
-    //             (
-    //                 0u64,
-    //                 ThreeVariableLen {
-    //                     a: 1,
-    //                     b: vec![3, 5, 7],
-    //                     c: vec![],
-    //                     d: vec![0, 0],
-    //                 },
-    //             ),
-    //             (
-    //                 1,
-    //                 ThreeVariableLen {
-    //                     a: 99,
-    //                     b: vec![1],
-    //                     c: vec![2, 3, 4, 5, 6, 7, 8, 9, 10],
-    //                     d: vec![4, 5, 6, 7, 8],
-    //                 },
-    //             ),
-    //             (
-    //                 2,
-    //                 ThreeVariableLen {
-    //                     a: 0,
-    //                     b: vec![],
-    //                     c: vec![],
-    //                     d: vec![],
-    //                 },
-    //             ),
-    //         ]),
-    //     ];
-    //     round_trip(data);
-    // }
 }

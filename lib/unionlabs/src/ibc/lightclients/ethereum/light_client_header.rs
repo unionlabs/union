@@ -1,12 +1,9 @@
 use macros::model;
-use ssz::{
-    types::{fixed_vector, FixedVector},
-    Decode, Encode, TreeHash,
-};
-use typenum::U;
+use ssz::Ssz;
+use typenum::Unsigned;
 
 use crate::{
-    errors::{InvalidLength, MissingField},
+    errors::{ExpectedLength, InvalidLength, MissingField},
     ethereum::config::{
         consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES,
@@ -18,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Encode, Decode, TreeHash)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
     into,
@@ -28,7 +25,7 @@ use crate::{
 pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
     pub execution: ExecutionPayloadHeader<C>,
-    pub execution_branch: FixedVector<H256, U<{ floorlog2(EXECUTION_PAYLOAD_INDEX) }>>,
+    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
 }
 
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>
@@ -51,7 +48,7 @@ pub enum TryFromLightClientHeaderError {
     MissingField(MissingField),
     BeaconBlockHeader(TryFromBeaconBlockHeaderError),
     ExecutionPayloadHeader(TryFromExecutionPayloadHeaderError),
-    ExecutionBranch(fixed_vector::TryFromVecError),
+    ExecutionBranch(InvalidLength),
     ExecutionBranchNode(InvalidLength),
 }
 
@@ -86,7 +83,12 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(TryFromLightClientHeaderError::ExecutionBranchNode)?
                 .try_into()
-                .map_err(TryFromLightClientHeaderError::ExecutionBranch)?,
+                .map_err(|vec: Vec<_>| {
+                    TryFromLightClientHeaderError::ExecutionBranch(InvalidLength {
+                        expected: ExpectedLength::Exact(C::MAX_EXTRA_DATA_BYTES::USIZE),
+                        found: vec.len(),
+                    })
+                })?,
         })
     }
 }

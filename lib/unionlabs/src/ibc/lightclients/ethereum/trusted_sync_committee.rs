@@ -1,5 +1,5 @@
 use macros::model;
-use ssz::{Decode, Encode, TreeHash};
+use ssz::Ssz;
 
 use crate::{
     errors::{required, MissingField},
@@ -15,9 +15,8 @@ use crate::{
 /// Note that the verifier uses one of them based on whether the signature slot
 /// is equal to the current slot or current slot + 1
 #[model]
-#[derive(Encode, Decode, TreeHash)]
-#[ssz(enum_behaviour = "union")]
-#[tree_hash(enum_behaviour = "union")]
+#[derive(Ssz)]
+#[ssz(union)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     Current(SyncCommittee<C>),
@@ -44,7 +43,7 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     }
 }
 
-#[derive(Encode, Decode, TreeHash)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
     into,

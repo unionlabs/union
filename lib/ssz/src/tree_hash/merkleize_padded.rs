@@ -32,6 +32,7 @@ use crate::tree_hash::{hash_concat, hash_fixed};
 ///
 /// _Note: there are some minor memory overheads, including a handful of usizes and a list of
 /// `MAX_TREE_DEPTH` hashes as `lazy_static` constants._
+#[must_use]
 pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
     // If the bytes are just one chunk or less, pad to one chunk and return without hashing.
     if bytes.len() <= BYTES_PER_CHUNK && min_leaves <= 1 {
@@ -100,7 +101,7 @@ pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
         // Store the parent node.
         chunks
             .set(i, &hash)
-            .expect("Buffer should always have capacity for parent nodes")
+            .expect("Buffer should always have capacity for parent nodes");
     }
 
     // Iterate through all heights above the leaf nodes and either (a) hash two children or, (b)
@@ -201,7 +202,7 @@ impl ChunkStore {
     ///
     /// Functionally identical to `Vec::truncate`.
     fn truncate(&mut self, num_chunks: usize) {
-        self.0.truncate(num_chunks * BYTES_PER_CHUNK)
+        self.0.truncate(num_chunks * BYTES_PER_CHUNK);
     }
 
     /// Consumes `self`, returning the underlying byte array.
