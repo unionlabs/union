@@ -73,7 +73,7 @@ export default defineConfig({
           tag: "link",
           attrs: {
             rel: "stylesheet",
-            href: "https://www.unpkg.com/katex@0.16.9/dist/katex.min.css"
+            href: "https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"
           }
         }
       ],
@@ -129,6 +129,7 @@ export default defineConfig({
         },
         {
           label: "Joining the Testnet",
+          collapsed: true,
           autogenerate: {
             directory: "/docs/joining-testnet"
           }
