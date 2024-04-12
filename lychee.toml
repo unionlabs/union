@@ -1,10 +1,15 @@
 base = "result"
 exclude = [
+  '^tcp://',
   '.woff2$',
-  '^https://statesync.testnet.bonlulu.uno/',
-  '^https://grpc.testnet.bonlulu.uno/',
-  '^http://myserver.com:1111/',
-  '^https://x.com/',
+  '^https://grpc',
+  '^https://x.com',
+  '^https://discord.',
+  '^https://twitter.com',
+  '^http://myserver.com',
+  '^https://services.staketab.org',
+  '^https://statesync.testnet.bonlulu.uno',
 ]
 
 exclude_all_private = true
+exclude_link_local  = true
