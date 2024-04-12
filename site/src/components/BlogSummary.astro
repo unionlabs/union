@@ -20,9 +20,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLO
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <Card padded>
-    <a class="flex flex-col items-start gap-2 size-full" href={`/blog/${latestBlogPost.slug}`}>
+    <a class="flex flex-col items-start gap md:gap-2 size-full" href={`/blog/${latestBlogPost.slug}`}>
       <H3>{latestBlogPost.data.title}</H3>
-      <p class="text-pretty text-lg text-left text-gray-400 mb-4">{latestBlogPost.data.description}</p>
+      <p class="text-pretty text-left md:text-lg text-gray-400 mb-4">{latestBlogPost.data.description}</p>
       <div class="w-full flex flex-1 items-end">
         <ButtonA href={`/blog/${latestBlogPost.slug}`} fake>read full post</ButtonA>
       </div>
