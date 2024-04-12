@@ -84,22 +84,6 @@ figure figcaption span {
   color: var(--logo-text-color);
 }
 
-* {
-  scrollbar-width: 0.01rem;
-  scrollbar-color: transparent transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 0.1rem;
-  height: 0.1rem;
-  background-color: transparent;
-}
-
-*::-webkit-scrollbar-thumb,
-*::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
 h1 > a {
   font-size: 2.5rem;
 }
