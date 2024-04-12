@@ -1,3 +1,4 @@
+import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
@@ -5,7 +6,6 @@ import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightLinksValidator from "starlight-links-validator"
-import { loadEnv } from "vite"
 
 const SITE_URL = "https://union.build"
 
@@ -67,14 +67,6 @@ export default defineConfig({
         {
           tag: "script",
           attrs: { src: "/scripts/anchor-targets.js" }
-        },
-        {
-          // math rendering breaks without this
-          tag: "link",
-          attrs: {
-            rel: "stylesheet",
-            href: "https://www.unpkg.com/katex@0.16.9/dist/katex.min.css"
-          }
         }
       ],
       locales: {
@@ -129,6 +121,7 @@ export default defineConfig({
         },
         {
           label: "Joining the Testnet",
+          collapsed: true,
           autogenerate: {
             directory: "/docs/joining-testnet"
           }
@@ -144,7 +137,8 @@ export default defineConfig({
       customCss: [
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
-        "./src/styles/starlight.css"
+        "./src/styles/starlight.css",
+        "./node_modules/katex/dist/katex.min.css"
       ]
     }),
     tailwind({
