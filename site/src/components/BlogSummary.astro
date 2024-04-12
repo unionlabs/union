@@ -25,13 +25,13 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
   </Card>
 
   <Card
-    class="p-0 list-none mx-auto w-full grid grid-rows-3 divide divide-y divide-solid divide-border/30"
+    class="w-full flex flex-col divide divide-y divide-solid divide-border/30"
   >
     {
       blogPosts.map(post => (
         <a
           href={`/blog/${post.slug}`}
-          class="justify-center w-full h-full flex flex-col text-left flex-start p-4"
+          class="justify-center size-full flex flex-col text-left flex-start p-4"
         >
           <p class="text-xl font-bold">{post.data.title}</p>
           <p class="text-accent font-semibold">Read More {'->'}</p>
