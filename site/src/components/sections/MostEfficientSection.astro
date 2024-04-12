@@ -10,8 +10,8 @@ import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
   <IntroHeading title="The Endgame of Infrastructure">
     Efficient zero-knowledge cryptography and consensus verification are the holy grail of interoperability. Union makes protocols fast, trustless and permissionless.
   </IntroHeading>
-  <div class="grid grid-cols-1 md:grid-cols-2 size-full gap-4">
-    <Card padded>
+  <div class="grid grid-cols-1 md:grid-cols-2 w-full gap-4">
+    <Card padded class="h-[218px] md:h-[234px]">
       <AppleGraphContainer
         bars={[
           { width: 100, label: 'CometBLS V3', primary: true },
@@ -23,7 +23,7 @@ import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
       />
     </Card>
 
-    <Card>
+    <Card class="h-[218px] md:h-[234px]">
       <div class="absolute p-4 sm:p-8 text-xl md:text-2xl font-semibold text-gray-300 z-20">
         Galois' Scalability
       </div>
