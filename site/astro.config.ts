@@ -47,7 +47,7 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             name: "description",
-            content: "The Sovereign Interoperability Layer"
+            content: "The Modular ZK Interoperability Layer"
           }
         },
         {
