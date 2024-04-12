@@ -48,6 +48,7 @@
     "moonlight-ii.json",
     "app/src/generated",
     "lib/pg-queue/migrations",
+    "./site/src/content/openapi/**",
     "uniond/docs/static/openapi.yml"
   ]
 }

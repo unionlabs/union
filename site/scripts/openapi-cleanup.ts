@@ -25,8 +25,8 @@ for (const warning of warningsArray) {
     unusedModels.push(warning.slice(warning.indexOf("  ") + 1).trim())
     continue
   }
-  const slicableText = "\t- Unused model: "
-  const modelName = warning.slice(warning.indexOf(slicableText) + slicableText.length)
+  const sliceableText = "\t- Unused model: "
+  const modelName = warning.slice(warning.indexOf(sliceableText) + sliceableText.length)
   if (modelName && !modelName.includes(" ")) unusedModels.push(modelName)
 }
 
@@ -39,4 +39,3 @@ for (const modelName of unusedModels) {
 }
 
 console.log(JSON.stringify(openApiSchema, undefined, 2))
-// await Bun.write("union_unused_models_removed.json", JSON.stringify(openApiSchema, undefined, 2))
