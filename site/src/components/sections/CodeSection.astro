@@ -24,7 +24,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
       {
         codeSnippets.map(snippet => (
           <TabItem label={snippet.title}>
-            <div class="pl-3 pb-3 w-full">
+            <div class="pl-3 pb-3 w-full max-h-[40vh] overflow-y-scroll">
               <CodeSnippet code={snippet.code} />
             </div>
           </TabItem>
