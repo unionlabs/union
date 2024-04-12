@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content'
 import Card from '#/components/Card.astro'
 import ButtonA from '#/components/ButtonA.astro'
+import TextA from '#/components/TextA.astro'
 import H3 from '#/components/typography/h3.astro'
 
 const BLOG_POST_COUNT = 4;
@@ -38,7 +39,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLO
           class="justify-center w-full flex flex-col text-left flex-start p-4 md:px-6"
         >
           <p class="text-xl font-bold">{post.data.title}</p>
-          <p class="text-accent font-semibold">Read More {'->'}</p>
+          <TextA fake>Read more</TextA>
         </a>
       ))
     }

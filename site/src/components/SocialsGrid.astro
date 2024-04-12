@@ -2,7 +2,7 @@
 import { Icon } from "@astrojs/starlight/components"
 import { socialLinks } from "#/lib/constants/socials.ts"
 import Card from "#/components/Card.astro"
-import IntroHeading from "#/components/typography/IntroHeading.astro";
+import TextA from '#/components/TextA.astro'
 ---
 
 <section class="flex flex-col">
@@ -15,10 +15,8 @@ import IntroHeading from "#/components/typography/IntroHeading.astro";
           rel="noopener noreferrer"
         >
           <Card class="flex flex-col items-center" padded>
-            <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
-            <div class="text-accent font-semibold">
-              {socialLink.cta} -&gt;
-            </div>
+            <Icon name={socialLink.icon} size="2.5rem" />
+            <TextA fake>{socialLink.cta}</TextA>
           </Card>
         </a>
       ))

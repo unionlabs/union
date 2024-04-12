@@ -5,6 +5,7 @@ import Card from "#/components/Card.astro"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
+import TextA from '#/components/TextA.astro'
 
 import H3 from "#/components/typography/h3.astro"
 
@@ -37,9 +38,9 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
               <H3>{blogPostEntry.data.title}</H3>
               <p class="sm:text-xl text-gray-400">{blogPostEntry.data.description}</p>
 
-              <div class="underline text-lg text-accent font-semibold">
-                Read Post -&gt;
-              </div>
+              <TextA fake>
+                Read Post
+              </TextA>
             </a>
           </Card>
         ))

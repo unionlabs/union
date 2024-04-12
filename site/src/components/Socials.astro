@@ -2,6 +2,7 @@
 import { Icon } from "@astrojs/starlight/components"
 import { socialLinks } from "#/lib/constants/socials.ts"
 import Card from "#/components/Card.astro"
+import TextA from '#/components/TextA.astro'
 ---
 
 <section class="bg-black mb-px flex flex-col items-center justif-center">
@@ -18,11 +19,7 @@ import Card from "#/components/Card.astro"
           >
             <Card>
               <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
-              <div class="mt-4">
-                <span class="mt-16 text-accent text-semibold">
-                  {socialLink.cta} -&gt;
-                </span>
-              </div>
+              <TextA fake>{socialLink.cta}</TextA>
             </Card>
           </a>
         ))
