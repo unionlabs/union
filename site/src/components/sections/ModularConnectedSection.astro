@@ -1,0 +1,15 @@
+---
+import LanderSection from "#/components/LanderSection.astro";
+import IntroHeading from "#/components/typography/IntroHeading.astro";
+import Card from "#/components/Card.astro";
+import ConnectedVisual from '#/components/ConnectedVisual.svelte'
+---
+
+<LanderSection gradient="to-t">
+  <IntroHeading title="Scale the Modular Stack" >
+    Union is the first infrastructure layer that can scale up to thousands of networks, unlocking horizontal scalability for any protocol.  
+  </IntroHeading>
+  <Card>
+    <ConnectedVisual client:load />
+  </Card>
+</LanderSection>

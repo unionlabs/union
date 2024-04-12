@@ -1,0 +1,14 @@
+---
+import H1 from '#/components/typography/h1.astro';
+import H2 from '#/components/typography/h2.astro';
+import Subtitle from '#/components/typography/subtitle.astro';
+
+const { title, main } = Astro.props;
+
+const HElement = main ? H1 : H2;
+---
+
+<div class="text-left flex flex-col md:text-center md:items-center p-2 md:p-0">
+  <HElement>{title}</HElement>
+  <Subtitle><slot/></Subtitle>
+</div>

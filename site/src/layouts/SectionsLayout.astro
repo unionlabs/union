@@ -1,0 +1,21 @@
+---
+import Layout from "./Layout.astro"
+
+interface Props {
+  url?: string
+  title?: string
+  image?: string
+  description?: string
+  gapless: boolean
+}
+
+const { url, title, image, description, gapless } = Astro.props
+---
+
+<Layout {url} {title} {image} {description}>
+  <main class:list={["flex flex-col relative", {"gap-16 lg:gap-32": !gapless}]}>
+    <div class="absolute inset-0 -z-20 noise-bg size-full"></div>
+    <slot />
+  </main>
+</Layout>
+

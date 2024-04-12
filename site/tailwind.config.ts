@@ -42,13 +42,16 @@ export default {
           800: "#04ACD2",
           900: "#037791",
           950: "#025C70"
-        }
+        },
+        border: "#1C1E21",
+        bg2: "#030711"
       },
       fontFamily: {
-        sans: [
+        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
+        display: [
           "Inter var",
           {
-            fontFeatureSettings: '"cv11", "ss01"',
+            fontFeatureSettings: '"ss01", "cv09", "ss08" "zero"',
             fontVariationSettings: '"opsz" 32'
           }
         ],

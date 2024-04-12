@@ -38,7 +38,9 @@ export default (<Config>{
           900: "#037791",
           950: "#025C70"
         },
-        border: "hsl(var(--border) / <alpha-value>)",
+        // border: "#1C1E21",
+        border: "#1C1E21",
+        bkg: "#030711",
         input: "hsl(var(--input) / <alpha-value>)",
         ring: "hsl(var(--ring) / <alpha-value>)",
         background: "hsl(var(--background) / <alpha-value>)",
@@ -78,10 +80,11 @@ export default (<Config>{
         sm: "calc(var(--radius) - 4px)"
       },
       fontFamily: {
-        sans: [
+        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
+        display: [
           "Inter var",
           {
-            fontFeatureSettings: '"cv11", "ss01"',
+            fontFeatureSettings: '"ss01", "cv09", "ss08" "zero"',
             fontVariationSettings: '"opsz" 32'
           }
         ],

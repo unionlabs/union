@@ -1,0 +1,17 @@
+---
+interface Props {
+  gradient?: "to-b" | "to-t"
+}
+
+const { gradient } = Astro.props
+---
+
+
+<section class:list={[
+  "to-[#020306]/50 from-[#081637]/50 flex w-full self-center flex flex-col py-8 md:py-12 z-10", 
+  {"bg-gradient-to-b": gradient === "to-b"},
+  {"bg-gradient-to-t": gradient === "to-t"} ]}>
+  <section class="max-w-5xl size-full self-center flex flex-col gap-8 md:gap-12 p-4 md:p-8 ">
+    <slot/>
+  </section>
+</section>

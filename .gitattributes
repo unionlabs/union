@@ -10,3 +10,5 @@
 **/generated/** linguist-generated
 evm/contracts/proto/** linguist-generated
 .zip filter=lfs diff=lfs merge=lfs -text
+*.splinecode filter=lfs diff=lfs merge=lfs -text
+

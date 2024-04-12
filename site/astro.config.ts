@@ -1,4 +1,3 @@
-import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
@@ -6,6 +5,7 @@ import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightLinksValidator from "starlight-links-validator"
+import { loadEnv } from "vite"
 
 const SITE_URL = "https://union.build"
 
@@ -47,7 +47,7 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             name: "description",
-            content: "The Sovereign Interoperability Layer"
+            content: "The Modular ZK Interoperability Layer"
           }
         },
         {
@@ -157,6 +157,7 @@ export default defineConfig({
   vite: {
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"]
-    }
+    },
+    assetsInclude: ["**/*.splinecode"]
   }
 })

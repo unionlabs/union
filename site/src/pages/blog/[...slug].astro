@@ -1,7 +1,8 @@
 ---
 import Layout from "#/layouts/Layout.astro"
 import { getCollection } from "astro:content"
-import Socials from "#/components/Socials.astro"
+import SocialsSection from "#/components/sections/SocialsSection.astro"
+import LanderSection from "#/components/LanderSection.astro"
 
 export async function getStaticPaths() {
   const blogEntries = await getCollection("blog")
@@ -21,27 +22,30 @@ const { Content } = await entry.render()
   image={entry.data.cover?.src}
   description={entry.data.description}
 >
-  <main
+  <!-- <main
     class="sm:text-xl flex-grow mt-2 sm:mt-12 pb-16 max-w-2xl self-center flex flex-col pt-6 sm:pt-0 mx-4"
-  >
-    <div class="text-lg text-gray-300">
-      <time datetime={entry.data.date.toISOString()}>
-        {
-          entry.data.date.toLocaleDateString('fr-CA', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-          })
-        }
-      </time>
-    </div>
-    <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
-      {entry.data.title}
-    </h1>
+  > -->
+  <LanderSection gradient="to-t">
+    <div class="max-w-2xl self-center md:text-lg text-gray-300">
+      <div class="text-lg">
+        <time class="text-lg text-gray-400"  datetime={entry.data.date.toISOString()}>
+          {
+            entry.data.date.toLocaleDateString('fr-CA', {
+              year: 'numeric',
+              month: 'numeric',
+              day: 'numeric',
+            })
+          }
+        </time>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
+        {entry.data.title}
+      </h1>
 
-    <Content />
-  </main>
-  <Socials />
+      <Content />
+    </div>
+    </LanderSection>
+  <SocialsSection />
 </Layout>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
@@ -51,6 +55,7 @@ const { Content } = await entry.render()
     width: 100%;
     height: auto;
     object-fit: cover;
+    border-radius: 8px !important;
   }
 
   p > a {
@@ -88,7 +93,7 @@ const { Content } = await entry.render()
   }
 
   h2,h3,h4,h5 {
-    margin-top: 1rem;
+    margin-top: 2rem;
     margin-bottom: 0rem;
     font-size: 1.87rem;
     color: #ffffff;

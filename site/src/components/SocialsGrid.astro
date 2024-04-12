@@ -1,24 +1,23 @@
 ---
 import { Icon } from "@astrojs/starlight/components"
 import { socialLinks } from "#/lib/constants/socials.ts"
+import Card from "#/components/Card.astro"
+import TextA from '#/components/TextA.astro'
 ---
 
 <section class="flex flex-col">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-px">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     {
       socialLinks.map(socialLink => (
         <a
           href={socialLink.href}
           target="_blank"
           rel="noopener noreferrer"
-          class="flex flex-col flex-1 p-7 text-center bg-black w-full"
         >
-          <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
-          <div class="mt-4">
-            <span class="mt-16 border-b-[1px] uppercase border-white text-semibold">
-              {socialLink.cta} -&gt;
-            </span>
-          </div>
+          <Card class="flex flex-col items-center" padded>
+            <Icon name={socialLink.icon} size="2.5rem" />
+            <TextA fake>{socialLink.cta}</TextA>
+          </Card>
         </a>
       ))
     }

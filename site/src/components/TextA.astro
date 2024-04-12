@@ -1,0 +1,9 @@
+---
+const { href, fake } = Astro.props;
+const Element = fake ? "div" : "a";
+---
+
+<Element class="text-accent font-semibold capitalize" {href}>
+  <slot /> -&gt;
+</Element>
+
