@@ -26,6 +26,9 @@
             #
             mv /tmp/cometbls_v3_info_servers.json "$out"/openapi/rpc/openapi.json
 
+          #
+          # convert ibc openapi spec to openapi v3
+          #
           openapi-generator-cli generate \
             --generator-name go \
             --output ibc-go-out \
@@ -35,6 +38,9 @@
             #
             cat ibc-go-out/api/openapi.yaml | yq >ibc_go_v3.json
 
+          #
+          # convert uniond openapi spec to openapi v3
+          #
           openapi-generator-cli generate \
             --generator-name go \
             --output uniond-out \
@@ -62,7 +68,7 @@
             mv /tmp/union_rest_v3_merged_schemas.json "$out"/openapi/rest/openapi.json
 
             #
-            # validate the generated REST openapi specs
+            # validate the generated RPC openapi specs
             #
             openapi-generator-cli validate \
               --input-spec "$out"/openapi/rpc/openapi.json \
