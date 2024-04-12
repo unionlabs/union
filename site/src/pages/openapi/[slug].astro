@@ -8,46 +8,28 @@ const openApiSchemaUrl = `/openapi/${slug}.json`
 <!doctype html>
 <html lang="en">
   <head>
+    <title>{`Union ${slug.toLocaleUpperCase()} OpenAPI`}</title>
     <meta charset="UTF-8" />
-    <title>{`Union ${slug.toLocaleUpperCase()} API`}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta property="og:locale" content="en_US" />
     <meta name="robots" content="index, follow" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta property="og:image:url" content="https://union.build/og.png" />
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://unpkg.com/swagger-ui-dist@5.14.0/swagger-ui.css"
-    />
   </head>
   <body>
-    <main id="swagger-ui"></main>
-    <script
-      is:inline
-      src="https://unpkg.com/swagger-ui-dist@5.14.0/swagger-ui-bundle.js"
-      charset="UTF-8"></script>
-    <script
-      is:inline
-      src="https://unpkg.com/swagger-ui-dist@5.14.0/swagger-ui-standalone-preset.js"
-      charset="UTF-8"></script>
+    <script id="api-reference" is:inline></script>
     <script is:inline define:vars={{ openApiSchemaUrl }}>
-      // @ts-ignore
-      window.onload = () =>
-        // @ts-ignore
-        (window.ui =
-          // @ts-ignore
-          SwaggerUIBundle({
-            // @ts-ignore
-            url: openApiSchemaUrl,
-            deepLinking: true,
-            dom_id: '#swagger-ui',
-            layout: 'StandaloneLayout',
-            // @ts-ignore
-            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-            // @ts-ignore
-            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-          }))
+      const configuration = {
+        theme: 'default',
+      }
+      const apiReference = document.querySelector('script#api-reference')
+      if (apiReference) {
+        // @ts-expect-error
+        apiReference.dataset.url = openApiSchemaUrl
+        apiReference.dataset.configuration = JSON.stringify(configuration)
+      }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
   <style>
     *,
@@ -56,9 +38,10 @@ const openApiSchemaUrl = `/openapi/${slug}.json`
       box-sizing: inherit;
     }
 
-    *::-webkit-scrollbar {
-      height: 0.3rem;
+    *::-webkit-scrollbar,
+    *::-webkit-scrollbar-thumb {
       width: 0rem;
+      height: 0.3rem;
     }
 
     *::-webkit-scrollbar-track {
@@ -76,14 +59,6 @@ const openApiSchemaUrl = `/openapi/${slug}.json`
         overflow-y: auto;
         scrollbar-gutter: stable;
       }
-    }
-
-    html {
-      box-sizing: border-box;
-      overflow: -moz-scrollbars-vertical;
-      overflow-y: scroll;
-      margin: 0;
-      background: #ffffff;
     }
   </style>
 </html>

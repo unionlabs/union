@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "astro/zod"
 import type { APIRoute } from "astro"
 import endpoints from "#/content/openapi/endpoints.json" with { type: "json" }
 
