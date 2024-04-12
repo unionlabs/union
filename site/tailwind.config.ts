@@ -47,13 +47,11 @@ export default {
         bg2: "#030711"
       },
       fontFamily: {
-        sans: [
-          "Inter var", ...defaultTheme.fontFamily.sans
-        ],
+        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
         display: [
           "Inter var",
           {
-            fontFeatureSettings:  '"ss01", "cv09", "ss08" "zero"',
+            fontFeatureSettings: '"ss01", "cv09", "ss08" "zero"',
             fontVariationSettings: '"opsz" 32'
           }
         ],

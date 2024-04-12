@@ -16,5 +16,5 @@ export const socialLinks: Array<{
     href: "https://discord.union.build",
     icon: "discord",
     cta: "Join our Discord"
-  },
+  }
 ]

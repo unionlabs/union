@@ -23,6 +23,7 @@ Connor
 Cosmoverse
 Counterparties
 Counterparty
+Cypherpunk
 DATADIR
 DYLD
 Datasource
@@ -389,6 +390,7 @@ frunk
 fuzzer
 galois
 galoisd
+gapless
 gascap
 gcmode
 genbn
@@ -785,6 +787,8 @@ solomachine
 spearbit
 specialized
 spents
+splinecode
+splinetool
 splitn
 spotlightjs
 sprembo
@@ -919,6 +923,7 @@ unionvisor
 unittests
 unjail
 unjailed
+unloadable
 unmarshal
 unmarshalling
 unopinionated

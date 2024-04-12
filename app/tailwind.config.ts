@@ -80,13 +80,11 @@ export default (<Config>{
         sm: "calc(var(--radius) - 4px)"
       },
       fontFamily: {
-        sans: [
-          "Inter var", ...defaultTheme.fontFamily.sans
-        ],
+        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
         display: [
           "Inter var",
           {
-            fontFeatureSettings:  '"ss01", "cv09", "ss08" "zero"',
+            fontFeatureSettings: '"ss01", "cv09", "ss08" "zero"',
             fontVariationSettings: '"opsz" 32'
           }
         ],

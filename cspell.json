@@ -11,6 +11,7 @@
   "caseSensitive": false,
   "dictionaries": ["en_US", "companies", "softwareTerms", "go", "union"],
   "ignorePaths": [
+    "**/*.splinecode",
     "**/*.graphql",
     "light-clients/ethereum-light-client/src/test/**",
     "generated/**",
