@@ -1924,7 +1924,7 @@
         }
       },
       "BlockResponse": {
-        "description": "Block info",
+        "description": "Blockc info",
         "allOf": [
           {
             "$ref": "#/components/schemas/JSONRPC"
