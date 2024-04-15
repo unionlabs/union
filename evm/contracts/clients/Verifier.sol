@@ -168,8 +168,6 @@ library Verifier {
     }
 
     ///
-    /// TODO: we may need to do a random linear combination :/
-    ///
     /// Verify an uncompressed Groth16 proof.
     /// @notice Reverts with InvalidProof if the proof is invalid or
     /// with PublicInputNotInField the public input is not reduced.
@@ -191,16 +189,28 @@ library Verifier {
             return false;
         }
 
+        // hash(proof.a, proof.c, inputs)
+        bytes32 r1 = keccak256(abi.encodePacked(proof[0], proof[1], proof[6], proof[7], x, y));
+        bytes32 r2 = keccak256(abi.encodePacked(proofCommitment, proofCommitmentPOK));
+
         // Note: The precompile expects the F2 coefficients in big-endian order.
         // Note: The pairing precompile rejects unreduced values, so we won't check that here.
         assembly ("memory-safe") {
             let f := mload(0x40) // Free memory pointer.
 
-            // Copy points (A, B, C) to memory. They are already in correct encoding.
-            // This is pairing e(A, B) and G1 of e(C, -δ).
-            calldatacopy(f, proof, 0x100)
+            // Copy point B to memory (A and C needs to be multiplied first). They are already in correct encoding
+            calldatacopy(add(f, 0x40), add(proof, 0x40), 0x80)
+        
+            // write e(r1 * A, B)
+            calldatacopy(add(f, 0x100), proof, 0x40)
+            mstore(add(f, 0x140), r1)
+            success := staticcall(gas(), PRECOMPILE_MUL, add(f, 0x100), 0x60, f, 0x40)
 
-            // Complete e(C, -δ) and write e(α, -β), e(L_pub, -γ) to memory.
+            // write G1 of e(r1 * C, -δ)
+            calldatacopy(add(f, 0x100), add(proof, 0xc0), 0x40)
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x100), 0x60, add(f, 0xc0), 0x40))
+
+            // Complete e(r1 * C, -δ) and write e(r1 * α, -β), e(r1 * L_pub, -γ) to memory.
             // OPT: This could be better done using a single codecopy, but
             //      Solidity (unlike standalone Yul) doesn't provide a way to
             //      to do this.
@@ -208,14 +218,24 @@ library Verifier {
             mstore(add(f, 0x120), DELTA_NEG_X_0)
             mstore(add(f, 0x140), DELTA_NEG_Y_1)
             mstore(add(f, 0x160), DELTA_NEG_Y_0)
+
+            // e(r1 * α, -β)
             mstore(add(f, 0x180), ALPHA_X)
             mstore(add(f, 0x1a0), ALPHA_Y)
+            mstore(add(f, 0x1c0), r1)
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x180), 0x60, add(f, 0x180), 0x40))
+
             mstore(add(f, 0x1c0), BETA_NEG_X_1)
             mstore(add(f, 0x1e0), BETA_NEG_X_0)
             mstore(add(f, 0x200), BETA_NEG_Y_1)
             mstore(add(f, 0x220), BETA_NEG_Y_0)
+
+            // e(r1 * L_pub, -γ)
             mstore(add(f, 0x240), x)
             mstore(add(f, 0x260), y)
+            mstore(add(f, 0x280), r1)
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x240), 0x60, add(f, 0x240), 0x40))
+            
             mstore(add(f, 0x280), GAMMA_NEG_X_1)
             mstore(add(f, 0x2a0), GAMMA_NEG_X_0)
             mstore(add(f, 0x2c0), GAMMA_NEG_Y_1)
@@ -224,18 +244,26 @@ library Verifier {
             // Verify pedersen commitment proof of knowledge
             // Symmetric to https://github.com/Consensys/gnark-crypto/blob/2e4aaaaefdbfdf06515663986ed884fed1b2177e/ecc/bn254/fr/pedersen/pedersen.go#L212-L224
             calldatacopy(add(f, 0x300), proofCommitment, 0x40)
+            mstore(add(f, 0x340), r2)
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x300), 0x60, add(f, 0x300), 0x40))
+
             mstore(add(f, 0x340), PEDERSEN_G_X_0)
             mstore(add(f, 0x360), PEDERSEN_G_X_1)
             mstore(add(f, 0x380), PEDERSEN_G_Y_0)
             mstore(add(f, 0x3A0), PEDERSEN_G_Y_1)
+
+            
             calldatacopy(add(f, 0x3C0), proofCommitmentPOK, 0x40)
+            mstore(add(f, 0x400), r2)
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x3C0), 0x60, add(f, 0x3C0), 0x40))
+
             mstore(add(f, 0x400), PEDERSEN_G_ROOT_SIGMA_NEG_X_0)
             mstore(add(f, 0x420), PEDERSEN_G_ROOT_SIGMA_NEG_X_1)
             mstore(add(f, 0x440), PEDERSEN_G_ROOT_SIGMA_NEG_Y_0)
             mstore(add(f, 0x460), PEDERSEN_G_ROOT_SIGMA_NEG_Y_1)
 
             // Check pairing equation.
-            success := staticcall(gas(), PRECOMPILE_VERIFY, f, 0x480, f, 0x20)
+            success := and(success, staticcall(gas(), PRECOMPILE_VERIFY, f, 0x480, f, 0x20))
             // Also check returned value (both are either 1 or 0).
             success := and(success, mload(f))
         }
