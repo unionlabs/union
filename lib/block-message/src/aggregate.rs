@@ -4,7 +4,7 @@ use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
-    fetch, queue_msg, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
+    fetch, queue_msg, HandleAggregate, QueueError, QueueMessageTypes, QueueMsg,
 };
 use unionlabs::ibc::core::client::height::IsHeight;
 
@@ -27,7 +27,7 @@ pub enum Aggregate<C: ChainExt> {
 impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {
     fn handle(
         self,
-        data: VecDeque<<BlockMessageTypes as QueueMsgTypes>::Data>,
+        data: VecDeque<<BlockMessageTypes as QueueMessageTypes>::Data>,
     ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let aggregate = self;
 

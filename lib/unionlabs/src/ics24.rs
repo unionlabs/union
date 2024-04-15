@@ -66,6 +66,10 @@ pub enum Path<ClientId: traits::Id, Height: IsHeight> {
     NextSequenceRecv(NextSequenceRecvPath),
     #[display(fmt = "{_0}")]
     NextSequenceAck(NextSequenceAckPath),
+    #[display(fmt = "{_0}")]
+    NextConnectionSequence(NextConnectionSequencePath),
+    #[display(fmt = "{_0}")]
+    NextClientSequence(NextClientSequencePath),
 }
 
 impl<ClientId: traits::Id, Height: IsHeight> FromStr for Path<ClientId, Height> {
@@ -83,6 +87,7 @@ impl<ClientId: traits::Id, Height: IsHeight> FromStr for Path<ClientId, Height> 
             .or_else(|_| s.parse().map(Self::NextSequenceSend))
             .or_else(|_| s.parse().map(Self::NextSequenceRecv))
             .or_else(|_| s.parse().map(Self::NextSequenceAck))
+            .or_else(|_| s.parse().map(Self::NextConnectionSequence))
     }
 }
 
@@ -184,6 +189,20 @@ pub struct NextSequenceAckPath {
 }
 
 impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextSequenceAckPath {
+    type Value = u64;
+}
+
+#[ibc_path("nextConnectionSequence")]
+pub struct NextConnectionSequencePath {}
+
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextConnectionSequencePath {
+    type Value = u64;
+}
+
+#[ibc_path("nextClientSequence")]
+pub struct NextClientSequencePath {}
+
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextClientSequencePath {
     type Value = u64;
 }
 

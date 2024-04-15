@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use chain_utils::GetChain;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, fetch, queue_msg, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
+    aggregate, conc, fetch, queue_msg, wait, HandleEvent, QueueError, QueueMessageTypes, QueueMsg,
 };
 use unionlabs::{
     hash::H256,
@@ -39,7 +39,7 @@ pub enum Event<Hc: ChainExt, Tr: ChainExt> {
 impl HandleEvent<RelayMessageTypes> for AnyLightClientIdentified<AnyEvent> {
     fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let wait = self;
 

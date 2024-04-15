@@ -1,9 +1,10 @@
 use macros::apply;
-use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath, NextSequenceAckPath, NextSequenceRecvPath,
+        CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
+        NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
         NextSequenceSendPath, ReceiptPath,
     },
     traits::{ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
@@ -26,17 +27,7 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 
     PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
-    ClientStateProof(IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>),
-    ClientConsensusStateProof(IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>),
-    ConnectionProof(IbcProof<ConnectionPath, Hc, Tr>),
-    ChannelEndProof(IbcProof<ChannelEndPath, Hc, Tr>),
-    CommitmentProof(IbcProof<CommitmentPath, Hc, Tr>),
-    AcknowledgementProof(IbcProof<AcknowledgementPath, Hc, Tr>),
-    ReceiptProof(IbcProof<ReceiptPath, Hc, Tr>),
-    NextSequenceSendProof(IbcProof<NextSequenceSendPath, Hc, Tr>),
-    NextSequenceRecvProof(IbcProof<NextSequenceRecvPath, Hc, Tr>),
-    NextSequenceAckProof(IbcProof<NextSequenceAckPath, Hc, Tr>),
-
+    // state
     ClientState(IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>),
     ClientConsensusState(IbcState<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>),
     Connection(IbcState<ConnectionPath, Hc, Tr>),
@@ -47,6 +38,22 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     NextSequenceSend(IbcState<NextSequenceSendPath, Hc, Tr>),
     NextSequenceRecv(IbcState<NextSequenceRecvPath, Hc, Tr>),
     NextSequenceAck(IbcState<NextSequenceAckPath, Hc, Tr>),
+    NextConnectionSequence(IbcState<NextConnectionSequencePath, Hc, Tr>),
+    NextClientSequence(IbcState<NextClientSequencePath, Hc, Tr>),
+
+    // proof
+    ClientStateProof(IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>),
+    ClientConsensusStateProof(IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>),
+    ConnectionProof(IbcProof<ConnectionPath, Hc, Tr>),
+    ChannelEndProof(IbcProof<ChannelEndPath, Hc, Tr>),
+    CommitmentProof(IbcProof<CommitmentPath, Hc, Tr>),
+    AcknowledgementProof(IbcProof<AcknowledgementPath, Hc, Tr>),
+    ReceiptProof(IbcProof<ReceiptPath, Hc, Tr>),
+    NextSequenceSendProof(IbcProof<NextSequenceSendPath, Hc, Tr>),
+    NextSequenceRecvProof(IbcProof<NextSequenceRecvPath, Hc, Tr>),
+    NextSequenceAckProof(IbcProof<NextSequenceAckPath, Hc, Tr>),
+    NextConnectionSequenceProof(IbcProof<NextConnectionSequencePath, Hc, Tr>),
+    NextClientSequenceProof(IbcProof<NextClientSequencePath, Hc, Tr>),
 
     #[serde(untagged)]
     LightClientSpecific(LightClientSpecificData<Hc, Tr>),
@@ -56,7 +63,7 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 impl HandleData<RelayMessageTypes> for AnyLightClientIdentified<AnyData> {
     fn handle(
         self,
-        _: &<RelayMessageTypes as QueueMsgTypes>::Store,
+        _: &<RelayMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         Ok(data(self))
     }

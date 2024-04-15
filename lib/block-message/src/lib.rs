@@ -4,7 +4,7 @@ use std::{collections::VecDeque, fmt::Debug};
 
 use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use queue_msg::{QueueMsg, QueueMsgTypes, QueueMsgTypesTraits};
+use queue_msg::{QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -30,7 +30,7 @@ pub trait ChainExt: Chain {
 
 pub struct BlockMessageTypes;
 
-impl QueueMsgTypes for BlockMessageTypes {
+impl QueueMessageTypes for BlockMessageTypes {
     type Event = Never;
     type Data = AnyChainIdentified<AnyData>;
     type Fetch = AnyChainIdentified<AnyFetch>;

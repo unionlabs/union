@@ -647,6 +647,18 @@ where
             path,
             __marker: PhantomData,
         }),
+        Path::NextConnectionSequence(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::NextClientSequence(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
     }
 }
 
@@ -724,6 +736,24 @@ where
         Path::NextSequenceSend(_path) => todo!(),
         Path::NextSequenceRecv(_path) => todo!(),
         Path::NextSequenceAck(_path) => todo!(),
+        Path::NextConnectionSequence(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
+        Path::NextClientSequence(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
     }
 }
 

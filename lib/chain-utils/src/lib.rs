@@ -8,9 +8,10 @@ use crossbeam_queue::ArrayQueue;
 use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::config::{Mainnet, Minimal, PresetBaseKind},
+    ethereum::config::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
     hash::H160,
     traits::{Chain, ChainIdOf, FromStrExact},
+    ClientType, WasmClientType,
 };
 
 use crate::{
@@ -240,4 +241,41 @@ impl AnyChain {
             ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),
         })
     }
+}
+
+pub trait LightClientType<Tr: Chain>: Chain {
+    /// How [`Self`] tracks [`Tr`].
+    const TYPE: ClientType;
+}
+
+impl LightClientType<Union> for Wasm<Cosmos> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::Cometbls);
+}
+
+impl LightClientType<Wasm<Cosmos>> for Union {
+    const TYPE: ClientType = ClientType::Tendermint;
+}
+
+impl LightClientType<Cosmos> for Cosmos {
+    const TYPE: ClientType = ClientType::Tendermint;
+}
+
+impl<C: ChainSpec> LightClientType<Wasm<Union>> for Ethereum<C> {
+    const TYPE: ClientType = ClientType::Cometbls;
+}
+
+impl LightClientType<Wasm<Union>> for Scroll {
+    const TYPE: ClientType = ClientType::Cometbls;
+}
+
+impl LightClientType<Scroll> for Wasm<Union> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::Scroll);
+}
+
+impl LightClientType<Ethereum<Mainnet>> for Wasm<Union> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::EthereumMainnet);
+}
+
+impl LightClientType<Ethereum<Minimal>> for Wasm<Union> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::EthereumMinimal);
 }

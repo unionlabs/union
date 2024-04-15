@@ -24,6 +24,7 @@ unionlabs                = { workspace = true }
 
 [dev-dependencies]
 enumorph = "0.1.2"
+tokio    = { workspace = true, features = ["time", "rt", "macros"] }
 
 [features]
 default = []

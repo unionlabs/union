@@ -9,7 +9,7 @@ use chain_utils::{
 };
 use queue_msg::{
     event, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
-    HandleWait, QueueError, QueueMsg, QueueMsgTypes,
+    HandleWait, QueueError, QueueMessageTypes, QueueMsg,
 };
 use relay_message::RelayMessageTypes;
 use unionlabs::{
@@ -26,7 +26,7 @@ use unionlabs::{
 
 pub struct VoyagerMessageTypes;
 
-impl QueueMsgTypes for VoyagerMessageTypes {
+impl QueueMessageTypes for VoyagerMessageTypes {
     type Event = VoyagerEvent;
     type Data = VoyagerData;
     type Fetch = VoyagerFetch;
@@ -37,7 +37,7 @@ impl QueueMsgTypes for VoyagerMessageTypes {
     type Store = Chains;
 }
 
-pub trait FromQueueMsg<T: QueueMsgTypes>: QueueMsgTypes + Sized {
+pub trait FromQueueMsg<T: QueueMessageTypes>: QueueMessageTypes + Sized {
     fn from_queue_msg(value: QueueMsg<T>) -> QueueMsg<Self>;
 }
 
@@ -131,14 +131,14 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
 
 #[queue_msg]
 pub enum VoyagerMsg {
-    Block(<BlockMessageTypes as QueueMsgTypes>::Effect),
-    Relay(<RelayMessageTypes as QueueMsgTypes>::Effect),
+    Block(<BlockMessageTypes as QueueMessageTypes>::Effect),
+    Relay(<RelayMessageTypes as QueueMessageTypes>::Effect),
 }
 
 impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
     async fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
         Ok(match self {
             Self::Relay(msg) => {
@@ -152,14 +152,14 @@ impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
 
 #[queue_msg]
 pub enum VoyagerWait {
-    Block(<BlockMessageTypes as QueueMsgTypes>::Wait),
-    Relay(<RelayMessageTypes as QueueMsgTypes>::Wait),
+    Block(<BlockMessageTypes as QueueMessageTypes>::Wait),
+    Relay(<RelayMessageTypes as QueueMessageTypes>::Wait),
 }
 
 impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
     async fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
         Ok(match self {
             Self::Block(msg) => {
@@ -178,14 +178,14 @@ impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
 
 #[queue_msg]
 pub enum VoyagerAggregate {
-    Block(<BlockMessageTypes as QueueMsgTypes>::Aggregate),
-    Relay(<RelayMessageTypes as QueueMsgTypes>::Aggregate),
+    Block(<BlockMessageTypes as QueueMessageTypes>::Aggregate),
+    Relay(<RelayMessageTypes as QueueMessageTypes>::Aggregate),
 }
 
 impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
     fn handle(
         self,
-        data: VecDeque<<VoyagerMessageTypes as QueueMsgTypes>::Data>,
+        data: VecDeque<<VoyagerMessageTypes as QueueMessageTypes>::Data>,
     ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
         Ok(match self {
             Self::Block(aggregate) => VoyagerMessageTypes::from_queue_msg(
@@ -214,14 +214,14 @@ impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
 
 #[queue_msg]
 pub enum VoyagerEvent {
-    Block(<BlockMessageTypes as QueueMsgTypes>::Event),
-    Relay(<RelayMessageTypes as QueueMsgTypes>::Event),
+    Block(<BlockMessageTypes as QueueMessageTypes>::Event),
+    Relay(<RelayMessageTypes as QueueMessageTypes>::Event),
 }
 
 impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
     fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
         Ok(match self {
             Self::Relay(event) => {
@@ -235,14 +235,14 @@ impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
 
 #[queue_msg]
 pub enum VoyagerData {
-    Block(<BlockMessageTypes as QueueMsgTypes>::Data),
-    Relay(<RelayMessageTypes as QueueMsgTypes>::Data),
+    Block(<BlockMessageTypes as QueueMessageTypes>::Data),
+    Relay(<RelayMessageTypes as QueueMessageTypes>::Data),
 }
 
 impl HandleData<VoyagerMessageTypes> for VoyagerData {
     fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
         Ok(match self {
             Self::Block(data) => match data.handle(store)? {
@@ -397,14 +397,14 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
 
 #[queue_msg]
 pub enum VoyagerFetch {
-    Block(<BlockMessageTypes as QueueMsgTypes>::Fetch),
-    Relay(<RelayMessageTypes as QueueMsgTypes>::Fetch),
+    Block(<BlockMessageTypes as QueueMessageTypes>::Fetch),
+    Relay(<RelayMessageTypes as QueueMessageTypes>::Fetch),
 }
 
 impl HandleFetch<VoyagerMessageTypes> for VoyagerFetch {
     async fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
         Ok(match self {
             Self::Block(fetch) => {
@@ -684,7 +684,7 @@ mod tests {
     };
     use hex_literal::hex;
     use queue_msg::{
-        aggregate, defer_relative, effect, event, fetch, repeat, seq, QueueMsg, QueueMsgTypes,
+        aggregate, defer_relative, effect, event, fetch, repeat, seq, QueueMessageTypes, QueueMsg,
     };
     use relay_message::{
         aggregate::AggregateMsgCreateClient,
@@ -1208,7 +1208,7 @@ mod tests {
         )));
     }
 
-    fn print_json<T: QueueMsgTypes>(msg: QueueMsg<T>)
+    fn print_json<T: QueueMessageTypes>(msg: QueueMsg<T>)
     where
         VoyagerMessageTypes: FromQueueMsg<T>,
     {

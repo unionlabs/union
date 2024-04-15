@@ -16,7 +16,7 @@ use axum::{
 use chain_utils::{AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
-use queue_msg::{Engine, InMemoryQueue, Queue, QueueMsg, QueueMsgTypes};
+use queue_msg::{Engine, InMemoryQueue, Queue, QueueMessageTypes, QueueMsg};
 use relay_message::RelayMessageTypes;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,7 @@ pub enum AnyQueueConfig {
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub enum AnyQueue<T: QueueMsgTypes> {
+pub enum AnyQueue<T: QueueMessageTypes> {
     InMemory(InMemoryQueue<T>),
     PgQueue(PgQueue<T>),
 }
@@ -57,7 +57,7 @@ pub enum AnyQueueError {
     PgQueue(sqlx::Error),
 }
 
-impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
+impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
     type Error = AnyQueueError;
     type Config = AnyQueueConfig;
 
@@ -121,7 +121,7 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct PgQueue<T: QueueMsgTypes>(pg_queue::Queue<QueueMsg<T>>, sqlx::PgPool);
+pub struct PgQueue<T: QueueMessageTypes>(pg_queue::Queue<QueueMsg<T>>, sqlx::PgPool);
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct PgQueueConfig {
@@ -144,7 +144,7 @@ impl PgQueueConfig {
     }
 }
 
-impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
+impl<T: QueueMessageTypes> Queue<T> for PgQueue<T> {
     type Error = sqlx::Error;
 
     type Config = PgQueueConfig;
@@ -214,7 +214,7 @@ impl Voyager {
             .with_state(queue_tx.clone());
 
         // #[axum::debug_handler]
-        async fn msg<T: QueueMsgTypes>(
+        async fn msg<T: QueueMessageTypes>(
             State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
             Json(msg): Json<QueueMsg<T>>,
         ) -> StatusCode {
@@ -225,7 +225,7 @@ impl Voyager {
         }
 
         // #[axum::debug_handler]
-        async fn msgs<T: QueueMsgTypes>(
+        async fn msgs<T: QueueMessageTypes>(
             State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
             Json(msgs): Json<Vec<QueueMsg<T>>>,
         ) -> StatusCode {
