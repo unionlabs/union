@@ -4,8 +4,6 @@ import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
-import "@openzeppelin/utils/Context.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
 import "../core/02-client/ILightClient.sol";
@@ -23,7 +21,7 @@ import "./ICS23MembershipVerifier.sol";
 import "./Verifier.sol";
 
 library CometblsClientLib {
-    error ErrUnauthorized();
+    error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrUntrustedHeightLTETrustedHeight();
     error ErrUntrustedTimestampLTETrustedTimestamp();
@@ -62,8 +60,12 @@ contract CometblsClient is
         _disableInitializers();
     }
 
-    function initialize(address ibcHandler_) public initializer {
-        ibcHandler = ibcHandler_;
+    function initialize(
+        address _ibcHandler,
+        address admin
+    ) public initializer {
+        __Ownable_init(admin);
+        ibcHandler = _ibcHandler;
     }
 
     function createClient(
@@ -433,7 +435,7 @@ contract CometblsClient is
 
     function _onlyIBC() private view {
         if (msg.sender != ibcHandler) {
-            revert CometblsClientLib.ErrUnauthorized();
+            revert CometblsClientLib.ErrNotIBC();
         }
     }
 

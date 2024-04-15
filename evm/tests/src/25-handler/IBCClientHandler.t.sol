@@ -132,7 +132,8 @@ contract IBCClientHandlerTests is TestPlus {
                             address(new IBCClient()),
                             address(new IBCConnection()),
                             address(new IBCChannelHandshake()),
-                            address(new IBCPacket())
+                            address(new IBCPacket()),
+                            address(this)
                         )
                     )
                 )
@@ -143,7 +144,8 @@ contract IBCClientHandlerTests is TestPlus {
                 new ERC1967Proxy(
                     address(new TestCometblsClient()),
                     abi.encodeCall(
-                        CometblsClient.initialize, (address(handler))
+                        CometblsClient.initialize,
+                        (address(handler), address(this))
                     )
                 )
             )
@@ -153,7 +155,8 @@ contract IBCClientHandlerTests is TestPlus {
                 new ERC1967Proxy(
                     address(new TestCometblsClient()),
                     abi.encodeCall(
-                        CometblsClient.initialize, (address(handler))
+                        CometblsClient.initialize,
+                        (address(handler), address(this))
                     )
                 )
             )
@@ -324,7 +327,7 @@ contract IBCClientHandlerTests is TestPlus {
         );
 
         client.pushValidProof();
-        vm.expectRevert(CometblsClientLib.ErrUnauthorized.selector);
+        vm.expectRevert(CometblsClientLib.ErrNotIBC.selector);
         client.createClient("blabla", m.clientStateBytes, m.consensusStateBytes);
     }
 
@@ -364,7 +367,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.warp(uint64(signedHeader.time.secs) + updateLatency);
 
         client.pushValidProof();
-        vm.expectRevert(CometblsClientLib.ErrUnauthorized.selector);
+        vm.expectRevert(CometblsClientLib.ErrNotIBC.selector);
         client.updateClient(m2.clientId, m2.clientMessage);
     }
 

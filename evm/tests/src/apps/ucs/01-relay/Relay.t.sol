@@ -77,13 +77,23 @@ contract RelayTests is Test {
                             address(new IBCClient()),
                             address(new IBCConnection()),
                             address(new IBCChannelHandshake()),
-                            address(new IBCPacket())
+                            address(new IBCPacket()),
+                            address(this)
                         )
                     )
                 )
             )
         );
-        relay = new UCS01Relay(ibcHandler);
+        relay = IRelay(
+            address(
+                new ERC1967Proxy(
+                    address(new UCS01Relay()),
+                    abi.encodeCall(
+                        UCS01Relay.initialize, (ibcHandler, address(this))
+                    )
+                )
+            )
+        );
     }
 
     function initChannel(
@@ -262,9 +272,8 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onChanOpenInit(
+        relay.onChanOpenInit(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
@@ -283,10 +292,9 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
         vm.prank(address(ibcHandler));
-        r.onChanOpenInit(
+        relay.onChanOpenInit(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
@@ -305,10 +313,9 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
         vm.prank(address(ibcHandler));
-        r.onChanOpenInit(
+        relay.onChanOpenInit(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
             new string[](0),
             destinationPort,
@@ -321,40 +328,14 @@ contract RelayTests is Test {
         );
     }
 
-    function test_openInit_setCounterparty(
-        string memory sourcePort,
-        string memory sourceChannel,
-        string memory destinationPort,
-        string memory destinationChannel
-    ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
-        vm.prank(address(ibcHandler));
-        r.onChanOpenInit(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
-            new string[](0),
-            destinationPort,
-            destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
-            RelayLib.VERSION
-        );
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
-            r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, sourceChannel);
-    }
-
     function test_openTry_onlyIBC(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onChanOpenTry(
+        relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
@@ -366,32 +347,6 @@ contract RelayTests is Test {
             RelayLib.VERSION,
             RelayLib.VERSION
         );
-    }
-
-    function test_openTry_setCounterparty(
-        string memory sourcePort,
-        string memory sourceChannel,
-        string memory destinationPort,
-        string memory destinationChannel
-    ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
-        vm.prank(address(ibcHandler));
-        r.onChanOpenTry(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
-            new string[](0),
-            destinationPort,
-            destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: sourceChannel
-            }),
-            RelayLib.VERSION,
-            RelayLib.VERSION
-        );
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
-            r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, sourceChannel);
     }
 
     function test_openTry_wrongVersion(
@@ -400,10 +355,9 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
         vm.prank(address(ibcHandler));
-        r.onChanOpenTry(
+        relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
@@ -423,10 +377,9 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
         vm.prank(address(ibcHandler));
-        r.onChanOpenTry(
+        relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
             new string[](0),
             destinationPort,
@@ -446,10 +399,9 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
         vm.prank(address(ibcHandler));
-        r.onChanOpenTry(
+        relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
@@ -468,9 +420,8 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onChanOpenAck(
+        relay.onChanOpenAck(
             destinationPort, destinationChannel, sourceChannel, RelayLib.VERSION
         );
     }
@@ -480,101 +431,61 @@ contract RelayTests is Test {
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
         vm.prank(address(ibcHandler));
-        r.onChanOpenAck(
+        relay.onChanOpenAck(
             destinationPort, destinationChannel, sourceChannel, "ucs01version"
         );
-    }
-
-    function test_openAck_setCounterpartyChannel(
-        string memory sourcePort,
-        string memory sourceChannel,
-        string memory destinationPort,
-        string memory destinationChannel
-    ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
-        vm.prank(address(ibcHandler));
-        r.onChanOpenInit(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
-            new string[](0),
-            destinationPort,
-            destinationChannel,
-            IbcCoreChannelV1Counterparty.Data({
-                port_id: sourcePort,
-                channel_id: ""
-            }),
-            RelayLib.VERSION
-        );
-        IbcCoreChannelV1Counterparty.Data memory counterparty =
-            r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, "");
-        vm.prank(address(ibcHandler));
-        r.onChanOpenAck(
-            destinationPort, destinationChannel, sourceChannel, RelayLib.VERSION
-        );
-        counterparty =
-            r.getCounterpartyEndpoint(destinationPort, destinationChannel);
-        assertEq(counterparty.port_id, sourcePort);
-        assertEq(counterparty.channel_id, sourceChannel);
     }
 
     function test_openConfirm_onlyIBC(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onChanOpenConfirm(destinationPort, destinationChannel);
+        relay.onChanOpenConfirm(destinationPort, destinationChannel);
     }
 
     function test_openConfirm(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
-        r.onChanOpenConfirm(destinationPort, destinationChannel);
+        relay.onChanOpenConfirm(destinationPort, destinationChannel);
     }
 
     function test_closeInit_onlyIBC(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onChanCloseInit(destinationPort, destinationChannel);
+        relay.onChanCloseInit(destinationPort, destinationChannel);
     }
 
     function test_closeInit_impossible(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrUnstoppable.selector);
         vm.prank(address(ibcHandler));
-        r.onChanCloseInit(destinationPort, destinationChannel);
+        relay.onChanCloseInit(destinationPort, destinationChannel);
     }
 
     function test_closeConfirm_onlyIBC(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onChanCloseConfirm(destinationPort, destinationChannel);
+        relay.onChanCloseConfirm(destinationPort, destinationChannel);
     }
 
     function test_closeConfirm_impossible(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrUnstoppable.selector);
         vm.prank(address(ibcHandler));
-        r.onChanCloseConfirm(destinationPort, destinationChannel);
+        relay.onChanCloseConfirm(destinationPort, destinationChannel);
     }
 
     function test_onRecvPacketProcessing_onlySelf(
@@ -588,10 +499,9 @@ contract RelayTests is Test {
         uint64 timeoutTimestamp,
         address relayer
     ) public {
-        UCS01Relay r = new UCS01Relay(ibcHandler);
         vm.expectRevert(RelayLib.ErrUnauthorized.selector);
         vm.prank(address(ibcHandler));
-        r.onRecvPacketProcessing(
+        UCS01Relay(address(relay)).onRecvPacketProcessing(
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
@@ -620,10 +530,9 @@ contract RelayTests is Test {
         uint64 timeoutTimestamp,
         address relayer
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
         vm.record();
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        r.onRecvPacket(
+        relay.onRecvPacket(
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,
@@ -655,9 +564,9 @@ contract RelayTests is Test {
         uint64 timeoutTimestamp,
         address relayer
     ) public {
-        IRelay r = new UCS01Relay(ibcHandler);
-        vm.record();
-        vm.prank(address(ibcHandler));
+        vm.assume(sender != address(0));
+        vm.assume(denom != address(0));
+        vm.assume(amount > 0);
 
         // Receive a token that hasn't been escrowed
         Token[] memory tokens = new Token[](1);
@@ -666,7 +575,9 @@ contract RelayTests is Test {
         );
         tokens[0].amount = amount;
 
-        bytes memory acknowledgement = r.onRecvPacket(
+        vm.record();
+        vm.prank(address(ibcHandler));
+        bytes memory acknowledgement = relay.onRecvPacket(
             IbcCoreChannelV1Packet.Data({
                 sequence: sequence,
                 source_port: sourcePort,

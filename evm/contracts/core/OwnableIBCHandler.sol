@@ -17,9 +17,12 @@ contract OwnableIBCHandler is IBCHandler {
         address ibcClient,
         address ibcConnection,
         address ibcChannel,
-        address ibcPacket
+        address ibcPacket,
+        address admin
     ) public override initializer {
-        IBCHandler.initialize(ibcClient, ibcConnection, ibcChannel, ibcPacket);
+        IBCHandler.initialize(
+            ibcClient, ibcConnection, ibcChannel, ibcPacket, admin
+        );
     }
 
     /**

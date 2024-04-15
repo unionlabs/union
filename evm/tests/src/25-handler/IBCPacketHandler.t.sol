@@ -152,7 +152,8 @@ contract IBCPacketHandlerTest is TestPlus {
                             address(new IBCClient()),
                             address(new IBCConnection()),
                             address(new IBCChannelHandshake()),
-                            address(new IBCPacket())
+                            address(new IBCPacket()),
+                            address(this)
                         )
                     )
                 )
@@ -163,7 +164,8 @@ contract IBCPacketHandlerTest is TestPlus {
                 new ERC1967Proxy(
                     address(new TestCometblsClient()),
                     abi.encodeCall(
-                        CometblsClient.initialize, (address(handler))
+                        CometblsClient.initialize,
+                        (address(handler), address(this))
                     )
                 )
             )
