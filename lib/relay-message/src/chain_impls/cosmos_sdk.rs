@@ -24,7 +24,7 @@ use crate::{
     fetch::{AnyFetch, Fetch},
     id, identified,
     use_aggregate::IsAggregateData,
-    wait::{AnyWait, Wait, WaitForBlock},
+    wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState, Identified, PathOf,
     RelayMessageTypes,
 };
@@ -175,7 +175,7 @@ where
                         packet: Some(msg.packet.into()),
                         proof_unreceived: msg.proof_unreceived.encode(),
                         proof_height: Some(msg.proof_height.into_height().into()),
-                        next_sequence_recv: msg.next_sequence_recv,
+                        next_sequence_recv: msg.next_sequence_recv.get(),
                         signer: signer.to_string(),
                     })
                 }
@@ -232,7 +232,7 @@ where
         seq([
             wait(id(
                 hc.chain_id(),
-                WaitForBlock {
+                WaitForHeight {
                     // height: at.increment(),
                     height: at,
                     __marker: PhantomData,
@@ -284,7 +284,7 @@ where
         seq([
             wait(id(
                 hc.chain_id(),
-                WaitForBlock {
+                WaitForHeight {
                     height: at,
                     __marker: PhantomData,
                 },

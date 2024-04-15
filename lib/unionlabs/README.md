@@ -21,5 +21,3 @@ The most commonly used crate for hash and uint types is parity's [primitive-type
 ## Encoding and Decoding
 
 This library exposes generic Encoding and Decoding traits, to allow for abstracting over the encoding used for a type (essentially a poor man's HKTs). See the Voyager source code for examples of how this can be used.
-
-Note: The `{TryFrom,From,Into}{Proto,EthAbi}` traits are a previous (less powerful) iteration of this concept, and are only public while the rest of the codebase is still migrating to the new `Encode<_>`/`Decode<_>` API.

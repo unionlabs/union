@@ -17,6 +17,7 @@ pub struct Packet {
     pub destination_port: PortId,
     pub destination_channel: ChannelId,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: u64,

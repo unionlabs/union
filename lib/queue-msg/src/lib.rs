@@ -103,6 +103,7 @@ pub enum QueueMsg<T: QueueMsgTypes> {
         /// The message that will utilize the aggregated data.
         receiver: T::Aggregate,
     },
+    Void(Box<Self>),
     Noop,
 }
 
@@ -199,6 +200,12 @@ pub fn aggregate<T: QueueMsgTypes>(
         data: data.into_iter().collect(),
         receiver: receiver.into(),
     }
+}
+
+#[inline]
+#[must_use = "constructing an instruction has no effect"]
+pub fn void<T: QueueMsgTypes>(t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
+    QueueMsg::Void(Box::new(t.into()))
 }
 
 pub trait QueueMsgTypesTraits = Debug
@@ -352,6 +359,16 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                     // if times - 1 > 0, queue repeat with times - 1
                     NonZeroU64::new(times.get() - 1_u64).map(|times| repeat(Some(times), *msg)),
                 ))))),
+                QueueMsg::Void(msg) => {
+                    // TODO: distribute across seq/conc
+                    Ok(msg.handle(store, depth + 1).await?.map(|msg| match msg {
+                        QueueMsg::Data(data) => {
+                            tracing::debug!(data = %serde_json::to_string(&data).unwrap(), "voiding data");
+                            QueueMsg::Noop
+                        }
+                        msg => void(msg),
+                    }))
+                }
                 QueueMsg::Noop => Ok(None),
             }
         };

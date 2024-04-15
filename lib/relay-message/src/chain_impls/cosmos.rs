@@ -45,7 +45,7 @@ use crate::{
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
     id, identified, seq,
     use_aggregate::IsAggregateData,
-    wait::{AnyWait, Wait, WaitForBlock},
+    wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchUpdateHeaders, DoMsg, Identified,
     RelayMessageTypes,
 };
@@ -104,7 +104,7 @@ where
         seq([
             wait(id(
                 hc.chain_id(),
-                WaitForBlock {
+                WaitForHeight {
                     height: update_info.update_to,
                     __marker: PhantomData,
                 },

@@ -3,11 +3,13 @@ use std::marker::PhantomData;
 use chain_utils::GetChain;
 use macros::apply;
 use queue_msg::{
-    aggregate, fetch, queue_msg, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
+    aggregate, conc, fetch, queue_msg, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
 };
 use unionlabs::{
     hash::H256,
+    ibc::core::channel::packet::Packet,
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath},
+    id::ConnectionId,
     traits::{ClientIdOf, ClientTypeOf, HeightOf},
     QueryHeight,
 };
@@ -15,15 +17,15 @@ use unionlabs::{
 use crate::{
     aggregate::{
         mk_aggregate_wait_for_update, Aggregate, AggregateChannelHandshakeMsgAfterUpdate,
-        AggregateConnectionFetchFromChannelEnd, AggregateConnectionOpenAck,
-        AggregateConnectionOpenConfirm, AggregateConnectionOpenTry, AggregateMsgAfterUpdate,
-        AggregatePacketMsgAfterUpdate, AggregateUpdateClient, AnyAggregate, ChannelHandshakeEvent,
-        PacketEvent,
+        AggregateClientStateFromConnection, AggregateConnectionFetchFromChannelEnd,
+        AggregateMsgAfterUpdate, AggregateMsgConnectionOpenAck, AggregateMsgConnectionOpenConfirm,
+        AggregateMsgConnectionOpenTry, AggregatePacketMsgAfterUpdate, AggregatePacketTimeout,
+        AggregateUpdateClient, AnyAggregate, ChannelHandshakeEvent, PacketEvent,
     },
     any_enum, any_lc,
     fetch::{AnyFetch, Fetch, FetchState},
     id, identified, seq,
-    wait::{AnyWait, Wait, WaitForBlock},
+    wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, RelayMessageTypes,
 };
 
@@ -81,7 +83,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 unionlabs::events::IbcEvent::ConnectionOpenInit(init) => seq([
                     wait(id(
                         hc.chain_id(),
-                        WaitForBlock {
+                        WaitForHeight {
                             height: ibc_event.height,
                             __marker: PhantomData,
                         },
@@ -97,7 +99,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         id(
                             hc.chain_id(),
                             AggregateMsgAfterUpdate::ConnectionOpenTry(
-                                AggregateConnectionOpenTry {
+                                AggregateMsgConnectionOpenTry {
                                     event_height: ibc_event.height,
                                     event: init,
                                 },
@@ -115,7 +117,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
+                        AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateMsgConnectionOpenAck {
                             event_height: ibc_event.height,
                             event: try_,
                         }),
@@ -132,7 +134,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     id(
                         hc.chain_id(),
                         AggregateMsgAfterUpdate::ConnectionOpenConfirm(
-                            AggregateConnectionOpenConfirm {
+                            AggregateMsgConnectionOpenConfirm {
                                 event_height: ibc_event.height,
                                 event: ack,
                             },
@@ -269,29 +271,70 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         },
                     ),
                 ),
-                unionlabs::events::IbcEvent::SendPacket(packet) => aggregate(
-                    [fetch(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        FetchState {
-                            at: QueryHeight::Specific(ibc_event.height),
-                            path: ConnectionPath {
-                                connection_id: packet.connection_id.clone(),
-                            }
-                            .into(),
-                        },
-                    ))],
-                    [],
-                    id(
-                        hc.chain_id(),
-                        AggregatePacketMsgAfterUpdate {
-                            update_to: ibc_event.height,
-                            event_height: ibc_event.height,
-                            tx_hash: ibc_event.tx_hash,
-                            packet_event: PacketEvent::Send(packet),
-                            __marker: PhantomData,
-                        },
-                    ),
-                ),
+                unionlabs::events::IbcEvent::SendPacket(send) => {
+                    // in parallel, run height timeout, timestamp timeout, and send packet
+                    conc([
+                        aggregate(
+                            [
+                                fetch(id(
+                                    hc.chain_id(),
+                                    FetchState::<Hc, Tr> {
+                                        at: QueryHeight::Specific(ibc_event.height),
+                                        path: ConnectionPath {
+                                            connection_id: send.connection_id.clone(),
+                                        }
+                                        .into(),
+                                    },
+                                )),
+                                fetch_client_state_from_connection(
+                                    &hc,
+                                    ibc_event.height,
+                                    send.connection_id.clone(),
+                                ),
+                            ],
+                            [],
+                            id(
+                                hc.chain_id(),
+                                AggregatePacketTimeout {
+                                    packet: Packet {
+                                        sequence: send.packet_sequence,
+                                        source_port: send.packet_src_port.clone(),
+                                        source_channel: send.packet_src_channel.clone(),
+                                        destination_port: send.packet_dst_port.clone(),
+                                        destination_channel: send.packet_dst_channel.clone(),
+                                        data: send.packet_data_hex.clone(),
+                                        timeout_height: send.packet_timeout_height,
+                                        timeout_timestamp: send.packet_timeout_timestamp,
+                                    },
+                                    __marker: PhantomData,
+                                },
+                            ),
+                        ),
+                        aggregate(
+                            [fetch(id::<Hc, Tr, _>(
+                                hc.chain_id(),
+                                FetchState {
+                                    at: QueryHeight::Specific(ibc_event.height),
+                                    path: ConnectionPath {
+                                        connection_id: send.connection_id.clone(),
+                                    }
+                                    .into(),
+                                },
+                            ))],
+                            [],
+                            id(
+                                hc.chain_id(),
+                                AggregatePacketMsgAfterUpdate {
+                                    update_to: ibc_event.height,
+                                    event_height: ibc_event.height,
+                                    tx_hash: ibc_event.tx_hash,
+                                    packet_event: PacketEvent::Send(send),
+                                    __marker: PhantomData,
+                                },
+                            ),
+                        ),
+                    ])
+                }
                 unionlabs::events::IbcEvent::AcknowledgePacket(ack) => {
                     tracing::info!(?ack, "packet acknowledged");
                     QueueMsg::Noop
@@ -332,6 +375,34 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
             },
         }
     }
+}
+
+fn fetch_client_state_from_connection<Hc: ChainExt, Tr: ChainExt>(
+    hc: &Hc,
+    height: Hc::Height,
+    connection_id: ConnectionId,
+) -> QueueMsg<RelayMessageTypes>
+where
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
+{
+    aggregate(
+        [fetch(id(
+            hc.chain_id(),
+            FetchState::<Hc, Tr> {
+                at: QueryHeight::Specific(height),
+                path: ConnectionPath { connection_id }.into(),
+            },
+        ))],
+        [],
+        id(
+            hc.chain_id(),
+            AggregateClientStateFromConnection::<Hc, Tr> {
+                at: height,
+                __marker: PhantomData,
+            },
+        ),
+    )
 }
 
 #[queue_msg]

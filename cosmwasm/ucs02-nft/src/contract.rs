@@ -8,7 +8,7 @@ use cosmwasm_std::{
     Env, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcChannelOpenResponse, IbcMsg, IbcOrder, IbcPacketAckMsg, IbcPacketReceiveMsg,
     IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Never, Reply, Response, StdError,
-    StdResult, SubMsg, Timestamp,
+    StdResult, Timestamp,
 };
 use cw_storage_plus::{Item, Map};
 use ethabi::{ParamType, Token};
@@ -133,11 +133,8 @@ impl TryFrom<NonFungibleTokenPacketData> for UCS02NonFungibleTokenPacketData {
         let (owner, name, symbol) = match from_json::<ics721::state::CollectionData>(
             class_data.unwrap_or(&Default::default()),
         )
-        .or_else(|_| {
-            Err(from_json::<SgCollectionData>(
-                class_data.unwrap_or(&Default::default()),
-            ))
-        }) {
+        .map_err(|_| from_json::<SgCollectionData>(class_data.unwrap_or(&Default::default())))
+        {
             Ok(data) => Ok((data.owner, data.name, data.symbol)),
             Err(Ok(data)) => Ok((data.owner, data.name, data.symbol)),
             _ => Err(TryFromNonFungibleTokenPacketDataError::InvalidClassData {
@@ -251,8 +248,7 @@ impl UCS02NonFungibleTokenPacketData {
                     } else {
                         Some(memo.clone())
                     },
-                }
-                .into())
+                })
             }
             _ => Err(ContractError::EthAbiDecoding),
         }
@@ -260,10 +256,10 @@ impl UCS02NonFungibleTokenPacketData {
 
     pub fn encode(self) -> Vec<u8> {
         ethabi::encode(&[
-            Token::String(self.class_owner.into()),
+            Token::String(self.class_owner),
             Token::String(self.class_id.into()),
-            Token::String(self.class_name.into()),
-            Token::String(self.class_symbol.into()),
+            Token::String(self.class_name),
+            Token::String(self.class_symbol),
             Token::Array(
                 self.token_ids
                     .into_iter()
@@ -274,7 +270,7 @@ impl UCS02NonFungibleTokenPacketData {
                 self.token_uris
                     .unwrap_or_default()
                     .into_iter()
-                    .map(|token_uri| Token::String(token_uri.into()))
+                    .map(Token::String)
                     .collect(),
             ),
             Token::String(self.sender),
@@ -329,7 +325,7 @@ pub fn execute(
         }) = &mut message.msg
         {
             let version = CHANNEL_VERSION
-                .load(deps.storage, &channel_id)
+                .load(deps.storage, channel_id)
                 .expect("impossible");
             if let Version::UCS02 = version {
                 let nft_data = from_json::<NonFungibleTokenPacketData>(&data).expect("impossible");
@@ -365,17 +361,17 @@ pub(crate) const ACK_AND_DO_NOTHING_REPLY_ID: u64 = 3;
 pub fn reply(mut deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
     let mut response =
         ics721_base::state::Ics721Contract::default().reply(deps.branch(), env, reply.clone())?;
-    if reply.id == ACK_AND_DO_NOTHING_REPLY_ID {
-        if CURRENT_VERSION.load(deps.storage)? == Version::UCS02 {
-            response.data = Some(
-                match from_json(&response.data.unwrap_or_default())
-                    .unwrap_or_else(|_| ics721::ibc_helpers::Ics721Ack::Error(Default::default()))
-                {
-                    ics721::ibc_helpers::Ics721Ack::Result(_) => [1].into(),
-                    ics721::ibc_helpers::Ics721Ack::Error(_) => [0].into(),
-                },
-            );
-        }
+    if reply.id == ACK_AND_DO_NOTHING_REPLY_ID
+        && CURRENT_VERSION.load(deps.storage)? == Version::UCS02
+    {
+        response.data = Some(
+            match from_json(response.data.unwrap_or_default())
+                .unwrap_or_else(|_| ics721::ibc_helpers::Ics721Ack::Error(Default::default()))
+            {
+                ics721::ibc_helpers::Ics721Ack::Result(_) => [1].into(),
+                ics721::ibc_helpers::Ics721Ack::Error(_) => [0].into(),
+            },
+        );
     }
     Ok(response)
 }

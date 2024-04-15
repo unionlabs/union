@@ -80,6 +80,7 @@ impl FromQueueMsg<RelayMessageTypes> for VoyagerMessageTypes {
                 data: data.into_iter().map(VoyagerData::Relay).collect(),
                 receiver: VoyagerAggregate::Relay(receiver),
             },
+            QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
             QueueMsg::Noop => QueueMsg::Noop,
         }
     }
@@ -122,6 +123,7 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
                 data: data.into_iter().map(VoyagerData::Block).collect(),
                 receiver: VoyagerAggregate::Block(receiver),
             },
+            QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
             QueueMsg::Noop => QueueMsg::Noop,
         }
     }
@@ -685,7 +687,7 @@ mod tests {
         aggregate, defer_relative, effect, event, fetch, repeat, seq, QueueMsg, QueueMsgTypes,
     };
     use relay_message::{
-        aggregate::AggregateCreateClient,
+        aggregate::AggregateMsgCreateClient,
         chain_impls::{
             cosmos_sdk::{
                 fetch::{AbciQueryType, FetchAbciQuery},
@@ -967,7 +969,7 @@ mod tests {
             [],
             relay_message::id::<Wasm<Union>, Scroll, _>(
                 union_chain_id.clone(),
-                AggregateCreateClient {
+                AggregateMsgCreateClient {
                     config: WasmConfig {
                         checksum: H256(hex!(
                             "c4c38c95b12a03dabe366dab1a19671193b5f8de7abf53eb3ecabbb946a4ac88"
@@ -1013,7 +1015,7 @@ mod tests {
                 [],
                 relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                     eth_chain_id,
-                    AggregateCreateClient {
+                    AggregateMsgCreateClient {
                         config: EthereumConfig {
                             client_type: "cometbls".to_string(),
                             client_address: H160(hex!("83428c7db9815f482a39a1715684dcf755021997")),
@@ -1042,7 +1044,7 @@ mod tests {
                 [],
                 relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                     union_chain_id.clone(),
-                    AggregateCreateClient {
+                    AggregateMsgCreateClient {
                         config: WasmConfig {
                             checksum: H256(hex!(
                                 "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
@@ -1078,7 +1080,7 @@ mod tests {
                 [],
                 relay_message::id::<Union, Wasm<Cosmos>, _>(
                     union_chain_id.clone(),
-                    AggregateCreateClient {
+                    AggregateMsgCreateClient {
                         config: (),
                         __marker: PhantomData,
                     },
@@ -1104,7 +1106,7 @@ mod tests {
                 [],
                 relay_message::id::<Wasm<Cosmos>, Union, _>(
                     simd_chain_id,
-                    AggregateCreateClient {
+                    AggregateMsgCreateClient {
                         config: WasmConfig {
                             checksum: H256(hex!(
                                 "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
@@ -1140,7 +1142,7 @@ mod tests {
                 [],
                 relay_message::id::<Cosmos, Cosmos, _>(
                     osmosis_chain_id.clone(),
-                    AggregateCreateClient {
+                    AggregateMsgCreateClient {
                         config: (),
                         __marker: PhantomData,
                     },
@@ -1166,7 +1168,7 @@ mod tests {
                 [],
                 relay_message::id::<Cosmos, Cosmos, _>(
                     stargaze_chain_id.clone(),
-                    AggregateCreateClient {
+                    AggregateMsgCreateClient {
                         config: (),
                         __marker: PhantomData,
                     },
