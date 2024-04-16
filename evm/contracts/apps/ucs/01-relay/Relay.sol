@@ -260,20 +260,20 @@ contract UCS01Relay is
         string calldata sourceChannel,
         LocalToken calldata localToken
     ) internal returns (string memory) {
-        // Ensure the user properly fund us.
-        SafeERC20.safeTransferFrom(
-            IERC20(localToken.denom),
-            msg.sender,
-            address(this),
-            localToken.amount
-        );
         // If the token is originating from the counterparty channel, we must have saved it's denom.
         string memory addressDenom =
             addressToDenom[sourcePort][sourceChannel][localToken.denom];
         if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
-            IERC20Denom(localToken.denom).burn(address(this), localToken.amount);
+            IERC20Denom(localToken.denom).burn(msg.sender, localToken.amount);
         } else {
+            // Ensure the user properly fund us.
+            SafeERC20.safeTransferFrom(
+                IERC20(localToken.denom),
+                msg.sender,
+                address(this),
+                localToken.amount
+            );
             // Token originating from the local chain, increase outstanding and escrow the amount.
             increaseOutstanding(
                 sourcePort, sourceChannel, localToken.denom, localToken.amount

@@ -162,13 +162,9 @@ contract RelayTests is Test {
         localTokens[0].denom = denomAddress;
         localTokens[0].amount = amount;
 
-        // Transfer from user to relay
+        // Burn from user to zero
         vm.expectEmit();
-        emit IERC20.Transfer(address(receiver), address(relay), amount);
-
-        // Burn from relay to zero
-        vm.expectEmit();
-        emit IERC20.Transfer(address(relay), address(0), amount);
+        emit IERC20.Transfer(address(receiver), address(0), amount);
 
         vm.expectEmit(false, false, false, false);
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
@@ -854,13 +850,9 @@ contract RelayTests is Test {
             vm.prank(receiver);
             IERC20Denom(denomAddress).approve(address(relay), amount);
 
-            // Transfer from user to relay
-            vm.expectEmit(false, false, false, false);
-            emit IERC20.Transfer(address(receiver), address(relay), amount);
-
-            // Burn from relay to zero
+            // Burn from sender to zero
             vm.expectEmit();
-            emit IERC20.Transfer(address(relay), address(0), amount);
+            emit IERC20.Transfer(address(receiver), address(0), amount);
 
             vm.expectEmit(false, false, false, false);
             emit RelayLib.Sent(
