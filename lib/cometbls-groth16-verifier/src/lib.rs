@@ -294,6 +294,7 @@ pub enum Error {
     InvalidChainId,
     InvalidHeight,
     InvalidTimestamp,
+    InvalidSliceLength,
 }
 
 pub fn verify_zkp(
@@ -314,7 +315,7 @@ pub fn verify_zkp(
     )
 }
 
-fn affine_g1_to_bytes(g1_point: &substrate_bn::AffineG1) -> Result<[u8; 64], Error> {
+fn g1_to_bytes(g1_point: &G1) -> Result<[u8; 64], Error> {
     let mut buffer = [0; 64];
     g1_point
         .x()
@@ -403,38 +404,40 @@ fn verify_generic_zkp_2(
         )
         .fold(initial_point, |s, (w_i, gamma_l_i)| s + gamma_l_i * w_i);
     // TODO: the verifying key transformation, pedersen key decoding and this negations should all be done at compile time
-    // TODO: random linear combination required?
-    let r1 = Sha256::new()
-        .chain_update(&affine_g1_to_bytes(&zkp.proof.a)?)
-        .chain_update(&affine_g1_to_bytes(&zkp.proof.c)?)
-        .chain_update(&affine_g1_to_bytes(&public_inputs_msm.into())?)
-        .finalize();
 
-    let r2 = Sha256::new()
-        .chain_update(&affine_g1_to_bytes(&zkp.proof_commitment)?)
-        .chain_update(&affine_g1_to_bytes(&zkp.proof_commitment_pok)?)
-        .finalize();
+    let proof_a: G1 = zkp.proof.a.into();
+    let proof_c: G1 = zkp.proof.c.into();
+    let pc: G1 = zkp.proof_commitment.into();
+    let pok: G1 = zkp.proof_commitment_pok.into();
 
-    let r1 = substrate_bn::Fr::from_slice(&r1).unwrap();
-    let r2 = substrate_bn::Fr::from_slice(&r2).unwrap();
+    let r1 = substrate_bn::Fr::from_slice(
+        &Sha256::new()
+            .chain_update(&g1_to_bytes(&proof_a)?)
+            .chain_update(&g1_to_bytes(&proof_c)?)
+            .chain_update(&g1_to_bytes(&public_inputs_msm)?)
+            .finalize(),
+    )
+    .map_err(|_| Error::InvalidSliceLength)?;
+
+    let r2 = substrate_bn::Fr::from_slice(
+        &Sha256::new()
+            .chain_update(&g1_to_bytes(&pc)?)
+            .chain_update(&g1_to_bytes(&pok)?)
+            .finalize(),
+    )
+    .map_err(|_| Error::InvalidSliceLength)?;
 
     let result = substrate_bn::pairing_batch(&[
-        (G1::try_from(zkp.proof.a).unwrap() * r1, zkp.proof.b.into()),
+        (proof_a * r1, zkp.proof.b.into()),
         (public_inputs_msm * r1, -substrate_bn::G2::from(vk.gamma_g2)),
+        (proof_c * r1, -substrate_bn::G2::from(vk.delta_g2)),
         (
-            G1::try_from(zkp.proof.c).unwrap() * r1,
-            -substrate_bn::G2::from(vk.delta_g2),
-        ),
-        (
-            G1::try_from(vk.alpha_g1).unwrap() * r1,
+            G1::from(vk.alpha_g1) * r1,
             -substrate_bn::G2::from(vk.beta_g2),
         ),
         // Verify pedersen proof of knowledge
-        (G1::try_from(zkp.proof_commitment).unwrap() * r2, g.into()),
-        (
-            G1::try_from(zkp.proof_commitment_pok).unwrap() * r2,
-            g_root_sigma_neg.into(),
-        ),
+        (pc * r2, g.into()),
+        (pok * r2, g_root_sigma_neg.into()),
     ]);
     if result != substrate_bn::Gt::one() {
         Err(Error::InvalidProof)
