@@ -635,6 +635,7 @@ let
         enableRecommendedContents = true;
         contents = [
           pkgs.coreutils
+          pkgs.curl
           node
           (mkValidatorHome idx)
         ] ++ extraPackages;
