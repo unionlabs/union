@@ -1,12 +1,12 @@
 ---
-import '#/styles/fonts.css'
-import '#/styles/reset.css'
-import '#/styles/tailwind.css'
-import { SEO } from 'astro-seo'
-import { Head } from 'astro-capo'
-import { AstroFont } from 'astro-font'
+import "#/styles/fonts.css"
+import "#/styles/reset.css"
+import "#/styles/tailwind.css"
+import { SEO } from "astro-seo"
+import { Head } from "astro-capo"
+import { AstroFont } from "astro-font"
 
-const BASE_URL = import.meta.env.PROD ? import.meta.env.SITE : ''
+const BASE_URL = import.meta.env.PROD ? import.meta.env.SITE : ""
 
 interface Props {
   url?: string
@@ -18,11 +18,11 @@ interface Props {
 }
 
 const {
-  url = 'https://union.build',
-  title = 'Union',
-  image = '/og.png',
-  description = 'The Modular ZK Interoperability Layer',
-  loadFonts = true,
+  url = "https://union.build",
+  title = "Union",
+  image = "/og.png",
+  description = "The Modular ZK Interoperability Layer",
+  loadFonts = true
 } = Astro.props
 
 const OPEN_GRAPH_IMAGE = `${BASE_URL}/${image.slice(1)}`
