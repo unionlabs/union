@@ -199,7 +199,11 @@ library Verifier {
             // r1 = hash(proof, x, y)
             mstore(add(f, 0x100), x)
             mstore(add(f, 0x120), y)
-            let r1 := keccak256(f, 0x140)
+            let r1 :=
+                and(
+                    keccak256(f, 0x140),
+                    0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+                )
 
             // Temporarily move B.x1 because of the following override
             let B_X := mload(add(f, 0x40))
@@ -285,7 +289,11 @@ library Verifier {
             // r2 = hash(proofCommitment, proofCommitmentPOK)
             calldatacopy(add(f, 0x300), proofCommitment, 0x40)
             calldatacopy(add(f, 0x340), proofCommitmentPOK, 0x40)
-            let r2 := keccak256(add(f, 0x380), 0x80)
+            let r2 :=
+                and(
+                    keccak256(add(f, 0x380), 0x80),
+                    0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+                )
             mstore(add(f, 0x340), r2)
             success :=
                 and(
