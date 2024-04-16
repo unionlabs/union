@@ -188,8 +188,6 @@ library Verifier {
             return false;
         }
 
-        bytes32 r2 = keccak256(abi.encodePacked(proofCommitment, proofCommitmentPOK));
-
         // Note: The precompile expects the F2 coefficients in big-endian order.
         // Note: The pairing precompile rejects unreduced values, so we won't check that here.
         assembly ("memory-safe") {
@@ -250,7 +248,11 @@ library Verifier {
 
             // Verify pedersen commitment proof of knowledge
             // Symmetric to https://github.com/Consensys/gnark-crypto/blob/2e4aaaaefdbfdf06515663986ed884fed1b2177e/ecc/bn254/fr/pedersen/pedersen.go#L212-L224
+
+            // r2 = hash(proofCommitment, proofCommitmentPOK)
             calldatacopy(add(f, 0x300), proofCommitment, 0x40)
+            calldatacopy(add(f, 0x340), proofCommitmentPOK, 0x40)
+            let r2 := keccak256(add(f, 0x380), 0x80)
             mstore(add(f, 0x340), r2)
             success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x300), 0x60, add(f, 0x300), 0x40))
 
