@@ -7,8 +7,10 @@ exclude = [
   '^https://discord.',
   '^https://twitter.com',
   '^http://myserver.com',
+  '^https://nodeist.net/union',
   '^https://services.staketab.org',
   '^https://statesync.testnet.bonlulu.uno',
+  '^https://union-testnet-grpc.polkachu.com',
 ]
 
 exclude_all_private = true
