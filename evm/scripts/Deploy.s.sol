@@ -70,6 +70,10 @@ contract Deployer {
 contract DeployDeployer is Script {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        VmSafe.Wallet memory wallet = vm.createWallet(privateKey);
+        vm.assertEq(
+            vm.getNonce(wallet), 0, "Account creating deployer must be fresh"
+        );
         vm.startBroadcast(privateKey);
         new Deployer();
         vm.stopBroadcast();
@@ -79,8 +83,10 @@ contract DeployDeployer is Script {
 contract DeployIBC is Script {
     function run() public {
         Deployer deployer = Deployer(vm.envAddress("DEPLOYER"));
+
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         VmSafe.Wallet memory wallet = vm.createWallet(privateKey);
+
         vm.startBroadcast(privateKey);
 
         // 0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5

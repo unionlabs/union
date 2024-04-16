@@ -411,7 +411,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script evm/scripts/Deploy.s.sol:DeployDeployer -vvv --rpc-url http://localhost:8545 --broadcast
+            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script -vvv evm/scripts/Deploy.s.sol:DeployDeployer -vvv --rpc-url http://localhost:8545 --broadcast
           '';
         };
 
@@ -420,7 +420,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script evm/scripts/Deploy.s.sol:DeployIBC -vvv --rpc-url http://localhost:8545 --broadcast
+            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script -vvv evm/scripts/Deploy.s.sol:DeployIBC -vvv --rpc-url http://localhost:8545 --broadcast
           '';
         };
 
