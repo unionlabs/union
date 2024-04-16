@@ -103,6 +103,7 @@
       evmSources = nix-filter {
         root = ./.;
         include = [
+          "scripts"
           "contracts"
           "tests"
         ];
@@ -406,25 +407,18 @@
           '';
         };
 
-        eth-deploy-deployer = pkgs.writeShellApplication {
-          name = "deploy-deployer";
+        eth-deploy-ibc = pkgs.writeShellApplication {
+          name = "eth-deploy-ibc";
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script -vvv evm/scripts/Deploy.s.sol:DeployDeployer -vvv --rpc-url http://localhost:8545 --broadcast
-          '';
-        };
-
-        eth-deploy-stack = pkgs.writeShellApplication {
-          name = "deploy-stack";
-          runtimeInputs = [ self'.packages.forge ];
-          text = ''
-            ${ensureAtRepositoryRoot}
-            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script -vvv evm/scripts/Deploy.s.sol:DeployIBC -vvv --rpc-url http://localhost:8545 --broadcast
+            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script -vvv evm/scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url http://localhost:8545 --broadcast
           '';
         };
 
         forge = wrappedForge;
+
+        evm-sources = evmSources;
       } //
       builtins.listToAttrs (
         builtins.map
