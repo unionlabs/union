@@ -25,10 +25,11 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         address ibcConnection,
         address ibcChannel,
         address ibcPacket,
+        address admin,
         address ibcHandlerInit_
     ) public initializer {
         OwnableIBCHandler.initialize(
-            ibcClient, ibcConnection, ibcChannel, ibcPacket
+            ibcClient, ibcConnection, ibcChannel, ibcPacket, admin
         );
         ibcHandlerInit = ibcHandlerInit_;
     }

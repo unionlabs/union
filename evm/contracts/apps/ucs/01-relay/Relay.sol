@@ -1,11 +1,19 @@
 pragma solidity ^0.8.23;
 
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+
 import "solady/utils/LibString.sol";
+
 import "solidity-stringutils/strings.sol";
-import "../../../core/25-handler/IBCHandler.sol";
+
+import "../../../core/04-channel/IIBCPacket.sol";
 import "../../../lib/Hex.sol";
 import "../../Base.sol";
 import "./IERC20Denom.sol";
@@ -40,11 +48,6 @@ interface IRelay is IIBCModule {
         string memory sourceChannel,
         address token
     ) external view returns (uint256);
-
-    function getCounterpartyEndpoint(
-        string memory sourcePort,
-        string memory sourceChannel
-    ) external view returns (IbcCoreChannelV1Counterparty.Data memory);
 
     function send(
         string calldata sourcePort,
@@ -168,12 +171,19 @@ library RelayPacketLib {
     }
 }
 
-contract UCS01Relay is IBCAppBase, IRelay {
+contract UCS01Relay is
+    IBCAppBase,
+    IRelay,
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable
+{
     using RelayPacketLib for RelayPacket;
     using LibString for *;
     using strings for *;
 
-    IBCHandler private immutable ibcHandler;
+    IIBCPacket private ibcHandler;
 
     // A mapping from remote denom to local ERC20 wrapper.
     mapping(string => mapping(string => mapping(string => address))) private
@@ -182,14 +192,18 @@ contract UCS01Relay is IBCAppBase, IRelay {
     // Required to determine whether an ERC20 token is originating from a remote chain.
     mapping(string => mapping(string => mapping(address => string))) private
         addressToDenom;
-    // A mapping from local port/channel to it's counterparty.
-    // This is required to remap denoms.
-    mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
-        private counterpartyEndpoints;
     mapping(string => mapping(string => mapping(address => uint256))) private
         outstanding;
 
-    constructor(IBCHandler _ibcHandler) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        IIBCPacket _ibcHandler,
+        address admin
+    ) public initializer {
+        __Ownable_init(admin);
         ibcHandler = _ibcHandler;
     }
 
@@ -213,20 +227,6 @@ contract UCS01Relay is IBCAppBase, IRelay {
         address token
     ) external view override returns (uint256) {
         return outstanding[sourcePort][sourceChannel][token];
-    }
-
-    // Return a channel counterparty endpoint.
-    // A counterparty will exist only if a channel has been previously opened.
-    function getCounterpartyEndpoint(
-        string memory sourcePort,
-        string memory sourceChannel
-    )
-        external
-        view
-        override
-        returns (IbcCoreChannelV1Counterparty.Data memory)
-    {
-        return counterpartyEndpoints[sourcePort][sourceChannel];
     }
 
     // Increase the oustanding amount on the given port/channel.
@@ -260,20 +260,20 @@ contract UCS01Relay is IBCAppBase, IRelay {
         string calldata sourceChannel,
         LocalToken calldata localToken
     ) internal returns (string memory) {
-        // Ensure the user properly fund us.
-        SafeERC20.safeTransferFrom(
-            IERC20(localToken.denom),
-            msg.sender,
-            address(this),
-            localToken.amount
-        );
         // If the token is originating from the counterparty channel, we must have saved it's denom.
         string memory addressDenom =
             addressToDenom[sourcePort][sourceChannel][localToken.denom];
         if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
-            IERC20Denom(localToken.denom).burn(address(this), localToken.amount);
+            IERC20Denom(localToken.denom).burn(msg.sender, localToken.amount);
         } else {
+            // Ensure the user properly fund us.
+            SafeERC20.safeTransferFrom(
+                IERC20(localToken.denom),
+                msg.sender,
+                address(this),
+                localToken.amount
+            );
             // Token originating from the local chain, increase outstanding and escrow the amount.
             increaseOutstanding(
                 sourcePort, sourceChannel, localToken.denom, localToken.amount
@@ -520,7 +520,6 @@ contract UCS01Relay is IBCAppBase, IRelay {
         if (order != RelayLib.ORDER) {
             revert RelayLib.ErrInvalidProtocolOrdering();
         }
-        counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
     function onChanOpenTry(
@@ -541,7 +540,6 @@ contract UCS01Relay is IBCAppBase, IRelay {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
         }
-        counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
     function onChanOpenAck(
@@ -553,9 +551,6 @@ contract UCS01Relay is IBCAppBase, IRelay {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
         }
-        // Counterparty channel was empty.
-        counterpartyEndpoints[portId][channelId].channel_id =
-            counterpartyChannelId;
     }
 
     function onChanOpenConfirm(
@@ -576,4 +571,10 @@ contract UCS01Relay is IBCAppBase, IRelay {
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 }

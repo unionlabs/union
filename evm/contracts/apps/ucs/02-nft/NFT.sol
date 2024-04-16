@@ -1,13 +1,21 @@
 pragma solidity ^0.8.23;
 
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+
 import "@openzeppelin/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/token/ERC721/ERC721.sol";
 import "@openzeppelin/token/ERC721/IERC721.sol";
 import "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+
 import "solady/utils/LibString.sol";
+
 import "solidity-stringutils/strings.sol";
 import "solidity-bytes-utils/BytesLib.sol";
-import "../../../core/25-handler/IBCHandler.sol";
+
+import "../../../core/04-channel/IIBCPacket.sol";
 import "../../../core/02-client/IBCHeight.sol";
 import "../../../lib/Hex.sol";
 import "../../Base.sol";
@@ -147,13 +155,20 @@ library NFTLib {
     }
 }
 
-contract UCS02NFT is IBCAppBase, IERC721Receiver {
+contract UCS02NFT is
+    IBCAppBase,
+    IERC721Receiver,
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable
+{
     using LibString for *;
     using BytesLib for *;
     using strings for *;
     using NFTPacketLib for *;
 
-    IBCHandler private immutable ibcHandler;
+    IIBCPacket private ibcHandler;
 
     // A mapping from remote denom to local ERC721 wrapper.
     mapping(string => mapping(string => mapping(string => address))) private
@@ -162,14 +177,18 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
     // Required to determine whether an ERC721 token is originating from a remote chain.
     mapping(string => mapping(string => mapping(address => string))) private
         nftToDenom;
-    // A mapping from local port/channel to it's counterparty.
-    // This is required to remap denoms.
-    mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
-        private counterpartyEndpoints;
     mapping(string => mapping(string => mapping(address => uint256))) private
         outstanding;
 
-    constructor(IBCHandler _ibcHandler) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        IIBCPacket _ibcHandler,
+        address admin
+    ) public initializer {
+        __Ownable_init(admin);
         ibcHandler = _ibcHandler;
     }
 
@@ -184,15 +203,6 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
 
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
-    }
-
-    // Return a channel counterparty endpoint.
-    // A counterparty will exist only if a channel has been previously opened.
-    function getCounterpartyEndpoint(
-        string memory sourcePort,
-        string memory sourceChannel
-    ) external view returns (IbcCoreChannelV1Counterparty.Data memory) {
-        return counterpartyEndpoints[sourcePort][sourceChannel];
     }
 
     // Return the amount of tokens submitted through the given port/channel.
@@ -269,20 +279,19 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
         bool supportsMetadata = IERC165(nftClass).supportsInterface(
             type(IERC721Metadata).interfaceId
         );
+        string[] memory tokenUris;
         string memory name = "";
         string memory symbol = "";
         if (supportsMetadata) {
             name = IERC721Metadata(nftClass).name();
             symbol = IERC721Metadata(nftClass).symbol();
-        }
-        string[] memory tokenUris = new string[](tokensLength);
-        for (uint256 i = 0; i < tokensLength; i++) {
-            uint256 tokenId = tokens[i];
-            if (supportsMetadata) {
+            tokenUris = new string[](tokensLength);
+            for (uint256 i = 0; i < tokensLength; i++) {
+                uint256 tokenId = tokens[i];
                 tokenUris[i] = IERC721Metadata(nftClass).tokenURI(tokenId);
-            } else {
-                tokenUris[i] = "";
             }
+        } else {
+            tokenUris = new string[](0);
         }
         // TODO: fetch creator/memo
         return NFTPacket({
@@ -498,11 +507,21 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
         // The nft class must exist as we previously created it.
         // If it does not, it means it was a originating from the local chain.
         address nftClass = denomToNft[portId][channelId][packet.classId];
-        if (nftClass != address(0)) {
-            uint256 tokenIdsLength = packet.tokenIds.length;
-            for (uint256 i = 0; i < tokenIdsLength; i++) {
-                // The tokenId must exist as we previously created it along the nftClass.
-                uint256 tokenId = packet.tokenIds[i];
+        bool isLocal = nftClass == address(0);
+        uint256 tokenIdsLength = packet.tokenIds.length;
+        if (isLocal) {
+            decreaseOutstanding(portId, channelId, nftClass, tokenIdsLength);
+        }
+        for (uint256 i = 0; i < tokenIdsLength; i++) {
+            uint256 tokenId = packet.tokenIds[i];
+            if (isLocal) {
+                // The token was originating from the local chain, we escrowed
+                // it. Refund means unescrowing.
+                // It's an ERC721 tokenId
+                IERC721(nftClass).safeTransferFrom(
+                    address(this), userToRefund, tokenId
+                );
+            } else {
                 // The token was originating from the remote chain, we burnt it.
                 // Refund means minting in this case.
                 string memory tokenUri = "";
@@ -510,18 +529,6 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
                     tokenUri = packet.tokenUris[i];
                 }
                 IERC721Denom(nftClass).mint(userToRefund, tokenId, tokenUri);
-            }
-        } else {
-            uint256 tokenIdsLength = packet.tokenIds.length;
-            decreaseOutstanding(portId, channelId, nftClass, tokenIdsLength);
-            for (uint256 i = 0; i < tokenIdsLength; i++) {
-                // The token was originating from the local chain, we escrowed
-                // it. Refund means unescrowing.
-                // It's an ERC721 tokenId
-                uint256 tokenId = packet.tokenIds[i];
-                IERC721(nftClass).safeTransferFrom(
-                    address(this), userToRefund, tokenId
-                );
             }
         }
         emit NFTLib.Refunded(
@@ -560,7 +567,6 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
         if (order != NFTLib.ORDER) {
             revert NFTLib.ErrInvalidProtocolOrdering();
         }
-        counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
     function onChanOpenTry(
@@ -581,7 +587,6 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
         if (!NFTLib.isValidVersion(counterpartyVersion)) {
             revert NFTLib.ErrInvalidCounterpartyProtocolVersion();
         }
-        counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
     function onChanOpenAck(
@@ -593,9 +598,6 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
         if (!NFTLib.isValidVersion(counterpartyVersion)) {
             revert NFTLib.ErrInvalidCounterpartyProtocolVersion();
         }
-        // Counterparty channel was empty.
-        counterpartyEndpoints[portId][channelId].channel_id =
-            counterpartyChannelId;
     }
 
     function onChanOpenConfirm(
@@ -616,4 +618,10 @@ contract UCS02NFT is IBCAppBase, IERC721Receiver {
     ) external override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 }

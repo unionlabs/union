@@ -34,6 +34,10 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    env-utils = {
+      url = "github:oceanlewis/env-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # Prysm bls12-381 native for eth LC aggregate/verify custom query
     blst = {

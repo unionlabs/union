@@ -164,6 +164,26 @@
         "type": "github"
       }
     },
+    "env-utils": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1651360332,
+        "narHash": "sha256-jASdfxvtzJ8p1QBSx4f8j4KvhQvOxzO/6L8/EYNwkLY=",
+        "owner": "oceanlewis",
+        "repo": "env-utils",
+        "rev": "471bd5f000d7d68c6376b74e82822dd0ea761b4a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oceanlewis",
+        "repo": "env-utils",
+        "type": "github"
+      }
+    },
     "ethereum-consensus-specs": {
       "flake": false,
       "locked": {
@@ -496,6 +516,7 @@
         "cosmossdk": "cosmossdk",
         "cosmwasm-nfts": "cosmwasm-nfts",
         "crane": "crane",
+        "env-utils": "env-utils",
         "ethereum-consensus-specs": "ethereum-consensus-specs",
         "flake-parts": "flake-parts_2",
         "foundry": "foundry",

@@ -61,11 +61,11 @@ in
     command = [ "${geth-init}/bin/geth-init" ];
     healthcheck = {
       interval = "5s";
-      retries = 2;
+      retries = 3;
       test = [
         "CMD-SHELL"
         ''
-          curl http://127.0.0.1:8545 \
+          curl http://geth:8545 \
             -X POST \
             -H 'Content-Type: application/json' \
             -d '{"jsonrpc": "2.0", "id": "1", "method": "eth_getBlockByNumber","params": ["0x0", false]}' | jq -r '.result.hash' || exit 1

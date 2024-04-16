@@ -44,9 +44,10 @@ abstract contract IBCHandler is
         address _ibcClient,
         address _ibcConnection,
         address _ibcChannel,
-        address _ibcPacket
+        address _ibcPacket,
+        address admin
     ) public virtual initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init(admin);
         __UUPSUpgradeable_init();
         ibcClient = _ibcClient;
         ibcConnection = _ibcConnection;

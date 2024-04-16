@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, mkCi, mkNodeId, dbg, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', nix-filter, inputs', system, get-flake, mkCi, mkNodeId, dbg, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -168,10 +168,51 @@
             inherit pkgs;
             config = self'.packages.devnet-eth-config;
           };
+          forge = import ./services/forge.nix {
+            inherit pkgs;
+            inherit (self'.packages) forge;
+            evm-sources = nix-filter {
+              root = ./../evm;
+              include = [
+                "scripts"
+                "contracts"
+                "tests"
+              ];
+            };
+          };
           lodestar = import ./services/lodestar.nix {
             inherit pkgs;
             config = self'.packages.devnet-eth-config;
             validatorCount = devnetConfig.ethereum.beacon.validatorCount;
+          };
+          blockscout-backend = import ./services/blockscout/backend.nix {
+            inherit lib pkgs;
+            inherit (inputs) env-utils;
+          };
+          blockscout-frontend = import ./services/blockscout/frontend.nix {
+            inherit lib pkgs;
+            inherit (inputs) env-utils;
+          };
+          blockscout-db = import ./services/blockscout/db.nix {
+            inherit lib pkgs;
+          };
+          blockscout-redis = import ./services/blockscout/redis.nix {
+            inherit lib pkgs;
+          };
+          blockscout-sig-provider = import ./services/blockscout/sig-provider.nix {
+            inherit lib pkgs;
+          };
+          blockscout-stats-db = import ./services/blockscout/stats-db.nix {
+            inherit lib pkgs;
+          };
+          blockscout-stats = import ./services/blockscout/stats.nix {
+            inherit lib pkgs;
+          };
+          blockscout-visualizer = import ./services/blockscout/visualizer.nix {
+            inherit lib pkgs;
+          };
+          blockscout-proxy = import ./services/blockscout/proxy.nix {
+            inherit lib pkgs;
           };
         };
 
