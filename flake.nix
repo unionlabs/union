@@ -193,7 +193,6 @@
         ./app/app.nix
         ./site/site.nix
         ./site/openapi.nix
-        ./indexer/indexer.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix
