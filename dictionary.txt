@@ -4,6 +4,7 @@ Accs
 Acknowledgemets
 Acks
 Axelar
+BLOCKSCOUT
 Beriker
 Bitfield
 Bitvector
@@ -73,6 +74,7 @@ LIBVIPS
 Lahcen
 Layerzero
 Lightshift
+MARKETCAP
 Mathjax
 Maxblocks
 Merkle
@@ -143,6 +145,7 @@ Undelegate
 Unintersect
 Unjail
 Unmarshal
+VYPER
 Vals
 Verkle
 Viridis
@@ -230,6 +233,7 @@ bitvector
 blabla
 blcok
 blockquote
+blockscout
 blocksync
 blst
 boneh
@@ -354,6 +358,7 @@ drawio
 dyld
 dylib
 echarts
+ecto
 eitherway
 elems
 endianness
@@ -494,6 +499,7 @@ interchainaccounts
 interfacetype
 iohk
 ipetkov
+isready
 itertools
 iure
 jemalloc
@@ -618,6 +624,7 @@ nowrap
 nums
 numtide
 observablehq
+oceanlewis
 omit
 omnichain
 oneof
@@ -784,6 +791,7 @@ smallvec
 snapshotter
 snapshottypes
 solomachine
+sourcify
 spearbit
 specialized
 spents
@@ -826,6 +834,7 @@ subdetail
 submessage
 submessages
 submsg
+subnetwork
 subroot
 subsec
 subslice

@@ -36,7 +36,6 @@ in
         "${../../hubble/hasura/metadata}:/hasura-metadata"
         "${../../hubble/hasura/migrations}:/hasura-migrations"
       ];
-
       depends_on = {
         data-connector-agent = {
           condition = "service_healthy";

@@ -417,8 +417,6 @@
         };
 
         forge = wrappedForge;
-
-        evm-sources = evmSources;
       } //
       builtins.listToAttrs (
         builtins.map
