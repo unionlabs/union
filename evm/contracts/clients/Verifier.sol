@@ -139,8 +139,7 @@ library Verifier {
             mstore(add(f, 0x20), CONSTANT_Y)
 
             // Add the proof commitment
-            mstore(g, calldataload(proofCommitment))
-            mstore(add(g, 0x20), calldataload(add(proofCommitment, 32)))
+            calldatacopy(g, proofCommitment, 0x40)
             success :=
                 and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
 
@@ -189,8 +188,6 @@ library Verifier {
             return false;
         }
 
-        // hash(proof.a, proof.c, inputs)
-        bytes32 r1 = keccak256(abi.encodePacked(proof[0], proof[1], proof[6], proof[7], x, y));
         bytes32 r2 = keccak256(abi.encodePacked(proofCommitment, proofCommitmentPOK));
 
         // Note: The precompile expects the F2 coefficients in big-endian order.
@@ -198,17 +195,27 @@ library Verifier {
         assembly ("memory-safe") {
             let f := mload(0x40) // Free memory pointer.
 
-            // Copy point B to memory (A and C needs to be multiplied first). They are already in correct encoding
-            calldatacopy(add(f, 0x40), add(proof, 0x40), 0x80)
-        
-            // write e(r1 * A, B)
-            calldatacopy(add(f, 0x100), proof, 0x40)
-            mstore(add(f, 0x140), r1)
-            success := staticcall(gas(), PRECOMPILE_MUL, add(f, 0x100), 0x60, f, 0x40)
+            // Copy A, B and C into memory.
+            calldatacopy(f, proof, 0x100)
 
-            // write G1 of e(r1 * C, -δ)
-            calldatacopy(add(f, 0x100), add(proof, 0xc0), 0x40)
-            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x100), 0x60, add(f, 0xc0), 0x40))
+            // r1 = hash(proof, x, y)
+            mstore(add(f, 0x100), x)
+            mstore(add(f, 0x120), y)
+            let r1 := keccak256(f, 0x140)
+            
+            // Temporarily move B.x1 because of the following override
+            let B_X := mload(add(f, 0x40))
+        
+            // Write e(r1 * A, B)
+            mstore(add(f, 0x40), r1)
+            success := staticcall(gas(), PRECOMPILE_MUL, f, 0x60, f, 0x40)
+
+            // Write B.x1 back
+            mstore(add(f, 0x40), B_X)
+
+            // Write G1 of e(r1 * C, -δ)
+            mstore(add(f, 0x100), r1)
+            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0xc0), 0x60, add(f, 0xc0), 0x40))
 
             // Complete e(r1 * C, -δ) and write e(r1 * α, -β), e(r1 * L_pub, -γ) to memory.
             // OPT: This could be better done using a single codecopy, but
