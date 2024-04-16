@@ -21,3 +21,4 @@ unionlabs    = { workspace = true }
 
 [features]
 default = []
+std     = []

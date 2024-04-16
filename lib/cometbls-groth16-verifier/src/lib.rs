@@ -8,7 +8,9 @@ use core::marker::PhantomData;
 use ark_ff::{vec, BigInt};
 use byteorder::{BigEndian, ByteOrder};
 use hex_literal::hex;
+use sha2::Sha256;
 use sha3::Digest;
+use substrate_bn::G1;
 use unionlabs::{
     hash::H256, ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt,
 };
@@ -292,6 +294,7 @@ pub enum Error {
     InvalidChainId,
     InvalidHeight,
     InvalidTimestamp,
+    InvalidSliceLength,
 }
 
 pub fn verify_zkp(
@@ -310,6 +313,19 @@ pub fn verify_zkp(
         g_root_sigma_neg,
         ZKP::try_from(zkp.into().as_ref())?,
     )
+}
+
+fn g1_to_bytes(g1_point: &G1) -> Result<[u8; 64], Error> {
+    let mut buffer = [0; 64];
+    g1_point
+        .x()
+        .to_big_endian(&mut buffer[..32])
+        .map_err(|_| Error::InvalidPoint)?;
+    g1_point
+        .y()
+        .to_big_endian(&mut buffer[32..])
+        .map_err(|_| Error::InvalidPoint)?;
+    Ok(buffer)
 }
 
 fn verify_generic_zkp_2(
@@ -388,16 +404,40 @@ fn verify_generic_zkp_2(
         )
         .fold(initial_point, |s, (w_i, gamma_l_i)| s + gamma_l_i * w_i);
     // TODO: the verifying key transformation, pedersen key decoding and this negations should all be done at compile time
-    // TODO: random linear combination required?
+
+    let proof_a: G1 = zkp.proof.a.into();
+    let proof_c: G1 = zkp.proof.c.into();
+    let pc: G1 = zkp.proof_commitment.into();
+    let pok: G1 = zkp.proof_commitment_pok.into();
+
+    let r1 = substrate_bn::Fr::from_slice(
+        &Sha256::new()
+            .chain_update(&g1_to_bytes(&proof_a)?)
+            .chain_update(&g1_to_bytes(&proof_c)?)
+            .chain_update(&g1_to_bytes(&public_inputs_msm)?)
+            .finalize(),
+    )
+    .map_err(|_| Error::InvalidSliceLength)?;
+
+    let r2 = substrate_bn::Fr::from_slice(
+        &Sha256::new()
+            .chain_update(&g1_to_bytes(&pc)?)
+            .chain_update(&g1_to_bytes(&pok)?)
+            .finalize(),
+    )
+    .map_err(|_| Error::InvalidSliceLength)?;
+
     let result = substrate_bn::pairing_batch(&[
-        // Verify groth16 proof
-        (zkp.proof.a.into(), zkp.proof.b.into()),
-        (public_inputs_msm, -substrate_bn::G2::from(vk.gamma_g2)),
-        (zkp.proof.c.into(), -substrate_bn::G2::from(vk.delta_g2)),
-        (vk.alpha_g1.into(), -substrate_bn::G2::from(vk.beta_g2)),
+        (proof_a * r1, zkp.proof.b.into()),
+        (public_inputs_msm * r1, -substrate_bn::G2::from(vk.gamma_g2)),
+        (proof_c * r1, -substrate_bn::G2::from(vk.delta_g2)),
+        (
+            G1::from(vk.alpha_g1) * r1,
+            -substrate_bn::G2::from(vk.beta_g2),
+        ),
         // Verify pedersen proof of knowledge
-        (zkp.proof_commitment.into(), g.into()),
-        (zkp.proof_commitment_pok.into(), g_root_sigma_neg.into()),
+        (pc * r2, g.into()),
+        (pok * r2, g_root_sigma_neg.into()),
     ]);
     if result != substrate_bn::Gt::one() {
         Err(Error::InvalidProof)
