@@ -200,10 +200,10 @@ library Verifier {
             mstore(add(f, 0x100), x)
             mstore(add(f, 0x120), y)
             let r1 := keccak256(f, 0x140)
-            
+
             // Temporarily move B.x1 because of the following override
             let B_X := mload(add(f, 0x40))
-        
+
             // Write e(r1 * A, B)
             mstore(add(f, 0x40), r1)
             success := staticcall(gas(), PRECOMPILE_MUL, f, 0x60, f, 0x40)
@@ -213,7 +213,18 @@ library Verifier {
 
             // Write G1 of e(r1 * C, -δ)
             mstore(add(f, 0x100), r1)
-            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0xc0), 0x60, add(f, 0xc0), 0x40))
+            success :=
+                and(
+                    success,
+                    staticcall(
+                        gas(),
+                        PRECOMPILE_MUL,
+                        add(f, 0xc0),
+                        0x60,
+                        add(f, 0xc0),
+                        0x40
+                    )
+                )
 
             // Complete e(r1 * C, -δ) and write e(r1 * α, -β), e(r1 * L_pub, -γ) to memory.
             // OPT: This could be better done using a single codecopy, but
@@ -228,7 +239,18 @@ library Verifier {
             mstore(add(f, 0x180), ALPHA_X)
             mstore(add(f, 0x1a0), ALPHA_Y)
             mstore(add(f, 0x1c0), r1)
-            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x180), 0x60, add(f, 0x180), 0x40))
+            success :=
+                and(
+                    success,
+                    staticcall(
+                        gas(),
+                        PRECOMPILE_MUL,
+                        add(f, 0x180),
+                        0x60,
+                        add(f, 0x180),
+                        0x40
+                    )
+                )
 
             mstore(add(f, 0x1c0), BETA_NEG_X_1)
             mstore(add(f, 0x1e0), BETA_NEG_X_0)
@@ -239,8 +261,19 @@ library Verifier {
             mstore(add(f, 0x240), x)
             mstore(add(f, 0x260), y)
             mstore(add(f, 0x280), r1)
-            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x240), 0x60, add(f, 0x240), 0x40))
-            
+            success :=
+                and(
+                    success,
+                    staticcall(
+                        gas(),
+                        PRECOMPILE_MUL,
+                        add(f, 0x240),
+                        0x60,
+                        add(f, 0x240),
+                        0x40
+                    )
+                )
+
             mstore(add(f, 0x280), GAMMA_NEG_X_1)
             mstore(add(f, 0x2a0), GAMMA_NEG_X_0)
             mstore(add(f, 0x2c0), GAMMA_NEG_Y_1)
@@ -254,17 +287,38 @@ library Verifier {
             calldatacopy(add(f, 0x340), proofCommitmentPOK, 0x40)
             let r2 := keccak256(add(f, 0x380), 0x80)
             mstore(add(f, 0x340), r2)
-            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x300), 0x60, add(f, 0x300), 0x40))
+            success :=
+                and(
+                    success,
+                    staticcall(
+                        gas(),
+                        PRECOMPILE_MUL,
+                        add(f, 0x300),
+                        0x60,
+                        add(f, 0x300),
+                        0x40
+                    )
+                )
 
             mstore(add(f, 0x340), PEDERSEN_G_X_0)
             mstore(add(f, 0x360), PEDERSEN_G_X_1)
             mstore(add(f, 0x380), PEDERSEN_G_Y_0)
             mstore(add(f, 0x3A0), PEDERSEN_G_Y_1)
 
-            
             calldatacopy(add(f, 0x3C0), proofCommitmentPOK, 0x40)
             mstore(add(f, 0x400), r2)
-            success := and(success, staticcall(gas(), PRECOMPILE_MUL, add(f, 0x3C0), 0x60, add(f, 0x3C0), 0x40))
+            success :=
+                and(
+                    success,
+                    staticcall(
+                        gas(),
+                        PRECOMPILE_MUL,
+                        add(f, 0x3C0),
+                        0x60,
+                        add(f, 0x3C0),
+                        0x40
+                    )
+                )
 
             mstore(add(f, 0x400), PEDERSEN_G_ROOT_SIGMA_NEG_X_0)
             mstore(add(f, 0x420), PEDERSEN_G_ROOT_SIGMA_NEG_X_1)
@@ -272,7 +326,10 @@ library Verifier {
             mstore(add(f, 0x460), PEDERSEN_G_ROOT_SIGMA_NEG_Y_1)
 
             // Check pairing equation.
-            success := and(success, staticcall(gas(), PRECOMPILE_VERIFY, f, 0x480, f, 0x20))
+            success :=
+                and(
+                    success, staticcall(gas(), PRECOMPILE_VERIFY, f, 0x480, f, 0x20)
+                )
             // Also check returned value (both are either 1 or 0).
             success := and(success, mload(f))
         }
