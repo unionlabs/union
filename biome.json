@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.6.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.7.0/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -155,15 +155,14 @@
       "nursery": {
         "all": true,
         "noConsole": "off",
-        "noBarrelFile": "off",
-        "noReExportAll": "off",
         "noNodejsModules": "off",
-        "noUselessTernary": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off"
       },
       "performance": {
         "all": true,
+        "noBarrelFile": "off",
+        "noReExportAll": "off",
         "noAccumulatingSpread": "warn"
       },
       "correctness": {
@@ -183,6 +182,7 @@
         "noForEach": "off",
         "noBannedTypes": "off",
         "useLiteralKeys": "off",
+        "noUselessTernary": "off",
         "noUselessFragments": "off",
         "noExcessiveCognitiveComplexity": "off"
       },
