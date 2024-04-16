@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, config, self', ... }:
 let
   geth-init =
     pkgs.writeShellApplication {
@@ -6,8 +6,21 @@ let
       runtimeInputs = [ pkgs.go-ethereum config ];
       text = ''
         ETH_DATADIR=/geth
+        mkdir "$ETH_DATADIR"
+        cp ${config}/genesis.json "$ETH_DATADIR"
 
-        geth init --datadir "$ETH_DATADIR" /${config}/genesis.json
+        # TODO(aeryz): check if we can omit output-ssz here
+        ${self'.packages.prysm}/bin/prysmctl testnet generate-genesis \
+          --fork capella \
+          --num-validators 64 \
+          --chain-config-file /${config}/beacon-config.yml \
+          --geth-genesis-json-in "$ETH_DATADIR/genesis.json" \
+          --geth-genesis-json-out "$ETH_DATADIR/genesis.json" \
+          --output-ssz "$ETH_DATADIR/genesis.ssz" \
+          --genesis-time 1710464327 \
+          --config-name minimal
+
+        geth init --datadir "$ETH_DATADIR" "$ETH_DATADIR/genesis.json"
         geth account import --datadir "$ETH_DATADIR" \
           --password /dev/null ${config}/dev-key0.prv
         geth account import --datadir "$ETH_DATADIR" \
