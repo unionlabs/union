@@ -83,11 +83,6 @@ abstract contract UnionBase is Script {
         internal
         returns (Deployer)
     {
-        vm.assertEq(
-            vm.getNonce(wallet),
-            0,
-            "Wallet must be fresh to deploy the deployer"
-        );
         bytes memory bytecode = DEPLOYER_BYTECODE_SOLIDITY_8_23_f704f362;
         Deployer deployer;
         assembly {
@@ -235,5 +230,45 @@ contract DeployDeployerAndIBC is UnionScript {
         deployIBC(wallet.addr);
 
         vm.stopBroadcast();
+    }
+}
+
+contract GetDeployed is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployed(string memory salt) internal returns (address) {
+        return CREATE3.getDeployed(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address handler = getDeployed(IBC.BASED);
+        address cometblsClient =
+            getDeployed(LightClients.make(LightClients.COMETBLS));
+        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
+        address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
+
+        console.log(
+            string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
+        );
+        console.log(
+            string(
+                abi.encodePacked(
+                    "CometblsClient: ", cometblsClient.toHexString()
+                )
+            )
+        );
+        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
+        console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
     }
 }
