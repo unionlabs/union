@@ -1,5 +1,5 @@
 {
-  "extends": "astro/tsconfigs/strict",
+  "extends": ["astro/tsconfigs/strict"],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
@@ -22,9 +22,9 @@
         "name": "@astrojs/ts-plugin"
       }
     ],
-    "types": ["node", "@cloudflare/workers-types", "typed-query-selector/strict"]
+    "types": ["node", "bun", "@cloudflare/workers-types", "typed-query-selector/strict"]
   },
-  "include": ["src/**/*", "public/**/*"],
+  "include": ["src", "public", "scripts"],
   "files": [
     "reset.d.ts",
     "ec.config.mjs",

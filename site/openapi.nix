@@ -4,8 +4,9 @@
       let
         generate-openapi-build-phase = pkgs.runCommand "generate-openapi-build"
           {
-            buildInputs = [ biome ] ++ (with unstablePkgs; [ yq jq openapi-generator-cli ]);
+            buildInputs = [ biome ] ++ (with unstablePkgs; [ yq jq bun openapi-generator-cli ]);
             BIOME_JSON = ../biome.json;
+            TS_OPENAPI_CLEANUP_SCRIPT = ./scripts/openapi-cleanup.ts;
           } ''
           echo "Build Phase"
 
@@ -30,62 +31,58 @@
           # convert ibc openapi spec to openapi v3
           #
           openapi-generator-cli generate \
-            --generator-name go \
+            --generator-name openapi \
             --output ibc-go-out \
-            --input-spec ${openapi.ibcGoOpenApiYml} && \
-            #
-            # convert ibc-go v3 spec from yaml to json
-            #
-            cat ibc-go-out/api/openapi.yaml | yq >ibc_go_v3.json
+            --input-spec ${openapi.ibcGoOpenApiYml} 
 
           #
           # convert uniond openapi spec to openapi v3
           #
           openapi-generator-cli generate \
-            --generator-name go \
+            --generator-name openapi \
             --output uniond-out \
-            --input-spec ${openapi.uniondOpenApiYml} && \
-            #
-            # convert union-rest v3 spec from yaml to json
-            #
-            cat uniond-out/api/openapi.yaml | yq >union_rest_v3.json
-            #
-            # take `paths` from ibc-go v3 spec and merge with `paths` from union-rest v3 spec
-            #
-            jq --slurpfile ibc_go_v3 \
-              ibc_go_v3.json '.paths += $ibc_go_v3[0].paths' union_rest_v3.json \
-              >/tmp/union_rest_v3_merged.json && \
+            --input-spec ${openapi.uniondOpenApiYml}
+
+          #
+          # take `paths` from ibc-go v3 spec and merge with `paths` from union-rest v3 spec
+          #
+          jq --slurpfile ibc_go_v3 \
+            ibc-go-out/openapi.json '.paths += $ibc_go_v3[0].paths' uniond-out/openapi.json \
+            >/tmp/union_rest_v3_merged.json && \
             #
             # take 'components.schemas' from ibc-go v3 spec and merge with 'components.schemas' from union-rest v3 spec
             #
             jq \
-              --slurpfile ibc_go_v3 ibc_go_v3.json \
+              --slurpfile ibc_go_v3 ibc-go-out/openapi.json \
               '.components.schemas += $ibc_go_v3[0].components.schemas' /tmp/union_rest_v3_merged.json \
               >/tmp/union_rest_v3_merged_schemas.json && \
-            #
-            # finally, store the union_rest_v3_merged_schemas_servers.json in the correct location
-            #
-            mv /tmp/union_rest_v3_merged_schemas.json "$out"/openapi/rest/openapi.json
+              #
+              # remove unused `paths` and `components.schemas` from the merged spec
+              #
+              bun $TS_OPENAPI_CLEANUP_SCRIPT /tmp/union_rest_v3_merged_schemas.json > /tmp/union_rest_v3_cleaned.json && \
+              #
+              # finally, store the union_rest_v3_cleaned.json in the correct location
+              #
+              mv /tmp/union_rest_v3_cleaned.json "$out"/openapi/rest/openapi.json && \
+              #
+              # validate the generated RPC openapi specs
+              #
+              openapi-generator-cli validate \
+                --input-spec "$out"/openapi/rpc/openapi.json \
+                --recommend
+            
+          #
+          # validate the generated REST openapi specs
+          #
+          openapi-generator-cli validate \
+            --input-spec "$out"/openapi/rest/openapi.json \
+            --recommend
 
-            #
-            # validate the generated RPC openapi specs
-            #
-            openapi-generator-cli validate \
-              --input-spec "$out"/openapi/rpc/openapi.json \
-              --recommend
-              
-            #
-            # validate the generated REST openapi specs
-            #
-            openapi-generator-cli validate \
-              --input-spec "$out"/openapi/rest/openapi.json \
-              --recommend
-
-            #
-            # format the result
-            #
-            cp $BIOME_JSON ./biome.json
-            biome format $out --config-path . --error-on-warnings --log-level="info" --diagnostic-level="info" --write
+          #
+          # format the result
+          #
+          cp $BIOME_JSON ./biome.json
+          biome format $out --config-path . --error-on-warnings --log-level="info" --diagnostic-level="info" --write
         '';
       in
       {
