@@ -344,10 +344,10 @@
         devnet = pkgs.writeShellApplication
           {
             name = "union-full-devnet";
-            runtimeInputs = [ lnav ];
+            runtimeInputs = [ pkgs.bash inputs'.process-compose.packages.process-compose ];
             text = ''
               ${ensureAtRepositoryRoot}
-              lnav ./devnet-logs
+              SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
             '';
           };
         devnet-union-home = mkCi false (devnet-union.devnet-home);

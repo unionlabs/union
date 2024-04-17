@@ -12,6 +12,7 @@
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
+    process-compose.url = "github:F1bonacc1/process-compose";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
