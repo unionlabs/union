@@ -464,6 +464,7 @@
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+              postgresql
               cargo-fuzz
               cargo-llvm-cov
               bacon
@@ -479,7 +480,7 @@
               protobuf
               self'.packages.tdc
               yq
-            ] ++ (with unstablePkgs; [
+            ]) ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
               nodejs_21
               nodePackages.graphqurl
@@ -488,7 +489,7 @@
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
             ])
-            ++ (with goPkgs; [
+              ++ (with goPkgs; [
               go
               gopls
               go-tools
@@ -498,7 +499,7 @@
               pkgs.foundry-bin
               goPkgs.sqlx-cli
               self'.packages.hasura-cli
-            ] else [ ]));
+            ] else [ ]);
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
 
