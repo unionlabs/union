@@ -4,15 +4,27 @@ processes:
   devnet-union:
     command: nix run .#devnet-union
     log_location: ./devnet-logs/devnet-union.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
   devnet-osmosis:
     command: nix run .#devnet-osmosis
     log_location: ./devnet-logs/devnet-osmosis.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
   devnet-eth:
     command: nix run .#devnet-eth
     log_location: ./devnet-logs/devnet-eth.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
   voyager-queue:
     command: nix run .#voyager-queue
     log_location: ./devnet-logs/voyager-queue.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
   download-circuit:
     command: nix run ".#download-circuit" . 
     log_location: ./devnet-logs/download-circuit.log

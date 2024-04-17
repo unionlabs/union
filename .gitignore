@@ -28,6 +28,8 @@ yarn-error.log*
 
 genesis.ssz
 
+# Galois Circuit
+circuit.zip
 r1cs.bin
 vk.bin
 pk.bin
