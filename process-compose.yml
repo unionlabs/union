@@ -1,0 +1,32 @@
+version: "0.5"
+
+processes:
+  devnet-union:
+    command: nix run .#devnet-union
+    log_location: ./devnet-logs/devnet-union.log
+  devnet-osmosis:
+    command: nix run .#devnet-osmosis
+    log_location: ./devnet-logs/devnet-osmosis.log
+  devnet-eth:
+    command: nix run .#devnet-eth
+    log_location: ./devnet-logs/devnet-eth.log
+  voyager-queue:
+    command: nix run .#voyager-queue
+    log_location: ./devnet-logs/voyager-queue.log
+  download-circuit:
+    command: nix run ".#download-circuit" . 
+    log_location: ./devnet-logs/download-circuit.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
+  galois:
+    command: nix run .#galoisd
+    log_location: ./devnet-logs/galois.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
+
+
+log_configuration:
+  disable_json: true
+  no_metadata: true  
