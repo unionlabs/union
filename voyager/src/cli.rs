@@ -218,7 +218,7 @@ impl FromArgMatches for Handshake {
         HandshakeRaw::from_arg_matches(matches).and_then(Self::from_raw)
     }
 
-    fn update_from_arg_matches(&mut self, matches: &clap::ArgMatches) -> Result<(), clap::Error> {
+    fn update_from_arg_matches(&mut self, _matches: &clap::ArgMatches) -> Result<(), clap::Error> {
         todo!()
     }
 }

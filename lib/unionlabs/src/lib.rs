@@ -296,14 +296,14 @@ pub trait ByteArrayExt<const N: usize> {
     /// // checked at compile time!
     /// assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
     /// ```
-    fn array_slice<const FROM: usize, const LEN: usize>(&self) -> [u8; LEN];
+    fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN];
 }
 
 impl<const N: usize> ByteArrayExt<N> for [u8; N] {
-    fn array_slice<const FROM: usize, const LEN: usize>(&self) -> [u8; LEN] {
-        const_assert!(FROM: usize, LEN: usize, N: usize => FROM + LEN <= N);
+    fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN] {
+        const_assert!(OFFSET: usize, LEN: usize, N: usize => OFFSET + LEN <= N);
 
-        unsafe { *addr_of!(self[FROM..(FROM + LEN)]).cast::<[u8; LEN]>() }
+        unsafe { *addr_of!(self[OFFSET..(OFFSET + LEN)]).cast::<[u8; LEN]>() }
     }
 }
 
