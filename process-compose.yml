@@ -70,7 +70,7 @@ processes:
     shutdown:
       signal: 2
   voyager-relay:
-    command: nix run -L github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json relay
+    command: RUST_LOG=info nix run -L github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json relay
     availability:
       restart: "always"
       backoff_seconds: 2
