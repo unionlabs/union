@@ -59,3 +59,5 @@ cache
 
 .envrc.local
 justfile
+
+.devnet-logs

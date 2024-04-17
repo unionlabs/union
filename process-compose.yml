@@ -3,37 +3,67 @@ version: "0.5"
 processes:
   devnet-union:
     command: nix run .#devnet-union
-    log_location: ./devnet-logs/devnet-union.log
+    log_location: ./.devnet-logs/devnet-union.log
     log_configuration:
       disable_json: true
       no_metadata: true  
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/block?height=2"
+        port: 26657
+      initial_delay_seconds: 5
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 60
   devnet-osmosis:
     command: nix run .#devnet-osmosis
-    log_location: ./devnet-logs/devnet-osmosis.log
+    log_location: ./.devnet-logs/devnet-osmosis.log
     log_configuration:
       disable_json: true
       no_metadata: true  
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/block?height=2"
+        port: 26857
+      initial_delay_seconds: 5
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 60
   devnet-eth:
     command: nix run .#devnet-eth
-    log_location: ./devnet-logs/devnet-eth.log
+    log_location: ./.devnet-logs/devnet-eth.log
     log_configuration:
       disable_json: true
       no_metadata: true  
   voyager-queue:
     command: nix run .#voyager-queue
-    log_location: ./devnet-logs/voyager-queue.log
+    log_location: ./.devnet-logs/voyager-queue.log
     log_configuration:
       disable_json: true
       no_metadata: true  
+    readiness_probe:
+      exec:
+        command: "pg_isready -h 127.0.0.1 -p 5432"
+      initial_delay_seconds: 5
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 60
   download-circuit:
     command: nix run ".#download-circuit" . 
-    log_location: ./devnet-logs/download-circuit.log
+    log_location: ./.devnet-logs/download-circuit.log
     log_configuration:
       disable_json: true
       no_metadata: true  
   galois:
-    command: nix run .#galoisd
-    log_location: ./devnet-logs/galois.log
+    command: nix run .#galoisd -- serve localhost:9999 --cs-path=./r1cs.bin --pk-path=./pk.bin --vk-path=./vk.bin
+    log_location: ./.devnet-logs/galois.log
     log_configuration:
       disable_json: true
       no_metadata: true  
