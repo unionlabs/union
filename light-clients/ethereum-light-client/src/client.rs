@@ -18,6 +18,7 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
+    ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_INDEX,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -130,7 +131,11 @@ impl IbcClient for EthereumLightClient {
         )?;
 
         let wasm_client_state = read_client_state(deps)?;
-        let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+        let ctx = LightClientContext::new(
+            &wasm_client_state.data,
+            trusted_consensus_state,
+            CURRENT_JUSTIFIED_ROOT_INDEX,
+        );
 
         // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
         // at the current timestamp.
@@ -197,7 +202,11 @@ impl IbcClient for EthereumLightClient {
         )?;
 
         let wasm_client_state = read_client_state(deps)?;
-        let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+        let ctx = LightClientContext::new(
+            &wasm_client_state.data,
+            trusted_consensus_state,
+            CURRENT_JUSTIFIED_ROOT_INDEX,
+        );
 
         let current_slot = compute_slot_at_timestamp::<Config>(
             wasm_client_state.data.genesis_time,
