@@ -464,7 +464,6 @@
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
-              postgresql
               cargo-fuzz
               cargo-llvm-cov
               bacon
@@ -482,6 +481,7 @@
               yq
             ]) ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
+              postgresql
               nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server
