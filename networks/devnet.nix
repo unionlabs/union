@@ -170,15 +170,7 @@
           };
           forge = import ./services/forge.nix {
             inherit pkgs;
-            inherit (self'.packages) forge;
-            evm-sources = nix-filter {
-              root = ./../evm;
-              include = [
-                "scripts"
-                "contracts"
-                "tests"
-              ];
-            };
+            inherit (self'.packages) forge evm-sources;
           };
           lodestar = import ./services/lodestar.nix {
             inherit pkgs;
@@ -192,6 +184,11 @@
           blockscout-frontend = import ./services/blockscout/frontend.nix {
             inherit lib pkgs;
             inherit (inputs) env-utils;
+          };
+          blockscout-sc-verifier = import ./services/blockscout/sc-verifier.nix {
+            inherit lib pkgs;
+            inherit (inputs) env-utils;
+            inherit (self'.packages) evm-sources;
           };
           blockscout-db = import ./services/blockscout/db.nix {
             inherit lib pkgs;

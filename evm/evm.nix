@@ -74,60 +74,60 @@
           path = "${openzeppelin-foundry-upgrades}/src";
         }
       ];
-      libraries = pkgs.stdenv.mkDerivation {
-        name = "libraries";
+      evmSources = pkgs.stdenv.mkDerivation {
+        name = "project";
         phases = [ "installPhase" "fixupPhase" ];
         src = "${linkedLibs}";
         installPhase = ''
-          mkdir $out
-          cp -rL $src/* $out
+          mkdir -p $out/libs
+          cp -rL $src/* $out/libs
+          cp -r ${nix-filter {
+            root = ./.;
+            include = [
+              "scripts"
+              "contracts"
+              "tests"
+            ];
+          }}/* $out/
         '';
         fixupPhase = ''
-          substituteInPlace $out/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
+          substituteInPlace $out/libs/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
             --replace 'openzeppelin/contracts' 'openzeppelin'
 
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
+          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/Upgrades.sol \
             --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
+          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/Upgrades.sol \
             --replace 'solidity-stringutils/src' 'solidity-stringutils'
 
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
+          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
             --replace 'solidity-stringutils/src' 'solidity-stringutils'
 
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
+          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
             --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
+          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
             --replace 'solidity-stringutils/src' 'solidity-stringutils'
         '';
-      };
-      evmSources = nix-filter {
-        root = ./.;
-        include = [
-          "scripts"
-          "contracts"
-          "tests"
-        ];
       };
       # Foundry FS permissions must be explicitly set in the config file
       foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
         [profile.default]
         fs_permissions = [{ access = "read", path = "./"}]
-        libs = ["${libraries}"]
+        libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
 
         [profile.optimized]
-        src = "${evmSources}/contracts"
+        src = "contracts"
         optimizer = true
         optimizer_runs = 10_000_000
 
         [profile.script]
-        src = "${evmSources}/scripts"
+        src = "scripts"
         optimizer = true
         optimizer_runs = 10_000_000
 
         [profile.test]
-        test = "${evmSources}/tests/src"
+        test = "tests/src"
         optimizer = false
         ast = true
       '';
@@ -147,127 +147,42 @@
         {
           network = "devnet";
           rpc-url = "http://localhost:8545";
-          private-key = builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv;
+          private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
+          extra-args = "--verify --verifier blockscout --verifier-url http://localhost/api";
         }
         {
           network = "testnet";
           rpc-url = "https://rpc-sepolia.rockx.com";
           private-key = ''"$1"'';
+          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
         {
           network = "scroll-testnet";
           rpc-url = "https://sepolia-rpc.scroll.io";
           private-key = ''"$1"'';
+          extra-args = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
         }
       ];
 
-      deploy-contracts = { rpc-url, private-key }: contracts:
-        pkgs.lib.concatStrings (pkgs.lib.forEach contracts (contract:
-          deploy {
-            inherit rpc-url private-key;
-            inherit (contract) path name;
-            args = contract.args or "";
-          }));
-
-      deploy = { rpc-url, private-key, path, name, args ? "" }: ''
-        echo "Deploying ${name}..."
-        ${pkgs.lib.toUpper name}=$(FOUNDRY_PROFILE=optimized forge create \
-                 --json \
-                 --rpc-url ${rpc-url} \
-                 --private-key ${private-key} \
-                 ${evmSources}/contracts/${path}:${name} ${args} | jq --raw-output .deployedTo)
-        echo "${name} => ''$${pkgs.lib.toUpper name}"
-      '';
-
-      deploy-ibc-contracts = { network, rpc-url, private-key }:
-        mkCi false (pkgs.writeShellApplication {
-          name = "eth-${network}-deploy";
-          runtimeInputs = [ pkgs.jq wrappedForge ];
-          # Sadly, forge is trying to write back the cache file even if no change is needed :).
-          # For this reason we copy the artifacts in a temp folder and work from there.
-          text = ''
-            OUT="$(mktemp -d)"
-            cd "$OUT"
-            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-
-            ${deploy-contracts { inherit rpc-url private-key; } [
-              { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }
-              { path = "core/03-connection/IBCConnection.sol"; name = "IBCConnection"; }
-              { path = "core/04-channel/IBCChannelHandshake.sol"; name = "IBCChannelHandshake"; }
-              { path = "core/04-channel/IBCPacket.sol"; name = "IBCPacket"; }
-              { path = "core/DevnetIBCHandlerInit.sol"; name = "DevnetIBCHandlerInit"; }
-              { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET" "$DEVNETIBCHANDLERINIT"''; }
-
-              { path = "clients/CometblsClientV2.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER"''; }
-
-              { path = "apps/ucs/01-relay/Relay.sol"; name = "UCS01Relay"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "1"'';}
-            ]}
-
-            echo "{\"ibc_handler_address\": \"$DEVNETOWNABLEIBCHANDLER\", \"cometbls_client_address\": \"$COMETBLSCLIENT\", \"ucs01_relay_address\": \"$UCS01RELAY\"  }"
-
-            rm -rf "$OUT"
-          '';
-        });
-
-      deploy-ping-pong = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
-        name = "evm-${network}-ping-pong-deploy";
-        runtimeInputs = [ pkgs.jq wrappedForge ];
+      eth-deploy = { rpc-url, private-key, extra-args, ... }: pkgs.writeShellApplication {
+        name = "eth-deploy";
+        runtimeInputs = [ self'.packages.forge ];
         text = ''
+          ${ensureAtRepositoryRoot}
           OUT="$(mktemp -d)"
-          cd "$OUT"
-          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+          pushd "$OUT"
+          cp --no-preserve=mode -r ${evmSources}/* .
 
-          ${deploy-contracts { rpc-url = rpc-url;
-                           private-key = private-key; } [{
-                           path = "apps/ucs/00-pingpong/PingPong.sol";
-                           name = "PingPong";
-                           args = ''--constructor-args "$IBC_HANDLER_ADDRESS" "$REVISION_NUMBER" "$NUM_OF_BLOCK_BEFORE_PONG_TIMEOUT" ''; }]}
+          PRIVATE_KEY=${private-key} FOUNDRY_PROFILE="script" \
+            forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
+            -vvv \
+            --rpc-url ${rpc-url} \
+            --broadcast ${extra-args}
 
-          echo "{\"ping_pong_address\": \"$PINGPONG\" }"
-
+          popd
           rm -rf "$OUT"
         '';
-      });
-
-      deploy-ucs01 = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
-        name = "evm-${network}-ucs01";
-        runtimeInputs = [ pkgs.jq wrappedForge ];
-        text = ''
-          OUT="$(mktemp -d)"
-          cd "$OUT"
-          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-
-          ${deploy-contracts { rpc-url = rpc-url;
-                           private-key = private-key; } [{
-                           path = "apps/ucs/01-relay/Relay.sol";
-                           name = "UCS01Relay";
-                           args = ''--constructor-args "$IBC_HANDLER_ADDRESS"''; }]}
-
-          echo "{\"ucs01_address\": \"$UCS01RELAY\" }"
-
-          rm -rf "$OUT"
-        '';
-      });
-
-      deploy-ucs02 = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
-        name = "evm-${network}-ucs02";
-        runtimeInputs = [ pkgs.jq wrappedForge ];
-        text = ''
-          OUT="$(mktemp -d)"
-          cd "$OUT"
-          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-
-          ${deploy-contracts { rpc-url = rpc-url;
-                           private-key = private-key; } [{
-                           path = "apps/ucs/02-nft/NFT.sol";
-                           name = "UCS02NFT";
-                           args = ''--constructor-args "$IBC_HANDLER_ADDRESS"''; }]}
-
-          echo "{\"ucs02_address\": \"$UCS02NFT\" }"
-
-          rm -rf "$OUT"
-        '';
-      });
+      };
     in
     {
       packages = {
@@ -358,7 +273,6 @@
           buildInputs = [ wrappedForge ];
           buildPhase = ''
             forge --version
-            cp ${foundryConfig}/foundry.toml .
             FOUNDRY_PROFILE=optimized forge build
           '';
           doCheck = false;
@@ -407,35 +321,29 @@
           '';
         };
 
-        eth-deploy-ibc = pkgs.writeShellApplication {
-          name = "eth-deploy-ibc";
-          runtimeInputs = [ self'.packages.forge ];
+        evm-contracts-addresses = pkgs.writeShellApplication {
+          name = "eth-contracts-addresses";
+          runtimeInputs = [ self'.packages.forge pkgs.jq ];
           text = ''
             ${ensureAtRepositoryRoot}
-            PRIVATE_KEY=0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv} FOUNDRY_PROFILE="script" forge script -vvv evm/scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url http://localhost:8545 --broadcast
+            OUT="$(mktemp -d)"
+            pushd "$OUT"
+            cp --no-preserve=mode -r ${evmSources}/* .
+
+            DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:GetDeployed -vvv
+
+            rm -rf "$OUT"
+            popd
           '';
         };
 
         forge = wrappedForge;
+
+        evm-sources = evmSources;
       } //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "eth-${args.network}-deploy"; value = deploy-ibc-contracts args; })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-${args.network}-ping-pong-deploy"; value = deploy-ping-pong args; })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-${args.network}-ucs01-deploy"; value = deploy-ucs01 args; })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-${args.network}-ucs02-nft"; value = deploy-ucs02 args; })
+          (args: { name = "eth-deploy-${args.network}"; value = eth-deploy args; })
           networks
       );
     };
