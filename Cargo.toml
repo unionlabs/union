@@ -22,7 +22,7 @@ members = [
   "lib/block-message",
   "lib/chain-utils",
   "lib/cometbls-groth16-verifier",
-  "lib/ethereum-verifier",
+  "lib/ethereum-verifier", "lib/gnark-key-parser",
   "lib/ics-008-wasm-client",
   "lib/ics23",
   "lib/macros",
@@ -40,6 +40,7 @@ members = [
   "lib/unionlabs",
   "lib/voyager-message",
   "lib/zktrie-rs",
+  "lib/gnark-key-parser",
 
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",

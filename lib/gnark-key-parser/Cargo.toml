@@ -1,0 +1,15 @@
+[package]
+name = "gnark-key-parser"
+version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+substrate-bn = { version = "0.6", default-features = false }
+base64 =  { workspace = true, features = ["alloc"] }
+hex = { workspace = true, features = ["alloc"]}
+ark-ff       = { version = "0.4.2", default-features = false }
+
+[lints]
+workspace = true

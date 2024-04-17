@@ -2960,6 +2960,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gnark-key-parser"
+version = "0.1.0"
+dependencies = [
+ "ark-ff",
+ "base64 0.21.7",
+ "hex",
+ "substrate-bn",
+]
+
+[[package]]
 name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
