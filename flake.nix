@@ -10,6 +10,8 @@
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-23.11";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Remove when lnav is updated on upstream nixpkgs
+    nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";

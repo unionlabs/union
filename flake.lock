@@ -439,6 +439,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-lnav": {
+      "locked": {
+        "lastModified": 1713345230,
+        "narHash": "sha256-BZRK1QfgwoPFm27dxdfTu/Jei4z26ck2qvGS0Aa3M+I=",
+        "owner": "cor",
+        "repo": "nixpkgs",
+        "rev": "1ad626a1f47da4edeba9253a97c4be38495c2fb2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cor",
+        "ref": "lnav-v0.12.2-beta",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-solc": {
       "locked": {
         "lastModified": 1707268954,
@@ -528,6 +544,7 @@
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
+        "nixpkgs-lnav": "nixpkgs-lnav",
         "nixpkgs-solc": "nixpkgs-solc",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "osmosis": "osmosis",

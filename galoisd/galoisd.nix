@@ -89,6 +89,27 @@
             rm "$1"/circuit.zip
           '';
         });
+
+      download-circuit-devnet =
+        pkgs.writeShellApplication {
+          name = "download-circuit-devnet";
+          runtimeInputs = [ pkgs.coreutils pkgs.zip pkgs.unzip ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+
+            if [[ -f "./.devnet/circuit/r1cs.bin" && -f "./.devnet/circuit/pk.bin" && -f "./.devnet/circuit/vk.bin" ]] 
+            then
+              echo "Circuit is already downloaded"
+              exit 0
+            fi
+
+            mkdir -p .devnet/circuit/
+            cd .devnet/circuit/
+
+            echo "Downloading circuit"
+            ${pkgs.lib.getExe self'.packages.download-circuit} .
+          '';
+        };
     };
   };
 }

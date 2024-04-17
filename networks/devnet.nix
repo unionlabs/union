@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', nix-filter, inputs', system, get-flake, mkCi, mkNodeId, dbg, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', nix-filter, inputs', system, get-flake, mkCi, mkNodeId, dbg, ensureAtRepositoryRoot, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -7,6 +7,7 @@
         inherit pkgs dbg;
         ucliBin = pkgs.lib.getExe self'.packages.ucli;
       };
+      lnav = inputs'.nixpkgs-lnav.legacyPackages.lnav;
 
       cosmwasmContracts = [
         {
@@ -340,6 +341,15 @@
     in
     {
       packages = {
+        devnet = pkgs.writeShellApplication
+          {
+            name = "union-full-devnet";
+            runtimeInputs = [ lnav ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              lnav ./devnet-logs
+            '';
+          };
         devnet-union-home = mkCi false (devnet-union.devnet-home);
         devnet-simd-home = mkCi false (devnet-simd.devnet-home);
         devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);
