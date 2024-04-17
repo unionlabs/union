@@ -27,6 +27,60 @@
         }
       ];
 
+      devnet-eth = trackJustified: {
+        geth = import ./services/geth.nix {
+          inherit pkgs;
+          config = self'.packages.devnet-eth-config;
+        };
+        forge = import ./services/forge.nix {
+          inherit pkgs;
+          inherit (self'.packages) forge evm-sources;
+        };
+        lodestar = import ./services/lodestar.nix {
+          inherit trackJustified;
+          inherit pkgs;
+          config = self'.packages.devnet-eth-config;
+          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
+        };
+      }
+      # For some reason, blockscout backend segfault on non-x86 arch
+      // (if pkgs.stdenv.isx86_64 then {
+        blockscout-backend = import ./services/blockscout/backend.nix {
+          inherit lib pkgs;
+          inherit (inputs) env-utils;
+        };
+        blockscout-frontend = import ./services/blockscout/frontend.nix {
+          inherit lib pkgs;
+          inherit (inputs) env-utils;
+        };
+        blockscout-sc-verifier = import ./services/blockscout/sc-verifier.nix {
+          inherit lib pkgs;
+          inherit (inputs) env-utils;
+          inherit (self'.packages) evm-sources;
+        };
+        blockscout-db = import ./services/blockscout/db.nix {
+          inherit lib pkgs;
+        };
+        blockscout-redis = import ./services/blockscout/redis.nix {
+          inherit lib pkgs;
+        };
+        blockscout-sig-provider = import ./services/blockscout/sig-provider.nix {
+          inherit lib pkgs;
+        };
+        blockscout-stats-db = import ./services/blockscout/stats-db.nix {
+          inherit lib pkgs;
+        };
+        blockscout-stats = import ./services/blockscout/stats.nix {
+          inherit lib pkgs;
+        };
+        blockscout-visualizer = import ./services/blockscout/visualizer.nix {
+          inherit lib pkgs;
+        };
+        blockscout-proxy = import ./services/blockscout/proxy.nix {
+          inherit lib pkgs;
+        };
+      } else { });
+
       devnet-union = dbg (mkCosmosDevnet {
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
@@ -212,58 +266,8 @@
 
         devnet-union-minimal = devnet-union-minimal.services;
 
-        devnet-eth = {
-          geth = import ./services/geth.nix {
-            inherit pkgs;
-            config = self'.packages.devnet-eth-config;
-          };
-          forge = import ./services/forge.nix {
-            inherit pkgs;
-            inherit (self'.packages) forge evm-sources;
-          };
-          lodestar = import ./services/lodestar.nix {
-            inherit pkgs;
-            config = self'.packages.devnet-eth-config;
-            validatorCount = devnetConfig.ethereum.beacon.validatorCount;
-          };
-        }
-        # For some reason, blockscout backend segfault on non-x86 arch
-        // (if pkgs.stdenv.isx86_64 then {
-          blockscout-backend = import ./services/blockscout/backend.nix {
-            inherit lib pkgs;
-            inherit (inputs) env-utils;
-          };
-          blockscout-frontend = import ./services/blockscout/frontend.nix {
-            inherit lib pkgs;
-            inherit (inputs) env-utils;
-          };
-          blockscout-sc-verifier = import ./services/blockscout/sc-verifier.nix {
-            inherit lib pkgs;
-            inherit (inputs) env-utils;
-            inherit (self'.packages) evm-sources;
-          };
-          blockscout-db = import ./services/blockscout/db.nix {
-            inherit lib pkgs;
-          };
-          blockscout-redis = import ./services/blockscout/redis.nix {
-            inherit lib pkgs;
-          };
-          blockscout-sig-provider = import ./services/blockscout/sig-provider.nix {
-            inherit lib pkgs;
-          };
-          blockscout-stats-db = import ./services/blockscout/stats-db.nix {
-            inherit lib pkgs;
-          };
-          blockscout-stats = import ./services/blockscout/stats.nix {
-            inherit lib pkgs;
-          };
-          blockscout-visualizer = import ./services/blockscout/visualizer.nix {
-            inherit lib pkgs;
-          };
-          blockscout-proxy = import ./services/blockscout/proxy.nix {
-            inherit lib pkgs;
-          };
-        } else { });
+        devnet-eth-finalized = devnet-eth 0;
+        devnet-eth-justified = devnet-eth 1;
 
         postgres = {
           postgres = import ./services/postgres.nix { inherit lib pkgs; };
@@ -285,11 +289,12 @@
       modules = {
         full-dev-setup = {
           project.name = "full-dev-setup";
-          services = services.devnet-eth // services.devnet-union // services.postgres;
+          services = services.devnet-eth-justified // services.devnet-union // services.postgres;
         };
       }
       // mkNamedModule "postgres"
-      // mkNamedModule "devnet-eth"
+      // mkNamedModule "devnet-eth-finalized"
+      // mkNamedModule "devnet-eth-justified"
       // mkNamedModule "devnet-stargaze"
       // mkNamedModule "devnet-osmosis"
       // mkNamedModule "devnet-simd"
@@ -308,7 +313,8 @@
         };
       }
       // mkNamedSpec "full-dev-setup"
-      // mkNamedSpec "devnet-eth"
+      // mkNamedSpec "devnet-eth-finalized"
+      // mkNamedSpec "devnet-eth-justified"
       // mkNamedSpec "devnet-stargaze"
       // mkNamedSpec "devnet-osmosis"
       // mkNamedSpec "devnet-simd"
@@ -321,7 +327,8 @@
 
       build = mkNamedBuild "full-dev-setup"
         // mkNamedBuild "voyager-queue"
-        // mkNamedBuild "devnet-eth"
+        // mkNamedBuild "devnet-eth-finalized"
+        // mkNamedBuild "devnet-eth-justified"
         // mkNamedBuild "devnet-stargaze"
         // mkNamedBuild "devnet-osmosis"
         // mkNamedBuild "devnet-simd"
@@ -360,7 +367,8 @@
       // (mkArionBuild "devnet-simd" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
+      // (mkArionBuild "devnet-eth-finalized" (system == "x86_64-linux"))
+      // (mkArionBuild "devnet-eth-justified" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"));
 
       _module.args.networks.modules = modules;

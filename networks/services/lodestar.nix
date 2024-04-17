@@ -1,4 +1,5 @@
-{ pkgs, config, validatorCount }:
+{ pkgs, config, validatorCount, trackJustified ? 0 }:
+assert (pkgs.lib.assertOneOf "trackJustified" trackJustified [ 0 1 ]);
 let
   lodestar-init = pkgs.writeShellApplication {
     name = "lodestar-init";
@@ -31,37 +32,42 @@ let
         --rest.namespace="*"
     '';
   };
+
+  lodestar-tracking-justfied = {
+    imageName = "ghcr.io/unionlabs/lodestar";
+    finalImageName = "unionlabs/lodestar";
+    finalImageTag = "union-v1.13.0-rc5";
+    imageDigest = "sha256:0ed140cbaf131d268813571f9534f4664342cabf102308bd59f0b3d24a1bac65";
+    sha256 = "sha256-pcjXfvxDu6YySXfTWhfox/ij8LHlUwKKwpsxd/v3q8U=";
+    arch = "amd64";
+  };
+
+  lodestar-tracking-finalized = {
+    imageName = "chainsafe/lodestar";
+    finalImageName = "chainsafe/lodestar";
+    finalImageTag = "v1.15.1";
+  };
+
+  lodestar-amd = {
+    imageDigest = "sha256:02adf60640dddd8f1bbab9eda09563d85aa675414af57a47a2234a1a40bde2e3";
+    sha256 = "sha256-iq9Jukk2lzIdXj3PgyxxgXLvikgAV35NaDU1siXqSNQ=";
+    arch = "amd64";
+  };
+
+  lodestar-arm = {
+    imageDigest = "sha256:1c6c3f043bfda4cb7e8d8423a46a30594561659e796fe975b3fbff2337f1ce24";
+    sha256 = "sha256-iRh/HOEgtqV6JOqDY9CEzvkwBEcsjCrneqQlob8M48o=";
+    arch = "arm64";
+  };
+
 in
 {
   build = {
     image = pkgs.lib.mkForce (pkgs.dockerTools.streamLayeredImage {
       name = "lodestar-extended";
-      # fromImage = fetchTarball {
-      #   name = "lodestar";
-      #   url = "ghcr.io/unionlabs/lodestar";
-      #   sha256 = "0izp5y55whbdaf26w3zy2xvkjvlll39lib1ifvb61ps9gmvlqn39";
-      # };
-      fromImage = pkgs.dockerTools.pullImage ({
-        imageName = "ghcr.io/unionlabs/lodestar";
-        finalImageName = "unionlabs/lodestar";
-        finalImageTag = "union-v1.13.0-rc5";
-        imageDigest = "sha256:0ed140cbaf131d268813571f9534f4664342cabf102308bd59f0b3d24a1bac65";
-        sha256 = "sha256-pcjXfvxDu6YySXfTWhfox/ij8LHlUwKKwpsxd/v3q8U=";
-        arch = "amd64";
-      });
-      # fromImage = pkgs.dockerTools.pullImage ({
-      #   imageName = "chainsafe/lodestar";
-      #   finalImageName = "chainsafe/lodestar";
-      #   finalImageTag = "v1.15.1";
-      # } // (if pkgs.stdenv.isx86_64 then {
-      #   imageDigest = "sha256:02adf60640dddd8f1bbab9eda09563d85aa675414af57a47a2234a1a40bdAAAA";
-      #   sha256 = "sha256-iq9Jukk2lzIdXj3PgyxxgXLvikgAV35NaDU1siXAAAA=";
-      #   arch = "amd64";
-      # } else {
-      #   imageDigest = "sha256:1c6c3f043bfda4cb7e8d8423a46a30594561659e796fe975b3fbff2337f1ce24";
-      #   sha256 = "sha256-iRh/HOEgtqV6JOqDY9CEzvkwBEcsjCrneqQlob8AAAA=";
-      #   arch = "arm64";
-      # }));
+      fromImage = pkgs.dockerTools.pullImage (
+        (if trackJustified == 1 then lodestar-tracking-justfied else lodestar-tracking-finalized // (if pkgs.stdenv.isx86_64 then lodestar-amd else lodestar-arm))
+      );
       contents = [
         pkgs.coreutils
         pkgs.curl
@@ -74,7 +80,8 @@ in
         WorkingDir = "/usr/app";
         Entrypoint = pkgs.lib.meta.getExe lodestar-init;
       };
-    });
+    }
+    );
   };
   service = {
     tty = true;
