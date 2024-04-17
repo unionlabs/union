@@ -13,16 +13,16 @@
   import secret from "#/assets/partners/secret.svg?raw";
   import canto from "#/assets/partners/canto.svg?raw";
 
-  /* Define our media query and media query object */
-  let mq: MediaQueryList;
-  let svg: Element | null;
+/* Define our media query and media query object */
+let mq: MediaQueryList
+let svg: Element | null
 
-  onMount(() => {
-    mq = matchMedia("only screen and (max-width: 640px)");
-    svg = document.querySelector("#connected-visual");
+onMount(() => {
+  mq = matchMedia("only screen and (max-width: 640px)")
+  svg = document.querySelector("#connected-visual")
 
-    /* Store the original value in a variable */
-    const originalViewBox = svg?.getAttribute("viewBox");
+  /* Store the original value in a variable */
+  const originalViewBox = svg?.getAttribute("viewBox")
 
     /* Define the handler */
     const updateViewBox = () => {
@@ -34,25 +34,25 @@
       }
     };
 
-    updateViewBox();
+  updateViewBox()
 
-    svg?.addEventListener("load", () => {
-      updateViewBox();
-    });
+  svg?.addEventListener("load", () => {
+    updateViewBox()
+  })
 
-    /* Fire if the media condition changes */
-    mq.addEventListener("change", updateViewBox);
-  });
+  /* Fire if the media condition changes */
+  mq.addEventListener("change", updateViewBox)
+})
 
-  const pos = (p: number) => p * 32;
+const pos = (p: number) => p * 32
 
-  type Node = {
-    x: number;
-    y: number;
-    logo: string;
-    url?: string;
-    scale?: number;
-  };
+type Node = {
+  x: number
+  y: number
+  logo: string
+  url?: string
+  scale?: number
+}
 
   const nodes: Record<string, Node> = {
     union: { x: 9, y: 6, logo: union, scale: 2.0, url: "https://union.build" },
@@ -115,60 +115,58 @@
 
   const LOGO_SIZE = 28;
 
-  const connectionData = conns.map(({ from, to, delay }) => {
-    const { x: fromX, y: fromY } = nodes[from];
-    const { x: toX, y: toY } = nodes[to];
+const connectionData = conns.map(({ from, to, delay }) => {
+  const { x: fromX, y: fromY } = nodes[from]
+  const { x: toX, y: toY } = nodes[to]
 
-    const dx = toX - fromX;
-    const dy = toY - fromY;
+  const dx = toX - fromX
+  const dy = toY - fromY
 
-    const totalDistance = Math.abs(dx) + Math.abs(dy);
+  const totalDistance = Math.abs(dx) + Math.abs(dy)
 
-    // console.log(dx, dy, totalDistance)
+  // console.log(dx, dy, totalDistance)
 
-    const duration = totalDistance * SECONDS_PER_CELL;
+  const duration = totalDistance * SECONDS_PER_CELL
 
-    const totalTime = duration + delay;
+  const totalTime = duration + delay
 
-    // console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
+  // console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
 
-    // time (clamped between [0, 1]) for the h and v components
-    const hTime = (Math.abs(dx) * SECONDS_PER_CELL) / totalTime;
-    const vTime = (Math.abs(dy) * SECONDS_PER_CELL) / totalTime;
+  // time (clamped between [0, 1]) for the h and v components
+  const hTime = (Math.abs(dx) * SECONDS_PER_CELL) / totalTime
+  const vTime = (Math.abs(dy) * SECONDS_PER_CELL) / totalTime
 
-    // console.log('hTime', hTime, 'vTime', vTime)
+  // console.log('hTime', hTime, 'vTime', vTime)
 
-    // clamp between [0, (duration / totalTime)]
-    const radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
-      .map((x) => scale(x, [0, 1], [0, duration / totalTime]))
-      .join(";");
+  // clamp between [0, (duration / totalTime)]
+  const radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
+    .map(x => scale(x, [0, 1], [0, duration / totalTime]))
+    .join(";")
 
-    const cxKeyTimes = [0, 0.5, 1]
-      .map((x) => scale(x, [0, 1], [0, hTime]))
-      .join(";");
+  const cxKeyTimes = [0, 0.5, 1].map(x => scale(x, [0, 1], [0, hTime])).join(";")
 
-    const cyKeyTimes = [0, 0.5, 1]
-      .map((x) => scale(x, [0, 1], [hTime, hTime + vTime]) - hTime / 2)
-      .join(";");
+  const cyKeyTimes = [0, 0.5, 1]
+    .map(x => scale(x, [0, 1], [hTime, hTime + vTime]) - hTime / 2)
+    .join(";")
 
-    return {
-      from,
-      to,
-      dx,
-      dy,
-      fromX,
-      fromY,
-      toX,
-      toY,
-      totalTime,
-      cxKeyTimes,
-      cyKeyTimes,
-      radiusKeyTimes,
-      delay,
-    };
-  });
+  return {
+    from,
+    to,
+    dx,
+    dy,
+    fromX,
+    fromY,
+    toX,
+    toY,
+    totalTime,
+    cxKeyTimes,
+    cyKeyTimes,
+    radiusKeyTimes,
+    delay
+  }
+})
 
-  const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`;
+const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
 </script>
 
 <svg
