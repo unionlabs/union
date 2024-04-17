@@ -6,7 +6,7 @@
           {
             buildInputs = [ biome ] ++ (with unstablePkgs; [ yq jq bun openapi-generator-cli ]);
             BIOME_JSON = ../biome.json;
-            TS_OPEANAPI_CLEANUP_SCRIPT = ./scripts/openapi-cleanup.ts;
+            TS_OPENAPI_CLEANUP_SCRIPT = ./scripts/openapi-cleanup.ts;
           } ''
           echo "Build Phase"
 
@@ -59,7 +59,7 @@
               #
               # remove unused `paths` and `components.schemas` from the merged spec
               #
-              bun $TS_OPEANAPI_CLEANUP_SCRIPT /tmp/union_rest_v3_merged_schemas.json > /tmp/union_rest_v3_cleaned.json && \
+              bun $TS_OPENAPI_CLEANUP_SCRIPT /tmp/union_rest_v3_merged_schemas.json > /tmp/union_rest_v3_cleaned.json && \
               #
               # finally, store the union_rest_v3_cleaned.json in the correct location
               #
