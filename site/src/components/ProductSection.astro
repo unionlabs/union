@@ -4,14 +4,11 @@ import Card from "#/components/Card.astro"
 const { name, description, link, model } = Astro.props
 ---
 <Card class="flex flex-col text-left">
-  <!-- <div class="-mt-16 -mb-4"> -->
-    <!-- <Spline {model} client:only/> -->
-  <!-- </div> -->
   <div class="flex flex-col flex-1 overflow-hidden">
     <h3 class="mb-1 text-3xl px-4">{name}</h3>
     <p class="text-gray-400 flex-1 px-4">{description}</p>
     <a
-      class="block bg-neutral-900 p-4 block mt-2 text-white font-semibold"
+      class="block bg-neutral-900 p-4 mt-2 text-white font-semibold"
       href={link}>Read More {'->'}</a
     >
   </div>

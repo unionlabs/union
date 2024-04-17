@@ -3,7 +3,9 @@ const { href, fake } = Astro.props
 const Element = fake ? "div" : "a"
 ---
 
-<Element class="bg-gradient-to-r from-accent-800 to-accent-900 inline-block block font-bold rounded-[6px] text-white border-accent-700 capitalize px-4 py-2 rounded-sm font-semibold shadow-xl" {href}>
+<Element
+  class="bg-gradient-to-r from-accent-800 to-accent-900 text-white border-accent-700 capitalize px-4 py-2 rounded-sm font-semibold shadow-xl"
+  {href}
+>
   <slot /> -&gt;
 </Element>
-

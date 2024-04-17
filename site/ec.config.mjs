@@ -13,7 +13,7 @@ export default {
   useStarlightUiThemeColors: true,
   useStarlightDarkModeSwitch: true,
   defaultProps: {
-    frame: "none",
+    frame: "none"
   },
   frames: {
     extractFileNameFromCode: true,
