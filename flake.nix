@@ -479,6 +479,7 @@
               pkg-config
               protobuf
               self'.packages.tdc
+              self'.packages.voy-send-msg
               yq
             ]) ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
@@ -513,10 +514,6 @@
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
             RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
-
-            shellHook = ''
-              alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
-            '';
           };
 
           treefmt = {
