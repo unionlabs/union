@@ -1,8 +1,8 @@
 { ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, javascriptPkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [ vips nodejs_21 ];
+      nodeDeps = with javascriptPkgs; [ vips nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
