@@ -6,7 +6,7 @@
           {
             buildInputs = [ biome ] ++ (with unstablePkgs; [ yq jq bun openapi-generator-cli ]);
             BIOME_JSON = ../biome.json;
-            TS_CLEANER = ./openapi.ts;
+            TS_CLEANER = ./scripts/openapi-cleanup.ts;
           } ''
           echo "Build Phase"
 
