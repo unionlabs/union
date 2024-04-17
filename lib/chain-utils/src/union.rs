@@ -9,17 +9,13 @@ use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
-    encoding::{Decode, Proto},
+    encoding::Proto,
     events::{TryFromTendermintEventError, WriteAcknowledgement},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::cometbls,
-    },
-    ics24::{
-        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath,
     },
     id::ClientId,
     signer::CosmosSigner,
@@ -343,69 +339,5 @@ impl CosmosSdkChain for Union {
 
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
         &self.checksum_cache
-    }
-}
-
-pub trait AbciStateRead<Tr>: IbcPath<Union, Tr>
-where
-    Tr: Chain,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value;
-}
-
-impl<Tr> AbciStateRead<Tr> for ClientStatePath<<Union as Chain>::ClientId>
-where
-    Tr: Chain,
-    Self::Value: Decode<Proto>,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
-        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
-    }
-}
-
-impl<Tr> AbciStateRead<Tr>
-    for ClientConsensusStatePath<<Union as Chain>::ClientId, <Tr as Chain>::Height>
-where
-    Tr: Chain,
-    Self::Value: Decode<Proto>,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
-        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
-    }
-}
-
-impl<Tr> AbciStateRead<Tr> for ConnectionPath
-where
-    Tr: Chain,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
-        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
-    }
-}
-
-impl<Tr> AbciStateRead<Tr> for ChannelEndPath
-where
-    Tr: Chain,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
-        <Self::Value as Decode<Proto>>::decode(&bytes).unwrap()
-    }
-}
-
-impl<Tr> AbciStateRead<Tr> for CommitmentPath
-where
-    Tr: Chain,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
-        bytes.try_into().unwrap()
-    }
-}
-
-impl<Tr> AbciStateRead<Tr> for AcknowledgementPath
-where
-    Tr: Chain,
-{
-    fn from_abci_bytes(bytes: Vec<u8>) -> Self::Value {
-        bytes.try_into().unwrap()
     }
 }

@@ -1,6 +1,6 @@
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{queue_msg, HandleEffect, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{queue_msg, HandleEffect, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -47,7 +47,7 @@ pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
 impl HandleEffect<RelayMessageTypes> for AnyLightClientIdentified<AnyEffect> {
     async fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let msg = self;
 

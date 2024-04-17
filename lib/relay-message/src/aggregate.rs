@@ -5,8 +5,8 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, effect, fetch, queue_msg, seq, wait, HandleAggregate, QueueError, QueueMsg,
-    QueueMsgTypes,
+    conc, defer_relative, effect, fetch, queue_msg, seq, wait, HandleAggregate, QueueError,
+    QueueMessageTypes, QueueMsg,
 };
 use unionlabs::{
     events::{
@@ -35,9 +35,10 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, NextSequenceRecvPath, ReceiptPath,
+        CommitmentPath, ConnectionPath, NextClientSequencePath, NextConnectionSequencePath,
+        NextSequenceRecvPath, ReceiptPath,
     },
-    id::{ChannelId, PortId},
+    id::{ChannelId, ConnectionId, PortId},
     traits::{ChainIdOf, ClientIdOf, ClientState, HeightOf},
     QueryHeight, DELAY_PERIOD,
 };
@@ -98,8 +99,11 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
 
     PacketUpdateClient(AggregatePacketMsgAfterUpdate<Hc, Tr>),
 
+    WaitForConnectionOpen(AggregateWaitForConnectionOpen<Hc, Tr>),
     WaitForCounterpartyTrustedHeight(AggregateWaitForCounterpartyTrustedHeight<Hc, Tr>),
     WaitForTrustedHeight(AggregateWaitForTrustedHeight<Hc, Tr>),
+    WaitForNextConnectionSequence(AggregateWaitForNextConnectionSequence<Hc, Tr>),
+    WaitForNextClientSequence(AggregateWaitForNextClientSequence<Hc, Tr>),
 
     FetchCounterpartyStateproof(AggregateFetchCounterpartyStateProof<Hc, Tr>),
 
@@ -113,7 +117,7 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
 impl HandleAggregate<RelayMessageTypes> for AnyLightClientIdentified<AnyAggregate> {
     fn handle(
         self,
-        data: VecDeque<<RelayMessageTypes as QueueMsgTypes>::Data>,
+        data: VecDeque<<RelayMessageTypes as QueueMessageTypes>::Data>,
     ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let aggregate = self;
 
@@ -144,6 +148,8 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
         Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
         Identified<Hc, Tr, IbcState<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
+        Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
+        Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
 
         // proof
         Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
@@ -227,6 +233,9 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
             Aggregate::WaitForTrustedHeight(agg) => do_aggregate(id(chain_id, agg), data),
             Aggregate::FetchCounterpartyStateproof(agg) => do_aggregate(id(chain_id, agg), data),
             Aggregate::ClientStateFromConnectionId(agg) => do_aggregate(id(chain_id, agg), data),
+            Aggregate::WaitForConnectionOpen(agg) => do_aggregate(id(chain_id, agg), data),
+            Aggregate::WaitForNextConnectionSequence(agg) => do_aggregate(id(chain_id, agg), data),
+            Aggregate::WaitForNextClientSequence(agg) => do_aggregate(id(chain_id, agg), data),
         }
     }
 }
@@ -366,6 +375,21 @@ pub struct AggregateWaitForCounterpartyTrustedHeight<Hc: ChainExt, Tr: ChainExt>
     pub wait_for: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_client_id: ClientIdOf<Tr>,
+}
+
+#[queue_msg]
+pub struct AggregateWaitForConnectionOpen<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
+    pub connection_id: ConnectionId,
+}
+
+#[queue_msg]
+pub struct AggregateWaitForNextConnectionSequence<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
+    pub sequence: u64,
+}
+
+#[queue_msg]
+pub struct AggregateWaitForNextClientSequence<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
+    pub sequence: u64,
 }
 
 #[queue_msg]
@@ -2511,5 +2535,182 @@ where
                 },
             },
         ))
+    }
+}
+
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForNextConnectionSequence<Hc, Tr>)
+where
+    Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
+{
+    type AggregatedData = HList![Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>];
+
+    fn aggregate(
+        Identified {
+            chain_id: this_chain_id,
+            t:
+                AggregateWaitForNextConnectionSequence {
+                    sequence,
+                    __marker: _,
+                },
+            __marker: _,
+        }: Self,
+        hlist_pat![Identified {
+            chain_id: next_connection_sequence_chain_id,
+            t: IbcState {
+                path: NextConnectionSequencePath {},
+                height: _,
+                state: next_connection_sequence
+            },
+            __marker: _
+        },]: Self::AggregatedData,
+    ) -> QueueMsg<RelayMessageTypes> {
+        assert_eq!(this_chain_id, next_connection_sequence_chain_id);
+
+        if next_connection_sequence >= sequence {
+            QueueMsg::Noop
+        } else {
+            seq([
+                defer_relative(3),
+                aggregate(
+                    [fetch(id(
+                        this_chain_id.clone(),
+                        FetchState {
+                            at: QueryHeight::Latest,
+                            path: NextConnectionSequencePath {}.into(),
+                        },
+                    ))],
+                    [],
+                    id(
+                        this_chain_id,
+                        AggregateWaitForNextConnectionSequence {
+                            sequence,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
+            ])
+        }
+    }
+}
+
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForNextClientSequence<Hc, Tr>)
+where
+    Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
+{
+    type AggregatedData = HList![Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>];
+
+    fn aggregate(
+        Identified {
+            chain_id: this_chain_id,
+            t:
+                AggregateWaitForNextClientSequence {
+                    sequence,
+                    __marker: _,
+                },
+            __marker: _,
+        }: Self,
+        hlist_pat![Identified {
+            chain_id: next_client_sequence_chain_id,
+            t: IbcState {
+                path: NextClientSequencePath {},
+                height: _,
+                state: next_client_sequence
+            },
+            __marker: _
+        },]: Self::AggregatedData,
+    ) -> QueueMsg<RelayMessageTypes> {
+        assert_eq!(this_chain_id, next_client_sequence_chain_id);
+
+        if next_client_sequence >= sequence {
+            QueueMsg::Noop
+        } else {
+            seq([
+                defer_relative(3),
+                aggregate(
+                    [fetch(id(
+                        this_chain_id.clone(),
+                        FetchState {
+                            at: QueryHeight::Latest,
+                            path: NextClientSequencePath {}.into(),
+                        },
+                    ))],
+                    [],
+                    id(
+                        this_chain_id,
+                        AggregateWaitForNextClientSequence {
+                            sequence,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
+            ])
+        }
+    }
+}
+
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForConnectionOpen<Hc, Tr>)
+where
+    Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
+{
+    type AggregatedData = HList![Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>];
+
+    fn aggregate(
+        Identified {
+            chain_id: this_chain_id,
+            t:
+                AggregateWaitForConnectionOpen {
+                    connection_id,
+                    __marker: _,
+                },
+            __marker: _,
+        }: Self,
+        hlist_pat![Identified {
+            chain_id: connection_state_client_id,
+            t: IbcState {
+                path: ConnectionPath {
+                    connection_id: path_connection_id
+                },
+                height: _,
+                state: connection
+            },
+            __marker: _
+        },]: Self::AggregatedData,
+    ) -> QueueMsg<RelayMessageTypes> {
+        assert_eq!(this_chain_id, connection_state_client_id);
+        assert_eq!(connection_id, path_connection_id);
+
+        if connection.state == connection::state::State::Open {
+            QueueMsg::Noop
+        } else {
+            seq([
+                defer_relative(3),
+                aggregate(
+                    [fetch(id(
+                        this_chain_id.clone(),
+                        FetchState {
+                            at: QueryHeight::Latest,
+                            path: ConnectionPath {
+                                connection_id: connection_id.clone(),
+                            }
+                            .into(),
+                        },
+                    ))],
+                    [],
+                    id(
+                        this_chain_id,
+                        AggregateWaitForConnectionOpen {
+                            connection_id,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
+            ])
+        }
     }
 }

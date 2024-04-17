@@ -4,7 +4,7 @@ use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkC
 use prost::Message;
 use queue_msg::{data, fetch, seq, wait, QueueMsg};
 use unionlabs::{
-    encoding::{Decode, Encode, Proto},
+    encoding::{Decode, DecodeAs, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
     ibc::core::client::height::IsHeight,
     ics24::{ClientStatePath, Path},
@@ -345,7 +345,8 @@ where
                 c.chain_id(),
                 IbcState::<ClientStatePath<Hc::ClientId>, Hc, Tr> {
                     height,
-                    state: Hc::StoredClientState::<Tr>::decode(&query_result.value).unwrap(),
+                    state: Hc::StoredClientState::<Tr>::decode_as::<Proto>(&query_result.value)
+                        .unwrap(),
                     path,
                 },
             )),
@@ -420,6 +421,22 @@ where
                 },
             )),
             Path::NextSequenceAck(path) => data(id::<Hc, Tr, _>(
+                c.chain_id(),
+                IbcState {
+                    height,
+                    state: u64::from_be_bytes(query_result.value.try_into().unwrap()),
+                    path,
+                },
+            )),
+            Path::NextConnectionSequence(path) => data(id::<Hc, Tr, _>(
+                c.chain_id(),
+                IbcState {
+                    height,
+                    state: u64::from_be_bytes(query_result.value.try_into().unwrap()),
+                    path,
+                },
+            )),
+            Path::NextClientSequence(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState {
                     height,
@@ -526,6 +543,24 @@ where
                     },
                 )),
                 Path::NextSequenceAck(path) => data(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    IbcProof {
+                        proof,
+                        height,
+                        path,
+                        __marker: PhantomData,
+                    },
+                )),
+                Path::NextConnectionSequence(path) => data(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    IbcProof {
+                        proof,
+                        height,
+                        path,
+                        __marker: PhantomData,
+                    },
+                )),
+                Path::NextClientSequence(path) => data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     IbcProof {
                         proof,

@@ -18,7 +18,7 @@ use crate::{
         core::client::height::{Height, IsHeight},
         lightclients::{cometbls, ethereum, scroll, tendermint, wasm},
     },
-    id::{ChannelId, PortId},
+    id::{ChannelId, ClientId, PortId},
     uint::U256,
     validated::{Validate, Validated},
     MaybeArbitrary, TypeUrl,
@@ -127,7 +127,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
     // this is just Height
     type Height: Member + IsHeight + MaybeArbitrary;
 
-    type ClientId: Member + Id + MaybeArbitrary;
+    type ClientId: Member + Id + TryFrom<ClientId> + Into<ClientId> + MaybeArbitrary;
 
     /// The encoding this chain uses in it's IBC store.
     type IbcStateEncoding: Encoding;

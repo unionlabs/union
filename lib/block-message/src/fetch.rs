@@ -4,7 +4,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, fetch, queue_msg, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
+    aggregate, conc, fetch, queue_msg, wait, HandleFetch, QueueError, QueueMessageTypes, QueueMsg,
 };
 use unionlabs::ibc::core::client::height::IsHeight;
 
@@ -29,7 +29,7 @@ pub enum Fetch<C: ChainExt> {
 impl HandleFetch<BlockMessageTypes> for AnyChainIdentified<AnyFetch> {
     async fn handle(
         self,
-        store: &<BlockMessageTypes as QueueMsgTypes>::Store,
+        store: &<BlockMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let fetch = self;
 

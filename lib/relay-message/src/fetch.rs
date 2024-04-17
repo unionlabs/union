@@ -3,7 +3,7 @@ use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64};
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{
     hash::H256,
     ics24::{self},
@@ -45,7 +45,7 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
 impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
     async fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let fetch = self;
 

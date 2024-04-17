@@ -149,6 +149,17 @@ pub enum ClientType {
     Cometbls,
 }
 
+impl ClientType {
+    #[must_use]
+    pub const fn identifier_prefix(self) -> &'static str {
+        match self {
+            ClientType::Wasm(_) => "08-wasm",
+            ClientType::Tendermint => "07-tendermint",
+            ClientType::Cometbls => "cometbls",
+        }
+    }
+}
+
 impl FromStr for WasmClientType {
     type Err = WasmClientTypeParseError;
 

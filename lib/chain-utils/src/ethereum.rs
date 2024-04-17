@@ -12,7 +12,9 @@ use contracts::{
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
         GetHashedPacketAcknowledgementCommitmentCall,
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, IBCHandler, PacketReceiptsCall, PacketReceiptsReturn,
+        GetHashedPacketCommitmentReturn, IBCHandler, NextClientSequenceCall,
+        NextClientSequenceReturn, NextConnectionSequenceCall, NextConnectionSequenceReturn,
+        PacketReceiptsCall, PacketReceiptsReturn,
     },
     ibc_packet::{IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
@@ -43,7 +45,8 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath,
+        CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
+        NextConnectionSequencePath,
     },
     id::{ChannelId, ClientId, PortId},
     option_unwrap, promote,
@@ -667,6 +670,8 @@ impl_eth_call_ext! {
     GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
     GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
     PacketReceiptsCall                           -> PacketReceiptsReturn;
+    NextConnectionSequenceCall                   -> NextConnectionSequenceReturn;
+    NextClientSequenceCall                       -> NextClientSequenceReturn;
 }
 
 pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
@@ -799,6 +804,38 @@ where
 
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
         encoded.0.into()
+    }
+}
+
+impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextConnectionSequencePath
+where
+    Hc: EthereumChain,
+    Tr: Chain,
+{
+    type EthCall = NextConnectionSequenceCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {}
+    }
+
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
+        encoded.0
+    }
+}
+
+impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextClientSequencePath
+where
+    Hc: EthereumChain,
+    Tr: Chain,
+{
+    type EthCall = NextClientSequenceCall;
+
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {}
+    }
+
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
+        encoded.0
     }
 }
 

@@ -25,7 +25,7 @@ use crate::aggregation::{HListTryFromIterator, UseAggregate};
 
 pub mod aggregation;
 
-pub trait Queue<T: QueueMsgTypes>: Clone + Send + Sync + Sized + 'static {
+pub trait Queue<T: QueueMessageTypes>: Clone + Send + Sync + Sized + 'static {
     /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
     type Error: Error + Send + Sync + 'static;
     type Config: Debug + Clone + Serialize + DeserializeOwned;
@@ -49,7 +49,7 @@ pub trait Queue<T: QueueMsgTypes>: Clone + Send + Sync + Sized + 'static {
 
 #[queue_msg]
 #[debug(bound())]
-pub enum QueueMsg<T: QueueMsgTypes> {
+pub enum QueueMsg<T: QueueMessageTypes> {
     /// An external event. This could be something like an IBC event, an external command, or anything else that occurs outside of the state machine. Can also be thought of as an "entry point".
     Event(T::Event),
     /// Inert data that will either be used in an aggregation or bubbled up to the top and sent as an output.
@@ -115,7 +115,7 @@ pub enum Defer {
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn retry<T: QueueMsgTypes>(count: u8, t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
+pub fn retry<T: QueueMessageTypes>(count: u8, t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Retry {
         remaining: count,
         msg: Box::new(t.into()),
@@ -124,7 +124,7 @@ pub fn retry<T: QueueMsgTypes>(count: u8, t: impl Into<QueueMsg<T>>) -> QueueMsg
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn repeat<T: QueueMsgTypes>(
+pub fn repeat<T: QueueMessageTypes>(
     times: impl Into<Option<NonZeroU64>>,
     t: impl Into<QueueMsg<T>>,
 ) -> QueueMsg<T> {
@@ -136,61 +136,61 @@ pub fn repeat<T: QueueMsgTypes>(
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn seq<T: QueueMsgTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
+pub fn seq<T: QueueMessageTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Sequence(ts.into_iter().collect())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn conc<T: QueueMsgTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
+pub fn conc<T: QueueMessageTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Concurrent(ts.into_iter().collect())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn defer_absolute<T: QueueMsgTypes>(timestamp: u64) -> QueueMsg<T> {
+pub fn defer_absolute<T: QueueMessageTypes>(timestamp: u64) -> QueueMsg<T> {
     QueueMsg::Defer(Defer::Absolute(timestamp))
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn defer_relative<T: QueueMsgTypes>(seconds: u64) -> QueueMsg<T> {
+pub fn defer_relative<T: QueueMessageTypes>(seconds: u64) -> QueueMsg<T> {
     QueueMsg::Defer(Defer::Relative(seconds))
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn fetch<T: QueueMsgTypes>(t: impl Into<T::Fetch>) -> QueueMsg<T> {
+pub fn fetch<T: QueueMessageTypes>(t: impl Into<T::Fetch>) -> QueueMsg<T> {
     QueueMsg::Fetch(t.into())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn effect<T: QueueMsgTypes>(t: impl Into<T::Effect>) -> QueueMsg<T> {
+pub fn effect<T: QueueMessageTypes>(t: impl Into<T::Effect>) -> QueueMsg<T> {
     QueueMsg::Effect(t.into())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn data<T: QueueMsgTypes>(t: impl Into<T::Data>) -> QueueMsg<T> {
+pub fn data<T: QueueMessageTypes>(t: impl Into<T::Data>) -> QueueMsg<T> {
     QueueMsg::Data(t.into())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn wait<T: QueueMsgTypes>(t: impl Into<T::Wait>) -> QueueMsg<T> {
+pub fn wait<T: QueueMessageTypes>(t: impl Into<T::Wait>) -> QueueMsg<T> {
     QueueMsg::Wait(t.into())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn event<T: QueueMsgTypes>(t: impl Into<T::Event>) -> QueueMsg<T> {
+pub fn event<T: QueueMessageTypes>(t: impl Into<T::Event>) -> QueueMsg<T> {
     QueueMsg::Event(t.into())
 }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn aggregate<T: QueueMsgTypes>(
+pub fn aggregate<T: QueueMessageTypes>(
     queue: impl IntoIterator<Item = QueueMsg<T>>,
     data: impl IntoIterator<Item = T::Data>,
     receiver: impl Into<T::Aggregate>,
@@ -204,7 +204,7 @@ pub fn aggregate<T: QueueMsgTypes>(
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn void<T: QueueMsgTypes>(t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
+pub fn void<T: QueueMessageTypes>(t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Void(Box::new(t.into()))
 }
 
@@ -218,7 +218,7 @@ pub trait QueueMsgTypesTraits = Debug
     + Unpin
     + MaybeArbitrary;
 
-pub trait QueueMsgTypes: Sized + 'static {
+pub trait QueueMessageTypes: Sized + 'static {
     type Event: HandleEvent<Self> + QueueMsgTypesTraits;
     type Data: HandleData<Self> + QueueMsgTypesTraits;
     type Fetch: HandleFetch<Self> + QueueMsgTypesTraits;
@@ -229,7 +229,7 @@ pub trait QueueMsgTypes: Sized + 'static {
     type Store: Debug + Send + Sync;
 }
 
-impl<T: QueueMsgTypes> QueueMsg<T> {
+impl<T: QueueMessageTypes> QueueMsg<T> {
     // NOTE: Box is required bc recursion
     #[allow(clippy::type_complexity)]
     pub fn handle<'a>(
@@ -377,8 +377,8 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
     }
 }
 
-fn flatten_seq<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
-    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
+fn flatten_seq<T: QueueMessageTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
+    fn flatten<T: QueueMessageTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
         match msg {
             QueueMsg::Sequence(new_seq) => new_seq
                 .into_iter()
@@ -407,8 +407,8 @@ fn flatten_seq<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
     }
 }
 
-fn flatten_conc<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
-    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
+fn flatten_conc<T: QueueMessageTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
+    fn flatten<T: QueueMessageTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
         match msg {
             QueueMsg::Concurrent(new_conc) => new_conc
                 .into_iter()
@@ -432,63 +432,90 @@ fn flatten_conc<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
 mod tests {
     use super::*;
 
+    struct UnitMessageTypes;
+
+    impl QueueMessageTypes for UnitMessageTypes {
+        type Event = ();
+        type Data = ();
+        type Fetch = ();
+        type Effect = ();
+        type Wait = ();
+
+        type Aggregate = ();
+
+        type Store = ();
+    }
+
+    impl HandleEffect<UnitMessageTypes> for () {
+        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
+        }
+    }
+
+    impl HandleEvent<UnitMessageTypes> for () {
+        fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
+        }
+    }
+
+    impl HandleData<UnitMessageTypes> for () {
+        fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
+        }
+    }
+
+    impl HandleFetch<UnitMessageTypes> for () {
+        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
+        }
+    }
+
+    impl HandleWait<UnitMessageTypes> for () {
+        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
+        }
+    }
+
+    impl HandleAggregate<UnitMessageTypes> for () {
+        fn handle(self, _: VecDeque<()>) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
+        }
+    }
+
+    #[queue_msg]
+    pub struct SimpleEvent {}
+    #[queue_msg]
+    pub struct SimpleData {}
+    #[queue_msg]
+    pub struct SimpleFetch {}
+    #[queue_msg]
+    pub struct SimpleEffect {}
+    #[queue_msg]
+    pub struct SimpleWait {}
+
+    #[queue_msg]
+    pub struct SimpleAggregate {}
+
+    macro_rules! vec_deque {
+        ($($tt:tt)*) => {
+            ::std::collections::VecDeque::from(vec![$($tt)*])
+        };
+    }
+
+    async fn assert_steps<T: QueueMessageTypes>(
+        engine: &Engine<T>,
+        q: &mut InMemoryQueue<T>,
+        steps: impl IntoIterator<Item = VecDeque<QueueMsg<T>>>,
+    ) {
+        for step in steps {
+            engine.step(q).await.unwrap();
+            assert_eq!(*q.0.lock().unwrap(), step);
+        }
+    }
+
     #[test]
     fn flatten() {
-        struct EmptyMsgTypes;
-
-        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-        struct Unit;
-
-        impl HandleEffect<EmptyMsgTypes> for Unit {
-            async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-                Ok(QueueMsg::Noop)
-            }
-        }
-
-        impl HandleEvent<EmptyMsgTypes> for Unit {
-            fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-                Ok(QueueMsg::Noop)
-            }
-        }
-
-        impl HandleData<EmptyMsgTypes> for Unit {
-            fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-                Ok(QueueMsg::Noop)
-            }
-        }
-
-        impl HandleFetch<EmptyMsgTypes> for Unit {
-            async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-                Ok(QueueMsg::Noop)
-            }
-        }
-
-        impl HandleWait<EmptyMsgTypes> for Unit {
-            async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-                Ok(QueueMsg::Noop)
-            }
-        }
-
-        impl HandleAggregate<EmptyMsgTypes> for Unit {
-            fn handle(self, _: VecDeque<Unit>) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
-                Ok(QueueMsg::Noop)
-            }
-        }
-
-        impl QueueMsgTypes for EmptyMsgTypes {
-            type Event = Unit;
-            type Data = Unit;
-            type Fetch = Unit;
-            type Effect = Unit;
-            type Wait = Unit;
-
-            type Aggregate = Unit;
-
-            type Store = ();
-        }
-
-        let msg = seq::<EmptyMsgTypes>([
+        let msg = seq::<UnitMessageTypes>([
             defer_absolute(1),
             seq([defer_absolute(2), seq([defer_absolute(3)])]),
             seq([defer_absolute(4)]),
@@ -505,23 +532,147 @@ mod tests {
             ])
         );
 
-        let msg = seq::<EmptyMsgTypes>([defer_absolute(1)]);
+        let msg = seq::<UnitMessageTypes>([defer_absolute(1)]);
         assert_eq!(flatten_seq(msg), defer_absolute(1));
 
-        let msg = conc::<EmptyMsgTypes>([defer_absolute(1)]);
+        let msg = conc::<UnitMessageTypes>([defer_absolute(1)]);
         assert_eq!(flatten_seq(msg), conc([defer_absolute(1)]));
 
-        let msg = conc::<EmptyMsgTypes>([seq([defer_absolute(1)])]);
+        let msg = conc::<UnitMessageTypes>([seq([defer_absolute(1)])]);
         assert_eq!(flatten_seq(msg), conc([seq([defer_absolute(1)])]));
 
-        let msg = seq::<EmptyMsgTypes>([data(Unit)]);
-        assert_eq!(flatten_seq(msg), data(Unit));
+        let msg = seq::<UnitMessageTypes>([data(())]);
+        assert_eq!(flatten_seq(msg), data(()));
 
-        let msg = conc::<EmptyMsgTypes>([seq([data(Unit)])]);
-        assert_eq!(flatten_seq(msg), conc([seq([data(Unit)])]));
+        let msg = conc::<UnitMessageTypes>([seq([data(())])]);
+        assert_eq!(flatten_seq(msg), conc([seq([data(())])]));
 
-        let msg = conc::<EmptyMsgTypes>([conc([conc([data(Unit)])])]);
-        assert_eq!(flatten_conc(msg), data(Unit));
+        let msg = conc::<UnitMessageTypes>([conc([conc([data(())])])]);
+        assert_eq!(flatten_conc(msg), data(()));
+    }
+
+    #[tokio::test]
+    async fn conc_seq_nested() {
+        let engine = Engine::new(Arc::new(()));
+
+        let mut q = InMemoryQueue::new(()).await.unwrap();
+
+        let msgs = seq::<UnitMessageTypes>([
+            conc([fetch(()), fetch(())]),
+            conc([wait(()), wait(())]),
+            conc([
+                repeat(None, fetch(())),
+                repeat(None, fetch(())),
+                effect(()),
+                seq([fetch(()), fetch(()), effect(())]),
+            ]),
+        ]);
+
+        q.enqueue(msgs).await.unwrap();
+
+        assert_steps(
+            &engine,
+            &mut q,
+            [
+                vec_deque![seq::<UnitMessageTypes>([
+                    // conc(a, b), handles a, conc(b) == b
+                    fetch(()),
+                    conc([wait(()), wait(())]),
+                    conc([
+                        repeat(None, fetch(())),
+                        repeat(None, fetch(())),
+                        effect(()),
+                        seq([fetch(()), fetch(()), effect(())]),
+                    ]),
+                ])],
+                vec_deque![seq::<UnitMessageTypes>([
+                    conc([wait(()), wait(())]),
+                    conc([
+                        repeat(None, fetch(())),
+                        repeat(None, fetch(())),
+                        effect(()),
+                        seq([fetch(()), fetch(()), effect(())]),
+                    ]),
+                ])],
+                vec_deque![seq::<UnitMessageTypes>([
+                    // conc(a, b), handles a, conc(b) == b
+                    wait(()),
+                    conc([
+                        repeat(None, fetch(())),
+                        repeat(None, fetch(())),
+                        effect(()),
+                        seq([fetch(()), fetch(()), effect(())]),
+                    ]),
+                ])],
+                // seq(a, conc(m...)), handles a, seq(conc(m...)) == m...
+                vec_deque![
+                    repeat(None, fetch(())),
+                    repeat(None, fetch(())),
+                    effect(()),
+                    seq([fetch(()), fetch(()), effect(())]),
+                ],
+                vec_deque![
+                    repeat(None, fetch(())),
+                    effect(()),
+                    seq([fetch(()), fetch(()), effect(())]),
+                    // repeat(a) queues seq(a, repeat(a))
+                    seq([fetch(()), repeat(None, fetch(()))])
+                ],
+                vec_deque![
+                    effect(()),
+                    seq([fetch(()), fetch(()), effect(())]),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    // repeat(a) queues seq(a, repeat(a))
+                    seq([fetch(()), repeat(None, fetch(()))])
+                ],
+                vec_deque![
+                    seq([fetch(()), fetch(()), effect(())]),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    QueueMsg::Noop,
+                ],
+                vec_deque![
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    QueueMsg::Noop,
+                    seq([fetch(()), effect(())]),
+                ],
+                vec_deque![
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    QueueMsg::Noop,
+                    seq([fetch(()), effect(())]),
+                    repeat(None, fetch(())),
+                ],
+                vec_deque![
+                    QueueMsg::Noop,
+                    seq([fetch(()), effect(())]),
+                    repeat(None, fetch(())),
+                    repeat(None, fetch(())),
+                ],
+                vec_deque![
+                    seq([fetch(()), effect(())]),
+                    repeat(None, fetch(())),
+                    repeat(None, fetch(())),
+                ],
+                vec_deque![repeat(None, fetch(())), repeat(None, fetch(())), effect(()),],
+                vec_deque![
+                    repeat(None, fetch(())),
+                    effect(()),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                ],
+                vec_deque![
+                    effect(()),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                ],
+                vec_deque![
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    seq([fetch(()), repeat(None, fetch(()))]),
+                    QueueMsg::Noop,
+                ],
+            ],
+        )
+        .await;
     }
 }
 
@@ -553,59 +704,59 @@ impl std::error::Error for QueueError {
     }
 }
 
-pub trait HandleFetch<T: QueueMsgTypes> {
+pub trait HandleFetch<T: QueueMessageTypes> {
     fn handle(
         self,
         store: &T::Store,
     ) -> impl Future<Output = Result<QueueMsg<T>, QueueError>> + Send;
 }
 
-pub trait HandleData<T: QueueMsgTypes> {
+pub trait HandleData<T: QueueMessageTypes> {
     fn handle(self, store: &T::Store) -> Result<QueueMsg<T>, QueueError>;
 }
 
-pub trait HandleWait<T: QueueMsgTypes> {
+pub trait HandleWait<T: QueueMessageTypes> {
     fn handle(
         self,
         store: &T::Store,
     ) -> impl Future<Output = Result<QueueMsg<T>, QueueError>> + Send;
 }
 
-pub trait HandleEvent<T: QueueMsgTypes> {
+pub trait HandleEvent<T: QueueMessageTypes> {
     fn handle(self, store: &T::Store) -> Result<QueueMsg<T>, QueueError>;
 }
 
-pub trait HandleEffect<T: QueueMsgTypes> {
+pub trait HandleEffect<T: QueueMessageTypes> {
     fn handle(
         self,
         store: &T::Store,
     ) -> impl Future<Output = Result<QueueMsg<T>, QueueError>> + Send;
 }
 
-pub trait HandleAggregate<T: QueueMsgTypes> {
+pub trait HandleAggregate<T: QueueMessageTypes> {
     fn handle(self, data: VecDeque<T::Data>) -> Result<QueueMsg<T>, QueueError>;
 }
 
-impl<T: QueueMsgTypes> HandleFetch<T> for Never {
-    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
+impl<T: QueueMessageTypes> HandleFetch<T> for Never {
+    async fn handle(self, _: &<T as QueueMessageTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
 
-impl<T: QueueMsgTypes> HandleWait<T> for Never {
-    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
+impl<T: QueueMessageTypes> HandleWait<T> for Never {
+    async fn handle(self, _: &<T as QueueMessageTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
 
-impl<T: QueueMsgTypes> HandleEvent<T> for Never {
-    fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
+impl<T: QueueMessageTypes> HandleEvent<T> for Never {
+    fn handle(self, _: &<T as QueueMessageTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
 
-impl<T: QueueMsgTypes> HandleEffect<T> for Never {
-    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
+impl<T: QueueMessageTypes> HandleEffect<T> for Never {
+    async fn handle(self, _: &<T as QueueMessageTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
@@ -619,13 +770,13 @@ pub fn now() -> u64 {
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct Engine<T: QueueMsgTypes> {
+pub struct Engine<T: QueueMessageTypes> {
     store: Arc<T::Store>,
 }
 
 pub type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
-impl<T: QueueMsgTypes> Engine<T> {
+impl<T: QueueMessageTypes> Engine<T> {
     pub fn new(store: Arc<T::Store>) -> Self {
         Self { store }
     }
@@ -683,7 +834,7 @@ impl<T: QueueMsgTypes> Engine<T> {
     }
 }
 
-pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMsgTypes, R, Q: Queue<T>>(
+pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMessageTypes, R, Q: Queue<T>>(
     a: A,
     store: Arc<T::Store>,
     queue_config: Q::Config,
@@ -716,9 +867,9 @@ pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMsgTypes, R, Q: Qu
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct InMemoryQueue<T: QueueMsgTypes>(Arc<Mutex<VecDeque<QueueMsg<T>>>>);
+pub struct InMemoryQueue<T: QueueMessageTypes>(pub(crate) Arc<Mutex<VecDeque<QueueMsg<T>>>>);
 
-impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
+impl<T: QueueMessageTypes> Queue<T> for InMemoryQueue<T> {
     type Error = std::convert::Infallible;
     type Config = ();
 

@@ -3,11 +3,11 @@ use std::marker::PhantomData;
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
-    data, defer_absolute, fetch, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
-    QueueMsgTypes,
+    data, defer_absolute, fetch, now, queue_msg, seq, wait, HandleWait, QueueError,
+    QueueMessageTypes, QueueMsg,
 };
 use unionlabs::{
-    ibc::core::client::height::IsHeight,
+    ibc::core::client::height::{Height, IsHeight},
     ics24::ClientStatePath,
     traits::{ChainIdOf, ClientState, HeightOf},
     QueryHeight,
@@ -24,6 +24,7 @@ use crate::{
 #[any = AnyWait]
 pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
     Height(WaitForHeight<Hc, Tr>),
+    HeightRelative(WaitForHeightRelative<Hc, Tr>),
     Timestamp(WaitForTimestamp<Hc, Tr>),
     TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
 }
@@ -31,7 +32,7 @@ pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
 impl HandleWait<RelayMessageTypes> for AnyLightClientIdentified<AnyWait> {
     async fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMsgTypes>::Store,
+        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
         let wait = self;
 
@@ -73,10 +74,28 @@ where
                         defer_absolute(now() + 1),
                         wait(id::<Hc, Tr, _>(
                             c.chain_id(),
-                            WaitForHeight { height, __marker }.into(),
+                            WaitForHeight { height, __marker },
                         )),
                     ])
                 }
+            }
+            Wait::HeightRelative(WaitForHeightRelative {
+                height,
+                __marker: _,
+            }) => {
+                let chain_height = c.query_latest_height().await.unwrap();
+
+                wait(id::<Hc, Tr, _>(
+                    c.chain_id(),
+                    WaitForHeight {
+                        height: Height {
+                            revision_number: chain_height.revision_number(),
+                            revision_height: chain_height.revision_height() + height,
+                        }
+                        .into(),
+                        __marker: PhantomData,
+                    },
+                ))
             }
             Wait::Timestamp(WaitForTimestamp {
                 timestamp,
@@ -160,6 +179,11 @@ where
 #[queue_msg]
 pub struct WaitForHeight<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
+}
+
+#[queue_msg]
+pub struct WaitForHeightRelative<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
+    pub height: u64,
 }
 
 #[queue_msg]

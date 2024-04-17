@@ -1,5 +1,5 @@
 use macros::apply;
-use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
 use crate::{any_enum, AnyChainIdentified, BlockMessageTypes, ChainExt};
@@ -19,7 +19,7 @@ pub enum Data<C: ChainExt> {
 impl HandleData<BlockMessageTypes> for AnyChainIdentified<AnyData> {
     fn handle(
         self,
-        _store: &<BlockMessageTypes as QueueMsgTypes>::Store,
+        _store: &<BlockMessageTypes as QueueMessageTypes>::Store,
     ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         Ok(data(self))
     }

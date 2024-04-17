@@ -7,7 +7,7 @@ use chain_utils::{
     cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm, Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use queue_msg::{seq, QueueMsg, QueueMsgTypes, QueueMsgTypesTraits};
+use queue_msg::{seq, QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -61,7 +61,7 @@ pub trait ChainExt: Chain {
 
 pub struct RelayMessageTypes;
 
-impl QueueMsgTypes for RelayMessageTypes {
+impl QueueMessageTypes for RelayMessageTypes {
     type Event = AnyLightClientIdentified<AnyEvent>;
     type Data = AnyLightClientIdentified<AnyData>;
     type Fetch = AnyLightClientIdentified<AnyFetch>;
