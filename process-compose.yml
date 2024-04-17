@@ -50,9 +50,33 @@ processes:
       success_threshold: 1
       failure_threshold: 60
   voyager-migrations:
-    command: nix run .#voyager -- -c ./voyager-config.json run-migrations
+    command: nix run github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json run-migrations
+    availability:
+      restart: "on_failure"
+      backoff_seconds: 2
     depends_on:
       voyager-queue:
+        condition: process_healthy
+  voyager-relay:
+    command: nix run github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json relay
+    availability:
+      restart: "always"
+      backoff_seconds: 2
+    depends_on:
+      voyager-migrations:
+        condition: process_completed_successfully
+    log_location: ./.devnet/logs/voyager-relay.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
+  voyager-handshake:
+    command: nix run -L github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{"checksum":"0xb4c67f099d011e68ec6954b4406d5b8f59b87b57e84d3cd11c69c1f52d8d876c"}' --port-a "wasm.union15z28y43vjqps24gcsamlrlur87phnkd974ucemzkzny59waxhxsqzmx5j7" --port-b "wasm.wasm15z28y43vjqps24gcsamlrlur87phnkd974ucemzkzny59waxhxsqur547e" --channel-version "ucs00-pingpong-1" --channel-ordering ordered --connection-ordering ordered --create-clients --open-connection --open-channel --init-fetch
+    depends_on:
+      voyager-migrations:
+        condition: process_completed_successfully
+      devnet-union: 
+        condition: process_healthy
+      devnet-osmosis: 
         condition: process_healthy
   download-circuit:
     command: nix run ".#download-circuit-devnet" . 
