@@ -35,12 +35,6 @@ processes:
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 60
-  devnet-eth:
-    command: nix run .#devnet-eth
-    log_location: ./.devnet/logs/devnet-eth.log
-    log_configuration:
-      disable_json: true
-      no_metadata: true  
   voyager-queue:
     command: nix run .#voyager-queue
     log_location: ./.devnet/logs/voyager-queue.log
@@ -55,6 +49,11 @@ processes:
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 60
+  voyager-migrations:
+    command: nix run .#voyager -- -c ./voyager-config.json run-migrations
+    depends_on:
+      voyager-queue:
+        condition: process_healthy
   download-circuit:
     command: nix run ".#download-circuit-devnet" . 
     log_location: ./.devnet/logs/download-circuit.log
