@@ -12,6 +12,32 @@
         self'.packages.cw721-base
       ];
 
+      # Code ids as ordered above ( starting at 1 (: )
+      cosmwasmInstantiations = [
+        {
+          code-id = 2;
+          message = {
+            default_timeout = 10000;
+            gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+          };
+          # salt must be non-prefixed hex string
+          salt = "00";
+          label = "ucs01-relay";
+        }
+        {
+          code-id = 3;
+          message = {
+            cw721_base_code_id = 4;
+            incoming_proxy = null;
+            outgoing_proxy = null;
+            pauser = null;
+            cw721_admin = null;
+          };
+          salt = "01";
+          label = "ucs02-nft";
+        }
+      ];
+
       devnet-union = dbg (mkCosmosDevnet {
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
@@ -42,6 +68,7 @@
           self'.packages.scroll-light-client
         ];
         inherit cosmwasmContracts;
+        inherit cosmwasmInstantiations;
         portIncrease = 0;
       });
 

@@ -12,6 +12,7 @@
 , genesisOverwrites ? { }
 , lightClients ? [ ]
 , cosmwasmContracts ? [ ]
+, cosmwasmInstantiations ? [ ]
 , startCommandOverwrite ? null
 , extraPackages ? [ ]
 , sdkVersion ? 50
@@ -527,7 +528,7 @@ let
                     "instantiate_config": { "permission": "Everybody" }
                   },
                   "code_bytes": $encoded,
-                  "pinned": false
+                  "pinned": true
                 }]' \
                 $out/config/genesis.json | sponge $out/config/genesis.json
             done
@@ -602,7 +603,6 @@ let
     '' else ''
       ${nodeBin} genesis validate --home .
     ''}
-    
   '';
 
   mkValidatorHome = idx:
@@ -698,11 +698,19 @@ let
 in
 {
   inherit devnet-home;
-
-  services = builtins.listToAttrs (builtins.genList
-    (id: {
-      name = "${chainName}-${toString id}";
-      value = mkNodeService id;
-    })
-    validatorCount);
+  services = builtins.listToAttrs
+    (builtins.genList
+      (id: {
+        name = "${chainName}-${toString id}";
+        value = mkNodeService id;
+      })
+      validatorCount) // {
+    cosmwasm-deployer = import ./services/cosmwasm-deployer.nix {
+      inherit pkgs;
+      inherit devnet-home;
+      inherit node;
+      depends-on-node = "${chainName}-${toString 0}";
+      instantiations = cosmwasmInstantiations;
+    };
+  };
 }
