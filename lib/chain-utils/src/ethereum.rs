@@ -311,7 +311,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
         self.beacon_api_client
             .finality_update()
             .await
-            .map(|response| self.make_height(response.data.attested_header.beacon.slot))
+            .map(|response| self.make_height(response.data.finalized_header.beacon.slot))
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
@@ -355,7 +355,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             .finality_update()
             .await?
             .data
-            .attested_header
+            .finalized_header
             .execution
             .timestamp
             .try_into()
