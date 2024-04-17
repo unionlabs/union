@@ -42,9 +42,6 @@
           config = self'.packages.devnet-eth-config;
           validatorCount = devnetConfig.ethereum.beacon.validatorCount;
         };
-      }
-      # For some reason, blockscout backend segfault on non-x86 arch
-      // (if pkgs.stdenv.isx86_64 then {
         blockscout-backend = import ./services/blockscout/backend.nix {
           inherit lib pkgs;
           inherit (inputs) env-utils;
@@ -79,7 +76,7 @@
         blockscout-proxy = import ./services/blockscout/proxy.nix {
           inherit lib pkgs;
         };
-      } else { });
+      };
 
       devnet-union = dbg (mkCosmosDevnet {
         node = self'.packages.uniond;
