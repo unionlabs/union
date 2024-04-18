@@ -350,6 +350,15 @@
               SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
             '';
           };
+        devnet-logs = pkgs.writeShellApplication
+          {
+            name = "union-full-devnet-logs";
+            runtimeInputs = [ lnav ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              lnav ./.devnet/logs/
+            '';
+          };
         devnet-union-home = mkCi false (devnet-union.devnet-home);
         devnet-simd-home = mkCi false (devnet-simd.devnet-home);
         devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);
