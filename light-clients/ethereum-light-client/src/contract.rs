@@ -9,11 +9,13 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ethereum::config::consts::{CURRENT_JUSTIFIED_ROOT_INDEX, FINALIZED_ROOT_INDEX},
     ibc::{core::client::height::Height, lightclients::ethereum::client_state::ClientState},
 };
 
-use crate::{client::EthereumLightClient, errors::Error};
+use crate::{
+    client::{validate_checkpoint_root_index, EthereumLightClient},
+    errors::Error,
+};
 
 // NOTE(aeryz): the fact that the host module forces the light clients to store and use the wasm wrapping
 // in the client state makes this code kinda messy. But this is going to be resolved in the future versions
@@ -30,10 +32,7 @@ pub fn instantiate(
             reason: format!("{:?}", e),
         })?;
 
-    match client_state.checkpoint_root_index {
-        CURRENT_JUSTIFIED_ROOT_INDEX | FINALIZED_ROOT_INDEX => {}
-        val => return Err(Error::UnknownCheckpointIndex(val)),
-    }
+    validate_checkpoint_root_index(client_state.checkpoint_root_index)?;
 
     save_proto_consensus_state(
         deps.branch(),

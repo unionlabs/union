@@ -18,6 +18,7 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
+    ethereum::config::consts::{CURRENT_JUSTIFIED_ROOT_INDEX, FINALIZED_ROOT_INDEX},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -408,6 +409,7 @@ impl IbcClient for EthereumLightClient {
         );
 
         let scs = substitute_client_state.data;
+        validate_checkpoint_root_index(scs.checkpoint_root_index)?;
         save_subject_client_state(
             deps,
             WasmClientState {
@@ -419,6 +421,7 @@ impl IbcClient for EthereumLightClient {
                     latest_slot: scs.latest_slot,
                     ibc_commitment_slot: scs.ibc_commitment_slot,
                     ibc_contract_address: scs.ibc_contract_address,
+                    checkpoint_root_index: scs.checkpoint_root_index,
                     frozen_height: ZERO_HEIGHT,
                     ..subject_client_state.data
                 },
@@ -473,6 +476,13 @@ impl IbcClient for EthereumLightClient {
                 .data
                 .timestamp,
         )
+    }
+}
+
+pub(crate) fn validate_checkpoint_root_index(checkpoint_root_index: u64) -> Result<(), Error> {
+    match checkpoint_root_index {
+        CURRENT_JUSTIFIED_ROOT_INDEX | FINALIZED_ROOT_INDEX => Ok(()),
+        val => Err(Error::UnknownCheckpointIndex(val)),
     }
 }
 
