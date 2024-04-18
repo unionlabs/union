@@ -456,11 +456,11 @@
     },
     "nixpkgs-lnav": {
       "locked": {
-        "lastModified": 1713345230,
-        "narHash": "sha256-BZRK1QfgwoPFm27dxdfTu/Jei4z26ck2qvGS0Aa3M+I=",
+        "lastModified": 1713467351,
+        "narHash": "sha256-9n7OPwpn6Xsj2bUYQJuwLeu9Q/OQwBrBvp5r4a/uTxI=",
         "owner": "cor",
         "repo": "nixpkgs",
-        "rev": "1ad626a1f47da4edeba9253a97c4be38495c2fb2",
+        "rev": "f9eb8b6e68cf4eb7336a1d929fabaccd08aa2db9",
         "type": "github"
       },
       "original": {
