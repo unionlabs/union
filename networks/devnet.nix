@@ -3,13 +3,28 @@
     let
       arion = inputs'.arion.packages.default;
 
-      mkCosmosDevnet = import ./mkCosmosDevnet.nix { inherit pkgs dbg; };
+      mkCosmosDevnet = import ./mkCosmosDevnet.nix {
+        inherit pkgs dbg;
+        ucliBin = pkgs.lib.getExe self'.packages.ucli;
+      };
 
       cosmwasmContracts = [
-        self'.packages.ucs00-pingpong
-        self'.packages.ucs01-relay
-        self'.packages.ucs02-nft
-        self'.packages.cw721-base
+        {
+          code = self'.packages.ucs00-pingpong;
+          instances = [ ];
+        }
+        {
+          code = self'.packages.ucs01-relay;
+          instances = [ ];
+        }
+        {
+          code = self'.packages.ucs02-nft;
+          instances = [ ];
+        }
+        {
+          code = self'.packages.cw721-base;
+          instances = [ ];
+        }
       ];
 
       devnet-union = dbg (mkCosmosDevnet {
@@ -41,7 +56,44 @@
           self'.packages.ethereum-light-client-mainnet
           self'.packages.scroll-light-client
         ];
-        inherit cosmwasmContracts;
+        cosmwasmContracts = [
+          {
+            code = self'.packages.ucs00-pingpong;
+            instances = [ ];
+          }
+          {
+            code = self'.packages.ucs01-relay;
+            instances = [{
+              message = {
+                default_timeout = 10000;
+                # Todo derive
+                gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+              };
+              # salt must be non-prefixed hex string
+              salt = "00";
+              label = "ucs01-relay";
+            }];
+          }
+          {
+            code = self'.packages.ucs02-nft;
+            instances = [{
+              message = {
+                # Must be the index of `cw721-base` within this contracts list
+                cw721_base_code_id = 4;
+                incoming_proxy = null;
+                outgoing_proxy = null;
+                pauser = null;
+                cw721_admin = null;
+              };
+              salt = "00";
+              label = "ucs02-nft";
+            }];
+          }
+          {
+            code = self'.packages.cw721-base;
+            instances = [ ];
+          }
+        ];
         portIncrease = 0;
       });
 
@@ -69,10 +121,7 @@
         lightClients = [
           self'.packages.cometbls-light-client
         ];
-        cosmwasmContracts = [
-          self'.packages.ucs00-pingpong
-          self'.packages.ucs01-relay
-        ];
+        inherit cosmwasmContracts;
         portIncrease = 200;
         sdkVersion = 47;
         genesisOverwrites = {
@@ -170,21 +219,16 @@
           };
           forge = import ./services/forge.nix {
             inherit pkgs;
-            inherit (self'.packages) forge;
-            evm-sources = nix-filter {
-              root = ./../evm;
-              include = [
-                "scripts"
-                "contracts"
-                "tests"
-              ];
-            };
+            inherit (self'.packages) forge evm-sources;
           };
           lodestar = import ./services/lodestar.nix {
             inherit pkgs;
             config = self'.packages.devnet-eth-config;
             validatorCount = devnetConfig.ethereum.beacon.validatorCount;
           };
+        }
+        # For some reason, blockscout backend segfault on non-x86 arch
+        // (if pkgs.stdenv.isx86_64 then {
           blockscout-backend = import ./services/blockscout/backend.nix {
             inherit lib pkgs;
             inherit (inputs) env-utils;
@@ -192,6 +236,11 @@
           blockscout-frontend = import ./services/blockscout/frontend.nix {
             inherit lib pkgs;
             inherit (inputs) env-utils;
+          };
+          blockscout-sc-verifier = import ./services/blockscout/sc-verifier.nix {
+            inherit lib pkgs;
+            inherit (inputs) env-utils;
+            inherit (self'.packages) evm-sources;
           };
           blockscout-db = import ./services/blockscout/db.nix {
             inherit lib pkgs;
@@ -214,7 +263,7 @@
           blockscout-proxy = import ./services/blockscout/proxy.nix {
             inherit lib pkgs;
           };
-        };
+        } else { });
 
         postgres = {
           postgres = import ./services/postgres.nix { inherit lib pkgs; };
