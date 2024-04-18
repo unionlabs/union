@@ -8,6 +8,7 @@ BLOCKSCOUT
 Beriker
 Bitfield
 Bitvector
+Boiron
 Boneh
 CCTP
 CFLAGS
@@ -494,6 +495,7 @@ includedir
 infima
 informations
 inplace
+instanceof
 interchain
 interchainaccounts
 interfacetype
