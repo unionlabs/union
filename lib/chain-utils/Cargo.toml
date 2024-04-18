@@ -39,4 +39,5 @@ tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 
 [features]
-arbitrary = ["dep:arbitrary"]
+arbitrary     = ["dep:arbitrary"]
+eth-justified = []

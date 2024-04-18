@@ -8,10 +8,7 @@ use crate::{
     hash::{H160, H256},
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
-            tendermint::fraction::{Fraction, TryFromFractionError},
-        },
+        lightclients::ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
     },
     uint::U256,
 };
