@@ -280,10 +280,11 @@ impl IbcClient for EthereumLightClient {
             consensus_state.data.state_root = consensus_update.attested_header.execution.state_root;
             consensus_state.data.storage_root = account_update.account_proof.storage_root;
 
+            // Normalize to nanoseconds to be ibc-go compliant
             consensus_state.data.timestamp = compute_timestamp_at_slot::<Config>(
                 client_state.data.genesis_time,
                 consensus_update.attested_header.beacon.slot,
-            );
+            ) * 1_000_000_000;
 
             if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
                 client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
@@ -438,7 +439,7 @@ impl IbcClient for EthereumLightClient {
         if is_client_expired(
             consensus_state.data.timestamp,
             client_state.data.trusting_period,
-            env.block.time.seconds(),
+            env.block.time.nanos(),
         ) {
             return Ok(Status::Expired);
         }
@@ -762,7 +763,7 @@ mod test {
         save_client_state(deps.as_mut(), wasm_client_state.clone());
         let mut env = mock_env();
 
-        env.block.time = Timestamp::from_seconds(
+        env.block.time = Timestamp::from_nanos(
             wasm_client_state.data.trusting_period + wasm_consensus_state.data.timestamp + 1,
         );
         assert_eq!(
@@ -770,7 +771,7 @@ mod test {
             Ok(Status::Expired)
         );
 
-        env.block.time = Timestamp::from_seconds(
+        env.block.time = Timestamp::from_nanos(
             wasm_client_state.data.trusting_period + wasm_consensus_state.data.timestamp,
         );
         assert_eq!(

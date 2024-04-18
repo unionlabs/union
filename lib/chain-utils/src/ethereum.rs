@@ -380,7 +380,8 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             seconds_per_slot: C::SECONDS_PER_SLOT::U64,
             slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
             epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
-            trusting_period: 100_000_000,
+            // In nanoseconds
+            trusting_period: 100_000_000 * 1_000_000_000,
             latest_slot: beacon_height.revision_height,
             min_sync_committee_participants: 0,
             trust_level: Fraction {
@@ -433,7 +434,8 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             light_client_update.data.clone()
         };
 
-        let timestamp = bootstrap.header.execution.timestamp;
+        // Normalize to nanos in order to be compliant with cosmos
+        let timestamp = bootstrap.header.execution.timestamp * 1_000_000_000;
         ethereum::consensus_state::ConsensusState {
             slot: bootstrap.header.beacon.slot,
             state_root: bootstrap.header.execution.state_root,

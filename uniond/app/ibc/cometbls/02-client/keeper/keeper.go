@@ -58,7 +58,7 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (
 		return nil, errorsmod.Wrapf(errors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
 	}
 
-	timestamp := uint64(histInfo.Header.Time.Unix())
+	timestamp := uint64(histInfo.Header.Time.UnixNano())
 
 	cometblsConsensusState := &ConsensusState{
 		Timestamp:          timestamp,

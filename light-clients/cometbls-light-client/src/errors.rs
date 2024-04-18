@@ -20,8 +20,10 @@ pub enum InvalidHeaderError {
     },
     #[error("header with timestamp ({0}) is expired")]
     HeaderExpired(u64),
-    #[error("negative header timestamp ({0})")]
+    #[error("negative header timestamp seconds ({0})")]
     NegativeTimestamp(i64),
+    #[error("negative header timestamp nanos ({0})")]
+    NegativeTimestampNanos(i32),
     #[error("signed header timestamp ({signed_timestamp}) cannot exceed the max clock drift ({max_clock_drift})")]
     SignedHeaderCannotExceedMaxClockDrift {
         signed_timestamp: u64,

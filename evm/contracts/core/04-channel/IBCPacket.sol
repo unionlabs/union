@@ -185,9 +185,12 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         ) {
             revert IBCPacketLib.ErrHeightTimeout();
         }
+
+        // For some reason cosmos is using nanos, we try to follow their convention to avoid friction
+        uint64 currentTimestamp = uint64(block.timestamp * 1e9);
         if (
             msg_.packet.timeout_timestamp != 0
-                && (block.timestamp >= msg_.packet.timeout_timestamp)
+                && (currentTimestamp >= msg_.packet.timeout_timestamp)
         ) {
             revert IBCPacketLib.ErrTimestampTimeout();
         }

@@ -72,6 +72,15 @@ impl Serialize for Timestamp {
 
 impl Timestamp {
     #[must_use]
+    /// # Panics
+    /// Returns the timestamp as unix timestamp in nanoseconds.
+    /// Assumes the timestamp is correct. Panics otherwise.
+    pub fn unix_nanos(&self) -> u64 {
+        u64::try_from(self.seconds.inner()).expect("impossible") * 1_000_000_000
+            + u64::try_from(self.nanos.inner()).expect("impossible")
+    }
+
+    #[must_use]
     /// Returns the duration between `self` and `other`. If `self` > `other`, the
     /// resulting [`Duration`] will be positive, and if `other` > `self` then the
     /// resulting [`Duration`] will be negative.

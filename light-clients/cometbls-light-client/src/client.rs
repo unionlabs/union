@@ -116,12 +116,8 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         let trusted_timestamp = consensus_state.data.timestamp;
-        let untrusted_timestamp = {
-            let header_timestamp = header.signed_header.time.seconds.inner();
-            header_timestamp
-                .try_into()
-                .map_err(|_| InvalidHeaderError::NegativeTimestamp(header_timestamp))?
-        };
+        // Normalized to nanoseconds to follow tendermint convention
+        let untrusted_timestamp = header.signed_header.time.unix_nanos();
 
         if untrusted_timestamp <= trusted_timestamp {
             return Err(InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent {
@@ -134,7 +130,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         if is_client_expired(
             untrusted_timestamp,
             client_state.data.trusting_period,
-            env.block.time.seconds(),
+            env.block.time.nanos(),
         ) {
             return Err(InvalidHeaderError::HeaderExpired(consensus_state.data.timestamp).into());
         }
@@ -142,7 +138,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         let max_clock_drift = env
             .block
             .time
-            .seconds()
+            .nanos()
             .checked_add(client_state.data.max_clock_drift)
             .ok_or(Error::MathOverflow)?;
 
@@ -208,13 +204,8 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         };
 
         consensus_state.data.next_validators_hash = header.signed_header.next_validators_hash;
-        consensus_state.data.timestamp = header
-            .signed_header
-            .time
-            .seconds
-            .inner()
-            .try_into()
-            .map_err(|_| Error::NegativeTimestamp(header.signed_header.time.seconds.inner()))?;
+        // Normalized to nanoseconds to follow tendermint convention
+        consensus_state.data.timestamp = header.signed_header.time.unix_nanos();
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state_metadata(
@@ -241,13 +232,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     ) -> Result<bool, Self::Error> {
         let height = height_from_header(&header);
 
-        let expected_timestamp: u64 = header
-            .signed_header
-            .time
-            .seconds
-            .inner()
-            .try_into()
-            .map_err(|_| Error::NegativeTimestamp(header.signed_header.time.seconds.inner()))?;
+        let expected_timestamp: u64 = header.signed_header.time.unix_nanos();
 
         // If there is already a header at this height, it should be exactly the same as the header that
         // we saved previously. If this is not the case, either the client is broken or the chain is
@@ -383,7 +368,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         if is_client_expired(
             consensus_state.data.timestamp,
             client_state.data.trusting_period,
-            env.block.time.seconds(),
+            env.block.time.nanos(),
         ) {
             return Ok(Status::Expired);
         }

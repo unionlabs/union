@@ -29,32 +29,11 @@ library CometblsHelp {
     using BytesLib for bytes;
 
     function isExpired(
-        GoogleProtobufTimestamp.Data memory headerTime,
+        uint64 headerTime,
         uint64 trustingPeriod,
         uint64 currentTime
     ) internal pure returns (bool) {
-        GoogleProtobufTimestamp.Data memory expirationTime =
-        GoogleProtobufTimestamp.Data({
-            secs: headerTime.secs + int64(trustingPeriod),
-            nanos: headerTime.nanos
-        });
-        return gt(
-            GoogleProtobufTimestamp.Data({secs: int64(currentTime), nanos: 0}),
-            expirationTime
-        );
-    }
-
-    function gt(
-        GoogleProtobufTimestamp.Data memory t1,
-        GoogleProtobufTimestamp.Data memory t2
-    ) internal pure returns (bool) {
-        if (t1.secs > t2.secs) {
-            return true;
-        } else if (t1.secs == t2.secs && t1.nanos > t2.nanos) {
-            return true;
-        } else {
-            return false;
-        }
+        return currentTime > (headerTime + trustingPeriod);
     }
 
     function optimize(
@@ -145,6 +124,20 @@ library CometblsHelp {
         assembly {
             consensusState := bz.offset
         }
+        return consensusState;
+    }
+
+    function unmarshalConsensusStateEthABIMemory(bytes memory bz)
+        internal
+        pure
+        returns (OptimizedConsensusState memory)
+    {
+        OptimizedConsensusState memory consensusState;
+        (uint64 timestamp, bytes32 appHash, bytes32 nextValidatorsHash) =
+            abi.decode(bz, (uint64, bytes32, bytes32));
+        consensusState.timestamp = timestamp;
+        consensusState.appHash = appHash;
+        consensusState.nextValidatorsHash = nextValidatorsHash;
         return consensusState;
     }
 

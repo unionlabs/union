@@ -298,14 +298,7 @@ contract IBCClientHandlerTests is TestPlus {
         handler.createClient(m);
     }
 
-    function test_createClient_onlyIBC(
-        uint64 trustedHeight,
-        uint64 clockDrift,
-        uint64 updateLatency
-    ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
-        vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
-
+    function test_createClient_onlyIBC(uint64 trustedHeight) public {
         (
             bytes memory zkp,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
@@ -323,7 +316,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         client.pushValidProof();
@@ -333,10 +326,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_updateClient_onlyIBC(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -356,7 +347,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -373,10 +364,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_updateClient_newCommitment(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -396,7 +385,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -429,7 +418,8 @@ contract IBCClientHandlerTests is TestPlus {
                 Cometbls.createConsensusState(
                     signedHeader.app_hash.toBytes32(0),
                     signedHeader.validators_hash.toBytes32(0),
-                    uint64(signedHeader.time.secs)
+                    uint64(signedHeader.time.secs) * 1e9
+                        + uint64(signedHeader.time.nanos)
                 ).marshalEthABI()
             )
         );
@@ -438,10 +428,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_updateClient_validZKP(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -461,7 +449,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -477,10 +465,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_updateClient_invalidZKP(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -500,7 +486,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -524,10 +510,8 @@ contract IBCClientHandlerTests is TestPlus {
     // NOTE: Optimization-wise, this is probably unecessary as we direcyly compute that on chain. i.e. we could remove commit.block_id entirely.
     function test_updateClient_invalidBlockRoot(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -547,7 +531,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -566,10 +550,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_updateClient_nextRevisionLower(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -587,7 +569,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -603,12 +585,9 @@ contract IBCClientHandlerTests is TestPlus {
         handler.updateClient(m2);
     }
 
-    function test_updateClient_trustingPeriodExpired(
-        uint64 trustedHeight,
-        uint64 clockDrift
-    ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
-
+    function test_updateClient_trustingPeriodExpired(uint64 trustedHeight)
+        public
+    {
         (
             bytes memory zkp,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
@@ -626,7 +605,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory id = handler.createClient(m);
@@ -648,7 +627,6 @@ contract IBCClientHandlerTests is TestPlus {
         ) = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
-        uint64 clockDrift = Cometbls.MAX_CLOCK_DRIFT - 1;
         uint64 updateLatency = Cometbls.TRUSTING_PERIOD - 1;
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -659,7 +637,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -680,7 +658,11 @@ contract IBCClientHandlerTests is TestPlus {
             })
         );
         assertTrue(ok);
-        assertEq(timestamp, uint64(signedHeader.time.secs));
+        assertEq(
+            timestamp,
+            uint64(signedHeader.time.secs) * 1e9
+                + uint64(signedHeader.time.nanos)
+        );
     }
 
     function test_getClientState() public {
@@ -699,7 +681,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -727,10 +709,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_getClientState_step(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -750,20 +730,20 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
-
-        IBCMsgs.MsgUpdateClient memory m2 =
-            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
-
-        vm.warp(uint64(signedHeader.time.secs) + updateLatency);
 
         (bytes memory clientStateBytes, bool ok) =
             client.getClientState(clientId);
         assertTrue(ok);
         assertEq(clientStateBytes, m.clientStateBytes);
+
+        vm.warp(uint64(signedHeader.time.secs) + updateLatency);
+
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
 
         client.pushValidProof();
         handler.updateClient(m2);
@@ -794,7 +774,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -812,7 +792,7 @@ contract IBCClientHandlerTests is TestPlus {
             Cometbls.createConsensusState(
                 ARBITRARY_INITIAL_APP_HASH,
                 signedHeader.validators_hash.toBytes32(0),
-                uint64(signedHeader.time.secs - 10)
+                (uint64(signedHeader.time.secs) - 10) * 1e9
             ).marshalEthABI()
         );
     }
@@ -839,10 +819,8 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_getConsensusState_step(
         uint64 trustedHeight,
-        uint64 clockDrift,
         uint64 updateLatency
     ) public {
-        vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
         (
@@ -862,15 +840,12 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
+        vm.warp(uint64(signedHeader.time.secs));
+
         string memory clientId = handler.createClient(m);
-
-        IBCMsgs.MsgUpdateClient memory m2 =
-            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
-
-        vm.warp(uint64(signedHeader.time.secs) + updateLatency);
 
         (bytes memory consensusStateBytes, bool ok) = client.getConsensusState(
             clientId,
@@ -880,6 +855,11 @@ contract IBCClientHandlerTests is TestPlus {
             })
         );
         assertFalse(ok);
+
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
+
+        vm.warp(uint64(signedHeader.time.secs) + updateLatency);
 
         client.pushValidProof();
         handler.updateClient(m2);
@@ -897,7 +877,8 @@ contract IBCClientHandlerTests is TestPlus {
             Cometbls.createConsensusState(
                 signedHeader.app_hash.toBytes32(0),
                 signedHeader.validators_hash.toBytes32(0),
-                uint64(signedHeader.time.secs)
+                uint64(signedHeader.time.secs) * 1e9
+                    + uint64(signedHeader.time.nanos)
             ).marshalEthABI()
         );
     }
@@ -918,7 +899,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -957,7 +938,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -995,7 +976,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1038,7 +1019,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1052,7 +1033,8 @@ contract IBCClientHandlerTests is TestPlus {
                 revision_number: 0,
                 revision_height: trustedHeight
             }),
-            delayPeriodTime,
+            // Expected to be in nanos
+            delayPeriodTime * 1e9,
             0,
             bytes(""),
             bytes(""),
@@ -1083,7 +1065,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1126,7 +1108,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1170,7 +1152,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1210,7 +1192,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1247,7 +1229,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1289,7 +1271,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1303,7 +1285,8 @@ contract IBCClientHandlerTests is TestPlus {
                 revision_number: 0,
                 revision_height: trustedHeight
             }),
-            delayPeriodTime,
+            // Expected to be in nanos
+            delayPeriodTime * 1e9,
             0,
             bytes(""),
             bytes(""),
@@ -1333,7 +1316,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1375,7 +1358,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1418,7 +1401,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
@@ -1447,10 +1430,6 @@ contract IBCClientHandlerTests is TestPlus {
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
-        uint64 trustedHeight = uint64(signedHeader.height) - 1;
-        uint64 clockDrift = Cometbls.MAX_CLOCK_DRIFT - 1;
-        uint64 updateLatency = Cometbls.TRUSTING_PERIOD - 1;
-
         handler.registerClient(CLIENT_TYPE, client);
 
         (IbcCoreClientV1Height.Data memory latestHeight, bool ok) =
@@ -1465,8 +1444,6 @@ contract IBCClientHandlerTests is TestPlus {
         ) = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
-        uint64 clockDrift = Cometbls.MAX_CLOCK_DRIFT - 1;
-        uint64 updateLatency = Cometbls.TRUSTING_PERIOD - 1;
 
         handler.registerClient(CLIENT_TYPE, client);
 
@@ -1476,7 +1453,7 @@ contract IBCClientHandlerTests is TestPlus {
             trustedHeight,
             ARBITRARY_INITIAL_APP_HASH,
             signedHeader.validators_hash.toBytes32(0),
-            uint64(signedHeader.time.secs - 10)
+            (uint64(signedHeader.time.secs) - 10) * 1e9
         );
 
         string memory clientId = handler.createClient(m);
