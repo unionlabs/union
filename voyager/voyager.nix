@@ -16,6 +16,7 @@
           name = "voy-send-msg";
           runtimeInputs = [ pkgs.curl ];
           text = ''
+            set -e
             curl localhost:65534/msg -H "content-type: application/json" -d "$@"
           '';
         };
