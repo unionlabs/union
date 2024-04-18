@@ -22,22 +22,36 @@ use crate::{
     from
 ))]
 pub struct ClientState {
+    /// id of the tracked ethereum chain
     pub chain_id: U256,
+    /// see: https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis
     pub genesis_validators_root: H256,
+    /// minimum allowed sync committee validator signature
     pub min_sync_committee_participants: u64,
+    /// see: https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis
     pub genesis_time: u64,
+    /// defined under [`eth spec`](https://ethereum.github.io/beacon-APIs/#/Config/getSpec)
     pub fork_parameters: ForkParameters,
     pub seconds_per_slot: u64,
+    /// number of slots per epoch
     pub slots_per_epoch: u64,
+    /// number of epochs per sync committee period (signature period)
     pub epochs_per_sync_committee_period: u64,
+    /// TODO(aeryz): remove unused
     pub trust_level: Fraction,
+    /// if the client is not updated for `trusting_period` seconds, it expires and needs recovery
     pub trusting_period: u64,
+    /// the highest slot that the client is updated to
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
+    /// whether the client is frozen or not
     pub frozen_height: Height,
+    /// the slot in the counterparty ibc contract for the commitments mapping
     pub ibc_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
+    /// merkle tree index of the tracked header
+    pub checkpoint_root_index: u64,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::ClientState {
@@ -57,6 +71,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             frozen_height: Some(value.frozen_height.into()),
             ibc_commitment_slot: value.ibc_commitment_slot.to_big_endian().into(),
             ibc_contract_address: value.ibc_contract_address.into(),
+            checkpoint_root_index: value.checkpoint_root_index,
         }
     }
 }
@@ -104,6 +119,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
                 .ibc_contract_address
                 .try_into()
                 .map_err(TryFromClientStateError::IbcContractAddress)?,
+            checkpoint_root_index: value.checkpoint_root_index,
         })
     }
 }

@@ -18,7 +18,6 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
-    ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_INDEX,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -134,7 +133,7 @@ impl IbcClient for EthereumLightClient {
         let ctx = LightClientContext::new(
             &wasm_client_state.data,
             trusted_consensus_state,
-            CURRENT_JUSTIFIED_ROOT_INDEX,
+            wasm_client_state.data.checkpoint_root_index,
         );
 
         // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
@@ -183,7 +182,6 @@ impl IbcClient for EthereumLightClient {
         misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
         // There is no point to check for misbehaviour when the headers are not for the same height
-        // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
         let (slot_1, slot_2) = (
             misbehaviour.update_1.finalized_header.beacon.slot,
             misbehaviour.update_2.finalized_header.beacon.slot,
@@ -209,7 +207,7 @@ impl IbcClient for EthereumLightClient {
         let ctx = LightClientContext::new(
             &wasm_client_state.data,
             trusted_consensus_state,
-            CURRENT_JUSTIFIED_ROOT_INDEX,
+            wasm_client_state.data.checkpoint_root_index,
         );
 
         let current_slot = compute_slot_at_timestamp::<Config>(

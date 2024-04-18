@@ -9,6 +9,7 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
+    ethereum::config::consts::{CURRENT_JUSTIFIED_ROOT_INDEX, FINALIZED_ROOT_INDEX},
     ibc::{core::client::height::Height, lightclients::ethereum::client_state::ClientState},
 };
 
@@ -28,6 +29,11 @@ pub fn instantiate(
         ClientState::decode_as::<Proto>(&msg.client_state).map_err(|e| Error::DecodeFromProto {
             reason: format!("{:?}", e),
         })?;
+
+    match client_state.checkpoint_root_index {
+        CURRENT_JUSTIFIED_ROOT_INDEX | FINALIZED_ROOT_INDEX => {}
+        val => return Err(Error::UnknownCheckpointIndex(val)),
+    }
 
     save_proto_consensus_state(
         deps.branch(),
