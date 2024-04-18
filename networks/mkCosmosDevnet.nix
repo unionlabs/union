@@ -773,7 +773,7 @@ in
         value = mkNodeService id;
       })
       validatorCount) // {
-    cosmwasm-deployer = import ./services/cosmwasm-deployer.nix {
+    "${chainName}-cosmwasm-deployer" = import ./services/cosmwasm-deployer.nix {
       inherit pkgs;
       inherit devnet-home;
       inherit node;

@@ -1,6 +1,6 @@
 # Contract addresses
 
-All the deployed contracts are upgradeable proxies forwarding call the the underlying implementation.
+All the deployed contracts are upgradeable proxies forwarding calls the the underlying implementation.
 
 We use a a special contract called deployer in order to generate deterministic addresses that don't include the initcode in the derivation, see deploy https://github.com/Vectorized/solady/blob/e6ad61c844d6392910bdd21d39a33b3d668fc987/src/utils/CREATE3.sol#L63.
 
@@ -37,6 +37,8 @@ The following table maps salt to contracts:
 The combination `(deployer_source, deployer_source_nonce, deployer, sender, salt)` fully determines the final addresses (no bytecode hash of any of the above contract involved).
 
 ## Devnet
+
+This links are working if you run a local devnet on a x86 machine only (Blockscout is currently unsupported on arm64).
 
 - IBCHandler: [0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5](http://localhost/address/0x524D4d28fc90dc5A257162abE37081f52681C7D6)
 - CometblsClient: [0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49](http://localhost/address/0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49)
