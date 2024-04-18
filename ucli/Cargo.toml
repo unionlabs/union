@@ -15,11 +15,13 @@ serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tokio      = { workspace = true, features = ["macros"] }
 
-beacon-api     = { workspace = true }
-chain-utils    = { workspace = true }
-contracts      = { workspace = true }
-tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
-unionlabs      = { workspace = true, features = ["ethabi"] }
+beacon-api      = { workspace = true }
+chain-utils     = { workspace = true }
+contracts       = { workspace = true }
+cosmwasm-std    = { workspace = true }
+subtle-encoding = { workspace = true, features = ["bech32-preview"] }
+tendermint-rpc  = { workspace = true, features = ["http-client", "websocket-client"] }
+unionlabs       = { workspace = true, features = ["ethabi"] }
 
 [features]
 eth-minimal = []

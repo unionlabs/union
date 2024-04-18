@@ -11,7 +11,11 @@ use ethers::{
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
-use unionlabs::{ethereum::config::ChainSpec, hash::H160, uint::U256};
+use unionlabs::{
+    ethereum::config::ChainSpec,
+    hash::{H160, H256},
+    uint::U256,
+};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -34,6 +38,20 @@ pub enum Command {
     Tx(TxCmd),
     #[command(subcommand)]
     Query(QueryCmd),
+    #[command(subcommand)]
+    Compute(ComputeCmd),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ComputeCmd {
+    Instantiate2Address {
+        #[arg(long)]
+        creator: H160,
+        #[arg(long)]
+        checksum: H256,
+        #[arg(long)]
+        salt: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]

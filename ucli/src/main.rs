@@ -20,120 +20,148 @@ mod cli;
 #[tokio::main]
 async fn main() {
     let args = AppArgs::parse();
-    let config = read_to_string(&args.config_file_path).unwrap();
-    let config = serde_json::from_str::<Config>(&config).unwrap();
+
+    let read_config = || {
+        let config = read_to_string(&args.config_file_path).unwrap();
+        serde_json::from_str::<Config>(&config).unwrap()
+    };
 
     match args.command {
-        cli::Command::Tx(tx) => match tx {
-            cli::TxCmd::Ethereum(ethereum_tx) => {
-                match ethereum_tx {
-                    cli::EthereumTx::Transfer {
-                        relay_address,
-                        port_id,
-                        channel_id,
-                        receiver,
-                        amount,
+        cli::Command::Compute(compute) => match compute {
+            cli::ComputeCmd::Instantiate2Address {
+                creator,
+                checksum,
+                salt,
+            } => {
+                println!(
+                    "{}",
+                    hex::encode(
+                        &*cosmwasm_std::instantiate2_address(
+                            &checksum.0,
+                            &creator.0.into(),
+                            &hex::decode(salt).unwrap(),
+                        )
+                        .unwrap()
+                    )
+                );
+            }
+        },
+        cli::Command::Tx(tx) => {
+            let config = read_config();
+            match tx {
+                cli::TxCmd::Ethereum(ethereum_tx) => {
+                    match ethereum_tx {
+                        cli::EthereumTx::Transfer {
+                            relay_address,
+                            port_id,
+                            channel_id,
+                            receiver,
+                            amount,
+                            denom,
+                        } => match config.ethereum {
+                            cli::EthereumChainConfig::Mainnet(config) => {
+                                handle_transfer::<Mainnet>(
+                                    Ethereum::new(config).await.unwrap(),
+                                    relay_address.into(),
+                                    port_id,
+                                    channel_id,
+                                    receiver,
+                                    amount,
+                                    denom,
+                                )
+                                .await
+                            }
+                            cli::EthereumChainConfig::Minimal(config) => {
+                                handle_transfer::<Minimal>(
+                                    Ethereum::new(config).await.unwrap(),
+                                    relay_address.into(),
+                                    port_id,
+                                    channel_id,
+                                    receiver,
+                                    amount,
+                                    denom,
+                                )
+                                .await
+                            }
+                        },
+                    };
+                }
+            }
+        }
+        cli::Command::Query(query) => {
+            let config = read_config();
+            match query {
+                cli::QueryCmd::Ethereum(ethereum_query) => match ethereum_query {
+                    cli::EthereumQuery::Ucs01Balance {
+                        contract_address,
                         denom,
+                        address,
+                        channel_id,
+                        port_id,
                     } => match config.ethereum {
                         cli::EthereumChainConfig::Mainnet(config) => {
-                            handle_transfer::<Mainnet>(
+                            handle_ucs_balance::<Mainnet>(
                                 Ethereum::new(config).await.unwrap(),
-                                relay_address.into(),
-                                port_id,
-                                channel_id,
-                                receiver,
-                                amount,
+                                contract_address.into(),
                                 denom,
+                                address.into(),
+                                channel_id,
+                                port_id,
                             )
                             .await
                         }
                         cli::EthereumChainConfig::Minimal(config) => {
-                            handle_transfer::<Minimal>(
+                            handle_ucs_balance::<Minimal>(
                                 Ethereum::new(config).await.unwrap(),
-                                relay_address.into(),
-                                port_id,
-                                channel_id,
-                                receiver,
-                                amount,
+                                contract_address.into(),
                                 denom,
+                                address.into(),
+                                channel_id,
+                                port_id,
                             )
                             .await
                         }
                     },
-                };
+                    cli::EthereumQuery::Erc20Balance {
+                        contract_address,
+                        address,
+                    } => match config.ethereum {
+                        cli::EthereumChainConfig::Mainnet(config) => {
+                            handle_erc_balance::<Mainnet>(
+                                Ethereum::new(config).await.unwrap(),
+                                contract_address.into(),
+                                address.into(),
+                            )
+                            .await
+                        }
+                        cli::EthereumChainConfig::Minimal(config) => {
+                            handle_erc_balance::<Minimal>(
+                                Ethereum::new(config).await.unwrap(),
+                                contract_address.into(),
+                                address.into(),
+                            )
+                            .await
+                        }
+                    },
+                },
+                cli::QueryCmd::Union(union_query) => match union_query {
+                    cli::UnionQuery::AccountInfo { address } => {
+                        let info = Union::new(chain_utils::union::Config {
+                            signers: config.union.signers,
+                            fee_denom: config.union.fee_denom,
+                            ws_url: config.union.ws_url,
+                            prover_endpoint: config.union.prover_endpoint,
+                            grpc_url: config.union.grpc_url,
+                        })
+                        .await
+                        .unwrap()
+                        .account_info(&address)
+                        .await;
+                        println!("{info:#?}");
+                    }
+                },
             }
-        },
-        cli::Command::Query(query) => match query {
-            cli::QueryCmd::Ethereum(ethereum_query) => match ethereum_query {
-                cli::EthereumQuery::Ucs01Balance {
-                    contract_address,
-                    denom,
-                    address,
-                    channel_id,
-                    port_id,
-                } => match config.ethereum {
-                    cli::EthereumChainConfig::Mainnet(config) => {
-                        handle_ucs_balance::<Mainnet>(
-                            Ethereum::new(config).await.unwrap(),
-                            contract_address.into(),
-                            denom,
-                            address.into(),
-                            channel_id,
-                            port_id,
-                        )
-                        .await
-                    }
-                    cli::EthereumChainConfig::Minimal(config) => {
-                        handle_ucs_balance::<Minimal>(
-                            Ethereum::new(config).await.unwrap(),
-                            contract_address.into(),
-                            denom,
-                            address.into(),
-                            channel_id,
-                            port_id,
-                        )
-                        .await
-                    }
-                },
-                cli::EthereumQuery::Erc20Balance {
-                    contract_address,
-                    address,
-                } => match config.ethereum {
-                    cli::EthereumChainConfig::Mainnet(config) => {
-                        handle_erc_balance::<Mainnet>(
-                            Ethereum::new(config).await.unwrap(),
-                            contract_address.into(),
-                            address.into(),
-                        )
-                        .await
-                    }
-                    cli::EthereumChainConfig::Minimal(config) => {
-                        handle_erc_balance::<Minimal>(
-                            Ethereum::new(config).await.unwrap(),
-                            contract_address.into(),
-                            address.into(),
-                        )
-                        .await
-                    }
-                },
-            },
-            cli::QueryCmd::Union(union_query) => match union_query {
-                cli::UnionQuery::AccountInfo { address } => {
-                    let info = Union::new(chain_utils::union::Config {
-                        signers: config.union.signers,
-                        fee_denom: config.union.fee_denom,
-                        ws_url: config.union.ws_url,
-                        prover_endpoint: config.union.prover_endpoint,
-                        grpc_url: config.union.grpc_url,
-                    })
-                    .await
-                    .unwrap()
-                    .account_info(&address)
-                    .await;
-                    println!("{info:#?}");
-                }
-            },
-        },
+        }
     }
 }
 
