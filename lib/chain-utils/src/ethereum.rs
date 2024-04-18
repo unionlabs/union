@@ -34,7 +34,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, EthAbi},
-    ethereum::config::ChainSpec,
+    ethereum::config::{consts::CURRENT_JUSTIFIED_ROOT_INDEX, ChainSpec},
     hash::{H160, H256},
     ibc::{
         core::client::height::{Height, IsHeight},
@@ -383,16 +383,14 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             trusting_period: 100_000_000,
             latest_slot: beacon_height.revision_height,
             min_sync_committee_participants: 0,
-            trust_level: Fraction {
-                numerator: 1,
-                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
-            },
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,
             },
             ibc_commitment_slot: U256::from(0),
             ibc_contract_address: self.ibc_handler_address,
+            // TODO(aeryz): fetch this
+            checkpoint_root_index: CURRENT_JUSTIFIED_ROOT_INDEX,
         }
     }
 
