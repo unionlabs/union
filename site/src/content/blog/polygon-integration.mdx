@@ -7,6 +7,11 @@ hidden: false
 cover: "/src/assets/images/noble-and-movement-partnership/cover.png"
 ---
 
+import Spline from "#/components/SplineResizing.astro";
+import cube from "#/spline/union-polygon.splinecode";
+
+<Spline aspect="1-2" model={cube} loading="eager"/>
+
 Union, the Modular Interoperability Layer, is plugging into the AggLayer, developed by leading L2 developer Polygon Labs, to facilitate message passing and asset transfers between the Polygon ecosystem and IBC-enabled chains. This integration will position Union as the de-facto IBC gateway in and out of the AggLayer, unlocking liquidity flow between two of the largest blockchain ecosystems: Polygon and Cosmos.
 
 The AggLayer was designed to solve the scalability problem in blockchain, which refers to scaling access to shared state and liquidity across multiple chains. To address this requires a new approach to blockchain architecture, namely, aggregated blockchains. Polygon Labs researchers and engineers have designed a solution – the aggregation layer, or AggLayer – which will seamlessly connect any ZK-enabled L2 or L1 chain, regardless of execution environment, for near-instant cross-chain transactions, and shared state and liquidity across chains.

@@ -1,0 +1,124 @@
+---
+import type SplineViewerProps from "@splinetool/viewer"
+/**
+ * Props descriptions can be found here:
+ * {@link https://unpkg.com/browse/@splinetool/viewer/build/spline-viewer.d.ts}
+ * or in node_modules/@splinetool/viewer/build/spline-viewer.d.ts
+ */
+export interface Props {
+  model: string
+  width?: number
+  height?: number
+  unloadable?: boolean
+  backgroundColor?: string
+  aspect?: "1-1" | "1-2",
+  hint?: SplineViewerProps.HintType
+  loading?: SplineViewerProps.LoadingType
+  eventsTarget?: SplineViewerProps.EventsTargetType
+  loadingAnimType?: SplineViewerProps.PreloaderAnimType
+}
+const { model, loading = "auto", eventsTarget = "global", aspect, ...restProps } = Astro.props
+---
+
+<script src="@splinetool/viewer"></script>
+
+<div id="spline-container" class:list={["w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t", { "aspect-w-2": aspect === "1-2" }]}>
+  <spline-viewer
+    id="spline-viewer"
+    url={model}
+    eventsTarget={eventsTarget}
+    {...restProps}
+    class="size-auto"></spline-viewer>
+</div>
+
+<script>
+
+  // Create a ResizeObserver to handle resizing of the container
+  const container = document.getElementById('spline-container');
+  if (!container) {
+    console.error("spline container not found");
+  } else {
+  const originalClassName = container.className;
+  const hackClassName = originalClassName + " pr-1";
+
+  // Function to set canvas dimensions
+  function resizeCanvas() {
+
+    if (!container) {
+      console.error("spline container not found");
+      return;
+    }
+    const targetWidth = container.clientWidth;
+    const targetHeight = container.clientHeight;
+
+  
+    const customElement = document.querySelector('spline-viewer');
+
+    // Access the shadow root of the spline-viewer and get the canvas from it
+    const shadowRoot = customElement?.shadowRoot;
+    const canvas = shadowRoot?.getElementById('spline');
+
+    if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
+      console.error("canvas not found");
+      return;
+    }
+
+    canvas.style.width = `${targetWidth}px`;
+    canvas.style.height= `${targetHeight}px`;
+    canvas.width = targetWidth * 2;
+    canvas.height = targetHeight * 2;
+    console.log("canvas after resize", canvas);
+  }
+
+
+  const observer = new ResizeObserver(() => { resizeCanvas(); });
+  observer.observe(container);
+
+  // Horrible hack to trigger the splien viewer to resize
+  container.className = hackClassName;
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 25);
+  setTimeout(
+    function() {
+      container.className = hackClassName;
+    }, 50);
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 100);
+  setTimeout(
+    function() {
+      container.className = hackClassName;
+    }, 200);
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 300);
+  setTimeout(
+    function() {
+      container.className = hackClassName;
+    }, 400);
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 1000);
+  setTimeout(
+    function() {
+      container.className = hackClassName;
+    }, 2000);
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 3000);
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 5000);
+  setTimeout(
+    function() {
+      container.className = originalClassName;
+    }, 10000);
+}
+</script>
