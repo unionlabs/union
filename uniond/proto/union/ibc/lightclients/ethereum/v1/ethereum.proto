@@ -41,6 +41,7 @@ message ClientState {
   .ibc.core.client.v1.Height frozen_height = 12;
   bytes ibc_commitment_slot = 13;
   bytes ibc_contract_address = 14;
+  uint64 checkpoint_root_index = 15;
 }
 
 

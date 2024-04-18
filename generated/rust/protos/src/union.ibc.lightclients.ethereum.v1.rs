@@ -91,6 +91,8 @@ pub struct ClientState {
     pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "14")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag = "15")]
+    pub checkpoint_root_index: u64,
 }
 impl ::prost::Name for ClientState {
     const NAME: &'static str = "ClientState";
