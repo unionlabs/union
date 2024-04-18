@@ -267,22 +267,6 @@
           '';
         });
 
-        external-evm-contracts = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
-          name = "external-evm-contracts";
-          src = "${openzeppelin}/contracts/token/ERC20";
-          buildInputs = [ wrappedForge ];
-          buildPhase = ''
-            forge --version
-            FOUNDRY_PROFILE=optimized forge build
-          '';
-          doCheck = false;
-          installPhase = ''
-            mkdir -p $out
-            mv out $out
-            mv cache $out
-          '';
-        });
-
         # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
         # solidity-coverage =
         #   pkgs.runCommand "solidity-coverage"
