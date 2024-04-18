@@ -460,7 +460,7 @@ let
   #   '';
 
   alicePubkey = home:
-    builtins.readFile (pkgs.runCommand "alice-pubkey" { buildInputs = [ pkgs.jq pkgs.moreutils ]; } ''
+    pkgs.runCommand "alice-pubkey" { buildInputs = [ pkgs.jq pkgs.moreutils ]; } ''
       export HOME=$(pwd)
       cp --no-preserve=mode -r ${home}/* .
 
@@ -476,32 +476,32 @@ let
         --output json | jq -r .bytes)
 
       echo -n "$ALICE_CANONICAL_KEY" > $out
-    '');
+    '';
 
   contractChecksum = contract:
-    builtins.readFile (pkgs.runCommand "contract-checksum" { buildInputs = [ pkgs.moreutils ]; } ''
+    pkgs.runCommand "contract-checksum" { buildInputs = [ pkgs.moreutils ]; } ''
       for wasm in $(find ${contract} -name "*.wasm" -type f); do
         CHECKSUM=$(sha256sum $wasm | cut -f1 -d " ")
         echo "Found $wasm"
         echo "Checksum: $CHECKSUM"
         echo -n "$CHECKSUM" > $out
       done
-    '');
+    '';
 
   getContractAddress = creator: checksum: salt:
-    builtins.readFile (pkgs.runCommand "get-contract-address" { buildInputs = [ pkgs.jq ]; } ''
+    pkgs.runCommand "get-contract-address" { buildInputs = [ pkgs.jq ]; } ''
       export HOME=$(pwd)
       CANONICAL_ADDR=$(${ucliBin} \
         compute \
         instantiate2-address \
-        --creator "0x${creator}" \
-        --checksum "0x${checksum}" \
+        --creator "0x$(cat ${creator})" \
+        --checksum "0x$(cat ${checksum})" \
         --salt "${salt}")
       ${nodeBin} \
         keys \
         parse "$CANONICAL_ADDR" \
         --output json | jq -r ".formats[0]" > $out
-    '');
+    '';
 
   addContractAddresses = { code, instances }: home:
     let
@@ -517,10 +517,10 @@ let
         cp --no-preserve=mode -r ${home}/* $out
         for wasm in $(find ${code} -name "*.wasm" -type f); do
           mkdir -p $out/checksums
-          echo -n "${checksum}" > "$out/checksums/$(basename $wasm .wasm)"
+          echo -n $(cat "${checksum}") > "$out/checksums/$(basename $wasm .wasm)"
           mkdir -p $out/addresses
           ${builtins.concatStringsSep "\n" (pkgs.lib.imap0 (idx: { salt, ... }: ''
-            echo -n "${getContractAddress creator checksum salt}" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
+            echo -n "$(cat ${getContractAddress creator checksum salt})" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
           '') instances)}
         done
       '';
