@@ -37,8 +37,6 @@ pub struct ClientState {
     pub slots_per_epoch: u64,
     /// number of epochs per sync committee period (signature period)
     pub epochs_per_sync_committee_period: u64,
-    /// TODO(aeryz): remove unused
-    pub trust_level: Fraction,
     /// if the client is not updated for `trusting_period` seconds, it expires and needs recovery
     pub trusting_period: u64,
     /// the highest slot that the client is updated to
@@ -65,7 +63,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: Some(value.trust_level.into()),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: Some(value.frozen_height.into()),
@@ -83,7 +80,6 @@ pub enum TryFromClientStateError {
     ForkParameters(TryFromForkParametersError),
     GenesisValidatorsRoot(InvalidLength),
     IbcCommitmentSlot(InvalidLength),
-    TrustLevel(TryFromFractionError),
     IbcContractAddress(InvalidLength),
 }
 
@@ -107,9 +103,6 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: required!(value.trust_level)?
-                .try_into()
-                .map_err(TryFromClientStateError::TrustLevel)?,
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.unwrap_or_default().into(),

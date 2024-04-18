@@ -35,13 +35,12 @@ message ClientState {
   uint64 seconds_per_slot = 6;
   uint64 slots_per_epoch = 7;
   uint64 epochs_per_sync_committee_period = 8;
-  .ibc.lightclients.tendermint.v1.Fraction trust_level = 9;
-  uint64 trusting_period = 10;
-  uint64 latest_slot = 11;
-  .ibc.core.client.v1.Height frozen_height = 12;
-  bytes ibc_commitment_slot = 13;
-  bytes ibc_contract_address = 14;
-  uint64 checkpoint_root_index = 15;
+  uint64 trusting_period = 9;
+  uint64 latest_slot = 10;
+  .ibc.core.client.v1.Height frozen_height = 11;
+  bytes ibc_commitment_slot = 12;
+  bytes ibc_contract_address = 13;
+  uint64 checkpoint_root_index = 14;
 }
 
 

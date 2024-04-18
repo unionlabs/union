@@ -415,8 +415,6 @@ impl IbcClient for EthereumLightClient {
                     chain_id: scs.chain_id,
                     min_sync_committee_participants: scs.min_sync_committee_participants,
                     fork_parameters: scs.fork_parameters,
-
-                    trust_level: scs.trust_level,
                     trusting_period: scs.trusting_period,
                     latest_slot: scs.latest_slot,
                     ibc_commitment_slot: scs.ibc_commitment_slot,
