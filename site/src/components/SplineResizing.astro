@@ -74,51 +74,16 @@ const { model, loading = "auto", eventsTarget = "global", aspect, ...restProps }
   const observer = new ResizeObserver(() => { resizeCanvas(); });
   observer.observe(container);
 
-  // Horrible hack to trigger the splien viewer to resize
+  // Horrible hack to trigger the spline viewer to resize
   container.className = hackClassName;
-  setTimeout(
-    function() {
-      container.className = originalClassName;
-    }, 25);
-  setTimeout(
-    function() {
+  setInterval(function() {
+    if (container.className === originalClassName) {
       container.className = hackClassName;
-    }, 50);
-  setTimeout(
-    function() {
+    } else {
       container.className = originalClassName;
-    }, 100);
-  setTimeout(
-    function() {
-      container.className = hackClassName;
-    }, 200);
-  setTimeout(
-    function() {
-      container.className = originalClassName;
-    }, 300);
-  setTimeout(
-    function() {
-      container.className = hackClassName;
-    }, 400);
-  setTimeout(
-    function() {
-      container.className = originalClassName;
-    }, 1000);
-  setTimeout(
-    function() {
-      container.className = hackClassName;
-    }, 2000);
-  setTimeout(
-    function() {
-      container.className = originalClassName;
-    }, 3000);
-  setTimeout(
-    function() {
-      container.className = originalClassName;
-    }, 5000);
-  setTimeout(
-    function() {
-      container.className = originalClassName;
-    }, 10000);
+    }
+  
+  }, 50);
+
 }
 </script>

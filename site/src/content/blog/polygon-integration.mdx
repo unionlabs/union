@@ -4,13 +4,18 @@ date: 2024-04-18
 author: "union_build"
 description: "Union, the Modular Interoperability Layer, is plugging into the AggLayer, developed by leading L2 developer Polygon Labs, to facilitate message passing and asset transfers between the Polygon ecosystem and IBC-enabled chains. This integration will position Union as the de-facto IBC gateway in and out of the AggLayer, unlocking liquidity flow between two of the largest blockchain ecosystems: Polygon and Cosmos."
 hidden: false
-cover: "/src/assets/images/noble-and-movement-partnership/cover.png"
+cover: "/src/assets/images/polygon-integration/cover.png"
 ---
 
+import { Image } from "astro:assets";
+import architecture from "#/assets/images/polygon-integration/union-polygon-architecture.svg";
 import Spline from "#/components/SplineResizing.astro";
 import cube from "#/spline/union-polygon.splinecode";
 
-<Spline aspect="1-2" model={cube} loading="eager"/>
+
+<div class="py-4">
+    <Spline aspect="1-2" model={cube} loading="eager"/>
+</div>
 
 Union, the Modular Interoperability Layer, is plugging into the AggLayer, developed by leading L2 developer Polygon Labs, to facilitate message passing and asset transfers between the Polygon ecosystem and IBC-enabled chains. This integration will position Union as the de-facto IBC gateway in and out of the AggLayer, unlocking liquidity flow between two of the largest blockchain ecosystems: Polygon and Cosmos.
 
@@ -22,7 +27,13 @@ This includes chains leveraging Polygon Chain Development Kit (CDK), a modular, 
 The engineering team at Union and the research team at Polygon Labs will integrate Union's ZK proofs for IBC into the AggLayer. This integration aims to facilitate the seamless bridging of funds from any IBC-enabled chain to any blockchain connected to the AggLayer, ensuring a trustless, efficient, and low-latency process.
 
 
-IMAGE HERE
+<div class="py-4">
+    <Image
+      alt="Union Polygon Architecture"
+      src={architecture}
+    />
+</div>
+
 
 Immediate access to the widely-utilized IBC bridging protocol will provide numerous advantages for blockchains connected to the AggLayer, including:
 
