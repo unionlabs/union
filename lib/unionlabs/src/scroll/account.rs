@@ -36,7 +36,7 @@ impl Account {
         Ok(Account {
             code_size: u64::from_be_bytes(value.array_slice::<16, 8>()),
             nonce: u64::from_be_bytes(value.array_slice::<24, 8>()),
-            balance: U256::from_big_endian(value.array_slice::<32, 32>()),
+            balance: U256::from_be_bytes(value.array_slice::<32, 32>()),
             storage_root: H256(value.array_slice::<64, 32>()),
             keccak_code_hash: H256(value.array_slice::<96, 32>()),
             poseidon_code_hash: H256(value.array_slice::<128, 32>()),

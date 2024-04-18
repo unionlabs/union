@@ -28,15 +28,15 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
             l1_client_id: value.l1_client_id,
             chain_id: value.chain_id.to_string(),
             latest_batch_index: value.latest_batch_index,
-            latest_batch_index_slot: value.latest_batch_index_slot.to_big_endian().to_vec(),
+            latest_batch_index_slot: value.latest_batch_index_slot.to_be_bytes().to_vec(),
             frozen_height: Some(value.frozen_height.into()),
             rollup_contract_address: value.rollup_contract_address.into(),
             rollup_finalized_state_roots_slot: value
                 .rollup_finalized_state_roots_slot
-                .to_big_endian()
+                .to_be_bytes()
                 .into(),
             ibc_contract_address: value.ibc_contract_address.into(),
-            ibc_commitment_slot: value.ibc_commitment_slot.to_big_endian().into(),
+            ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
         }
     }
 }
@@ -62,14 +62,14 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for Clie
             l1_client_id: value.l1_client_id,
             chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
             latest_batch_index: value.latest_batch_index,
-            latest_batch_index_slot: U256::try_from_big_endian(&value.latest_batch_index_slot)
+            latest_batch_index_slot: U256::try_from_be_bytes(&value.latest_batch_index_slot)
                 .map_err(TryFromClientStateError::LatestBatchIndexSlot)?,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
             rollup_contract_address: value
                 .rollup_contract_address
                 .try_into()
                 .map_err(TryFromClientStateError::RollupContractAddress)?,
-            rollup_finalized_state_roots_slot: U256::try_from_big_endian(
+            rollup_finalized_state_roots_slot: U256::try_from_be_bytes(
                 &value.rollup_finalized_state_roots_slot,
             )
             .map_err(TryFromClientStateError::RollupFinalizedStateRootsSlot)?,
@@ -77,7 +77,7 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for Clie
                 .ibc_contract_address
                 .try_into()
                 .map_err(TryFromClientStateError::IbcContractAddress)?,
-            ibc_commitment_slot: U256::try_from_big_endian(&value.ibc_commitment_slot)
+            ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
                 .map_err(TryFromClientStateError::IbcCommitmentSlot)?,
         })
     }

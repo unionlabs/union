@@ -1,0 +1,32 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "scroll-codec"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[package.metadata.crane]
+test-include = ["lib/scroll-codec/src/testdata/"]
+
+[lints]
+workspace = true
+
+[dependencies]
+enumorph    = { workspace = true }
+ethers      = { workspace = true, features = ["rustls", "providers"] }
+futures     = { workspace = true }
+hex         = { workspace = true }
+macros      = { workspace = true }
+num-bigint  = { workspace = true }
+serde       = { workspace = true, features = ["derive"] }
+serde-utils = { workspace = true }
+serde_json  = { workspace = true }
+sha3        = { workspace = true }
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+scroll-api  = { workspace = true }
+tokio       = { workspace = true, features = ["macros", "rt"] }
+url         = "2.5.0"

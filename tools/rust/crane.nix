@@ -179,7 +179,7 @@
             crateSrc = mkCleanSrc {
               name = cratePname;
               workspaceDepsForCrate = mkRootPaths workspaceDepsForCrate;
-              extraIncludes = dbg (mkRootPaths (includePathsForCrate ++ extraTestIncludePathsForCrate));
+              extraIncludes = mkRootPaths (includePathsForCrate ++ extraTestIncludePathsForCrate);
             };
 
             # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate.

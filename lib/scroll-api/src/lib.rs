@@ -10,10 +10,10 @@ pub struct ScrollClient {
 
 impl ScrollClient {
     #[allow(clippy::new_without_default)]
-    pub fn new(base_url: String) -> Self {
+    pub fn new(base_url: impl AsRef<str>) -> Self {
         Self {
             client: reqwest::Client::new(),
-            base_url: base_url.trim_end_matches('/').to_string(),
+            base_url: base_url.as_ref().trim_end_matches('/').to_string(),
         }
     }
 

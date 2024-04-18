@@ -149,7 +149,7 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
 
 // Union whitepaper: (1) H_{hmac_r}
 fn hash_to_field(message: &[u8]) -> U256 {
-    (U256::from_big_endian(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + U256::from(1)
+    (U256::from_be_bytes(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + U256::from(1)
 }
 
 // Gnark commitment hashing, we employ our custom hash_to_field in the prover itself
@@ -360,21 +360,21 @@ fn verify_generic_zkp_2(
                 U256::from(
                     u64::try_from(i64::from(header.height)).map_err(|_| Error::InvalidHeight)?,
                 )
-                .to_big_endian(),
+                .to_be_bytes(),
             )
             .chain_update(
                 U256::from(
                     u64::try_from(i64::from(header.time.seconds))
                         .map_err(|_| Error::InvalidTimestamp)?,
                 )
-                .to_big_endian(),
+                .to_be_bytes(),
             )
             .chain_update(
                 U256::from(
                     u64::try_from(i32::from(header.time.nanos))
                         .map_err(|_| Error::InvalidTimestamp)?,
                 )
-                .to_big_endian(),
+                .to_be_bytes(),
             )
             .chain_update(header.validators_hash)
             .chain_update(header.next_validators_hash)
@@ -385,7 +385,7 @@ fn verify_generic_zkp_2(
     // drop the most significant byte to fit in bn254 F_r
     inputs_hash[0] = 0;
     let public_inputs: [substrate_bn::Fr; NB_PUBLIC_INPUTS] = [
-        decode_scalar(U256::from_big_endian(inputs_hash))?,
+        decode_scalar(U256::from_be_bytes(inputs_hash))?,
         decode_scalar(commitment_hash)?,
     ];
     let initial_point = substrate_bn::G1::from(

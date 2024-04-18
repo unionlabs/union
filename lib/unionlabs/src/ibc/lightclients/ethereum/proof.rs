@@ -26,8 +26,8 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::Proof> for Proof {
         value: protos::union::ibc::lightclients::ethereum::v1::Proof,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            key: U256::try_from_big_endian(&value.key).map_err(TryFromProofError::Key)?,
-            value: U256::try_from_big_endian(&value.value).map_err(TryFromProofError::Value)?,
+            key: U256::try_from_be_bytes(&value.key).map_err(TryFromProofError::Key)?,
+            value: U256::try_from_be_bytes(&value.value).map_err(TryFromProofError::Value)?,
             proof: value.proof,
         })
     }
@@ -36,8 +36,8 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::Proof> for Proof {
 impl From<Proof> for protos::union::ibc::lightclients::ethereum::v1::Proof {
     fn from(value: Proof) -> Self {
         Self {
-            key: value.key.to_big_endian().into(),
-            value: value.value.to_big_endian().into(),
+            key: value.key.to_be_bytes().into(),
+            value: value.value.to_be_bytes().into(),
             proof: value.proof,
         }
     }

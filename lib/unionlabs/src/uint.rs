@@ -2,7 +2,8 @@
 
 use core::{
     fmt::Display,
-    ops::{Add, Div, Rem},
+    iter::Sum,
+    ops::{Add, AddAssign, Div, Rem},
     str::FromStr,
 };
 
@@ -16,7 +17,17 @@ use crate::{
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
 #[derive(
-    ::macros::Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
+    ::macros::Debug,
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[repr(transparent)]
@@ -104,27 +115,27 @@ impl U256 {
     }
 
     #[must_use]
-    pub fn to_little_endian(&self) -> [u8; 32] {
+    pub fn to_le_bytes(&self) -> [u8; 32] {
         let mut buf = [0; 32];
         self.0.to_little_endian(&mut buf);
         buf
     }
 
     #[must_use]
-    pub fn to_big_endian(&self) -> [u8; 32] {
+    pub fn to_be_bytes(&self) -> [u8; 32] {
         let mut buf = [0; 32];
         self.0.to_big_endian(&mut buf);
         buf
     }
 
     #[must_use]
-    pub fn to_packed_big_endian(&self) -> Vec<u8> {
-        let buffer = self.to_big_endian();
+    pub fn to_be_bytes_packed(&self) -> Vec<u8> {
+        let buffer = self.to_be_bytes();
         let leading_empty_bytes = (self.leading_zeros() / 8) as usize;
         buffer[leading_empty_bytes..].to_vec()
     }
 
-    pub fn try_from_big_endian(bz: &[u8]) -> Result<Self, InvalidLength> {
+    pub fn try_from_be_bytes(bz: &[u8]) -> Result<Self, InvalidLength> {
         let len = bz.len();
 
         if (0..=32).contains(&len) {
@@ -138,7 +149,7 @@ impl U256 {
     }
 
     #[must_use]
-    pub fn from_big_endian(bz: [u8; 32]) -> Self {
+    pub fn from_be_bytes(bz: [u8; 32]) -> Self {
         Self(primitive_types::U256::from_big_endian(&bz))
     }
 
@@ -148,24 +159,24 @@ impl U256 {
     }
 
     #[must_use]
-    pub fn to_big_endian_hex(&self) -> String {
-        serde_utils::to_hex(self.to_big_endian())
+    pub fn to_be_hex(&self) -> String {
+        serde_utils::to_hex(self.to_be_bytes())
     }
 
     #[must_use]
-    pub fn to_packed_big_endian_hex(&self) -> String {
+    pub fn to_be_hex_packed(&self) -> String {
         if self.0.is_zero() {
             format!("{HEX_ENCODING_PREFIX}{}", 0)
         } else {
             // NOTE: Can't use serde_utils::to_hex here as it ensures there's an even number of bytes (by prepending a 0) which we don't want for u256
             format!(
                 "{HEX_ENCODING_PREFIX}{}",
-                hex::encode(self.to_packed_big_endian()).trim_start_matches('0')
+                hex::encode(self.to_be_bytes_packed()).trim_start_matches('0')
             )
         }
     }
 
-    pub fn from_big_endian_hex(s: impl AsRef<str>) -> Result<U256, TryFromHexError> {
+    pub fn from_be_hex(s: impl AsRef<str>) -> Result<U256, TryFromHexError> {
         if s.as_ref().is_empty() {
             return Err(serde_utils::FromHexStringError::EmptyString.into());
         }
@@ -175,7 +186,7 @@ impl U256 {
             .ok_or_else(|| serde_utils::FromHexStringError::MissingPrefix(s.as_ref().to_owned()))
             .map_err(Into::into)
             .and_then(|maybe_hex| {
-                Ok(U256::try_from_big_endian(
+                Ok(U256::try_from_be_bytes(
                     &if maybe_hex.len() % 2 == 1 {
                         hex::decode(format!("0{maybe_hex}"))
                     } else {
@@ -204,7 +215,7 @@ pub mod u256_big_endian_hex {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&data.to_packed_big_endian_hex())
+        serializer.serialize_str(&data.to_be_hex_packed())
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
@@ -212,7 +223,7 @@ pub mod u256_big_endian_hex {
         D: serde::Deserializer<'de>,
     {
         String::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
-            U256::from_big_endian_hex(s).map_err(de::Error::custom)
+            U256::from_be_hex(s).map_err(de::Error::custom)
         })
     }
 }
@@ -244,7 +255,7 @@ pub mod u256_big_endian_hex {
 
 impl Encode<Proto> for U256 {
     fn encode(self) -> Vec<u8> {
-        self.to_big_endian().into()
+        self.to_be_bytes().into()
     }
 }
 
@@ -252,7 +263,7 @@ impl Decode<Proto> for U256 {
     type Error = InvalidLength;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        Self::try_from_big_endian(bytes)
+        Self::try_from_be_bytes(bytes)
     }
 }
 
@@ -337,7 +348,7 @@ impl Display for U256 {
 
 impl rlp::Encodable for U256 {
     fn rlp_append(&self, s: &mut rlp::RlpStream) {
-        s.encoder().encode_value(&self.to_packed_big_endian());
+        s.encoder().encode_value(&self.to_be_bytes_packed());
     }
 }
 
@@ -360,6 +371,18 @@ impl Add for U256 {
 
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
+    }
+}
+
+impl AddAssign for U256 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+    }
+}
+
+impl Sum for U256 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(U256::default(), |a, b| a + b)
     }
 }
 
@@ -408,7 +431,7 @@ mod u256_tests {
             let string = format!(r#"{{"u256":"{hex}"}}"#);
             let t = serde_json::from_str::<T>(&string).unwrap();
 
-            dbg!(H256(t.u256.to_big_endian()));
+            dbg!(H256(t.u256.to_be_bytes()));
 
             assert_eq!(t.u256.0.as_u64(), n);
 

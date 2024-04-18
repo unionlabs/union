@@ -253,7 +253,7 @@ fn do_verify_membership(
     check_commitment_key(
         &path,
         ibc_commitment_slot,
-        H256(storage_proof.key.to_big_endian()),
+        H256(storage_proof.key.to_be_bytes()),
     )?;
 
     let path = path
@@ -288,7 +288,7 @@ fn do_verify_membership(
             .finalize(),
     );
 
-    let proof_value = H256::from(storage_proof.value.to_big_endian());
+    let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
     if expected_value_hash != proof_value {
         return Err(Error::StoredValueMismatch {
@@ -299,8 +299,8 @@ fn do_verify_membership(
 
     scroll_verifier::verify_zktrie_storage_proof(
         storage_root,
-        storage_proof.key.to_big_endian().into(),
-        storage_proof.value.to_big_endian().as_ref(),
+        storage_proof.key.to_be_bytes().into(),
+        storage_proof.value.to_be_bytes().as_ref(),
         &storage_proof.proof,
     )?;
 
@@ -317,11 +317,11 @@ fn do_verify_non_membership(
     check_commitment_key(
         &path,
         ibc_commitment_slot,
-        H256(storage_proof.key.to_big_endian()),
+        H256(storage_proof.key.to_be_bytes()),
     )?;
     scroll_verifier::verify_zktrie_storage_absence(
         storage_root,
-        H256(storage_proof.key.to_big_endian()),
+        H256(storage_proof.key.to_be_bytes()),
         &storage_proof.proof,
     )?;
     Ok(())
