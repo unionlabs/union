@@ -1,5 +1,3 @@
-instanceof
-Boiron
 0xc0dejug
 ABCI
 Accs
@@ -10,6 +8,7 @@ BLOCKSCOUT
 Beriker
 Bitfield
 Bitvector
+Boiron
 Boneh
 CCTP
 CFLAGS
@@ -496,6 +495,7 @@ includedir
 infima
 informations
 inplace
+instanceof
 interchain
 interchainaccounts
 interfacetype
