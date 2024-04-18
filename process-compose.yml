@@ -56,7 +56,7 @@ processes:
     shutdown:
       signal: 2
   voyager-migrations:
-    command: RUST_LOG=debug nix run -L github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json run-migrations
+    command: RUST_LOG=debug nix run -L .#voyager -- -c ./voyager-config.json run-migrations
     availability:
       restart: "on_failure"
       backoff_seconds: 2
@@ -70,7 +70,7 @@ processes:
     shutdown:
       signal: 2
   voyager-relay:
-    command: RUST_LOG=info nix run -L github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json relay
+    command: RUST_LOG=info nix run -L .#voyager -- -c ./voyager-config.json relay
     availability:
       restart: "always"
       backoff_seconds: 2
@@ -83,8 +83,12 @@ processes:
       no_metadata: true  
     shutdown:
       signal: 2
-  voyager-handshake:
-    command: nix run -L github:unionlabs/union/voyager-channel-creation#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{"checksum":"0xb4c67f099d011e68ec6954b4406d5b8f59b87b57e84d3cd11c69c1f52d8d876c"}' --port-a "wasm.union15z28y43vjqps24gcsamlrlur87phnkd974ucemzkzny59waxhxsqzmx5j7" --port-b "wasm.wasm15z28y43vjqps24gcsamlrlur87phnkd974ucemzkzny59waxhxsqur547e" --channel-version "ucs00-pingpong-1" --channel-ordering ordered --connection-ordering ordered --create-clients --open-connection --open-channel --init-fetch
+  voyager-client-connection-handshake:
+    command: nix run -L .#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{"checksum":"0xb4c67f099d011e68ec6954b4406d5b8f59b87b57e84d3cd11c69c1f52d8d876c"}' --create-clients --open-connection --connection-ordering unordered --init-fetch
+    log_location: ./.devnet/logs/voyager-client-connection-handshake.log
+    log_configuration:
+      disable_json: true
+      no_metadata: true  
     depends_on:
       voyager-migrations:
         condition: process_completed_successfully
