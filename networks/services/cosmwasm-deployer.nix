@@ -1,10 +1,15 @@
-{ pkgs, devnet-home, node, depends-on-node, instantiations, ... }:
+{ pkgs, devnet-home, node, depends-on-node, cosmwasmContracts, ... }:
 let
+  instantiations = pkgs.lib.lists.flatten (
+    pkgs.lib.imap1
+      (code-id: { instances, ... }: builtins.map (instance: instance // { inherit code-id; }) instances)
+      cosmwasmContracts
+  );
   cosmwasm-deployer =
     pkgs.writeShellApplication {
       name = "cosmwasm-deployer";
       runtimeInputs = [ node ];
-      text = ''
+      text = if builtins.length instantiations == 0 then "" else ''
         mkdir -p /tmp
         ${builtins.concatStringsSep "\n" (pkgs.lib.imap0 (idx: {code-id, salt, label, message }:
           ''

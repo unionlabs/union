@@ -1,5 +1,6 @@
 { pkgs
 , dbg
+, ucliBin
 , ...
 }:
 { node
@@ -12,7 +13,6 @@
 , genesisOverwrites ? { }
 , lightClients ? [ ]
 , cosmwasmContracts ? [ ]
-, cosmwasmInstantiations ? [ ]
 , startCommandOverwrite ? null
 , extraPackages ? [ ]
 , sdkVersion ? 50
@@ -459,6 +459,72 @@ let
 
   #   '';
 
+  alicePubkey = home:
+    builtins.readFile (pkgs.runCommand "alice-pubkey" { buildInputs = [ pkgs.jq pkgs.moreutils ]; } ''
+      export HOME=$(pwd)
+      cp --no-preserve=mode -r ${home}/* .
+
+      ALICE_ADDRESS=$(${nodeBin} keys list \
+        --keyring-backend test \
+        --home . \
+        --output json \
+        | jq '.[] | select(.name == "alice").address' --raw-output)
+
+      ALICE_CANONICAL_KEY=$(${nodeBin} keys parse $ALICE_ADDRESS \
+        --keyring-backend test \
+        --home . \
+        --output json | jq -r .bytes)
+
+      echo -n "$ALICE_CANONICAL_KEY" > $out
+    '');
+
+  contractChecksum = contract:
+    builtins.readFile (pkgs.runCommand "contract-checksum" { buildInputs = [ pkgs.moreutils ]; } ''
+      for wasm in $(find ${contract} -name "*.wasm" -type f); do
+        CHECKSUM=$(sha256sum $wasm | cut -f1 -d " ")
+        echo "Found $wasm"
+        echo "Checksum: $CHECKSUM"
+        echo -n "$CHECKSUM" > $out
+      done
+    '');
+
+  getContractAddress = creator: checksum: salt:
+    builtins.readFile (pkgs.runCommand "get-contract-address" { buildInputs = [ pkgs.jq ]; } ''
+      export HOME=$(pwd)
+      CANONICAL_ADDR=$(${ucliBin} \
+        compute \
+        instantiate2-address \
+        --creator "0x${creator}" \
+        --checksum "0x${checksum}" \
+        --salt "${salt}")
+      ${nodeBin} \
+        keys \
+        parse "$CANONICAL_ADDR" \
+        --output json | jq -r ".formats[0]" > $out
+    '');
+
+  addContractAddresses = { code, instances }: home:
+    let
+      checksum = contractChecksum code;
+      creator = alicePubkey home;
+    in
+    pkgs.runCommand
+      "${chainName}-add-contract-addresses"
+      { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
+      ''
+        export HOME=$(pwd)
+        mkdir -p $out
+        cp --no-preserve=mode -r ${home}/* $out
+        for wasm in $(find ${code} -name "*.wasm" -type f); do
+          mkdir -p $out/checksums
+          echo -n "${checksum}" > "$out/checksums/$(basename $wasm .wasm)"
+          mkdir -p $out/addresses
+          ${builtins.concatStringsSep "\n" (pkgs.lib.imap0 (idx: { salt, ... }: ''
+            echo -n "${getContractAddress creator checksum salt}" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
+          '') instances)}
+        done
+      '';
+
   addLightClientCodeToGenesis = contract: home:
     pkgs.runCommand
       "${chainName}-add-light-client-contract-code-to-genesis"
@@ -571,7 +637,9 @@ let
         # add ibc contracts
         enableAllClients
 
-        (addIbcContractCodesToGenesis cosmwasmContracts)
+        (addIbcContractCodesToGenesis (builtins.map ({ code, ... }: code) cosmwasmContracts))
+
+        (builtins.map addContractAddresses cosmwasmContracts)
 
         # add ibc connection
         # addIbcConnectionToGenesis
@@ -709,8 +777,8 @@ in
       inherit pkgs;
       inherit devnet-home;
       inherit node;
+      inherit cosmwasmContracts;
       depends-on-node = "${chainName}-${toString 0}";
-      instantiations = cosmwasmInstantiations;
     };
   };
 }

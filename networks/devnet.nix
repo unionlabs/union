@@ -3,38 +3,27 @@
     let
       arion = inputs'.arion.packages.default;
 
-      mkCosmosDevnet = import ./mkCosmosDevnet.nix { inherit pkgs dbg; };
+      mkCosmosDevnet = import ./mkCosmosDevnet.nix {
+        inherit pkgs dbg;
+        ucliBin = pkgs.lib.getExe self'.packages.ucli;
+      };
 
       cosmwasmContracts = [
-        self'.packages.ucs00-pingpong
-        self'.packages.ucs01-relay
-        self'.packages.ucs02-nft
-        self'.packages.cw721-base
-      ];
-
-      # Code ids as ordered above ( starting at 1 (: )
-      cosmwasmInstantiations = [
         {
-          code-id = 2;
-          message = {
-            default_timeout = 10000;
-            gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
-          };
-          # salt must be non-prefixed hex string
-          salt = "00";
-          label = "ucs01-relay";
+          code = self'.packages.ucs00-pingpong;
+          instances = [ ];
         }
         {
-          code-id = 3;
-          message = {
-            cw721_base_code_id = 4;
-            incoming_proxy = null;
-            outgoing_proxy = null;
-            pauser = null;
-            cw721_admin = null;
-          };
-          salt = "01";
-          label = "ucs02-nft";
+          code = self'.packages.ucs01-relay;
+          instances = [ ];
+        }
+        {
+          code = self'.packages.ucs02-nft;
+          instances = [ ];
+        }
+        {
+          code = self'.packages.cw721-base;
+          instances = [ ];
         }
       ];
 
@@ -67,8 +56,44 @@
           self'.packages.ethereum-light-client-mainnet
           self'.packages.scroll-light-client
         ];
-        inherit cosmwasmContracts;
-        inherit cosmwasmInstantiations;
+        cosmwasmContracts = [
+          {
+            code = self'.packages.ucs00-pingpong;
+            instances = [ ];
+          }
+          {
+            code = self'.packages.ucs01-relay;
+            instances = [{
+              message = {
+                default_timeout = 10000;
+                # Todo derive
+                gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+              };
+              # salt must be non-prefixed hex string
+              salt = "00";
+              label = "ucs01-relay";
+            }];
+          }
+          {
+            code = self'.packages.ucs02-nft;
+            instances = [{
+              message = {
+                # Must be the index of `cw721-base` within this contracts list
+                cw721_base_code_id = 4;
+                incoming_proxy = null;
+                outgoing_proxy = null;
+                pauser = null;
+                cw721_admin = null;
+              };
+              salt = "00";
+              label = "ucs02-nft";
+            }];
+          }
+          {
+            code = self'.packages.cw721-base;
+            instances = [ ];
+          }
+        ];
         portIncrease = 0;
       });
 
@@ -96,10 +121,7 @@
         lightClients = [
           self'.packages.cometbls-light-client
         ];
-        cosmwasmContracts = [
-          self'.packages.ucs00-pingpong
-          self'.packages.ucs01-relay
-        ];
+        inherit cosmwasmContracts;
         portIncrease = 200;
         sdkVersion = 47;
         genesisOverwrites = {
