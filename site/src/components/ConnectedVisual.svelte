@@ -174,7 +174,7 @@
 <svg
   id="connected-visual"
   class="size-full"
-  viewBox="0 0 {18 * 32 - 1} {11 * 32 - 1}"
+  viewBox="32 32 {16 * 32 - 1} {10 * 32 - 1}"
   version="1.1"
   xmlns="http://www.w3.org/2000/svg"
 >
