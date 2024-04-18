@@ -1563,29 +1563,44 @@ where
                 packet,
                 __marker,
             }) => aggregate(
-                [aggregate(
-                    // fetch the packet nonexistence proof from the counterparty
-                    [fetch(id(
-                        this_chain_id.clone(),
-                        FetchState::<Hc, Tr> {
-                            at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
-                            path: NextSequenceRecvPath {
+                [
+                    // NOTE: Use this when we support ordered packets
+                    //     aggregate(
+                    //     // fetch the packet nonexistence proof from the counterparty
+                    //     [fetch(id(
+                    //         this_chain_id.clone(),
+                    //         FetchState::<Hc, Tr> {
+                    //             at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
+                    //             path: NextSequenceRecvPath {
+                    //                 port_id: packet.destination_port.clone(),
+                    //                 channel_id: packet.destination_channel.clone(),
+                    //             }
+                    //             .into(),
+                    //         },
+                    //     ))],
+                    //     [],
+                    //     id(
+                    //         this_chain_id.clone(),
+                    //         AggregateFetchReceiptPathProofFromChannelAndPort::<Hc, Tr> {
+                    //             port_id: packet.destination_port.clone(),
+                    //             channel_id: packet.destination_channel.clone(),
+                    //             __marker: PhantomData,
+                    //         },
+                    //     ),
+                    // )
+                    fetch(id(
+                        this_chain_id,
+                        FetchProof::<Hc, Tr> {
+                            at: trusted_client_state_fetched_at_height,
+                            path: ReceiptPath {
                                 port_id: packet.destination_port.clone(),
                                 channel_id: packet.destination_channel.clone(),
+                                sequence: packet.sequence,
                             }
                             .into(),
                         },
-                    ))],
-                    [],
-                    id(
-                        this_chain_id.clone(),
-                        AggregateFetchReceiptPathProofFromChannelAndPort::<Hc, Tr> {
-                            port_id: packet.destination_port.clone(),
-                            channel_id: packet.destination_channel.clone(),
-                            __marker: PhantomData,
-                        },
-                    ),
-                )],
+                    )),
+                ],
                 [],
                 id(
                     trusted_client_state.chain_id(),
