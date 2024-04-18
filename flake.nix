@@ -188,6 +188,7 @@
         ./voyager/voyager.nix
         ./lib/ics23/ics23.nix
         ./lib/ssz/ssz.nix
+        ./lib/unionlabs/unionlabs.nix
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./lib/tendermint-verifier/tendermint-verifier.nix

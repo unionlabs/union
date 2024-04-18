@@ -21,7 +21,7 @@ use clap::Parser;
 use futures::future::OptionFuture;
 use queue_msg::{
     aggregate, aggregation::TupleAggregator, conc, defer_relative, effect, event, fetch, repeat,
-    run_to_completion, seq, wait, InMemoryQueue, QueueMsg,
+    run_to_completion, seq, InMemoryQueue, QueueMsg,
 };
 use relay_message::{
     aggregate::{
@@ -29,7 +29,7 @@ use relay_message::{
         AggregateWaitForNextConnectionSequence,
     },
     data::IbcState,
-    DoFetchState, RelayMessageTypes,
+    RelayMessageTypes,
 };
 use sqlx::{query_as, PgPool};
 use tikv_jemallocator::Jemalloc;
@@ -37,14 +37,11 @@ use tracing_subscriber::EnvFilter;
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal, PresetBaseKind},
     ibc::core::{
-        channel::{
-            self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,
-        },
+        channel::{self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit},
         commitment::merkle_prefix::MerklePrefix,
         connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
     },
     ics24::{ConnectionPath, NextClientSequencePath, NextConnectionSequencePath},
-    id::{ClientId, ConnectionId},
     traits::{Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, HeightOf},
     QueryHeight,
 };

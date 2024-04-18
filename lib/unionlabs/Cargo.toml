@@ -5,6 +5,9 @@ version = "0.1.0"
 
 edition = { workspace = true }
 
+[package.metadata.crane]
+include = ["lib/unionlabs/src/scroll/codec"]
+
 [lints]
 workspace = true
 
