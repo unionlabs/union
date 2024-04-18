@@ -28,7 +28,7 @@
     const updateViewBox = () => {
       if (mq.matches) {
         /* Change the viewBox dimensions to show the hexagon */
-        svg?.setAttribute("viewBox", `64 0 ${14 * 32 - 1} ${11 * 32 - 1}`);
+        svg?.setAttribute("viewBox", `96 64 ${12 * 32 - 1} ${8 * 32 - 1}`);
       } else {
         svg?.setAttribute("viewBox", `${originalViewBox}`);
       }
@@ -56,7 +56,7 @@
 
   const nodes: Record<string, Node> = {
     union: { x: 9, y: 6, logo: union, scale: 2.0, url: "https://union.build" },
-    celestia: { x: 4, y: 4, logo: celestia, url: "https://celestia.org/" },
+    celestia: { x: 5, y: 4, logo: celestia, url: "https://celestia.org/" },
     ethereum: {
       x: 7,
       y: 3,
@@ -64,9 +64,9 @@
       url: "https://ethereum.org/",
       scale: 1.2,
     },
-    movement: { x: 5, y: 8, logo: movement, url: "https://movementlabs.xyz/" },
-    noble: { x: 14, y: 8, logo: noble, url: "https://nobleassets.xyz/" },
-    secret: { x: 4, y: 6, logo: secret, url: "https://scrt.network/" },
+    movement: { x: 4, y: 6, logo: movement, url: "https://movementlabs.xyz/" },
+    noble: { x: 13, y: 8, logo: noble, url: "https://nobleassets.xyz/" },
+    secret: { x: 5, y: 8, logo: secret, url: "https://scrt.network/" },
     quasar: { x: 11, y: 9, logo: quasar, url: "https://quasar.fi/" },
     canto: { x: 8, y: 9, logo: canto, url: "https://canto.io/" },
     polygon: { x: 10, y: 3, logo: polygon, url: "https://polygon.technology/" },
