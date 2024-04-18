@@ -98,9 +98,18 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
 
         string memory channelId = generateChannelIdentifier();
         channels[msg_.portId][channelId] = msg_.channel;
-        nextSequenceSends[msg_.portId][channelId] = 1;
-        nextSequenceRecvs[msg_.portId][channelId] = 1;
-        nextSequenceAcks[msg_.portId][channelId] = 1;
+
+        commitments[IBCCommitment.nextSequenceSendCommitmentKey(
+            msg_.portId, channelId
+        )] = bytes32(uint256(1));
+        commitments[IBCCommitment.nextSequenceRecvCommitmentKey(
+            msg_.portId, channelId
+        )] = bytes32(uint256(1));
+
+        commitments[IBCCommitment.nextSequenceAckCommitmentKey(
+            msg_.portId, channelId
+        )] = bytes32(uint256(1));
+
         updateChannelCommitment(msg_.portId, channelId);
 
         IIBCModule module = lookupModuleByPort(msg_.portId);
@@ -175,9 +184,15 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
 
         string memory channelId = generateChannelIdentifier();
         channels[msg_.portId][channelId] = msg_.channel;
-        nextSequenceSends[msg_.portId][channelId] = 1;
-        nextSequenceRecvs[msg_.portId][channelId] = 1;
-        nextSequenceAcks[msg_.portId][channelId] = 1;
+        commitments[IBCCommitment.nextSequenceSendCommitmentKey(
+            msg_.portId, channelId
+        )] = bytes32(uint256(1));
+        commitments[IBCCommitment.nextSequenceRecvCommitmentKey(
+            msg_.portId, channelId
+        )] = bytes32(uint256(1));
+        commitments[IBCCommitment.nextSequenceAckCommitmentKey(
+            msg_.portId, channelId
+        )] = bytes32(uint256(1));
         updateChannelCommitment(msg_.portId, channelId);
 
         IIBCModule module = lookupModuleByPort(msg_.portId);

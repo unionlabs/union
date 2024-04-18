@@ -320,8 +320,15 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
-        uint64 sequenceBefore =
-            handler.nextSequenceSends(address(app).toHexString(), channelId);
+        uint64 sequenceBefore = uint64(
+            uint256(
+                handler.commitments(
+                    IBCCommitment.nextSequenceSendCommitmentKey(
+                        address(app).toHexString(), channelId
+                    )
+                )
+            )
+        );
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -333,8 +340,15 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        uint64 sequenceAfter =
-            handler.nextSequenceSends(address(app).toHexString(), channelId);
+        uint64 sequenceAfter = uint64(
+            uint256(
+                handler.commitments(
+                    IBCCommitment.nextSequenceSendCommitmentKey(
+                        address(app).toHexString(), channelId
+                    )
+                )
+            )
+        );
         assertEq(sequenceAfter, sequenceBefore + 1);
     }
 
@@ -421,23 +435,27 @@ contract IBCPacketHandlerTest is TestPlus {
             payload
         );
         assertEq(
-            handler.packetReceipts(
-                msg_.packet.destination_port,
-                msg_.packet.destination_channel,
-                msg_.packet.sequence
+            handler.commitments(
+                IBCCommitment.packetReceiptCommitmentKey(
+                    msg_.packet.destination_port,
+                    msg_.packet.destination_channel,
+                    msg_.packet.sequence
+                )
             ),
-            0
+            bytes32(uint256(0))
         );
         client.pushValidMembership();
         vm.prank(relayer);
         handler.recvPacket(msg_);
         assertEq(
-            handler.packetReceipts(
-                msg_.packet.destination_port,
-                msg_.packet.destination_channel,
-                msg_.packet.sequence
+            handler.commitments(
+                IBCCommitment.packetReceiptCommitmentKey(
+                    msg_.packet.destination_port,
+                    msg_.packet.destination_channel,
+                    msg_.packet.sequence
+                )
             ),
-            1
+            bytes32(uint256(1))
         );
     }
 
