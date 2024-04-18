@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import tw from "tailwind.config";
-  import skip from "#/assets/partners/skip.svelte?raw";
-  import noble from "#/assets/partners/noble.svelte?raw";
-  import quasar from "#/assets/partners/quasar.svelte?raw";
-  import celestia from "#/assets/partners/celestia.svelte?raw";
-  import ethereum from "#/assets/partners/ethereum.svelte?raw";
-  import movement from "#/assets/partners/movement.svelte?raw";
   import union from "#/assets/union-logo/union-logo-transparent.svg?raw";
+  import skip from "#/assets/partners/skip.svg?raw";
+  import noble from "#/assets/partners/noble.svg?raw";
+  import quasar from "#/assets/partners/quasar.svg?raw";
+  import celestia from "#/assets/partners/celestia.svg?raw";
+  import ethereum from "#/assets/partners/ethereum.svg?raw";
+  import movement from "#/assets/partners/movement.svg?raw";
+  import polygon from "#/assets/partners/polygon.svg?raw";
+  import scroll from "#/assets/partners/scroll.svg?raw";
+  import secret from "#/assets/partners/secret.svg?raw";
+  import canto from "#/assets/partners/canto.svg?raw";
 
   /* Define our media query and media query object */
   let mq: MediaQueryList;
@@ -54,7 +58,7 @@
     union: { x: 9, y: 6, logo: union, scale: 2.0, url: "https://union.build" },
     celestia: { x: 4, y: 4, logo: celestia, url: "https://celestia.org/" },
     ethereum: {
-      x: 8,
+      x: 7,
       y: 3,
       logo: ethereum,
       url: "https://ethereum.org/",
@@ -62,13 +66,21 @@
     },
     movement: { x: 5, y: 8, logo: movement, url: "https://movementlabs.xyz/" },
     noble: { x: 14, y: 8, logo: noble, url: "https://nobleassets.xyz/" },
-    quasar: { x: 10, y: 9, logo: quasar, url: "https://quasar.fi/" },
-    skip: { x: 13, y: 4, logo: skip, url: "https://skip.money/", scale: 1.2 },
+    secret: { x: 4, y: 6, logo: secret, url: "https://scrt.network/" },
+    quasar: { x: 11, y: 9, logo: quasar, url: "https://quasar.fi/" },
+    canto: { x: 8, y: 9, logo: canto, url: "https://canto.io/" },
+    polygon: { x: 10, y: 3, logo: polygon, url: "https://polygon.technology/" },
+    scroll: { x: 13, y: 4, logo: scroll, url: "https://scroll.io/" },
+    skip: { x: 14, y: 6, logo: skip, url: "https://skip.money/", scale: 1.2 },
   };
 
   const conns: Array<{ from: string; to: string; delay: number }> = [
     { to: "celestia", from: "union", delay: 2 },
     { to: "ethereum", from: "union", delay: 3 },
+    { to: "polygon", from: "union", delay: 4 },
+    { to: "scroll", from: "union", delay: 3 },
+    { to: "secret", from: "union", delay: 2 },
+    { to: "canto", from: "union", delay: 4 },
     { to: "movement", from: "union", delay: 4 },
     { to: "noble", from: "union", delay: 5 },
     { to: "quasar", from: "union", delay: 6 },
@@ -76,6 +88,10 @@
     { to: "union", from: "celestia", delay: 7 },
     { to: "union", from: "ethereum", delay: 6 },
     { to: "union", from: "movement", delay: 5 },
+    { to: "union", from: "polygon", delay: 6 },
+    { to: "union", from: "scroll", delay: 5 },
+    { to: "union", from: "secret", delay: 5 },
+    { to: "union", from: "canto", delay: 3 },
     { to: "union", from: "noble", delay: 4 },
     { to: "union", from: "quasar", delay: 3 },
     { to: "union", from: "skip", delay: 2 },
