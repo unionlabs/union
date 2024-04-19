@@ -1,17 +1,55 @@
-use std::{collections::HashMap, fs};
+// You need to bring the ToString trait into scope to use it
+use std::{collections::HashMap, fs, string::ToString};
 
 use process_compose::{HttpProbe, LogConfiguration, Probe, Process, Project};
 use serde::{Deserialize, Serialize};
+use strum::Display;
 
 mod process_compose;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug, strum::Display)]
 pub enum Network {
     Union,
     Osmosis,
-    Stargaze,
-    Ethereum,
-    Scroll,
+}
+
+impl Network {
+    fn to_process(&self) -> Process {
+        Process {
+            name: format!("{} Devnet", &self),
+            command: format!("nix run .#{}", &self.network_id()),
+            is_daemon: None,
+            disabled: None,
+            depends_on: None,
+            liveliness_probe: None,
+            readiness_probe: Some(Probe {
+                exec: None,
+                http_get: Some(HttpProbe {
+                    host: "127.0.0.1".into(),
+                    path: "/block?height=2".into(),
+                    scheme: "http".into(),
+                    port: match &self {
+                        Network::Union => 26657,
+                        Network::Osmosis => 26857,
+                    },
+                }),
+                initial_delay_seconds: 10,
+                period_seconds: 10,
+                timeout_seconds: 5,
+                success_threshold: 1,
+                failure_threshold: 1000,
+            }),
+        }
+    }
+
+    fn network_id(&self) -> String {
+        format!("devnet-{}", self.to_string().to_lowercase())
+    }
+}
+
+struct NetworkConfig {
+    pub network: Network,
+    pub probe_port: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -22,7 +60,7 @@ pub struct DevnetConfig {
 
 impl DevnetConfig {
     pub fn to_process_compose(&self) -> Project {
-        Project {
+        let mut project = Project {
             version: "0.5".into(),
             log_location: ".devnet/logs/".into(),
             log_level: None,
@@ -38,32 +76,16 @@ impl DevnetConfig {
                 flush_each_line: false,
                 no_metadata: true,
             }),
-            processes: HashMap::from([(
-                "union-devnet".into(),
-                Process {
-                    name: "Union Devnet".into(),
-                    command: "nix run .#devnet-union".into(),
-                    is_daemon: None,
-                    disabled: None,
-                    depends_on: None,
-                    liveliness_probe: None,
-                    readiness_probe: Some(Probe {
-                        exec: None,
-                        http_get: Some(HttpProbe {
-                            host: "127.0.0.1".into(),
-                            path: "/block?height=2".into(),
-                            scheme: "http".into(),
-                            port: 26657,
-                        }),
-                        initial_delay_seconds: 10,
-                        period_seconds: 10,
-                        timeout_seconds: 5,
-                        success_threshold: 1,
-                        failure_threshold: 1000,
-                    }),
-                },
-            )]),
+            processes: HashMap::new(),
+        };
+
+        for network in self.networks.clone() {
+            project
+                .processes
+                .insert(network.network_id(), network.to_process());
         }
+
+        project
     }
 }
 

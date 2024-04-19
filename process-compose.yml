@@ -10,7 +10,7 @@
   },
   "log_format": "plain",
   "processes": {
-    "union-devnet": {
+    "devnet-union": {
       "name": "Union Devnet",
       "command": "nix run .#devnet-union",
       "readiness_probe": {
@@ -19,6 +19,23 @@
           "path": "/block?height=2",
           "scheme": "http",
           "port": 26657
+        },
+        "initial_delay_seconds": 10,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      }
+    },
+    "devnet-osmosis": {
+      "name": "Osmosis Devnet",
+      "command": "nix run .#devnet-osmosis",
+      "readiness_probe": {
+        "http_get": {
+          "host": "127.0.0.1",
+          "path": "/block?height=2",
+          "scheme": "http",
+          "port": 26857
         },
         "initial_delay_seconds": 10,
         "period_seconds": 10,
