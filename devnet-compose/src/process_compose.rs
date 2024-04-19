@@ -51,13 +51,13 @@ pub struct LogConfiguration {
 pub struct Process {
     pub name: String,
     pub disabled: Option<bool>,
-    // is_daemon: Option<bool>,
+    pub is_daemon: Option<bool>,
     pub command: String,
     // entrypoint: Option<Vec<String>>,
     // availability: AvailabilityConfig,
-    // depends_on: DependsOnConfig,
-    // liveliness_probe: Probe,
-    // readiness_probe: Probe,
+    pub depends_on: Option<HashMap<String, ProcessDependency>>,
+    pub liveliness_probe: Option<Probe>,
+    pub readiness_probe: Option<Probe>,
     // shutdown: ShutdownParams,
     // disable_ansi_colors: bool,
     // working_dir: String,
@@ -71,4 +71,38 @@ pub struct Process {
     // replica_name: string,
     // executable: string,
     // args: Vec<string>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize)]
+pub struct ProcessDependency {
+    pub condition: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize)]
+pub struct Probe {
+    pub exec: Option<ExecProbe>,
+    pub http_get: Option<HttpProbe>,
+    pub initial_delay_seconds: usize,
+    pub period_seconds: usize,
+    pub timeout_seconds: usize,
+    pub success_threshold: usize,
+    pub failure_threshold: usize,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize)]
+pub struct ExecProbe {
+    pub command: String,
+    pub working_dir: String,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize)]
+pub struct HttpProbe {
+    pub host: String,
+    pub path: String,
+    pub scheme: String,
+    pub port: usize,
 }

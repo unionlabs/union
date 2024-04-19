@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs};
 
-use process_compose::{LogConfiguration, Process, Project};
+use process_compose::{HttpProbe, LogConfiguration, Probe, Process, Project};
 use serde::{Deserialize, Serialize};
 
 mod process_compose;
@@ -43,7 +43,24 @@ impl DevnetConfig {
                 Process {
                     name: "Union Devnet".into(),
                     command: "nix run .#devnet-union".into(),
+                    is_daemon: None,
                     disabled: None,
+                    depends_on: None,
+                    liveliness_probe: None,
+                    readiness_probe: Some(Probe {
+                        exec: None,
+                        http_get: Some(HttpProbe {
+                            host: "127.0.0.1".into(),
+                            path: "/block?height=2".into(),
+                            scheme: "http".into(),
+                            port: 26657,
+                        }),
+                        initial_delay_seconds: 10,
+                        period_seconds: 10,
+                        timeout_seconds: 5,
+                        success_threshold: 1,
+                        failure_threshold: 1000,
+                    }),
                 },
             )]),
         }
