@@ -1,9 +1,9 @@
 {
   "data": {
-    "slot": 3577152,
-    "state_root": "0x362c490a956b08e1593eaa162493a5a8a0ea7c363a556340e67db359d000f334",
-    "storage_root": "0x362c490a956b08e1593eaa162493a5a8a0ea7c363a556340e67db359d000f335",
-    "timestamp": 1697538180,
+    "slot": 3577120,
+    "state_root": "0x31769eda5d44e2d3698ac3319f37cca3267ee443fd00e60812197fbedc18586f",
+    "storage_root": "0xb414385d9e845dddc7eac7358481791584d94f6f285f607963a80b4c7da131aa",
+    "timestamp": 1698659040,
     "current_sync_committee": "0xa8a2170aef4f2d23e9fd272cd0e65b3d98f9ce1cc0eb0df75876d7754b69add47c19b00fc9332de2a16d3c4075360912",
     "next_sync_committee": "0xa210dc22d065f947f26edccf82d3c2886ad51c2241d8b67636fa3e5c5ec67f7e016c288b25bfa9ebdcb9682e76212a6c"
   }

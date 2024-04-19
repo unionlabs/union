@@ -21,11 +21,11 @@ use crate::{
 pub struct ClientState {
     /// id of the tracked ethereum chain
     pub chain_id: U256,
-    /// see: https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis
+    /// see [Beacon API](https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis)
     pub genesis_validators_root: H256,
     /// minimum allowed sync committee validator signature
     pub min_sync_committee_participants: u64,
-    /// see: https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis
+    /// see [Beacon API](https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis)
     pub genesis_time: u64,
     /// defined under [`eth spec`](https://ethereum.github.io/beacon-APIs/#/Config/getSpec)
     pub fork_parameters: ForkParameters,

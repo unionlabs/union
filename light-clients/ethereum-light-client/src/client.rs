@@ -646,7 +646,7 @@ mod test {
 
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
-        revision_height: 3577152,
+        revision_height: 3577120,
     };
 
     const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
@@ -825,7 +825,7 @@ mod test {
         for update in &*UPDATES {
             let mut env = mock_env();
             env.block.time = cosmwasm_std::Timestamp::from_seconds(
-                update.consensus_update.finalized_header.execution.timestamp + 60 * 5,
+                update.consensus_update.attested_header.execution.timestamp + 60 * 5,
             );
             EthereumLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
                 .unwrap();

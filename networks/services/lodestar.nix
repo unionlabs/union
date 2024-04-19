@@ -33,7 +33,7 @@ let
     '';
   };
 
-  lodestar-tracking-justfied = {
+  lodestar-tracking-justified = {
     imageName = "ghcr.io/unionlabs/lodestar";
     finalImageName = "unionlabs/lodestar";
     finalImageTag = "union-v1.13.0-rc5";
@@ -66,7 +66,7 @@ in
     image = pkgs.lib.mkForce (pkgs.dockerTools.streamLayeredImage {
       name = "lodestar-extended";
       fromImage = pkgs.dockerTools.pullImage (
-        (if trackJustified == 1 then lodestar-tracking-justfied else lodestar-tracking-finalized // (if pkgs.stdenv.isx86_64 then lodestar-amd else lodestar-arm))
+        (if trackJustified == 1 then lodestar-tracking-justified else lodestar-tracking-finalized // (if pkgs.stdenv.isx86_64 then lodestar-amd else lodestar-arm))
       );
       contents = [
         pkgs.coreutils

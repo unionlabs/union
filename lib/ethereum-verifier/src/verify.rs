@@ -371,7 +371,7 @@ mod tests {
 
     use serde::Deserialize;
     use unionlabs::{
-        ethereum::config::{Mainnet, SEPOLIA},
+        ethereum::config::{consts::FINALIZED_ROOT_INDEX, Mainnet, SEPOLIA},
         ibc::lightclients::ethereum::{proof::Proof, sync_committee::SyncCommittee},
     };
 
@@ -466,6 +466,10 @@ mod tests {
 
         fn fork_parameters(&self) -> &ForkParameters {
             &SEPOLIA.fork_parameters
+        }
+
+        fn tracking_checkpoint_root_index(&self) -> u64 {
+            FINALIZED_ROOT_INDEX
         }
     }
 

@@ -27,22 +27,19 @@
     "seconds_per_slot": 12,
     "slots_per_epoch": 32,
     "epochs_per_sync_committee_period": 256,
-    "trust_level": {
-      "numerator": 1,
-      "denominator": 3
-    },
     "trusting_period": 100000000,
-    "latest_slot": 3577184,
+    "latest_slot": 3577120,
     "frozen_height": {
       "revision_number": 0,
       "revision_height": 0
     },
     "ibc_commitment_slot": "0",
-    "ibc_contract_address": "0x971a9631b0a4e0e78954c764c7060e9d95d5cfd6"
+    "ibc_contract_address": "0x971a9631b0a4e0e78954c764c7060e9d95d5cfd6",
+    "checkpoint_root_index": 105
   },
   "checksum": "0xfa19d6ccbe4bde2d6a205136e65089460c4d9781a918add0e9dd3a0b9a2d73cb",
   "latest_height": {
     "revision_number": 0,
-    "revision_height": 3577152
+    "revision_height": 3577120
   }
 }
