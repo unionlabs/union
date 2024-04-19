@@ -1,9 +1,8 @@
 // You need to bring the ToString trait into scope to use it
-use std::{collections::HashMap, fs, string::ToString};
+use std::{collections::HashMap, fs};
 
 use process_compose::{HttpProbe, LogConfiguration, Probe, Process, Project};
 use serde::{Deserialize, Serialize};
-use strum::Display;
 
 mod process_compose;
 
@@ -11,10 +10,11 @@ mod process_compose;
 pub enum Network {
     Union,
     Osmosis,
+    Stargaze,
 }
 
 impl Network {
-    fn to_process(&self) -> Process {
+    fn to_process(self) -> Process {
         Process {
             name: format!("{} Devnet", &self),
             command: format!("nix run .#{}", &self.network_id()),
@@ -28,10 +28,7 @@ impl Network {
                     host: "127.0.0.1".into(),
                     path: "/block?height=2".into(),
                     scheme: "http".into(),
-                    port: match &self {
-                        Network::Union => 26657,
-                        Network::Osmosis => 26857,
-                    },
+                    port: self.probe_port(),
                 }),
                 initial_delay_seconds: 10,
                 period_seconds: 10,
@@ -45,11 +42,14 @@ impl Network {
     fn network_id(&self) -> String {
         format!("devnet-{}", self.to_string().to_lowercase())
     }
-}
 
-struct NetworkConfig {
-    pub network: Network,
-    pub probe_port: usize,
+    fn probe_port(&self) -> usize {
+        match self {
+            Network::Union => 26657,
+            Network::Stargaze => 26757,
+            Network::Osmosis => 26857,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -92,7 +92,7 @@ impl DevnetConfig {
 fn main() {
     use Network::*;
     let config = DevnetConfig {
-        networks: vec![Union, Osmosis],
+        networks: vec![Union, Osmosis, Stargaze],
         connections: vec![(Union, Osmosis)],
     };
 
