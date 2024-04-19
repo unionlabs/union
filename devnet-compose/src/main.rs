@@ -1,6 +1,6 @@
-use std::{collections::HashSet, fs};
+use std::{collections::HashMap, fs};
 
-use process_compose::Project;
+use process_compose::{LogConfiguration, Process, Project};
 use serde::{Deserialize, Serialize};
 
 mod process_compose;
@@ -30,6 +30,22 @@ impl DevnetConfig {
             log_format: "plain".into(),
             is_strict: true,
             file_names: None,
+            log_configuration: Some(LogConfiguration {
+                disable_json: true,
+                add_timestamp: false,
+                timestamp_format: None,
+                no_color: false,
+                flush_each_line: false,
+                no_metadata: true,
+            }),
+            processes: HashMap::from([(
+                "union-devnet".into(),
+                Process {
+                    name: "Union Devnet".into(),
+                    command: "nix run .#devnet-union".into(),
+                    disabled: None,
+                },
+            )]),
         }
     }
 }

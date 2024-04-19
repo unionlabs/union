@@ -6,9 +6,9 @@ license-file.workspace = true
 repository.workspace = true
 
 [dependencies]
-serde                     = { workspace = true, features = ["derive"] }
+serde                     = { workspace = true, features = ["derive", "std"] }
 serde_json.workspace = true
-serde_with = { workspace = true, features = ["macros"] }
+serde_with = { workspace = true, features = ["macros", "json"] }
 
 [lints]
 workspace = true

@@ -2,5 +2,11 @@
   "version": "0.5",
   "log_location": ".devnet/logs/",
   "log_format": "plain",
+  "processes": {
+    "union-devnet": {
+      "name": "Union Devnet",
+      "command": "nix run .#devnet-union"
+    }
+  },
   "is_strict": true
 }
