@@ -17,7 +17,7 @@ processes:
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 60
+      failure_threshold: 600
     shutdown:
       signal: 2
   devnet-osmosis:
@@ -36,7 +36,7 @@ processes:
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 60
+      failure_threshold: 600
     shutdown:
       signal: 2
   voyager-queue:
@@ -52,7 +52,7 @@ processes:
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 60
+      failure_threshold: 600
     shutdown:
       signal: 2
   voyager-migrations:
@@ -95,7 +95,7 @@ processes:
       period_seconds: 1
       timeout_seconds: 1
       success_threshold: 1
-      failure_threshold: 60
+      failure_threshold: 600
     shutdown:
       signal: 2
   voyager-client-connection-handshake:
@@ -120,7 +120,7 @@ processes:
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 60
+      failure_threshold: 600
     shutdown:
       signal: 2
   download-circuit:
@@ -147,7 +147,7 @@ processes:
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 60
+      failure_threshold: 600
     shutdown:
       signal: 2
 
