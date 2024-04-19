@@ -232,6 +232,7 @@
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
         ./fuzz
+        ./devnet-compose/devnet-compose.nix
         ./faucet/faucet.nix
         ./ucli/ucli.nix
         ./zerg/zerg.nix
