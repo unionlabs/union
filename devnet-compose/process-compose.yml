@@ -1,0 +1,6 @@
+{
+  "version": "0.5",
+  "log_location": ".devnet/logs/",
+  "log_format": "plain",
+  "is_strict": true
+}
