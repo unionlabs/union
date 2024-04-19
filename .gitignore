@@ -56,3 +56,4 @@ cache
 .biome
 
 .envrc.local
+justfile

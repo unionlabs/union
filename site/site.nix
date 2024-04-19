@@ -1,14 +1,18 @@
 { ... }: {
-  perSystem = { pkgs, javascriptPkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with javascriptPkgs; [ vips nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ vips nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
       packages = {
         site = unstablePkgs.buildNpmPackage {
+<<<<<<< HEAD
           npmDepsHash = "sha256-dd0rU/5WHM0NVxJWjGLM34VS3Y4Hmc4vRIot49E+NuE=";
+=======
+          npmDepsHash = "sha256-CxLgfc7+BpRKgD88L9Q8+OGWWbft8GY0DDG1Cbl1T8M=";
+>>>>>>> a42b705f6 (chore: update nixpkgs-unstable input instead)
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";

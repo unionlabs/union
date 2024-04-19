@@ -1,14 +1,14 @@
 { ... }: {
-  perSystem = { pkgs, javascriptPkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with javascriptPkgs; [ nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        typescript-sdk = javascriptPkgs.buildNpmPackage {
+        typescript-sdk = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-gERPCJE54DLGc0LSqlFLxCeC8mI5W2mCJcnaO6fkFmk=";
           src = ./.;
           pname = packageJSON.name;

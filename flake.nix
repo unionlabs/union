@@ -10,8 +10,6 @@
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-23.11";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Track a separate nixpkgs for JS and TS tools
-    nixpkgs-javascript.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -273,12 +271,11 @@
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
-          javascriptPkgs = import inputs.nixpkgs-javascript { inherit system; };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs javascriptPkgs mkCi;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -480,7 +477,7 @@
               protobuf
               self'.packages.tdc
               yq
-            ] ++ (with javascriptPkgs; [
+            ] ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
               nodejs_21
               nodePackages.graphqurl
