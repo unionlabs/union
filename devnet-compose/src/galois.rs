@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use crate::{
     log_path,
-    process_compose::{LogConfiguration, Probe, Process, ProcessDependency, ShutdownConfig},
+    process_compose::{
+        LogConfiguration, Probe, Process, ProcessDependency, RestartPolicy, ShutdownConfig,
+    },
 };
 
 const CIRCUIT_BASE_PATH: &str = "./.devnet/circuit/";
@@ -16,12 +18,11 @@ pub fn download_circuit_process() -> Process {
         command: r##"nix run .#download-circuit-devnet ."##.into(),
         depends_on: None,
         liveliness_probe: None,
-        readiness_probe: Some(Probe::exec(
-            "nix run .#galoisd -- query-stats localhost:9999",
-        )),
+        readiness_probe: None,
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
         shutdown: ShutdownConfig::default(),
+        availability: Some(RestartPolicy::on_failure(2)),
     }
 }
 
@@ -38,5 +39,6 @@ pub fn galoisd_process() -> Process {
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
         shutdown: ShutdownConfig::default(),
+        availability: Some(RestartPolicy::always(5)),
     }
 }

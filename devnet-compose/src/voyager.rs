@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     log_path,
-    process_compose::{LogConfiguration, Probe, ProcessDependency, ShutdownConfig},
-    Process,
+    process_compose::{LogConfiguration, Probe, ProcessDependency, RestartPolicy, ShutdownConfig},
+    Network, Process,
 };
 
 pub fn queue_process() -> Process {
@@ -21,6 +21,7 @@ pub fn queue_process() -> Process {
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
         shutdown: ShutdownConfig::default(),
+        availability: Some(RestartPolicy::always(2)),
     }
 }
 
@@ -41,5 +42,35 @@ pub fn migrations_process() -> Process {
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
         shutdown: ShutdownConfig::default(),
+        availability: Some(RestartPolicy::on_failure(2)),
+    }
+}
+pub fn relay_process(networks: &[Network]) -> Process {
+    let name = "voyager-migrations".to_string();
+
+    let mut depends_on = HashMap::from([
+        (queue_process().name, ProcessDependency::healthy()),
+        (
+            migrations_process().name,
+            ProcessDependency::completed_successfully(),
+        ),
+    ]);
+
+    for network in networks {
+        depends_on.insert(network.to_process().name, ProcessDependency::healthy());
+    }
+
+    Process {
+        name: name.clone(),
+        disabled: None,
+        is_daemon: None,
+        command: "RUST_LOG=info nix run -L .#voyager -- -c ./voyager-config.json relay".into(),
+        depends_on: Some(depends_on),
+        liveliness_probe: None,
+        readiness_probe: Some(Probe::http_get(65534, "/health")),
+        log_configuration: LogConfiguration::default(),
+        log_location: log_path(&name),
+        shutdown: ShutdownConfig::default(),
+        availability: Some(RestartPolicy::always(2)),
     }
 }

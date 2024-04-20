@@ -111,7 +111,7 @@ pub struct Process {
     pub log_configuration: LogConfiguration,
     pub log_location: String,
     // entrypoint: Option<Vec<String>>,
-    // availability: AvailabilityConfig,
+    pub availability: Option<RestartPolicy>,
     pub depends_on: Option<HashMap<String, ProcessDependency>>,
     pub liveliness_probe: Option<Probe>,
     pub readiness_probe: Option<Probe>,
@@ -128,6 +128,35 @@ pub struct Process {
     // replica_name: string,
     // executable: string,
     // args: Vec<string>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize)]
+pub struct RestartPolicy {
+    pub restart: String,
+    pub backoff_seconds: usize,
+    pub max_restarts: Option<usize>,
+    pub exit_on_end: Option<bool>,
+}
+
+impl RestartPolicy {
+    pub fn always(backoff_seconds: usize) -> Self {
+        RestartPolicy {
+            restart: "always".into(),
+            backoff_seconds,
+            max_restarts: None,
+            exit_on_end: None,
+        }
+    }
+
+    pub fn on_failure(backoff_seconds: usize) -> Self {
+        RestartPolicy {
+            restart: "on_failure".into(),
+            backoff_seconds,
+            max_restarts: None,
+            exit_on_end: None,
+        }
+    }
 }
 
 #[skip_serializing_none]

@@ -10,6 +10,8 @@ use process_compose::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::process_compose::RestartPolicy;
+
 mod galois;
 mod process_compose;
 mod theme;
@@ -42,6 +44,7 @@ impl Network {
             log_configuration: LogConfiguration::default(),
             log_location: log_path(&self.network_id()),
             shutdown: ShutdownConfig::default(),
+            availability: Some(RestartPolicy::always(10)),
         }
     }
 
@@ -112,6 +115,7 @@ pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
         liveliness_probe: None,
         readiness_probe: None, // TODO
         shutdown: ShutdownConfig::default(),
+        availability: None,
     }
 }
 
