@@ -348,11 +348,15 @@
             text = ''
               ${ensureAtRepositoryRoot}
 
+              rm -rf ./.devnet/homes/
               mkdir -p ./.devnet/homes/
               cp -R ${self'.packages.devnet-union-home} ./.devnet/homes/union/ 
               cp -R ${self'.packages.devnet-osmosis-home} ./.devnet/homes/osmosis/ 
               cp -R ${self'.packages.devnet-stargaze-home} ./.devnet/homes/stargaze/ 
               cp -R ${self'.packages.devnet-simd-home} ./.devnet/homes/simd/ 
+
+              # Fix no write permission on keys
+              chmod -R +w ./.devnet/homes
 
               ${lib.getExe self'.packages.devnet-compose}
 
