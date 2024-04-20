@@ -6,7 +6,8 @@ members = [
   "cosmwasm/ucs00-pingpong",
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
-  "cosmwasm/ucs02-nft", "devnet-compose",
+  "cosmwasm/ucs02-nft",
+  "devnet-compose",
 
   "e2e/ensure-blocks",
 
@@ -143,9 +144,9 @@ ripemd                   = { version = "0.1.3", default-features = false }
 rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.3", default-features = false }
 serde                    = { version = "1.0.0", default-features = false }
-serde_with               = { version = "3.7.0", default-features = false, features = ["macros"] }
 serde-json-wasm          = { version = "1.0.0", default-features = false }
 serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }     # serde-json requires one of "std" or "alloc"
+serde_with               = { version = "3.7.0", default-features = false, features = ["macros"] }
 sha2                     = { version = "0.10.7", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }

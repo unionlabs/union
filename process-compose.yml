@@ -1,7 +1,11 @@
 {
   "version": "0.5",
-  "log_location": ".devnet/logs/",
+  "log_location": "./.devnet/logs/",
   "log_configuration": {
+    "rotation": {
+      "directory": "./.devnet/logs/",
+      "compress": false
+    },
     "disable_json": true,
     "no_color": false,
     "no_metadata": true,
@@ -13,6 +17,12 @@
     "devnet-union": {
       "name": "Union Devnet",
       "command": "nix run .#devnet-union",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//devnet-union.log",
       "readiness_probe": {
         "http_get": {
           "host": "127.0.0.1",
@@ -30,6 +40,12 @@
     "devnet-osmosis": {
       "name": "Osmosis Devnet",
       "command": "nix run .#devnet-osmosis",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//devnet-osmosis.log",
       "readiness_probe": {
         "http_get": {
           "host": "127.0.0.1",
@@ -47,6 +63,12 @@
     "devnet-stargaze": {
       "name": "Stargaze Devnet",
       "command": "nix run .#devnet-stargaze",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//devnet-stargaze.log",
       "readiness_probe": {
         "http_get": {
           "host": "127.0.0.1",

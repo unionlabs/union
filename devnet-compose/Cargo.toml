@@ -1,15 +1,15 @@
 [package]
-name = "devnet-compose"
-version = "0.1.0"
-edition.workspace = true
+edition.workspace      = true
 license-file.workspace = true
-repository.workspace = true
+name                   = "devnet-compose"
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-serde                     = { workspace = true, features = ["derive", "std"] }
-serde_json.workspace = true
+serde      = { workspace = true, features = ["derive", "std"] }
+serde_json = { workspace = true }
 serde_with = { workspace = true, features = ["macros", "json"] }
-strum = {version = "0.26.2", features = ["derive"] }
+strum      = { version = "0.26.2", features = ["derive"] }
 
 [lints]
 workspace = true
