@@ -46,7 +46,7 @@ pub fn migrations_process() -> Process {
     }
 }
 pub fn relay_process(networks: &[Network]) -> Process {
-    let name = "voyager-migrations".to_string();
+    let name = "voyager-relay".to_string();
 
     let mut depends_on = HashMap::from([
         (queue_process().name, ProcessDependency::healthy()),

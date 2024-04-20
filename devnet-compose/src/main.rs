@@ -110,7 +110,7 @@ pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
         depends_on: Some(HashMap::from([
             (net_a.to_process().name,ProcessDependency::healthy()),
             (net_b.to_process().name,ProcessDependency::healthy()),
-            (voyager::migrations_process().name,ProcessDependency::completed_successfully())
+            (voyager::relay_process(&[]).name,ProcessDependency::healthy())
         ])),
         liveliness_probe: None,
         readiness_probe: None, // TODO
@@ -132,6 +132,7 @@ impl DevnetConfig {
             // There are connections, so we need voyager running with applied migrations
             project.add_process(voyager::queue_process());
             project.add_process(voyager::migrations_process());
+            project.add_process(voyager::relay_process(&self.networks));
 
             if self.networks.contains(&Network::Union) {
                 // There are connections to Union, so we need to prove Union consensus
