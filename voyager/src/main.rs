@@ -885,8 +885,7 @@ where
             client_b_config,
             connection_ordering,
         } => {
-            let (client_sequence_a, (client_sequence_b, ())) =
-                dbg!(get_next_client_sequences().await);
+            let (client_sequence_a, (client_sequence_b, ())) = get_next_client_sequences().await;
 
             mk_create_client_msgs(
                 client_a_config,

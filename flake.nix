@@ -10,6 +10,9 @@
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-23.11";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Remove when lnav is updated on upstream nixpkgs
+    nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
+    process-compose.url = "github:F1bonacc1/process-compose";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -229,6 +232,7 @@
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
         ./fuzz
+        ./devnet-compose/devnet-compose.nix
         ./faucet/faucet.nix
         ./ucli/ucli.nix
         ./zerg/zerg.nix
@@ -476,9 +480,11 @@
               pkg-config
               protobuf
               self'.packages.tdc
+              self'.packages.voy-send-msg
               yq
-            ] ++ (with unstablePkgs; [
+            ]) ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
+              postgresql
               nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server
@@ -486,7 +492,7 @@
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
             ])
-            ++ (with goPkgs; [
+              ++ (with goPkgs; [
               go
               gopls
               go-tools
@@ -496,7 +502,7 @@
               pkgs.foundry-bin
               goPkgs.sqlx-cli
               self'.packages.hasura-cli
-            ] else [ ]));
+            ] else [ ]);
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
 
@@ -509,10 +515,6 @@
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
             RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
-
-            shellHook = ''
-              alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
-            '';
           };
 
           treefmt = {

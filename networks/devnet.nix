@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', nix-filter, inputs', system, get-flake, mkCi, mkNodeId, dbg, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', nix-filter, inputs', system, get-flake, mkCi, mkNodeId, dbg, ensureAtRepositoryRoot, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -7,6 +7,7 @@
         inherit pkgs dbg;
         ucliBin = pkgs.lib.getExe self'.packages.ucli;
       };
+      lnav = inputs'.nixpkgs-lnav.legacyPackages.lnav;
 
       cosmwasmContracts = [
         {
@@ -149,7 +150,7 @@
           self'.packages.cometbls-light-client
         ];
         inherit cosmwasmContracts;
-        portIncrease = 100;
+        portIncrease = 300;
       };
 
       devnet-union-minimal = mkCosmosDevnet {
@@ -340,6 +341,37 @@
     in
     {
       packages = {
+        devnet = pkgs.writeShellApplication
+          {
+            name = "union-full-devnet";
+            runtimeInputs = [ pkgs.bash inputs'.process-compose.packages.process-compose ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+
+              rm -rf ./.devnet/homes/
+              mkdir -p ./.devnet/homes/
+              cp -R ${self'.packages.devnet-union-home} ./.devnet/homes/union/ 
+              cp -R ${self'.packages.devnet-osmosis-home} ./.devnet/homes/osmosis/ 
+              cp -R ${self'.packages.devnet-stargaze-home} ./.devnet/homes/stargaze/ 
+              cp -R ${self'.packages.devnet-simd-home} ./.devnet/homes/simd/ 
+
+              # Fix no write permission on keys
+              chmod -R +w ./.devnet/homes
+
+              ${lib.getExe self'.packages.devnet-compose}
+
+              SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
+            '';
+          };
+        devnet-logs = pkgs.writeShellApplication
+          {
+            name = "union-full-devnet-logs";
+            runtimeInputs = [ lnav ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              lnav ./.devnet/logs/
+            '';
+          };
         devnet-union-home = mkCi false (devnet-union.devnet-home);
         devnet-simd-home = mkCi false (devnet-simd.devnet-home);
         devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);

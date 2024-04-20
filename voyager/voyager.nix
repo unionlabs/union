@@ -11,7 +11,16 @@
       };
     in
     {
-      packages = voyager.packages;
+      packages = voyager.packages // {
+        voy-send-msg = pkgs.writeShellApplication {
+          name = "voy-send-msg";
+          runtimeInputs = [ pkgs.curl ];
+          text = ''
+            set -e
+            curl localhost:65534/msg -H "content-type: application/json" -d "$@"
+          '';
+        };
+      };
       checks = voyager.checks;
     };
 }

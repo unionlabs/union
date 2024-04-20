@@ -254,6 +254,21 @@
       }
     },
     "flake-utils_2": {
+      "locked": {
+        "lastModified": 1659877975,
+        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_3": {
       "inputs": {
         "systems": "systems"
       },
@@ -439,6 +454,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-lnav": {
+      "locked": {
+        "lastModified": 1713467351,
+        "narHash": "sha256-9n7OPwpn6Xsj2bUYQJuwLeu9Q/OQwBrBvp5r4a/uTxI=",
+        "owner": "cor",
+        "repo": "nixpkgs",
+        "rev": "f9eb8b6e68cf4eb7336a1d929fabaccd08aa2db9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cor",
+        "ref": "lnav-v0.12.2-beta",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-solc": {
       "locked": {
         "lastModified": 1707268954,
@@ -471,6 +502,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1701985094,
+        "narHash": "sha256-SrEEAeDvsdehVrvoq47pGFZ+p/QbUcTovL84S7tn6Sk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "a24421da00be9ebfdade97135db98a1fac5173d4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "release-23.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "osmosis": {
       "flake": false,
       "locked": {
@@ -485,6 +532,25 @@
         "owner": "osmosis-labs",
         "ref": "v24.0.0-rc0",
         "repo": "osmosis",
+        "type": "github"
+      }
+    },
+    "process-compose": {
+      "inputs": {
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1712440905,
+        "narHash": "sha256-r3BRB7X1G4fvBhlb2VCxjP7tmHDUkH/y8oS4zFdqPX8=",
+        "owner": "F1bonacc1",
+        "repo": "process-compose",
+        "rev": "5a7b83ed8a0f6be58efa9e4940ff41517892eca2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "F1bonacc1",
+        "repo": "process-compose",
         "type": "github"
       }
     },
@@ -528,9 +594,11 @@
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
+        "nixpkgs-lnav": "nixpkgs-lnav",
         "nixpkgs-solc": "nixpkgs-solc",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "osmosis": "osmosis",
+        "process-compose": "process-compose",
         "public-awesome-launchpad": "public-awesome-launchpad",
         "rust-overlay": "rust-overlay",
         "stargaze": "stargaze",
@@ -543,7 +611,7 @@
     },
     "rust-overlay": {
       "inputs": {
-        "flake-utils": "flake-utils_2",
+        "flake-utils": "flake-utils_3",
         "nixpkgs": [
           "nixpkgs"
         ]

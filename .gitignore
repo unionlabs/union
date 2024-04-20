@@ -28,6 +28,8 @@ yarn-error.log*
 
 genesis.ssz
 
+# Galois Circuit
+circuit.zip
 r1cs.bin
 vk.bin
 pk.bin
@@ -57,3 +59,9 @@ cache
 
 .envrc.local
 justfile
+
+.devnet/
+
+process-compose.yml
+process-compose.override.yml
+
