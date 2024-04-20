@@ -35,6 +35,9 @@
         "timeout_seconds": 5,
         "success_threshold": 1,
         "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
       }
     },
     "devnet-osmosis": {
@@ -58,6 +61,9 @@
         "timeout_seconds": 5,
         "success_threshold": 1,
         "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
       }
     },
     "devnet-stargaze": {
@@ -81,6 +87,50 @@
         "timeout_seconds": 5,
         "success_threshold": 1,
         "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "voyager-migrations": {
+      "name": "voyager-migrations",
+      "command": "RUST_LOG=debug nix run -L .#voyager -- -c ./voyager-config.json run-migrations",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//voyager-migrations.log",
+      "depends_on": {
+        "voyager-queue": {
+          "condition": "process_healthy"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "voyager-queue": {
+      "name": "voyager-queue",
+      "command": "nix run .#voyager-queue -L",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//voyager-queue.log",
+      "readiness_probe": {
+        "exec": {
+          "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
+        },
+        "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
       }
     }
   },

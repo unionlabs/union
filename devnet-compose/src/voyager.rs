@@ -1,11 +1,47 @@
-use crate::Process;
+use std::collections::HashMap;
 
-// const VOYAGER_QUEUE_PROCESS: Process = Process {
-//     name: todo!(),
-//     disabled: todo!(),
-//     is_daemon: todo!(),
-//     command: todo!(),
-//     depends_on: todo!(),
-//     liveliness_probe: todo!(),
-//     readiness_probe: todo!(),
-// };
+use crate::{
+    log_path,
+    process_compose::{ExecProbe, LogConfiguration, Probe, ProcessDependency, ShutdownConfig},
+    Process,
+};
+
+pub fn queue_process() -> Process {
+    let name = "voyager-queue".to_string();
+    Process {
+        name: name.clone(),
+        disabled: None,
+        is_daemon: None,
+        command: "nix run .#voyager-queue -L".into(),
+        depends_on: None,
+        liveliness_probe: None,
+        readiness_probe: Some(Probe::exec(
+            "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres",
+        )),
+        log_configuration: LogConfiguration::default(),
+        log_location: log_path(&name),
+        shutdown: ShutdownConfig::default(),
+    }
+}
+
+pub fn migrations_process() -> Process {
+    let name = "voyager-migrations".to_string();
+    Process {
+        name: name.clone(),
+        disabled: None,
+        is_daemon: None,
+        command: "RUST_LOG=debug nix run -L .#voyager -- -c ./voyager-config.json run-migrations"
+            .into(),
+        depends_on: Some(HashMap::from([(
+            "voyager-queue".into(),
+            ProcessDependency {
+                condition: "process_healthy".into(),
+            },
+        )])),
+        liveliness_probe: None,
+        readiness_probe: None,
+        log_configuration: LogConfiguration::default(),
+        log_location: log_path(&name),
+        shutdown: ShutdownConfig::default(),
+    }
+}
