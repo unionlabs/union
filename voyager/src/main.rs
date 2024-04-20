@@ -12,13 +12,11 @@ use std::{
     sync::Arc,
 };
 
-use block_message::BlockMessageTypes;
 use chain_utils::{
     cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm, AnyChain,
     ChainConfigType, Chains, EthereumChainConfig, LightClientType,
 };
 use clap::Parser;
-use futures::future::OptionFuture;
 use queue_msg::{
     aggregate, aggregation::TupleAggregator, conc, defer_relative, effect, event, fetch, repeat,
     run_to_completion, seq, InMemoryQueue, QueueMsg,
@@ -42,10 +40,10 @@ use unionlabs::{
         connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
     },
     ics24::{ConnectionPath, NextClientSequencePath, NextConnectionSequencePath},
-    traits::{Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, HeightOf},
+    traits::{Chain, ClientIdOf},
     QueryHeight,
 };
-use voyager_message::{FromQueueMsg, VoyagerMessageTypes};
+use voyager_message::{FromQueueMsg, VoyagerFetch, VoyagerMessageTypes};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -356,7 +354,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             }
         }
         Command::Handshake(Handshake {
-            init_fetch,
             chain_a,
             chain_b,
             ty,
@@ -368,116 +365,88 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             let all_msgs = match (chain_a, chain_b) {
                 (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
-                    mk_handshake::<Union, Wasm<Cosmos>, Union, Cosmos>(
-                        &union,
-                        &Wasm(cosmos),
-                        init_fetch,
-                        ty,
-                        chains,
-                    )
-                    .await
+                    mk_handshake::<Union, Wasm<Cosmos>>(&union, &Wasm(cosmos), ty, chains).await
                 }
                 (AnyChain::Union(union), AnyChain::EthereumMainnet(ethereum)) => {
-                    mk_handshake::<Wasm<Union>, Ethereum<Mainnet>, Union, Ethereum<Mainnet>>(
+                    mk_handshake::<Wasm<Union>, Ethereum<Mainnet>>(
                         &Wasm(union),
                         &ethereum,
-                        init_fetch,
                         ty,
                         chains,
                     )
                     .await
                 }
                 (AnyChain::Union(union), AnyChain::EthereumMinimal(ethereum)) => {
-                    mk_handshake::<Wasm<Union>, Ethereum<Minimal>, Union, Ethereum<Minimal>>(
+                    mk_handshake::<Wasm<Union>, Ethereum<Minimal>>(
                         &Wasm(union),
                         &ethereum,
-                        init_fetch,
                         ty,
                         chains,
                     )
                     .await
                 }
                 (AnyChain::Union(union), AnyChain::Scroll(scroll)) => {
-                    mk_handshake::<Wasm<Union>, Scroll, Union, Scroll>(
-                        &Wasm(union),
-                        &scroll,
-                        init_fetch,
-                        ty,
-                        chains,
-                    )
-                    .await
+                    mk_handshake::<Wasm<Union>, Scroll>(&Wasm(union), &scroll, ty, chains).await
                 }
                 (AnyChain::Cosmos(cosmos), AnyChain::Union(union)) => {
-                    mk_handshake::<Wasm<Cosmos>, Union, Cosmos, Union>(
-                        &Wasm(cosmos),
-                        &union,
-                        init_fetch,
-                        ty,
-                        chains,
-                    )
-                    .await
+                    mk_handshake::<Wasm<Cosmos>, Union>(&Wasm(cosmos), &union, ty, chains).await
                 }
                 (AnyChain::Cosmos(cosmos_a), AnyChain::Cosmos(cosmos_b)) => {
-                    mk_handshake::<Cosmos, Cosmos, Cosmos, Cosmos>(
-                        &cosmos_a, &cosmos_b, init_fetch, ty, chains,
-                    )
-                    .await
+                    mk_handshake::<Cosmos, Cosmos>(&cosmos_a, &cosmos_b, ty, chains).await
                 }
                 (AnyChain::EthereumMainnet(ethereum), AnyChain::Union(union)) => {
-                    mk_handshake::<Ethereum<Mainnet>, Wasm<Union>, Ethereum<Mainnet>, Union>(
+                    mk_handshake::<Ethereum<Mainnet>, Wasm<Union>>(
                         &ethereum,
                         &Wasm(union),
-                        init_fetch,
                         ty,
                         chains,
                     )
                     .await
                 }
                 (AnyChain::EthereumMinimal(ethereum), AnyChain::Union(union)) => {
-                    mk_handshake::<Ethereum<Minimal>, Wasm<Union>, Ethereum<Minimal>, Union>(
+                    mk_handshake::<Ethereum<Minimal>, Wasm<Union>>(
                         &ethereum,
                         &Wasm(union),
-                        init_fetch,
                         ty,
                         chains,
                     )
                     .await
                 }
                 (AnyChain::Scroll(scroll), AnyChain::Union(union)) => {
-                    mk_handshake::<Scroll, Wasm<Union>, Scroll, Union>(
-                        &scroll,
-                        &Wasm(union),
-                        init_fetch,
-                        ty,
-                        chains,
-                    )
-                    .await
+                    mk_handshake::<Scroll, Wasm<Union>>(&scroll, &Wasm(union), ty, chains).await
                 }
                 _ => panic!("invalid"),
             };
 
             println!("{}", serde_json::to_string(&all_msgs).unwrap());
         }
+        Command::InitFetch { on } => {
+            let on = voyager_config.get_chain(&on).await?;
+
+            let msg = match on {
+                AnyChain::Union(on) => mk_init_fetch::<Union>(&on).await,
+                AnyChain::Cosmos(on) => mk_init_fetch::<Cosmos>(&on).await,
+                AnyChain::EthereumMainnet(on) => mk_init_fetch::<Ethereum<Mainnet>>(&on).await,
+                AnyChain::EthereumMinimal(on) => mk_init_fetch::<Ethereum<Minimal>>(&on).await,
+                AnyChain::Scroll(on) => mk_init_fetch::<Scroll>(&on).await,
+            };
+
+            println!("{}", serde_json::to_string(&msg).unwrap());
+        }
     }
 
     Ok(())
 }
 
-async fn mk_handshake<A, B, ABlock, BBlock>(
+async fn mk_handshake<A, B>(
     a: &A,
     b: &B,
-    init_fetch: bool,
     ty: HandshakeType,
     chains: Arc<Chains>,
 ) -> QueueMsg<VoyagerMessageTypes>
 where
     A: relay_message::ChainExt + LightClientType<B>,
     B: relay_message::ChainExt + LightClientType<A>,
-    // wasm strikes again
-    ABlock: block_message::ChainExt<Height = HeightOf<A>>,
-    BBlock: block_message::ChainExt<Height = HeightOf<B>>,
-    ClientStateOf<ABlock>: ClientState<ChainId = ChainIdOf<A>>,
-    ClientStateOf<BBlock>: ClientState<ChainId = ChainIdOf<B>>,
 
     relay_message::AnyLightClientIdentified<relay_message::fetch::AnyFetch>:
         From<relay_message::Identified<A, B, relay_message::fetch::Fetch<A, B>>>,
@@ -503,11 +472,6 @@ where
         From<relay_message::Identified<A, B, relay_message::effect::Effect<A, B>>>,
     relay_message::AnyLightClientIdentified<relay_message::effect::AnyEffect>:
         From<relay_message::Identified<B, A, relay_message::effect::Effect<B, A>>>,
-
-    block_message::AnyChainIdentified<block_message::fetch::AnyFetch>:
-        From<block_message::Identified<ABlock, block_message::fetch::Fetch<ABlock>>>,
-    block_message::AnyChainIdentified<block_message::fetch::AnyFetch>:
-        From<block_message::Identified<BBlock, block_message::fetch::Fetch<BBlock>>>,
 
     relay_message::Identified<A, B, relay_message::data::IbcState<NextClientSequencePath, A, B>>:
         relay_message::use_aggregate::IsAggregateData,
@@ -844,27 +808,6 @@ where
         ))
     };
 
-    let fetch_msgs = OptionFuture::from(init_fetch.then_some(async {
-        let a_latest_height = a.query_latest_height().await.unwrap();
-        let b_latest_height = b.query_latest_height().await.unwrap();
-
-        conc([
-            fetch::<BlockMessageTypes>(block_message::id::<ABlock, _>(
-                a.chain_id(),
-                block_message::fetch::FetchBlock::<ABlock> {
-                    height: a_latest_height,
-                },
-            )),
-            fetch::<BlockMessageTypes>(block_message::id::<BBlock, _>(
-                b.chain_id(),
-                block_message::fetch::FetchBlock::<BBlock> {
-                    height: b_latest_height,
-                },
-            )),
-        ])
-    }))
-    .await;
-
     let msgs = match ty {
         HandshakeType::Client {
             client_a_config,
@@ -1002,11 +945,24 @@ where
         ),
     };
 
-    conc(
-        [VoyagerMessageTypes::from_queue_msg(msgs)]
-            .into_iter()
-            .chain(fetch_msgs.map(VoyagerMessageTypes::from_queue_msg)),
-    )
+    VoyagerMessageTypes::from_queue_msg(msgs)
+}
+
+async fn mk_init_fetch<A>(a: &A) -> QueueMsg<VoyagerMessageTypes>
+where
+    A: block_message::ChainExt,
+    block_message::AnyChainIdentified<block_message::fetch::AnyFetch>:
+        From<block_message::Identified<A, block_message::fetch::Fetch<A>>>,
+{
+    fetch(VoyagerFetch::Block(
+        block_message::id::<A, _>(
+            a.chain_id(),
+            block_message::fetch::FetchBlock::<A> {
+                height: a.query_latest_height().await.unwrap(),
+            },
+        )
+        .into(),
+    ))
 }
 
 fn mk_client_id<Hc: LightClientType<Tr>, Tr: Chain>(sequence: u64) -> ClientIdOf<Hc> {

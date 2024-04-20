@@ -56,7 +56,6 @@ pub enum LogFormat {
 
 #[derive(Debug)]
 pub struct Handshake {
-    pub init_fetch: bool,
     pub chain_a: String,
     pub chain_b: String,
 
@@ -162,7 +161,6 @@ impl Handshake {
         raw.assert_empty()?;
 
         Ok(Self {
-            init_fetch: raw.init_fetch,
             chain_a: raw.chain_a,
             chain_b: raw.chain_b,
             ty,
@@ -225,8 +223,6 @@ impl FromArgMatches for Handshake {
 
 #[derive(Debug, Args)]
 pub struct HandshakeRaw {
-    #[arg(long, default_value_t = false)]
-    pub init_fetch: bool,
     #[arg(required = true)]
     pub chain_a: String,
     #[arg(required = true)]
@@ -325,6 +321,9 @@ pub enum Command {
     RunMigrations,
     PrintConfig,
     Handshake(Handshake),
+    InitFetch {
+        on: String,
+    },
     Relay,
     #[command(subcommand)]
     Queue(QueueCmd),
