@@ -102,7 +102,7 @@ pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
         name: name.clone(),
         disabled: None,
         is_daemon: Some(true),
-        command: format!("set -o pipefail; nix run .#voy-send-msg -- '$(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config {} --client-b-config {} --create-clients --open-connection --connection-ordering unordered --init-fetch)",net_a.network_id(), net_b.network_id(), client_a_config, client_b_config ),
+        command: format!("set -o pipefail; nix run .#voy-send-msg -- \"$(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config {} --client-b-config {} --create-clients --open-connection --connection-ordering unordered --init-fetch)\"",net_a.network_id(), net_b.network_id(), client_a_config, client_b_config ),
 
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
