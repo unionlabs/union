@@ -35,6 +35,7 @@ Devs
 Disket
 Distinctio
 Djuric
+F1bonacc1
 FLUSHCOMPLETE
 Fatalf
 Feegrant
@@ -238,7 +239,6 @@ blockquote
 blockscout
 blocksync
 blst
-bonacc
 boneh
 bonlulu
 bools

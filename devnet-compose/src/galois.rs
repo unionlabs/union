@@ -15,7 +15,7 @@ pub fn download_circuit_process() -> Process {
         name: name.clone(),
         disabled: None,
         is_daemon: None,
-        command: r##"nix run .#download-circuit-devnet ."##.into(),
+        command: "nix run .#download-circuit-devnet .".into(),
         depends_on: None,
         liveliness_probe: None,
         readiness_probe: None,
