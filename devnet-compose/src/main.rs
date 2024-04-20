@@ -151,6 +151,8 @@ impl DevnetConfig {
 
 fn main() {
     cliclack::set_theme(theme::UnionTheme);
+    cliclack::clear_screen();
+
     intro(style(" Union Devnet Compose ").on_cyan().black().bold()).unwrap();
     let networks: Vec<Network> = multiselect("Which networks do you want to include?")
         .initial_values(vec![])
@@ -187,7 +189,22 @@ fn main() {
             .unwrap();
     }
 
-    outro("Devnet generated!").unwrap();
+    let info_text = format!("Tips:\n - Run {} in a second terminal tab to view logs.\n - You can restart single processes in the interface with ctrl+r.\n - You can view the generated process composition at `process-compose.yml` in the repo root.\n - Processes are designed to be overridden for a fast dev feedback cycle.\n   For example, add a `process-compose.override.yml` to the repo root with the following contents\n   to use a cargo debug build of voyager instead of the nix build.", style("`nix run .#devnet-logs`").cyan().bold()) +
+    r##"
+    {
+      "processes": {
+        "voyager-relay" : {
+          "command" : "RUST_LOG=info cargo run -p voyager"
+        }
+      }
+    }
+    "##;
+
+    cliclack::note(
+        style(" Devnet generated! ").on_cyan().black().bold(),
+        info_text,
+    )
+    .unwrap();
 
     use Network::*;
     let config = DevnetConfig {
@@ -199,4 +216,16 @@ fn main() {
     let project = serde_json::to_string_pretty(&project).expect("failed to serialize project");
 
     fs::write("process-compose.yml", project).expect("failed to write contents");
+
+    let answer = cliclack::confirm("Ready to launch the devnet?")
+        .initial_value(true)
+        .interact()
+        .unwrap();
+
+    if answer {
+        cliclack::outro("Launching the devnet").unwrap()
+    } else {
+        cliclack::outro_cancel("Generated a process-compose.yml but did not start the devnet")
+            .unwrap()
+    }
 }

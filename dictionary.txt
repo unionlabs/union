@@ -208,6 +208,7 @@ autocliv
 autotests
 awkroot
 axelar
+backoff
 bankkeeper
 banktypes
 baseapp
@@ -237,6 +238,7 @@ blockquote
 blockscout
 blocksync
 blst
+bonacc
 boneh
 bonlulu
 bools
@@ -262,6 +264,7 @@ chevdor
 chrono
 circom
 clazz
+cliclack
 clientkeeper
 clienttx
 clienttypes
@@ -551,6 +554,7 @@ lightclient
 lightclients
 linkmode
 lmfao
+lnav
 lnxk
 loaderreact
 lockb
@@ -637,6 +641,7 @@ osmo
 osmosisd
 outdir
 outfile
+outro
 overrrides
 oxalica
 oxlint
