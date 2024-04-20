@@ -93,7 +93,7 @@ pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
         name: name.clone(),
         disabled: None,
         is_daemon: Some(true),
-        command: format!("set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{{\"checksum\":\"0x{cometbls_lightclient_checksum}\"}}' --create-clients --open-connection --connection-ordering unordered --init-fetch)"),
+        command: format!("set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config null --client-b-config '{{\"checksum\":\"0x{cometbls_lightclient_checksum}\"}}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",union_network.network_id(), non_union_network.network_id()),
 
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
