@@ -14,71 +14,23 @@
   },
   "log_format": "plain",
   "processes": {
-    "connection-union-osmosis": {
-      "name": "connection-union-osmosis",
-      "is_daemon": true,
-      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{\"checksum\":\"0xb2785dc632f285c14aad784c5f19046e5d1558ff3a7961c3a1863b2c89166117\"}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+    "devnet-stargaze": {
+      "name": "devnet-stargaze",
+      "command": "nix run .#devnet-stargaze",
       "log_configuration": {
         "disable_json": true,
         "no_metadata": true,
         "add_timestamp": false
       },
-      "log_location": "./.devnet/logs/connection-union-osmosis.log",
-      "depends_on": {
-        "devnet-union": {
-          "condition": "process_healthy"
-        },
-        "devnet-osmosis": {
-          "condition": "process_healthy"
-        },
-        "voyager-migrations": {
-          "condition": "process_completed_successfully"
-        }
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "devnet-osmosis": {
-      "name": "devnet-osmosis",
-      "command": "nix run .#devnet-osmosis",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs/devnet-osmosis.log",
+      "log_location": "./.devnet/logs/devnet-stargaze.log",
       "readiness_probe": {
         "http_get": {
           "host": "127.0.0.1",
           "path": "/block?height=2",
           "scheme": "http",
-          "port": 26857
+          "port": 26757
         },
         "initial_delay_seconds": 10,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "voyager-queue": {
-      "name": "voyager-queue",
-      "command": "nix run .#voyager-queue -L",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs/voyager-queue.log",
-      "readiness_probe": {
-        "exec": {
-          "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
-        },
-        "initial_delay_seconds": 5,
         "period_seconds": 10,
         "timeout_seconds": 5,
         "success_threshold": 1,
@@ -114,6 +66,29 @@
         "signal": 2
       }
     },
+    "voyager-queue": {
+      "name": "voyager-queue",
+      "command": "nix run .#voyager-queue -L",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/voyager-queue.log",
+      "readiness_probe": {
+        "exec": {
+          "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
+        },
+        "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
     "galoisd": {
       "name": "galoisd",
       "command": "nix run .#galoisd -- serve localhost:9999 --cs-path=./.devnet/circuit/r1cs.bin --pk-path=./.devnet/circuit/pk.bin --vk-path=./.devnet/circuit/vk.bin",
@@ -133,6 +108,82 @@
           "command": "nix run .#galoisd -- query-stats localhost:9999"
         },
         "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "connection-union-osmosis": {
+      "name": "connection-union-osmosis",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake devnet-union devnet-osmosis --client-a-config null --client-b-config '{\"checksum\":\"0xb2785dc632f285c14aad784c5f19046e5d1558ff3a7961c3a1863b2c89166117\"}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/connection-union-osmosis.log",
+      "depends_on": {
+        "devnet-osmosis": {
+          "condition": "process_healthy"
+        },
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        },
+        "devnet-union": {
+          "condition": "process_healthy"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "connection-union-simd": {
+      "name": "connection-union-simd",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake devnet-union devnet-simd --client-a-config null --client-b-config '{\"checksum\":\"0xb2785dc632f285c14aad784c5f19046e5d1558ff3a7961c3a1863b2c89166117\"}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/connection-union-simd.log",
+      "depends_on": {
+        "devnet-union": {
+          "condition": "process_healthy"
+        },
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        },
+        "devnet-simd": {
+          "condition": "process_healthy"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "devnet-simd": {
+      "name": "devnet-simd",
+      "command": "nix run .#devnet-simd",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/devnet-simd.log",
+      "readiness_probe": {
+        "http_get": {
+          "host": "127.0.0.1",
+          "path": "/block?height=2",
+          "scheme": "http",
+          "port": 26957
+        },
+        "initial_delay_seconds": 10,
         "period_seconds": 10,
         "timeout_seconds": 5,
         "success_threshold": 1,
@@ -178,6 +229,132 @@
         "timeout_seconds": 5,
         "success_threshold": 1,
         "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "connection-osmosis-stargaze": {
+      "name": "connection-osmosis-stargaze",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake devnet-osmosis devnet-stargaze --client-a-config null --client-b-config null --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/connection-osmosis-stargaze.log",
+      "depends_on": {
+        "devnet-stargaze": {
+          "condition": "process_healthy"
+        },
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        },
+        "devnet-osmosis": {
+          "condition": "process_healthy"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "devnet-osmosis": {
+      "name": "devnet-osmosis",
+      "command": "nix run .#devnet-osmosis",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/devnet-osmosis.log",
+      "readiness_probe": {
+        "http_get": {
+          "host": "127.0.0.1",
+          "path": "/block?height=2",
+          "scheme": "http",
+          "port": 26857
+        },
+        "initial_delay_seconds": 10,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "connection-union-stargaze": {
+      "name": "connection-union-stargaze",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake devnet-union devnet-stargaze --client-a-config null --client-b-config '{\"checksum\":\"0xb2785dc632f285c14aad784c5f19046e5d1558ff3a7961c3a1863b2c89166117\"}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/connection-union-stargaze.log",
+      "depends_on": {
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        },
+        "devnet-union": {
+          "condition": "process_healthy"
+        },
+        "devnet-stargaze": {
+          "condition": "process_healthy"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "connection-osmosis-simd": {
+      "name": "connection-osmosis-simd",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake devnet-osmosis devnet-simd --client-a-config null --client-b-config null --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/connection-osmosis-simd.log",
+      "depends_on": {
+        "devnet-osmosis": {
+          "condition": "process_healthy"
+        },
+        "devnet-simd": {
+          "condition": "process_healthy"
+        },
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "connection-stargaze-simd": {
+      "name": "connection-stargaze-simd",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake devnet-stargaze devnet-simd --client-a-config null --client-b-config null --create-clients --open-connection --connection-ordering unordered --init-fetch)",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/connection-stargaze-simd.log",
+      "depends_on": {
+        "devnet-simd": {
+          "condition": "process_healthy"
+        },
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        },
+        "devnet-stargaze": {
+          "condition": "process_healthy"
+        }
       },
       "shutdown": {
         "signal": 2

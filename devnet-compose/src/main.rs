@@ -57,6 +57,23 @@ impl Network {
             Network::Simd => 26957,
         }
     }
+
+    fn cometbls_light_client_config(&self) -> String {
+        // TODO: this is a bit hacky, well need better Network types rather than an assertion here.
+        assert!(
+            self != &Network::Union,
+            "Tried to get cometbls client id on union"
+        );
+        let cometbls_lightclient_checksum = fs::read_to_string(format!(
+            "./.devnet/homes/{}/code-ids/cometbls_light_client",
+            self.to_string().to_lowercase()
+        ))
+        .unwrap_or_else(|_| panic!("could not find code-id for cometbls_light_client on {self}"));
+
+        let cometbls_lightclient_checksum = cometbls_lightclient_checksum.trim().to_string();
+
+        format!("'{{\"checksum\":\"0x{cometbls_lightclient_checksum}\"}}'")
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -73,33 +90,23 @@ pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
         net_b.to_string().to_lowercase()
     );
 
-    let (union_network, non_union_network) = match (net_a, net_b) {
-        (Union, n) => (Union, n),
-        (n, Union) => (Union, n),
-        _ => panic!("Cosmos <-> Cosmos is currently unsupported"),
+    let (client_a_config, client_b_config) = match (net_a, net_b) {
+        (Union, n) => ("null".to_string(), n.cometbls_light_client_config()),
+        (n, Union) => (n.cometbls_light_client_config(), "null".to_string()),
+        (_, _) => ("null".to_string(), "null".to_string()),
     };
-
-    let cometbls_lightclient_checksum = fs::read_to_string(format!(
-        "./.devnet/homes/{}/code-ids/cometbls_light_client",
-        non_union_network.to_string().to_lowercase()
-    ))
-    .unwrap_or_else(|_| {
-        panic!("could not find code-id for cometbls_light_client on {non_union_network}")
-    });
-
-    let cometbls_lightclient_checksum = cometbls_lightclient_checksum.trim();
 
     Process {
         name: name.clone(),
         disabled: None,
         is_daemon: Some(true),
-        command: format!("set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config null --client-b-config '{{\"checksum\":\"0x{cometbls_lightclient_checksum}\"}}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",union_network.network_id(), non_union_network.network_id()),
+        command: format!("set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config {} --client-b-config {} --create-clients --open-connection --connection-ordering unordered --init-fetch)",net_a.network_id(), net_b.network_id(), client_a_config, client_b_config ),
 
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
         depends_on: Some(HashMap::from([
-            (union_network.to_process().name,ProcessDependency::healthy()),
-            (non_union_network.to_process().name,ProcessDependency::healthy()),
+            (net_a.to_process().name,ProcessDependency::healthy()),
+            (net_b.to_process().name,ProcessDependency::healthy()),
             (voyager::migrations_process().name,ProcessDependency::completed_successfully())
         ])),
         liveliness_probe: None,
