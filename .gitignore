@@ -61,3 +61,7 @@ cache
 justfile
 
 .devnet/
+
+process-compose.yml
+process-compose.override.yml
+
