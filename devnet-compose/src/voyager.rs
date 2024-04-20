@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     log_path,
-    process_compose::{ExecProbe, LogConfiguration, Probe, ProcessDependency, ShutdownConfig},
+    process_compose::{LogConfiguration, Probe, ProcessDependency, ShutdownConfig},
     Process,
 };
 
@@ -33,10 +33,8 @@ pub fn migrations_process() -> Process {
         command: "RUST_LOG=debug nix run -L .#voyager -- -c ./voyager-config.json run-migrations"
             .into(),
         depends_on: Some(HashMap::from([(
-            "voyager-queue".into(),
-            ProcessDependency {
-                condition: "process_healthy".into(),
-            },
+            queue_process().name,
+            ProcessDependency::healthy(),
         )])),
         liveliness_probe: None,
         readiness_probe: None,

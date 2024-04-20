@@ -6,6 +6,7 @@ use process_compose::{
 };
 use serde::{Deserialize, Serialize};
 
+mod galois;
 mod process_compose;
 mod voyager;
 
@@ -25,8 +26,8 @@ pub enum Network {
 impl Network {
     fn to_process(self) -> Process {
         Process {
-            name: format!("{} Devnet", &self),
-            command: format!("nix run .#{}", &self.network_id()),
+            name: self.network_id().clone(),
+            command: format!("nix run .#{}", self.network_id()),
             is_daemon: None,
             disabled: None,
             depends_on: None,
@@ -61,18 +62,22 @@ impl DevnetConfig {
     pub fn to_process_compose(&self) -> Project {
         let mut project = Project::default();
 
+        // Add a devnet for each network
         for network in self.networks.clone() {
-            project
-                .processes
-                .insert(network.network_id(), network.to_process());
+            project.add_process(network.to_process());
         }
 
-        project
-            .processes
-            .insert("voyager-queue".into(), voyager::queue_process());
-        project
-            .processes
-            .insert("voyager-migrations".into(), voyager::migrations_process());
+        if !self.connections.is_empty() {
+            // There are connections, so we need voyager running with applied migrations
+            project.add_process(voyager::queue_process());
+            project.add_process(voyager::migrations_process());
+
+            if self.networks.contains(&Network::Union) {
+                // There are connections to Union, so we need to prove Union consensus
+                project.add_process(galois::download_circuit_process());
+                project.add_process(galois::galoisd_process());
+            }
+        }
 
         project
     }

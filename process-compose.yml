@@ -14,8 +14,36 @@
   },
   "log_format": "plain",
   "processes": {
+    "galoisd": {
+      "name": "galoisd",
+      "command": "nix run .#galoisd -- serve localhost:9999 --cs-path=./.devnet/circuit/r1cs.bin --pk-path=./.devnet/circuit/pk.bin --vk-path=./.devnet/circuit/vk.bin",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//galoisd.log",
+      "depends_on": {
+        "galois-download-circuit": {
+          "condition": "process_completed_successfully"
+        }
+      },
+      "readiness_probe": {
+        "exec": {
+          "command": "nix run .#galoisd -- query-stats localhost:9999"
+        },
+        "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
     "devnet-union": {
-      "name": "Union Devnet",
+      "name": "devnet-union",
       "command": "nix run .#devnet-union",
       "log_configuration": {
         "disable_json": true,
@@ -29,58 +57,6 @@
           "path": "/block?height=2",
           "scheme": "http",
           "port": 26657
-        },
-        "initial_delay_seconds": 10,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "devnet-osmosis": {
-      "name": "Osmosis Devnet",
-      "command": "nix run .#devnet-osmosis",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//devnet-osmosis.log",
-      "readiness_probe": {
-        "http_get": {
-          "host": "127.0.0.1",
-          "path": "/block?height=2",
-          "scheme": "http",
-          "port": 26857
-        },
-        "initial_delay_seconds": 10,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "devnet-stargaze": {
-      "name": "Stargaze Devnet",
-      "command": "nix run .#devnet-stargaze",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//devnet-stargaze.log",
-      "readiness_probe": {
-        "http_get": {
-          "host": "127.0.0.1",
-          "path": "/block?height=2",
-          "scheme": "http",
-          "port": 26757
         },
         "initial_delay_seconds": 10,
         "period_seconds": 10,
@@ -110,6 +86,32 @@
         "signal": 2
       }
     },
+    "devnet-osmosis": {
+      "name": "devnet-osmosis",
+      "command": "nix run .#devnet-osmosis",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//devnet-osmosis.log",
+      "readiness_probe": {
+        "http_get": {
+          "host": "127.0.0.1",
+          "path": "/block?height=2",
+          "scheme": "http",
+          "port": 26857
+        },
+        "initial_delay_seconds": 10,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
     "voyager-queue": {
       "name": "voyager-queue",
       "command": "nix run .#voyager-queue -L",
@@ -122,6 +124,55 @@
       "readiness_probe": {
         "exec": {
           "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
+        },
+        "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "devnet-stargaze": {
+      "name": "devnet-stargaze",
+      "command": "nix run .#devnet-stargaze",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//devnet-stargaze.log",
+      "readiness_probe": {
+        "http_get": {
+          "host": "127.0.0.1",
+          "path": "/block?height=2",
+          "scheme": "http",
+          "port": 26757
+        },
+        "initial_delay_seconds": 10,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "galois-download-circuit": {
+      "name": "galois-download-circuit",
+      "command": "nix run .#download-circuit-devnet .",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//galois-download-circuit.log",
+      "readiness_probe": {
+        "exec": {
+          "command": "nix run .#galoisd -- query-stats localhost:9999"
         },
         "initial_delay_seconds": 5,
         "period_seconds": 10,

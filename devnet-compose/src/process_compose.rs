@@ -22,6 +22,13 @@ pub struct Project {
     pub file_names: Option<Vec<String>>,
 }
 
+impl Project {
+    pub fn add_process(&mut self, process: Process) {
+        let name = process.name.clone();
+        self.processes.insert(name, process);
+    }
+}
+
 impl Default for Project {
     fn default() -> Self {
         Project {
@@ -147,6 +154,20 @@ impl Default for ShutdownConfig {
 #[derive(Serialize, Deserialize)]
 pub struct ProcessDependency {
     pub condition: String,
+}
+
+impl ProcessDependency {
+    pub fn completed_successfully() -> Self {
+        Self {
+            condition: "process_completed_successfully".into(),
+        }
+    }
+
+    pub fn healthy() -> Self {
+        Self {
+            condition: "process_healthy".into(),
+        }
+    }
 }
 
 #[skip_serializing_none]
