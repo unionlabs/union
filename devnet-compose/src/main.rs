@@ -1,6 +1,9 @@
 // You need to bring the ToString trait into scope to use it
 use std::{any::Any, collections::HashMap, fs};
 
+use cliclack::{intro, multiselect, outro};
+use console::style;
+use itertools::Itertools;
 use process_compose::{
     HttpProbe, LogConfiguration, LogRotationConfig, Probe, Process, Project, ShutdownConfig,
 };
@@ -8,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 mod galois;
 mod process_compose;
+mod theme;
 mod voyager;
 
 const LOGS_BASE_PATH: &str = "./.devnet/logs/";
@@ -84,10 +88,44 @@ impl DevnetConfig {
 }
 
 fn main() {
+    cliclack::set_theme(theme::UnionTheme);
+    intro(style(" Union Devnet Compose ").on_cyan().black().bold()).unwrap();
+    let networks: Vec<Network> = multiselect("Which networks do you want to include?")
+        .initial_values(vec![])
+        .item(Union, "Union", "recommended")
+        .item(Osmosis, "Osmosis", "")
+        .item(Stargaze, "Stargaze", "")
+        .interact()
+        .unwrap();
+
+    let mut connections: Vec<(Network, Network)> = Vec::new();
+    if networks.len() > 1 {
+        let connection_options: Vec<((Network, Network), String, String)> = networks
+            .clone()
+            .into_iter()
+            .combinations(2)
+            .map(|mut combo| (combo.remove(0), combo.remove(0)))
+            .map(|combo @ (net_a, net_b)| {
+                (
+                    combo,
+                    format!("{net_a} <-> {net_b}").to_string(),
+                    "".to_string(),
+                )
+            })
+            .collect();
+        connections = multiselect("Which IBC connections do you want to set up?")
+            .items(&connection_options)
+            .required(false)
+            .interact()
+            .unwrap();
+    }
+
+    outro("Devnet generated!").unwrap();
+
     use Network::*;
     let config = DevnetConfig {
-        networks: vec![Union, Osmosis, Stargaze],
-        connections: vec![(Union, Osmosis)],
+        networks,
+        connections,
     };
 
     let project = config.to_process_compose();

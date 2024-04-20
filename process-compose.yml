@@ -14,34 +14,6 @@
   },
   "log_format": "plain",
   "processes": {
-    "galoisd": {
-      "name": "galoisd",
-      "command": "nix run .#galoisd -- serve localhost:9999 --cs-path=./.devnet/circuit/r1cs.bin --pk-path=./.devnet/circuit/pk.bin --vk-path=./.devnet/circuit/vk.bin",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//galoisd.log",
-      "depends_on": {
-        "galois-download-circuit": {
-          "condition": "process_completed_successfully"
-        }
-      },
-      "readiness_probe": {
-        "exec": {
-          "command": "nix run .#galoisd -- query-stats localhost:9999"
-        },
-        "initial_delay_seconds": 5,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
     "devnet-union": {
       "name": "devnet-union",
       "command": "nix run .#devnet-union",
@@ -59,6 +31,29 @@
           "port": 26657
         },
         "initial_delay_seconds": 10,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "voyager-queue": {
+      "name": "voyager-queue",
+      "command": "nix run .#voyager-queue -L",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//voyager-queue.log",
+      "readiness_probe": {
+        "exec": {
+          "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
+        },
+        "initial_delay_seconds": 5,
         "period_seconds": 10,
         "timeout_seconds": 5,
         "success_threshold": 1,
@@ -86,6 +81,29 @@
         "signal": 2
       }
     },
+    "galois-download-circuit": {
+      "name": "galois-download-circuit",
+      "command": "nix run .#download-circuit-devnet .",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs//galois-download-circuit.log",
+      "readiness_probe": {
+        "exec": {
+          "command": "nix run .#galoisd -- query-stats localhost:9999"
+        },
+        "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
     "devnet-osmosis": {
       "name": "devnet-osmosis",
       "command": "nix run .#devnet-osmosis",
@@ -103,29 +121,6 @@
           "port": 26857
         },
         "initial_delay_seconds": 10,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "voyager-queue": {
-      "name": "voyager-queue",
-      "command": "nix run .#voyager-queue -L",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//voyager-queue.log",
-      "readiness_probe": {
-        "exec": {
-          "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
-        },
-        "initial_delay_seconds": 5,
         "period_seconds": 10,
         "timeout_seconds": 5,
         "success_threshold": 1,
@@ -161,15 +156,20 @@
         "signal": 2
       }
     },
-    "galois-download-circuit": {
-      "name": "galois-download-circuit",
-      "command": "nix run .#download-circuit-devnet .",
+    "galoisd": {
+      "name": "galoisd",
+      "command": "nix run .#galoisd -- serve localhost:9999 --cs-path=./.devnet/circuit/r1cs.bin --pk-path=./.devnet/circuit/pk.bin --vk-path=./.devnet/circuit/vk.bin",
       "log_configuration": {
         "disable_json": true,
         "no_metadata": true,
         "add_timestamp": false
       },
-      "log_location": "./.devnet/logs//galois-download-circuit.log",
+      "log_location": "./.devnet/logs//galoisd.log",
+      "depends_on": {
+        "galois-download-circuit": {
+          "condition": "process_completed_successfully"
+        }
+      },
       "readiness_probe": {
         "exec": {
           "command": "nix run .#galoisd -- query-stats localhost:9999"

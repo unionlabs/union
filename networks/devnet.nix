@@ -347,6 +347,7 @@
             runtimeInputs = [ pkgs.bash inputs'.process-compose.packages.process-compose ];
             text = ''
               ${ensureAtRepositoryRoot}
+              ${lib.getExe self'.packages.devnet-compose}
               SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
             '';
           };

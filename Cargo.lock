@@ -834,7 +834,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
 dependencies = [
  "bitflags 1.3.2",
- "textwrap",
+ "textwrap 0.11.0",
  "unicode-width",
 ]
 
@@ -877,6 +877,19 @@ name = "clap_lex"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
+
+[[package]]
+name = "cliclack"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4febf49beeedc40528e4956995631f1bbdb4d8804ef940b44351f393a996c739"
+dependencies = [
+ "console",
+ "indicatif",
+ "once_cell",
+ "textwrap 0.16.1",
+ "zeroize",
+]
 
 [[package]]
 name = "coins-bip32"
@@ -1011,6 +1024,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d16048cd947b08fa32c24458a22f5dc5e835264f689f4f5653210c69fd107363"
 dependencies = [
  "crossbeam-utils",
+]
+
+[[package]]
+name = "console"
+version = "0.15.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e1f83fc076bd6dd27517eacdf25fef6c4dfe5f1d7448bafaaf3a26f13b5e4eb"
+dependencies = [
+ "encode_unicode",
+ "lazy_static",
+ "libc",
+ "unicode-width",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1751,6 +1777,9 @@ dependencies = [
 name = "devnet-compose"
 version = "0.1.0"
 dependencies = [
+ "cliclack",
+ "console",
+ "itertools 0.12.1",
  "serde",
  "serde_json",
  "serde_with",
@@ -1966,6 +1995,12 @@ checksum = "c533630cf40e9caa44bd91aadc88a75d75a4c3a12b4cfde353cbed41daa1e1f1"
 dependencies = [
  "log",
 ]
+
+[[package]]
+name = "encode_unicode"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "encoding_rs"
@@ -3367,6 +3402,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "indicatif"
+version = "0.17.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "763a5a8f45087d6bcea4222e7b72c291a054edf80e4ef6efd2a4979878c7bea3"
+dependencies = [
+ "console",
+ "instant",
+ "number_prefix",
+ "portable-atomic",
+ "unicode-width",
+]
+
+[[package]]
 name = "inout"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3978,6 +4026,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "number_prefix"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
+
+[[package]]
 name = "object"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4395,6 +4449,12 @@ checksum = "38f6d39893cca0701371e3c27294f09797214b86f1fb951b89ade8ec04e2abab"
 dependencies = [
  "plotters-backend",
 ]
+
+[[package]]
+name = "portable-atomic"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 
 [[package]]
 name = "poseidon-rs"
@@ -5701,6 +5761,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
+name = "smawk"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
+
+[[package]]
 name = "snap"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6394,6 +6460,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "textwrap"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
+dependencies = [
+ "smawk",
+ "unicode-linebreak",
+ "unicode-width",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7083,6 +7160,12 @@ name = "unicode-ident"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
+
+[[package]]
+name = "unicode-linebreak"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b09c83c3c29d37506a3e260c08c03743a6bb66a9cd432c6934ab501a190571f"
 
 [[package]]
 name = "unicode-normalization"
