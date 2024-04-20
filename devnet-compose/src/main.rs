@@ -5,7 +5,8 @@ use cliclack::{intro, multiselect, outro};
 use console::style;
 use itertools::Itertools;
 use process_compose::{
-    HttpProbe, LogConfiguration, LogRotationConfig, Probe, Process, Project, ShutdownConfig,
+    HttpProbe, LogConfiguration, LogRotationConfig, Probe, Process, ProcessDependency, Project,
+    ShutdownConfig,
 };
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +18,7 @@ mod voyager;
 const LOGS_BASE_PATH: &str = "./.devnet/logs/";
 
 pub fn log_path(process_name: &str) -> String {
-    format!("{LOGS_BASE_PATH}/{}.log", process_name)
+    format!("{LOGS_BASE_PATH}{process_name}.log")
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug, strum::Display)]
@@ -64,6 +65,49 @@ pub struct DevnetConfig {
     pub connections: Vec<(Network, Network)>,
 }
 
+pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
+    use Network::*;
+    let name = format!(
+        "connection-{}-{}",
+        net_a.to_string().to_lowercase(),
+        net_b.to_string().to_lowercase()
+    );
+
+    let (union_network, non_union_network) = match (net_a, net_b) {
+        (Union, n) => (Union, n),
+        (n, Union) => (Union, n),
+        _ => panic!("Cosmos <-> Cosmos is currently unsupported"),
+    };
+
+    let cometbls_lightclient_checksum = fs::read_to_string(format!(
+        "./.devnet/homes/{}/code-ids/cometbls_light_client",
+        non_union_network.to_string().to_lowercase()
+    ))
+    .unwrap_or_else(|_| {
+        panic!("could not find code-id for cometbls_light_client on {non_union_network}")
+    });
+
+    let cometbls_lightclient_checksum = cometbls_lightclient_checksum.trim();
+
+    Process {
+        name: name.clone(),
+        disabled: None,
+        is_daemon: Some(true),
+        command: format!("set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{{\"checksum\":\"0x{cometbls_lightclient_checksum}\"}}' --create-clients --open-connection --connection-ordering unordered --init-fetch)"),
+
+        log_configuration: LogConfiguration::default(),
+        log_location: log_path(&name),
+        depends_on: Some(HashMap::from([
+            (union_network.to_process().name,ProcessDependency::healthy()),
+            (non_union_network.to_process().name,ProcessDependency::healthy()),
+            (voyager::migrations_process().name,ProcessDependency::completed_successfully())
+        ])),
+        liveliness_probe: None,
+        readiness_probe: None, // TODO
+        shutdown: ShutdownConfig::default(),
+    }
+}
+
 impl DevnetConfig {
     pub fn to_process_compose(&self) -> Project {
         let mut project = Project::default();
@@ -82,6 +126,10 @@ impl DevnetConfig {
                 // There are connections to Union, so we need to prove Union consensus
                 project.add_process(galois::download_circuit_process());
                 project.add_process(galois::galoisd_process());
+            }
+
+            for conn in &self.connections {
+                project.add_process(connection_to_process(conn))
             }
         }
 

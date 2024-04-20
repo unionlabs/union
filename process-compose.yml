@@ -14,21 +14,46 @@
   },
   "log_format": "plain",
   "processes": {
-    "devnet-union": {
-      "name": "devnet-union",
-      "command": "nix run .#devnet-union",
+    "connection-union-osmosis": {
+      "name": "connection-union-osmosis",
+      "is_daemon": true,
+      "command": "set -o pipefail; nix run .#voy-send-msg -- $(nix run -L .#voyager -- -c ./voyager-config.json handshake union-devnet osmosis-devnet --client-a-config null --client-b-config '{\"checksum\":\"0xb2785dc632f285c14aad784c5f19046e5d1558ff3a7961c3a1863b2c89166117\"}' --create-clients --open-connection --connection-ordering unordered --init-fetch)",
       "log_configuration": {
         "disable_json": true,
         "no_metadata": true,
         "add_timestamp": false
       },
-      "log_location": "./.devnet/logs//devnet-union.log",
+      "log_location": "./.devnet/logs/connection-union-osmosis.log",
+      "depends_on": {
+        "devnet-union": {
+          "condition": "process_healthy"
+        },
+        "devnet-osmosis": {
+          "condition": "process_healthy"
+        },
+        "voyager-migrations": {
+          "condition": "process_completed_successfully"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "devnet-osmosis": {
+      "name": "devnet-osmosis",
+      "command": "nix run .#devnet-osmosis",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/devnet-osmosis.log",
       "readiness_probe": {
         "http_get": {
           "host": "127.0.0.1",
           "path": "/block?height=2",
           "scheme": "http",
-          "port": 26657
+          "port": 26857
         },
         "initial_delay_seconds": 10,
         "period_seconds": 10,
@@ -48,7 +73,7 @@
         "no_metadata": true,
         "add_timestamp": false
       },
-      "log_location": "./.devnet/logs//voyager-queue.log",
+      "log_location": "./.devnet/logs/voyager-queue.log",
       "readiness_probe": {
         "exec": {
           "command": "pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres"
@@ -63,88 +88,21 @@
         "signal": 2
       }
     },
-    "voyager-migrations": {
-      "name": "voyager-migrations",
-      "command": "RUST_LOG=debug nix run -L .#voyager -- -c ./voyager-config.json run-migrations",
+    "devnet-union": {
+      "name": "devnet-union",
+      "command": "nix run .#devnet-union",
       "log_configuration": {
         "disable_json": true,
         "no_metadata": true,
         "add_timestamp": false
       },
-      "log_location": "./.devnet/logs//voyager-migrations.log",
-      "depends_on": {
-        "voyager-queue": {
-          "condition": "process_healthy"
-        }
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "galois-download-circuit": {
-      "name": "galois-download-circuit",
-      "command": "nix run .#download-circuit-devnet .",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//galois-download-circuit.log",
-      "readiness_probe": {
-        "exec": {
-          "command": "nix run .#galoisd -- query-stats localhost:9999"
-        },
-        "initial_delay_seconds": 5,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "devnet-osmosis": {
-      "name": "devnet-osmosis",
-      "command": "nix run .#devnet-osmosis",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//devnet-osmosis.log",
+      "log_location": "./.devnet/logs/devnet-union.log",
       "readiness_probe": {
         "http_get": {
           "host": "127.0.0.1",
           "path": "/block?height=2",
           "scheme": "http",
-          "port": 26857
-        },
-        "initial_delay_seconds": 10,
-        "period_seconds": 10,
-        "timeout_seconds": 5,
-        "success_threshold": 1,
-        "failure_threshold": 1000
-      },
-      "shutdown": {
-        "signal": 2
-      }
-    },
-    "devnet-stargaze": {
-      "name": "devnet-stargaze",
-      "command": "nix run .#devnet-stargaze",
-      "log_configuration": {
-        "disable_json": true,
-        "no_metadata": true,
-        "add_timestamp": false
-      },
-      "log_location": "./.devnet/logs//devnet-stargaze.log",
-      "readiness_probe": {
-        "http_get": {
-          "host": "127.0.0.1",
-          "path": "/block?height=2",
-          "scheme": "http",
-          "port": 26757
+          "port": 26657
         },
         "initial_delay_seconds": 10,
         "period_seconds": 10,
@@ -164,12 +122,53 @@
         "no_metadata": true,
         "add_timestamp": false
       },
-      "log_location": "./.devnet/logs//galoisd.log",
+      "log_location": "./.devnet/logs/galoisd.log",
       "depends_on": {
         "galois-download-circuit": {
           "condition": "process_completed_successfully"
         }
       },
+      "readiness_probe": {
+        "exec": {
+          "command": "nix run .#galoisd -- query-stats localhost:9999"
+        },
+        "initial_delay_seconds": 5,
+        "period_seconds": 10,
+        "timeout_seconds": 5,
+        "success_threshold": 1,
+        "failure_threshold": 1000
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "voyager-migrations": {
+      "name": "voyager-migrations",
+      "command": "RUST_LOG=debug nix run -L .#voyager -- -c ./voyager-config.json run-migrations",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/voyager-migrations.log",
+      "depends_on": {
+        "voyager-queue": {
+          "condition": "process_healthy"
+        }
+      },
+      "shutdown": {
+        "signal": 2
+      }
+    },
+    "galois-download-circuit": {
+      "name": "galois-download-circuit",
+      "command": "nix run .#download-circuit-devnet .",
+      "log_configuration": {
+        "disable_json": true,
+        "no_metadata": true,
+        "add_timestamp": false
+      },
+      "log_location": "./.devnet/logs/galois-download-circuit.log",
       "readiness_probe": {
         "exec": {
           "command": "nix run .#galoisd -- query-stats localhost:9999"
