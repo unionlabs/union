@@ -150,7 +150,7 @@
           self'.packages.cometbls-light-client
         ];
         inherit cosmwasmContracts;
-        portIncrease = 100;
+        portIncrease = 300;
       };
 
       devnet-union-minimal = mkCosmosDevnet {
@@ -347,7 +347,15 @@
             runtimeInputs = [ pkgs.bash inputs'.process-compose.packages.process-compose ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              mkdir -p ./.devnet/homes/
+              cp -R ${self'.packages.devnet-union-home} ./.devnet/homes/union/ 
+              cp -R ${self'.packages.devnet-osmosis-home} ./.devnet/homes/osmosis/ 
+              cp -R ${self'.packages.devnet-stargaze-home} ./.devnet/homes/stargaze/ 
+              cp -R ${self'.packages.devnet-simd-home} ./.devnet/homes/simd/ 
+
               ${lib.getExe self'.packages.devnet-compose}
+
               SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
             '';
           };

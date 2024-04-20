@@ -25,6 +25,7 @@ pub enum Network {
     Union,
     Osmosis,
     Stargaze,
+    Simd,
 }
 
 impl Network {
@@ -52,6 +53,7 @@ impl Network {
             Network::Union => 26657,
             Network::Stargaze => 26757,
             Network::Osmosis => 26857,
+            Network::Simd => 26957,
         }
     }
 }
@@ -95,6 +97,7 @@ fn main() {
         .item(Union, "Union", "recommended")
         .item(Osmosis, "Osmosis", "")
         .item(Stargaze, "Stargaze", "")
+        .item(Simd, "Simd", "")
         .interact()
         .unwrap();
 
@@ -109,7 +112,11 @@ fn main() {
                 (
                     combo,
                     format!("{net_a} <-> {net_b}").to_string(),
-                    "".to_string(),
+                    if net_a == Union || net_b == Union {
+                        "Will include Galois services".to_string()
+                    } else {
+                        "".to_string()
+                    },
                 )
             })
             .collect();

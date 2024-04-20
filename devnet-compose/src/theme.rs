@@ -1,5 +1,5 @@
-use cliclack::{input, intro, log, outro, set_theme, Theme, ThemeState};
-use console::{style, Style};
+use cliclack::{Theme, ThemeState};
+use console::Style;
 
 pub struct UnionTheme;
 
