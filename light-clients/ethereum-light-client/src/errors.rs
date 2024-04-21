@@ -103,6 +103,9 @@ pub enum Error {
 
     #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})")]
     MisbehaviourCannotExist(u64, u64),
+
+    #[error("unknown checkpoint index {0}")]
+    UnknownCheckpointIndex(u64),
 }
 
 impl From<ics008_wasm_client::storage_utils::Error> for Error {

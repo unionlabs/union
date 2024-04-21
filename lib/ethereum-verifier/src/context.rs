@@ -13,4 +13,6 @@ pub trait LightClientContext {
     fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>>;
 
     fn fork_parameters(&self) -> &ForkParameters;
+
+    fn tracking_checkpoint_root_index(&self) -> u64;
 }

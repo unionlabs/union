@@ -65,7 +65,7 @@ unionlabs                 = { workspace = true, features = ["ethabi"] }
 voyager-message.workspace = true
 
 [features]
-default = []
+eth-justified = ["chain-utils/eth-justified"]
 
 arbitrary = [
   "dep:arbitrary",

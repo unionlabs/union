@@ -38,10 +38,7 @@ use unionlabs::{
     hash::{H160, H256},
     ibc::{
         core::client::height::{Height, IsHeight},
-        lightclients::{
-            ethereum::{self, storage_proof::StorageProof},
-            tendermint::fraction::Fraction,
-        },
+        lightclients::ethereum::{self, storage_proof::StorageProof},
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -49,12 +46,17 @@ use unionlabs::{
         NextConnectionSequencePath,
     },
     id::{ChannelId, ClientId, PortId},
-    option_unwrap, promote,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
     uint::U256,
 };
 
 use crate::{private_key::PrivateKey, Pool};
+
+#[cfg(feature = "eth-justified")]
+pub const CHECKPOINT_ROOT_INDEX: u64 =
+    unionlabs::ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_INDEX;
+#[cfg(not(feature = "eth-justified"))]
+pub const CHECKPOINT_ROOT_INDEX: u64 = unionlabs::ethereum::config::consts::FINALIZED_ROOT_INDEX;
 
 pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
@@ -311,7 +313,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
         self.beacon_api_client
             .finality_update()
             .await
-            .map(|response| self.make_height(response.data.attested_header.beacon.slot))
+            .map(|response| self.make_height(response.data.finalized_header.beacon.slot))
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
@@ -355,7 +357,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             .finality_update()
             .await?
             .data
-            .attested_header
+            .finalized_header
             .execution
             .timestamp
             .try_into()
@@ -383,16 +385,14 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             trusting_period: 100_000_000,
             latest_slot: beacon_height.revision_height,
             min_sync_committee_participants: 0,
-            trust_level: Fraction {
-                numerator: 1,
-                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
-            },
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,
             },
             ibc_commitment_slot: U256::from(0),
             ibc_contract_address: self.ibc_handler_address,
+            // TODO(aeryz): fetch this
+            checkpoint_root_index: CHECKPOINT_ROOT_INDEX,
         }
     }
 

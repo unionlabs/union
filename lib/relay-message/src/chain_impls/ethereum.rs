@@ -941,7 +941,7 @@ where
     // be the current sync committee of the period that we want to update to.
     let previous_period = u64::max(
         1,
-        light_client_update.attested_header.beacon.slot
+        light_client_update.finalized_header.beacon.slot
             / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64),
     ) - 1;
 
@@ -956,7 +956,7 @@ where
             fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 Fetch::specific(FetchAccountUpdate {
-                    slot: light_client_update.attested_header.beacon.slot,
+                    slot: light_client_update.finalized_header.beacon.slot,
                 }),
             )),
             fetch(id::<Ethereum<C>, Tr, _>(
@@ -1159,7 +1159,7 @@ where
         assert_eq!(chain_id, bootstrap_chain_id);
 
         let target_period =
-            sync_committee_period::<_, C>(finality_update.attested_header.beacon.slot);
+            sync_committee_period::<_, C>(finality_update.finalized_header.beacon.slot);
 
         let trusted_period = sync_committee_period::<_, C>(req.update_from.revision_height);
 
@@ -1243,7 +1243,7 @@ where
             |(mut vec, mut trusted_slot), update| {
                 let old_trusted_slot = trusted_slot;
 
-                trusted_slot = update.attested_header.beacon.slot;
+                trusted_slot = update.finalized_header.beacon.slot;
 
                 vec.push_back(make_create_update::<C, Tr>(
                     req.clone(),

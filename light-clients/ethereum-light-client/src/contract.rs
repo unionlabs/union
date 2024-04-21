@@ -12,7 +12,10 @@ use unionlabs::{
     ibc::{core::client::height::Height, lightclients::ethereum::client_state::ClientState},
 };
 
-use crate::{client::EthereumLightClient, errors::Error};
+use crate::{
+    client::{validate_checkpoint_root_index, EthereumLightClient},
+    errors::Error,
+};
 
 // NOTE(aeryz): the fact that the host module forces the light clients to store and use the wasm wrapping
 // in the client state makes this code kinda messy. But this is going to be resolved in the future versions
@@ -28,6 +31,8 @@ pub fn instantiate(
         ClientState::decode_as::<Proto>(&msg.client_state).map_err(|e| Error::DecodeFromProto {
             reason: format!("{:?}", e),
         })?;
+
+    validate_checkpoint_root_index(client_state.checkpoint_root_index)?;
 
     save_proto_consensus_state(
         deps.branch(),

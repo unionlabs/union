@@ -12,16 +12,19 @@ use crate::consensus_state::TrustedConsensusState;
 pub struct LightClientContext<'a, C: ChainSpec> {
     pub client_state: &'a ClientState,
     pub trusted_consensus_state: TrustedConsensusState<C>,
+    pub checkpoint_root_index: u64,
 }
 
 impl<'a, C: ChainSpec> LightClientContext<'a, C> {
     pub fn new(
         client_state: &'a ClientState,
         trusted_consensus_state: TrustedConsensusState<C>,
+        checkpoint_root_index: u64,
     ) -> Self {
         Self {
             client_state,
             trusted_consensus_state,
+            checkpoint_root_index,
         }
     }
 }
@@ -53,5 +56,9 @@ impl<'a, C: ChainSpec> TLightClientContext for LightClientContext<'a, C> {
 
     fn fork_parameters(&self) -> &ForkParameters {
         &self.client_state.fork_parameters
+    }
+
+    fn tracking_checkpoint_root_index(&self) -> u64 {
+        self.checkpoint_root_index
     }
 }

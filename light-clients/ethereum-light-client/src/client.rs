@@ -18,6 +18,7 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
+    ethereum::config::consts::{CURRENT_JUSTIFIED_ROOT_INDEX, FINALIZED_ROOT_INDEX},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -130,7 +131,11 @@ impl IbcClient for EthereumLightClient {
         )?;
 
         let wasm_client_state = read_client_state(deps)?;
-        let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+        let ctx = LightClientContext::new(
+            &wasm_client_state.data,
+            trusted_consensus_state,
+            wasm_client_state.data.checkpoint_root_index,
+        );
 
         // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
         // at the current timestamp.
@@ -159,7 +164,11 @@ impl IbcClient for EthereumLightClient {
         let proof_data = header.account_update.account_proof;
 
         verify_account_storage_root(
-            header.consensus_update.attested_header.execution.state_root,
+            header
+                .consensus_update
+                .finalized_header
+                .execution
+                .state_root,
             &wasm_client_state.data.ibc_contract_address,
             &proof_data.proof,
             &proof_data.storage_root,
@@ -174,10 +183,9 @@ impl IbcClient for EthereumLightClient {
         misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
         // There is no point to check for misbehaviour when the headers are not for the same height
-        // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
         let (slot_1, slot_2) = (
-            misbehaviour.update_1.attested_header.beacon.slot,
-            misbehaviour.update_2.attested_header.beacon.slot,
+            misbehaviour.update_1.finalized_header.beacon.slot,
+            misbehaviour.update_2.finalized_header.beacon.slot,
         );
         ensure(
             slot_1 == slot_2,
@@ -197,7 +205,11 @@ impl IbcClient for EthereumLightClient {
         )?;
 
         let wasm_client_state = read_client_state(deps)?;
-        let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+        let ctx = LightClientContext::new(
+            &wasm_client_state.data,
+            trusted_consensus_state,
+            wasm_client_state.data.checkpoint_root_index,
+        );
 
         let current_slot = compute_slot_at_timestamp::<Config>(
             wasm_client_state.data.genesis_time,
@@ -245,7 +257,7 @@ impl IbcClient for EthereumLightClient {
         let store_period =
             compute_sync_committee_period_at_slot::<Config>(consensus_state.data.slot);
         let update_finalized_period = compute_sync_committee_period_at_slot::<Config>(
-            consensus_update.attested_header.beacon.slot,
+            consensus_update.finalized_header.beacon.slot,
         );
 
         if let Some(ref next_sync_committee) = consensus_state.data.next_sync_committee {
@@ -271,22 +283,23 @@ impl IbcClient for EthereumLightClient {
         // smaller. We don't want to save a new state if this is the case.
         let updated_height = core::cmp::max(
             trusted_height.revision_height,
-            consensus_update.attested_header.beacon.slot,
+            consensus_update.finalized_header.beacon.slot,
         );
 
-        if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
-            consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
+        if consensus_update.finalized_header.beacon.slot > consensus_state.data.slot {
+            consensus_state.data.slot = consensus_update.finalized_header.beacon.slot;
 
-            consensus_state.data.state_root = consensus_update.attested_header.execution.state_root;
+            consensus_state.data.state_root =
+                consensus_update.finalized_header.execution.state_root;
             consensus_state.data.storage_root = account_update.account_proof.storage_root;
 
             consensus_state.data.timestamp = compute_timestamp_at_slot::<Config>(
                 client_state.data.genesis_time,
-                consensus_update.attested_header.beacon.slot,
+                consensus_update.finalized_header.beacon.slot,
             );
 
-            if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
-                client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
+            if client_state.data.latest_slot < consensus_update.finalized_header.beacon.slot {
+                client_state.data.latest_slot = consensus_update.finalized_header.beacon.slot;
                 update_client_state(deps.branch(), client_state, updated_height);
             }
         }
@@ -319,7 +332,7 @@ impl IbcClient for EthereumLightClient {
     ) -> Result<bool, Self::Error> {
         let height = Height {
             revision_number: 0,
-            revision_height: header.consensus_update.attested_header.beacon.slot,
+            revision_height: header.consensus_update.finalized_header.beacon.slot,
         };
 
         if let Some(consensus_state) =
@@ -327,7 +340,7 @@ impl IbcClient for EthereumLightClient {
         {
             // New header is given with the same height but the storage roots don't match.
             if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
-                || consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot
+                || consensus_state.data.slot != header.consensus_update.finalized_header.beacon.slot
             {
                 return Ok(true);
             }
@@ -346,12 +359,12 @@ impl IbcClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        if misbehaviour.update_1.attested_header.beacon.slot
-            == misbehaviour.update_2.attested_header.beacon.slot
+        if misbehaviour.update_1.finalized_header.beacon.slot
+            == misbehaviour.update_2.finalized_header.beacon.slot
         {
             // TODO(aeryz): this will be the finalized header when we implement justified
             // This ensures that there are no conflicting justified/finalized headers at the same height
-            if misbehaviour.update_1.attested_header != misbehaviour.update_2.attested_header {
+            if misbehaviour.update_1.finalized_header != misbehaviour.update_2.finalized_header {
                 return Ok(true);
             }
         }
@@ -396,6 +409,7 @@ impl IbcClient for EthereumLightClient {
         );
 
         let scs = substitute_client_state.data;
+        validate_checkpoint_root_index(scs.checkpoint_root_index)?;
         save_subject_client_state(
             deps,
             WasmClientState {
@@ -403,12 +417,11 @@ impl IbcClient for EthereumLightClient {
                     chain_id: scs.chain_id,
                     min_sync_committee_participants: scs.min_sync_committee_participants,
                     fork_parameters: scs.fork_parameters,
-
-                    trust_level: scs.trust_level,
                     trusting_period: scs.trusting_period,
                     latest_slot: scs.latest_slot,
                     ibc_commitment_slot: scs.ibc_commitment_slot,
                     ibc_contract_address: scs.ibc_contract_address,
+                    checkpoint_root_index: scs.checkpoint_root_index,
                     frozen_height: ZERO_HEIGHT,
                     ..subject_client_state.data
                 },
@@ -463,6 +476,13 @@ impl IbcClient for EthereumLightClient {
                 .data
                 .timestamp,
         )
+    }
+}
+
+pub(crate) fn validate_checkpoint_root_index(checkpoint_root_index: u64) -> Result<(), Error> {
+    match checkpoint_root_index {
+        CURRENT_JUSTIFIED_ROOT_INDEX | FINALIZED_ROOT_INDEX => Ok(()),
+        val => Err(Error::UnknownCheckpointIndex(val)),
     }
 }
 
@@ -626,7 +646,7 @@ mod test {
 
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
-        revision_height: 3577152,
+        revision_height: 3577120,
     };
 
     const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
@@ -662,7 +682,7 @@ mod test {
                 if prev_height != 0 {
                     data.trusted_sync_committee.trusted_height.revision_height = prev_height;
                 }
-                prev_height = data.consensus_update.attested_header.beacon.slot;
+                prev_height = data.consensus_update.finalized_header.beacon.slot;
                 updates.push(data);
             }
 
@@ -812,7 +832,7 @@ mod test {
             EthereumLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
             EthereumLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
             // Consensus state is saved to the updated height.
-            if update.consensus_update.attested_header.beacon.slot
+            if update.consensus_update.finalized_header.beacon.slot
                 > update.trusted_sync_committee.trusted_height.revision_height
             {
                 // It's a finality update
@@ -820,7 +840,7 @@ mod test {
                     deps.as_ref(),
                     &Height {
                         revision_number: 0,
-                        revision_height: update.consensus_update.attested_header.beacon.slot,
+                        revision_height: update.consensus_update.finalized_header.beacon.slot,
                     },
                 )
                 .unwrap()
@@ -828,7 +848,7 @@ mod test {
                 // Slot is updated.
                 assert_eq!(
                     wasm_consensus_state.data.slot,
-                    update.consensus_update.attested_header.beacon.slot
+                    update.consensus_update.finalized_header.beacon.slot
                 );
                 // Storage root is updated.
                 assert_eq!(
@@ -840,13 +860,13 @@ mod test {
                 let wasm_client_state: WasmClientState = read_client_state(deps.as_ref()).unwrap();
                 assert_eq!(
                     wasm_client_state.data.latest_slot,
-                    update.consensus_update.attested_header.beacon.slot
+                    update.consensus_update.finalized_header.beacon.slot
                 );
             } else {
                 // It's a sync committee update
                 let updated_height = core::cmp::max(
                     update.trusted_sync_committee.trusted_height.revision_height,
-                    update.consensus_update.attested_header.beacon.slot,
+                    update.consensus_update.finalized_header.beacon.slot,
                 );
                 let wasm_consensus_state: WasmConsensusState = read_consensus_state(
                     deps.as_ref(),

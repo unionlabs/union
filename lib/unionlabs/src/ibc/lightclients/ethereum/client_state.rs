@@ -8,10 +8,7 @@ use crate::{
     hash::{H160, H256},
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
-            tendermint::fraction::{Fraction, TryFromFractionError},
-        },
+        lightclients::ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
     },
     uint::U256,
 };
@@ -22,22 +19,34 @@ use crate::{
     from
 ))]
 pub struct ClientState {
+    /// id of the tracked ethereum chain
     pub chain_id: U256,
+    /// see [Beacon API](https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis)
     pub genesis_validators_root: H256,
+    /// minimum allowed sync committee validator signature
     pub min_sync_committee_participants: u64,
+    /// see [Beacon API](https://ethereum.github.io/beacon-APIs/#/Beacon/getGenesis)
     pub genesis_time: u64,
+    /// defined under [`eth spec`](https://ethereum.github.io/beacon-APIs/#/Config/getSpec)
     pub fork_parameters: ForkParameters,
     pub seconds_per_slot: u64,
+    /// number of slots per epoch
     pub slots_per_epoch: u64,
+    /// number of epochs per sync committee period (signature period)
     pub epochs_per_sync_committee_period: u64,
-    pub trust_level: Fraction,
+    /// if the client is not updated for `trusting_period` seconds, it expires and needs recovery
     pub trusting_period: u64,
+    /// the highest slot that the client is updated to
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
+    /// whether the client is frozen or not
     pub frozen_height: Height,
+    /// the slot in the counterparty ibc contract for the commitments mapping
     pub ibc_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
+    /// merkle tree index of the tracked header
+    pub checkpoint_root_index: u64,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::ClientState {
@@ -51,12 +60,12 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: Some(value.trust_level.into()),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: Some(value.frozen_height.into()),
             ibc_commitment_slot: value.ibc_commitment_slot.to_big_endian().into(),
             ibc_contract_address: value.ibc_contract_address.into(),
+            checkpoint_root_index: value.checkpoint_root_index,
         }
     }
 }
@@ -68,7 +77,6 @@ pub enum TryFromClientStateError {
     ForkParameters(TryFromForkParametersError),
     GenesisValidatorsRoot(InvalidLength),
     IbcCommitmentSlot(InvalidLength),
-    TrustLevel(TryFromFractionError),
     IbcContractAddress(InvalidLength),
 }
 
@@ -92,9 +100,6 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: required!(value.trust_level)?
-                .try_into()
-                .map_err(TryFromClientStateError::TrustLevel)?,
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
@@ -104,6 +109,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
                 .ibc_contract_address
                 .try_into()
                 .map_err(TryFromClientStateError::IbcContractAddress)?,
+            checkpoint_root_index: value.checkpoint_root_index,
         })
     }
 }
