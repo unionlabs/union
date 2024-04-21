@@ -360,6 +360,7 @@
 
               ${lib.getExe self'.packages.devnet-compose}
 
+              # Use bash as the shell to get consistent kill signal handling
               SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
             '';
           };
