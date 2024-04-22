@@ -172,15 +172,15 @@ pub mod consts {
 
     // https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md
     /// `get_generalized_index(BeaconState, "finalized_checkpoint", "root")`
-    pub const FINALIZED_ROOT_INDEX: u64 = 105;
+    pub const FINALIZED_ROOT_GINDEX: u64 = 105;
     /// `get_generalized_index(BeaconState, "current_justified_checkpoint", "root")`
-    pub const CURRENT_JUSTIFIED_ROOT_INDEX: u64 = 103;
+    pub const CURRENT_JUSTIFIED_ROOT_GINDEX: u64 = 103;
     /// `get_generalized_index(BeaconState, "current_sync_committee")`
-    pub const CURRENT_SYNC_COMMITTEE_INDEX: u64 = 54;
+    pub const CURRENT_SYNC_COMMITTEE_GINDEX: u64 = 54;
     /// `get_generalized_index(BeaconState, "next_sync_committee")`
-    pub const NEXT_SYNC_COMMITTEE_INDEX: u64 = 55;
+    pub const NEXT_SYNC_COMMITTEE_GINDEX: u64 = 55;
     /// `get_generalized_index(BeaconBlockBody, "execution_payload")`
-    pub const EXECUTION_PAYLOAD_INDEX: u64 = 25;
+    pub const EXECUTION_PAYLOAD_GINDEX: u64 = 25;
 }
 
 pub mod preset {

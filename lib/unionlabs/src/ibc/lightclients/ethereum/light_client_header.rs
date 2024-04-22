@@ -8,7 +8,7 @@ use typenum::U;
 use crate::{
     errors::{InvalidLength, MissingField},
     ethereum::config::{
-        consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
+        consts::{floorlog2, EXECUTION_PAYLOAD_GINDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES,
     },
     hash::H256,
@@ -28,7 +28,7 @@ use crate::{
 pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
     pub execution: ExecutionPayloadHeader<C>,
-    pub execution_branch: FixedVector<H256, U<{ floorlog2(EXECUTION_PAYLOAD_INDEX) }>>,
+    pub execution_branch: FixedVector<H256, U<{ floorlog2(EXECUTION_PAYLOAD_GINDEX) }>>,
 }
 
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>

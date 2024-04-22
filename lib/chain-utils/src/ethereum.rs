@@ -125,7 +125,9 @@ pub struct Config<S: EthereumSignersConfig = ReadWrite> {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
-    /// The finality level that this chain is to track. Note that for `[Finality::Justified`], the beacon node specified in [`Self::eth_beacon_rpc_api`] MUST be the [unionlabs fork of lodestar](https://github.com/unionlabs/lodestar/tree/v1.13.0-justified-lc), which provides the justified header in place of the finalized header. This fork is also incompatible with [`Finality::Finalized`] for the same reason, and misconfiguring this will cause the light client updates to fail since it will not be able to verify the updates (justified and finalized headers are verified against different roots, see [`Finality::generalized_index`] for more information).
+    /// The finality level that this chain is to track. Note that for `[Finality::Justified`], the beacon node specified in [`Self::eth_beacon_rpc_api`] MUST be the [unionlabs fork of lodestar](https://github.com/unionlabs/lodestar/tree/v1.13.0-justified-lc), which provides the justified header in place of the finalized header. This fork is also incompatible with [`Finality::Finalized`] for the same reason, and misconfiguring this will cause the light client updates to fail since it will not be able to verify the updates (justified and finalized headers are verified against different roots, see [`Finality::generalized_index`] for more specific values).
+    ///
+    /// For more information on ethereum finality levels, see the [consensus specs](https://github.com/ethereum/consensus-specs/blob/5c561722b8969c7fc5d28bd68892d724fe955055/specs/altair/light-client/sync-protocol.md#constants).
     pub finality: Finality,
 }
 
@@ -142,9 +144,9 @@ impl Finality {
     pub const fn generalized_index(self) -> u64 {
         match self {
             Finality::Justified => {
-                unionlabs::ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_INDEX
+                unionlabs::ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_GINDEX
             }
-            Finality::Finalized => unionlabs::ethereum::config::consts::FINALIZED_ROOT_INDEX,
+            Finality::Finalized => unionlabs::ethereum::config::consts::FINALIZED_ROOT_GINDEX,
         }
     }
 }

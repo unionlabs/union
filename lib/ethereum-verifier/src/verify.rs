@@ -9,7 +9,7 @@ use unionlabs::{
     ethereum::{
         config::{
             consts::{
-                floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, NEXT_SYNC_COMMITTEE_INDEX,
+                floorlog2, get_subtree_index, EXECUTION_PAYLOAD_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX,
             },
             ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
         },
@@ -178,8 +178,8 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         validate_merkle_branch(
             &next_sync_committee.tree_hash_root().into(),
             &update.next_sync_committee_branch.unwrap_or_default(),
-            floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
-            get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
+            floorlog2(NEXT_SYNC_COMMITTEE_GINDEX),
+            get_subtree_index(NEXT_SYNC_COMMITTEE_GINDEX),
             &update.attested_header.beacon.state_root,
         )?;
     }
@@ -359,8 +359,8 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     validate_merkle_branch(
         &get_lc_execution_root(fork_parameters, header),
         &header.execution_branch,
-        floorlog2(EXECUTION_PAYLOAD_INDEX),
-        get_subtree_index(EXECUTION_PAYLOAD_INDEX),
+        floorlog2(EXECUTION_PAYLOAD_GINDEX),
+        get_subtree_index(EXECUTION_PAYLOAD_GINDEX),
         &header.beacon.body_root,
     )
 }
@@ -371,7 +371,7 @@ mod tests {
 
     use serde::Deserialize;
     use unionlabs::{
-        ethereum::config::{consts::FINALIZED_ROOT_INDEX, Mainnet, SEPOLIA},
+        ethereum::config::{consts::FINALIZED_ROOT_GINDEX, Mainnet, SEPOLIA},
         ibc::lightclients::ethereum::{proof::Proof, sync_committee::SyncCommittee},
     };
 
@@ -469,7 +469,7 @@ mod tests {
         }
 
         fn tracking_checkpoint_root_index(&self) -> u64 {
-            FINALIZED_ROOT_INDEX
+            FINALIZED_ROOT_GINDEX
         }
     }
 

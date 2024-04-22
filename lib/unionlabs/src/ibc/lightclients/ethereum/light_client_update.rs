@@ -6,7 +6,7 @@ use macros::model;
 use crate::{
     errors::{InvalidLength, MissingField},
     ethereum::config::{
-        consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
+        consts::{floorlog2, FINALIZED_ROOT_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
     },
     hash::H256,
@@ -18,8 +18,8 @@ use crate::{
 };
 
 /// TODO: Move these to a more central location
-pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
-pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
+pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_GINDEX)];
+pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_GINDEX)];
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate),

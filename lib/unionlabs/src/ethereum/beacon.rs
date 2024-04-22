@@ -11,7 +11,7 @@ use crate::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{
         config::{
-            consts::{floorlog2, CURRENT_SYNC_COMMITTEE_INDEX, FINALIZED_ROOT_INDEX},
+            consts::{floorlog2, CURRENT_SYNC_COMMITTEE_GINDEX, FINALIZED_ROOT_GINDEX},
             BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
             MAX_ATTESTER_SLASHINGS, MAX_BLS_TO_EXECUTION_CHANGES, MAX_BYTES_PER_TRANSACTION,
             MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
@@ -242,7 +242,7 @@ pub struct LightClientBootstrap<
     pub current_sync_committee: SyncCommittee<C>,
     // TODO: Update tree_hash to support const generic arrays
     pub current_sync_committee_branch:
-        FixedVector<H256, U<{ floorlog2(CURRENT_SYNC_COMMITTEE_INDEX) }>>,
+        FixedVector<H256, U<{ floorlog2(CURRENT_SYNC_COMMITTEE_GINDEX) }>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -255,7 +255,7 @@ pub struct LightClientFinalityUpdate<
     pub attested_header: LightClientHeader<C>,
     /// Finalized header corresponding to `attested_header.state_root`
     pub finalized_header: LightClientHeader<C>,
-    pub finality_branch: [H256; floorlog2(FINALIZED_ROOT_INDEX)],
+    pub finality_branch: [H256; floorlog2(FINALIZED_ROOT_GINDEX)],
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate<C>,
     /// Slot at which the aggregate signature was created (untrusted)

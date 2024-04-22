@@ -18,7 +18,7 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
-    ethereum::config::consts::{CURRENT_JUSTIFIED_ROOT_INDEX, FINALIZED_ROOT_INDEX},
+    ethereum::config::consts::{CURRENT_JUSTIFIED_ROOT_GINDEX, FINALIZED_ROOT_GINDEX},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -481,7 +481,7 @@ impl IbcClient for EthereumLightClient {
 
 pub(crate) fn validate_checkpoint_root_index(checkpoint_root_index: u64) -> Result<(), Error> {
     match checkpoint_root_index {
-        CURRENT_JUSTIFIED_ROOT_INDEX | FINALIZED_ROOT_INDEX => Ok(()),
+        CURRENT_JUSTIFIED_ROOT_GINDEX | FINALIZED_ROOT_GINDEX => Ok(()),
         val => Err(Error::UnknownCheckpointIndex(val)),
     }
 }
