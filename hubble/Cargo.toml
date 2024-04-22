@@ -1,5 +1,6 @@
 [package]
 edition      = { workspace = true }
+include      = ["../.sqlx"]
 license-file = { workspace = true }
 name         = "hubble"
 publish      = false
@@ -10,7 +11,7 @@ version      = "0.1.0"
 workspace = true
 
 [package.metadata.crane]
-include = [".sqlx"]
+test-include = []
 
 [[bin]]
 name = "hubble"

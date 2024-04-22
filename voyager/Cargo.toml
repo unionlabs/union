@@ -1,5 +1,6 @@
 [package]
 edition      = { workspace = true }
+include      = [".sqlx"]
 license-file = { workspace = true }
 name         = "voyager"
 publish      = false
@@ -8,7 +9,7 @@ resolver     = "2"
 version      = "0.1.0"
 
 [package.metadata.crane]
-include = ["voyager/.sqlx"]
+test-include = []
 
 [lints]
 workspace = true

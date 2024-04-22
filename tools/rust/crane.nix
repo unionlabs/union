@@ -1,12 +1,14 @@
 # cspell:ignore tomls
 { inputs, ... }: {
-  perSystem = { self', pkgs, rust, system, lib, dbg, inputs', mkCi, ... }:
+  perSystem = { self', pkgs, unstablePkgs, rust, system, lib, dbg, inputs', mkCi, ... }:
     let
       inherit (inputs) crane;
 
       inherit (lib) flatten unique;
 
       craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.nightly;
+
+      fs = unstablePkgs.lib.fileset;
 
       mkChecks = pkgName: checks: lib.mapAttrs'
         (
@@ -20,13 +22,28 @@
       # get the crane metadata out of the Cargo.toml
       #
       # [package.metadata.crane]
-      # include      = ["path1", "path2"]
       # test-include = ["path3", "path4"]
       getCraneMetadata = toml:
         assert builtins.isAttrs toml;
         lib.attrsets.attrByPath [ "package" "metadata" "crane" ] { } toml;
 
-      getExtraIncludes = memberCargoTomls: attr: unique (flatten (map (toml: (getCraneMetadata toml).${attr} or [ ]) (builtins.attrValues memberCargoTomls)));
+      getExtraIncludes = memberCargoTomls: unique (flatten (map (toml: (getCraneMetadata toml).test-include or [ ]) (builtins.attrValues memberCargoTomls)));
+      getIncludes = memberCargoTomls: unique (
+        flatten
+          (map
+            (memberName:
+              map
+                (include: "${memberName}/${include}")
+                (memberCargoTomls.${memberName}.package.include or [ ])
+            )
+            (builtins.attrNames memberCargoTomls)
+          )
+      );
+
+      # map a list of paths relative to the root of the repository to absolute paths that can be used with the fileset api.
+      #
+      # [string] -> [path]
+      mkRootPaths = paths: map (path: ../../${path}) paths;
 
       # apparently nix doesn't cache calls to builtins.readFile (which importTOML calls internally), so we cache the cargo tomls here
       # this saves ~2-3 minutes in evaluation time
@@ -34,7 +51,6 @@
         (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml"))
         members
       );
-
 
       # root of the repository
       root = builtins.path { name = "root"; path = ../../.; };
@@ -44,46 +60,24 @@
         assert builtins.isString dir;
         lib.trivial.importTOML ../../${dir}/Cargo.toml;
 
-      # For use in source filtering; ensures that a directory and all of it's contents are included
-      # in the new filtered source.
-      ensureDirectoryIncluded = { path', pathToInclude }:
-        # check if the path to include is prefixed with the path, to catch files in sub-folders
-        # that we have included:
-        # pathToInclude = some/dir
-        #    sourcePath = some/dir/file.ext     true
-        #    sourcePath = some/dir/sub/file.ext true
-        #    sourcePath = some/dir.ext          false
-        lib.hasPrefix (pathToInclude + "/") path'
-        # check if the path is prefixed with the path to include, to ensure that folders aren't
-        # preemptively filtered out:
-        # pathToInclude = some/dir/sub
-        #    sourcePath = some             true
-        #    sourcePath = some/dir         true
-        #    sourcePath = some/dir/sub/dir false
-        || lib.hasPrefix path' pathToInclude;
-
-      # removes the root store path from the given path, facilitating easier source filtering.
-      removeRootStorePath = path:
-        let
-          root' = (toString root) + "/";
-          path' = toString path;
-        in
-        lib.throwIfNot
-          (lib.hasPrefix root' path')
-          "path ${path'} does not have the prefix ${root'}"
-          (lib.removePrefix root' path');
-
+      # first filter down to just the cargo source, and any additional files as specified by srcFilter
       mkCleanSrc =
-        { srcFilter, name }: lib.cleanSourceWith {
-          name = "${name}-source";
-          src = root;
-          filter = path: type:
-            let
-              path' = removeRootStorePath path;
-            in
-            # first filter down to just the cargo source, and any additional files as specified by srcFilter
-            ((craneLib.filterCargoSources path type)
-              || (srcFilter path' type));
+        { workspaceDepsForCrate
+        , extraIncludes
+        , name
+        }: fs.toSource {
+          root = ../../.;
+          fileset = fs.union
+            # unconditionally include...
+            (fs.unions (flatten [ ../../rustfmt.toml ../../clippy.toml ../../Cargo.toml ../../Cargo.lock extraIncludes ]))
+            # ...and include rust source of workspace deps
+            (fs.intersection
+              (fs.unions workspaceDepsForCrate)
+              (fs.fileFilter
+                (file: (file.name == "Cargo.toml") || (builtins.any file.hasExt [ "rs" ]))
+                ../../.
+              )
+            );
         };
 
       workspaceCargoToml = lib.trivial.importTOML (root + "/Cargo.toml");
@@ -145,7 +139,10 @@
             getWorkspaceDeps = dir:
               let
                 go = dir': foundSoFar:
-                  lib.pipe ((crateCargoToml dir').dependencies // (crateCargoToml dir').dev-dependencies or { }) [
+                  let
+                    dirCargoToml = crateCargoToml dir';
+                  in
+                  lib.pipe (dirCargoToml.dependencies // dirCargoToml.dev-dependencies or { } // dirCargoToml.build-dependencies or { }) [
                     (lib.filterAttrs
                       (dependency: value:
                         # ...and dep is a workspace dependency...
@@ -176,60 +173,17 @@
 
             workspaceDepsForCrateCargoTomls = readMemberCargoTomls workspaceDepsForCrate;
 
-            extraIncludePathsForCrate = getExtraIncludes workspaceDepsForCrateCargoTomls "include";
-            extraTestIncludePathsForCrate = getExtraIncludes workspaceDepsForCrateCargoTomls "test-include";
+            includePathsForCrate = getIncludes workspaceDepsForCrateCargoTomls;
+            extraTestIncludePathsForCrate = getExtraIncludes workspaceDepsForCrateCargoTomls;
 
-            crateSrc =
-              let
-                isIncluded = path': builtins.elem path'
-                  (
-                    unique
-                      (flatten
-                        (map
-                          (dep: map
-                            (includedPath: "${dep}/${includedPath}")
-                            (lib.attrsets.attrByPath
-                              [ "package" "include" ]
-                              [ ]
-                              (workspaceDepsForCrateCargoTomls.${dep})
-                            )
-                          )
-                          workspaceDepsForCrate)
-                      )
-                  );
-                additionalSrcFilter = path': (builtins.any (include: lib.hasPrefix include path') extraIncludePathsForCrate);
-                additionalTestSrcFilter = path': (builtins.any (include: lib.hasPrefix include path') extraTestIncludePathsForCrate);
-              in
-              mkCleanSrc {
-                name = cratePname;
-                srcFilter = path': type: ((additionalSrcFilter path')
-                  # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
-                  || (additionalTestSrcFilter path')
-                  || (isIncluded path')
-                )
-                && (
-                  path' == "Cargo.toml"
-                    || path' == "Cargo.lock"
-                    || (
-                    builtins.any
-                      (depPath: ensureDirectoryIncluded {
-                        inherit path';
-                        pathToInclude = depPath;
-                      })
-                      workspaceDepsForCrate
-                  )
-                    # Yes, this does need to be filtered twice - once in the original filter so it's included
-                    # in the cargo sources, and once again so it's included when filtering down to workspace
-                    # dependencies
-                    || (additionalSrcFilter path')
-                    # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
-                    || (additionalTestSrcFilter path')
-                    || (isIncluded path')
-                );
-              };
+            crateSrc = mkCleanSrc {
+              name = cratePname;
+              workspaceDepsForCrate = mkRootPaths workspaceDepsForCrate;
+              extraIncludes = dbg (mkRootPaths (includePathsForCrate ++ extraTestIncludePathsForCrate));
+            };
 
             # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate.
-            patchedWorkspaceToml =
+            crateRepoSource =
               let
                 patchedCargoToml = (pkgs.formats.toml { }).generate
                   "Cargo.toml"
@@ -238,7 +192,6 @@
                   });
               in
               # REVIEW: This can maybe be a runCommand?
-                # I'm not touching it though
               pkgs.stdenv.mkDerivation {
                 name = "${cratePname}-patched-workspace-cargo-toml";
                 src = crateSrc;
@@ -262,9 +215,9 @@
             crateAttrs = extraEnv // {
               inherit (crateInfo) pname version;
 
-              src = patchedWorkspaceToml;
+              src = crateRepoSource;
 
-              dummySrc = craneLib.mkDummySrc patchedWorkspaceToml;
+              dummySrc = craneLib.mkDummySrc crateRepoSource;
 
               # defaults to "--all-targets" otherwise, which breaks some stuff
               cargoCheckExtraArgs = "";
@@ -349,36 +302,21 @@
 
       cargoWorkspaceSrc =
         let
-          allIncludes = unique
-            (flatten
-              (map
-                (dep: map
-                  (includedPath: "${dep}/${includedPath}")
-                  (lib.attrsets.attrByPath
-                    [ "package" "include" ]
-                    [ ]
-                    (allCargoTomls.${dep})
-                  )
-                )
-                workspaceCargoToml.workspace.members)
-            );
-
-          allCraneIncludes =
-            dbg (unique ((getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "include") ++
-              (getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "test-include")));
+          includePaths = getIncludes allCargoTomls;
+          extraTestIncludePaths = getExtraIncludes allCargoTomls;
         in
+
         mkCleanSrc {
           name = "cargo-workspace-src";
-          srcFilter =
-            with { inherit (lib) hasPrefix; };
-            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (allCraneIncludes ++ allIncludes));
+          workspaceDepsForCrate = mkRootPaths workspaceCargoToml.workspace.members;
+          extraIncludes = mkRootPaths (includePaths ++ extraTestIncludePaths);
         };
     in
     {
       _module.args = {
         crane = {
           lib = craneLib;
-          inherit buildWorkspaceMember ensureDirectoryIncluded;
+          inherit buildWorkspaceMember;
         } //
         (import ./buildWasmContract.nix {
           inherit buildWorkspaceMember crateCargoToml pkgs lib rust craneLib dbg;
