@@ -1,9 +1,10 @@
-use std::cmp::Ordering;
-
+use error::Error;
 use substrate_bn::{
-    arith::{self, U256, U512},
+    arith::{self},
     AffineG1, AffineG2, Fq, Fq2, G1, G2,
 };
+
+mod error;
 
 /// A verification key in the Groth16 SNARK.
 pub struct VerifyingKey {
@@ -19,7 +20,6 @@ pub struct VerifyingKey {
     pub gamma_abc_g1: Vec<AffineG1>,
 }
 
-// TODO(aeryz): enum?
 const MASK: u8 = 0b11 << 6;
 const UNCOMPRESSED: u8 = 0b00 << 6;
 const COMPRESSED_INFINITY: u8 = 0b01 << 6;
@@ -32,32 +32,17 @@ const G1_AFFINE_UNCOMPRESSED_SIZE: usize = G1_AFFINE_COMPRESSED_SIZE * 2;
 const G2_AFFINE_COMPRESSED_SIZE: usize = 32 * 2;
 const G2_AFFINE_UNCOMPRESSED_SIZE: usize = G2_AFFINE_COMPRESSED_SIZE * 2;
 
-pub fn decode_g1_affine(data: &[u8]) -> AffineG1 {
-    if data.len() < 32 {
-        panic!("cannot parse");
-    }
-
-    // if data[0] & MASK != UNCOMPRESSED {
-    //     let g1 = AffineG1::new(Fq::zero(), Fq::zero()).unwrap();
-    //     Fq::from_slice()
-    // } else {
-    //     todo!()
-    // }
-    todo!()
-}
-
-pub fn parse_affine_g1_array(buf: &[u8]) -> (usize, Vec<AffineG1>) {
-    let size = u32::from_be_bytes((&buf[0..4]).try_into().unwrap());
+pub fn parse_affine_g1_array(buf: &[u8]) -> Result<(usize, Vec<AffineG1>), Error> {
+    let size = u32::from_be_bytes((&buf[0..4]).try_into().expect("impossible"));
     let mut g1s = Vec::new();
     let mut n_read = 4;
     for _ in 0..size {
-        println!("parsing");
-        let (cur_read, g1) = affine_g1_set_bytes(&buf[n_read..]);
+        let (cur_read, g1) = parse_affine_g1(&buf[n_read..])?;
         n_read += cur_read;
         g1s.push(g1);
     }
 
-    (n_read, g1s)
+    Ok((n_read, g1s))
 }
 
 fn is_zeroed(first_byte: u8, rest: &[u8]) -> bool {
@@ -66,8 +51,8 @@ fn is_zeroed(first_byte: u8, rest: &[u8]) -> bool {
 
 /// LexicographicallyLargest returns true if this element is strictly lexicographically
 /// larger than its negation, false otherwise
-/// See [the reference implementation]()
-fn lexicographically_largest(z: &Fq) -> bool {
+/// See [in gnark](https://github.com/Consensys/gnark-crypto/blob/v0.12.1/ecc/bn254/fp/element.go#L290)
+fn g1_lexicographically_largest(z: &Fq) -> bool {
     // z > (q-1) / 2
     z.into_u256()
         > arith::U256::from([
@@ -78,45 +63,64 @@ fn lexicographically_largest(z: &Fq) -> bool {
         ])
 }
 
-pub fn affine_g1_set_bytes(buf: &[u8]) -> (usize, AffineG1) {
+// LexicographicallyLargest returns true if this element is strictly lexicographically
+// larger than its negation, false otherwise
+/// See [in gnark](https://github.com/Consensys/gnark-crypto/blob/v0.12.1/ecc/bn254/internal/fptower/e2.go#L57)
+fn g2_lexicographically_largest(z: &Fq2) -> bool {
+    if z.real().is_zero() {
+        g1_lexicographically_largest(&z.real())
+    } else {
+        g1_lexicographically_largest(&z.imaginary())
+    }
+}
+
+/// Parse G1 element
+///
+/// [See in gnark](https://github.com/Consensys/gnark-crypto/blob/v0.12.1/ecc/bn254/marshal.go#L807)
+pub fn parse_affine_g1(buf: &[u8]) -> Result<(usize, AffineG1), Error> {
     if buf.len() < G1_AFFINE_COMPRESSED_SIZE {
-        panic!("");
+        return Err(Error::ShortBuffer);
     }
 
     let metadata = buf[0] & MASK;
 
     if metadata == UNCOMPRESSED {
         if buf.len() < G1_AFFINE_UNCOMPRESSED_SIZE {
-            panic!("short");
+            return Err(Error::ShortBuffer);
         }
     }
 
     if metadata == COMPRESSED_INFINITY {
         if !is_zeroed(buf[0], &buf[1..32]) {
-            panic!("no sir no");
+            return Err(Error::InvalidInfinityEncoding);
         }
 
-        return (32, AffineG1::new(Fq::zero(), Fq::zero()).unwrap());
+        return Ok((
+            G1_AFFINE_COMPRESSED_SIZE,
+            AffineG1::new(Fq::zero(), Fq::zero())?,
+        ));
     }
 
     if metadata == UNCOMPRESSED {
-        let x = Fq::from_slice(&buf[..32]).unwrap();
-        let y = Fq::from_slice(&buf[32..64]).unwrap();
+        let x = Fq::from_slice(&buf[..32])?;
+        let y = Fq::from_slice(&buf[32..64])?;
 
-        return (64, AffineG1::new(x, y).unwrap());
+        return Ok((G1_AFFINE_UNCOMPRESSED_SIZE, AffineG1::new(x, y)?));
     }
 
     let mut buf_x: [u8; 32] = [0; 32];
     buf_x.copy_from_slice(&buf[..32]);
     buf_x[0] &= !MASK;
 
-    let x = Fq::from_slice(&buf_x[..32]).unwrap();
+    let x = Fq::from_slice(&buf_x[..32])?;
 
-    let mut y = x * x * x + G1::b();
+    let y = x * x * x + G1::b();
 
-    y = y.sqrt().unwrap();
+    let Some(mut y) = y.sqrt() else {
+        return Err(Error::NoSquareRoot);
+    };
 
-    if lexicographically_largest(&y) {
+    if g1_lexicographically_largest(&y) {
         if metadata == COMPRESSED_SMALLEST {
             y = -y;
         }
@@ -126,105 +130,81 @@ pub fn affine_g1_set_bytes(buf: &[u8]) -> (usize, AffineG1) {
         }
     }
 
-    let g1 = AffineG1::new(x, y).unwrap();
+    let g1 = AffineG1::new(x, y)?;
 
-    (32, g1)
+    Ok((G1_AFFINE_COMPRESSED_SIZE, g1))
 }
 
-pub fn affine_g2_set_bytes(buf: &[u8]) -> (usize, AffineG2) {
+/// Parse G2 element
+///
+/// [See in gnark](https://github.com/Consensys/gnark-crypto/blob/v0.12.1/ecc/bn254/marshal.go#L1063)
+pub fn parse_affine_g2(buf: &[u8]) -> Result<(usize, AffineG2), Error> {
     if buf.len() < G2_AFFINE_COMPRESSED_SIZE {
-        panic!("");
+        return Err(Error::ShortBuffer);
     }
 
     let metadata = buf[0] & MASK;
 
     if metadata == UNCOMPRESSED {
         if buf.len() < G2_AFFINE_UNCOMPRESSED_SIZE {
-            panic!("short");
+            return Err(Error::ShortBuffer);
         }
     }
 
     if metadata == COMPRESSED_INFINITY {
-        println!("here2");
-        // TODO(aeryz): compressed infinity
+        if !is_zeroed(buf[0] & !MASK, &buf[1..G2_AFFINE_COMPRESSED_SIZE]) {
+            return Err(Error::InvalidInfinityEncoding);
+        }
+        return Ok((
+            G2_AFFINE_COMPRESSED_SIZE,
+            AffineG2::new(Fq2::zero(), Fq2::zero())?,
+        ));
     }
 
     if metadata == UNCOMPRESSED {
-        let x_1 = Fq::from_slice(&buf[..32]).unwrap();
-        let x_0 = Fq::from_slice(&buf[32..64]).unwrap();
+        let x_1 = Fq::from_slice(&buf[..32])?;
+        let x_0 = Fq::from_slice(&buf[32..64])?;
 
-        let y_1 = Fq::from_slice(&buf[64..96]).unwrap();
-        let y_0 = Fq::from_slice(&buf[96..128]).unwrap();
+        let y_1 = Fq::from_slice(&buf[64..96])?;
+        let y_0 = Fq::from_slice(&buf[96..128])?;
 
-        return (
-            128,
-            AffineG2::new(Fq2::new(x_0, x_1), Fq2::new(y_0, y_1)).unwrap(),
-        );
+        return Ok((
+            G2_AFFINE_UNCOMPRESSED_SIZE,
+            AffineG2::new(Fq2::new(x_0, x_1), Fq2::new(y_0, y_1))?,
+        ));
     }
-
-    // let mut buf_x: [u8; 65] = [0; 65];
-    // buf_x[2..65].copy_from_slice(&buf[1..64]);
-    // buf_x[1] = buf[0] & !MASK;
-
-    // buf_x[0] = if metadata == COMPRESSED_LARGEST {
-    //     11
-    // } else if metadata == COMPRESSED_SMALLEST {
-    //     10
-    // } else {
-    //     panic!("invalid encoding");
-    // };
-
-    // let g2 = G2::from_compressed(&buf_x[..]).unwrap();
-
-    // (64, AffineG2::from_jacobian(g2).unwrap())
 
     let mut buf_x: [u8; 32] = [0; 32];
     buf_x.copy_from_slice(&buf[..32]);
 
     buf_x[0] &= !MASK;
-    let x_1 = Fq::from_slice(&buf_x[..32]).unwrap();
-    let x_0 = Fq::from_slice(&buf[32..64]).unwrap();
+    let x_1 = Fq::from_slice(&buf_x[..32])?;
+    let x_0 = Fq::from_slice(&buf[32..64])?;
 
     let x = Fq2::new(x_0, x_1);
 
     let y_squared = (x * x * x) + G2::b();
 
-    if let Some(mut y) = y_squared.sqrt() {
-        let c0: U256 = (y.real()).into_u256();
-        let c1: U256 = (y.imaginary()).into_u256();
-        let lhs = U512::new(&c1, &c0, &Fq::modulus());
+    let Some(mut y) = y_squared.sqrt() else {
+        return Err(Error::NoSquareRoot);
+    };
 
-        let y_neg = -y;
-
-        let c0: U256 = (y_neg.real()).into_u256();
-        let c1: U256 = (y_neg.imaginary()).into_u256();
-        let rhs = U512::new(&c1, &c0, &Fq::modulus());
-
-        let y_gt = lhs > rhs;
-
-        if metadata == COMPRESSED_LARGEST {
-            if !y_gt {
-                y = y_neg;
-            }
-        } else if metadata == COMPRESSED_SMALLEST {
-            if y_gt {
-                y = y_neg;
-            }
-        } else {
-            panic!("invalid encoding");
+    if g2_lexicographically_largest(&y) {
+        if metadata == COMPRESSED_SMALLEST {
+            y = -y;
         }
-
-        // TODO(aeryz): smallest largest
-        return (64, AffineG2::new(x, y).unwrap());
     } else {
-        panic!("no square")
+        if metadata == COMPRESSED_LARGEST {
+            y = -y;
+        }
     }
+
+    Ok((G2_AFFINE_COMPRESSED_SIZE, AffineG2::new(x, y)?))
 }
 
 #[cfg(test)]
 mod tests {
     use ark_ff::BigInt;
-    use substrate_bn::G1;
 
     use super::*;
 
@@ -343,20 +323,20 @@ mod tests {
 
         let file = include_bytes!("/home/aeryz/dev/union/union/vk.bin");
         let mut cursor = 0;
-        let (n_bytes, g1_alpha) = affine_g1_set_bytes(&file[..]);
+        let (n_bytes, g1_alpha) = parse_affine_g1(&file[..]).unwrap();
         assert_eq!(verifying_key.alpha_g1, g1_alpha);
         cursor += n_bytes;
-        let (n_bytes, _g1_beta) = affine_g1_set_bytes(&file[cursor..]);
+        let (n_bytes, _g1_beta) = parse_affine_g1(&file[cursor..]).unwrap();
         cursor += n_bytes;
-        let (n_bytes, g2_beta) = affine_g2_set_bytes(&file[cursor..]);
+        let (n_bytes, g2_beta) = parse_affine_g2(&file[cursor..]).unwrap();
         cursor += n_bytes;
-        let (n_bytes, g2_gamma) = affine_g2_set_bytes(&file[cursor..]);
+        let (n_bytes, g2_gamma) = parse_affine_g2(&file[cursor..]).unwrap();
         cursor += n_bytes;
-        let (n_bytes, _g1_delta) = affine_g1_set_bytes(&file[cursor..]);
+        let (n_bytes, _g1_delta) = parse_affine_g1(&file[cursor..]).unwrap();
         cursor += n_bytes;
-        let (n_bytes, g2_delta) = affine_g2_set_bytes(&file[cursor..]);
+        let (n_bytes, g2_delta) = parse_affine_g2(&file[cursor..]).unwrap();
         cursor += n_bytes;
-        let (_, g1_gamma_abc) = parse_affine_g1_array(&file[cursor..]);
+        let (_, g1_gamma_abc) = parse_affine_g1_array(&file[cursor..]).unwrap();
 
         assert_eq!(verifying_key.alpha_g1, g1_alpha);
         assert_eq!(verifying_key.beta_g2.x(), g2_beta.x());

@@ -11,6 +11,7 @@ base64 =  { workspace = true, features = ["alloc"] }
 hex = { workspace = true, features = ["alloc"]}
 ark-ff       = { version = "0.4.2", default-features = false }
 arith = "0.2.3"
+thiserror = {workspace = true, default-features = false}
 
 [lints]
 workspace = true
