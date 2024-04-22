@@ -22,3 +22,7 @@ unionlabs    = { workspace = true }
 [features]
 default = []
 std     = []
+
+[build-dependencies]
+gnark-key-parser = { workspace = true }
+hex-literal  = { workspace = true }

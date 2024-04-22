@@ -32,6 +32,33 @@ const G1_AFFINE_UNCOMPRESSED_SIZE: usize = G1_AFFINE_COMPRESSED_SIZE * 2;
 const G2_AFFINE_COMPRESSED_SIZE: usize = 32 * 2;
 const G2_AFFINE_UNCOMPRESSED_SIZE: usize = G2_AFFINE_COMPRESSED_SIZE * 2;
 
+impl VerifyingKey {
+    pub fn parse(buf: &[u8]) -> Result<Self, Error> {
+        let mut cursor = 0;
+        let (n_bytes, alpha_g1) = parse_affine_g1(&buf[..]).unwrap();
+        cursor += n_bytes;
+        let (n_bytes, _g1_beta) = parse_affine_g1(&buf[cursor..]).unwrap();
+        cursor += n_bytes;
+        let (n_bytes, beta_g2) = parse_affine_g2(&buf[cursor..]).unwrap();
+        cursor += n_bytes;
+        let (n_bytes, gamma_g2) = parse_affine_g2(&buf[cursor..]).unwrap();
+        cursor += n_bytes;
+        let (n_bytes, _g1_delta) = parse_affine_g1(&buf[cursor..]).unwrap();
+        cursor += n_bytes;
+        let (n_bytes, delta_g2) = parse_affine_g2(&buf[cursor..]).unwrap();
+        cursor += n_bytes;
+        let (_, gamma_abc_g1) = parse_affine_g1_array(&buf[cursor..]).unwrap();
+
+        Ok(Self {
+            alpha_g1,
+            beta_g2,
+            gamma_g2,
+            delta_g2,
+            gamma_abc_g1,
+        })
+    }
+}
+
 pub fn parse_affine_g1_array(buf: &[u8]) -> Result<(usize, Vec<AffineG1>), Error> {
     let size = u32::from_be_bytes((&buf[0..4]).try_into().expect("impossible"));
     let mut g1s = Vec::new();
@@ -317,36 +344,20 @@ mod tests {
     }
     #[test]
     fn it_works() {
-        // let b64str = b"hwk883gUlTKCyXYA6XWZa8H9/xKIYZaJ0xEs0M5hQOMxiGpxocuX/8maSDmeCk3bhwk883gUlTKCyXYA6XWZa8H9/xKIYZaJ0xEs0M5hQOMxiGpxocuX/8maSDmeCk3bo5ViaDBdO7ZBxAhLSe5k/5TFQyF5Lv7KN2tLKnwgoWMqB16OL8WdbePIwTCuPtJNAFKoTZylLDbSf02kckMcZQDPF9iGh+JC99Pio74vDpwTEjUx5tQ99gNQwxULtztsqDRsPnEvKvLmsxHt8LQVBkEBm2PBJFY+OXf1MNW021viDBpR10mX4WQ6zrsGL5L0GY4cwf4tlbh+Obit+LnN/SQTnREf8fPpdKZ1sa/ui3pGi8lMT6io4D7Ujlwx2RdChwk883gUlTKCyXYA6XWZa8H9/xKIYZaJ0xEs0M5hQOMxiGpxocuX/8maSDmeCk3bkBF+isfMf77HCEGsZANw0hSrO2FGg14Sl26xLAIohdaW8O7gEaag8JdVAZ3OVLd5Df1NkZBEr753Xb8WwaXsJjE7qxwINL1KdqA4+EiYW4edb7+a9bbBeOPtb67ZxmFqAAAAAoMkzUv+KG8WoXszZI5NNMrbMLBDYP/xHunVgSWcix/kBrGlNozv1uFr0cmYZiij3YqToYs+EZa3dl2ILHx7H1n+b+Bjky/td2QduHVtf5t/Z9sKCfr+vOn12zVvOVz/6wAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        // vk.bin
+        let file = hex::decode("8967072901cc7ab63357f1ddc4196c7c1feda50540d8026d7f6f0167c118a899d923def15f75234f2a6d53b566a2528441e98050b38803673e9179b834fc39a499355fd270b7601d5d88408b7e9e53d260512e2180cd260017dc941f2fc96d65153f0344c6bf2d8a891b979bc61d39a98fb11155fcd57418f30ea018ea842874a0e76be91a3148e2f8ef644222b3ce5b939a73bd2e0a40814f7f92a79c483acf2216bbe0c289e07936b4d9653b91521a24c570c808fa46dfd12ec4429e71b61999fcfb245459d63a4923b8f8c488d1e6af7ca358867b88eb0cdefe896c221f09e95e4c18d1e0475de4549b2547611d8301e1afff1047a6f5a288c9314af0b9fc05d403c8c91820a385a72c18d6a4962cef41a3ab93daa7ed289b1e95db4d04eb00000003e71843e52743864f4bb67ce94a2ce8fe82c8f61042c4c1ced8531d94305392818b0dbe71f4d60e02e9160ec2b015cae3a09cbe4f437226e2c02e1a5e5d124bcac29e93d5f47c0c7671350398ed8c40f5bc5c2f5b00363c7e2eb18a91a1c490c70000000100000000a57df6f8132cb0037f7dfdf1a29b04c1ff92ba082eda513996ba2bfa9fbd198713f0d8d8879885ca567ef99298c30c397e6fba584658f4127713a814c06de55aefbfe141a7555cf7e3e86b092660b81cfb68a025ad817e45cec0b0f2e2ca636802a104df1c015f2307fa2859627098cdf9fdb521d61d323943343a12304e5baf").unwrap();
 
         let verifying_key = universal_vk();
 
-        let file = include_bytes!("/home/aeryz/dev/union/union/vk.bin");
-        let mut cursor = 0;
-        let (n_bytes, g1_alpha) = parse_affine_g1(&file[..]).unwrap();
-        assert_eq!(verifying_key.alpha_g1, g1_alpha);
-        cursor += n_bytes;
-        let (n_bytes, _g1_beta) = parse_affine_g1(&file[cursor..]).unwrap();
-        cursor += n_bytes;
-        let (n_bytes, g2_beta) = parse_affine_g2(&file[cursor..]).unwrap();
-        cursor += n_bytes;
-        let (n_bytes, g2_gamma) = parse_affine_g2(&file[cursor..]).unwrap();
-        cursor += n_bytes;
-        let (n_bytes, _g1_delta) = parse_affine_g1(&file[cursor..]).unwrap();
-        cursor += n_bytes;
-        let (n_bytes, g2_delta) = parse_affine_g2(&file[cursor..]).unwrap();
-        cursor += n_bytes;
-        let (_, g1_gamma_abc) = parse_affine_g1_array(&file[cursor..]).unwrap();
+        let parsed_key = VerifyingKey::parse(&file[..]).unwrap();
 
-        assert_eq!(verifying_key.alpha_g1, g1_alpha);
-        assert_eq!(verifying_key.beta_g2.x(), g2_beta.x());
-        assert_eq!(verifying_key.beta_g2.y(), g2_beta.y());
-        assert_eq!(verifying_key.gamma_g2.x(), g2_gamma.x());
-        assert_eq!(verifying_key.gamma_g2.y(), g2_gamma.y());
-        assert_eq!(verifying_key.delta_g2.x(), g2_delta.x());
-        assert_eq!(verifying_key.delta_g2.y(), g2_delta.y());
-        assert_eq!(verifying_key.gamma_abc_g1[0], g1_gamma_abc[0]);
-        assert_eq!(verifying_key.gamma_abc_g1[1], g1_gamma_abc[1]);
-        assert_eq!(verifying_key.gamma_abc_g1[2], g1_gamma_abc[2]);
+        assert_eq!(verifying_key.alpha_g1, parsed_key.alpha_g1);
+        assert_eq!(verifying_key.beta_g2.x(), parsed_key.beta_g2.x());
+        assert_eq!(verifying_key.beta_g2.y(), parsed_key.beta_g2.y());
+        assert_eq!(verifying_key.gamma_g2.x(), parsed_key.gamma_g2.x());
+        assert_eq!(verifying_key.gamma_g2.y(), parsed_key.gamma_g2.y());
+        assert_eq!(verifying_key.delta_g2.x(), parsed_key.delta_g2.x());
+        assert_eq!(verifying_key.delta_g2.y(), parsed_key.delta_g2.y());
+        assert_eq!(verifying_key.gamma_abc_g1, parsed_key.gamma_abc_g1);
     }
 }
