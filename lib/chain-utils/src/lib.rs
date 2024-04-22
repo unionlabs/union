@@ -179,6 +179,7 @@ pub enum ChainConfigType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+// TODO: Deduplicate this between here and ethereum.rs, use an internally tagged enum for preset_base
 pub struct EthereumChainConfig {
     pub preset_base: PresetBaseKind,
 
@@ -193,6 +194,7 @@ pub struct EthereumChainConfig {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
+    pub finality: ethereum::Finality,
 }
 
 pub enum AnyChain {
@@ -228,6 +230,7 @@ impl AnyChain {
                     signers: ethereum.signers,
                     eth_rpc_api: ethereum.eth_rpc_api,
                     eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
+                    finality: ethereum.finality,
                 };
                 match ethereum.preset_base {
                     PresetBaseKind::Minimal => {

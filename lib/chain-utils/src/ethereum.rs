@@ -52,12 +52,6 @@ use unionlabs::{
 
 use crate::{private_key::PrivateKey, Pool};
 
-#[cfg(feature = "eth-justified")]
-pub const CHECKPOINT_ROOT_INDEX: u64 =
-    unionlabs::ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_INDEX;
-#[cfg(not(feature = "eth-justified"))]
-pub const CHECKPOINT_ROOT_INDEX: u64 = unionlabs::ethereum::config::consts::FINALIZED_ROOT_INDEX;
-
 pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
@@ -113,6 +107,7 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
     pub ibc_handlers: S::Out,
     pub provider: Arc<Provider<Ws>>,
     pub beacon_api_client: BeaconApiClient<C>,
+    pub finality: Finality,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -130,6 +125,28 @@ pub struct Config<S: EthereumSignersConfig = ReadWrite> {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
+    /// The finality level that this chain is to track. Note that for `[Finality::Justified`], the beacon node specified in [`Self::eth_beacon_rpc_api`] MUST be the [unionlabs fork of lodestar](https://github.com/unionlabs/lodestar/tree/v1.13.0-justified-lc), which provides the justified header in place of the finalized header. This fork is also incompatible with [`Finality::Finalized`] for the same reason, and misconfiguring this will cause the light client updates to fail since it will not be able to verify the updates (justified and finalized headers are verified against different roots, see [`Finality::generalized_index`] for more information).
+    pub finality: Finality,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Finality {
+    Justified,
+    Finalized,
+}
+
+impl Finality {
+    #[inline]
+    #[must_use]
+    pub const fn generalized_index(self) -> u64 {
+        match self {
+            Finality::Justified => {
+                unionlabs::ethereum::config::consts::CURRENT_JUSTIFIED_ROOT_INDEX
+            }
+            Finality::Finalized => unionlabs::ethereum::config::consts::FINALIZED_ROOT_INDEX,
+        }
+    }
 }
 
 // lol
@@ -391,8 +408,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             },
             ibc_commitment_slot: U256::from(0),
             ibc_contract_address: self.ibc_handler_address,
-            // TODO(aeryz): fetch this
-            checkpoint_root_index: CHECKPOINT_ROOT_INDEX,
+            checkpoint_root_index: self.finality.generalized_index(),
         }
     }
 
@@ -506,6 +522,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
             ibc_handler_address: config.ibc_handler_address,
             provider: Arc::new(provider),
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
+            finality: config.finality,
         })
     }
 }
@@ -513,11 +530,9 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
 impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
     pub fn make_height(&self, height: impl Into<u64>) -> Height {
         // REVIEW: Consider using the fork revision?
-        {
-            Height {
-                revision_number: ETHEREUM_REVISION_NUMBER,
-                revision_height: height.into(),
-            }
+        Height {
+            revision_number: ETHEREUM_REVISION_NUMBER,
+            revision_height: height.into(),
         }
     }
 }

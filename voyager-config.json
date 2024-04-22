@@ -19,7 +19,8 @@
         "preset_base": "mainnet",
         "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
         "eth_rpc_api": "wss://rpc.ankr.com/eth_sepolia/ws/864e6497c4508f901b2dbaec5ae848868e2163370ec1776d3262960137dc38eb",
-        "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
+        "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io",
+        "finality": "finalized"
       },
       "scroll_api": "https://sepolia-api-re.scroll.io/",
       "union_grpc_url": "http://localhost:9090"
@@ -47,7 +48,8 @@
         }
       ],
       "eth_rpc_api": "ws://localhost:8546",
-      "eth_beacon_rpc_api": "http://localhost:9596"
+      "eth_beacon_rpc_api": "http://localhost:9596",
+      "finality": "finalized"
     },
     "union-devnet": {
       "chain_type": "union",
