@@ -3,6 +3,7 @@ exclude = [
   '^tcp://',
   '.woff2$',
   '^https://grpc',
+  '^udhc.finance',
   '^https://x.com',
   '^https://discord.',
   '^https://twitter.com',
