@@ -20,11 +20,6 @@ abstract contract IBCStore {
     mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
     mapping(string => mapping(string => IbcCoreChannelV1Channel.Data)) public
         channels;
-    mapping(string => mapping(string => uint64)) public nextSequenceSends;
-    mapping(string => mapping(string => uint64)) public nextSequenceRecvs;
-    mapping(string => mapping(string => uint64)) public nextSequenceAcks;
-    mapping(string => mapping(string => mapping(uint64 => uint8))) public
-        packetReceipts;
     mapping(string => address) public capabilities;
 
     // Sequences for identifier

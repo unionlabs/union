@@ -44,7 +44,7 @@
         rev = "v0.2.1";
         hash = "sha256-tQ6J5X/kpsGqHfapkDkaS2apbjL+I63vgQEk1vQI/c0=";
       };
-      linkedLibs = pkgs.linkFarm "evm-libraries" [
+      libraries = pkgs.linkFarm "evm-libraries" [
         {
           name = "solidity-stringutils";
           path = "${solidity-stringutils}/src";
@@ -74,10 +74,36 @@
           path = "${openzeppelin-foundry-upgrades}/src";
         }
       ];
-      evmSources = pkgs.stdenv.mkDerivation {
-        name = "project";
+      evmLibs = pkgs.stdenv.mkDerivation {
+        name = "evm-libs-src";
         phases = [ "installPhase" "fixupPhase" ];
-        src = "${linkedLibs}";
+        src = libraries;
+        installPhase = ''
+          mkdir -p $out
+          cp -rL $src/* $out
+        '';
+        fixupPhase = ''
+          substituteInPlace $out/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
+            --replace 'openzeppelin/contracts' 'openzeppelin'
+
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
+            --replace 'openzeppelin/contracts' 'openzeppelin'
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
+            --replace 'solidity-stringutils/src' 'solidity-stringutils'
+
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
+            --replace 'solidity-stringutils/src' 'solidity-stringutils'
+
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
+            --replace 'openzeppelin/contracts' 'openzeppelin'
+          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
+            --replace 'solidity-stringutils/src' 'solidity-stringutils'
+        '';
+      };
+      evmSources = pkgs.stdenv.mkDerivation {
+        name = "evm-union-src";
+        phases = [ "installPhase" "fixupPhase" ];
+        src = evmLibs;
         installPhase = ''
           mkdir -p $out/libs
           cp -rL $src/* $out/libs
@@ -89,23 +115,6 @@
               "tests"
             ];
           }}/* $out/
-        '';
-        fixupPhase = ''
-          substituteInPlace $out/libs/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-
-          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/libs/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
         '';
       };
       # Foundry FS permissions must be explicitly set in the config file
@@ -301,7 +310,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report
+            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
           '';
         };
 

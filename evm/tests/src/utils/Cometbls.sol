@@ -76,9 +76,9 @@ library Cometbls {
         return CometblsClientState.Data({
             chain_id: chainId,
             // TODO: all this could be fuzzed
-            trusting_period: TRUSTING_PERIOD,
+            trusting_period: TRUSTING_PERIOD * 1e9,
             unbonding_period: 300,
-            max_clock_drift: MAX_CLOCK_DRIFT,
+            max_clock_drift: MAX_CLOCK_DRIFT * 1e9,
             frozen_height: ClientHeight.Data({
                 revision_number: 0,
                 revision_height: 0

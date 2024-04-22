@@ -283,6 +283,7 @@ impl Chain for Scroll {
         scroll::consensus_state::ConsensusState {
             batch_index,
             ibc_storage_root: storage_root.into(),
+            // Normalize to nanoseconds to be ibc-go compliant
             timestamp: self
                 .l1
                 .beacon_api_client
@@ -292,7 +293,8 @@ impl Chain for Scroll {
                 .data
                 .header
                 .execution
-                .timestamp,
+                .timestamp
+                * 1_000_000_000,
         }
     }
 

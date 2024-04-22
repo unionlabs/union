@@ -469,9 +469,7 @@ where
             tracing::info!("write acknowledgement: {raw_event:?}");
             QueueMsg::Noop
         }
-        IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => {
-            todo!()
-        }
+        IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => QueueMsg::Noop,
         IBCHandlerEvents::OwnableEvent(_) => QueueMsg::Noop,
     }
 }

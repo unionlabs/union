@@ -56,8 +56,8 @@ abstract contract IBCQuerier is IBCStore {
         string calldata channelId,
         uint64 sequence
     ) external view returns (bytes32, bool) {
-        bytes32 commitment = commitments[keccak256(
-            IBCCommitment.packetCommitmentPath(portId, channelId, sequence)
+        bytes32 commitment = commitments[IBCCommitment.packetCommitmentKey(
+            portId, channelId, sequence
         )];
         return (commitment, commitment != bytes32(0));
     }
@@ -67,11 +67,8 @@ abstract contract IBCQuerier is IBCStore {
         string calldata channelId,
         uint64 sequence
     ) external view returns (bytes32, bool) {
-        bytes32 commitment = commitments[keccak256(
-            IBCCommitment.packetAcknowledgementCommitmentPath(
-                portId, channelId, sequence
-            )
-        )];
+        bytes32 commitment = commitments[IBCCommitment
+            .packetAcknowledgementCommitmentKey(portId, channelId, sequence)];
         return (commitment, commitment != bytes32(0));
     }
 
@@ -80,13 +77,22 @@ abstract contract IBCQuerier is IBCStore {
         string calldata channelId,
         uint64 sequence
     ) external view returns (bool) {
-        return packetReceipts[portId][channelId][sequence] == 1;
+        bytes32 receipt = commitments[IBCCommitment.packetReceiptCommitmentKey(
+            portId, channelId, sequence
+        )];
+        return receipt == bytes32(uint256(1));
     }
 
     function getNextSequenceSend(
         string calldata portId,
         string calldata channelId
     ) external view returns (uint64) {
-        return nextSequenceSends[portId][channelId];
+        return uint64(
+            uint256(
+                commitments[IBCCommitment.nextSequenceSendCommitmentKey(
+                    portId, channelId
+                )]
+            )
+        );
     }
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 import "solady/utils/LibString.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/utils/math/Math.sol";
 
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
@@ -127,8 +128,8 @@ contract IBCPacketHandlerTest is TestPlus {
     uint64 constant LATEST_HEIGHT = 0x1337;
     uint64 constant LATEST_TIMESTAMP = 0xCAFEBABE;
 
-    uint64 constant LOCAL_HEIGHT = 0xC0DEC0DEC0DEC0DE;
-    uint64 constant LOCAL_TIMESTAMP = 0xDEADBEEFDEADBEEF;
+    uint64 constant LOCAL_HEIGHT = LATEST_HEIGHT + 0xDEAD;
+    uint64 constant LOCAL_TIMESTAMP = LATEST_TIMESTAMP + 0xC0DE;
 
     bytes constant ARBITRARY_ZKP =
         hex"195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A";
@@ -320,8 +321,15 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
-        uint64 sequenceBefore =
-            handler.nextSequenceSends(address(app).toHexString(), channelId);
+        uint64 sequenceBefore = uint64(
+            uint256(
+                handler.commitments(
+                    IBCCommitment.nextSequenceSendCommitmentKey(
+                        address(app).toHexString(), channelId
+                    )
+                )
+            )
+        );
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -333,8 +341,15 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        uint64 sequenceAfter =
-            handler.nextSequenceSends(address(app).toHexString(), channelId);
+        uint64 sequenceAfter = uint64(
+            uint256(
+                handler.commitments(
+                    IBCCommitment.nextSequenceSendCommitmentKey(
+                        address(app).toHexString(), channelId
+                    )
+                )
+            )
+        );
         assertEq(sequenceAfter, sequenceBefore + 1);
     }
 
@@ -389,6 +404,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         client.pushValidMembership();
         vm.prank(relayer);
         handler.recvPacket(
@@ -397,7 +413,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload
             )
         );
@@ -412,51 +428,55 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
             address(app).toHexString(),
             channelId,
             LATEST_HEIGHT,
             timeoutHeight,
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         assertEq(
-            handler.packetReceipts(
-                msg_.packet.destination_port,
-                msg_.packet.destination_channel,
-                msg_.packet.sequence
+            handler.commitments(
+                IBCCommitment.packetReceiptCommitmentKey(
+                    msg_.packet.destination_port,
+                    msg_.packet.destination_channel,
+                    msg_.packet.sequence
+                )
             ),
-            0
+            bytes32(uint256(0))
         );
         client.pushValidMembership();
         vm.prank(relayer);
         handler.recvPacket(msg_);
         assertEq(
-            handler.packetReceipts(
-                msg_.packet.destination_port,
-                msg_.packet.destination_channel,
-                msg_.packet.sequence
+            handler.commitments(
+                IBCCommitment.packetReceiptCommitmentKey(
+                    msg_.packet.destination_port,
+                    msg_.packet.destination_channel,
+                    msg_.packet.sequence
+                )
             ),
-            1
+            bytes32(uint256(1))
         );
     }
 
     function test_recvPacket_alreadyReceived(
         address relayer,
         bytes memory payload,
-        uint64 timeoutHeight,
-        uint64 timeoutTimestamp
+        uint64 timeoutHeight
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
-        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        uint64 timeoutTimestamp = uint64(vm.getBlockTimestamp()) + 1;
         client.pushValidMembership();
         IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
             address(app).toHexString(),
             channelId,
             LATEST_HEIGHT,
             timeoutHeight,
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         vm.prank(relayer);
@@ -470,24 +490,25 @@ contract IBCPacketHandlerTest is TestPlus {
     function test_recvPacket_timeoutHeight(
         address relayer,
         bytes memory payload,
-        uint32 timeoutHeight,
+        uint32 timeoutHeightDelta,
         uint64 timeoutTimestamp
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
-        vm.assume(
-            0 < timeoutTimestamp && timeoutTimestamp > vm.getBlockTimestamp()
-        );
-        vm.assume(timeoutHeight > 0);
+        vm.assume(timeoutHeightDelta > 0);
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         client.pushValidMembership();
-        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
         vm.prank(relayer);
+        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
         handler.recvPacket(
             MsgMocks.packetRecv(
                 address(app).toHexString(),
                 channelId,
                 LATEST_HEIGHT,
-                LOCAL_HEIGHT - timeoutHeight,
-                timeoutTimestamp,
+                // If the height is zero it's considered not to be a timeout on height, we need to ensure its properly clamped
+                LOCAL_HEIGHT
+                    - uint64(Math.min(LOCAL_HEIGHT - 1, timeoutHeightDelta)),
+                timeoutTimestamp * 1e9,
                 payload
             )
         );
@@ -497,11 +518,11 @@ contract IBCPacketHandlerTest is TestPlus {
         address relayer,
         bytes memory payload,
         uint64 timeoutHeight,
-        uint32 timeoutTimestamp
+        uint64 timeoutTimestamp
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(0 < timeoutHeight && timeoutHeight > vm.getBlockNumber());
-        vm.assume(timeoutTimestamp > 0);
+        vm.assume(timeoutTimestamp < LOCAL_TIMESTAMP);
         client.pushValidMembership();
         vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
         vm.prank(relayer);
@@ -511,7 +532,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                LOCAL_TIMESTAMP - timeoutTimestamp,
+                (LOCAL_TIMESTAMP - timeoutTimestamp) * 1e9,
                 payload
             )
         );
@@ -526,6 +547,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
         vm.prank(relayer);
         handler.recvPacket(
@@ -534,7 +556,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload
             )
         );
@@ -549,6 +571,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
             address(app).toHexString(),
             channelId,
@@ -575,6 +598,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
             address(app).toHexString(),
             channelId,
@@ -654,6 +678,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -662,7 +687,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 revision_number: 0,
                 revision_height: timeoutHeight
             }),
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         client.pushValidMembership();
@@ -673,7 +698,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload,
                 acknowledgement
             )
@@ -690,6 +715,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -698,7 +724,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 revision_number: 0,
                 revision_height: timeoutHeight
             }),
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         client.pushValidMembership();
@@ -709,7 +735,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload,
                 acknowledgement
             )
@@ -723,7 +749,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload,
                 acknowledgement
             )
@@ -740,6 +766,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -748,7 +775,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 revision_number: 0,
                 revision_height: timeoutHeight
             }),
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         vm.prank(relayer);
@@ -759,7 +786,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload,
                 acknowledgement
             )
@@ -776,6 +803,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(relayer);
         vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.acknowledgePacket(
@@ -784,7 +812,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 payload,
                 acknowledgement
             )
@@ -801,6 +829,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -809,7 +838,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 revision_number: 0,
                 revision_height: timeoutHeight
             }),
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         vm.prank(relayer);
@@ -820,7 +849,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT,
                 timeoutHeight,
-                timeoutTimestamp,
+                timeoutTimestamp * 1e9,
                 abi.encodePacked(payload, hex"00"),
                 acknowledgement
             )
@@ -837,6 +866,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -845,7 +875,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 revision_number: 0,
                 revision_height: timeoutHeight
             }),
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         client.pushValidMembership();
@@ -854,7 +884,7 @@ contract IBCPacketHandlerTest is TestPlus {
             channelId,
             LATEST_HEIGHT,
             timeoutHeight,
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload,
             acknowledgement
         );
@@ -876,6 +906,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -884,7 +915,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 revision_number: 0,
                 revision_height: timeoutHeight
             }),
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload
         );
         client.pushValidMembership();
@@ -893,7 +924,7 @@ contract IBCPacketHandlerTest is TestPlus {
             channelId,
             LATEST_HEIGHT,
             timeoutHeight,
-            timeoutTimestamp,
+            timeoutTimestamp * 1e9,
             payload,
             acknowledgement
         );
@@ -1201,20 +1232,24 @@ contract IBCPacketHandlerTest is TestPlus {
 
     function test_timeoutPacket_timestamp_ok(
         address relayer,
-        // avoid overflowing uint64.max
-        uint32 timeoutTimestamp,
+        uint64 timeoutTimestamp,
         bytes memory payload
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
-        vm.assume(LATEST_TIMESTAMP + 1 < timeoutTimestamp);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP + 1);
+        vm.assume(
+            timeoutTimestamp
+                < (type(uint64).max / 1e9) - Cometbls.MAX_CLOCK_DRIFT - 1
+        );
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
             channelId,
             ClientHeight.Data({revision_number: 0, revision_height: 0}),
-            timeoutTimestamp - 1,
+            (timeoutTimestamp - 1) * 1e9,
             payload
         );
+        vm.warp(timeoutTimestamp);
         client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
@@ -1233,7 +1268,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT + 1,
                 0,
-                timeoutTimestamp - 1,
+                (timeoutTimestamp - 1) * 1e9,
                 payload
             )
         );
@@ -1241,20 +1276,24 @@ contract IBCPacketHandlerTest is TestPlus {
 
     function test_timeoutPacket_timestamp_notReached(
         address relayer,
-        // avoid overflowing uint64.max
-        uint32 timeoutTimestamp,
+        uint64 timeoutTimestamp,
         bytes memory payload
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
-        vm.assume(LATEST_TIMESTAMP + 1 < timeoutTimestamp);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP + 1);
+        vm.assume(
+            timeoutTimestamp
+                < (type(uint64).max / 1e9) - Cometbls.MAX_CLOCK_DRIFT - 1
+        );
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
             channelId,
             ClientHeight.Data({revision_number: 0, revision_height: 0}),
-            timeoutTimestamp - 1,
+            (timeoutTimestamp - 1) * 1e9,
             payload
         );
+        vm.warp(timeoutTimestamp - 1);
         client.pushValidProof();
         vm.prank(relayer);
         handler.updateClient(
@@ -1274,7 +1313,7 @@ contract IBCPacketHandlerTest is TestPlus {
                 channelId,
                 LATEST_HEIGHT + 1,
                 0,
-                timeoutTimestamp - 1,
+                (timeoutTimestamp - 1) * 1e9,
                 payload
             )
         );

@@ -703,7 +703,15 @@ where
                             [wait(id(
                                 counterparty_chain_id.clone(),
                                 WaitForTimestamp::<Tr, Hc> {
-                                    timestamp: packet.timeout_timestamp.try_into().unwrap(),
+                                    timestamp: i64::try_from(
+                                        // TODO: normalizes for voyager that
+                                        // expects seconds, we may just move to
+                                        // nanoseconds for everything to avoid
+                                        // any friction in the interface
+                                        // Add one second as we truncate the nanos.
+                                        (packet.timeout_timestamp / (1e9 as u64)) + 1,
+                                    )
+                                    .unwrap(),
                                     __marker: PhantomData,
                                 },
                             ))],

@@ -124,13 +124,9 @@ impl Chain for Union {
 
         let height = commit.signed_header.header.height;
 
-        let unbonding_period: u64 = params
-            .unbonding_time
-            .clone()
-            .unwrap()
-            .seconds
-            .try_into()
-            .unwrap();
+        // Expected to be nanos
+        let unbonding_period =
+            u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
 
         cometbls::client_state::ClientState {
             chain_id: self.chain_id.clone(),
@@ -138,7 +134,7 @@ impl Chain for Union {
             trusting_period: unbonding_period * 85 / 100,
             unbonding_period,
             // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-            max_clock_drift: 60 * 20,
+            max_clock_drift: (60 * 20) * 1_000_000_000,
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,
@@ -162,7 +158,7 @@ impl Chain for Union {
                 .signed_header
                 .header
                 .time
-                .unix_timestamp()
+                .unix_timestamp_nanos()
                 .try_into()
                 .unwrap(),
             app_hash: MerkleRoot {

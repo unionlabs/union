@@ -99,8 +99,11 @@ contract CometblsClient is
         clientStates[clientId] = clientState;
         uint128 latestHeight = clientState.latest_height.toUint128();
         consensusStates[clientId][latestHeight] = consensusState;
-        processedMoments[clientId][latestHeight] =
-            ProcessedMoment({timestamp: block.timestamp, height: block.number});
+        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
+        processedMoments[clientId][latestHeight] = ProcessedMoment({
+            timestamp: block.timestamp * 1e9,
+            height: block.number
+        });
         return (
             clientState.marshalToCommitmentEthABI(),
             ConsensusStateUpdate({
@@ -127,23 +130,25 @@ contract CometblsClient is
         }
 
         uint64 trustedTimestamp = consensusState.timestamp;
-        uint64 untrustedTimestamp = uint64(header.signed_header.time.secs);
+        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
+        uint64 untrustedTimestamp = uint64(header.signed_header.time.secs) * 1e9
+            + uint64(header.signed_header.time.nanos);
         if (untrustedTimestamp <= trustedTimestamp) {
             revert CometblsClientLib.ErrUntrustedTimestampLTETrustedTimestamp();
         }
 
+        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
+        uint64 currentTime = uint64(block.timestamp * 1e9);
         if (
             CometblsHelp.isExpired(
-                header.signed_header.time,
-                clientState.trusting_period,
-                uint64(block.timestamp)
+                untrustedTimestamp, clientState.trusting_period, currentTime
             )
         ) {
             revert CometblsClientLib.ErrHeaderExpired();
         }
 
-        uint64 maxClockDrift =
-            uint64(block.timestamp) + clientState.max_clock_drift;
+        uint64 maxClockDrift = currentTime + clientState.max_clock_drift;
+
         if (untrustedTimestamp >= maxClockDrift) {
             revert CometblsClientLib.ErrMaxClockDriftExceeded();
         }
@@ -222,7 +227,7 @@ contract CometblsClient is
 
         ProcessedMoment storage processed =
             processedMoments[clientId][untrustedHeightIndex];
-        processed.timestamp = block.timestamp;
+        processed.timestamp = block.timestamp * 1e9;
         processed.height = block.number;
 
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
@@ -282,7 +287,7 @@ contract CometblsClient is
         }
         ProcessedMoment storage moment =
             processedMoments[clientId][height.toUint128()];
-        uint64 currentTime = uint64(block.timestamp);
+        uint64 currentTime = uint64(block.timestamp * 1e9);
         uint64 validTime = uint64(moment.timestamp) + delayPeriodTime;
         if (delayPeriodTime != 0 && currentTime < validTime) {
             revert CometblsClientLib.ErrDelayPeriodNotExpired();
@@ -326,6 +331,7 @@ contract CometblsClient is
     ) external view override returns (uint64, bool) {
         OptimizedConsensusState memory consensusState =
             consensusStates[clientId][height.toUint128()];
+        // For some reason cosmos is using nanos, we try to follow their convention to avoid friction
         return (consensusState.timestamp, consensusState.timestamp > 0);
     }
 

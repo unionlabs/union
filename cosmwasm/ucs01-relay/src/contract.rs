@@ -130,7 +130,7 @@ pub fn execute_transfer(
 
     let input = TransferInput {
         current_time: env.block.time,
-        timeout_delta: config.default_timeout,
+        timeout_delta: msg.timeout.unwrap_or(config.default_timeout),
         sender: info.sender.clone(),
         receiver: msg.receiver,
         tokens,

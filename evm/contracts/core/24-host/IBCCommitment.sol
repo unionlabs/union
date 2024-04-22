@@ -90,12 +90,30 @@ library IBCCommitment {
         );
     }
 
+    function nextSequenceSendCommitmentPath(
+        string memory portId,
+        string memory channelId
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            "nextSequenceSend/ports/", portId, "/channels/", channelId
+        );
+    }
+
     function nextSequenceRecvCommitmentPath(
         string memory portId,
         string memory channelId
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             "nextSequenceRecv/ports/", portId, "/channels/", channelId
+        );
+    }
+
+    function nextSequenceAckCommitmentPath(
+        string memory portId,
+        string memory channelId
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            "nextSequenceAck/ports/", portId, "/channels/", channelId
         );
     }
 
@@ -161,10 +179,24 @@ library IBCCommitment {
             keccak256(packetReceiptCommitmentPath(portId, channelId, sequence));
     }
 
+    function nextSequenceSendCommitmentKey(
+        string memory portId,
+        string memory channelId
+    ) internal pure returns (bytes32) {
+        return keccak256(nextSequenceSendCommitmentPath(portId, channelId));
+    }
+
     function nextSequenceRecvCommitmentKey(
         string memory portId,
         string memory channelId
     ) internal pure returns (bytes32) {
         return keccak256(nextSequenceRecvCommitmentPath(portId, channelId));
+    }
+
+    function nextSequenceAckCommitmentKey(
+        string memory portId,
+        string memory channelId
+    ) internal pure returns (bytes32) {
+        return keccak256(nextSequenceAckCommitmentPath(portId, channelId));
     }
 }
