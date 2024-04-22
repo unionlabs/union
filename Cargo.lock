@@ -145,6 +145,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arith"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "556cabf32c649f5d6ccfbcc5bdf9f5a7cc4aa1eb5043cdabedff3fd49dd2cab9"
+
+[[package]]
 name = "ark-ff"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2963,6 +2969,7 @@ dependencies = [
 name = "gnark-key-parser"
 version = "0.1.0"
 dependencies = [
+ "arith",
  "ark-ff",
  "base64 0.21.7",
  "hex",

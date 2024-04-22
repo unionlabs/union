@@ -10,6 +10,7 @@ substrate-bn = { version = "0.6", default-features = false }
 base64 =  { workspace = true, features = ["alloc"] }
 hex = { workspace = true, features = ["alloc"]}
 ark-ff       = { version = "0.4.2", default-features = false }
+arith = "0.2.3"
 
 [lints]
 workspace = true

@@ -1,5 +1,7 @@
+use std::cmp::Ordering;
+
 use substrate_bn::{
-    arith::{U256, U512},
+    arith::{self, U256, U512},
     AffineG1, AffineG2, Fq, Fq2, G1, G2,
 };
 
@@ -58,6 +60,24 @@ pub fn parse_affine_g1_array(buf: &[u8]) -> (usize, Vec<AffineG1>) {
     (n_read, g1s)
 }
 
+fn is_zeroed(first_byte: u8, rest: &[u8]) -> bool {
+    first_byte == 0 && rest.iter().all(|x| *x == 0)
+}
+
+/// LexicographicallyLargest returns true if this element is strictly lexicographically
+/// larger than its negation, false otherwise
+/// See [the reference implementation]()
+fn lexicographically_largest(z: &Fq) -> bool {
+    // z > (q-1) / 2
+    z.into_u256()
+        > arith::U256::from([
+            11389680472494603939,
+            14681934109093717318,
+            15863968012492123182,
+            1743499133401485332,
+        ])
+}
+
 pub fn affine_g1_set_bytes(buf: &[u8]) -> (usize, AffineG1) {
     if buf.len() < G1_AFFINE_COMPRESSED_SIZE {
         panic!("");
@@ -72,8 +92,11 @@ pub fn affine_g1_set_bytes(buf: &[u8]) -> (usize, AffineG1) {
     }
 
     if metadata == COMPRESSED_INFINITY {
-        println!("here2");
-        // TODO(aeryz): compressed infinity
+        if !is_zeroed(buf[0], &buf[1..32]) {
+            panic!("no sir no");
+        }
+
+        return (32, AffineG1::new(Fq::zero(), Fq::zero()).unwrap());
     }
 
     if metadata == UNCOMPRESSED {
@@ -83,22 +106,29 @@ pub fn affine_g1_set_bytes(buf: &[u8]) -> (usize, AffineG1) {
         return (64, AffineG1::new(x, y).unwrap());
     }
 
-    let mut buf_x: [u8; 33] = [0; 33];
-    buf_x[2..33].copy_from_slice(&buf[1..32]);
-    buf_x[1] = buf[0] & !MASK;
+    let mut buf_x: [u8; 32] = [0; 32];
+    buf_x.copy_from_slice(&buf[..32]);
+    buf_x[0] &= !MASK;
 
-    println!("right before");
-    buf_x[0] = if metadata == COMPRESSED_LARGEST {
-        2
-    } else if metadata == COMPRESSED_SMALLEST {
-        3
+    let x = Fq::from_slice(&buf_x[..32]).unwrap();
+
+    let mut y = x * x * x + G1::b();
+
+    y = y.sqrt().unwrap();
+
+    if lexicographically_largest(&y) {
+        if metadata == COMPRESSED_SMALLEST {
+            y = -y;
+        }
     } else {
-        panic!("invalid encoding");
-    };
+        if metadata == COMPRESSED_LARGEST {
+            y = -y;
+        }
+    }
 
-    let g1 = G1::from_compressed(&buf_x[..]).unwrap();
+    let g1 = AffineG1::new(x, y).unwrap();
 
-    (32, AffineG1::from_jacobian(g1).unwrap())
+    (32, g1)
 }
 
 pub fn affine_g2_set_bytes(buf: &[u8]) -> (usize, AffineG2) {
@@ -309,9 +339,12 @@ mod tests {
     fn it_works() {
         // let b64str = b"hwk883gUlTKCyXYA6XWZa8H9/xKIYZaJ0xEs0M5hQOMxiGpxocuX/8maSDmeCk3bhwk883gUlTKCyXYA6XWZa8H9/xKIYZaJ0xEs0M5hQOMxiGpxocuX/8maSDmeCk3bo5ViaDBdO7ZBxAhLSe5k/5TFQyF5Lv7KN2tLKnwgoWMqB16OL8WdbePIwTCuPtJNAFKoTZylLDbSf02kckMcZQDPF9iGh+JC99Pio74vDpwTEjUx5tQ99gNQwxULtztsqDRsPnEvKvLmsxHt8LQVBkEBm2PBJFY+OXf1MNW021viDBpR10mX4WQ6zrsGL5L0GY4cwf4tlbh+Obit+LnN/SQTnREf8fPpdKZ1sa/ui3pGi8lMT6io4D7Ujlwx2RdChwk883gUlTKCyXYA6XWZa8H9/xKIYZaJ0xEs0M5hQOMxiGpxocuX/8maSDmeCk3bkBF+isfMf77HCEGsZANw0hSrO2FGg14Sl26xLAIohdaW8O7gEaag8JdVAZ3OVLd5Df1NkZBEr753Xb8WwaXsJjE7qxwINL1KdqA4+EiYW4edb7+a9bbBeOPtb67ZxmFqAAAAAoMkzUv+KG8WoXszZI5NNMrbMLBDYP/xHunVgSWcix/kBrGlNozv1uFr0cmYZiij3YqToYs+EZa3dl2ILHx7H1n+b+Bjky/td2QduHVtf5t/Z9sKCfr+vOn12zVvOVz/6wAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
+        let verifying_key = universal_vk();
+
         let file = include_bytes!("/home/aeryz/dev/union/union/vk.bin");
         let mut cursor = 0;
         let (n_bytes, g1_alpha) = affine_g1_set_bytes(&file[..]);
+        assert_eq!(verifying_key.alpha_g1, g1_alpha);
         cursor += n_bytes;
         let (n_bytes, _g1_beta) = affine_g1_set_bytes(&file[cursor..]);
         cursor += n_bytes;
@@ -324,8 +357,6 @@ mod tests {
         let (n_bytes, g2_delta) = affine_g2_set_bytes(&file[cursor..]);
         cursor += n_bytes;
         let (_, g1_gamma_abc) = parse_affine_g1_array(&file[cursor..]);
-
-        let verifying_key = universal_vk();
 
         assert_eq!(verifying_key.alpha_g1, g1_alpha);
         assert_eq!(verifying_key.beta_g2.x(), g2_beta.x());
