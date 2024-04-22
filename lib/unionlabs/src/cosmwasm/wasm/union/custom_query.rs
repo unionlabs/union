@@ -27,6 +27,11 @@ pub enum UnionCustomQuery {
     Aggregate {
         public_keys: Vec<Binary>,
     },
+    Verify {
+        aggregate_public_key: Binary,
+        message: Binary,
+        signature: Binary,
+    },
 }
 
 impl cosmwasm_std::CustomQuery for UnionCustomQuery {}
@@ -43,6 +48,22 @@ pub fn query_fast_aggregate_verify(
             message,
             signature,
         });
+    deps.querier
+        .query(&request)
+        .map_err(|e| Error::FastAggregateVerify(e.to_string()))
+}
+
+pub fn query_verify(
+    deps: Deps<UnionCustomQuery>,
+    aggregate_public_key: Binary,
+    message: Binary,
+    signature: Binary,
+) -> Result<bool, Error> {
+    let request: QueryRequest<UnionCustomQuery> = QueryRequest::Custom(UnionCustomQuery::Verify {
+        aggregate_public_key,
+        message,
+        signature,
+    });
     deps.querier
         .query(&request)
         .map_err(|e| Error::FastAggregateVerify(e.to_string()))

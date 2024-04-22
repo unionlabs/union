@@ -39,9 +39,16 @@ type MinSyncCommitteeParticipants<Ctx> =
     <<Ctx as LightClientContext>::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS;
 
 pub trait BlsVerify {
-    fn fast_aggregate_verify<'pk>(
+    fn aggregate_verify<'pk>(
         &self,
         public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+        msg: Vec<u8>,
+        signature: BlsSignature,
+    ) -> Result<(), Error>;
+
+    fn verify(
+        &self,
+        aggregate_public_key: &BlsPublicKey,
         msg: Vec<u8>,
         signature: BlsSignature,
     ) -> Result<(), Error>;
@@ -74,9 +81,9 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 ) -> Result<(), ValidateLightClientError> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
+    let num_set_bits = sync_aggregate.sync_committee_bits.num_set_bits();
     ensure(
-        sync_aggregate.sync_committee_bits.num_set_bits()
-            >= MinSyncCommitteeParticipants::<Ctx>::USIZE,
+        num_set_bits >= MinSyncCommitteeParticipants::<Ctx>::USIZE,
         Error::InsufficientSyncCommitteeParticipants(
             sync_aggregate.sync_committee_bits.num_set_bits(),
         ),
@@ -194,16 +201,6 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             .ok_or(Error::ExpectedNextSyncCommittee)?
     };
 
-    // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
-    // public keys of the ones who participated.
-    let participant_pubkeys = update
-        .sync_aggregate
-        .sync_committee_bits
-        .iter()
-        .zip(sync_committee.pubkeys.iter())
-        .filter_map(|(included, pubkey)| included.then_some(pubkey))
-        .collect::<Vec<_>>();
-
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
     let fork_version = compute_fork_version(
         ctx.fork_parameters(),
@@ -218,11 +215,29 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     );
     let signing_root = compute_signing_root(&update.attested_header.beacon, domain);
 
-    bls_verifier.fast_aggregate_verify(
-        participant_pubkeys,
-        signing_root.as_ref().to_owned(),
-        sync_aggregate.sync_committee_signature,
-    )?;
+    if num_set_bits == sync_committee.pubkeys.len() {
+        bls_verifier.verify(
+            &sync_committee.aggregate_pubkey,
+            signing_root.as_ref().to_owned(),
+            sync_aggregate.sync_committee_signature,
+        )?;
+    } else {
+        // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
+        // public keys of the ones who participated.
+        let participant_pubkeys = update
+            .sync_aggregate
+            .sync_committee_bits
+            .iter()
+            .zip(sync_committee.pubkeys.iter())
+            .filter_map(|(included, pubkey)| included.then_some(pubkey))
+            .collect::<Vec<_>>();
+
+        bls_verifier.aggregate_verify(
+            participant_pubkeys,
+            signing_root.as_ref().to_owned(),
+            sync_aggregate.sync_committee_signature,
+        )?;
+    }
 
     Ok(())
 }
@@ -473,7 +488,7 @@ mod tests {
     struct BlsVerifier;
 
     impl BlsVerify for BlsVerifier {
-        fn fast_aggregate_verify<'pk>(
+        fn aggregate_verify<'pk>(
             &self,
             public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
             msg: Vec<u8>,
