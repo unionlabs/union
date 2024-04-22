@@ -7,13 +7,16 @@ use core::marker::PhantomData;
 
 use ark_ff::{vec, BigInt};
 use byteorder::{BigEndian, ByteOrder};
+use constants::*;
 use hex_literal::hex;
 use sha2::Sha256;
 use sha3::Digest;
-use substrate_bn::G1;
+use substrate_bn::{AffineG1, AffineG2, G1};
 use unionlabs::{
     hash::H256, ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt,
 };
+
+mod constants;
 
 pub const NB_PUBLIC_INPUTS: usize = 2;
 
@@ -26,103 +29,7 @@ pub const PRIME_R_MINUS_ONE: U256 = U256::from_limbs([
     3486998266802970665,
 ]);
 
-fn make_g1(x: BigInt<4>, y: BigInt<4>) -> substrate_bn::AffineG1 {
-    substrate_bn::AffineG1::new(
-        substrate_bn::Fq::from_u256(x.0.into()).unwrap(),
-        substrate_bn::Fq::from_u256(y.0.into()).unwrap(),
-    )
-    .unwrap()
-}
-
-fn make_g2(x0: BigInt<4>, x1: BigInt<4>, y0: BigInt<4>, y1: BigInt<4>) -> substrate_bn::AffineG2 {
-    substrate_bn::AffineG2::new(
-        substrate_bn::Fq2::new(
-            substrate_bn::Fq::from_u256(x0.0.into()).unwrap(),
-            substrate_bn::Fq::from_u256(x1.0.into()).unwrap(),
-        ),
-        substrate_bn::Fq2::new(
-            substrate_bn::Fq::from_u256(y0.0.into()).unwrap(),
-            substrate_bn::Fq::from_u256(y1.0.into()).unwrap(),
-        ),
-    )
-    .unwrap()
-}
-
-// TODO: this should be computed at compile time
-pub fn pedersen_commitment_key() -> (substrate_bn::AffineG2, substrate_bn::AffineG2) {
-    let g_raw = hex!("257DF6F8132CB0037F7DFDF1A29B04C1FF92BA082EDA513996BA2BFA9FBD198713F0D8D8879885CA567EF99298C30C397E6FBA584658F4127713A814C06DE55A1660EBCC60C7A3AC560EFCEA5993F528EE13685D3A39694ACD74FE67C80D798A15E80642C58DB4DBE0A87F92CE3C65E962F231278353783A691FD64078BA7F34");
-    let g_root_sigma_neg_raw = hex!("2FBFE141A7555CF7E3E86B092660B81CFB68A025AD817E45CEC0B0F2E2CA636802A104DF1C015F2307FA2859627098CDF9FDB521D61D323943343A12304E5BAF27DA3F93ECF3BFD0B3A3354AE2162A6C230C0E539B6D9F82C0826E2B006A59222C0838551CB9E5CF67DB57DE7E2250BB97807F6687F135A6EB910359BA7BDB8D");
-    let G2Affine(_, g) = G2Affine::<BigEndian>::try_from(g_raw).expect("impossible");
-    let G2Affine(_, g_root_sigma_neg) =
-        G2Affine::<BigEndian>::try_from(g_root_sigma_neg_raw).expect("impossible");
-    (g, g_root_sigma_neg)
-}
-
-// TODO: this should be computed at compile time
-pub fn universal_vk() -> VerifyingKey {
-    VerifyingKey {
-        alpha_g1: make_g1(
-            BigInt!("4252850302693242182654534639730627324742305503909561446344356971523664816281"),
-            BigInt!("3971530409048238023625806606514600982127202826003358538821613170737831313919"),
-        ),
-        beta_g2: make_g2(
-            BigInt!("9609903744775525881338738176064678545439912439219033822736570321349357348980"),
-            BigInt!(
-                "11402125448377072234752634956069960846261435348550776006069399216352815312229"
-            ),
-            BigInt!("3876014193556985028076276590285094449745398487447250532380698384573245200038"),
-            BigInt!("6131692356384648492800758325058748831519318785594820705365176509549681793745"),
-        ),
-        gamma_g2: make_g2(
-            BigInt!(
-                "15418804173338388766896385877623893969695670309009587476846726795628238714393"
-            ),
-            BigInt!(
-                "14882897597913405382982164467298010752166363844685258881581520272046793702095"
-            ),
-            BigInt!("4166025151148225057462107057100265181139888889391061071239248954005945470477"),
-            BigInt!("206728492847877950288262169260916452585500374823256459470367014125967964118"),
-        ),
-        delta_g2: make_g2(
-            BigInt!("2636161939055419322743684458857549714230849256995406138405588958157843793131"),
-            BigInt!(
-                "18711435617866698040659011365354165232283248284733617156044102129651710736892"
-            ),
-            BigInt!(
-                "19240355865528042255113556794397480864884450537537107687508383548050491695680"
-            ),
-            BigInt!(
-                "12249371269602120664445362627662636389936048209522657338249293583990077475589"
-            ),
-        ),
-        gamma_abc_g1: vec![
-            make_g1(
-                BigInt!(
-                    "17683074019270049519594214298171697666582975915064153618004061598086681825921"
-                ),
-                BigInt!(
-                    "16826145467743906176166100307225491106961753217491843100452871479833450456070"
-                ),
-            ),
-            make_g1(
-                BigInt!(
-                    "4999724750322169039879775285047941133298355297928988655266615607529011563466"
-                ),
-                BigInt!(
-                    "8614448667589143428827059805500251818303043966026074735628377626634208993292"
-                ),
-            ),
-            make_g1(
-                BigInt!(
-                    "1184807858330365651919114999096473332175166887333719856514157833289677967559"
-                ),
-                BigInt!(
-                    "20327610427697660249999185524229068956160879388632193295649998184224119517657"
-                ),
-            ),
-        ],
-    }
-}
+const _: () = assert!(GAMMA_ABC_G1.len() == NB_PUBLIC_INPUTS + 1);
 
 fn hmac_keccak(message: &[u8]) -> [u8; 32] {
     sha3::Keccak256::new()
@@ -303,14 +210,12 @@ pub fn verify_zkp(
     header: &LightHeader,
     zkp: impl Into<Vec<u8>>,
 ) -> Result<(), Error> {
-    let (g, g_root_sigma_neg) = pedersen_commitment_key();
     verify_generic_zkp_2(
-        universal_vk(),
         chain_id,
         trusted_validators_hash,
         header,
-        g,
-        g_root_sigma_neg,
+        PEDERSEN_G,
+        PEDERSEN_G_ROOT_SIGMA_NEG,
         ZKP::try_from(zkp.into().as_ref())?,
     )
 }
@@ -329,7 +234,6 @@ fn g1_to_bytes(g1_point: &G1) -> Result<[u8; 64], Error> {
 }
 
 fn verify_generic_zkp_2(
-    vk: VerifyingKey,
     chain_id: &str,
     trusted_validators_hash: H256,
     header: &LightHeader,
@@ -341,9 +245,6 @@ fn verify_generic_zkp_2(
         return Err(Error::InvalidChainId);
     }
     // Constant + public inputs
-    if vk.gamma_abc_g1.len() != NB_PUBLIC_INPUTS + 1 {
-        return Err(Error::InvalidVerifyingKey);
-    }
     let decode_scalar = move |x: U256| -> Result<substrate_bn::Fr, Error> {
         substrate_bn::Fr::new(x.0 .0.into()).ok_or(Error::InvalidPublicInput)
     };
@@ -388,22 +289,11 @@ fn verify_generic_zkp_2(
         decode_scalar(U256::from_big_endian(inputs_hash))?,
         decode_scalar(commitment_hash)?,
     ];
-    let initial_point = substrate_bn::G1::from(
-        vk.gamma_abc_g1
-            .first()
-            .copied()
-            .ok_or(Error::InvalidVerifyingKey)?,
-    ) + zkp.proof_commitment.into();
+    let initial_point = substrate_bn::G1::from(GAMMA_ABC_G1[0]) + zkp.proof_commitment.into();
     let public_inputs_msm = public_inputs
         .into_iter()
-        .zip(
-            vk.gamma_abc_g1
-                .into_iter()
-                .skip(1)
-                .map(substrate_bn::G1::from),
-        )
+        .zip(GAMMA_ABC_G1.into_iter().skip(1).map(substrate_bn::G1::from))
         .fold(initial_point, |s, (w_i, gamma_l_i)| s + gamma_l_i * w_i);
-    // TODO: the verifying key transformation, pedersen key decoding and this negations should all be done at compile time
 
     let proof_a: G1 = zkp.proof.a.into();
     let proof_c: G1 = zkp.proof.c.into();
@@ -429,12 +319,9 @@ fn verify_generic_zkp_2(
 
     let result = substrate_bn::pairing_batch(&[
         (proof_a * r1, zkp.proof.b.into()),
-        (public_inputs_msm * r1, -substrate_bn::G2::from(vk.gamma_g2)),
-        (proof_c * r1, -substrate_bn::G2::from(vk.delta_g2)),
-        (
-            G1::from(vk.alpha_g1) * r1,
-            -substrate_bn::G2::from(vk.beta_g2),
-        ),
+        (public_inputs_msm * r1, -substrate_bn::G2::from(GAMMA_G2)),
+        (proof_c * r1, -substrate_bn::G2::from(DELTA_G2)),
+        (G1::from(ALPHA_G1) * r1, -substrate_bn::G2::from(BETA_G2)),
         // Verify pedersen proof of knowledge
         (pc * r2, g.into()),
         (pok * r2, g_root_sigma_neg.into()),
