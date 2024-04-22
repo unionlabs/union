@@ -2,6 +2,7 @@
 authors     = ["arnaucube <root@arnaucube.com>"]
 description = "Poseidon hash implementation"
 edition     = "2018"
+include     = ["constants.json"]
 license     = "Apache-2.0"
 name        = "poseidon-rs"
 readme      = "README.md"
@@ -12,7 +13,7 @@ version     = "0.0.10"
 workspace = true
 
 [package.metadata.crane]
-include = ["lib/poseidon-rs/constants.json"]
+test-include = []
 
 [dependencies]
 ethereum-types = { version = "0.14", default-features = false }

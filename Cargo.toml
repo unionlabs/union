@@ -30,6 +30,7 @@ members = [
   "lib/poseidon-rs",
   "lib/queue-msg",
   "lib/queue-msg-macro",
+  "lib/relay-message",
   "lib/scroll-api",
   "lib/scroll-rpc",
   "lib/scroll-verifier",
