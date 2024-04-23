@@ -5,13 +5,13 @@ extern crate alloc;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use ark_ff::{vec, BigInt};
+use ark_ff::vec;
 use byteorder::{BigEndian, ByteOrder};
 use constants::*;
 use hex_literal::hex;
 use sha2::Sha256;
 use sha3::Digest;
-use substrate_bn::{AffineG1, AffineG2, G1};
+use substrate_bn::G1;
 use unionlabs::{
     hash::H256, ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt,
 };
@@ -76,7 +76,6 @@ fn hash_commitment(proof_commitment: &substrate_bn::AffineG1) -> Result<U256, Er
 pub const FQ_SIZE: usize = 32;
 pub const G1_SIZE: usize = 2 * FQ_SIZE;
 pub const G2_SIZE: usize = 2 * G1_SIZE;
-pub const COMMITMENT_HASH_SIZE: usize = 32;
 
 pub struct G1Affine<FromOrder: ByteOrder>(PhantomData<FromOrder>, substrate_bn::AffineG1);
 pub type G1AffineBE = G1Affine<BigEndian>;

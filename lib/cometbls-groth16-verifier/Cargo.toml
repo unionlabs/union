@@ -24,9 +24,9 @@ default = []
 std     = []
 
 [build-dependencies]
+byteorder        = { version = "1.4", default-features = false }
 gnark-key-parser = { workspace = true }
-hex-literal  = { workspace = true }
-substrate-bn = { version = "0.6", default-features = false }
-byteorder    = { version = "1.4", default-features = false }
+hex-literal      = { workspace = true }
+substrate-bn     = { version = "0.6", default-features = false }
 
-unionlabs    = { workspace = true }
+unionlabs = { workspace = true }

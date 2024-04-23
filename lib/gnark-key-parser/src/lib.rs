@@ -360,45 +360,4 @@ mod tests {
         assert_eq!(verifying_key.delta_g2.y(), parsed_key.delta_g2.y());
         assert_eq!(verifying_key.gamma_abc_g1, parsed_key.gamma_abc_g1);
     }
-
-    #[test]
-    fn build_script() {
-        let file = hex::decode("8967072901cc7ab63357f1ddc4196c7c1feda50540d8026d7f6f0167c118a899d923def15f75234f2a6d53b566a2528441e98050b38803673e9179b834fc39a499355fd270b7601d5d88408b7e9e53d260512e2180cd260017dc941f2fc96d65153f0344c6bf2d8a891b979bc61d39a98fb11155fcd57418f30ea018ea842874a0e76be91a3148e2f8ef644222b3ce5b939a73bd2e0a40814f7f92a79c483acf2216bbe0c289e07936b4d9653b91521a24c570c808fa46dfd12ec4429e71b61999fcfb245459d63a4923b8f8c488d1e6af7ca358867b88eb0cdefe896c221f09e95e4c18d1e0475de4549b2547611d8301e1afff1047a6f5a288c9314af0b9fc05d403c8c91820a385a72c18d6a4962cef41a3ab93daa7ed289b1e95db4d04eb00000003e71843e52743864f4bb67ce94a2ce8fe82c8f61042c4c1ced8531d94305392818b0dbe71f4d60e02e9160ec2b015cae3a09cbe4f437226e2c02e1a5e5d124bcac29e93d5f47c0c7671350398ed8c40f5bc5c2f5b00363c7e2eb18a91a1c490c70000000100000000a57df6f8132cb0037f7dfdf1a29b04c1ff92ba082eda513996ba2bfa9fbd198713f0d8d8879885ca567ef99298c30c397e6fba584658f4127713a814c06de55aefbfe141a7555cf7e3e86b092660b81cfb68a025ad817e45cec0b0f2e2ca636802a104df1c015f2307fa2859627098cdf9fdb521d61d323943343a12304e5baf").unwrap();
-        let parsed_key = VerifyingKey::parse(&file[..]).unwrap();
-        let [alpha_g1_x0, alpha_g1_x1, alpha_g1_y0, alpha_g1_y1] =
-            unsafe { std::mem::transmute::<AffineG1, [u128; 4]>(parsed_key.alpha_g1) };
-        let [beta_g2_x00, beta_g2_x01, beta_g2_x10, beta_g2_x11, beta_g2_y00, beta_g2_y01, beta_g2_y10, beta_g2_y11] =
-            unsafe { std::mem::transmute::<AffineG2, [u128; 8]>(parsed_key.beta_g2) };
-        let [gamma_g2_x00, gamma_g2_x01, gamma_g2_x10, gamma_g2_x11, gamma_g2_y00, gamma_g2_y01, gamma_g2_y10, gamma_g2_y11] =
-            unsafe { std::mem::transmute::<AffineG2, [u128; 8]>(parsed_key.gamma_g2) };
-        let [delta_g2_x00, delta_g2_x01, delta_g2_x10, delta_g2_x11, delta_g2_y00, delta_g2_y01, delta_g2_y10, delta_g2_y11] =
-            unsafe { std::mem::transmute::<AffineG2, [u128; 8]>(parsed_key.delta_g2) };
-
-        let gamma_abc_size = parsed_key.gamma_abc_g1.len();
-        let s: String = parsed_key
-            .gamma_abc_g1
-            .into_iter()
-            .map(|g1| {
-                let [g1_x0, g1_x1, g1_y0, g1_y1] =
-                    unsafe { std::mem::transmute::<AffineG1, [u128; 4]>(g1) };
-                format!(
-                    r#"unsafe {{ core::mem::transmute::<[u128; 4], substrate_bn::AffineG1>
-                        ([{g1_x0}, {g1_x1}, {g1_y0}, {g1_y1}]) }},
-            "#
-                )
-            })
-            .collect();
-
-        let out = format!(
-            r#"
-                const ALPHA_G1: substrate_bn::AffineG1 = unsafe {{ core::mem::transmute::<[u128; 4], substrate_bn::AffineG1>([{alpha_g1_x0}, {alpha_g1_x1}, {alpha_g1_y0}, {alpha_g1_y1}]) }};
-                const BETA_G2: substrate_bn::AffineG2 = unsafe {{ core::mem::transmute::<[u128; 8], substrate_bn::AffineG2>([{beta_g2_x00}, {beta_g2_x01}, {beta_g2_x10}, {beta_g2_x11}, {beta_g2_y00}, {beta_g2_y01}, {beta_g2_y10}, {beta_g2_y11}]) }};
-                const GAMMA_G2: substrate_bn::AffineG2 = unsafe {{ core::mem::transmute::<[u128; 8], substrate_bn::AffineG2>([{gamma_g2_x00}, {gamma_g2_x01}, {gamma_g2_x10}, {gamma_g2_x11}, {gamma_g2_y00}, {gamma_g2_y01}, {gamma_g2_y10}, {gamma_g2_y11}]) }};
-                const DELTA_G2: substrate_bn::AffineG2 = unsafe {{ core::mem::transmute::<[u128; 8], substrate_bn::AffineG2>([{delta_g2_x00}, {delta_g2_x01}, {delta_g2_x10}, {delta_g2_x11}, {delta_g2_y00}, {delta_g2_y01}, {delta_g2_y10}, {delta_g2_y11}]) }};
-                const GAMMA_ABC_G1: [substrate_bn::AffineG1; {gamma_abc_size}] = [{s}];
-            "#
-        );
-
-        println!("{out}");
-    }
 }
