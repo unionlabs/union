@@ -89,11 +89,11 @@ fn pedersen_commitment_key() -> String {
 }
 
 fn main() {
-    println!("cargo:rerun-if-changed=vk.bin");
+    println!("cargo:rerun-if-changed=verifying_key.bin");
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("constants.rs");
 
-    let data = include_bytes!("./vk.bin");
+    let data = include_bytes!("./verifying_key.bin");
     let verifying_key = parse_verifying_key(data.as_slice());
 
     let pedersen_commitment = pedersen_commitment_key();
