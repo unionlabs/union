@@ -89,12 +89,12 @@ Assuming your private validator key is in the default location:
 </Tabs>
 
 
-### 3) Run the `create-validator` Command
+### 3) Run the Create Validator Command
 
-Then you can submit this file using the `create-validator` sub-command:
+Then you can submit this file using the `create-union-validator` sub-command:
 
 ```sh frame="none"
-uniond tx staking create-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
+uniond union-staking create-union-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
 	--from $KEY_NAME \
 	--chain-id union-testnet-8
 ```
@@ -114,7 +114,7 @@ touch ~/.unionvisor/validator.json
 
 # Then after editing the json content
 
-uniond tx staking create-validator /.unionvisor/validator.json $POSSESSION_PROOF \
+uniond union-staking create-union-validator /.unionvisor/validator.json $POSSESSION_PROOF \
 	--from $KEY_NAME \
 	--chain-id union-testnet-8
 ```
