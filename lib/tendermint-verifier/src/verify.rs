@@ -276,7 +276,6 @@ pub fn verify_commit_light_trusting<V: HostFns>(
     trust_level: Fraction,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
-    // TODO(aeryz): cometbft recalculates it if this is 0, why?
     // SAFETY: as u64 is safe here since we do `abs` which makes it always positive
     let total_voting_power_mul_by_numerator = vals
         .total_voting_power
