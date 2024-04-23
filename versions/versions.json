@@ -20,7 +20,7 @@
     "seeds": ""
   },
   "union-testnet-8": {
-    "versions": ["v0.21.0"],
+    "versions": ["v0.21.0", "v0.22.0"],
     "current": "v0.21.0",
     "seeds": ""
   }
