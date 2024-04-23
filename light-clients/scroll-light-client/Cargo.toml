@@ -13,20 +13,22 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std       = { workspace = true, features = ["abort"] }
-ethereum-verifier  = { workspace = true }
-hex                = { workspace = true }
-ics008-wasm-client = { workspace = true }
-protos             = { workspace = true }
-rlp                = { workspace = true }
-schemars           = { workspace = true }
-scroll-verifier    = { workspace = true }
-serde              = { workspace = true, features = ["derive"] }
-serde-json-wasm    = { workspace = true }
-sha3               = { workspace = true }
-thiserror          = { workspace = true }
-tiny-keccak        = { workspace = true, features = ["keccak"] }
-unionlabs          = { workspace = true, features = ["ethabi", "stargate"] }
+cosmwasm-std           = { workspace = true, features = ["abort"] }
+ethereum-verifier      = { workspace = true }
+ethers-core.workspace  = true
+hex                    = { workspace = true }
+ics008-wasm-client     = { workspace = true }
+protos                 = { workspace = true }
+rlp                    = { workspace = true }
+schemars               = { workspace = true }
+scroll-codec.workspace = true
+scroll-verifier        = { workspace = true }
+serde                  = { workspace = true, features = ["derive"] }
+serde-json-wasm        = { workspace = true }
+sha3                   = { workspace = true }
+thiserror              = { workspace = true }
+tiny-keccak            = { workspace = true, features = ["keccak"] }
+unionlabs              = { workspace = true, features = ["ethabi", "stargate"] }
 
 [dev-dependencies]
 base64     = { workspace = true }

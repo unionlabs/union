@@ -1,7 +1,7 @@
 {
   "chain": {
     "scroll-testnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "scroll",
       "ibc_handler_address": "0x0000000000000000000000000000000000000000",
       "signers": [
@@ -13,12 +13,14 @@
       "rollup_contract_address": "0x2D567EcE699Eabe5afCd141eDB7A4f2D0D6ce8a0",
       "rollup_finalized_state_roots_slot": "158",
       "rollup_last_finalized_batch_index_slot": "156",
+      "rollup_message_queue_slot": "152",
+      "rollup_committed_batches_slot": "157",
       "l1_client_id": "cometbls-1",
       "l1": {
         "chain_type": "ethereum",
         "preset_base": "mainnet",
         "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
-        "eth_rpc_api": "wss://rpc.ankr.com/eth_sepolia/ws/864e6497c4508f901b2dbaec5ae848868e2163370ec1776d3262960137dc38eb",
+        "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/6PCr1n8dJeYbE2Z9LrXScs05hLTYiVFl",
         "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
       },
       "scroll_api": "https://sepolia-api-re.scroll.io/",
@@ -51,7 +53,7 @@
     },
     "union-devnet": {
       "chain_type": "union",
-      "enabled": true,
+      "enabled": false,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -106,7 +108,7 @@
     },
     "osmosis-devnet": {
       "chain_type": "cosmos",
-      "enabled": true,
+      "enabled": false,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"

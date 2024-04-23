@@ -1,10 +1,13 @@
-use std::{collections::VecDeque, marker::PhantomData};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    marker::PhantomData,
+};
 
 use chain_utils::{
     ethereum::{EthereumChain, EthereumChainExt, IbcHandlerExt},
     scroll::Scroll,
 };
-use ethers::providers::Middleware;
+use ethers::{abi::AbiDecode, providers::Middleware};
 use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
@@ -163,6 +166,21 @@ where
                         ibc_contract_address: c.ibc_handler_address,
                     }),
                 )),
+                fetch(id(
+                    c.chain_id(),
+                    Fetch::specific(FetchBatchHashProof {
+                        height: update_info.update_to,
+                        committed_batches_slot: c.rollup_committed_batches_slot,
+                        rollup_contract_address: c.rollup_contract_address,
+                    }),
+                )),
+                fetch(id(
+                    c.chain_id(),
+                    Fetch::specific(FetchCommitBatchTransactionInput {
+                        height: update_info.update_to,
+                        rollup_contract_address: c.rollup_contract_address,
+                    }),
+                )),
             ],
             [],
             id(
@@ -277,13 +295,13 @@ where
                     .batch_index_of_beacon_slot(height.revision_height)
                     .await;
 
-                let finalized_root_proof = scroll
+                let batch_hash_proof = scroll
                     .l1
                     .provider
                     .get_proof(
                         ethers::types::H160::from(rollup_contract_address),
                         vec![H256(
-                            scroll_verifier::verify::finalized_state_root_key(
+                            scroll_verifier::verify::batch_index_mapping_key(
                                 finalized_root_slot,
                                 batch_index.into(),
                             )
@@ -301,7 +319,7 @@ where
                     .await
                     .unwrap();
 
-                let proof = match <[_; 1]>::try_from(finalized_root_proof.storage_proof) {
+                let proof = match <[_; 1]>::try_from(batch_hash_proof.storage_proof) {
                     Ok([proof]) => proof,
                     Err(invalid) => {
                         panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
@@ -360,6 +378,110 @@ where
                     __marker: PhantomData,
                 })
             }
+            Self::FetchBatchHashProof(FetchBatchHashProof {
+                height,
+                committed_batches_slot,
+                rollup_contract_address,
+            }) => {
+                let batch_index = scroll
+                    .batch_index_of_beacon_slot(height.revision_height)
+                    .await;
+
+                let batch_hash_proof = scroll
+                    .l1
+                    .provider
+                    .get_proof(
+                        ethers::types::H160::from(rollup_contract_address),
+                        vec![H256(
+                            scroll_verifier::verify::batch_index_mapping_key(
+                                committed_batches_slot,
+                                batch_index.into(),
+                            )
+                            .to_be_bytes(),
+                        )
+                        .into()],
+                        Some(ethers::types::BlockId::Number(
+                            scroll
+                                .l1
+                                .execution_height_of_beacon_slot(height.revision_height)
+                                .await
+                                .into(),
+                        )),
+                    )
+                    .await
+                    .unwrap();
+
+                let proof = match <[_; 1]>::try_from(batch_hash_proof.storage_proof) {
+                    Ok([proof]) => proof,
+                    Err(invalid) => {
+                        panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+                    }
+                };
+
+                Data::specific(BatchHashProof {
+                    height,
+                    batch_index,
+                    proof: StorageProof {
+                        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
+                            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+                            value: proof.value.into(),
+                            proof: proof
+                                .proof
+                                .into_iter()
+                                .map(|bytes| bytes.to_vec())
+                                .collect(),
+                        }]
+                        .to_vec(),
+                    },
+                    __marker: PhantomData,
+                })
+            }
+            ScrollFetch::FetchCommitBatchTransactionInput(FetchCommitBatchTransactionInput {
+                height,
+                // TODO: This needs to be passed to `scroll_codec::fetch_l1_message_hashes`
+                rollup_contract_address: _,
+            }) => {
+                let batch_index = scroll
+                    .batch_index_of_beacon_slot(height.revision_height)
+                    .await;
+
+                let batch = scroll.scroll_api_client.batch(batch_index).await;
+
+                let tx = scroll
+                    .l1
+                    .provider
+                    .get_transaction(batch.batch.commit_tx_hash)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let calldata = tx.input.to_vec();
+
+                let blob_versioned_hash = tx
+                    .blob_versioned_hashes
+                    .unwrap_or_default()
+                    .first()
+                    .map(|x| H256(x.0));
+
+                let message_hashes = scroll_codec::fetch_l1_message_hashes(
+                    scroll.l1.provider.as_ref(),
+                    scroll
+                        .l1
+                        .execution_height_of_beacon_slot(height.revision_height)
+                        .await,
+                    <scroll_codec::CommitBatchCall as AbiDecode>::decode(&calldata).unwrap(),
+                )
+                .await
+                .unwrap();
+
+                Data::specific(CommitBatchTransactionInput {
+                    height,
+                    batch_index,
+                    message_hashes,
+                    calldata,
+                    blob_versioned_hash,
+                    __marker: PhantomData,
+                })
+            }
         };
 
         data(id::<Scroll, Tr, _>(scroll.chain_id, msg))
@@ -380,6 +502,8 @@ pub enum ScrollFetch<Tr: ChainExt> {
     FetchScrollFinalizedRootProof(FetchScrollFinalizedRootProof),
     // - ibc contract root against finalized root on L2
     FetchIbcContractRootProof(FetchIbcContractRootProof),
+    FetchBatchHashProof(FetchBatchHashProof),
+    FetchCommitBatchTransactionInput(FetchCommitBatchTransactionInput),
 }
 
 #[queue_msg]
@@ -398,10 +522,24 @@ pub struct FetchLatestBatchIndexProof {
 }
 
 #[queue_msg]
+pub struct FetchBatchHashProof {
+    pub height: HeightOf<Scroll>,
+    pub committed_batches_slot: U256,
+    pub rollup_contract_address: H160,
+}
+
+#[queue_msg]
 pub struct FetchScrollFinalizedRootProof {
     // the height to update to
     pub height: HeightOf<Scroll>,
     pub finalized_root_slot: U256,
+    pub rollup_contract_address: H160,
+}
+
+#[queue_msg]
+pub struct FetchCommitBatchTransactionInput {
+    // the height to update to
+    pub height: HeightOf<Scroll>,
     pub rollup_contract_address: H160,
 }
 
@@ -419,6 +557,8 @@ pub enum ScrollData<Tr: ChainExt> {
     LatestBatchIndexProof(LatestBatchIndexProof<Tr>),
     ScrollFinalizedRootProof(ScrollFinalizedRootProof<Tr>),
     IbcContractRootProof(IbcContractRootProof<Tr>),
+    BatchHashProof(BatchHashProof<Tr>),
+    CommitBatchTransactionInput(CommitBatchTransactionInput<Tr>),
 }
 
 const _: () = {
@@ -430,6 +570,8 @@ const _: () = {
             LatestBatchIndexProof(LatestBatchIndexProof<Tr>),
             ScrollFinalizedRootProof(ScrollFinalizedRootProof<Tr>),
             IbcContractRootProof(IbcContractRootProof<Tr>),
+            BatchHashProof(BatchHashProof<Tr>),
+            CommitBatchTransactionInput(CommitBatchTransactionInput<Tr>),
         ),
     }
 };
@@ -448,9 +590,17 @@ pub struct LatestBatchIndexProof<#[cover] Tr: ChainExt> {
 }
 
 #[queue_msg]
+pub struct BatchHashProof<#[cover] Tr: ChainExt> {
+    pub height: HeightOf<Scroll>,
+    pub batch_index: u64,
+    pub proof: StorageProof,
+}
+
+#[queue_msg]
 pub struct ScrollFinalizedRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub batch_index: u64,
+    // TODO: Remove this field as it is present in proof[0].value
     pub finalized_state_root: U256,
     pub proof: StorageProof,
 }
@@ -459,6 +609,18 @@ pub struct ScrollFinalizedRootProof<#[cover] Tr: ChainExt> {
 pub struct IbcContractRootProof<#[cover] Tr: ChainExt> {
     pub height: HeightOf<Scroll>,
     pub proof: AccountProof,
+}
+
+#[queue_msg]
+pub struct CommitBatchTransactionInput<#[cover] Tr: ChainExt> {
+    pub height: HeightOf<Scroll>,
+    pub batch_index: u64,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub calldata: Vec<u8>,
+    #[serde(with = "::serde_utils::map_numeric_keys_as_string")]
+    pub message_hashes: BTreeMap<u64, H256>,
+    pub blob_versioned_hash: Option<H256>,
 }
 
 #[queue_msg]
@@ -478,6 +640,8 @@ where
     Identified<Scroll, Tr, LatestBatchIndexProof<Tr>>: IsAggregateData,
     Identified<Scroll, Tr, ScrollFinalizedRootProof<Tr>>: IsAggregateData,
     Identified<Scroll, Tr, IbcContractRootProof<Tr>>: IsAggregateData,
+    Identified<Scroll, Tr, BatchHashProof<Tr>>: IsAggregateData,
+    Identified<Scroll, Tr, CommitBatchTransactionInput<Tr>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Scroll>)>,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Scroll, Tr>)>,
@@ -503,6 +667,8 @@ where
     Identified<Scroll, Tr, LatestBatchIndexProof<Tr>>: IsAggregateData,
     Identified<Scroll, Tr, ScrollFinalizedRootProof<Tr>>: IsAggregateData,
     Identified<Scroll, Tr, IbcContractRootProof<Tr>>: IsAggregateData,
+    Identified<Scroll, Tr, BatchHashProof<Tr>>: IsAggregateData,
+    Identified<Scroll, Tr, CommitBatchTransactionInput<Tr>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Scroll>)>,
 {
@@ -511,6 +677,8 @@ where
         Identified<Scroll, Tr, LatestBatchIndexProof<Tr>>,
         Identified<Scroll, Tr, ScrollFinalizedRootProof<Tr>>,
         Identified<Scroll, Tr, IbcContractRootProof<Tr>>,
+        Identified<Scroll, Tr, BatchHashProof<Tr>>,
+        Identified<Scroll, Tr, CommitBatchTransactionInput<Tr>>,
     ];
 
     fn aggregate(
@@ -523,7 +691,7 @@ where
             Identified {
                 chain_id: rollup_contract_root_proof_chain_id,
                 t: RollupContractRootProof {
-                    height: _rollup_contract_root_proof_height,
+                    height: rollup_contract_root_proof_height,
                     proof: rollup_contract_root_proof,
                     __marker: _
                 },
@@ -532,7 +700,7 @@ where
             Identified {
                 chain_id: latest_batch_index_proof_chain_id,
                 t: LatestBatchIndexProof {
-                    height: _latest_batch_index_proof_height,
+                    height: latest_batch_index_proof_height,
                     latest_batch_index,
                     proof: latest_batch_index_proof,
                     __marker: _
@@ -542,10 +710,10 @@ where
             Identified {
                 chain_id: scroll_finalized_root_proof_chain_id,
                 t: ScrollFinalizedRootProof {
-                    height: _scroll_finalized_root_proof_height,
-                    batch_index: _batch_index,
+                    height: scroll_finalized_root_proof_height,
+                    batch_index: scroll_finalized_root_proof_batch_index,
                     finalized_state_root,
-                    proof: finalized_root_proof,
+                    proof: scroll_finalized_root_proof,
                     __marker: _
                 },
                 __marker: _,
@@ -553,9 +721,31 @@ where
             Identified {
                 chain_id: ibc_contract_root_proof_chain_id,
                 t: IbcContractRootProof {
-                    height: _ibc_contract_root_proof_height,
+                    height: ibc_contract_root_proof_height,
                     proof: ibc_contract_account_proof,
                     __marker: _
+                },
+                __marker: _,
+            },
+            Identified {
+                chain_id: batch_hash_proof_chain_id,
+                t: BatchHashProof {
+                    height: batch_hash_proof_height,
+                    batch_index: batch_hash_proof_batch_index,
+                    proof: batch_hash_proof,
+                    __marker: _,
+                },
+                __marker: _,
+            },
+            Identified {
+                chain_id: commit_batch_transaction_input_chain_id,
+                t: CommitBatchTransactionInput {
+                    height: commit_batch_transaction_input_height,
+                    batch_index: commit_batch_transaction_input_batch_index,
+                    calldata,
+                    message_hashes,
+                    blob_versioned_hash,
+                    __marker,
                 },
                 __marker: _,
             }
@@ -565,6 +755,35 @@ where
         assert_eq!(latest_batch_index_proof_chain_id, chain_id);
         assert_eq!(scroll_finalized_root_proof_chain_id, chain_id);
         assert_eq!(ibc_contract_root_proof_chain_id, chain_id);
+        assert_eq!(batch_hash_proof_chain_id, chain_id);
+        assert_eq!(commit_batch_transaction_input_chain_id, chain_id);
+
+        assert_eq!(
+            rollup_contract_root_proof_height,
+            latest_batch_index_proof_height
+        );
+        assert_eq!(
+            rollup_contract_root_proof_height,
+            scroll_finalized_root_proof_height
+        );
+        assert_eq!(
+            rollup_contract_root_proof_height,
+            ibc_contract_root_proof_height
+        );
+        assert_eq!(rollup_contract_root_proof_height, batch_hash_proof_height);
+        assert_eq!(
+            rollup_contract_root_proof_height,
+            commit_batch_transaction_input_height
+        );
+
+        assert_eq!(
+            scroll_finalized_root_proof_batch_index,
+            batch_hash_proof_batch_index
+        );
+        assert_eq!(
+            scroll_finalized_root_proof_batch_index,
+            commit_batch_transaction_input_batch_index
+        );
 
         effect(id::<Tr, Scroll, _>(
             req.counterparty_chain_id,
@@ -574,10 +793,14 @@ where
                     l1_height: req.update_to,
                     l1_account_proof: rollup_contract_root_proof,
                     l2_state_root: H256(finalized_state_root.to_be_bytes()),
-                    l2_state_proof: finalized_root_proof,
+                    l2_state_proof: scroll_finalized_root_proof,
                     last_batch_index: latest_batch_index,
                     last_batch_index_proof: latest_batch_index_proof,
                     l2_ibc_account_proof: ibc_contract_account_proof,
+                    batch_hash_proof,
+                    commit_batch_calldata: calldata,
+                    l1_message_hashes: message_hashes,
+                    blob_versioned_hash,
                 },
             }),
         ))

@@ -71,6 +71,48 @@ impl ::prost::Name for GrantQueueItem {
         ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)
     }
 }
+/// EventGrant is emitted on Msg/Grant
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventGrant {
+    /// Msg type URL for which an autorization is granted
+    #[prost(string, tag = "2")]
+    pub msg_type_url: ::prost::alloc::string::String,
+    /// Granter account address
+    #[prost(string, tag = "3")]
+    pub granter: ::prost::alloc::string::String,
+    /// Grantee account address
+    #[prost(string, tag = "4")]
+    pub grantee: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventGrant {
+    const NAME: &'static str = "EventGrant";
+    const PACKAGE: &'static str = "cosmos.authz.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)
+    }
+}
+/// EventRevoke is emitted on Msg/Revoke
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventRevoke {
+    /// Msg type URL for which an autorization is revoked
+    #[prost(string, tag = "2")]
+    pub msg_type_url: ::prost::alloc::string::String,
+    /// Granter account address
+    #[prost(string, tag = "3")]
+    pub granter: ::prost::alloc::string::String,
+    /// Grantee account address
+    #[prost(string, tag = "4")]
+    pub grantee: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventRevoke {
+    const NAME: &'static str = "EventRevoke";
+    const PACKAGE: &'static str = "cosmos.authz.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)
+    }
+}
 /// GenesisState defines the authz module's genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -190,48 +232,6 @@ pub struct QueryGranteeGrantsResponse {
 }
 impl ::prost::Name for QueryGranteeGrantsResponse {
     const NAME: &'static str = "QueryGranteeGrantsResponse";
-    const PACKAGE: &'static str = "cosmos.authz.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)
-    }
-}
-/// EventGrant is emitted on Msg/Grant
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventGrant {
-    /// Msg type URL for which an autorization is granted
-    #[prost(string, tag = "2")]
-    pub msg_type_url: ::prost::alloc::string::String,
-    /// Granter account address
-    #[prost(string, tag = "3")]
-    pub granter: ::prost::alloc::string::String,
-    /// Grantee account address
-    #[prost(string, tag = "4")]
-    pub grantee: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventGrant {
-    const NAME: &'static str = "EventGrant";
-    const PACKAGE: &'static str = "cosmos.authz.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)
-    }
-}
-/// EventRevoke is emitted on Msg/Revoke
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventRevoke {
-    /// Msg type URL for which an autorization is revoked
-    #[prost(string, tag = "2")]
-    pub msg_type_url: ::prost::alloc::string::String,
-    /// Granter account address
-    #[prost(string, tag = "3")]
-    pub granter: ::prost::alloc::string::String,
-    /// Grantee account address
-    #[prost(string, tag = "4")]
-    pub grantee: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventRevoke {
-    const NAME: &'static str = "EventRevoke";
     const PACKAGE: &'static str = "cosmos.authz.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)

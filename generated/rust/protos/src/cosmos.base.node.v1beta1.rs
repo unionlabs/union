@@ -16,11 +16,12 @@ impl ::prost::Name for ConfigRequest {
 pub struct ConfigResponse {
     #[prost(string, tag = "1")]
     pub minimum_gas_price: ::prost::alloc::string::String,
-    /// pruning settings
     #[prost(string, tag = "2")]
     pub pruning_keep_recent: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub pruning_interval: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "4")]
+    pub halt_height: u64,
 }
 impl ::prost::Name for ConfigResponse {
     const NAME: &'static str = "ConfigResponse";

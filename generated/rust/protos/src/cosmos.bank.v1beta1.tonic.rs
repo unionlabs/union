@@ -308,6 +308,30 @@ pub mod query_client {
                 .insert(GrpcMethod::new("cosmos.bank.v1beta1.Query", "DenomOwners"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn denom_owners_by_query(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryDenomOwnersByQueryRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDenomOwnersByQueryResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.bank.v1beta1.Query/DenomOwnersByQuery",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.bank.v1beta1.Query",
+                "DenomOwnersByQuery",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn send_enabled(
             &mut self,
             request: impl tonic::IntoRequest<super::QuerySendEnabledRequest>,

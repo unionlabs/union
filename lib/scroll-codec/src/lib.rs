@@ -4,18 +4,20 @@
 
 //! Scroll types, as specified in <https://github.com/scroll-tech/scroll/tree/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/libraries/codec>, with the commit from [this announcement](https://scroll.io/blog/blobs-are-here-scrolls-bernoulli-upgrade).
 
-use std::{collections::BTreeMap, ops::Add};
+use std::collections::BTreeMap;
 
-use ethers::{
-    providers::{Http, Provider, ProviderError},
-    utils::keccak256,
-};
-use futures::{StreamExt, TryStreamExt};
+use ethers::utils::keccak256;
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sha3::{digest::FixedOutput, Digest, Keccak256};
 use unionlabs::{hash::H256, uint::U256};
+#[cfg(feature = "fetch")]
+use {
+    ethers::providers::{JsonRpcClient, Provider, ProviderError},
+    futures::{StreamExt, TryStreamExt},
+    serde_json::json,
+    std::ops::Add,
+};
 
 use crate::{
     batch_header::{BatchHeader, BatchHeaderDecodeError, BatchHeaderV0, BatchHeaderV1},
@@ -212,6 +214,7 @@ fn commit_chunk_v0(
 
     H256(hasher.finalize_fixed().into())
 }
+
 /// <https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L632>
 fn commit_chunks_v1(
     total_l1_messages_popped_overall: &mut u64,
@@ -219,9 +222,9 @@ fn commit_chunks_v1(
     skipped_l1_message_bitmap: &BigUint,
     message_queue: &mut BTreeMap<u64, H256>,
 ) -> (H256, u64) {
-    let mut total_l1_messages_popped_in_batch = 0;
+    let mut hasher = Keccak256::new();
 
-    let mut batch_data = vec![];
+    let mut total_l1_messages_popped_in_batch = 0;
 
     for chunk in chunks {
         let chunk_data_hash = commit_chunk_v1(
@@ -232,13 +235,11 @@ fn commit_chunks_v1(
             message_queue,
         );
 
-        batch_data.push(chunk_data_hash);
+        hasher.update(chunk_data_hash);
     }
 
     (
-        H256(keccak256(
-            batch_data.into_iter().flat_map(|x| x.0).collect::<Vec<_>>(),
-        )),
+        hasher.finalize_fixed().into(),
         total_l1_messages_popped_in_batch,
     )
 }
@@ -251,17 +252,11 @@ fn commit_chunk_v1(
     skipped_l1_message_bitmap: &BigUint,
     message_queue: &mut BTreeMap<u64, H256>,
 ) -> H256 {
-    let block_contexts = chunk.blocks.iter().flat_map(|bc| {
-        [
-            bc.block_number.to_be_bytes().to_vec(),
-            bc.timestamp.to_be_bytes().to_vec(),
-            bc.base_fee.to_be_bytes().to_vec(),
-            bc.gas_limit.to_be_bytes().to_vec(),
-            bc.num_transactions.to_be_bytes().to_vec(),
-        ]
-    });
+    let mut hasher = Keccak256::new();
 
-    let mut concatenated_tx_hashes = vec![];
+    for block_context in &chunk.blocks {
+        block_context.copy_block_context(&mut hasher);
+    }
 
     // TODO: This can be a scan
     for bc in &chunk.blocks {
@@ -273,15 +268,10 @@ fn commit_chunk_v1(
             message_queue,
         );
 
-        concatenated_tx_hashes.push(concatenated_l1_hashes);
+        hasher.update(concatenated_l1_hashes);
     }
 
-    H256(keccak256(
-        block_contexts
-            .chain(concatenated_tx_hashes)
-            .flatten()
-            .collect::<Vec<_>>(),
-    ))
+    H256(hasher.finalize_fixed().into())
 }
 
 /// <https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L911>
@@ -322,8 +312,9 @@ fn load_l1_message_hashes(
 /// See [`FetchL1MessageHashesError`] for possible failure modes for this function.
 ///
 /// <https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L911>
-pub async fn fetch_l1_message_hashes(
-    provider: &Provider<Http>,
+#[cfg(feature = "fetch")]
+pub async fn fetch_l1_message_hashes<P: JsonRpcClient>(
+    provider: &Provider<P>,
     height: u64,
     call: CommitBatchCall,
 ) -> Result<BTreeMap<u64, H256>, FetchL1MessageHashesError> {
@@ -391,6 +382,7 @@ pub async fn fetch_l1_message_hashes(
         .await
 }
 
+#[cfg(feature = "fetch")]
 #[derive(Debug, thiserror::Error)]
 pub enum FetchL1MessageHashesError {
     #[error("error decoding parent batch header")]

@@ -1,4 +1,28 @@
 // @generated
+/// SendAuthorization allows the grantee to spend up to spend_limit coins from
+/// the granter's account.
+///
+/// Since: cosmos-sdk 0.43
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SendAuthorization {
+    #[prost(message, repeated, tag = "1")]
+    pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    /// allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
+    /// granter. If omitted, any recipient is allowed.
+    ///
+    /// Since: cosmos-sdk 0.47
+    #[prost(string, repeated, tag = "2")]
+    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for SendAuthorization {
+    const NAME: &'static str = "SendAuthorization";
+    const PACKAGE: &'static str = "cosmos.bank.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
+    }
+}
 /// Params defines the parameters for the bank module.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -649,6 +673,49 @@ impl ::prost::Name for QueryDenomOwnersResponse {
         ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
     }
 }
+/// QueryDenomOwnersByQueryRequest defines the request type for the DenomOwnersByQuery RPC query,
+/// which queries for a paginated set of all account holders of a particular
+/// denomination.
+///
+/// Since: cosmos-sdk 0.50.3
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomOwnersByQueryRequest {
+    /// denom defines the coin denomination to query all account holders for.
+    #[prost(string, tag = "1")]
+    pub denom: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryDenomOwnersByQueryRequest {
+    const NAME: &'static str = "QueryDenomOwnersByQueryRequest";
+    const PACKAGE: &'static str = "cosmos.bank.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryDenomOwnersByQueryResponse defines the RPC response of a DenomOwnersByQuery RPC query.
+///
+/// Since: cosmos-sdk 0.50.3
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomOwnersByQueryResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub denom_owners: ::prost::alloc::vec::Vec<DenomOwner>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryDenomOwnersByQueryResponse {
+    const NAME: &'static str = "QueryDenomOwnersByQueryResponse";
+    const PACKAGE: &'static str = "cosmos.bank.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
+    }
+}
 /// QuerySendEnabledRequest defines the RPC request for looking up SendEnabled entries.
 ///
 /// Since: cosmos-sdk 0.47
@@ -687,30 +754,6 @@ pub struct QuerySendEnabledResponse {
 }
 impl ::prost::Name for QuerySendEnabledResponse {
     const NAME: &'static str = "QuerySendEnabledResponse";
-    const PACKAGE: &'static str = "cosmos.bank.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
-    }
-}
-/// SendAuthorization allows the grantee to spend up to spend_limit coins from
-/// the granter's account.
-///
-/// Since: cosmos-sdk 0.43
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SendAuthorization {
-    #[prost(message, repeated, tag = "1")]
-    pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    /// allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
-    /// granter. If omitted, any recipient is allowed.
-    ///
-    /// Since: cosmos-sdk 0.47
-    #[prost(string, repeated, tag = "2")]
-    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-impl ::prost::Name for SendAuthorization {
-    const NAME: &'static str = "SendAuthorization";
     const PACKAGE: &'static str = "cosmos.bank.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)

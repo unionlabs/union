@@ -25,7 +25,12 @@ pub enum BatchHeaderDecodeError {
 }
 
 impl BatchHeader {
-    pub(crate) fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderDecodeError> {
+    /// Decode a batch header (either v0 or v1).
+    ///
+    /// # Errors
+    ///
+    /// See [`BatchHeaderDecodeError`] for the possible failure modes for this function.
+    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderDecodeError> {
         match bz.as_ref().first() {
             Some(&BatchHeaderV0::VERSION) => Ok(BatchHeaderV0::decode(bz)?.into()),
             Some(&BatchHeaderV1::VERSION) => Ok(BatchHeaderV1::decode(bz)?.into()),

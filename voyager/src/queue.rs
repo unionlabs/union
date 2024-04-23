@@ -275,7 +275,9 @@ impl Voyager {
                 reactor
                     .run(&mut q)
                     .for_each(|x| async {
-                        let _msg = x.unwrap();
+                        let msg = x.unwrap();
+
+                        tracing::info!(data = %serde_json::to_string(&msg).unwrap(), "received data outside of an aggregation");
                     })
                     .await;
                 Ok(())

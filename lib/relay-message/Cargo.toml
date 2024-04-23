@@ -25,6 +25,7 @@ num-bigint               = { workspace = true }
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }
 queue-msg                = { workspace = true }
+scroll-codec             = { workspace = true, features = ["fetch"] }
 scroll-rpc               = { workspace = true }
 scroll-verifier          = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }

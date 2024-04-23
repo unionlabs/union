@@ -11,6 +11,7 @@ use crate::{errors::InvalidLength, hash::H160, ibc::core::client::height::Height
     from
 ))]
 pub struct ClientState {
+    // TODO: This should be ClientId
     pub l1_client_id: String,
     pub chain_id: U256,
     pub latest_batch_index: u64,
@@ -18,6 +19,7 @@ pub struct ClientState {
     pub frozen_height: Height,
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
+    pub rollup_committed_batches_slot: U256,
     pub ibc_contract_address: H160,
     pub ibc_commitment_slot: U256,
 }
@@ -37,6 +39,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
                 .into(),
             ibc_contract_address: value.ibc_contract_address.into(),
             ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
+            rollup_committed_batches_slot: value.rollup_committed_batches_slot.to_be_bytes().into(),
         }
     }
 }
@@ -50,6 +53,7 @@ pub enum TryFromClientStateError {
     RollupFinalizedStateRootsSlot(InvalidLength),
     IbcContractAddress(InvalidLength),
     IbcCommitmentSlot(InvalidLength),
+    RollupCommittedBatchesSlot(InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for ClientState {
@@ -79,6 +83,10 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for Clie
                 .map_err(TryFromClientStateError::IbcContractAddress)?,
             ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
                 .map_err(TryFromClientStateError::IbcCommitmentSlot)?,
+            rollup_committed_batches_slot: U256::try_from_be_bytes(
+                &value.rollup_committed_batches_slot,
+            )
+            .map_err(TryFromClientStateError::RollupCommittedBatchesSlot)?,
         })
     }
 }

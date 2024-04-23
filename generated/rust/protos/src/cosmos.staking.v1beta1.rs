@@ -1,4 +1,104 @@
 // @generated
+/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+///
+/// Since: cosmos-sdk 0.43
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StakeAuthorization {
+    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
+    /// empty, there is no spend limit and any amount of coins can be delegated.
+    #[prost(message, optional, tag = "1")]
+    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
+    /// authorization_type defines one of AuthorizationType.
+    #[prost(enumeration = "AuthorizationType", tag = "4")]
+    pub authorization_type: i32,
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
+    pub validators: ::core::option::Option<stake_authorization::Validators>,
+}
+/// Nested message and enum types in `StakeAuthorization`.
+pub mod stake_authorization {
+    /// Validators defines list of validator addresses.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ValidatorsList {
+        #[prost(string, repeated, tag = "1")]
+        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    }
+    impl ::prost::Name for ValidatorsList {
+        const NAME: &'static str = "Validators";
+        const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.staking.v1beta1.StakeAuthorization.{}", Self::NAME)
+        }
+    }
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Validators {
+        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
+        /// account.
+        #[prost(message, tag = "2")]
+        AllowList(ValidatorsList),
+        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
+        #[prost(message, tag = "3")]
+        DenyList(ValidatorsList),
+    }
+}
+impl ::prost::Name for StakeAuthorization {
+    const NAME: &'static str = "StakeAuthorization";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// AuthorizationType defines the type of staking module authorization type
+///
+/// Since: cosmos-sdk 0.43
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum AuthorizationType {
+    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
+    Unspecified = 0,
+    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
+    Delegate = 1,
+    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
+    Undelegate = 2,
+    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
+    Redelegate = 3,
+    /// AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION defines an authorization type for Msg/MsgCancelUnbondingDelegation
+    CancelUnbondingDelegation = 4,
+}
+impl AuthorizationType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            AuthorizationType::Unspecified => "AUTHORIZATION_TYPE_UNSPECIFIED",
+            AuthorizationType::Delegate => "AUTHORIZATION_TYPE_DELEGATE",
+            AuthorizationType::Undelegate => "AUTHORIZATION_TYPE_UNDELEGATE",
+            AuthorizationType::Redelegate => "AUTHORIZATION_TYPE_REDELEGATE",
+            AuthorizationType::CancelUnbondingDelegation => {
+                "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION"
+            }
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "AUTHORIZATION_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "AUTHORIZATION_TYPE_DELEGATE" => Some(Self::Delegate),
+            "AUTHORIZATION_TYPE_UNDELEGATE" => Some(Self::Undelegate),
+            "AUTHORIZATION_TYPE_REDELEGATE" => Some(Self::Redelegate),
+            "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION" => {
+                Some(Self::CancelUnbondingDelegation)
+            }
+            _ => None,
+        }
+    }
+}
 /// HistoricalInfo contains header and validator information for a given block.
 /// It is stored as part of staking module's state, which persists the `n` most
 /// recent HistoricalInfo
@@ -1088,106 +1188,6 @@ impl ::prost::Name for QueryParamsResponse {
     const PACKAGE: &'static str = "cosmos.staking.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
-///
-/// Since: cosmos-sdk 0.43
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StakeAuthorization {
-    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
-    /// empty, there is no spend limit and any amount of coins can be delegated.
-    #[prost(message, optional, tag = "1")]
-    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
-    /// authorization_type defines one of AuthorizationType.
-    #[prost(enumeration = "AuthorizationType", tag = "4")]
-    pub authorization_type: i32,
-    /// validators is the oneof that represents either allow_list or deny_list
-    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
-    pub validators: ::core::option::Option<stake_authorization::Validators>,
-}
-/// Nested message and enum types in `StakeAuthorization`.
-pub mod stake_authorization {
-    /// Validators defines list of validator addresses.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct ValidatorsVec {
-        #[prost(string, repeated, tag = "1")]
-        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    }
-    impl ::prost::Name for ValidatorsVec {
-        const NAME: &'static str = "Validators";
-        const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-        fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!("cosmos.staking.v1beta1.StakeAuthorization.{}", Self::NAME)
-        }
-    }
-    /// validators is the oneof that represents either allow_list or deny_list
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Validators {
-        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
-        /// account.
-        #[prost(message, tag = "2")]
-        AllowList(ValidatorsVec),
-        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
-        #[prost(message, tag = "3")]
-        DenyList(ValidatorsVec),
-    }
-}
-impl ::prost::Name for StakeAuthorization {
-    const NAME: &'static str = "StakeAuthorization";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// AuthorizationType defines the type of staking module authorization type
-///
-/// Since: cosmos-sdk 0.43
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum AuthorizationType {
-    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
-    Unspecified = 0,
-    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
-    Delegate = 1,
-    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
-    Undelegate = 2,
-    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
-    Redelegate = 3,
-    /// AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION defines an authorization type for Msg/MsgCancelUnbondingDelegation
-    CancelUnbondingDelegation = 4,
-}
-impl AuthorizationType {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            AuthorizationType::Unspecified => "AUTHORIZATION_TYPE_UNSPECIFIED",
-            AuthorizationType::Delegate => "AUTHORIZATION_TYPE_DELEGATE",
-            AuthorizationType::Undelegate => "AUTHORIZATION_TYPE_UNDELEGATE",
-            AuthorizationType::Redelegate => "AUTHORIZATION_TYPE_REDELEGATE",
-            AuthorizationType::CancelUnbondingDelegation => {
-                "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION"
-            }
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "AUTHORIZATION_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
-            "AUTHORIZATION_TYPE_DELEGATE" => Some(Self::Delegate),
-            "AUTHORIZATION_TYPE_UNDELEGATE" => Some(Self::Undelegate),
-            "AUTHORIZATION_TYPE_REDELEGATE" => Some(Self::Redelegate),
-            "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION" => {
-                Some(Self::CancelUnbondingDelegation)
-            }
-            _ => None,
-        }
     }
 }
 /// MsgCreateValidator defines a SDK message for creating a new validator.

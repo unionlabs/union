@@ -101,62 +101,6 @@ impl ::prost::Name for QueryCodeResponse {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
-/// Wasm light client's Client state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClientState {
-    /// bytes encoding the client state of the underlying light client
-    /// implemented as a Wasm contract.
-    #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    pub checksum: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-}
-impl ::prost::Name for ClientState {
-    const NAME: &'static str = "ClientState";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// Wasm light client's ConsensusState
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusState {
-    /// bytes encoding the consensus state of the underlying light client
-    /// implemented as a Wasm contract.
-    #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for ConsensusState {
-    const NAME: &'static str = "ConsensusState";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// Wasm light client message (either header(s) or misbehaviour)
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClientMessage {
-    #[prost(bytes = "vec", tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for ClientMessage {
-    const NAME: &'static str = "ClientMessage";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
 /// MsgStoreCode defines the request type for the StoreCode rpc.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -255,6 +199,62 @@ impl ::prost::Name for MsgMigrateContract {
 pub struct MsgMigrateContractResponse {}
 impl ::prost::Name for MsgMigrateContractResponse {
     const NAME: &'static str = "MsgMigrateContractResponse";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// Wasm light client's Client state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClientState {
+    /// bytes encoding the client state of the underlying light client
+    /// implemented as a Wasm contract.
+    #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    pub checksum: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
+}
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// Wasm light client's ConsensusState
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusState {
+    /// bytes encoding the consensus state of the underlying light client
+    /// implemented as a Wasm contract.
+    #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// Wasm light client message (either header(s) or misbehaviour)
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClientMessage {
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ClientMessage {
+    const NAME: &'static str = "ClientMessage";
     const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
