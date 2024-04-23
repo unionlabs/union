@@ -125,13 +125,11 @@
         gas_reports = ["*"]
         via_ir = true
 
-        [profile.optimized]
-        src = "contracts"
-        optimizer = true
-        optimizer_runs = 10_000_000
-
         [profile.script]
         src = "scripts"
+        bytecode_hash = "none"
+        cbor_metadata = false
+        sparse_mode = false
         optimizer = true
         optimizer_runs = 10_000_000
 
@@ -157,7 +155,7 @@
           network = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
-          extra-args = "--verify --verifier blockscout --verifier-url http://localhost/api";
+          extra-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
         }
         {
           network = "testnet";
@@ -180,11 +178,12 @@
           ${ensureAtRepositoryRoot}
           OUT="$(mktemp -d)"
           pushd "$OUT"
+          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
           cp --no-preserve=mode -r ${evmSources}/* .
 
           PRIVATE_KEY=${private-key} FOUNDRY_PROFILE="script" \
             forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
-            -vvv \
+            -vvvv \
             --rpc-url ${rpc-url} \
             --broadcast ${extra-args}
 
@@ -263,7 +262,7 @@
           buildInputs = [ wrappedForge ];
           buildPhase = ''
             forge --version
-            FOUNDRY_PROFILE=optimized forge build --sizes
+            FOUNDRY_PROFILE=script forge build --sizes
           '';
           doCheck = true;
           checkPhase = ''
@@ -321,6 +320,7 @@
             ${ensureAtRepositoryRoot}
             OUT="$(mktemp -d)"
             pushd "$OUT"
+            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
             cp --no-preserve=mode -r ${evmSources}/* .
 
             DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:GetDeployed -vvv
