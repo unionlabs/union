@@ -288,7 +288,7 @@ pub fn verify_storage_proof(
     expected_value: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<(), VerifyStorageProofError> {
-    match get_node(root, key.to_big_endian(), proof)? {
+    match get_node(root, key.to_be_bytes(), proof)? {
         Some(value) if value == expected_value => Ok(()),
         Some(value) => Err(Error::ValueMismatch {
             expected: expected_value.into(),
@@ -312,7 +312,7 @@ pub fn verify_storage_absence(
     key: U256,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<bool, VerifyStorageAbsenceError> {
-    Ok(get_node(root, key.to_big_endian(), proof)?.is_none())
+    Ok(get_node(root, key.to_be_bytes(), proof)?.is_none())
 }
 
 /// Computes the execution block root hash.
@@ -664,7 +664,7 @@ mod tests {
         assert_eq!(
             get_node(
                 VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key.to_big_endian(),
+                VALID_PROOF.storage_proof.key.to_be_bytes(),
                 VALID_PROOF.storage_proof.proof.iter()
             )
             .unwrap()
@@ -684,7 +684,7 @@ mod tests {
         assert!(matches!(
             get_node(
                 storage_root,
-                VALID_PROOF.storage_proof.key.to_big_endian(),
+                VALID_PROOF.storage_proof.key.to_be_bytes(),
                 VALID_PROOF.storage_proof.proof.iter()
             ),
             Err(Error::Trie(_))
@@ -693,7 +693,7 @@ mod tests {
 
     #[test]
     fn verify_state_returns_fails_when_invalid_key() {
-        let mut proof_key = VALID_PROOF.storage_proof.key.to_big_endian();
+        let mut proof_key = VALID_PROOF.storage_proof.key.to_be_bytes();
         proof_key[0] = u8::MAX - proof_key[0];
 
         assert!(matches!(
@@ -714,7 +714,7 @@ mod tests {
         assert!(matches!(
             get_node(
                 VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key.to_big_endian(),
+                VALID_PROOF.storage_proof.key.to_be_bytes(),
                 &proof
             ),
             Err(Error::Trie(_))
@@ -760,7 +760,7 @@ mod tests {
 
     #[test]
     fn verify_storage_proof_fails_when_incorrect_value() {
-        let mut proof_value = VALID_PROOF.storage_proof.value.to_big_endian();
+        let mut proof_value = VALID_PROOF.storage_proof.value.to_be_bytes();
         proof_value[0] = u8::MAX - proof_value[0];
 
         assert!(matches!(

@@ -28,7 +28,7 @@
         }
       ];
 
-      devnet-union = dbg (mkCosmosDevnet {
+      devnet-union = mkCosmosDevnet {
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
         chainName = "union";
@@ -96,7 +96,7 @@
           }
         ];
         portIncrease = 0;
-      });
+      };
 
       devnet-stargaze = mkCosmosDevnet {
         node = self'.packages.starsd;

@@ -122,7 +122,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
             gas_used: value.gas_used,
             timestamp: value.timestamp,
             extra_data: value.extra_data.into(),
-            base_fee_per_gas: value.base_fee_per_gas.to_big_endian().into(),
+            base_fee_per_gas: value.base_fee_per_gas.to_be_bytes().into(),
             block_hash: value.block_hash.into(),
             transactions_root: value.transactions_root.into(),
             withdrawals_root: value.withdrawals_root.into(),
@@ -189,7 +189,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .extra_data
                 .try_into()
                 .map_err(TryFromExecutionPayloadHeaderError::ExtraData)?,
-            base_fee_per_gas: U256::try_from_big_endian(&value.base_fee_per_gas)
+            base_fee_per_gas: U256::try_from_be_bytes(&value.base_fee_per_gas)
                 .map_err(TryFromExecutionPayloadHeaderError::BaseFeePerGas)?,
             block_hash: value
                 .block_hash

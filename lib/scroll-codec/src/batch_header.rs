@@ -1,9 +1,8 @@
 use enumorph::Enumorph;
-
-use crate::{
+use sha3::{Digest, Keccak256};
+use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
     hash::H256,
-    uint::U256,
     ByteArrayExt,
 };
 
@@ -26,12 +25,36 @@ pub enum BatchHeaderDecodeError {
 }
 
 impl BatchHeader {
-    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderDecodeError> {
+    pub(crate) fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderDecodeError> {
         match bz.as_ref().first() {
             Some(&BatchHeaderV0::VERSION) => Ok(BatchHeaderV0::decode(bz)?.into()),
             Some(&BatchHeaderV1::VERSION) => Ok(BatchHeaderV1::decode(bz)?.into()),
             Some(version) => Err(BatchHeaderDecodeError::UnknownVersion(*version)),
             None => Err(BatchHeaderDecodeError::EmptyBytes),
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn batch_index(&self) -> u64 {
+        match self {
+            BatchHeader::V0(batch_header) => batch_header.batch_index,
+            BatchHeader::V1(batch_header) => batch_header.batch_index,
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn compute_batch_hash(&self) -> H256 {
+        match self {
+            BatchHeader::V0(batch_header) => batch_header.compute_batch_hash(),
+            BatchHeader::V1(batch_header) => batch_header.compute_batch_hash(),
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn total_l1_message_popped(&self) -> u64 {
+        match self {
+            BatchHeader::V0(batch_header) => batch_header.total_l1_message_popped,
+            BatchHeader::V1(batch_header) => batch_header.total_l1_message_popped,
         }
     }
 }
@@ -60,7 +83,7 @@ pub struct BatchHeaderV0 {
     /// The parent batch hash
     pub parent_batch_hash: H256,
     /// A bitmap to indicate which L1 messages are skipped in the batch
-    pub skipped_l1_message_bitmap: Vec<U256>,
+    pub skipped_l1_message_bitmap: Vec<H256>,
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -73,36 +96,34 @@ pub enum BatchHeaderV0DecodeError {
     TooManyL1Messages(u64),
 }
 
-const BATCH_HEADER_V0_FIXED_LENGTH: usize = 89;
-
 impl BatchHeaderV0 {
     const VERSION: u8 = 0;
+    const FIXED_LENGTH: usize = 89;
 
     #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderV0DecodeError> {
-        let slice: [u8; BATCH_HEADER_V0_FIXED_LENGTH] = bz
-            .as_ref()
-            .get(..BATCH_HEADER_V0_FIXED_LENGTH)
-            .ok_or_else(|| {
-                BatchHeaderV0DecodeError::LengthTooSmall(InvalidLength {
-                    expected: ExpectedLength::Gte(BATCH_HEADER_V0_FIXED_LENGTH),
-                    found: bz.as_ref().len(),
-                })
-            })?
+        let bz = bz.as_ref();
+
+        let slice: [u8; Self::FIXED_LENGTH] = bz
+            .get(..Self::FIXED_LENGTH)
+            .ok_or(BatchHeaderV0DecodeError::LengthTooSmall(InvalidLength {
+                expected: ExpectedLength::Gte(Self::FIXED_LENGTH),
+                found: bz.len(),
+            }))?
             .try_into()
             .expect("range bound is array len; qed;");
 
         let l1_message_popped = u64::from_be_bytes(slice.array_slice::<9, 8>());
 
-        let expected_len = BATCH_HEADER_V0_FIXED_LENGTH
+        let expected_len = Self::FIXED_LENGTH
             + usize::try_from(((l1_message_popped + 255) / 256) * 32)
                 .map_err(|_| BatchHeaderV0DecodeError::TooManyL1Messages(l1_message_popped))?;
 
-        if bz.as_ref().len() != expected_len {
+        if bz.len() != expected_len {
             return Err(BatchHeaderV0DecodeError::IncorrectBitmapLength(
                 InvalidLength {
                     expected: ExpectedLength::Exact(expected_len),
-                    found: bz.as_ref().len(),
+                    found: bz.len(),
                 },
             ));
         }
@@ -110,19 +131,38 @@ impl BatchHeaderV0 {
         let version = slice.array_slice::<0, 1>()[0];
         debug_assert_eq!(version, Self::VERSION);
 
+        assert!(bz[Self::FIXED_LENGTH..].len() % 32 == 0);
+
         Ok(Self {
             batch_index: u64::from_be_bytes(slice.array_slice::<1, 8>()),
             l1_message_popped,
             total_l1_message_popped: u64::from_be_bytes(slice.array_slice::<17, 8>()),
             data_hash: H256(slice.array_slice::<25, 32>()),
             parent_batch_hash: H256(slice.array_slice::<57, 32>()),
-            skipped_l1_message_bitmap: bz
-                .as_ref()
+            skipped_l1_message_bitmap: bz[Self::FIXED_LENGTH..]
                 .chunks(32)
-                .map(U256::try_from_big_endian)
-                .collect::<Result<_, _>>()
-                .expect("chunk size is 32; qed"),
+                .map(|x| H256(x.try_into().expect("chunk size is 32; qed")))
+                .collect(),
         })
+    }
+
+    /// <https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/libraries/codec/BatchHeaderV0Codec.sol#L206>
+    #[must_use]
+    pub fn compute_batch_hash(&self) -> H256 {
+        let mut hasher = Keccak256::new();
+
+        hasher.update([Self::VERSION]);
+        hasher.update(self.batch_index.to_be_bytes());
+        hasher.update(self.l1_message_popped.to_be_bytes());
+        hasher.update(self.total_l1_message_popped.to_be_bytes());
+        hasher.update(self.data_hash);
+        hasher.update(self.parent_batch_hash);
+
+        for bitmap_limb in &self.skipped_l1_message_bitmap {
+            hasher.update(bitmap_limb);
+        }
+
+        hasher.finalize().into()
     }
 }
 
@@ -153,7 +193,7 @@ pub struct BatchHeaderV1 {
     /// The parent batch hash
     pub parent_batch_hash: H256,
     /// A bitmap to indicate which L1 messages are skipped in the batch
-    pub skipped_l1_message_bitmap: Vec<U256>,
+    pub skipped_l1_message_bitmap: Vec<H256>,
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -166,36 +206,33 @@ pub enum BatchHeaderV1DecodeError {
     TooManyL1Messages(u64),
 }
 
-const BATCH_HEADER_V1_FIXED_LENGTH: usize = 121;
-
 impl BatchHeaderV1 {
     const VERSION: u8 = 1;
+    const FIXED_LENGTH: usize = 121;
 
-    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
     fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderV1DecodeError> {
-        let slice: [u8; BATCH_HEADER_V1_FIXED_LENGTH] = bz
-            .as_ref()
-            .get(..BATCH_HEADER_V1_FIXED_LENGTH)
-            .ok_or_else(|| {
-                BatchHeaderV1DecodeError::LengthTooSmall(InvalidLength {
-                    expected: ExpectedLength::Gte(BATCH_HEADER_V1_FIXED_LENGTH),
-                    found: bz.as_ref().len(),
-                })
-            })?
+        let bz = bz.as_ref();
+
+        let slice: [u8; Self::FIXED_LENGTH] = bz
+            .get(..Self::FIXED_LENGTH)
+            .ok_or(BatchHeaderV1DecodeError::LengthTooSmall(InvalidLength {
+                expected: ExpectedLength::Gte(Self::FIXED_LENGTH),
+                found: bz.len(),
+            }))?
             .try_into()
             .expect("range bound is array len; qed;");
 
         let l1_message_popped = u64::from_be_bytes(slice.array_slice::<9, 8>());
 
-        let expected_len = BATCH_HEADER_V1_FIXED_LENGTH
+        let expected_len = Self::FIXED_LENGTH
             + usize::try_from(((l1_message_popped + 255) / 256) * 32)
                 .map_err(|_| BatchHeaderV1DecodeError::TooManyL1Messages(l1_message_popped))?;
 
-        if bz.as_ref().len() != expected_len {
+        if bz.len() != expected_len {
             return Err(BatchHeaderV1DecodeError::IncorrectBitmapLength(
                 InvalidLength {
                     expected: ExpectedLength::Exact(expected_len),
-                    found: bz.as_ref().len(),
+                    found: bz.len(),
                 },
             ));
         }
@@ -210,12 +247,30 @@ impl BatchHeaderV1 {
             data_hash: H256(slice.array_slice::<25, 32>()),
             blob_versioned_hash: H256(slice.array_slice::<57, 32>()),
             parent_batch_hash: H256(slice.array_slice::<89, 32>()),
-            skipped_l1_message_bitmap: bz
-                .as_ref()
+            skipped_l1_message_bitmap: bz[Self::FIXED_LENGTH..]
                 .chunks(32)
-                .map(U256::try_from_big_endian)
-                .collect::<Result<_, _>>()
-                .expect("chunk size is 32; qed"),
+                .map(|x| H256(x.try_into().expect("chunk size is 32; qed")))
+                .collect(),
         })
+    }
+
+    /// <https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/libraries/codec/BatchHeaderV1Codec.sol#L224>
+    #[must_use]
+    pub fn compute_batch_hash(&self) -> H256 {
+        let mut hasher = Keccak256::new();
+
+        hasher.update([Self::VERSION]);
+        hasher.update(self.batch_index.to_be_bytes());
+        hasher.update(self.l1_message_popped.to_be_bytes());
+        hasher.update(self.total_l1_message_popped.to_be_bytes());
+        hasher.update(self.data_hash);
+        hasher.update(self.blob_versioned_hash);
+        hasher.update(self.parent_batch_hash);
+
+        for bitmap_limb in &self.skipped_l1_message_bitmap {
+            hasher.update(bitmap_limb);
+        }
+
+        hasher.finalize().into()
     }
 }

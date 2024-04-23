@@ -32,6 +32,8 @@ members = [
   "lib/queue-msg-macro",
   "lib/relay-message",
   "lib/scroll-api",
+  "lib/scroll-codec",
+  "lib/scroll-codec/fetch-test-vectors",
   "lib/scroll-rpc",
   "lib/scroll-verifier",
   "lib/serde-utils",
@@ -87,6 +89,7 @@ queue-msg                 = { path = "lib/queue-msg", default-features = false }
 queue-msg-macro           = { path = "lib/queue-msg-macro", default-features = false }
 relay-message             = { path = "lib/relay-message", default-features = false }
 scroll-api                = { path = "lib/scroll-api", default-features = false }
+scroll-codec              = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                = { path = "lib/scroll-rpc", default-features = false }
 scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }

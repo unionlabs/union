@@ -55,7 +55,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: Some(value.frozen_height.into()),
-            ibc_commitment_slot: value.ibc_commitment_slot.to_big_endian().into(),
+            ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
             ibc_contract_address: value.ibc_contract_address.into(),
         }
     }
@@ -98,7 +98,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
-            ibc_commitment_slot: U256::try_from_big_endian(&value.ibc_commitment_slot)
+            ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
                 .map_err(TryFromClientStateError::IbcCommitmentSlot)?,
             ibc_contract_address: value
                 .ibc_contract_address

@@ -230,7 +230,7 @@ where
                     .provider
                     .get_proof(
                         ethers::types::H160::from(rollup_contract_address),
-                        vec![H256(latest_batch_index_slot.to_big_endian()).into()],
+                        vec![H256(latest_batch_index_slot.to_be_bytes()).into()],
                         Some(ethers::types::BlockId::Number(
                             scroll
                                 .l1
@@ -255,7 +255,7 @@ where
                     latest_batch_index: proof.value.try_into().unwrap(),
                     proof: StorageProof {
                         proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_big_endian(proof.key.to_fixed_bytes()),
+                            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
                             value: proof.value.into(),
                             proof: proof
                                 .proof
@@ -287,7 +287,7 @@ where
                                 finalized_root_slot,
                                 batch_index.into(),
                             )
-                            .to_big_endian(),
+                            .to_be_bytes(),
                         )
                         .into()],
                         Some(ethers::types::BlockId::Number(
@@ -314,7 +314,7 @@ where
                     finalized_state_root: proof.value.into(),
                     proof: StorageProof {
                         proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_big_endian(proof.key.to_fixed_bytes()),
+                            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
                             value: proof.value.into(),
                             proof: proof
                                 .proof
@@ -573,7 +573,7 @@ where
                 client_message: scroll::header::Header {
                     l1_height: req.update_to,
                     l1_account_proof: rollup_contract_root_proof,
-                    l2_state_root: H256(finalized_state_root.to_big_endian()),
+                    l2_state_root: H256(finalized_state_root.to_be_bytes()),
                     l2_state_proof: finalized_root_proof,
                     last_batch_index: latest_batch_index,
                     last_batch_index_proof: latest_batch_index_proof,

@@ -57,7 +57,7 @@ impl JsonRpcClient {
                     address,
                     location
                         .into_iter()
-                        .map(|u| (u.to_packed_big_endian_hex()))
+                        .map(|u| (u.to_be_hex_packed()))
                         .collect::<Vec<_>>(),
                     block.to_string(),
                 ),

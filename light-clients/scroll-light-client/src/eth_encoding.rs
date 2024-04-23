@@ -9,7 +9,7 @@ use unionlabs::{hash::H256, uint::U256};
 pub fn generate_commitment_key(path: &str, slot: U256) -> H256 {
     sha3::Keccak256::new()
         .chain_update(sha3::Keccak256::new().chain_update(path).finalize())
-        .chain_update(slot.to_big_endian())
+        .chain_update(slot.to_be_bytes())
         .finalize()
         .into()
 }

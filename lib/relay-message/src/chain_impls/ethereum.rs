@@ -575,7 +575,7 @@ where
 
     let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
         proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-            key: U256::from_big_endian(proof.key.to_fixed_bytes()),
+            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
             value: proof.value.into(),
             proof: proof
                 .proof

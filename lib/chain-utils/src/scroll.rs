@@ -47,6 +47,8 @@ pub struct Scroll {
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
+    pub rollup_message_queue_slot: U256,
+
     pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
     pub union_grpc_url: String,
 }
@@ -65,6 +67,8 @@ pub struct Config {
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
+    pub rollup_message_queue_slot: U256,
+
     pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
     pub l1: ethereum::Config<Readonly>,
     pub scroll_api: String,
@@ -124,6 +128,7 @@ impl Scroll {
             l1_client_id: config.l1_client_id,
             union_grpc_url: config.union_grpc_url,
             scroll_rpc: scroll_rpc::JsonRpcClient::new(config.scroll_eth_rpc_api).await?,
+            rollup_message_queue_slot: config.rollup_message_queue_slot,
         })
     }
 
@@ -140,7 +145,7 @@ impl Scroll {
             .provider
             .get_storage_at(
                 ethers::types::H160(self.rollup_contract_address.0),
-                H256::from(self.rollup_last_finalized_batch_index_slot.to_big_endian()).into(),
+                H256::from(self.rollup_last_finalized_batch_index_slot.to_be_bytes()).into(),
                 Some(ethers::types::BlockId::Number(
                     ethers::types::BlockNumber::Number(execution_height.into()),
                 )),
@@ -148,7 +153,7 @@ impl Scroll {
             .await
             .unwrap();
 
-        let batch_index = U256::from_big_endian(storage.to_fixed_bytes())
+        let batch_index = U256::from_be_bytes(storage.to_fixed_bytes())
             .try_into()
             .unwrap();
 
@@ -272,7 +277,7 @@ impl Chain for Scroll {
             .provider
             .get_storage_at(
                 ethers::types::H160(self.rollup_contract_address.0),
-                H256::from(self.rollup_last_finalized_batch_index_slot.to_big_endian()).into(),
+                H256::from(self.rollup_last_finalized_batch_index_slot.to_be_bytes()).into(),
                 Some(ethers::types::BlockId::Number(
                     ethers::types::BlockNumber::Number(scroll_height.into()),
                 )),

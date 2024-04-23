@@ -40,3 +40,6 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 
 [features]
 arbitrary = ["dep:arbitrary"]
+
+[dev-dependencies]
+tracing-subscriber = "0.3.18"

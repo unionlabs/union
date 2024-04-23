@@ -68,11 +68,11 @@ pub fn verify_header(
 }
 
 pub fn finalized_state_root_key(slot: U256, batch_index: U256) -> U256 {
-    U256::from_big_endian(
+    U256::from_be_bytes(
         H256::from(
             sha3::Keccak256::new()
-                .chain_update(batch_index.to_big_endian())
-                .chain_update(slot.to_big_endian())
+                .chain_update(batch_index.to_be_bytes())
+                .chain_update(slot.to_be_bytes())
                 .finalize(),
         )
         .0,
@@ -194,8 +194,8 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-                proof.key.to_big_endian().into(),
-                &proof.value.to_big_endian(),
+                proof.key.to_be_bytes().into(),
+                &proof.value.to_be_bytes(),
                 &proof.proof
             ),
             Ok(())
@@ -214,7 +214,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-                proof.key.to_big_endian().into(),
+                proof.key.to_be_bytes().into(),
                 &proof.proof
             ),
             Ok(())

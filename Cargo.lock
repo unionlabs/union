@@ -803,6 +803,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "typenum",
  "unionlabs",
 ]
@@ -2216,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "ethers"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "ethers-addressbook",
  "ethers-contract",
@@ -2231,7 +2232,7 @@ dependencies = [
 [[package]]
 name = "ethers-addressbook"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "ethers-core",
  "once_cell",
@@ -2242,7 +2243,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "const-hex",
  "ethers-contract-abigen",
@@ -2260,7 +2261,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-abigen"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "Inflector",
  "const-hex",
@@ -2283,7 +2284,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-derive"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "Inflector",
  "const-hex",
@@ -2298,7 +2299,7 @@ dependencies = [
 [[package]]
 name = "ethers-core"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "arrayvec",
  "bytes",
@@ -2328,7 +2329,7 @@ dependencies = [
 [[package]]
 name = "ethers-etherscan"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "ethers-core",
  "reqwest",
@@ -2342,7 +2343,7 @@ dependencies = [
 [[package]]
 name = "ethers-middleware"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "async-trait",
  "auto_impl",
@@ -2368,7 +2369,7 @@ dependencies = [
 [[package]]
 name = "ethers-providers"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "async-trait",
  "auto_impl",
@@ -2405,7 +2406,7 @@ dependencies = [
 [[package]]
 name = "ethers-signers"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "async-trait",
  "coins-bip32",
@@ -2423,7 +2424,7 @@ dependencies = [
 [[package]]
 name = "ethers-solc"
 version = "2.0.10"
-source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#070dab6ca10168f372e52fd0e76e898896804c46"
+source = "git+https://github.com/unionlabs/ethers-rs?branch=ethers-core-wasm#dd64d33c3a9ad2eaad6f2806c88663ebbcab22c0"
 dependencies = [
  "cfg-if",
  "const-hex",
@@ -2507,6 +2508,19 @@ name = "fastrand"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
+
+[[package]]
+name = "fetch-scroll-codec-test-vectors"
+version = "0.0.0"
+dependencies = [
+ "clap 4.5.4",
+ "ethers",
+ "scroll-api",
+ "scroll-codec",
+ "serde_json",
+ "tokio",
+ "url",
+]
 
 [[package]]
 name = "ff"
@@ -5317,6 +5331,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "scroll-codec"
+version = "0.1.0"
+dependencies = [
+ "enumorph",
+ "ethers",
+ "futures",
+ "hex",
+ "hex-literal",
+ "macros",
+ "num-bigint",
+ "scroll-api",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "tokio",
+ "unionlabs",
+ "url",
+]
+
+[[package]]
 name = "scroll-light-client"
 version = "0.1.0"
 dependencies = [
@@ -5549,9 +5585,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.115"
+version = "1.0.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12dc5c46daa8e9fdf4f5e71b6cf9a53f2487da0e86e55808e2d35539666497dd"
+checksum = "3e17db7126d17feb94eb3fad46bf1a96b034e8aacbc2e775fe81505f8b0b2813"
 dependencies = [
  "itoa",
  "ryu",
