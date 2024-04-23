@@ -101,8 +101,11 @@ impl IbcClient for TendermintLightClient {
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: Env,
-        header: Self::Header,
+        mut header: Self::Header,
     ) -> Result<(), Self::Error> {
+        set_total_voting_power(&mut header.validator_set)?;
+        set_total_voting_power(&mut header.trusted_validators)?;
+
         let client_state: WasmClientState = read_client_state(deps)?;
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &header.trusted_height)?
@@ -398,6 +401,20 @@ impl IbcClient for TendermintLightClient {
             .try_into()
             .map_err(|_| Error::NegativeTimestamp(timestamp))
     }
+}
+
+fn set_total_voting_power(
+    validator_set: &mut unionlabs::tendermint::types::validator_set::ValidatorSet,
+) -> Result<(), Error> {
+    validator_set.total_voting_power =
+        validator_set
+            .validators
+            .iter()
+            .try_fold(0_i64, |acc, val| {
+                acc.checked_add(val.voting_power.inner())
+                    .ok_or(Error::MathOverflow)
+            })?;
+    Ok(())
 }
 
 fn migrate_check_allowed_fields(
