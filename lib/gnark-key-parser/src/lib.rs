@@ -6,6 +6,11 @@ use substrate_bn::{
 
 mod error;
 
+pub struct PedersenVerifyingKey {
+    pub g: AffineG2,
+    pub g_root_sigma_neg: AffineG2,
+}
+
 /// A verification key in the Groth16 SNARK.
 pub struct VerifyingKey {
     /// The `alpha * G`, where `G` is the generator of `E::G1`.
@@ -18,6 +23,8 @@ pub struct VerifyingKey {
     pub delta_g2: substrate_bn::AffineG2,
     /// The `gamma^{-1} * (beta * a_i + alpha * b_i + c_i) * H`, where `H` is the generator of `E::G1`.
     pub gamma_abc_g1: Vec<AffineG1>,
+    pub public_and_commitment_committed: Vec<Vec<u64>>,
+    pub commitment_key: PedersenVerifyingKey,
 }
 
 const MASK: u8 = 0b11 << 6;
@@ -33,30 +40,70 @@ const G2_AFFINE_COMPRESSED_SIZE: usize = 32 * 2;
 const G2_AFFINE_UNCOMPRESSED_SIZE: usize = G2_AFFINE_COMPRESSED_SIZE * 2;
 
 impl VerifyingKey {
-    pub fn parse(buf: &[u8]) -> Result<Self, Error> {
+    pub fn parse(buf: &[u8]) -> Result<(usize, Self), Error> {
         let mut cursor = 0;
-        let (n_bytes, alpha_g1) = parse_affine_g1(&buf[..]).unwrap();
+        let (n_bytes, alpha_g1) = parse_affine_g1(&buf[..])?;
         cursor += n_bytes;
-        let (n_bytes, _g1_beta) = parse_affine_g1(&buf[cursor..]).unwrap();
+        let (n_bytes, _g1_beta) = parse_affine_g1(&buf[cursor..])?;
         cursor += n_bytes;
-        let (n_bytes, beta_g2) = parse_affine_g2(&buf[cursor..]).unwrap();
+        let (n_bytes, beta_g2) = parse_affine_g2(&buf[cursor..])?;
         cursor += n_bytes;
-        let (n_bytes, gamma_g2) = parse_affine_g2(&buf[cursor..]).unwrap();
+        let (n_bytes, gamma_g2) = parse_affine_g2(&buf[cursor..])?;
         cursor += n_bytes;
-        let (n_bytes, _g1_delta) = parse_affine_g1(&buf[cursor..]).unwrap();
+        let (n_bytes, _g1_delta) = parse_affine_g1(&buf[cursor..])?;
         cursor += n_bytes;
-        let (n_bytes, delta_g2) = parse_affine_g2(&buf[cursor..]).unwrap();
+        let (n_bytes, delta_g2) = parse_affine_g2(&buf[cursor..])?;
         cursor += n_bytes;
-        let (_, gamma_abc_g1) = parse_affine_g1_array(&buf[cursor..]).unwrap();
+        let (n_bytes, gamma_abc_g1) = parse_affine_g1_array(&buf[cursor..])?;
+        cursor += n_bytes;
+        let (n_bytes, public_and_commitment_committed) = parse_uint64_slice_slice(&buf[cursor..])?;
+        cursor += n_bytes;
+        let (n_bytes, g) = parse_affine_g2(&buf[cursor..])?;
+        cursor += n_bytes;
+        let (n_bytes, g_root_sigma_neg) = parse_affine_g2(&buf[cursor..])?;
+        cursor += n_bytes;
 
-        Ok(Self {
-            alpha_g1,
-            beta_g2,
-            gamma_g2,
-            delta_g2,
-            gamma_abc_g1,
-        })
+        Ok((
+            cursor,
+            Self {
+                alpha_g1,
+                beta_g2,
+                gamma_g2,
+                delta_g2,
+                gamma_abc_g1,
+                public_and_commitment_committed,
+                commitment_key: PedersenVerifyingKey {
+                    g,
+                    g_root_sigma_neg,
+                },
+            },
+        ))
     }
+}
+
+pub fn parse_uint64_slice(buf: &[u8]) -> Result<(usize, Vec<u64>), Error> {
+    let size = u32::from_be_bytes((&buf[0..4]).try_into().expect("impossible"));
+    let mut items = Vec::new();
+    let mut cursor = 4;
+    for _ in 0..size {
+        items.push(u64::from_be_bytes(
+            (&buf[cursor..cursor + 8]).try_into().expect("impossible"),
+        ));
+        cursor += 8;
+    }
+    Ok((cursor, items))
+}
+
+pub fn parse_uint64_slice_slice(buf: &[u8]) -> Result<(usize, Vec<Vec<u64>>), Error> {
+    let size = u32::from_be_bytes((&buf[0..4]).try_into().expect("impossible"));
+    let mut items = Vec::new();
+    let mut cursor = 4;
+    for _ in 0..size {
+        let (cur_read, value) = parse_uint64_slice(&buf[cursor..])?;
+        cursor += cur_read;
+        items.push(value);
+    }
+    Ok((cursor, items))
 }
 
 pub fn parse_affine_g1_array(buf: &[u8]) -> Result<(usize, Vec<AffineG1>), Error> {
@@ -263,6 +310,31 @@ mod tests {
     }
 
     pub fn universal_vk() -> VerifyingKey {
+        const PEDERSEN_G: substrate_bn::AffineG2 = unsafe {
+            core::mem::transmute::<[u128; 8], substrate_bn::AffineG2>([
+                11811635544135052229933151055424244648,
+                38109979931269619311736752979166931278,
+                90391742616114872771404285750669801592,
+                52127860733344004379550038853653983369,
+                94283382067525625571866539274932825678,
+                46211394867610833270624710233881181494,
+                152610685216587622477368049102478160737,
+                13810267963617699865883949649491963230,
+            ])
+        };
+        const PEDERSEN_G_ROOT_SIGMA_NEG: substrate_bn::AffineG2 = unsafe {
+            core::mem::transmute::<[u128; 8], substrate_bn::AffineG2>([
+                72813077000167954255887915103454700534,
+                12589073809616840933661747092291565935,
+                337926906408442213219854203224585082877,
+                59919365646951351584569269731816365136,
+                12528477130055848686709301753705522532,
+                49609059301297358295345786701940661278,
+                57099380008375147203174978222963579184,
+                6628981065425146778130938788258647964,
+            ])
+        };
+
         VerifyingKey {
             alpha_g1: make_g1(
                 BigInt!(
@@ -340,8 +412,14 @@ mod tests {
                 ),
                 ),
             ],
+            public_and_commitment_committed: Vec::new(),
+            commitment_key: PedersenVerifyingKey {
+                g: PEDERSEN_G,
+                g_root_sigma_neg: PEDERSEN_G_ROOT_SIGMA_NEG,
+            },
         }
     }
+
     #[test]
     fn it_works() {
         // vk.bin
@@ -349,7 +427,9 @@ mod tests {
 
         let verifying_key = universal_vk();
 
-        let parsed_key = VerifyingKey::parse(&file[..]).unwrap();
+        let (n_read, parsed_key) = VerifyingKey::parse(&file[..]).unwrap();
+
+        assert_eq!(n_read, file.len());
 
         assert_eq!(verifying_key.alpha_g1, parsed_key.alpha_g1);
         assert_eq!(verifying_key.beta_g2.x(), parsed_key.beta_g2.x());
@@ -359,5 +439,21 @@ mod tests {
         assert_eq!(verifying_key.delta_g2.x(), parsed_key.delta_g2.x());
         assert_eq!(verifying_key.delta_g2.y(), parsed_key.delta_g2.y());
         assert_eq!(verifying_key.gamma_abc_g1, parsed_key.gamma_abc_g1);
+        assert_eq!(
+            verifying_key.commitment_key.g.x(),
+            parsed_key.commitment_key.g.x()
+        );
+        assert_eq!(
+            verifying_key.commitment_key.g.y(),
+            parsed_key.commitment_key.g.y()
+        );
+        assert_eq!(
+            verifying_key.commitment_key.g_root_sigma_neg.x(),
+            parsed_key.commitment_key.g_root_sigma_neg.x()
+        );
+        assert_eq!(
+            verifying_key.commitment_key.g_root_sigma_neg.y(),
+            parsed_key.commitment_key.g_root_sigma_neg.y()
+        );
     }
 }

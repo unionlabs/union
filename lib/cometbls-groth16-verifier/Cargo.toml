@@ -10,7 +10,7 @@ version      = "0.1.0"
 workspace = true
 
 [package.metadata.crane]
-include = ["lib/cometbls-groth16-verifier/verifying_key.bin"]
+test-include = ["lib/cometbls-groth16-verifier/verifying_key.bin"]
 
 [dependencies]
 ark-ff       = { version = "0.4.2", default-features = false }
@@ -27,9 +27,5 @@ default = []
 std     = []
 
 [build-dependencies]
-byteorder        = { version = "1.4", default-features = false }
 gnark-key-parser = { workspace = true }
-hex-literal      = { workspace = true }
 substrate-bn     = { version = "0.6", default-features = false }
-
-unionlabs = { workspace = true }
