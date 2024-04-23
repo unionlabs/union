@@ -137,6 +137,10 @@
       url = "github:unionlabs/union/release-v0.21.0";
       flake = false;
     };
+    v0_22_0 = {
+      url = "github:unionlabs/union/release-v0.22.0";
+      flake = false;
+    };
   };
   outputs =
     inputs@{ self
@@ -268,7 +272,7 @@
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
           uniondBundleVersions = rec {
-            complete = versions.union-testnet-7.versions;
+            complete = versions.union-testnet-8.versions;
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
