@@ -7,6 +7,7 @@ import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/access/Ownable.sol";
 
+import "../contracts/Glue.sol";
 import "../contracts/core/02-client/IBCClient.sol";
 import "../contracts/core/03-connection/IBCConnection.sol";
 import "../contracts/core/04-channel/IBCChannelHandshake.sol";

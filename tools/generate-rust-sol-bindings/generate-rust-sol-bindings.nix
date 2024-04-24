@@ -33,7 +33,6 @@
             ${self'.packages.evm-contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json \
             ${self'.packages.evm-contracts}/out/IBCPacket.sol/IBCPacket.json \
             ${self'.packages.evm-contracts}/out/Glue.sol/Glue.json \
-            ${self'.packages.evm-contracts}/out/DevnetOwnableIBCHandler.sol/DevnetOwnableIBCHandler.json \
             ${self'.packages.evm-contracts}/out/ERC20.sol/ERC20.json \
             ${self'.packages.evm-contracts}/out/Relay.sol/UCS01Relay.json \
             ${self'.packages.evm-contracts}/out/CometblsClientV2.sol/CometblsClient.json
