@@ -3,8 +3,6 @@
     let
       voyager = crane.buildWorkspaceMember {
         crateDirFromRoot = "voyager";
-        # temporarily, to keep warnings in-editor until i fix them
-        cargoClippyExtraArgs = "--allow deprecated";
         extraEnv = {
           SQLX_OFFLINE = "1";
         };

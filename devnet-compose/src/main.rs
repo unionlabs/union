@@ -150,7 +150,7 @@ impl DevnetConfig {
 
 fn main() {
     cliclack::set_theme(theme::UnionTheme);
-    cliclack::clear_screen();
+    let _ = cliclack::clear_screen();
 
     intro(style(" Union Devnet Compose ").on_cyan().black().bold()).unwrap();
     let networks: Vec<Network> = multiselect("Which networks do you want to include?")

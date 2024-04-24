@@ -42,7 +42,7 @@ const G2_AFFINE_UNCOMPRESSED_SIZE: usize = G2_AFFINE_COMPRESSED_SIZE * 2;
 impl VerifyingKey {
     pub fn parse(buf: &[u8]) -> Result<(usize, Self), Error> {
         let mut cursor = 0;
-        let (n_bytes, alpha_g1) = parse_affine_g1(&buf[..])?;
+        let (n_bytes, alpha_g1) = parse_affine_g1(buf)?;
         cursor += n_bytes;
         let (n_bytes, _g1_beta) = parse_affine_g1(&buf[cursor..])?;
         cursor += n_bytes;
@@ -158,10 +158,8 @@ pub fn parse_affine_g1(buf: &[u8]) -> Result<(usize, AffineG1), Error> {
 
     let metadata = buf[0] & MASK;
 
-    if metadata == UNCOMPRESSED {
-        if buf.len() < G1_AFFINE_UNCOMPRESSED_SIZE {
-            return Err(Error::ShortBuffer);
-        }
+    if metadata == UNCOMPRESSED && buf.len() < G1_AFFINE_UNCOMPRESSED_SIZE {
+        return Err(Error::ShortBuffer);
     }
 
     if metadata == COMPRESSED_INFINITY {
@@ -198,10 +196,8 @@ pub fn parse_affine_g1(buf: &[u8]) -> Result<(usize, AffineG1), Error> {
         if metadata == COMPRESSED_SMALLEST {
             y = -y;
         }
-    } else {
-        if metadata == COMPRESSED_LARGEST {
-            y = -y;
-        }
+    } else if metadata == COMPRESSED_LARGEST {
+        y = -y;
     }
 
     let g1 = AffineG1::new(x, y)?;
@@ -219,10 +215,8 @@ pub fn parse_affine_g2(buf: &[u8]) -> Result<(usize, AffineG2), Error> {
 
     let metadata = buf[0] & MASK;
 
-    if metadata == UNCOMPRESSED {
-        if buf.len() < G2_AFFINE_UNCOMPRESSED_SIZE {
-            return Err(Error::ShortBuffer);
-        }
+    if metadata == UNCOMPRESSED && buf.len() < G2_AFFINE_UNCOMPRESSED_SIZE {
+        return Err(Error::ShortBuffer);
     }
 
     if metadata == COMPRESSED_INFINITY {
@@ -267,10 +261,8 @@ pub fn parse_affine_g2(buf: &[u8]) -> Result<(usize, AffineG2), Error> {
         if metadata == COMPRESSED_SMALLEST {
             y = -y;
         }
-    } else {
-        if metadata == COMPRESSED_LARGEST {
-            y = -y;
-        }
+    } else if metadata == COMPRESSED_LARGEST {
+        y = -y;
     }
 
     Ok((G2_AFFINE_COMPRESSED_SIZE, AffineG2::new(x, y)?))

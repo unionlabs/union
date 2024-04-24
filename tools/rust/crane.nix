@@ -292,7 +292,7 @@
             checks = mkChecks "${cratePname}" {
               clippy = mkCi (system == "x86_64-linux") (craneLib.cargoClippy (crateAttrs // {
                 cargoArtifacts = artifacts;
-                cargoClippyExtraArgs = " -- --deny warnings ${cargoClippyExtraArgs}";
+                cargoClippyExtraArgs = "--tests -- --deny warnings ${cargoClippyExtraArgs}";
               }));
               tests = mkCi (system == "x86_64-linux") (craneLib.cargoNextest cargoNextestAttrs);
             };
