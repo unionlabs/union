@@ -23,6 +23,7 @@ members = [
   "lib/chain-utils",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-verifier",
+  "lib/gnark-key-parser",
   "lib/ics-008-wasm-client",
   "lib/ics23",
   "lib/macros",
@@ -43,6 +44,7 @@ members = [
   "lib/unionlabs",
   "lib/voyager-message",
   "lib/zktrie-rs",
+  "lib/gnark-key-parser",
 
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
@@ -79,6 +81,7 @@ chain-utils               = { path = "lib/chain-utils", default-features = false
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 contracts                 = { path = "generated/rust/contracts", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
+gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
 ics008-wasm-client        = { path = "lib/ics-008-wasm-client", default-features = false }
 ics23                     = { path = "lib/ics23", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }

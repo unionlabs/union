@@ -145,6 +145,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arith"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "556cabf32c649f5d6ccfbcc5bdf9f5a7cc4aa1eb5043cdabedff3fd49dd2cab9"
+
+[[package]]
 name = "ark-ff"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -984,6 +990,7 @@ dependencies = [
  "ark-ff",
  "byteorder",
  "ethabi",
+ "gnark-key-parser",
  "hex-literal",
  "sha2 0.10.8",
  "sha3",
@@ -2971,6 +2978,18 @@ dependencies = [
  "futures-core",
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "gnark-key-parser"
+version = "0.1.0"
+dependencies = [
+ "arith",
+ "ark-ff",
+ "base64 0.21.7",
+ "hex",
+ "substrate-bn",
+ "thiserror",
 ]
 
 [[package]]
