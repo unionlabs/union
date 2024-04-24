@@ -36,7 +36,13 @@ pub enum ChunkV0DecodeError {
 }
 
 impl ChunkV0 {
-    pub(crate) fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ChunkV0DecodeError> {
+    /// Decode a v0 chunk.
+    ///
+    /// # Errors
+    ///
+    /// See [`ChunkV0DecodeError`] for the possible failure modes for this function.
+    #[allow(clippy::missing_panics_doc)] // panic is unreachable
+    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ChunkV0DecodeError> {
         let bz = bz.as_ref();
 
         let len: usize = bz
@@ -60,7 +66,7 @@ impl ChunkV0 {
             blocks.push(BlockContext::decode(
                 bz[((BlockContext::LENGTH * i) + 1)..=(BlockContext::LENGTH * (i + 1))]
                     .try_into()
-                    .unwrap(),
+                    .expect("size is the expected length; qed;"),
             ));
         }
 
@@ -115,8 +121,13 @@ pub struct ChunkV1 {
 }
 
 impl ChunkV1 {
-    #[allow(clippy::unwrap_used, clippy::missing_panics_doc)]
-    pub(crate) fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ChunkV1DecodeError> {
+    /// Decode a v1 chunk.
+    ///
+    /// # Errors
+    ///
+    /// See [`ChunkV1DecodeError`] for the possible failure modes for this function.
+    #[allow(clippy::missing_panics_doc)] // panic is unreachable
+    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ChunkV1DecodeError> {
         let bz = bz.as_ref();
 
         let len: usize = bz
@@ -137,7 +148,9 @@ impl ChunkV1 {
 
         for i in 0..len {
             blocks.push(BlockContext::decode(
-                bz[((60 * i) + 1)..=(60 * (i + 1))].try_into().unwrap(),
+                bz[((BlockContext::LENGTH * i) + 1)..=(BlockContext::LENGTH * (i + 1))]
+                    .try_into()
+                    .expect("size is the expected length; qed;"),
             ));
         }
 

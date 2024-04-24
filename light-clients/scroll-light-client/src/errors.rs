@@ -3,13 +3,17 @@ use ethereum_verifier::{
     ValidateLightClientError, VerifyAccountStorageRootError, VerifyStorageAbsenceError,
     VerifyStorageProofError,
 };
+use scroll_codec::{
+    batch_header::BatchHeaderDecodeError,
+    chunk::{ChunkV0DecodeError, ChunkV1DecodeError},
+};
 use thiserror::Error as ThisError;
 use unionlabs::{
     hash::{H160, H256},
     ibc::core::client::height::Height,
 };
 
-#[derive(ThisError, Debug, PartialEq)]
+#[derive(ThisError, Debug)]
 pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -76,6 +80,21 @@ pub enum Error {
 
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
+
+    #[error("error decoding commit batch calldata")]
+    CommitBatchDecode(#[from] ethers_core::abi::AbiError),
+
+    #[error("empty batch")]
+    EmptyBatch,
+
+    #[error("error decoding v0 chunk")]
+    ChunkV0Decode(#[from] ChunkV0DecodeError),
+
+    #[error("error decoding v1 chunk")]
+    ChunkV1Decode(#[from] ChunkV1DecodeError),
+
+    #[error("error decoding batch header")]
+    BatchHeaderDecode(#[from] BatchHeaderDecodeError),
 }
 
 impl From<ics008_wasm_client::storage_utils::Error> for Error {

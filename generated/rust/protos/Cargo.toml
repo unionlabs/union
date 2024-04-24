@@ -273,6 +273,7 @@ proto_full = [
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
   "union+ibc+lightclients+scroll+v1",
+  "union+ics23+v1",
   "union+staking+v1",
 ]
 "tendermint+abci" = ["google+protobuf", "tendermint+crypto", "tendermint+types"]
@@ -305,6 +306,7 @@ proto_full = [
 ]
 "union+ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1", "ibc+lightclients+tendermint+v1"]
 "union+ibc+lightclients+scroll+v1" = ["ibc+core+client+v1", "union+ibc+lightclients+ethereum+v1"]
+"union+ics23+v1" = []
 "union+staking+v1" = ["cosmos+staking+v1beta1"]
 ## @@protoc_insertion_point(features)
 client      = ["tonic"]

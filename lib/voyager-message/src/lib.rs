@@ -1187,6 +1187,19 @@ mod tests {
             },
         )));
 
+        println!("---------------------------------------");
+        println!("Scroll - fetch update header");
+        println!("---------------------------------------");
+        print_json::<RelayMessageTypes>(fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
+            scroll_chain_id,
+            relay_message::fetch::Fetch::UpdateHeaders(relay_message::fetch::FetchUpdateHeaders {
+                counterparty_chain_id: union_chain_id.clone(),
+                counterparty_client_id: parse!("08-wasm-0"),
+                update_from: parse!("0-1"),
+                update_to: parse!("0-4846816"),
+            }),
+        )));
+
         print_json::<BlockMessageTypes>(fetch(block_message::id::<Cosmos, _>(
             "simd-devnet-1".parse().unwrap(),
             block_message::fetch::FetchBlock {

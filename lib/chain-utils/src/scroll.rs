@@ -45,11 +45,17 @@ pub struct Scroll {
     pub l1: Ethereum<Mainnet, Readonly>,
 
     pub rollup_contract_address: H160,
+    /// [ScrollChain.finalizedStateRoots](https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L159)
     pub rollup_finalized_state_roots_slot: U256,
+    /// [ScrollChain.lastFinalizedBatchIndex](https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L153)
     pub rollup_last_finalized_batch_index_slot: U256,
+    /// [ScrollChain.messageQueue](https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L128)
     pub rollup_message_queue_slot: U256,
+    /// [ScrollChain.committedBatches](https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L156)
+    pub rollup_committed_batches_slot: U256,
 
     pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
+    /// GRPC url of Union, used to query the L1 state with [`Self::l1_client_id`].
     pub union_grpc_url: String,
 }
 
@@ -68,6 +74,7 @@ pub struct Config {
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
     pub rollup_message_queue_slot: U256,
+    pub rollup_committed_batches_slot: U256,
 
     pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
     pub l1: ethereum::Config<Readonly>,
@@ -129,6 +136,7 @@ impl Scroll {
             union_grpc_url: config.union_grpc_url,
             scroll_rpc: scroll_rpc::JsonRpcClient::new(config.scroll_eth_rpc_api).await?,
             rollup_message_queue_slot: config.rollup_message_queue_slot,
+            rollup_committed_batches_slot: config.rollup_committed_batches_slot,
         })
     }
 
@@ -264,6 +272,7 @@ impl Chain for Scroll {
             rollup_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
             ibc_contract_address: self.ibc_handler_address,
             ibc_commitment_slot: U256::from(0),
+            rollup_committed_batches_slot: self.rollup_committed_batches_slot,
         }
     }
 

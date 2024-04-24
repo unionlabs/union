@@ -467,6 +467,171 @@ impl ProposalExecutorResult {
         }
     }
 }
+/// EventCreateGroup is an event emitted when a group is created.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventCreateGroup {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+}
+impl ::prost::Name for EventCreateGroup {
+    const NAME: &'static str = "EventCreateGroup";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventUpdateGroup is an event emitted when a group is updated.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUpdateGroup {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+}
+impl ::prost::Name for EventUpdateGroup {
+    const NAME: &'static str = "EventUpdateGroup";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventCreateGroupPolicy is an event emitted when a group policy is created.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventCreateGroupPolicy {
+    /// address is the account address of the group policy.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventCreateGroupPolicy {
+    const NAME: &'static str = "EventCreateGroupPolicy";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventUpdateGroupPolicy is an event emitted when a group policy is updated.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUpdateGroupPolicy {
+    /// address is the account address of the group policy.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventUpdateGroupPolicy {
+    const NAME: &'static str = "EventUpdateGroupPolicy";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventSubmitProposal is an event emitted when a proposal is created.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSubmitProposal {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+impl ::prost::Name for EventSubmitProposal {
+    const NAME: &'static str = "EventSubmitProposal";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventWithdrawProposal is an event emitted when a proposal is withdrawn.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventWithdrawProposal {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+impl ::prost::Name for EventWithdrawProposal {
+    const NAME: &'static str = "EventWithdrawProposal";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventVote is an event emitted when a voter votes on a proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventVote {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+impl ::prost::Name for EventVote {
+    const NAME: &'static str = "EventVote";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventExec is an event emitted when a proposal is executed.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventExec {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// result is the proposal execution result.
+    #[prost(enumeration = "ProposalExecutorResult", tag = "2")]
+    pub result: i32,
+    /// logs contains error logs in case the execution result is FAILURE.
+    #[prost(string, tag = "3")]
+    pub logs: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventExec {
+    const NAME: &'static str = "EventExec";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventLeaveGroup is an event emitted when group member leaves the group.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventLeaveGroup {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+    /// address is the account address of the group member.
+    #[prost(string, tag = "2")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventLeaveGroup {
+    const NAME: &'static str = "EventLeaveGroup";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// EventProposalPruned is an event emitted when a proposal is pruned.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalPruned {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// status is the proposal status (UNSPECIFIED, SUBMITTED, ACCEPTED, REJECTED, ABORTED, WITHDRAWN).
+    #[prost(enumeration = "ProposalStatus", tag = "2")]
+    pub status: i32,
+    /// tally_result is the proposal tally result (when applicable).
+    #[prost(message, optional, tag = "3")]
+    pub tally_result: ::core::option::Option<TallyResult>,
+}
+impl ::prost::Name for EventProposalPruned {
+    const NAME: &'static str = "EventProposalPruned";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
 /// GenesisState defines the group module's genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -979,171 +1144,6 @@ pub struct QueryGroupsResponse {
 }
 impl ::prost::Name for QueryGroupsResponse {
     const NAME: &'static str = "QueryGroupsResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventCreateGroup is an event emitted when a group is created.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventCreateGroup {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-}
-impl ::prost::Name for EventCreateGroup {
-    const NAME: &'static str = "EventCreateGroup";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventUpdateGroup is an event emitted when a group is updated.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventUpdateGroup {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-}
-impl ::prost::Name for EventUpdateGroup {
-    const NAME: &'static str = "EventUpdateGroup";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventCreateGroupPolicy is an event emitted when a group policy is created.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventCreateGroupPolicy {
-    /// address is the account address of the group policy.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventCreateGroupPolicy {
-    const NAME: &'static str = "EventCreateGroupPolicy";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventUpdateGroupPolicy is an event emitted when a group policy is updated.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventUpdateGroupPolicy {
-    /// address is the account address of the group policy.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventUpdateGroupPolicy {
-    const NAME: &'static str = "EventUpdateGroupPolicy";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventSubmitProposal is an event emitted when a proposal is created.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventSubmitProposal {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-impl ::prost::Name for EventSubmitProposal {
-    const NAME: &'static str = "EventSubmitProposal";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventWithdrawProposal is an event emitted when a proposal is withdrawn.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventWithdrawProposal {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-impl ::prost::Name for EventWithdrawProposal {
-    const NAME: &'static str = "EventWithdrawProposal";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventVote is an event emitted when a voter votes on a proposal.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventVote {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-impl ::prost::Name for EventVote {
-    const NAME: &'static str = "EventVote";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventExec is an event emitted when a proposal is executed.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventExec {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// result is the proposal execution result.
-    #[prost(enumeration = "ProposalExecutorResult", tag = "2")]
-    pub result: i32,
-    /// logs contains error logs in case the execution result is FAILURE.
-    #[prost(string, tag = "3")]
-    pub logs: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventExec {
-    const NAME: &'static str = "EventExec";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventLeaveGroup is an event emitted when group member leaves the group.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventLeaveGroup {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-    /// address is the account address of the group member.
-    #[prost(string, tag = "2")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventLeaveGroup {
-    const NAME: &'static str = "EventLeaveGroup";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// EventProposalPruned is an event emitted when a proposal is pruned.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventProposalPruned {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// status is the proposal status (UNSPECIFIED, SUBMITTED, ACCEPTED, REJECTED, ABORTED, WITHDRAWN).
-    #[prost(enumeration = "ProposalStatus", tag = "2")]
-    pub status: i32,
-    /// tally_result is the proposal tally result (when applicable).
-    #[prost(message, optional, tag = "3")]
-    pub tally_result: ::core::option::Option<TallyResult>,
-}
-impl ::prost::Name for EventProposalPruned {
-    const NAME: &'static str = "EventProposalPruned";
     const PACKAGE: &'static str = "cosmos.group.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)

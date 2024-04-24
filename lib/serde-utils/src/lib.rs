@@ -374,6 +374,50 @@ pub mod string {
     }
 }
 
+pub mod map_numeric_keys_as_string {
+    use alloc::{
+        collections::BTreeMap,
+        string::{String, ToString},
+    };
+    use core::{fmt::Display, str::FromStr};
+
+    use serde::{de::Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S, M, K, V>(data: M, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        K: Display,
+        V: Serialize,
+        M: IntoIterator<Item = (K, V)> + Copy,
+    {
+        serializer.collect_map(data.into_iter().map(|(k, v)| (k.to_string(), v)))
+    }
+
+    pub fn deserialize<'de, D, M, K, V>(deserializer: D) -> Result<M, D::Error>
+    where
+        D: Deserializer<'de>,
+        K: FromStr,
+        V: Deserialize<'de>,
+        M: FromIterator<(K, V)>,
+    {
+        <BTreeMap<String, V>>::deserialize(deserializer).and_then(|s| {
+            s.into_iter()
+                .map(|(k, v)| {
+                    Ok((
+                        k.parse()
+                            // TODO fix error situation
+                            // FromStr::Err has no bounds
+                            .map_err(|_| {
+                                serde::de::Error::custom("failure to parse string data")
+                            })?,
+                        v,
+                    ))
+                })
+                .collect()
+        })
+    }
+}
+
 pub mod string_opt {
     use alloc::string::String;
     use core::{fmt, str::FromStr};

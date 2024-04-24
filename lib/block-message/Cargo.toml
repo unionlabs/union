@@ -54,4 +54,5 @@ arbitrary = [
   "unionlabs/arbitrary",
   "chain-utils/arbitrary",
   "contracts/arbitrary",
+  # "ethers/arbitrary",
 ]

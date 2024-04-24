@@ -1,19 +1,4 @@
 // @generated
-/// GenesisState defines the evidence module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// evidence defines all the evidence at genesis.
-    #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
-}
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
-    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
-    }
-}
 /// Equivocation implements the Evidence interface and defines evidence of double
 /// signing misbehavior.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -34,6 +19,21 @@ pub struct Equivocation {
 }
 impl ::prost::Name for Equivocation {
     const NAME: &'static str = "Equivocation";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
+/// GenesisState defines the evidence module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// evidence defines all the evidence at genesis.
+    #[prost(message, repeated, tag = "1")]
+    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+}
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
     const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)

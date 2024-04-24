@@ -1,10 +1,16 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
+use ethers_core::abi::AbiDecode;
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
         update_client_state,
     },
     IbcClient, Status, StorageState,
+};
+use scroll_codec::{
+    batch_header::BatchHeader,
+    chunk::{ChunkV0, ChunkV1},
+    CommitBatchCall,
 };
 use sha3::Digest;
 use unionlabs::{
@@ -133,20 +139,38 @@ impl IbcClient for ScrollLightClient {
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
-        env: Env,
+        _env: Env,
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
-            deps.as_ref(),
-            &env,
-            client_state.data.l1_client_id.clone(),
-            header.l1_height,
-        )?;
+
+        let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)?;
+
+        let timestamp = match BatchHeader::decode(call.parent_batch_header)? {
+            BatchHeader::V0(_) => {
+                call.chunks
+                    .last()
+                    .map(ChunkV0::decode)
+                    .ok_or(Error::EmptyBatch)??
+                    .blocks
+            }
+            BatchHeader::V1(_) => {
+                call.chunks
+                    .last()
+                    .map(ChunkV1::decode)
+                    .ok_or(Error::EmptyBatch)??
+                    .blocks
+            }
+        }
+        .pop()
+        .ok_or(Error::EmptyBatch)?
+        .timestamp;
+
         if client_state.data.latest_batch_index < header.last_batch_index {
             client_state.data.latest_batch_index = header.last_batch_index;
             update_client_state(deps.branch(), client_state, header.last_batch_index);
         }
+
         let updated_height = Height {
             // TODO: Extract into a constant
             revision_number: 0,
@@ -156,7 +180,8 @@ impl IbcClient for ScrollLightClient {
             data: ConsensusState {
                 batch_index: header.last_batch_index,
                 ibc_storage_root: header.l2_ibc_account_proof.storage_root,
-                timestamp: l1_consensus_state.data.timestamp,
+                // must be nanos
+                timestamp: 1_000_000_000 * timestamp,
             },
         };
         save_consensus_state(deps, consensus_state, &updated_height);

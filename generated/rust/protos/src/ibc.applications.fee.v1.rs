@@ -1,4 +1,25 @@
 // @generated
+/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IncentivizedAcknowledgement {
+    /// the underlying app acknowledgement bytes
+    #[prost(bytes = "vec", tag = "1")]
+    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
+    /// the relayer address which submits the recv packet message
+    #[prost(string, tag = "2")]
+    pub forward_relayer_address: ::prost::alloc::string::String,
+    /// success flag of the base application callback
+    #[prost(bool, tag = "3")]
+    pub underlying_app_success: bool,
+}
+impl ::prost::Name for IncentivizedAcknowledgement {
+    const NAME: &'static str = "IncentivizedAcknowledgement";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
 /// Fee defines the ICS29 receive, acknowledgement and timeout fees
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -544,27 +565,6 @@ pub struct QueryFeeEnabledChannelResponse {
 }
 impl ::prost::Name for QueryFeeEnabledChannelResponse {
     const NAME: &'static str = "QueryFeeEnabledChannelResponse";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IncentivizedAcknowledgement {
-    /// the underlying app acknowledgement bytes
-    #[prost(bytes = "vec", tag = "1")]
-    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
-    /// the relayer address which submits the recv packet message
-    #[prost(string, tag = "2")]
-    pub forward_relayer_address: ::prost::alloc::string::String,
-    /// success flag of the base application callback
-    #[prost(bool, tag = "3")]
-    pub underlying_app_success: bool,
-}
-impl ::prost::Name for IncentivizedAcknowledgement {
-    const NAME: &'static str = "IncentivizedAcknowledgement";
     const PACKAGE: &'static str = "ibc.applications.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)

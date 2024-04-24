@@ -117,9 +117,10 @@
           # SEE: https://github.com/neoeinstein/protoc-gen-prost/issues/61
           additional-filter = "-not -path '*cosmos/msg/textual/v1/textual.proto' -not -path '*cosmos/msg/v1/msg.proto' -not -path '*cosmos/query/v1/query.proto' -and -not -path '*/proto/tendermint/*'";
           fixup-script = ''
-            sed -i 's/pub struct Validators/pub struct ValidatorsVec/' "./src/cosmos.staking.v1beta1.rs"
-            sed -i 's/AllowList(Validators)/AllowList(ValidatorsVec)/' "./src/cosmos.staking.v1beta1.rs"
-            sed -i 's/DenyList(Validators)/DenyList(ValidatorsVec)/' "./src/cosmos.staking.v1beta1.rs"
+            sed -i 's/pub struct Validators/pub struct ValidatorsList/' "./src/cosmos.staking.v1beta1.rs"
+            sed -i 's/impl ::prost::Name for Validators/impl ::prost::Name for ValidatorsList/' "./src/cosmos.staking.v1beta1.rs"
+            sed -i 's/AllowList(Validators)/AllowList(ValidatorsList)/' "./src/cosmos.staking.v1beta1.rs"
+            sed -i 's/DenyList(Validators)/DenyList(ValidatorsList)/' "./src/cosmos.staking.v1beta1.rs"
           '';
         };
       };

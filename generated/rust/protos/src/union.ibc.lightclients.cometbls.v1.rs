@@ -71,7 +71,6 @@ impl ::prost::Name for Misbehaviour {
         ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
     }
 }
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightHeader {
