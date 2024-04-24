@@ -393,7 +393,7 @@ impl<Hc: Chain, Tr> DoAggregate for Identified<Hc, Tr, Never> {
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
 
-    #[deprecated = "will be removed in favor of an aggregation with state"]
+    // SEE: <https://github.com/unionlabs/union/issues/1813>
     fn query_client_state(
         hc: &Hc,
         client_id: Hc::ClientId,

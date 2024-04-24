@@ -301,17 +301,17 @@ fn verify_generic_zkp_2(
 
     let r1 = substrate_bn::Fr::from_slice(
         &Sha256::new()
-            .chain_update(&g1_to_bytes(&proof_a)?)
-            .chain_update(&g1_to_bytes(&proof_c)?)
-            .chain_update(&g1_to_bytes(&public_inputs_msm)?)
+            .chain_update(g1_to_bytes(&proof_a)?)
+            .chain_update(g1_to_bytes(&proof_c)?)
+            .chain_update(g1_to_bytes(&public_inputs_msm)?)
             .finalize(),
     )
     .map_err(|_| Error::InvalidSliceLength)?;
 
     let r2 = substrate_bn::Fr::from_slice(
         &Sha256::new()
-            .chain_update(&g1_to_bytes(&pc)?)
-            .chain_update(&g1_to_bytes(&pok)?)
+            .chain_update(g1_to_bytes(&pc)?)
+            .chain_update(g1_to_bytes(&pok)?)
             .finalize(),
     )
     .map_err(|_| Error::InvalidSliceLength)?;
