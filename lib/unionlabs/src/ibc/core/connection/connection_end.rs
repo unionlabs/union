@@ -16,7 +16,14 @@ use crate::{
     traits::Id,
 };
 
-#[model(proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from))]
+#[model(
+    proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from),
+    ethabi(
+        raw(contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData),
+        into,
+        from
+    )
+)]
 #[serde(bound(
     serialize = "
         ClientId: Id,

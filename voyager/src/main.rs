@@ -178,32 +178,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             queue.run().await?;
         }
-        Command::Setup(cmd) => match cmd {
-            cli::SetupCmd::InitialChannel {
-                on,
-                counterparty_port_id,
-                module_address,
-                port_id,
-                channel_id,
-            } => {
-                let chain = voyager_config.get_chain(&on).await?;
-
-                match chain {
-                    AnyChain::EthereumMinimal(ethereum) => {
-                        chain_utils::ethereum::setup_initial_channel(
-                            &ethereum,
-                            module_address.into(),
-                            channel_id,
-                            port_id,
-                            counterparty_port_id,
-                        )
-                        .await;
-                    }
-                    _ => panic!("Not supported."),
-                }
-            }
-            cli::SetupCmd::Transfer { .. } => {}
-        },
         Command::Query {
             on,
             at,

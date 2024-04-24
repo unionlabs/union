@@ -1,7 +1,7 @@
 {
   "chain": {
     "scroll-testnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "scroll",
       "ibc_handler_address": "0x0000000000000000000000000000000000000000",
       "signers": [
@@ -30,7 +30,7 @@
       "enabled": false,
       "chain_type": "ethereum",
       "preset_base": "minimal",
-      "ibc_handler_address": "0xA79fC743bcCDF8ec0078021fF7b00837a7CDB032",
+      "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
       "signers": [
         {
           "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
@@ -53,7 +53,7 @@
     },
     "union-devnet": {
       "chain_type": "union",
-      "enabled": false,
+      "enabled": true,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -81,7 +81,7 @@
     },
     "simd-devnet": {
       "chain_type": "cosmos",
-      "enabled": false,
+      "enabled": true,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -103,8 +103,8 @@
         }
       ],
       "fee_denom": "stake",
-      "ws_url": "ws://localhost:26757/websocket",
-      "grpc_url": "http://localhost:9190"
+      "ws_url": "ws://localhost:26957/websocket",
+      "grpc_url": "http://localhost:9390"
     },
     "osmosis-devnet": {
       "chain_type": "cosmos",

@@ -45,7 +45,7 @@ pub trait ChainExt: Chain {
     /// Error type for [`Self::msg`].
     type MsgError: Debug + MaybeRecoverableError;
 
-    /// The config required to construct this light client.
+    /// The config required to create a light client on this chain.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
 
     fn do_fetch<Tr: ChainExt>(
@@ -166,15 +166,16 @@ macro_rules! any_enum {
                     }
                 }
             )+
+
+            $(
+                impl<Hc: ChainExt, Tr: ChainExt> $Enum<Hc, Tr> {
+                    pub fn specific(t: impl Into<Hc::$Enum<Tr>>) -> $Enum<Hc, Tr> {
+                        $Specific(t.into()).into()
+                    }
+                }
+            )?
         };
 
-        $(
-            impl<Hc: ChainExt, Tr: ChainExt> $Enum<Hc, Tr> {
-                pub fn specific(t: impl Into<Hc::$Enum<Tr>>) -> $Enum<Hc, Tr> {
-                    $Specific(t.into()).into()
-                }
-            }
-        )?
     };
 }
 pub(crate) use any_enum;

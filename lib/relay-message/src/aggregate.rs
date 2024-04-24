@@ -150,6 +150,7 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         Identified<Hc, Tr, IbcState<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
         Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
         Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
+        Identified<Tr, Hc, IbcState<ReceiptPath, Tr, Hc>>: IsAggregateData,
 
         // proof
         Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
@@ -1597,9 +1598,21 @@ where
                     //     ),
                     // )
                     fetch(id(
-                        this_chain_id,
+                        this_chain_id.clone(),
                         FetchProof::<Hc, Tr> {
                             at: trusted_client_state_fetched_at_height,
+                            path: ReceiptPath {
+                                port_id: packet.destination_port.clone(),
+                                channel_id: packet.destination_channel.clone(),
+                                sequence: packet.sequence,
+                            }
+                            .into(),
+                        },
+                    )),
+                    fetch(id(
+                        this_chain_id,
+                        FetchState::<Hc, Tr> {
+                            at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
                             path: ReceiptPath {
                                 port_id: packet.destination_port.clone(),
                                 channel_id: packet.destination_channel.clone(),
@@ -1612,13 +1625,7 @@ where
                 [],
                 id(
                     trusted_client_state.chain_id(),
-                    AggregateMsgTimeout::<Tr, Hc> {
-                        // client_id: counterparty_client_id,
-                        // counterparty_client_id: client_id,
-                        // counterparty_chain_id: this_chain_id,
-                        packet,
-                        __marker,
-                    },
+                    AggregateMsgTimeout::<Tr, Hc> { packet, __marker },
                 ),
             ),
         }
@@ -2361,12 +2368,14 @@ where
 impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgTimeout<Hc, Tr>)
 where
     Identified<Tr, Hc, IbcProof<ReceiptPath, Tr, Hc>>: IsAggregateData,
+    Identified<Tr, Hc, IbcState<ReceiptPath, Tr, Hc>>: IsAggregateData,
 
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
     type AggregatedData = HList![
         Identified<Tr, Hc, IbcProof<ReceiptPath, Tr, Hc>>,
+        Identified<Tr, Hc, IbcState<ReceiptPath, Tr, Hc>>,
     ];
 
     fn aggregate(
@@ -2375,52 +2384,71 @@ where
             t:
                 AggregateMsgTimeout {
                     packet,
-                    // client_id,
-                    // counterparty_client_id,
-                    // counterparty_chain_id,
                     __marker: _,
                 },
             __marker: _,
         }: Self,
-        hlist_pat![Identified {
-            chain_id: _,
-            t: IbcProof {
-                proof: proof_unreceived,
-                height: proof_unreceived_height,
-                path: ReceiptPath {
+        hlist_pat![
+            Identified {
+                chain_id: _,
+                t: IbcProof {
+                    proof: proof_unreceived,
+                    height: proof_unreceived_height,
                     // TODO: Assert these against the packet
-                    port_id: _,
-                    channel_id: _,
-                    sequence
+                    path: proof_unreceived_path,
+                    __marker: _,
                 },
                 __marker: _,
             },
-            __marker: _,
-        },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
-        seq([
-            // void(wait(id(
-            //     this_chain_id.clone(),
-            //     WaitForTrustedHeight::<Hc, Tr> {
-            //         client_id,
-            //         counterparty_client_id,
-            //         counterparty_chain_id,
-            //         height: proof_unreceived_height,
-            //     },
-            // ))),
-            effect(id(
-                this_chain_id,
-                MsgTimeoutData::<Hc, Tr> {
-                    msg: MsgTimeout {
-                        packet,
-                        proof_unreceived,
-                        proof_height: proof_unreceived_height,
-                        next_sequence_recv: sequence,
-                    },
-                    __marker: PhantomData,
+            Identified {
+                chain_id: _,
+                t: IbcState {
+                    state: packet_receipt,
+                    height: packet_receipt_height,
+                    path: packet_receipt_path,
                 },
-            )),
-        ])
+                __marker: _,
+            },
+        ]: Self::AggregatedData,
+    ) -> QueueMsg<RelayMessageTypes> {
+        assert_eq!(proof_unreceived_path, packet_receipt_path);
+        assert_eq!(proof_unreceived_height, packet_receipt_height);
+
+        if packet_receipt {
+            tracing::info!(
+                sequence = %packet.sequence,
+                source_port = %packet.source_port,
+                source_channel = %packet.source_channel,
+                destination_port = %packet.destination_port,
+                destination_channel = %packet.destination_channel,
+                "packet received, cancelling timeout"
+            );
+            QueueMsg::Noop
+        } else {
+            seq([
+                // void(wait(id(
+                //     this_chain_id.clone(),
+                //     WaitForTrustedHeight::<Hc, Tr> {
+                //         client_id,
+                //         counterparty_client_id,
+                //         counterparty_chain_id,
+                //         height: proof_unreceived_height,
+                //     },
+                // ))),
+                effect(id(
+                    this_chain_id,
+                    MsgTimeoutData::<Hc, Tr> {
+                        msg: MsgTimeout {
+                            packet,
+                            proof_unreceived,
+                            proof_height: proof_unreceived_height,
+                            next_sequence_recv: proof_unreceived_path.sequence,
+                        },
+                        __marker: PhantomData,
+                    },
+                )),
+            ])
+        }
     }
 }
 

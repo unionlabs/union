@@ -4,7 +4,6 @@
 //! Do not manually edit these files.
 //! These files may be overwritten by the codegen system at any time.
 pub mod cometbls_client;
-pub mod devnet_ownable_ibc_handler;
 pub mod erc20;
 pub mod glue;
 pub mod ibc_channel_handshake;
