@@ -194,7 +194,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			}
 		}
 
-		getInputsHash := func(chainID string, h *types.Header) []byte {
+		getInputsHash := func(chainID string, h *types.Header, trustedValidatorsHash []byte) []byte {
 			buff := []byte{}
 			var padded [32]byte
 			writeI64 := func(x int64) {
@@ -215,12 +215,12 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			writeMiMCHash(h.ValidatorsHash)
 			writeMiMCHash(h.NextValidatorsHash)
 			writeHash(h.AppHash)
-			writeMiMCHash(h.ValidatorsHash)
+			writeMiMCHash(trustedValidatorsHash)
 			hash := sha256.Sum256(buff)
 			return hash[1:]
 		}
 
-		inputsHash := getInputsHash(req.Vote.ChainID, req.UntrustedHeader)
+		inputsHash := getInputsHash(req.Vote.ChainID, req.UntrustedHeader, trustedValidatorsRoot)
 
 		log.Printf("Inputs hash: %X\n", inputsHash)
 
