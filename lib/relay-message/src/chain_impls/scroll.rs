@@ -65,7 +65,7 @@ where
     Tr::StateProof: Encode<EthAbi>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
-        do_msg(&self.ibc_handlers, msg).await
+        do_msg(&self.ibc_handlers, msg, true).await
     }
 }
 
