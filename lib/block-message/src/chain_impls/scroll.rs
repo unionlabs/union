@@ -113,10 +113,15 @@ where
 
                             tracing::debug!(?log, "raw log");
 
-                            let event = IBCHandlerEvents::decode_log(&log.into())
-                                .expect("failed to decode ibc handler event");
-
-                            mk_aggregate_event(scroll, event, event_height, tx_hash).await
+                            match IBCHandlerEvents::decode_log(&log.into()) {
+                                Ok(event) => {
+                                    mk_aggregate_event(scroll, event, event_height, tx_hash).await
+                                }
+                                Err(err) => {
+                                    tracing::warn!(?err, "failed to decode ibc handler event");
+                                    QueueMsg::Noop
+                                }
+                            }
                         })
                         .collect::<Vec<_>>()
                         .await,

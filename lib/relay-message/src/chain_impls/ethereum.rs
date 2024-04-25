@@ -100,13 +100,14 @@ where
     Tr::StateProof: Encode<EthAbi>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
-        do_msg(&self.ibc_handlers, msg).await
+        do_msg(&self.ibc_handlers, msg, false).await
     }
 }
 
 pub async fn do_msg<Hc: ChainExt<Config = EthereumConfig> + EthereumChain, Tr: ChainExt>(
     ibc_handlers: &Pool<IBCHandler<EthereumSignerMiddleware>>,
     msg: Effect<Hc, Tr>,
+    legacy: bool,
 ) -> Result<(), TxSubmitError>
 where
     ConsensusStateOf<Tr>: Encode<EthAbi>,
@@ -304,6 +305,8 @@ where
                 },
             ),
         };
+
+        let msg = if legacy { msg.legacy() } else { msg };
 
         tracing::debug!(?msg, "submitting evm tx");
 
