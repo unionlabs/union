@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    Addr, Attribute, Binary, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
+    Addr, Attribute, Binary, Coin, CosmosMsg, Env, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
     IbcOrder, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
 
 use crate::{
-    middleware::{InFlightPfmPacket, Memo, PacketForward},
+    middleware::{Memo, PacketForward, PacketReturnInfo},
     types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
 
@@ -187,6 +187,15 @@ pub trait TransferProtocol {
         let packet = Self::Packet::try_from(raw_packet.into())?;
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
         let ack = Into::<GenericAck>::into(Self::Ack::try_from(raw_ack.clone().into())?);
+        let memo = Into::<String>::into(packet.extension().clone());
+
+        if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
+            match memo {
+                Memo::Forward { forward } => return self.pfm_ack(ack, forward),
+                Memo::None {} => {}
+            }
+        }
+
         let (ack_msgs, ack_attr) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
@@ -205,7 +214,6 @@ pub trait TransferProtocol {
         };
 
         let packet_event = {
-            let memo = Into::<String>::into(packet.extension().clone());
             Event::new(PACKET_EVENT)
                 .add_attributes((!memo.is_empty()).then_some((ATTR_MEMO, &memo)))
         };
@@ -262,7 +270,6 @@ pub trait TransferProtocol {
     fn receive(
         &mut self,
         raw_packet: impl Into<Binary> + Clone,
-        packet_sequence: u64,
     ) -> IbcReceiveResponse<Self::CustomMsg> {
         let mut handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
             let packet = Self::Packet::try_from(raw_packet.clone().into())?;
@@ -333,7 +340,6 @@ pub trait TransferProtocol {
         &mut self,
         packet: Self::Packet,
         forward: PacketForward,
-        packet_sequence: u64,
         processed: bool,
     ) -> IbcReceiveResponse<Self::CustomMsg>;
 
@@ -341,10 +347,16 @@ pub trait TransferProtocol {
         &mut self,
         tokens: Vec<Coin>,
         forward: PacketForward,
-        in_flight_packet: Option<InFlightPfmPacket>,
+        receiver: Addr,
         nonrefundable: bool,
-        packet_sequence: u64,
+        return_info: PacketReturnInfo,
     ) -> IbcReceiveResponse<Self::CustomMsg>;
+
+    fn pfm_ack(
+        &mut self,
+        ack: GenericAck,
+        original_forward_packet: PacketForward,
+    ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error>;
 }
 
 #[cfg(test)]

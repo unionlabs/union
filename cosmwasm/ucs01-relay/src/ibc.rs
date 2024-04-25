@@ -149,7 +149,7 @@ pub fn ibc_packet_receive(
                 channel: channel_info,
             },
         }
-        .receive(msg.packet.data, msg.packet.sequence)),
+        .receive(msg.packet.data)),
         Ucs01Protocol::VERSION => Ok(Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -158,7 +158,7 @@ pub fn ibc_packet_receive(
                 channel: channel_info,
             },
         }
-        .receive(msg.packet.data, msg.packet.sequence)),
+        .receive(msg.packet.data)),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
             protocol_version: v.into(),

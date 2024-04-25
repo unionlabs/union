@@ -16,7 +16,7 @@ pub const CHANNEL_STATE: Map<(&str, &str), ChannelState> = Map::new("channel_sta
 
 /// In flight PFM packets, stored for refund information.
 /// Indexed by `PfmRefuntPacketKey` (channel_id, port_id, sequence).
-pub const IN_FLIGHT_PFM_PACKETS: Map<PfmRefuntPacketKey, InFlightPfmPacket> =
+pub const IN_FLIGHT_PFM_PACKETS: Map<PfmRefundPacketKey, InFlightPfmPacket> =
     Map::new("in_flight_pfm_packets");
 
 // TokenFactory limitation
@@ -28,22 +28,26 @@ pub type Hash = [u8; HASH_LENGTH];
 
 /// Used for indexing in flight packets for refunds.
 #[derive(Debug, Clone)]
-pub struct PfmRefuntPacketKey {
+pub struct PfmRefundPacketKey {
     pub channel_id: String,
     pub port_id: String,
-    pub sequence: u64,
+    // Block height of the original transaction
+    pub height: u64,
+    // Index of the original transaction from `cosmwasm_std::types::TransactionInfo`
+    pub index: u32,
 }
 
-impl<'a> Prefixer<'a> for PfmRefuntPacketKey {
+impl<'a> Prefixer<'a> for PfmRefundPacketKey {
     fn prefix(&self) -> Vec<cw_storage_plus::Key> {
-        let mut res = self.sequence.prefix();
+        let mut res = self.index.prefix();
+        res.extend(self.height.prefix());
         res.extend(self.port_id.prefix());
         res.extend(self.channel_id.prefix());
         res
     }
 }
 
-impl KeyDeserialize for PfmRefuntPacketKey {
+impl KeyDeserialize for PfmRefundPacketKey {
     type Output = <(String, String, u64) as KeyDeserialize>::Output;
 
     fn from_vec(value: Vec<u8>) -> cosmwasm_std::StdResult<Self::Output> {
@@ -51,7 +55,7 @@ impl KeyDeserialize for PfmRefuntPacketKey {
     }
 }
 
-impl<'a> PrimaryKey<'a> for PfmRefuntPacketKey {
+impl<'a> PrimaryKey<'a> for PfmRefundPacketKey {
     type Prefix = <(String, String, u64) as PrimaryKey<'a>>::Prefix;
 
     type SubPrefix = <(String, String, u64) as PrimaryKey<'a>>::SubPrefix;
@@ -61,7 +65,8 @@ impl<'a> PrimaryKey<'a> for PfmRefuntPacketKey {
     type SuperSuffix = <(String, String, u64) as PrimaryKey<'a>>::SuperSuffix;
 
     fn key(&self) -> Vec<cw_storage_plus::Key> {
-        let mut res = self.sequence.prefix();
+        let mut res = self.index.prefix();
+        res.extend(self.height.prefix());
         res.extend(self.port_id.prefix());
         res.extend(self.channel_id.prefix());
         res

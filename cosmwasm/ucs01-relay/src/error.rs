@@ -3,7 +3,7 @@ use std::string::FromUtf8Error;
 use cosmwasm_std::{IbcOrder, OverflowError, StdError, SubMsgResult};
 use cw_controllers::AdminError;
 use thiserror::Error;
-use ucs01_relay_api::{protocol::ProtocolError, types::EncodingError};
+use ucs01_relay_api::{middleware::MiddlewareError, protocol::ProtocolError, types::EncodingError};
 
 /// Never is a placeholder to ensure we don't return any errors
 #[derive(Error, Debug)]
@@ -62,6 +62,9 @@ pub enum ContractError {
 
     #[error("Only myself is able to trigger this message")]
     Unauthorized,
+
+    #[error("{0}")]
+    MiddlewareError(#[from] MiddlewareError),
 }
 
 impl From<FromUtf8Error> for ContractError {
