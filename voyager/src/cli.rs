@@ -5,7 +5,6 @@ use clap::{
     error::{ContextKind, ContextValue, ErrorKind},
     Args, FromArgMatches, Parser, Subcommand,
 };
-use ethers::types::Address;
 use frunk::{hlist_pat, HList};
 use queue_msg::{aggregation::UseAggregate, run_to_completion, InMemoryQueue};
 use relay_message::{
@@ -327,8 +326,6 @@ pub enum Command {
     Relay,
     #[command(subcommand)]
     Queue(QueueCmd),
-    #[command(subcommand)]
-    Setup(SetupCmd),
     Query {
         #[arg(long)]
         on: String,
@@ -654,42 +651,6 @@ pub enum QueueCmd {
         page: Pg64,
         #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
         per_page: Pg64,
-    },
-}
-
-#[derive(Debug, Subcommand)]
-pub enum SetupCmd {
-    Transfer {
-        #[arg(long)]
-        on: String,
-        #[arg(long)]
-        relay_address: Address,
-        // #[arg(long)]
-        // from: Address,
-        // #[arg(long)]
-        // to: String,
-        #[arg(long)]
-        port_id: String,
-        #[arg(long)]
-        channel_id: String,
-        #[arg(long)]
-        receiver: String,
-        #[arg(long)]
-        amount: u64,
-        #[arg(long)]
-        denom: String,
-    },
-    InitialChannel {
-        #[arg(long)]
-        on: String,
-        #[arg(long)]
-        module_address: Address,
-        #[arg(long)]
-        channel_id: String,
-        #[arg(long)]
-        port_id: String,
-        #[arg(long)]
-        counterparty_port_id: String,
     },
 }
 

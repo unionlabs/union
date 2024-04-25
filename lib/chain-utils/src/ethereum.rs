@@ -3,7 +3,6 @@ use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, sync::Arc}
 use beacon_api::client::BeaconApiClient;
 use contracts::{
     cometbls_client::CometblsClientErrors,
-    devnet_ownable_ibc_handler::OwnershipTransferredFilter,
     ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
     ibc_client::{IBCClientErrors, IBCClientEvents},
     ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
@@ -12,12 +11,12 @@ use contracts::{
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
         GetHashedPacketAcknowledgementCommitmentCall,
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, IBCHandler, NextClientSequenceCall,
-        NextClientSequenceReturn, NextConnectionSequenceCall, NextConnectionSequenceReturn,
-        PacketReceiptsCall, PacketReceiptsReturn,
+        GetHashedPacketCommitmentReturn, HasPacketReceiptCall, HasPacketReceiptReturn, IBCHandler,
+        IbcCoreConnectionV1ConnectionEndData, NextClientSequenceCall, NextConnectionSequenceCall,
+        OwnershipTransferredFilter,
     },
     ibc_packet::{IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
-    shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
+    shared_types::IbcCoreChannelV1ChannelData,
 };
 use ethers::{
     abi::{AbiDecode, Tokenizable},
@@ -46,13 +45,16 @@ use unionlabs::{
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
-        NextConnectionSequencePath,
+        NextConnectionSequencePath, ReceiptPath,
     },
     id::{ChannelId, ClientId, PortId},
     option_unwrap, promote,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
     uint::U256,
 };
+
+/// The slot of the `mapping(bytes32 => bytes32) public commitments` mapping in the `IBCStore` contract.
+pub const IBC_HANDLER_COMMITMENTS_SLOT: U256 = U256::from_limbs([0, 0, 0, 0]);
 
 use crate::{private_key::PrivateKey, Pool};
 
@@ -671,9 +673,9 @@ impl_eth_call_ext! {
     GetChannelCall                               -> GetChannelReturn;
     GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
     GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
-    PacketReceiptsCall                           -> PacketReceiptsReturn;
-    NextConnectionSequenceCall                   -> NextConnectionSequenceReturn;
-    NextClientSequenceCall                       -> NextClientSequenceReturn;
+    HasPacketReceiptCall                         -> HasPacketReceiptReturn;
+    NextConnectionSequenceCall                   -> u64;
+    NextClientSequenceCall                       -> u64;
 }
 
 pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
@@ -821,7 +823,7 @@ where
     }
 
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0
+        encoded
     }
 }
 
@@ -837,68 +839,28 @@ where
     }
 
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0
+        encoded
     }
 }
 
-#[allow(unused_variables)]
-pub async fn setup_initial_channel<C: ChainSpec>(
-    this: &Ethereum<C>,
-    module_address: H160,
-    channel_id: String,
-    port_id: String,
-    counterparty_port_id: String,
-) {
-    // let signer_middleware = Arc::new(SignerMiddleware::new(
-    //     this.provider.clone(),
-    //     this.wallet.clone(),
-    // ));
+impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ReceiptPath
+where
+    Hc: EthereumChain,
+    Tr: Chain,
+{
+    type EthCall = HasPacketReceiptCall;
 
-    // let ibc_handler = devnet_ownable_ibc_handler::DevnetOwnableIBCHandler::new(
-    //     this.ibc_handler.address(),
-    //     signer_middleware,
-    // );
+    fn into_eth_call(self) -> Self::EthCall {
+        Self::EthCall {
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
+            sequence: self.sequence.into(),
+        }
+    }
 
-    // ibc_handler
-    //     .setup_initial_channel(
-    //         "connection-0".into(),
-    //         IbcCoreConnectionV1ConnectionEndData {
-    //             client_id: "cometbls-new-0".into(),
-    //             versions: vec![IbcCoreConnectionV1VersionData {
-    //                 identifier: "1".into(),
-    //                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
-    //             }],
-    //             state: 3,
-    //             counterparty: IbcCoreConnectionV1TrData {
-    //                 client_id: "08-wasm-0".into(),
-    //                 connection_id: "connection-0".into(),
-    //                 prefix: IbcCoreCommitmentV1MerklePrefixData {
-    //                     key_prefix: b"ibc".to_vec().into(),
-    //                 },
-    //             },
-    //             delay_period: 6,
-    //         },
-    //         port_id,
-    //         channel_id.clone(),
-    //         IbcCoreChannelV1ChannelData {
-    //             state: 3,
-    //             ordering: 1,
-    //             counterparty: IbcCoreChannelV1TrData {
-    //                 port_id: counterparty_port_id,
-    //                 channel_id,
-    //             },
-    //             connection_hops: vec!["connection-0".into()],
-    //             version: "ics20-1".into(),
-    //         },
-    //         module_address.into(),
-    //     )
-    //     .send()
-    //     .await
-    //     .unwrap()
-    //     .await
-    //     .unwrap()
-    //     .unwrap();
-    todo!()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
+        encoded.0
+    }
 }
 
 #[test]

@@ -397,7 +397,7 @@ where
                 IbcState {
                     height,
                     state: match query_result.value[..] {
-                        [0] => false,
+                        [] => false,
                         [1] => true,
                         ref invalid => panic!("not a bool??? {invalid:?}"),
                     },

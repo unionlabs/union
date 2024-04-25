@@ -1,3 +1,18 @@
+///`GoogleProtobufTimestampData(int64,int64)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct GoogleProtobufTimestampData {
+    pub secs: i64,
+    pub nanos: i64,
+}
 ///`MsgChannelCloseConfirm(string,string,bytes,(uint64,uint64))`
 #[derive(
     Clone,
@@ -347,24 +362,6 @@ pub struct IbcCoreClientV1HeightData {
 pub struct IbcCoreCommitmentV1MerklePrefixData {
     pub key_prefix: ::ethers::core::types::Bytes,
 }
-///`IbcCoreConnectionV1ConnectionEndData(string,(string,string[])[],uint8,(string,string,(bytes)),uint64)`
-#[derive(
-    Clone,
-    ::ethers::contract::EthAbiType,
-    ::ethers::contract::EthAbiCodec,
-    Default,
-    Debug,
-    PartialEq,
-    Eq,
-    Hash,
-)]
-pub struct IbcCoreConnectionV1ConnectionEndData {
-    pub client_id: ::std::string::String,
-    pub versions: ::std::vec::Vec<IbcCoreConnectionV1VersionData>,
-    pub state: u8,
-    pub counterparty: IbcCoreConnectionV1CounterpartyData,
-    pub delay_period: u64,
-}
 ///`IbcCoreConnectionV1CounterpartyData(string,string,(bytes))`
 #[derive(
     Clone,
@@ -395,4 +392,22 @@ pub struct IbcCoreConnectionV1CounterpartyData {
 pub struct IbcCoreConnectionV1VersionData {
     pub identifier: ::std::string::String,
     pub features: ::std::vec::Vec<::std::string::String>,
+}
+///`UnionIbcLightclientsCometblsV1LightHeaderData(int64,(int64,int64),bytes,bytes,bytes)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct UnionIbcLightclientsCometblsV1LightHeaderData {
+    pub height: i64,
+    pub time: GoogleProtobufTimestampData,
+    pub validators_hash: ::ethers::core::types::Bytes,
+    pub next_validators_hash: ::ethers::core::types::Bytes,
+    pub app_hash: ::ethers::core::types::Bytes,
 }

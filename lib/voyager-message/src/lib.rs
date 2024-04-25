@@ -711,7 +711,7 @@ mod tests {
             commitment::merkle_prefix::MerklePrefix,
             connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
         },
-        ics24,
+        ics24::{self, NextSequenceSendPath},
         uint::U256,
         QueryHeight, DELAY_PERIOD,
     };
