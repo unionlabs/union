@@ -45,6 +45,13 @@ This links are working if you run a local devnet on a x86 machine only (Blocksco
 - UCS01: [0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46](http://localhost/address/0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46)
 - UCS02: [0x524d4d28fc90dc5a257162abe37081f52681c7d6](http://localhost/address/0x524d4d28fc90dc5a257162abe37081f52681c7d6)
 
+## Testnet 8
+
+- IBCHandler: [0x6b6b60a68b8dcbb170f25045974d10098917f816](https://sepolia.etherscan.io/address/0x6b6b60a68b8dcbb170f25045974d10098917f816)
+- CometblsClient: [0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3](https://sepolia.etherscan.io/address/0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3)
+- UCS01: [0x3d0eb16ad2619666dbde1921282cd885b58eeefe](https://sepolia.etherscan.io/address/0x3d0eb16ad2619666dbde1921282cd885b58eeefe)
+- UCS02: [0xb455b205106c9b72e967399e15efd8a025fd4a90](https://sepolia.etherscan.io/address/0xb455b205106c9b72e967399e15efd8a025fd4a90)
+
 ## Other networks
 
 Assuming you create the deployer from a fresh account `<SOURCE>` (0 nonce), the `<DEPLOYER>` address can be precomputed with `cast compute-address --nonce 0 <SOURCE>`
