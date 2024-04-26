@@ -20,38 +20,20 @@ use crate::{
     },
     id::{ChannelId, ClientId, PortId},
     uint::U256,
-    validated::{Validate, Validated},
     MaybeArbitrary, TypeUrl,
 };
 
 /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
-pub trait Id:
-    Debug
+pub trait Id = Debug
     + Clone
     + PartialEq
     + Serialize
     + for<'de> Deserialize<'de>
-    + FromStr<Err = Self::FromStrErr>
+    + FromStr<Err: Error + Send + Sync + 'static>
     + Display
     + Send
     + Sync
-    + 'static
-{
-    type FromStrErr: Error + Send + Sync + 'static;
-}
-
-impl Id for String {
-    // type FromStrErr = <String as FromStr>::Err;
-    type FromStrErr = alloc::string::ParseError;
-}
-
-impl<T: Id, V: Validate<T> + 'static> Id for Validated<T, V>
-where
-    T::FromStrErr: Error,
-    V::Error: Error + Send + Sync + 'static,
-{
-    type FromStrErr = <Self as FromStr>::Err;
-}
+    + 'static;
 
 /// [`Serialize`] and [`Deserialize`] only as exactly [`Self::EXPECTING`].
 pub trait FromStrExact: Default + Sized {
