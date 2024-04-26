@@ -422,7 +422,7 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
             })
         } else {
             // Ensure there are no bits higher than `bit_len` that are set to true.
-            let (mask, _) = u8::max_value().overflowing_shr(8 - (bit_len as u32 % 8));
+            let (mask, _) = u8::MAX.overflowing_shr(8 - (bit_len as u32 % 8));
 
             if (bytes.last().expect("Guarded against empty bytes") & !mask) == 0 {
                 Ok(Self {

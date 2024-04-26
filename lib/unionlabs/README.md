@@ -14,7 +14,7 @@ The general pattern is as follows, using `Channel` as an example:
 
 Note that the `unionlabs` type doesn't include the version - we currently only support the latest version of each module.
 
-## Hash and UInt
+## `Hash` and `UInt`
 
 The most commonly used crate for hash and uint types is parity's [primitive-types](https://docs.rs/primitive-types/latest/primitive_types/), which is quite old and has quite a lot of issues ([hidden panics](https://github.com/paritytech/parity-common/issues/764), [strange Display impl](https://github.com/paritytech/parity-common/issues/656), [parsing inconsistencies](https://github.com/paritytech/parity-common/issues/643), etc). There are alternatives, such as [ruint](https://github.com/recmo/uint), which is used in [alloy](https://github.com/alloy-rs/core), but for simplicity we currently define our own hash and uint types (note that our uint is just a wrapper around `primitive-types::U256` that provides sane string parsing and Display defaults). We will likely migrate to `ruint` in the future, once we migrate to `alloy` from `ethers`.
 

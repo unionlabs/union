@@ -1017,18 +1017,16 @@ pub mod wasm {
         type Config = WasmConfig;
     }
 
-    const _: () = {
-        try_from_relayer_msg! {
-            chain = Wasm<Union>,
-            generics = (Tr: ChainExt),
-            msgs = UnionDataMsg(
-                UntrustedCommit(UntrustedCommit<Wasm<Union>, Tr>),
-                TrustedValidators(TrustedValidators<Wasm<Union>, Tr>),
-                UntrustedValidators(UntrustedValidators<Wasm<Union>, Tr>),
-                ProveResponse(ProveResponse<Wasm<Union>, Tr>),
-            ),
-        }
-    };
+    try_from_relayer_msg! {
+        chain = Wasm<Union>,
+        generics = (Tr: ChainExt),
+        msgs = UnionDataMsg(
+            UntrustedCommit(UntrustedCommit<Wasm<Union>, Tr>),
+            TrustedValidators(TrustedValidators<Wasm<Union>, Tr>),
+            UntrustedValidators(UntrustedValidators<Wasm<Union>, Tr>),
+            ProveResponse(ProveResponse<Wasm<Union>, Tr>),
+        ),
+    }
 
     impl ChainExt for Wasm<Cosmos> {
         type Data<Tr: ChainExt> = CosmosDataMsg<Wasm<Cosmos>, Tr>;
@@ -1040,18 +1038,16 @@ pub mod wasm {
         type Config = WasmConfig;
     }
 
-    const _: () = {
-        try_from_relayer_msg! {
-            chain = Wasm<Cosmos>,
-            generics = (Tr: ChainExt),
-            msgs = CosmosDataMsg(
-                TrustedCommit(TrustedCommit<Wasm<Cosmos>, Tr>),
-                UntrustedCommit(UntrustedCommit<Wasm<Cosmos>, Tr>),
-                TrustedValidators(TrustedValidators<Wasm<Cosmos>, Tr>),
-                UntrustedValidators(UntrustedValidators<Wasm<Cosmos>, Tr>),
-            ),
-        }
-    };
+    try_from_relayer_msg! {
+        chain = Wasm<Cosmos>,
+        generics = (Tr: ChainExt),
+        msgs = CosmosDataMsg(
+            TrustedCommit(TrustedCommit<Wasm<Cosmos>, Tr>),
+            UntrustedCommit(UntrustedCommit<Wasm<Cosmos>, Tr>),
+            TrustedValidators(TrustedValidators<Wasm<Cosmos>, Tr>),
+            UntrustedValidators(UntrustedValidators<Wasm<Cosmos>, Tr>),
+        ),
+    }
 
     impl<Hc> CosmosSdkChainSealed for Wasm<Hc>
     where

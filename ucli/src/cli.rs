@@ -1,6 +1,5 @@
-use std::ffi::OsString;
+use std::{ffi::OsString, marker::PhantomData};
 
-use beacon_api::client::BeaconApiClient;
 use chain_utils::private_key::PrivateKey;
 use clap::{Parser, Subcommand};
 use ethers::{
@@ -14,7 +13,6 @@ use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::{
     ethereum::config::ChainSpec,
     hash::{H160, H256},
-    uint::U256,
 };
 
 #[derive(Debug, Parser)]
@@ -161,10 +159,11 @@ pub struct UnionChainConfig {
 
 #[derive(Debug, Clone)]
 pub struct Ethereum<C: ChainSpec> {
-    pub chain_id: U256,
+    // pub chain_id: U256,
     pub wallet: LocalWallet,
     pub provider: Provider<Ws>,
-    pub beacon_api_client: BeaconApiClient<C>,
+    // pub beacon_api_client: BeaconApiClient<C>,
+    __marker: PhantomData<fn() -> C>,
 }
 
 impl<C: ChainSpec> Ethereum<C> {
@@ -178,10 +177,11 @@ impl<C: ChainSpec> Ethereum<C> {
         let wallet = LocalWallet::new_with_signer(signer, address, chain_id.as_u64());
 
         Ok(Self {
-            chain_id: U256(chain_id),
+            // chain_id: U256(chain_id),
             provider,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
+            // beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
             wallet,
+            __marker: PhantomData,
         })
     }
 }

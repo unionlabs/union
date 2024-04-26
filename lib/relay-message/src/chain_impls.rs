@@ -14,19 +14,19 @@ macro_rules! try_from_relayer_msg {
             $($Variant:ident($Ty:ty),)+
         ),
     ) => {
-        with_dollar_sign! {
-            ($d:tt) => {
-                macro_rules! with_generics {
-                    (
-                        chain = $d Chain:ty,
-                        msgs = $d Enum:ident(
-                            $d ($d Variant:ident($d Ty:ty),)+
-                        ),
-                    ) => {
-                        const _: () = {
-                            use crate::{AnyLightClientIdentified, RelayMessageTypes, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
-                            use queue_msg::QueueMsg;
+        const _: () = {
+            use crate::{AnyLightClientIdentified, RelayMessageTypes, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
+            use queue_msg::QueueMsg;
 
+            with_dollar_sign! {
+                ($d:tt) => {
+                    macro_rules! with_generics {
+                        (
+                            chain = $d Chain:ty,
+                            msgs = $d Enum:ident(
+                                $d ($d Variant:ident($d Ty:ty),)+
+                            ),
+                        ) => {
                             $d (
                                 impl <$($generics)+> TryFrom<QueueMsg<RelayMessageTypes>> for Identified<$d Chain, Tr, $d Ty>
                                 where
@@ -99,17 +99,17 @@ macro_rules! try_from_relayer_msg {
                             //     }
                             // }
                         };
-                    };
+                    }
                 }
             }
-        }
 
-        with_generics!(
-            chain = $Chain,
-            msgs = $Enum(
-                $($Variant($Ty),)+
-            ),
-        );
+            with_generics!(
+                chain = $Chain,
+                msgs = $Enum(
+                    $($Variant($Ty),)+
+                ),
+            );
+        };
     };
 }
 

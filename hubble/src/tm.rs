@@ -24,7 +24,9 @@ use crate::postgres::{self, ChainId};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub url: Url,
+    #[allow(dead_code)]
     pub start: Option<u64>,
+    #[allow(dead_code)]
     pub until: Option<u64>,
 }
 
