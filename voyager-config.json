@@ -1,9 +1,9 @@
 {
   "chain": {
     "scroll-testnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "scroll",
-      "ibc_handler_address": "0x0000000000000000000000000000000000000000",
+      "ibc_handler_address": "0x915eccda242f8353f901e26466a54e67396653c0",
       "signers": [
         {
           "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
@@ -15,7 +15,7 @@
       "rollup_last_finalized_batch_index_slot": "156",
       "rollup_message_queue_slot": "152",
       "rollup_committed_batches_slot": "157",
-      "l1_client_id": "cometbls-1",
+      "l1_client_id": "08-wasm-0",
       "l1": {
         "chain_type": "ethereum",
         "preset_base": "mainnet",
@@ -24,7 +24,7 @@
         "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
       },
       "scroll_api": "https://sepolia-api-re.scroll.io/",
-      "union_grpc_url": "http://localhost:9090"
+      "union_grpc_url": "https://grpc.testnet.bonlulu.uno:443"
     },
     "ethereum-devnet": {
       "enabled": false,
@@ -53,7 +53,7 @@
     },
     "union-devnet": {
       "chain_type": "union",
-      "enabled": true,
+      "enabled": false,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -81,7 +81,7 @@
     },
     "simd-devnet": {
       "chain_type": "cosmos",
-      "enabled": true,
+      "enabled": false,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"

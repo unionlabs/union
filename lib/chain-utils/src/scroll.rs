@@ -18,7 +18,7 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
+        self, read_ack, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
         EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
@@ -250,10 +250,8 @@ impl Chain for Scroll {
             .map_err(Into::into)
     }
 
-    fn query_latest_timestamp(
-        &self,
-    ) -> impl futures::prelude::Future<Output = Result<i64, Self::Error>> + '_ {
-        self.l1.query_latest_timestamp().map_err(Into::into)
+    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
+        self.l1.query_latest_timestamp().map_err(Into::into).await
     }
 
     async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
@@ -314,20 +312,18 @@ impl Chain for Scroll {
 
     async fn read_ack(
         &self,
-        _tx_hash: H256,
-        _destination_channel_id: ChannelId,
-        _destination_port_id: PortId,
-        _sequence: NonZeroU64,
+        tx_hash: H256,
+        destination_channel_id: ChannelId,
+        destination_port_id: PortId,
+        sequence: NonZeroU64,
     ) -> Vec<u8> {
-        // This should be the same logic but using the scroll provider
-        // self.evm
-        //     .read_ack(
-        //         tx_hash,
-        //         destination_channel_id,
-        //         destination_port_id,
-        //         sequence,
-        //     )
-        //     .await
-        todo!()
+        read_ack(
+            self,
+            tx_hash,
+            destination_port_id,
+            destination_channel_id,
+            sequence,
+        )
+        .await
     }
 }

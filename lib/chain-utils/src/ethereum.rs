@@ -458,30 +458,14 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
         destination_port_id: PortId,
         sequence: NonZeroU64,
     ) -> Vec<u8> {
-        self.provider
-            .get_transaction_receipt(tx_hash)
-            .await
-            .unwrap()
-            .unwrap()
-            .logs
-            .into_iter()
-            .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
-            .find_map(|e| match e {
-                Ok(WriteAcknowledgementFilter {
-                    destination_port: ack_dst_port_id,
-                    destination_channel,
-                    sequence: ack_sequence,
-                    acknowledgement,
-                }) if ack_dst_port_id == destination_port_id.to_string()
-                    && destination_channel == destination_channel_id.to_string()
-                    && Some(sequence) == NonZeroU64::new(ack_sequence) =>
-                {
-                    Some(acknowledgement)
-                }
-                _ => None,
-            })
-            .unwrap_or_default()
-            .to_vec()
+        read_ack(
+            self,
+            tx_hash,
+            destination_port_id,
+            destination_channel_id,
+            sequence,
+        )
+        .await
     }
 }
 
@@ -512,6 +496,39 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         })
     }
+}
+
+pub(crate) async fn read_ack<Hc: EthereumChainExt>(
+    c: &Hc,
+    tx_hash: H256,
+    destination_port_id: PortId,
+    destination_channel_id: ChannelId,
+    sequence: NonZeroU64,
+) -> Vec<u8> {
+    c.provider()
+        .get_transaction_receipt(tx_hash)
+        .await
+        .unwrap()
+        .unwrap()
+        .logs
+        .into_iter()
+        .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
+        .find_map(|e| match e {
+            Ok(WriteAcknowledgementFilter {
+                destination_port: ack_dst_port_id,
+                destination_channel,
+                sequence: ack_sequence,
+                acknowledgement,
+            }) if ack_dst_port_id == destination_port_id.to_string()
+                && destination_channel == destination_channel_id.to_string()
+                && Some(sequence) == NonZeroU64::new(ack_sequence) =>
+            {
+                Some(acknowledgement)
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
+        .to_vec()
 }
 
 impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
