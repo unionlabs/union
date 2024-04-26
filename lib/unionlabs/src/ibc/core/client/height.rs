@@ -86,7 +86,6 @@ impl From<Height> for protos::ibc::core::client::v1::Height {
     }
 }
 
-// REVIEW(benluelo): Ordering for heights with different revision numbers?
 impl PartialOrd for Height {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(match self.revision_number.cmp(&other.revision_number) {

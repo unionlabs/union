@@ -191,7 +191,7 @@ impl ClientState for scroll::client_state::ClientState {
         Height {
             // TODO: Make ETHEREUM_REVISION_NUMBER a constant in this crate
             revision_number: 0,
-            revision_height: self.latest_batch_index,
+            revision_height: self.latest_slot,
         }
     }
 

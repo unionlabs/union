@@ -109,6 +109,7 @@ pub fn update_client_state<T: IbcClient>(
     mut wasm_client_state: wasm::client_state::ClientState<T::ClientState>,
     latest_height: u64,
 ) {
+    // TODO: this may be wrong, why reuse the same revision number, must be passed?
     wasm_client_state.latest_height = Height {
         revision_number: wasm_client_state.latest_height.revision_number,
         revision_height: latest_height,

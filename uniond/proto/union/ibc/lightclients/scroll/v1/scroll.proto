@@ -9,7 +9,7 @@ import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
 message ClientState {
   string l1_client_id = 1;
   string chain_id = 2;
-  uint64 latest_batch_index = 3;
+  uint64 latest_slot = 3;
   // TODO: Should be rollup_
   bytes latest_batch_index_slot = 4;
   .ibc.core.client.v1.Height frozen_height = 5;

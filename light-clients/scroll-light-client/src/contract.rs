@@ -31,7 +31,7 @@ pub fn instantiate(
         },
         &Height {
             revision_number: 0,
-            revision_height: client_state.latest_batch_index,
+            revision_height: client_state.latest_slot,
         },
     );
     save_proto_client_state::<ScrollLightClient>(
@@ -42,7 +42,7 @@ pub fn instantiate(
             latest_height: Some(
                 Height {
                     revision_number: 0,
-                    revision_height: client_state.latest_batch_index,
+                    revision_height: client_state.latest_slot,
                 }
                 .into(),
             ),

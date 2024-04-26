@@ -283,6 +283,7 @@ impl Chain for Scroll {
             .map_err(Into::into)
     }
 
+    // FIXME: must be scroll timestamp, not L1
     async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
         self.l1.query_latest_timestamp().map_err(Into::into).await
     }
@@ -291,9 +292,7 @@ impl Chain for Scroll {
         scroll::client_state::ClientState {
             l1_client_id: self.l1_client_id.to_string(),
             chain_id: self.chain_id(),
-            latest_batch_index: self
-                .batch_index_of_beacon_slot(height.revision_height)
-                .await,
+            latest_slot: height.revision_height,
             latest_batch_index_slot: self.rollup_last_finalized_batch_index_slot,
             frozen_height: Height {
                 revision_number: 0,
@@ -328,6 +327,7 @@ impl Chain for Scroll {
         scroll::consensus_state::ConsensusState {
             ibc_storage_root: storage_root.into(),
             // Normalize to nanoseconds to be ibc-go compliant
+            // FIXME: must be scroll timestamp, not L1
             timestamp: self
                 .l1
                 .beacon_api_client
