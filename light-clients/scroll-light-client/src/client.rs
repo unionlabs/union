@@ -144,6 +144,13 @@ impl IbcClient for ScrollLightClient {
     ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
+        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
+            deps,
+            &env,
+            client_state.data.l1_client_id.clone(),
+            header.l1_height,
+        )?;
+
         let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)?;
 
         let timestamp = match BatchHeader::decode(call.parent_batch_header)? {
@@ -174,11 +181,10 @@ impl IbcClient for ScrollLightClient {
         let updated_height = Height {
             // TODO: Extract into a constant
             revision_number: 0,
-            revision_height: header.last_batch_index,
+            revision_height: l1_consensus_state.data.slot,
         };
         let consensus_state = WasmConsensusState {
             data: ConsensusState {
-                batch_index: header.last_batch_index,
                 ibc_storage_root: header.l2_ibc_account_proof.storage_root,
                 // must be nanos
                 timestamp: 1_000_000_000 * timestamp,

@@ -8,7 +8,6 @@ use crate::{errors::InvalidLength, hash::H256};
     from
 ))]
 pub struct ConsensusState {
-    pub batch_index: u64,
     pub ibc_storage_root: H256,
     pub timestamp: u64,
 }
@@ -16,7 +15,6 @@ pub struct ConsensusState {
 impl From<ConsensusState> for protos::union::ibc::lightclients::scroll::v1::ConsensusState {
     fn from(value: ConsensusState) -> Self {
         Self {
-            batch_index: value.batch_index,
             ibc_storage_root: value.ibc_storage_root.into(),
             timestamp: value.timestamp,
         }
@@ -35,7 +33,6 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ConsensusState> for C
         value: protos::union::ibc::lightclients::scroll::v1::ConsensusState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            batch_index: value.batch_index,
             ibc_storage_root: value
                 .ibc_storage_root
                 .try_into()
