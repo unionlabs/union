@@ -301,7 +301,7 @@ pub trait ByteArrayExt<const N: usize> {
 
 impl<const N: usize> ByteArrayExt<N> for [u8; N] {
     fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN] {
-        const_assert!(OFFSET: usize, LEN: usize, N: usize => OFFSET + LEN <= N);
+        const { assert!(OFFSET + LEN <= N) };
 
         unsafe { *addr_of!(self[OFFSET..(OFFSET + LEN)]).cast::<[u8; LEN]>() }
     }

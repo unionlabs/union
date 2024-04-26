@@ -48,7 +48,7 @@ use unionlabs::{
         NextConnectionSequencePath, ReceiptPath,
     },
     id::{ChannelId, ClientId, PortId},
-    option_unwrap, promote,
+    option_unwrap,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
     uint::U256,
 };
@@ -216,7 +216,7 @@ impl<C: ChainSpec> FromStrExact for EthereumChainType<C> {
             "ChainSpec string value is expected to be 7 bytes"
         );
 
-        match core::str::from_utf8(&concat(C::EXPECTING.as_bytes())) {
+        match core::str::from_utf8(const { &concat(C::EXPECTING.as_bytes()) }) {
             Ok(ok) => ok,
             Err(_) => {
                 panic!()
@@ -388,7 +388,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             min_sync_committee_participants: 0,
             trust_level: Fraction {
                 numerator: 1,
-                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
+                denominator: const { option_unwrap!(NonZeroU64::new(3)) },
             },
             frozen_height: Height {
                 revision_number: 0,

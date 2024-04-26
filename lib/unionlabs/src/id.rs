@@ -1,7 +1,6 @@
 use core::fmt::Debug;
 
 use crate::{
-    const_assert,
     errors::{ExpectedLength, InvalidLength},
     validated::{Validate, Validated},
 };
@@ -93,7 +92,7 @@ impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize> Validat
     type Error = InvalidLength;
 
     fn validate(t: T) -> Result<T, Self::Error> {
-        const_assert!(MIN: usize, MAX: usize => MIN <= MAX);
+        const { assert!(MIN <= MAX) };
 
         let s: String = t.into();
 
@@ -115,7 +114,7 @@ impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize>
     crate::validated::ValidateExt<T> for Bounded<MIN, MAX>
 {
     fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        const_assert!(MIN: usize, MAX: usize => MIN <= MAX);
+        const { assert!(MIN <= MAX) };
 
         let s: String = t.into();
 

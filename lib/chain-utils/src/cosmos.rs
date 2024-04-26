@@ -24,7 +24,7 @@ use unionlabs::{
         lightclients::tendermint::{self, fraction::Fraction},
     },
     id::ClientId,
-    option_unwrap, promote,
+    option_unwrap, result_unwrap,
     signer::CosmosSigner,
     traits::{Chain, ClientState, FromStrExact},
     WasmClientType,
@@ -176,7 +176,7 @@ impl Chain for Cosmos {
             // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
             trust_level: Fraction {
                 numerator: 1,
-                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
+                denominator: const { option_unwrap!(NonZeroU64::new(3)) },
             },
             // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
             trusting_period: unionlabs::google::protobuf::duration::Duration::new(
@@ -193,8 +193,12 @@ impl Chain for Cosmos {
             )
             .unwrap(),
             // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-            max_clock_drift: unionlabs::google::protobuf::duration::Duration::new(60 * 10, 0)
-                .unwrap(),
+            max_clock_drift: const {
+                result_unwrap!(unionlabs::google::protobuf::duration::Duration::new(
+                    60 * 10,
+                    0
+                ))
+            },
             frozen_height: None,
             latest_height: Height {
                 revision_number: self.chain_revision,
