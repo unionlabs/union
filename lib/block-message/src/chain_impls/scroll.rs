@@ -1,12 +1,13 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, marker::PhantomData};
 
 use chain_utils::{
-    ethereum::IBCHandlerEvents,
+    ethereum::{IBCHandlerEvents, IbcHandlerExt},
     scroll::{Scroll, SCROLL_REVISION_NUMBER},
 };
+use contracts::ibc_handler::{GetChannelCall, GetConnectionCall, IBCHandler};
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
 use futures::StreamExt;
-use queue_msg::{aggregation::do_aggregate, conc, fetch, queue_msg, QueueMsg};
+use queue_msg::{aggregation::do_aggregate, conc, data, fetch, queue_msg, QueueMsg};
 use unionlabs::{ethereum::config::Mainnet, ibc::core::client::height::Height, traits::Chain};
 
 use crate::{
@@ -132,54 +133,55 @@ where
                 fetch_beacon_block_range(scroll, beacon_block_range, &scroll.l1.beacon_api_client)
                     .await
             }
-            ScrollFetch::FetchChannel(FetchChannel { .. }) => {
-                // data(id(
-                //     c.chain_id(),
-                //     ChainSpecificData::<Scroll>(
-                //         ChannelData(
-                //             // TODO: This should read from scroll chain
-                //             // c.ibc_state_read_at_execution_height(
-                //             //     GetChannelCall {
-                //             //         port_id: path.port_id.to_string(),
-                //             //         channel_id: path.channel_id.to_string(),
-                //             //     },
-                //             //     c.execution_height(height).await,
-                //             // )
-                //             // .await
-                //             // .unwrap()
-                //             // .unwrap()
-                //             // .try_into()
-                //             // .unwrap(),
-                //             todo!(),
-                //         )
-                //         .into(),
-                //     ),
-                // ));
-                todo!()
+            ScrollFetch::FetchChannel(FetchChannel { height, path }) => {
+                let ibc_handler = IBCHandler::new(scroll.ibc_handler_address, scroll.provider.clone());
+                let batch_index = scroll
+                    .batch_index_of_beacon_slot(height.revision_height)
+                    .await;
+                let scroll_height = scroll.scroll_height_of_batch_index(batch_index).await;
+                data(id(
+                    scroll.chain_id(),
+                    Data::<Scroll>::specific(ChannelData {
+                        channel: ibc_handler
+                            .eth_call(
+                                GetChannelCall {
+                                    port_id: path.port_id.to_string(),
+                                    channel_id: path.channel_id.to_string(),
+                                },
+                                scroll_height,
+                            )
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .try_into()
+                            .unwrap(),
+                        __marker: PhantomData,
+                    }),
+                ))
             }
-            ScrollFetch::FetchConnection(FetchConnection { .. }) => {
-                // data(id(
-                //     c.chain_id(),
-                //     ChainSpecificData::<Scroll>(
-                //         ConnectionData(
-                //             // TODO: This should read from scroll chain
-                //             // c.ibc_state_read_at_execution_height(
-                //             //     GetConnectionCall {
-                //             //         connection_id: path.connection_id.to_string(),
-                //             //     },
-                //             //     c.execution_height(height).await,
-                //             // )
-                //             // .await
-                //             // .unwrap()
-                //             // .unwrap()
-                //             // .try_into()
-                //             // .unwrap(),
-                //             todo!(),
-                //         )
-                //         .into(),
-                //     ),
-                // ));
-                todo!()
+            ScrollFetch::FetchConnection(FetchConnection { height, path }) => {
+                let ibc_handler = IBCHandler::new(scroll.ibc_handler_address, scroll.provider.clone());
+                let batch_index = scroll
+                    .batch_index_of_beacon_slot(height.revision_height)
+                    .await;
+                let scroll_height = scroll.scroll_height_of_batch_index(batch_index).await;
+                data(id(
+                    scroll.chain_id(),
+                    Data::<Scroll>::specific(ConnectionData(
+                        ibc_handler
+                            .eth_call(
+                                GetConnectionCall {
+                                    connection_id: path.connection_id.to_string(),
+                                },
+                                scroll_height,
+                            )
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .try_into()
+                            .unwrap(),
+                    )),
+                ))
             }
         }
     }
