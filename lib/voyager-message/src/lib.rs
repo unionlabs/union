@@ -382,6 +382,28 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                         _ => unimplemented!(),
                     },
                 ),
+                QueueMsg::Data(block_message::AnyChainIdentified::Scroll(
+                    block_message::Identified {
+                        chain_id,
+                        t: block_message::data::Data::IbcEvent(ibc_event),
+                    },
+                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
+                    match ibc_event.client_type {
+                        unionlabs::ClientType::Cometbls => {
+                            event(relay_message::id::<Scroll, Wasm<Union>, _>(
+                                chain_id,
+                                relay_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Scroll, Wasm<Union>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        _ => unimplemented!(),
+                    },
+                ),
                 msg => {
                     <VoyagerMessageTypes as FromQueueMsg<BlockMessageTypes>>::from_queue_msg(msg)
                 }
