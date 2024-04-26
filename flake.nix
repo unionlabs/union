@@ -35,7 +35,6 @@
     };
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     env-utils = {
       url = "github:oceanlewis/env-utils";

@@ -175,7 +175,6 @@ macro_rules! any_enum {
                 }
             )?
         };
-
     };
 }
 pub(crate) use any_enum;

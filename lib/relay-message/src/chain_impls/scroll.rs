@@ -561,20 +561,18 @@ pub enum ScrollData<Tr: ChainExt> {
     CommitBatchTransactionInput(CommitBatchTransactionInput<Tr>),
 }
 
-const _: () = {
-    try_from_relayer_msg! {
-        chain = Scroll,
-        generics = (Tr: ChainExt),
-        msgs = ScrollData(
-            RollupContractRootProof(RollupContractRootProof<Tr>),
-            LatestBatchIndexProof(LatestBatchIndexProof<Tr>),
-            ScrollFinalizedRootProof(ScrollFinalizedRootProof<Tr>),
-            IbcContractRootProof(IbcContractRootProof<Tr>),
-            BatchHashProof(BatchHashProof<Tr>),
-            CommitBatchTransactionInput(CommitBatchTransactionInput<Tr>),
-        ),
-    }
-};
+try_from_relayer_msg! {
+    chain = Scroll,
+    generics = (Tr: ChainExt),
+    msgs = ScrollData(
+        RollupContractRootProof(RollupContractRootProof<Tr>),
+        LatestBatchIndexProof(LatestBatchIndexProof<Tr>),
+        ScrollFinalizedRootProof(ScrollFinalizedRootProof<Tr>),
+        IbcContractRootProof(IbcContractRootProof<Tr>),
+        BatchHashProof(BatchHashProof<Tr>),
+        CommitBatchTransactionInput(CommitBatchTransactionInput<Tr>),
+    ),
+}
 
 #[queue_msg]
 pub struct RollupContractRootProof<#[cover] Tr: ChainExt> {

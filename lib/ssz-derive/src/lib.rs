@@ -826,7 +826,7 @@ fn ssz_decode_derive_struct(item: &DeriveInput, struct_data: &DataStruct) -> Tok
                 end = end
                     .checked_add(#ssz_fixed_len)
                     .ok_or_else(|| ssz::DecodeError::OutOfBoundsByte {
-                        i: usize::max_value()
+                        i: usize::MAX
                     })?;
                 let slice = bytes.get(start..end)
                     .ok_or_else(|| ssz::DecodeError::InvalidByteLength {

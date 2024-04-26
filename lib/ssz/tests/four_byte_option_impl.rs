@@ -124,9 +124,9 @@ fn tuple_u8_u16() {
         (0, 0),
         (0, 1),
         (1, 0),
-        (u8::max_value(), u16::max_value()),
-        (0, u16::max_value()),
-        (u8::max_value(), 0),
+        (u8::MAX, u16::MAX),
+        (0, u16::MAX),
+        (u8::MAX, 0),
         (42, 12301),
     ];
 

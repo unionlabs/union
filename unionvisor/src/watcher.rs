@@ -25,20 +25,15 @@ pub struct FileReader {
     path: PathBuf,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum FileReaderError {
+    #[error("file not found")]
     FileNotFound,
-    Serde(serde_json::Error),
-    Io(io::Error),
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+    #[error(transparent)]
+    Io(#[from] io::Error),
 }
-
-impl core::fmt::Display for FileReaderError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-impl std::error::Error for FileReaderError {}
 
 impl FileReader {
     pub fn new(path: impl Into<PathBuf>) -> Self {

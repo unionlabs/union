@@ -30,6 +30,7 @@ pub struct Transaction<Chain: ChainType> {
     pub chain_id: ChainId,
     pub block_hash: Chain::BlockHash,
     pub block_height: Chain::BlockHeight,
+    #[allow(dead_code)]
     pub time: OffsetDateTime,
     pub data: serde_json::Value,
     pub hash: Chain::TransactionHash,
