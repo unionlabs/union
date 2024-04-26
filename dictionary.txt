@@ -1,4 +1,6 @@
+0xbonlulu
 0xc0dejug
+0xkaiserkarel
 ABCI
 Accs
 Acknowledgemets
@@ -35,6 +37,7 @@ Devs
 Disket
 Distinctio
 Djuric
+EigenLayer
 F1bonacc1
 FLUSHCOMPLETE
 Fatalf
@@ -152,7 +155,6 @@ Vals
 Verkle
 Viridis
 Wagmi
-Woestijne
 Wrapf
 XMSB
 YMSB
@@ -1000,9 +1002,6 @@ webpki
 wght
 whistleblower
 withdrawability
-woestijne
-xbonlulu
-xkaiserkarel
 xprv
 xqxp
 yamlfmt
