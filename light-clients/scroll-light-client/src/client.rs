@@ -139,17 +139,10 @@ impl IbcClient for ScrollLightClient {
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
-        env: Env,
+        _env: Env,
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-
-        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
-            deps.as_ref(),
-            &env,
-            client_state.data.l1_client_id.clone(),
-            header.l1_height,
-        )?;
 
         let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)?;
 
@@ -178,11 +171,6 @@ impl IbcClient for ScrollLightClient {
             update_client_state(deps.branch(), client_state, header.last_batch_index);
         }
 
-        let updated_height = Height {
-            // TODO: Extract into a constant
-            revision_number: 0,
-            revision_height: l1_consensus_state.data.slot,
-        };
         let consensus_state = WasmConsensusState {
             data: ConsensusState {
                 ibc_storage_root: header.l2_ibc_account_proof.storage_root,
@@ -190,8 +178,8 @@ impl IbcClient for ScrollLightClient {
                 timestamp: 1_000_000_000 * timestamp,
             },
         };
-        save_consensus_state(deps, consensus_state, &updated_height);
-        Ok(vec![updated_height])
+        save_consensus_state(deps, consensus_state, &header.l1_height);
+        Ok(vec![header.l1_height])
     }
 
     fn update_state_on_misbehaviour(
