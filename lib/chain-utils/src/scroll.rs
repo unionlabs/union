@@ -293,7 +293,6 @@ impl Chain for Scroll {
             .unwrap();
 
         scroll::consensus_state::ConsensusState {
-            batch_index,
             ibc_storage_root: storage_root.into(),
             // Normalize to nanoseconds to be ibc-go compliant
             timestamp: self

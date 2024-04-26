@@ -171,21 +171,15 @@ impl IbcClient for ScrollLightClient {
             update_client_state(deps.branch(), client_state, header.last_batch_index);
         }
 
-        let updated_height = Height {
-            // TODO: Extract into a constant
-            revision_number: 0,
-            revision_height: header.last_batch_index,
-        };
         let consensus_state = WasmConsensusState {
             data: ConsensusState {
-                batch_index: header.last_batch_index,
                 ibc_storage_root: header.l2_ibc_account_proof.storage_root,
                 // must be nanos
                 timestamp: 1_000_000_000 * timestamp,
             },
         };
-        save_consensus_state(deps, consensus_state, &updated_height);
-        Ok(vec![updated_height])
+        save_consensus_state(deps, consensus_state, &header.l1_height);
+        Ok(vec![header.l1_height])
     }
 
     fn update_state_on_misbehaviour(

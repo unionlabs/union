@@ -21,9 +21,8 @@ message ClientState {
 }
 
 message ConsensusState {
-  uint64 batch_index = 1;
-  bytes ibc_storage_root = 2;
-  uint64 timestamp = 3;
+  bytes ibc_storage_root = 1;
+  uint64 timestamp = 2;
 }
 
 message Header {

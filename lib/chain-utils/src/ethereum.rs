@@ -690,7 +690,7 @@ impl_eth_call_ext! {
     GetChannelCall                               -> GetChannelReturn;
     GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
     GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
-    HasPacketReceiptCall                         -> HasPacketReceiptReturn;
+    HasPacketReceiptCall                         -> bool;
     NextConnectionSequenceCall                   -> u64;
     NextClientSequenceCall                       -> u64;
 }
@@ -876,7 +876,7 @@ where
     }
 
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0
+        encoded
     }
 }
 

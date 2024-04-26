@@ -36,11 +36,9 @@ impl ::prost::Name for ClientState {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
-    #[prost(uint64, tag = "1")]
-    pub batch_index: u64,
-    #[prost(bytes = "vec", tag = "2")]
+    #[prost(bytes = "vec", tag = "1")]
     pub ibc_storage_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag = "3")]
+    #[prost(uint64, tag = "2")]
     pub timestamp: u64,
 }
 impl ::prost::Name for ConsensusState {
