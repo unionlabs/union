@@ -111,8 +111,11 @@ pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr
 
 impl<Hc, Tr> Fetch<Hc, Tr>
 where
-    Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr> + DoFetchUpdateHeaders<Hc, Tr>,
-    Hc::Fetch<Tr>: DoFetch<Hc>,
+    Hc: ChainExt<Fetch<Tr>: DoFetch<Hc>>
+        + DoFetchState<Hc, Tr>
+        + DoFetchProof<Hc, Tr>
+        + DoFetchUpdateHeaders<Hc, Tr>,
+
     Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,

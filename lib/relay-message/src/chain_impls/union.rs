@@ -31,7 +31,7 @@ use unionlabs::{
             simple_validator::SimpleValidator,
         },
     },
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf},
+    traits::Chain,
     union::galois::{
         poll_request::PollRequest,
         poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
@@ -75,14 +75,15 @@ impl ChainExt for Union {
 
 impl CosmosSdkChainSealed for Union {}
 
-impl<Tr: ChainExt> DoMsg<Union, Tr> for Union
+impl<Tr> DoMsg<Union, Tr> for Union
 where
-    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
-    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
-    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
-
-    Tr::StoredClientState<Union>: IntoAny,
-    Tr::StateProof: Encode<Proto>,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<Proto> + TypeUrl,
+        SelfClientState: Encode<Proto> + TypeUrl,
+        Header: Encode<Proto> + TypeUrl,
+        StoredClientState<Union>: IntoAny,
+        StateProof: Encode<Proto>,
+    >,
 {
     async fn msg(&self, msg: Effect<Union, Tr>) -> Result<(), BroadcastTxCommitError> {
         do_msg(
@@ -127,11 +128,10 @@ where
             StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof,
             Data<Tr> = UnionDataMsg<Hc, Tr>,
             Fetch<Tr> = UnionFetch<Hc, Tr>,
+            StoredClientState<Tr>: Decode<Proto>,
+            StoredConsensusState<Tr>: Decode<Proto>,
         >,
     Tr: ChainExt,
-
-    Hc::StoredClientState<Tr>: Decode<Proto>,
-    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,

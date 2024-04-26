@@ -139,8 +139,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
 
 fn try_from_proto_branch<T>(proto: Vec<Vec<u8>>) -> Result<T, TryFromBranchError<T>>
 where
-    T: TryFrom<Vec<H256>>,
-    <T as TryFrom<Vec<H256>>>::Error: Debug + PartialEq + Eq,
+    T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq>,
 {
     proto
         .into_iter()
@@ -154,8 +153,7 @@ where
 #[derive(Debug, PartialEq, Eq)]
 pub enum TryFromBranchError<T>
 where
-    T: TryFrom<Vec<H256>>,
-    <T as TryFrom<Vec<H256>>>::Error: Debug + PartialEq + Eq,
+    T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq>,
 {
     Branch(<T as TryFrom<Vec<H256>>>::Error),
     BranchNode(InvalidLength),

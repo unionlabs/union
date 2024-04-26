@@ -8,8 +8,8 @@
 )]
 
 use std::{
-    error::Error, ffi::OsString, fs::read_to_string, iter, marker::PhantomData, process::ExitCode,
-    sync::Arc,
+    error::Error, ffi::OsString, fmt::Debug, fs::read_to_string, iter, marker::PhantomData,
+    process::ExitCode, sync::Arc,
 };
 
 use chain_utils::{
@@ -40,6 +40,7 @@ use unionlabs::{
         connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
     },
     ics24::{ConnectionPath, NextClientSequencePath, NextConnectionSequencePath},
+    id::ClientId,
     traits::{Chain, ClientIdOf},
     QueryHeight,
 };
@@ -419,8 +420,8 @@ async fn mk_handshake<A, B>(
     chains: Arc<Chains>,
 ) -> QueueMsg<VoyagerMessageTypes>
 where
-    A: relay_message::ChainExt + LightClientType<B>,
-    B: relay_message::ChainExt + LightClientType<A>,
+    A: relay_message::ChainExt<ClientId: TryFrom<ClientId, Error: Debug>> + LightClientType<B>,
+    B: relay_message::ChainExt<ClientId: TryFrom<ClientId, Error: Debug>> + LightClientType<A>,
 
     relay_message::AnyLightClientIdentified<relay_message::fetch::AnyFetch>:
         From<relay_message::Identified<A, B, relay_message::fetch::Fetch<A, B>>>,
@@ -874,9 +875,8 @@ where
 
             seq([
                 mk_connection_msgs(
-                    // NOTE: We do this so we don't have to bound a very nested type to Debug, will not be an issue once we have associated type bounds
-                    client_a.try_into().ok().unwrap(),
-                    client_b.try_into().ok().unwrap(),
+                    client_a.try_into().unwrap(),
+                    client_b.try_into().unwrap(),
                     connection_ordering,
                 ),
                 mk_wait_for_connection_open(
@@ -899,9 +899,8 @@ where
             client_b,
             connection_ordering,
         } => mk_connection_msgs(
-            // NOTE: We do this so we don't have to bound a very nested type to Debug, will not be an issue once we have associated type bounds
-            client_a.try_into().ok().unwrap(),
-            client_b.try_into().ok().unwrap(),
+            client_a.try_into().unwrap(),
+            client_b.try_into().unwrap(),
             connection_ordering,
         ),
         HandshakeType::Channel {

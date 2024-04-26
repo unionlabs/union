@@ -25,8 +25,7 @@ where
 
 pub fn assert_string_roundtrip<T>(t: &T)
 where
-    T: Display + FromStr + Debug + PartialEq,
-    <T as FromStr>::Err: Debug,
+    T: Display + FromStr<Err: Debug> + Debug + PartialEq,
 {
     let from_str = t.to_string().parse::<T>().unwrap();
 

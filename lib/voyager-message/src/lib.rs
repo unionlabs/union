@@ -20,7 +20,6 @@ use unionlabs::{
         ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    traits::ClientIdOf,
     WasmClientType,
 };
 
@@ -444,11 +443,12 @@ impl HandleFetch<VoyagerMessageTypes> for VoyagerFetch {
 }
 
 // poor man's monad
-fn chain_event_to_lc_event<Hc: relay_message::ChainExt, Tr: relay_message::ChainExt>(
+fn chain_event_to_lc_event<Hc, Tr>(
     event: IbcEvent<Hc::ClientId, Hc::ClientType, String>,
 ) -> IbcEvent<Hc::ClientId, Hc::ClientType, Tr::ClientId>
 where
-    <ClientIdOf<Tr> as FromStr>::Err: Debug,
+    Hc: relay_message::ChainExt,
+    Tr: relay_message::ChainExt<ClientId: FromStr<Err: Debug>>,
 {
     match event {
         IbcEvent::CreateClient(CreateClient {

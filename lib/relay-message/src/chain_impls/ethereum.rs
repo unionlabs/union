@@ -51,7 +51,7 @@ use unionlabs::{
     ics24::{
         ClientStatePath, NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, Path,
     },
-    traits::{Chain, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    traits::{Chain, ClientIdOf, ClientState, ClientStateOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
     MaybeRecoverableError,
 };
@@ -89,34 +89,39 @@ impl<C: ChainSpec> ChainExt for Ethereum<C> {
     type Config = EthereumConfig;
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Ethereum<C>
+impl<C, Tr> DoMsg<Self, Tr> for Ethereum<C>
 where
-    ConsensusStateOf<Tr>: Encode<EthAbi>,
-    ClientStateOf<Tr>: Encode<EthAbi>,
-    HeaderOf<Tr>: Encode<EthAbi>,
+    C: ChainSpec,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<EthAbi>,
+        SelfClientState: Encode<EthAbi>,
+        Header: Encode<EthAbi>,
+        StoredClientState<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
+        StateProof: Encode<EthAbi>,
+    >,
 
     ClientStateOf<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
-    Tr::StoredClientState<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
-    Tr::StateProof: Encode<EthAbi>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
         do_msg(&self.ibc_handlers, msg, false).await
     }
 }
 
-pub async fn do_msg<Hc: ChainExt<Config = EthereumConfig> + EthereumChain, Tr: ChainExt>(
+pub async fn do_msg<Hc, Tr>(
     ibc_handlers: &Pool<IBCHandler<EthereumSignerMiddleware>>,
     msg: Effect<Hc, Tr>,
     legacy: bool,
 ) -> Result<(), TxSubmitError>
 where
-    ConsensusStateOf<Tr>: Encode<EthAbi>,
-    ClientStateOf<Tr>: Encode<EthAbi>,
-    HeaderOf<Tr>: Encode<EthAbi>,
-
-    ClientStateOf<Hc>: Encode<Tr::IbcStateEncoding>,
-    Tr::StoredClientState<Hc>: Encode<Tr::IbcStateEncoding>,
-    Tr::StateProof: Encode<EthAbi>,
+    Hc: ChainExt<Config = EthereumConfig, SelfClientState: Encode<Tr::IbcStateEncoding>>
+        + EthereumChain,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<EthAbi>,
+        SelfClientState: Encode<EthAbi>,
+        Header: Encode<EthAbi>,
+        StoredClientState<Hc>: Encode<Tr::IbcStateEncoding>,
+        StateProof: Encode<EthAbi>,
+    >,
 {
     let f = |ibc_handler| async move {
         let msg: ethers::contract::FunctionCall<_, _, ()> = match msg.clone() {
@@ -369,12 +374,12 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchState<Self, Tr> for Ethereum<C>
+impl<C, Tr> DoFetchState<Self, Tr> for Ethereum<C>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
-    Tr::SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
+    C: ChainSpec,
+    Tr: ChainExt<SelfClientState: Decode<IbcStateEncodingOf<Ethereum<C>>> + Encode<EthAbi>>,
 
-    Tr::SelfClientState: Encode<EthAbi>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
     fn state(
         hc: &Self,
@@ -403,8 +408,10 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchUpdateHeaders<Self, Tr> for Ethereum<C>
+impl<C, Tr> DoFetchUpdateHeaders<Self, Tr> for Ethereum<C>
 where
+    C: ChainSpec,
+    Tr: ChainExt,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
@@ -426,14 +433,14 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetch<Ethereum<C>> for EthereumFetchMsg<C, Tr>
+impl<C, Tr> DoFetch<Ethereum<C>> for EthereumFetchMsg<C, Tr>
 where
+    C: ChainSpec,
+    Tr: ChainExt<
+        SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding> + Encode<EthAbi>,
+        SelfConsensusState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
+    >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
-
-    Tr::SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
-    Tr::SelfConsensusState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
-
-    Tr::SelfClientState: Encode<EthAbi>,
 {
     async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> QueueMsg<RelayMessageTypes> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
@@ -672,10 +679,11 @@ pub async fn fetch_ibc_state<Hc, Tr>(
     FetchIbcState { path, height }: FetchIbcState<Hc, Tr>,
 ) -> Data<Hc, Tr>
 where
-    Hc: ChainExt + EthereumChain,
+    Hc: ChainExt<
+            StoredClientState<Tr>: Decode<Hc::IbcStateEncoding>,
+            StoredConsensusState<Tr>: Decode<Hc::IbcStateEncoding>,
+        > + EthereumChain,
     Tr: ChainExt,
-    Hc::StoredClientState<Tr>: Decode<Hc::IbcStateEncoding>,
-    Hc::StoredConsensusState<Tr>: Decode<Hc::IbcStateEncoding>,
 {
     let execution_height = c
         .execution_height_of_beacon_slot(height.revision_height())
@@ -983,7 +991,7 @@ pub struct LightClientUpdate<C: ChainSpec, #[cover] Tr: ChainExt> {
 impl<C, Tr> DoAggregate for Identified<Ethereum<C>, Tr, EthereumAggregateMsg<C, Tr>>
 where
     C: ChainSpec,
-    Tr: ChainExt,
+    Tr: ChainExt<SelfClientState: Encode<EthAbi>>,
 
     Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, BootstrapData<C, Tr>>: IsAggregateData,
@@ -998,8 +1006,6 @@ where
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
-
-    Tr::SelfClientState: Encode<EthAbi>,
 {
     fn do_aggregate(
         Identified {
@@ -1230,7 +1236,6 @@ impl<C, Tr> UseAggregate<RelayMessageTypes>
     for Identified<Ethereum<C>, Tr, MakeCreateUpdatesData<C, Tr>>
 where
     C: ChainSpec,
-
     Tr: ChainExt,
 
     Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
@@ -1294,7 +1299,7 @@ impl<C, Tr> UseAggregate<RelayMessageTypes>
     for Identified<Ethereum<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
 where
     C: ChainSpec,
-    Tr: ChainExt,
+    Tr: ChainExt<SelfClientState: Encode<EthAbi>>,
 
     Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
 
@@ -1303,11 +1308,8 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
-
-    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>:
-        TryFrom<AnyLightClientIdentified<AnyData>>,
-
-    Tr::SelfClientState: Encode<EthAbi>,
+    // Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>:
+    //     TryFrom<AnyLightClientIdentified<AnyData>>,
 {
     type AggregatedData = HList![Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>];
 

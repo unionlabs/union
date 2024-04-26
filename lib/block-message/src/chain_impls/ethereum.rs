@@ -117,12 +117,11 @@ pub(crate) async fn fetch_get_logs<Hc>(
     revision_number: u64,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: EthereumChainExt<Height = Height>,
-    // TODO: Replace with associated type bounds once stable
-    Hc::Aggregate: From<AggregateWithChannel<Hc>>,
-    Hc::Aggregate: From<AggregateWithConnection<Hc>>,
-    Hc::Fetch: From<FetchChannel<Hc>>,
-    Hc::Fetch: From<FetchConnection<Hc>>,
+    Hc: EthereumChainExt<
+        Height = Height,
+        Aggregate: From<AggregateWithChannel<Hc>> + From<AggregateWithConnection<Hc>>,
+        Fetch: From<FetchChannel<Hc>> + From<FetchConnection<Hc>>,
+    >,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
@@ -178,12 +177,9 @@ pub(crate) async fn fetch_beacon_block_range<C, Hc>(
 ) -> QueueMsg<BlockMessageTypes>
 where
     C: ChainSpec,
-    Hc: ChainExt + EthereumChain,
+    Hc: ChainExt<Fetch: From<FetchGetLogs> + From<FetchBeaconBlockRange>> + EthereumChain,
 
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
-
-    // TODO: Replace with associated type bounds
-    Hc::Fetch: From<FetchGetLogs> + From<FetchBeaconBlockRange>,
 {
     assert!(from_slot < to_slot);
 
@@ -246,8 +242,8 @@ pub(crate) async fn fetch_channel<Hc>(
     FetchChannel { height, path }: FetchChannel<Hc>,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: EthereumChainExt,
-    Hc::Data: From<ChannelData<Hc>>,
+    Hc: EthereumChainExt<Data: From<ChannelData<Hc>>>,
+
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
     data(id(
@@ -278,8 +274,7 @@ pub(crate) async fn fetch_connection<Hc>(
     FetchConnection { height, path }: FetchConnection<Hc>,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: EthereumChainExt,
-    Hc::Data: From<ConnectionData<Hc>>,
+    Hc: EthereumChainExt<Data: From<ConnectionData<Hc>>>,
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
     data(id(
@@ -309,11 +304,10 @@ pub async fn mk_aggregate_event<Hc>(
     tx_hash: H256,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: ChainExt + EthereumChain,
-    Hc::Aggregate: From<AggregateWithChannel<Hc>>,
-    Hc::Aggregate: From<AggregateWithConnection<Hc>>,
-    Hc::Fetch: From<FetchChannel<Hc>>,
-    Hc::Fetch: From<FetchConnection<Hc>>,
+    Hc: ChainExt<
+            Aggregate: From<AggregateWithChannel<Hc>> + From<AggregateWithConnection<Hc>>,
+            Fetch: From<FetchChannel<Hc>> + From<FetchConnection<Hc>>,
+        > + EthereumChain,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
@@ -507,12 +501,10 @@ pub fn with_channel<Hc, T>(
     raw_event: T,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: ChainExt + EthereumChain,
+    Hc: ChainExt<Aggregate: From<AggregateWithChannel<Hc>>, Fetch: From<FetchChannel<Hc>>>
+        + EthereumChain,
 
     AggregateWithChannel<Hc>: From<EventInfo<Hc, T>>,
-
-    Hc::Aggregate: From<AggregateWithChannel<Hc>>,
-    Hc::Fetch: From<FetchChannel<Hc>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
@@ -548,12 +540,10 @@ pub fn with_connection<Hc, T>(
     raw_event: T,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: ChainExt + EthereumChain,
+    Hc: ChainExt<Aggregate: From<AggregateWithConnection<Hc>>, Fetch: From<FetchConnection<Hc>>>
+        + EthereumChain,
 
     AggregateWithConnection<Hc>: From<EventInfo<Hc, T>>,
-
-    Hc::Aggregate: From<AggregateWithConnection<Hc>>,
-    Hc::Fetch: From<FetchConnection<Hc>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
