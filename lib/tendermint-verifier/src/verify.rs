@@ -527,7 +527,7 @@ mod tests {
     use std::{fs, num::NonZeroU64};
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-    use unionlabs::{ibc::lightclients::tendermint::header::Header, option_unwrap, promote};
+    use unionlabs::{ibc::lightclients::tendermint::header::Header, option_unwrap};
 
     use super::*;
 
@@ -586,7 +586,7 @@ mod tests {
             Duration::new(100_000_000, 0).unwrap(),
             Fraction {
                 numerator: 1,
-                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
+                denominator: const { option_unwrap!(NonZeroU64::new(3)) },
             },
             &SignatureVerifier::new(EdVerifier),
         )

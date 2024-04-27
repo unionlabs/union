@@ -8,7 +8,7 @@ use unionlabs::{
     google::protobuf::any::{mk_any, IntoAny},
     ibc::core::client::height::IsHeight,
     ics24::{ClientStatePath, Path},
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    traits::{ClientStateOf, ConsensusStateOf, HeightOf},
     TypeUrl,
 };
 
@@ -44,18 +44,18 @@ pub async fn do_msg<Hc, Tr>(
     mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
 ) -> Result<(), BroadcastTxCommitError>
 where
-    Hc: CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
-    Tr: ChainExt,
-
-    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
-    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
-    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
-
-    ConsensusStateOf<Hc>: Encode<Proto> + TypeUrl,
-    ClientStateOf<Hc>: Encode<Proto> + TypeUrl,
-
-    Tr::StoredClientState<Hc>: IntoAny,
-    Tr::StateProof: Encode<Proto>,
+    Hc: CosmosSdkChainSealed<
+        MsgError = BroadcastTxCommitError,
+        SelfConsensusState: Encode<Proto> + TypeUrl,
+        SelfClientState: Encode<Proto> + TypeUrl,
+    >,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<Proto> + TypeUrl,
+        SelfClientState: Encode<Proto> + TypeUrl,
+        Header: Encode<Proto> + TypeUrl,
+        StoredClientState<Hc>: IntoAny,
+        StateProof: Encode<Proto>,
+    >,
 {
     hc.signers()
         .with(|signer| async {
@@ -209,22 +209,20 @@ where
 
 impl<Hc, Tr> DoFetchState<Hc, Tr> for Hc
 where
-    Hc: CosmosSdkChainSealed + ChainExt,
-    Hc::StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof>,
-    <Hc::StateProof as TryFrom<protos::ibc::core::commitment::v1::MerkleProof>>::Error: Debug,
-    Tr: ChainExt,
+    Hc: CosmosSdkChainSealed
+        + ChainExt<
+            StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
+            StoredClientState<Tr>: Decode<Proto>,
+            StoredConsensusState<Tr>: Decode<Proto>,
+            Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>,
+        >,
 
-    Hc::Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>,
+    Tr: ChainExt<SelfClientState: Decode<Proto>, SelfConsensusState: Decode<Proto>>,
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     // required by fetch_abci_query, can be removed once that's been been removed
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-    Tr::SelfClientState: Decode<Proto>,
-    Tr::SelfConsensusState: Decode<Proto>,
-
-    Hc::StoredClientState<Tr>: Decode<Proto>,
-    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
@@ -274,9 +272,8 @@ where
 
 impl<Hc, Tr> DoFetchProof<Hc, Tr> for Hc
 where
-    Hc: ChainExt + CosmosSdkChainSealed,
+    Hc: ChainExt<Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>> + CosmosSdkChainSealed,
     Tr: ChainExt,
-    Hc::Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
@@ -308,16 +305,15 @@ pub async fn fetch_abci_query<Hc, Tr>(
     ty: AbciQueryType,
 ) -> QueueMsg<RelayMessageTypes>
 where
-    Hc: CosmosSdkChain + ChainExt,
-    <Hc as Chain>::StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof>,
-    <<Hc as Chain>::StateProof as TryFrom<protos::ibc::core::commitment::v1::MerkleProof>>::Error:
-        Debug,
+    Hc: CosmosSdkChain
+        + ChainExt<
+            StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
+            StoredClientState<Tr>: Decode<Proto>,
+            StoredConsensusState<Tr>: Decode<Proto>,
+        >,
     Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-
-    Hc::StoredClientState<Tr>: Decode<Proto>,
-    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 {
     let mut client =
         protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
@@ -639,8 +635,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt,
-        <Hc as ChainExt>::Data<Tr>: From<TrustedCommit<Hc, Tr>>,
+        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<TrustedCommit<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -670,8 +665,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt,
-        <Hc as ChainExt>::Data<Tr>: From<UntrustedCommit<Hc, Tr>>,
+        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<UntrustedCommit<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -701,8 +695,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt,
-        <Hc as ChainExt>::Data<Tr>: From<TrustedValidators<Hc, Tr>>,
+        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<TrustedValidators<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -734,8 +727,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt,
-        <Hc as ChainExt>::Data<Tr>: From<UntrustedValidators<Hc, Tr>>,
+        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<UntrustedValidators<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -989,7 +981,7 @@ pub mod wasm {
         google::protobuf::any::{Any, IntoAny},
         hash::H256,
         ibc::lightclients::wasm,
-        traits::{ClientState, ClientStateOf, ConsensusStateOf, HeaderOf},
+        traits::ClientState,
         TypeUrl,
     };
 
@@ -1088,19 +1080,20 @@ pub mod wasm {
 
     impl<Hc, Tr> DoMsg<Wasm<Hc>, Tr> for Wasm<Hc>
     where
-        Wasm<Hc>: ChainExt<MsgError = BroadcastTxCommitError, Config = WasmConfig>,
+        Wasm<Hc>: ChainExt<
+            SelfConsensusState: Encode<Proto> + TypeUrl,
+            SelfClientState: Encode<Proto> + TypeUrl,
+            MsgError = BroadcastTxCommitError,
+            Config = WasmConfig,
+        >,
         Hc: CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
-        Tr: ChainExt,
-
-        ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
-        ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
-        HeaderOf<Tr>: Encode<Proto> + TypeUrl,
-
-        ConsensusStateOf<Wasm<Hc>>: Encode<Proto> + TypeUrl,
-        ClientStateOf<Wasm<Hc>>: Encode<Proto> + TypeUrl,
-
-        Tr::StoredClientState<Wasm<Hc>>: IntoAny,
-        Tr::StateProof: Encode<Proto>,
+        Tr: ChainExt<
+            StoredClientState<Wasm<Hc>>: IntoAny,
+            StateProof: Encode<Proto>,
+            SelfConsensusState: Encode<Proto> + TypeUrl,
+            SelfClientState: Encode<Proto> + TypeUrl,
+            Header: Encode<Proto> + TypeUrl,
+        >,
     {
         async fn msg(&self, msg: Effect<Wasm<Hc>, Tr>) -> Result<(), Self::MsgError> {
             do_msg(

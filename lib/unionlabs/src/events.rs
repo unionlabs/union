@@ -37,8 +37,7 @@ macro_rules! event {
         where
             $(
                 $(
-                    $generics: FromStr,
-                    <$generics as FromStr>::Err: std::error::Error,
+                    $generics: FromStr<Err: std::error::Error>,
                 )+
             )?
         {
@@ -81,8 +80,7 @@ macro_rules! event {
             where
                 $(
                     $(
-                        $struct_generics: FromStr,
-                        <$struct_generics as FromStr>::Err: std::error::Error,
+                        $struct_generics: FromStr<Err: std::error::Error>,
                     )+
                 )?
             {
@@ -100,7 +98,6 @@ macro_rules! event {
 
                     $(
                         let mut $field = None::<(usize, _)>;
-                        // let mut $field = None;
                     )+
 
                     for (idx, attr) in value.attributes.into_iter().enumerate() {

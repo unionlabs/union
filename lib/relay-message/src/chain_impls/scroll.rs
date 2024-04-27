@@ -25,7 +25,7 @@ use unionlabs::{
         },
     },
     ics24::ClientStatePath,
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, IbcStateEncodingOf},
+    traits::{Chain, ClientStateOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
 };
 
@@ -54,15 +54,16 @@ impl ChainExt for Scroll {
     type Config = EthereumConfig;
 }
 
-impl<Tr: ChainExt> DoMsg<Self, Tr> for Scroll
+impl<Tr> DoMsg<Self, Tr> for Scroll
 where
-    ConsensusStateOf<Tr>: Encode<EthAbi>,
-    ClientStateOf<Tr>: Encode<EthAbi>,
-    HeaderOf<Tr>: Encode<EthAbi>,
-
     ClientStateOf<Scroll>: Encode<Tr::IbcStateEncoding>,
-    Tr::StoredClientState<Scroll>: Encode<Tr::IbcStateEncoding>,
-    Tr::StateProof: Encode<EthAbi>,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<EthAbi>,
+        SelfClientState: Encode<EthAbi>,
+        Header: Encode<EthAbi>,
+        StoredClientState<Scroll>: Encode<Tr::IbcStateEncoding>,
+        StateProof: Encode<EthAbi>,
+    >,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
         do_msg(&self.ibc_handlers, msg, true).await
@@ -86,12 +87,11 @@ where
 }
 
 // REVIEW: This can probably be generic over Hc: EthereumChain, instead of being duplicated between ethereum and scroll
-impl<Tr: ChainExt> DoFetchState<Self, Tr> for Scroll
+impl<Tr> DoFetchState<Self, Tr> for Scroll
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
-    Tr::SelfClientState: Decode<IbcStateEncodingOf<Scroll>>,
+    Tr: ChainExt<SelfClientState: Decode<IbcStateEncodingOf<Scroll>> + Encode<EthAbi>>,
 
-    Tr::SelfClientState: Encode<EthAbi>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
 {
     fn state(
         hc: &Self,
@@ -120,10 +120,11 @@ where
     }
 }
 
-impl<Tr: ChainExt> DoFetchUpdateHeaders<Self, Tr> for Scroll
+impl<Tr> DoFetchUpdateHeaders<Self, Tr> for Scroll
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Scroll, Tr>)>,
+    Tr: ChainExt,
 {
     fn fetch_update_headers(
         c: &Self,
@@ -133,6 +134,7 @@ where
         // - scroll latest batch index proof against rollup contract
         // - scroll finalized root at batch index against rollup contract
         // - ibc contract root against finalized root on L2
+        // - commitBatch calldata and popped messages to verify timestamp
 
         aggregate(
             [
@@ -191,14 +193,13 @@ where
     }
 }
 
-impl<Tr: ChainExt> DoFetch<Scroll> for ScrollFetch<Tr>
+impl<Tr> DoFetch<Scroll> for ScrollFetch<Tr>
 where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Scroll, Tr>)>,
-
-    Tr::SelfClientState: Decode<IbcStateEncodingOf<Scroll>>,
-    Tr::SelfConsensusState: Decode<IbcStateEncodingOf<Scroll>>,
-
-    Tr::SelfClientState: Encode<EthAbi>,
+    Tr: ChainExt<
+        SelfClientState: Decode<IbcStateEncodingOf<Scroll>>,
+        SelfConsensusState: Decode<IbcStateEncodingOf<Scroll>> + Encode<EthAbi>,
+    >,
 {
     async fn do_fetch(scroll: &Scroll, msg: Self) -> QueueMsg<RelayMessageTypes> {
         let msg = match msg {

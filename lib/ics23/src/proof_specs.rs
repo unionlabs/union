@@ -8,7 +8,7 @@ use unionlabs::{
         length_op::LengthOp,
         proof_spec::ProofSpec,
     },
-    promote, result_unwrap,
+    result_unwrap,
 };
 
 pub const IAVL_PROOF_SPEC: ProofSpec = ProofSpec {
@@ -20,10 +20,14 @@ pub const IAVL_PROOF_SPEC: ProofSpec = ProofSpec {
         prefix: Cow::Borrowed(&[0]),
     },
     inner_spec: InnerSpec {
-        child_order: Cow::Borrowed(promote!(&[PositiveI32AsUsize]: &[
-            result_unwrap!(PositiveI32AsUsize::new(0)),
-            result_unwrap!(PositiveI32AsUsize::new(1)),
-        ])),
+        child_order: Cow::Borrowed(
+            const {
+                &[
+                    result_unwrap!(PositiveI32AsUsize::new(0)),
+                    result_unwrap!(PositiveI32AsUsize::new(1)),
+                ]
+            },
+        ),
         child_size: result_unwrap!(PositiveI32AsUsize::new(33)),
         min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(4)),
         max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(12)),
@@ -44,10 +48,14 @@ pub const TENDERMINT_PROOF_SPEC: ProofSpec = ProofSpec {
         prefix: Cow::Borrowed(&[0]),
     },
     inner_spec: InnerSpec {
-        child_order: Cow::Borrowed(promote!(&[PositiveI32AsUsize]: &[
-            result_unwrap!(PositiveI32AsUsize::new(0)),
-            result_unwrap!(PositiveI32AsUsize::new(1)),
-        ])),
+        child_order: Cow::Borrowed(
+            const {
+                &[
+                    result_unwrap!(PositiveI32AsUsize::new(0)),
+                    result_unwrap!(PositiveI32AsUsize::new(1)),
+                ]
+            },
+        ),
         child_size: result_unwrap!(PositiveI32AsUsize::new(32)),
         min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
         max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),

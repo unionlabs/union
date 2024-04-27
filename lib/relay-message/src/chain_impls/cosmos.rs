@@ -24,7 +24,7 @@ use unionlabs::{
     },
     ics24::ClientStatePath,
     tendermint::types::validator::Validator,
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf},
+    traits::Chain,
     TypeUrl,
 };
 
@@ -62,14 +62,15 @@ impl ChainExt for Cosmos {
 
 impl CosmosSdkChainSealed for Cosmos {}
 
-impl<Tr: ChainExt> DoMsg<Cosmos, Tr> for Cosmos
+impl<Tr> DoMsg<Cosmos, Tr> for Cosmos
 where
-    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
-    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
-    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
-
-    Tr::StoredClientState<Cosmos>: IntoAny,
-    Tr::StateProof: Encode<Proto>,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<Proto> + TypeUrl,
+        SelfClientState: Encode<Proto> + TypeUrl,
+        Header: Encode<Proto> + TypeUrl,
+        StoredClientState<Cosmos>: IntoAny,
+        StateProof: Encode<Proto>,
+    >,
 {
     async fn msg(&self, msg: Effect<Cosmos, Tr>) -> Result<(), BroadcastTxCommitError> {
         do_msg(
@@ -176,11 +177,10 @@ where
             StateProof = MerkleProof,
             Data<Tr> = CosmosDataMsg<Hc, Tr>,
             Fetch<Tr> = CosmosFetch<Hc, Tr>,
+            StoredClientState<Tr>: Decode<Proto>,
+            StoredConsensusState<Tr>: Decode<Proto>,
         >,
     Tr: ChainExt,
-
-    Hc::StoredClientState<Tr>: Decode<Proto>,
-    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,

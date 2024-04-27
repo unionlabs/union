@@ -19,7 +19,7 @@ use unionlabs::{
     hash::H256,
     ibc::core::client::height::IsHeight,
     id::ConnectionId,
-    option_unwrap, promote,
+    option_unwrap,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{ClientIdOf, HeightOf},
 };
@@ -278,7 +278,7 @@ where
                         Fetch::<C>::specific(FetchTransactions {
                             height: from_height,
                             // who needs const blocks
-                            page: promote!(NonZeroU32: option_unwrap!(NonZeroU32::new(1_u32))),
+                            page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
                         }),
                     ))
                 } else {
@@ -291,7 +291,7 @@ where
                             Fetch::<C>::specific(FetchTransactions {
                                 height: from_height,
                                 // who needs const blocks
-                                page: promote!(NonZeroU32: option_unwrap!(NonZeroU32::new(1_u32))),
+                                page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
                             }),
                         ))]
                         .into_iter()

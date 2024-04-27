@@ -65,8 +65,7 @@ pub fn to_hex<T: AsRef<[u8]>>(data: T) -> String {
 
 pub fn parse_hex<T>(string: impl AsRef<[u8]>) -> Result<T, FromHexStringError>
 where
-    T: TryFrom<Vec<u8>>,
-    <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
+    T: TryFrom<Vec<u8>, Error: Debug + 'static>,
 {
     let s = &string.as_ref();
 
@@ -105,8 +104,7 @@ pub mod base64 {
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
         D: Deserializer<'de>,
-        T: TryFrom<Vec<u8>>,
-        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
     {
         BASE64_STANDARD
             .decode(String::deserialize(deserializer)?.as_bytes())
@@ -235,22 +233,21 @@ pub mod hex_string {
     use alloc::{string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     use crate::{parse_hex, to_hex};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         serializer.serialize_str(&to_hex(data))
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
-        D: serde::Deserializer<'de>,
-        T: TryFrom<Vec<u8>>,
-        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
     {
         String::deserialize(deserializer).and_then(|x| parse_hex::<T>(x).map_err(de::Error::custom))
     }
@@ -286,11 +283,11 @@ pub mod hex_upper_unprefixed {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         if data.as_ref().is_empty() {
             serializer.serialize_str("0")
@@ -301,9 +298,8 @@ pub mod hex_upper_unprefixed {
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
-        D: serde::Deserializer<'de>,
-        T: TryFrom<Vec<u8>>,
-        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
     {
         let s = String::deserialize(deserializer)?;
         let bz = hex::decode(s).map_err(de::Error::custom)?;
@@ -332,10 +328,8 @@ pub mod hex_string_list {
     pub fn deserialize<'de, D, T, C>(deserializer: D) -> Result<C, D::Error>
     where
         D: Deserializer<'de>,
-        T: TryFrom<Vec<u8>>,
-        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
-        C: TryFrom<Vec<T>>,
-        <C as TryFrom<Vec<T>>>::Error: Debug,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
+        C: TryFrom<Vec<T>, Error: Debug>,
     {
         Vec::<String>::deserialize(deserializer)?
             .into_iter()
@@ -348,21 +342,21 @@ pub mod hex_string_list {
 
 pub mod string {
     use alloc::string::String;
-    use core::{fmt, str::FromStr};
+    use core::{fmt::Display, str::FromStr};
 
-    use serde::de::Deserialize;
+    use serde::{de::Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
-        T: fmt::Display,
+        S: Serializer,
+        T: Display,
     {
         serializer.collect_str(&data)
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
         T: FromStr,
     {
         String::deserialize(deserializer).and_then(|s| {
@@ -420,14 +414,14 @@ pub mod map_numeric_keys_as_string {
 
 pub mod string_opt {
     use alloc::string::String;
-    use core::{fmt, str::FromStr};
+    use core::{fmt::Display, str::FromStr};
 
-    use serde::de::Deserialize;
+    use serde::{de::Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
-        T: fmt::Display,
+        S: Serializer,
+        T: Display,
     {
         if let Some(data) = data {
             serializer.collect_str(&data)
@@ -438,7 +432,7 @@ pub mod string_opt {
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
         T: FromStr,
     {
         String::deserialize(deserializer).and_then(|s| {
@@ -457,18 +451,18 @@ pub mod u256_from_dec_str {
     use alloc::{format, string::String};
 
     use primitive_types::U256;
-    use serde::de::Deserialize;
+    use serde::{de::Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(data: &U256, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         serializer.collect_str(&data)
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
         String::deserialize(deserializer).and_then(|s| {
             U256::from_dec_str(&s).map_err(|err| {
@@ -482,11 +476,14 @@ pub mod bitvec_string {
     use alloc::string::String;
 
     use bitvec::vec::BitVec;
-    use serde::de::{self, Deserialize};
+    use serde::{
+        de::{self, Deserialize},
+        Deserializer, Serializer,
+    };
 
     pub fn serialize<S>(data: &BitVec<u8>, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         let output = data
             .iter()
@@ -500,7 +497,7 @@ pub mod bitvec_string {
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<BitVec<u8>, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
         <&str>::deserialize(deserializer).and_then(|s| {
             s.chars()
@@ -518,26 +515,29 @@ pub mod bitvec_string {
 }
 
 pub mod fmt {
-    use core::{fmt::Write, marker::PhantomData};
+    use core::{
+        fmt::{self, Write},
+        marker::PhantomData,
+    };
 
     use bitvec::{order::BitOrder, store::BitStore, view::AsBits};
 
     use crate::to_hex;
 
     pub struct DebugAsHex<T>(pub T);
-    impl<T: AsRef<[u8]>> core::fmt::Debug for DebugAsHex<T> {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    impl<T: AsRef<[u8]>> fmt::Debug for DebugAsHex<T> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             write!(f, "{}", to_hex(&self.0))
         }
     }
 
     pub struct DebugListAsHex<I>(pub I);
-    impl<I> core::fmt::Debug for DebugListAsHex<I>
+    impl<I> fmt::Debug for DebugListAsHex<I>
     where
         I: IntoIterator + Copy,
         I::Item: AsRef<[u8]>,
     {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.debug_list()
                 .entries(self.0.into_iter().map(DebugAsHex::<I::Item>))
                 .finish()
@@ -553,8 +553,8 @@ pub mod fmt {
             Self(a, PhantomData)
         }
     }
-    impl<A: AsBits<B>, B: BitStore, O: BitOrder> core::fmt::Debug for DebugBits<A, B, O> {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    impl<A: AsBits<B>, B: BitStore, O: BitOrder> fmt::Debug for DebugBits<A, B, O> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             for bit in self.0.as_bits::<O>().iter().by_refs() {
                 // REVIEW: Is string literal or char more efficient?
                 f.write_char(if *bit { '1' } else { '0' })?
