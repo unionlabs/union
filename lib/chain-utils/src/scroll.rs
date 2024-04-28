@@ -96,6 +96,39 @@ impl EthereumChain for Scroll {
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
     }
+
+    async fn get_proof(
+        &self,
+        address: H160,
+        location: U256,
+        block: u64,
+    ) -> unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
+        let proof = self
+            .scroll_rpc
+            .get_proof(address, [location], scroll_rpc::BlockId::Number(block))
+            .await
+            .unwrap();
+
+        let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+            Ok([proof]) => proof,
+            Err(invalid) => {
+                panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+            }
+        };
+
+        unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
+            proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
+                key: proof.key,
+                value: proof.value,
+                proof: proof
+                    .proof
+                    .into_iter()
+                    .map(|bytes| bytes.to_vec())
+                    .collect(),
+            }]
+            .to_vec(),
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
