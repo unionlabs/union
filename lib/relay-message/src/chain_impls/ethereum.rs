@@ -567,36 +567,14 @@ where
         .await;
 
     let proof = c
-        .provider()
         .get_proof(
-            ethers::types::H160::from(c.ibc_handler_address()),
-            vec![location.into()],
-            Some(execution_height.into()),
+            c.ibc_handler_address(),
+            U256::from_be_bytes(location),
+            execution_height,
         )
-        .await
-        .unwrap();
+        .await;
 
     tracing::info!(?proof);
-
-    let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-        Ok([proof]) => proof,
-        Err(invalid) => {
-            panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-        }
-    };
-
-    let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
-        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-            value: proof.value.into(),
-            proof: proof
-                .proof
-                .into_iter()
-                .map(|bytes| bytes.to_vec())
-                .collect(),
-        }]
-        .to_vec(),
-    };
 
     match get_proof.path {
         Path::ClientState(path) => Data::from(IbcProof::<_, Hc, Tr> {
