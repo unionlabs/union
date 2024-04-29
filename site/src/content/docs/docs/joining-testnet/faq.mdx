@@ -10,7 +10,7 @@ As we continue onboarding validators and expanding the testnet, we'll populate t
 
 We started our testnet with the goal of onboarding 64 validators. The sign-up form for these first 64 slots has been closed.
 
-We have now expanded `union-testnet-6` to support 128 validators. Those interested can submit their Union address to the Subo Survey Bot on [our Discord](https://discord.gg/union-build) to have a chance of being selected as a validator and receiving tokens from the Union team. The Subo "Union Testnet Validator Intake Form" is set to close on February 19th, 2024.
+We have now expanded the Union testnet to support 128 validators. Those interested can submit their Union address to the Subo Survey Bot on [our Discord](https://discord.gg/union-build) to have a chance of being selected as a validator and receiving tokens from the Union team. The Subo "Union Testnet Validator Intake Form" closed on February 19th, 2024.
 
 ### Do you have any public REST/RPC/gRPC endpoints?
 
@@ -25,6 +25,10 @@ Ensure you have exposed your host machine's network via the `--network` flag in 
 Due to [an issue in the cosmos-sdk](https://github.com/cosmos/cosmos-sdk/issues/18868), commands using AutoCLI do not respect the `--home` flag and instead always try and read the default home. As a temporary fix, we've removed the behavior reading the default home, always require a `--home` flag, and moved all `tx` commands away from AutoCLI. However, `query` commands still use AutoCLI and won't read the `--home` flag.
 
 To get around this behavior, we suggest always supplying `--node` and `--chain-id` when using query commands.
+
+### Can I have access to the Union GitHub repository?
+
+We are not currently providing the general public access to our GitHub repositories.
 
 ### Other questions?
 
