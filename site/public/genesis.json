@@ -2,7 +2,7 @@
   "app_name": "uniond",
   "app_version": "",
   "genesis_time": "2024-04-03T01:21:56.396226031Z",
-  "chain_id": "union-testnet-7",
+  "chain_id": "union-testnet-8",
   "initial_height": 1,
   "app_hash": null,
   "app_state": {
@@ -1216,68 +1216,6 @@
               {
                 "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
                 "description": {
-                  "moniker": "aeryz",
-                  "identity": "",
-                  "website": "",
-                  "security_contact": "",
-                  "details": ""
-                },
-                "commission": {
-                  "rate": "0.100000000000000000",
-                  "max_rate": "0.200000000000000000",
-                  "max_change_rate": "0.010000000000000000"
-                },
-                "min_self_delegation": "1",
-                "delegator_address": "",
-                "validator_address": "unionvaloper1ml67yhc5kp8qrxssfnqz8pxqvjyln5fup5xqpl",
-                "pubkey": {
-                  "@type": "/cosmos.crypto.bn254.PubKey",
-                  "key": "21zHut5mxVAiYfWzVJVsXZHxpNKNmIeb/yaSdKveQi0="
-                },
-                "value": {
-                  "denom": "muno",
-                  "amount": "1000000000000"
-                }
-              }
-            ],
-            "memo": "4a8cbd3254d65fe5f6ad80c07138c398cacc3ad3@92.243.27.215:26656",
-            "timeout_height": "0",
-            "extension_options": [],
-            "non_critical_extension_options": []
-          },
-          "auth_info": {
-            "signer_infos": [
-              {
-                "public_key": {
-                  "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "AzMpeaWPvsivTVttJEDh34iHhu3E5oHgAntOzBmY7cOd"
-                },
-                "mode_info": {
-                  "single": {
-                    "mode": "SIGN_MODE_DIRECT"
-                  }
-                },
-                "sequence": "0"
-              }
-            ],
-            "fee": {
-              "amount": [],
-              "gas_limit": "200000",
-              "payer": "",
-              "granter": ""
-            },
-            "tip": null
-          },
-          "signatures": [
-            "G7doDjtrmdRRv2jucX4s1DU2q094oDdQmWuYb+n7BMpi3gaa8N6vfpZQ+pqjF15iZasDhA/tmHLsTlaRYXAJpQ=="
-          ]
-        },
-        {
-          "body": {
-            "messages": [
-              {
-                "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
-                "description": {
                   "moniker": "bonlulu",
                   "identity": "",
                   "website": "",
@@ -1302,7 +1240,7 @@
                 }
               }
             ],
-            "memo": "35f462b92e7d007650700d4550c14cb2ff806b6c@146.190.244.247:26656",
+            "memo": "bcfe201a94afef92ca3e464097f5dda17c22ac3a@198.19.249.52:26656",
             "timeout_height": "0",
             "extension_options": [],
             "non_critical_extension_options": []
@@ -1331,7 +1269,7 @@
             "tip": null
           },
           "signatures": [
-            "/19EtUp2Cg3+h82mZqPDopHG3LmvyEXsapbf460y50FEoU2j+g+Dc6sPOq+U5FjtCkHA2pxKQdIEVebITgZcPQ=="
+            "sszSGJyRVc1XQvxRo8pvLWGwncpbgQJFg4YmFrjGCDs7uwHraMwSrADTqMnZPgRkhn0r2a0hnIrmrLdKDtwk2w=="
           ]
         },
         {
@@ -1393,7 +1331,7 @@
             "tip": null
           },
           "signatures": [
-            "PBidGkn3GDy03NR+Q6ZGaiUr0olqXJJTXxXKcHyrXjsrQIu8KldRgdI7llHpClPNTUGzjty9iI/r2fwKzoRcrA=="
+            "9jdSLaC9bJ/ii7yAWQO/qvshMdTcKU6Xo7fwvoqtVxVt+3iKfubbaK3iLATmsN85RHjbtj4zR0Gr7D0tjVc+yA=="
           ]
         },
         {
@@ -1426,7 +1364,7 @@
                 }
               }
             ],
-            "memo": "5da474cda6d8858b4a1646cbbce053d17a2be829@159.65.33.232:26656",
+            "memo": "0af46a138c052681ec5207eafd12ef6d1a4fe923@159.65.33.232:26656",
             "timeout_height": "0",
             "extension_options": [],
             "non_critical_extension_options": []
@@ -1455,7 +1393,7 @@
             "tip": null
           },
           "signatures": [
-            "7EHrgP7uU4a9xiBOnOXBnbQeOHwlQ7aVhjB/b4BcZ8Va/LNZ3L7AXkcLomEsqZaha7nc+0FAQJTuUbhS8U/6zw=="
+            "J+tcMmIqh3UHkPe/b1Gi5rtEd0Aln30atIhP9KdITvsVH1OlLMp+jgjCdFvMvqbM4I8pYJjSzdM33C4/JbKgJg=="
           ]
         }
       ]
