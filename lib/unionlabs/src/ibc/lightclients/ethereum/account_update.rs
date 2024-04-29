@@ -22,7 +22,7 @@ impl From<AccountUpdate> for protos::union::ibc::lightclients::ethereum::v1::Acc
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromAccountUpdateError {
     MissingField(MissingField),
     AccountProof(TryFromAccountProofError),

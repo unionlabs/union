@@ -1,9 +1,6 @@
 use core::fmt::Debug;
 
-use ethereum_verifier::{
-    verify_account_storage_root, verify_storage_proof, VerifyAccountStorageRootError,
-    VerifyStorageProofError,
-};
+use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
 use ethers_core::abi::{AbiDecode, AbiError};
 use scroll_codec::CommitBatchError;
 use sha3::Digest;
@@ -15,12 +12,12 @@ use unionlabs::{
 };
 use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, TrieData, ZkTrie};
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
+    #[error(transparent)]
+    InvalidContractAddressProof(ethereum_verifier::Error),
     #[error("{0}")]
-    InvalidContractAddressProof(#[from] VerifyAccountStorageRootError),
-    #[error("{0}")]
-    InvalidRollupProof(#[from] VerifyStorageProofError),
+    InvalidRollupProof(ethereum_verifier::Error),
     #[error("invalid zktrie")]
     ZkTrie(zktrie::Error),
     #[error("node value mismatch")]
@@ -42,7 +39,8 @@ pub fn verify_header(
         &client_state.rollup_contract_address,
         &header.l1_account_proof.proof,
         &header.l1_account_proof.storage_root,
-    )?;
+    )
+    .map_err(Error::InvalidContractAddressProof)?;
 
     // Verify that the latest batch index is part of the rollup account root
     verify_storage_proof(
@@ -50,7 +48,8 @@ pub fn verify_header(
         client_state.latest_batch_index_slot,
         &rlp::encode(&header.last_batch_index),
         &header.last_batch_index_proof.proofs[0].proof,
-    )?;
+    )
+    .map_err(Error::InvalidRollupProof)?;
 
     // Verify that the rollup finalized state root is part of the rollup account root
     verify_storage_proof(
@@ -61,7 +60,8 @@ pub fn verify_header(
         ),
         &rlp::encode(&header.l2_state_root),
         &header.l2_state_proof.proofs[0].proof,
-    )?;
+    )
+    .map_err(Error::InvalidRollupProof)?;
 
     let batch_hash = scroll_codec::commit_batch(
         <scroll_codec::CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)?,
@@ -78,7 +78,8 @@ pub fn verify_header(
         ),
         &rlp::encode(&batch_hash),
         &header.batch_hash_proof.proofs[0].proof,
-    )?;
+    )
+    .map_err(Error::InvalidRollupProof)?;
 
     // Verify that the ibc account root is part of the rollup root
     scroll_verify_zktrie_account_storage_root(

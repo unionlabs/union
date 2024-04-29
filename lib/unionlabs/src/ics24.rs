@@ -206,16 +206,22 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextClientSequencePath {
     type Value = u64;
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum PathParseError {
+    #[error("invalid static segment, expected `{expected}` but found `{found}`")]
     InvalidStaticSegment {
         expected: &'static str,
         found: String,
     },
+    #[error("missing static segment `{0}`")]
     MissingStaticSegment(&'static str),
+    // TODO: Figure out a way to provide more context here?
+    #[error("missing segment")]
     MissingSegment,
+    #[error("too many segments")]
     TooManySegments,
     // contains the stringified parse error
+    #[error("error parsing segment: {0}")]
     Parse(String),
 }
 

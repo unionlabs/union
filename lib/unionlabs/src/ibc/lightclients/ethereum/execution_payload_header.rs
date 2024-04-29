@@ -132,7 +132,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromExecutionPayloadHeaderError {
     ParentHash(InvalidLength),
     FeeRecipient(InvalidLength),

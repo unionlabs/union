@@ -1,8 +1,16 @@
 use milagro_bls::AmclError;
 use trie_db::TrieError;
-use unionlabs::{bls::BlsPublicKey, hash::H256};
+use unionlabs::{
+    bls::{BlsPublicKey, BlsSignature},
+    hash::H256,
+};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
+#[error("invalid merkle branch \
+    (leaf: {leaf}, branch: [{branch}], \
+    depth: {depth}, index: {index}, root: {root})",
+    branch = .branch.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+)]
 pub struct InvalidMerkleBranch {
     pub leaf: H256,
     pub branch: Vec<H256>,
@@ -11,11 +19,19 @@ pub struct InvalidMerkleBranch {
     pub root: H256,
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error, Clone)]
+#[error("signature cannot be verified (public_keys: {public_keys:?}, msg: {msg}, signature: {signature})", msg = serde_utils::to_hex(.msg))]
+pub struct InvalidSignature {
+    pub public_keys: Vec<BlsPublicKey>,
+    pub msg: Vec<u8>,
+    pub signature: BlsSignature,
+}
+
+#[derive(Debug, PartialEq, thiserror::Error, Clone)]
 pub enum Error {
-    #[error("invalid merkle branch ({0:?})")]
-    InvalidMerkleBranch(InvalidMerkleBranch),
-    #[error("invalid chain conversion")]
+    #[error(transparent)]
+    InvalidMerkleBranch(#[from] InvalidMerkleBranch),
+    #[error("invalid chain version")]
     InvalidChainVersion,
     #[error("crypto error")]
     Crypto,
@@ -48,54 +64,47 @@ pub enum Error {
         stored_period: u64,
     },
     #[error(
-        "next sync committee ({got}) does not match with the one in the current state ({expected})"
+        "next sync committee ({found}) does not match with the one in the current state ({expected})"
     )]
     NextSyncCommitteeMismatch {
         expected: BlsPublicKey,
-        got: BlsPublicKey,
+        found: BlsPublicKey,
     },
     #[error("insufficient number of sync committee participants ({0})")]
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
-    #[error("proof is invalid due to value mismatch expected: {e}, actual: {a}", e = serde_utils::to_hex(expected), a = serde_utils::to_hex(actual))]
+    #[error(
+        "proof is invalid due to value mismatch, expected: {expected}, actual: {actual}",
+        expected = serde_utils::to_hex(expected),
+        actual = serde_utils::to_hex(actual)
+    )]
     ValueMismatch { expected: Vec<u8>, actual: Vec<u8> },
     #[error("proof is invalid due to missing value: {v}", v = serde_utils::to_hex(value))]
     ValueMissing { value: Vec<u8> },
     #[error("trie error ({0:?})")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
     #[error("rlp decoding failed ({0:?})")]
-    RlpDecode(rlp::DecoderError),
-    #[error("custom query error: ({0})")]
-    CustomError(String),
-    #[error("update header contains deneb specific informations")]
+    RlpDecode(#[from] rlp::DecoderError),
+    #[error("custom query error")]
+    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
+    // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
+    #[error(transparent)]
+    InvalidSignature(Box<InvalidSignature>),
+    #[error("update header contains deneb specific information")]
     MustBeDeneb,
     #[error("finalized slot cannot be the genesis slot")]
     FinalizedSlotIsGenesis,
 }
 
-#[derive(Debug, thiserror::Error, PartialEq)]
-#[error("verify storage absence error: {0}")]
-pub struct VerifyStorageAbsenceError(#[from] pub Error);
-
-#[derive(Debug, thiserror::Error, PartialEq)]
-#[error("validate light client error: {0}")]
-pub struct ValidateLightClientError(#[from] pub Error);
-
-#[derive(Debug, thiserror::Error, PartialEq)]
-#[error("verify account storage root error: {0}")]
-pub struct VerifyAccountStorageRootError(#[from] pub Error);
-
-#[derive(Debug, thiserror::Error, PartialEq)]
-#[error("verify storage proof error: {0}")]
-pub struct VerifyStorageProofError(#[from] pub Error);
-
+// NOTE: Implemented here instead of via #[from] since AmclError doesn't implement std::error::Error
 impl From<AmclError> for Error {
     fn from(e: AmclError) -> Self {
         Error::Bls(e)
     }
 }
 
+// NOTE: Implemented here instead of via #[from] since Box<TrieError<primitive_types::H256, rlp::DecoderError>> doesn't implement std::error::Error
 impl From<Box<TrieError<primitive_types::H256, rlp::DecoderError>>> for Error {
     fn from(e: Box<TrieError<primitive_types::H256, rlp::DecoderError>>) -> Self {
         Error::Trie(e)

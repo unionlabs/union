@@ -1,4 +1,3 @@
-use frame_support_procedural::DebugNoBound;
 use macros::model;
 use ssz::{Decode, Encode, TreeHash};
 
@@ -76,7 +75,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<TrustedSyncCommittee<C>>
     }
 }
 
-#[derive(DebugNoBound)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromTrustedSyncCommitteeError {
     MissingField(MissingField),
     SyncCommittee(TryFromSyncCommitteeError),

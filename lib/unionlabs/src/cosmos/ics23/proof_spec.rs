@@ -39,12 +39,17 @@ impl From<ProofSpec> for protos::cosmos::ics23::v1::ProofSpec {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromProofSpecError {
+    #[error(transparent)]
     MissingField(MissingField),
-    LeafSpec(TryFromLeafOpError),
-    InnerSpec(TryFromInnerSpecError),
+    #[error("invalid leaf spec")]
+    LeafSpec(#[from] TryFromLeafOpError),
+    #[error("invalid inner spec")]
+    InnerSpec(#[from] TryFromInnerSpecError),
+    #[error("negative max depth")]
     NegativeMinDepth,
+    #[error("negative min depth")]
     NegativeMaxDepth,
 }
 

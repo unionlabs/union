@@ -23,7 +23,7 @@ impl From<ValidatorSet> for protos::tendermint::types::ValidatorSet {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromValidatorSetError {
     Validators(TryFromValidatorError),
     MissingField(MissingField),

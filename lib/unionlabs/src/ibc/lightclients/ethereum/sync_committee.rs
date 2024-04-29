@@ -31,7 +31,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncCommittee<C>>
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromSyncCommitteeError {
     /// One of the `pubkeys` had an invalid length
     PubKey(InvalidLength),

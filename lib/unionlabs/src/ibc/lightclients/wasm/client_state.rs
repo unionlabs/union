@@ -28,6 +28,16 @@ where
     }
 }
 
+impl<Data: Decode<Proto, Error: PartialEq>> PartialEq for TryFromWasmClientStateError<Data> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Data(this), Self::Data(other)) => this == other,
+            (Self::CodeId(this), Self::CodeId(other)) => this == other,
+            _ => false,
+        }
+    }
+}
+
 #[derive(DebugNoBound)]
 pub enum TryFromWasmClientStateError<Data: Decode<Proto>> {
     Data(DecodeErrorOf<Proto, Data>),

@@ -14,10 +14,13 @@ pub struct NonExistenceProof {
     pub right: Option<ExistenceProof>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromNonExistenceProofError {
+    #[error(transparent)]
     MissingField(MissingField),
+    #[error("left proof invalid")]
     Left(TryFromExistenceProofError),
+    #[error("right proof invalid")]
     Right(TryFromExistenceProofError),
 }
 

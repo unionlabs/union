@@ -38,7 +38,7 @@ impl From<PublicKey> for protos::tendermint::crypto::PublicKey {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromPublicKeyError {
     MissingField(MissingField),
 }

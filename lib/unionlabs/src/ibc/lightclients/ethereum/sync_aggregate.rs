@@ -39,7 +39,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromSyncAggregateError {
     Bits(ssz::types::Error),
     Signature(InvalidLength),

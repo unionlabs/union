@@ -25,18 +25,16 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
     let client_state =
-        ClientState::decode_as::<Proto>(&msg.client_state).map_err(|e| Error::DecodeFromProto {
-            reason: format!("{:?}", e),
-        })?;
+        ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
 
-    save_proto_consensus_state(
+    save_proto_consensus_state::<TendermintLightClient>(
         deps.branch(),
         ProtoConsensusState {
             data: msg.consensus_state.into(),
         },
         &client_state.latest_height,
     );
-    save_proto_client_state(
+    save_proto_client_state::<TendermintLightClient>(
         deps,
         ProtoClientState {
             data: msg.client_state.into(),

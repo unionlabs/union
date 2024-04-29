@@ -14,7 +14,7 @@ pub struct AccountProof {
     pub proof: Vec<Vec<u8>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromAccountProofError {
     ContractAddress(InvalidLength),
     StorageRoot(InvalidLength),

@@ -7,7 +7,7 @@ use ics008_wasm_client::{
         read_substitute_client_state, read_substitute_consensus_state, save_client_state,
         save_consensus_state, save_subject_client_state, save_subject_consensus_state,
     },
-    IbcClient, Status, StorageState, ZERO_HEIGHT,
+    IbcClient, IbcClientError, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
@@ -33,16 +33,16 @@ use crate::{
         get_current_or_next_consensus_state_meta, get_current_or_prev_consensus_state_meta,
         save_consensus_state_metadata,
     },
-    zkp_verifier::ZKPVerifier,
+    zkp_verifier::ZkpVerifier,
 };
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
     unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
 
-pub struct CometblsLightClient<T: ZKPVerifier = ()>(PhantomData<T>);
+pub struct CometblsLightClient<T: ZkpVerifier = ()>(PhantomData<T>);
 
-impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
+impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -66,14 +66,11 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         proof: Vec<u8>,
         path: MerklePath,
         value: StorageState,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
 
-        let merkle_proof =
-            MerkleProof::decode(proof.as_ref()).map_err(|e| Error::DecodeFromProto {
-                reason: format!("{:?}", e),
-            })?;
+        let merkle_proof = MerkleProof::decode(proof.as_ref()).map_err(Error::MerkleProofDecode)?;
 
         match value {
             StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
@@ -91,13 +88,14 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             ),
         }
         .map_err(Error::VerifyMembership)
+        .map_err(Into::into)
     }
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &header.trusted_height)?
@@ -169,21 +167,22 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             &header.zero_knowledge_proof,
         )
         .map_err(Error::InvalidZKP)
+        .map_err(Into::into)
     }
 
     fn verify_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _env: Env,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<Vec<Height>, Self::Error> {
+    ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         let mut consensus_state: WasmConsensusState =
             read_consensus_state(deps.as_ref(), &header.trusted_height)?
@@ -207,13 +206,13 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         // Normalized to nanoseconds to follow tendermint convention
         consensus_state.data.timestamp = header.signed_header.time.unix_nanos();
 
-        save_client_state(deps.branch(), client_state);
+        save_client_state::<Self>(deps.branch(), client_state);
         save_consensus_state_metadata(
             deps.branch(),
             consensus_state.data.timestamp,
             untrusted_height,
         );
-        save_consensus_state(deps, consensus_state, &untrusted_height);
+        save_consensus_state::<Self>(deps, consensus_state, &untrusted_height);
 
         Ok(vec![untrusted_height])
     }
@@ -222,14 +221,14 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         _deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         _client_message: Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
-    ) -> Result<bool, Self::Error> {
+    ) -> Result<bool, IbcClientError<Self>> {
         let height = height_from_header(&header);
 
         let expected_timestamp: u64 = header.signed_header.time.unix_nanos();
@@ -244,8 +243,9 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
                     app_hash: MerkleRoot { hash },
                     next_validators_hash,
                 },
-        }) = read_consensus_state::<_, ConsensusState>(deps, &height)?
+        }) = read_consensus_state::<Self>(deps, &height)?
         {
+            // NOTE: Expanded for clarity, could just be Ok(condition)
             if timestamp != expected_timestamp
                 || hash != header.signed_header.app_hash
                 || next_validators_hash != header.signed_header.next_validators_hash
@@ -282,8 +282,8 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<bool, Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<bool, IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn verify_upgrade_and_update_state(
@@ -292,11 +292,13 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         _upgrade_consensus_state: Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
-    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
+    fn migrate_client_store(
+        mut deps: DepsMut<Self::CustomQuery>,
+    ) -> Result<(), IbcClientError<Self>> {
         let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
 
@@ -322,14 +324,14 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             substitute_client_state.latest_height,
         );
 
-        save_subject_consensus_state(
+        save_subject_consensus_state::<Self>(
             deps.branch(),
             substitute_consensus_state,
             &substitute_client_state.latest_height,
         );
 
         let scs = substitute_client_state.data;
-        save_subject_client_state(
+        save_subject_client_state::<Self>(
             deps,
             WasmClientState {
                 data: ClientState {
@@ -350,17 +352,15 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     fn status(
         deps: Deps<Self::CustomQuery>,
         env: &cosmwasm_std::Env,
-    ) -> Result<Status, Self::Error> {
+    ) -> Result<Status, IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != ZERO_HEIGHT {
             return Ok(Status::Frozen);
         }
 
-        let Some(consensus_state) = read_consensus_state::<Self::CustomQuery, ConsensusState>(
-            deps,
-            &client_state.latest_height,
-        )?
+        let Some(consensus_state) =
+            read_consensus_state::<Self>(deps, &client_state.latest_height)?
         else {
             return Ok(Status::Expired);
         };
@@ -379,20 +379,18 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,
         _env: &cosmwasm_std::Env,
-    ) -> Result<Vec<GenesisMetadata>, Self::Error> {
+    ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
         Ok(Vec::new())
     }
 
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,
-    ) -> Result<u64, Self::Error> {
-        Ok(
-            read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
-                .ok_or(Error::ConsensusStateNotFound(height))?
-                .data
-                .timestamp,
-        )
+    ) -> Result<u64, IbcClientError<Self>> {
+        Ok(read_consensus_state::<Self>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height))?
+            .data
+            .timestamp)
     }
 }
 
@@ -537,7 +535,8 @@ mod tests {
 
         CometblsLightClient::<()>::migrate_client_store(deps.as_mut()).unwrap();
 
-        let wasm_client_state: WasmClientState = read_subject_client_state(deps.as_ref()).unwrap();
+        let wasm_client_state: WasmClientState =
+            read_subject_client_state::<CometblsLightClient<()>>(deps.as_ref()).unwrap();
         // we didn't miss updating any fields
         assert_eq!(wasm_client_state, substitute_wasm_client_state);
         // client is unfrozen
@@ -545,9 +544,12 @@ mod tests {
 
         // the new consensus state is saved under the correct height
         assert_eq!(
-            read_subject_consensus_state(deps.as_ref(), &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
-                .unwrap()
-                .unwrap(),
+            read_subject_consensus_state::<CometblsLightClient<()>>(
+                deps.as_ref(),
+                &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT
+            )
+            .unwrap()
+            .unwrap(),
             substitute_wasm_consensus_state
         );
 
@@ -596,7 +598,7 @@ mod tests {
             );
             assert_eq!(
                 CometblsLightClient::<()>::migrate_client_store(deps.as_mut()),
-                Err(Error::MigrateFieldsChanged)
+                Err(Error::MigrateFieldsChanged.into())
             );
         }
     }
@@ -623,7 +625,7 @@ mod tests {
 
         assert_eq!(
             CometblsLightClient::<()>::migrate_client_store(deps.as_mut()),
-            Err(Error::SubstituteClientFrozen)
+            Err(Error::SubstituteClientFrozen.into())
         );
     }
 }

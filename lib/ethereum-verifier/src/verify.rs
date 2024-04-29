@@ -31,8 +31,7 @@ use crate::{
         compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
         compute_sync_committee_period_at_slot, validate_merkle_branch,
     },
-    Error, LightClientContext, ValidateLightClientError, VerifyAccountStorageRootError,
-    VerifyStorageAbsenceError, VerifyStorageProofError,
+    Error, LightClientContext,
 };
 
 type MinSyncCommitteeParticipants<Ctx> =
@@ -71,7 +70,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     current_slot: u64,
     genesis_validators_root: H256,
     bls_verifier: V,
-) -> Result<(), ValidateLightClientError> {
+) -> Result<(), Error> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
     ensure(
@@ -171,7 +170,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
                 next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
                     expected: stored_next_sync_committee.aggregate_pubkey,
-                    got: next_sync_committee.aggregate_pubkey,
+                    found: next_sync_committee.aggregate_pubkey,
                 },
             )?;
         }
@@ -255,7 +254,7 @@ pub fn verify_account_storage_root(
     address: &H160,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &H256,
-) -> Result<(), VerifyAccountStorageRootError> {
+) -> Result<(), Error> {
     match get_node(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
@@ -287,7 +286,7 @@ pub fn verify_storage_proof(
     key: U256,
     expected_value: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-) -> Result<(), VerifyStorageProofError> {
+) -> Result<(), Error> {
     match get_node(root, key.to_be_bytes(), proof)? {
         Some(value) if value == expected_value => Ok(()),
         Some(value) => Err(Error::ValueMismatch {
@@ -311,7 +310,7 @@ pub fn verify_storage_absence(
     root: H256,
     key: U256,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
-) -> Result<bool, VerifyStorageAbsenceError> {
+) -> Result<bool, Error> {
     Ok(get_node(root, key.to_be_bytes(), proof)?.is_none())
 }
 
@@ -506,7 +505,6 @@ mod tests {
             INITIAL_DATA.genesis_validators_root,
             BlsVerifier,
         )
-        .map_err(|e| e.0)
     }
 
     #[test]
@@ -770,7 +768,7 @@ mod tests {
                 proof_value.as_ref(),
                 VALID_PROOF.storage_proof.proof.iter()
             ),
-            Err(VerifyStorageProofError(Error::ValueMismatch { .. }))
+            Err(Error::ValueMismatch { .. })
         ));
     }
 

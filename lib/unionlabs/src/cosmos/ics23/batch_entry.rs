@@ -14,11 +14,14 @@ pub enum BatchEntry {
     Nonexist(NonExistenceProof),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromBatchEntryError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Exist(TryFromExistenceProofError),
-    Nonexist(TryFromNonExistenceProofError),
+    #[error("invalid existence proof")]
+    Exist(#[from] TryFromExistenceProofError),
+    #[error("invalid non existence proof")]
+    Nonexist(#[from] TryFromNonExistenceProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::BatchEntry> for BatchEntry {

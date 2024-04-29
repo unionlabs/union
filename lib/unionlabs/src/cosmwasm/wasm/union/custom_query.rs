@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Deps, QueryRequest};
 
 use crate::bls::BlsPublicKey;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
     #[error("error while running `fast_aggregate_verify` query ({0})")]
     FastAggregateVerify(String),

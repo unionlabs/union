@@ -44,16 +44,22 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum TryFromClientStateError {
-    L1ClientId(FromDecStrErr),
-    ChainId(FromDecStrErr),
-    LatestBatchIndexSlot(InvalidLength),
-    RollupContractAddress(InvalidLength),
-    RollupFinalizedStateRootsSlot(InvalidLength),
-    IbcContractAddress(InvalidLength),
-    IbcCommitmentSlot(InvalidLength),
-    RollupCommittedBatchesSlot(InvalidLength),
+    #[error("unable to parse chain id")]
+    ChainId(#[source] FromDecStrErr),
+    #[error("invalid latest batch index slot")]
+    LatestBatchIndexSlot(#[source] InvalidLength),
+    #[error("invalid rollup contract address")]
+    RollupContractAddress(#[source] InvalidLength),
+    #[error("invalid rollup finalized state roots slot")]
+    RollupFinalizedStateRootsSlot(#[source] InvalidLength),
+    #[error("invalid ibc contract address")]
+    IbcContractAddress(#[source] InvalidLength),
+    #[error("invalid ibc commitment slot")]
+    IbcCommitmentSlot(#[source] InvalidLength),
+    #[error("invalid ibc committed batches slot")]
+    RollupCommittedBatchesSlot(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for ClientState {

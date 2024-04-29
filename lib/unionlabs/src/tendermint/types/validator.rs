@@ -27,7 +27,7 @@ impl From<Validator> for protos::tendermint::types::Validator {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromValidatorError {
     MissingField(MissingField),
     Address(InvalidLength),

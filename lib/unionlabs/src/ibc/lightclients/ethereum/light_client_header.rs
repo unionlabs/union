@@ -46,7 +46,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromLightClientHeaderError {
     MissingField(MissingField),
     BeaconBlockHeader(TryFromBeaconBlockHeaderError),

@@ -39,8 +39,9 @@ impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::Clien
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
+    #[error(transparent)]
     MissingField(MissingField),
 }
 

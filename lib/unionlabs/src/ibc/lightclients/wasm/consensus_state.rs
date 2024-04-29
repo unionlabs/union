@@ -1,3 +1,4 @@
+use frame_support_procedural::DebugNoBound;
 use macros::model;
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
@@ -17,9 +18,17 @@ impl<Data: Encode<Proto>> From<ConsensusState<Data>>
     }
 }
 
-#[derive(Debug)]
+#[derive(DebugNoBound)]
 pub enum TryFromWasmConsensusStateError<Data: Decode<Proto>> {
     Data(DecodeErrorOf<Proto, Data>),
+}
+
+impl<Data: Decode<Proto, Error: PartialEq>> PartialEq for TryFromWasmConsensusStateError<Data> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Data(this), Self::Data(other)) => this == other,
+        }
+    }
 }
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ConsensusState> for ConsensusState<Data>

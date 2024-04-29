@@ -63,7 +63,7 @@ impl From<Header> for protos::union::ibc::lightclients::scroll::v1::Header {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
     L1AccountProof(TryFromAccountProofError),

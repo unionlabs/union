@@ -7,9 +7,10 @@ pub struct BatchProof {
     pub entries: Vec<BatchEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromBatchProofError {
-    Entries(TryFromBatchEntryError),
+    #[error("invalid entries")]
+    Entries(#[from] TryFromBatchEntryError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::BatchProof> for BatchProof {

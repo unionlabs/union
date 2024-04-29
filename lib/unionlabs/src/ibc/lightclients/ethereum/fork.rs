@@ -27,7 +27,7 @@ impl From<Fork> for protos::union::ibc::lightclients::ethereum::v1::Fork {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromForkError {
     Version(InvalidLength),
 }

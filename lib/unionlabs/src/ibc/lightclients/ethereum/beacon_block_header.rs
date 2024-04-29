@@ -31,7 +31,7 @@ impl From<BeaconBlockHeader> for protos::union::ibc::lightclients::ethereum::v1:
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromBeaconBlockHeaderError {
     ParentRoot(InvalidLength),
     StateRoot(InvalidLength),

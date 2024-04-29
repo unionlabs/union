@@ -1,5 +1,5 @@
 use cosmwasm_std::{Binary, Deps};
-use ethereum_verifier::BlsVerify;
+use ethereum_verifier::{BlsVerify, InvalidSignature};
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
@@ -17,11 +17,11 @@ impl<'a> BlsVerify for VerificationContext<'a> {
         msg: Vec<u8>,
         signature: BlsSignature,
     ) -> Result<(), ethereum_verifier::Error> {
-        let public_keys_: Vec<_> = public_keys.into_iter().cloned().collect();
+        let public_keys: Vec<_> = public_keys.into_iter().cloned().collect();
 
         let is_valid = query_fast_aggregate_verify(
             self.deps,
-            public_keys_
+            public_keys
                 .clone()
                 .into_iter()
                 .map(|x| Binary(x.into()))
@@ -29,14 +29,15 @@ impl<'a> BlsVerify for VerificationContext<'a> {
             msg.clone().into(),
             Binary(signature.into()),
         )
-        .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
+        .map_err(ethereum_verifier::Error::CustomQuery)?;
 
         ensure(
             is_valid,
-            ethereum_verifier::Error::CustomError(format!(
-                "signature cannot be verified: public_keys: {:#?}, msg: {:#?}, signature: {}",
-                public_keys_, msg, signature
-            )),
+            ethereum_verifier::Error::InvalidSignature(Box::new(InvalidSignature {
+                public_keys,
+                msg,
+                signature,
+            })),
         )
     }
 }

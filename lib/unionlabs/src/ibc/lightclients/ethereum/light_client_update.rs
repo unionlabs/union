@@ -1,10 +1,9 @@
 use core::fmt::Debug;
 
-use frame_support_procedural::DebugNoBound;
 use macros::model;
 
 use crate::{
-    errors::{InvalidLength, MissingField},
+    errors::{required, InvalidLength, MissingField},
     ethereum::config::{
         consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
@@ -75,7 +74,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     }
 }
 
-#[derive(DebugNoBound)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromLightClientUpdateError {
     MissingField(MissingField),
     AttestedHeader(TryFromLightClientHeaderError),
@@ -96,11 +95,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         value: protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            attested_header: value
-                .attested_header
-                .ok_or(TryFromLightClientUpdateError::MissingField(MissingField(
-                    "attested_header",
-                )))?
+            attested_header: required!(value.attested_header)?
                 .try_into()
                 .map_err(TryFromLightClientUpdateError::AttestedHeader)?,
             next_sync_committee: value
@@ -116,20 +111,12 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                         .map_err(TryFromLightClientUpdateError::NextSyncCommitteeBranch)?,
                 )
             },
-            finalized_header: value
-                .finalized_header
-                .ok_or(TryFromLightClientUpdateError::MissingField(MissingField(
-                    "finalized_header",
-                )))?
+            finalized_header: required!(value.finalized_header)?
                 .try_into()
                 .map_err(TryFromLightClientUpdateError::FinalizedHeader)?,
             finality_branch: try_from_proto_branch(value.finality_branch)
                 .map_err(TryFromLightClientUpdateError::FinalityBranch)?,
-            sync_aggregate: value
-                .sync_aggregate
-                .ok_or(TryFromLightClientUpdateError::MissingField(MissingField(
-                    "sync_aggregate",
-                )))?
+            sync_aggregate: required!(value.sync_aggregate)?
                 .try_into()
                 .map_err(TryFromLightClientUpdateError::SyncAggregate)?,
             signature_slot: value.signature_slot,
@@ -139,7 +126,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
 
 fn try_from_proto_branch<T>(proto: Vec<Vec<u8>>) -> Result<T, TryFromBranchError<T>>
 where
-    T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq>,
+    T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq + Clone>,
 {
     proto
         .into_iter()
@@ -150,10 +137,11 @@ where
         .map_err(TryFromBranchError::Branch)
 }
 
-#[derive(Debug, PartialEq, Eq)]
+// TODO: Remove the bounds on T::Error and only require said bounds when implementing the respective traits, will clean up try_from_proto_branch as well
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TryFromBranchError<T>
 where
-    T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq>,
+    T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq + Clone>,
 {
     Branch(<T as TryFrom<Vec<H256>>>::Error),
     BranchNode(InvalidLength),

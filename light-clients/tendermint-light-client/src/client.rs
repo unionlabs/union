@@ -5,7 +5,7 @@ use ics008_wasm_client::{
         read_substitute_client_state, read_substitute_consensus_state, save_client_state,
         save_consensus_state, save_subject_client_state, save_subject_consensus_state,
     },
-    IbcClient, Status, StorageState, ZERO_HEIGHT,
+    IbcClient, IbcClientError, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_verifier::types::SignatureVerifier;
@@ -68,15 +68,12 @@ impl IbcClient for TendermintLightClient {
         proof: Vec<u8>,
         path: MerklePath,
         value: StorageState,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
 
-        let merkle_proof = MerkleProof::decode_as::<Proto>(proof.as_ref()).map_err(|e| {
-            Error::DecodeFromProto {
-                reason: format!("{:?}", e),
-            }
-        })?;
+        let merkle_proof =
+            MerkleProof::decode_as::<Proto>(proof.as_ref()).map_err(Error::MerkleProofDecode)?;
 
         // TODO(aeryz): delay period check
 
@@ -96,13 +93,14 @@ impl IbcClient for TendermintLightClient {
             ),
         }
         .map_err(Error::VerifyMembership)
+        .map_err(Into::into)
     }
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: Env,
         mut header: Self::Header,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         set_total_voting_power(&mut header.validator_set)?;
         set_total_voting_power(&mut header.trusted_validators)?;
 
@@ -119,9 +117,10 @@ impl IbcClient for TendermintLightClient {
 
         if revision_number != header.trusted_height.revision_number {
             return Err(Error::RevisionNumberMismatch {
-                trusted_rn: revision_number,
-                header_rn: header.trusted_height.revision_number,
-            });
+                trusted_revision_number: revision_number,
+                header_revision_number: header.trusted_height.revision_number,
+            }
+            .into());
         }
 
         let signed_height = header
@@ -130,7 +129,8 @@ impl IbcClient for TendermintLightClient {
             .height
             .inner()
             .try_into()
-            .map_err(|_| Error::InvalidHeight)?;
+            .expect("value is bounded >= 0; qed;");
+
         if signed_height <= header.trusted_height.revision_height {
             return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
                 signed_height,
@@ -143,9 +143,16 @@ impl IbcClient for TendermintLightClient {
             &construct_partial_header(
                 client_state.data.chain_id,
                 i64::try_from(header.trusted_height.revision_height)
-                    .map_err(|_| Error::InvalidHeight)? // TODO(aeryz): add context #1333
+                    .map_err(|_| {
+                        Error::IbcHeightTooLargeForTendermintHeight(
+                            header.trusted_height.revision_height,
+                        )
+                    })?
                     .try_into()
-                    .map_err(|_| Error::InvalidHeight)?,
+                    .expect(
+                        "value is converted from u64, which is positive, \
+                        and the expected bounded type is >= 0; qed;",
+                    ),
                 consensus_state.data.timestamp,
                 consensus_state.data.next_validators_hash,
             ),
@@ -160,7 +167,8 @@ impl IbcClient for TendermintLightClient {
             client_state.data.max_clock_drift,
             client_state.data.trust_level,
             &SignatureVerifier::new(Ed25519Verifier::new(deps)),
-        )?;
+        )
+        .map_err(Error::TendermintVerify)?;
 
         Ok(())
     }
@@ -169,17 +177,17 @@ impl IbcClient for TendermintLightClient {
         _deps: Deps<Self::CustomQuery>,
         _env: Env,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<Vec<Height>, Self::Error> {
+    ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let update_height = height_from_header(&header);
-        if read_consensus_state::<_, ConsensusState>(deps.as_ref(), &update_height)?.is_some() {
+        if read_consensus_state::<Self>(deps.as_ref(), &update_height)?.is_some() {
             return Ok(vec![update_height]);
         }
 
@@ -192,13 +200,13 @@ impl IbcClient for TendermintLightClient {
             client_state.data.latest_height = update_height;
         }
 
-        save_client_state(deps.branch(), client_state);
+        save_client_state::<Self>(deps.branch(), client_state);
         save_consensus_state_metadata(
             deps.branch(),
             header.signed_header.header.time,
             update_height,
         );
-        save_consensus_state(
+        save_consensus_state::<Self>(
             deps,
             WasmConsensusState {
                 data: ConsensusState {
@@ -219,14 +227,14 @@ impl IbcClient for TendermintLightClient {
         _deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         _client_message: Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
-    ) -> Result<bool, Self::Error> {
+    ) -> Result<bool, IbcClientError<Self>> {
         let height = height_from_header(&header);
 
         // If there is already a header at this height, it should be exactly the same as the header that
@@ -239,7 +247,7 @@ impl IbcClient for TendermintLightClient {
                     next_validators_hash,
                     root: MerkleRoot { hash },
                 },
-        }) = read_consensus_state::<_, ConsensusState>(deps, &height)?
+        }) = read_consensus_state::<Self>(deps, &height)?
         {
             if timestamp != header.signed_header.header.time
                 || hash != header.signed_header.header.app_hash
@@ -277,8 +285,8 @@ impl IbcClient for TendermintLightClient {
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<bool, Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<bool, IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn verify_upgrade_and_update_state(
@@ -287,11 +295,13 @@ impl IbcClient for TendermintLightClient {
         _upgrade_consensus_state: Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
-    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
+    fn migrate_client_store(
+        mut deps: DepsMut<Self::CustomQuery>,
+    ) -> Result<(), IbcClientError<Self>> {
         let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
 
@@ -321,14 +331,14 @@ impl IbcClient for TendermintLightClient {
             substitute_client_state.latest_height,
         );
 
-        save_subject_consensus_state(
+        save_subject_consensus_state::<TendermintLightClient>(
             deps.branch(),
             substitute_consensus_state,
             &substitute_client_state.latest_height,
         );
 
         let scs = substitute_client_state.data;
-        save_subject_client_state(
+        save_subject_client_state::<TendermintLightClient>(
             deps,
             WasmClientState {
                 data: ClientState {
@@ -349,7 +359,7 @@ impl IbcClient for TendermintLightClient {
     fn status(
         deps: Deps<Self::CustomQuery>,
         env: &cosmwasm_std::Env,
-    ) -> Result<Status, Self::Error> {
+    ) -> Result<Status, IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         // TODO(aeryz): when refactoring the tm client, we should consider making this non-optional
@@ -358,10 +368,8 @@ impl IbcClient for TendermintLightClient {
             return Ok(Status::Frozen);
         }
 
-        let Some(consensus_state) = read_consensus_state::<Self::CustomQuery, ConsensusState>(
-            deps,
-            &client_state.latest_height,
-        )?
+        let Some(consensus_state) =
+            read_consensus_state::<Self>(deps, &client_state.latest_height)?
         else {
             return Ok(Status::Expired);
         };
@@ -383,23 +391,25 @@ impl IbcClient for TendermintLightClient {
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,
         _env: &cosmwasm_std::Env,
-    ) -> Result<Vec<GenesisMetadata>, Self::Error> {
+    ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
         Ok(Vec::new())
     }
 
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,
-    ) -> Result<u64, Self::Error> {
-        let timestamp = read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
+    ) -> Result<u64, IbcClientError<Self>> {
+        let timestamp = read_consensus_state::<Self>(deps, &height)?
             .ok_or(Error::ConsensusStateNotFound(height))?
             .data
             .timestamp
             .seconds
             .inner();
+
         timestamp
             .try_into()
             .map_err(|_| Error::NegativeTimestamp(timestamp))
+            .map_err(Into::into)
     }
 }
 
@@ -613,7 +623,8 @@ mod tests {
 
         TendermintLightClient::migrate_client_store(deps.as_mut()).unwrap();
 
-        let wasm_client_state: WasmClientState = read_subject_client_state(deps.as_ref()).unwrap();
+        let wasm_client_state: WasmClientState =
+            read_subject_client_state::<TendermintLightClient>(deps.as_ref()).unwrap();
         // we didn't miss updating any fields
         assert_eq!(wasm_client_state, substitute_wasm_client_state);
         // client is unfrozen
@@ -621,9 +632,12 @@ mod tests {
 
         // the new consensus state is saved under the correct height
         assert_eq!(
-            read_subject_consensus_state(deps.as_ref(), &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
-                .unwrap()
-                .unwrap(),
+            read_subject_consensus_state::<TendermintLightClient>(
+                deps.as_ref(),
+                &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT
+            )
+            .unwrap()
+            .unwrap(),
             substitute_wasm_consensus_state
         );
 
@@ -676,7 +690,7 @@ mod tests {
             );
             assert_eq!(
                 TendermintLightClient::migrate_client_store(deps.as_mut()),
-                Err(Error::MigrateFieldsChanged)
+                Err(Error::MigrateFieldsChanged.into())
             );
         }
     }
@@ -703,7 +717,7 @@ mod tests {
 
         assert_eq!(
             TendermintLightClient::migrate_client_store(deps.as_mut()),
-            Err(Error::SubstituteClientFrozen)
+            Err(Error::SubstituteClientFrozen.into())
         );
     }
 }

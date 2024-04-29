@@ -11,10 +11,12 @@ pub struct CompressedBatchProof {
     pub lookup_inners: Vec<InnerOp>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCompressedBatchProofProofError {
-    Entries(TryFromCompressedBatchEntryProofError),
-    LookupInners(TryFromInnerOpError),
+    #[error("invalid entries")]
+    Entries(#[from] TryFromCompressedBatchEntryProofError),
+    #[error("invalid lookup inners")]
+    LookupInners(#[from] TryFromInnerOpError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchProof> for CompressedBatchProof {
