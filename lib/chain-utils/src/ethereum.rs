@@ -11,7 +11,7 @@ use contracts::{
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
         GetHashedPacketAcknowledgementCommitmentCall,
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, HasPacketReceiptCall, HasPacketReceiptReturn, IBCHandler,
+        GetHashedPacketCommitmentReturn, HasPacketReceiptCall, IBCHandler,
         IbcCoreConnectionV1ConnectionEndData, NextClientSequenceCall, NextConnectionSequenceCall,
         OwnershipTransferredFilter,
     },

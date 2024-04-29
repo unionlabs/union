@@ -2,7 +2,7 @@ use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
 use ics008_wasm_client::{
     define_cosmwasm_light_client_contract,
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
-    InstantiateMsg,
+    CustomQueryOf, InstantiateMsg,
 };
 use protos::ibc::lightclients::wasm::v1::{
     ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
@@ -19,28 +19,26 @@ use crate::{client::CometblsLightClient, errors::Error};
 // of IBC (probably v9). When that feature is implemented, we can move this to the ics008 macro.
 #[entry_point]
 pub fn instantiate(
-    mut deps: DepsMut,
+    mut deps: DepsMut<CustomQueryOf<CometblsLightClient>>,
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
     let client_state =
-        ClientState::decode_as::<Proto>(&msg.client_state).map_err(|e| Error::DecodeFromProto {
-            reason: format!("{:?}", e),
-        })?;
+        ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
 
     if client_state.chain_id.len() > 31 {
-        return Err(Error::InvalidChainID);
+        return Err(Error::InvalidChainId);
     }
 
-    save_proto_consensus_state(
+    save_proto_consensus_state::<CometblsLightClient>(
         deps.branch(),
         ProtoConsensusState {
             data: msg.consensus_state.into(),
         },
         &client_state.latest_height,
     );
-    save_proto_client_state(
+    save_proto_client_state::<CometblsLightClient>(
         deps,
         ProtoClientState {
             data: msg.client_state.into(),

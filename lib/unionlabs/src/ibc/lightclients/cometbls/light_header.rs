@@ -55,14 +55,20 @@ impl From<SignedHeader> for LightHeader {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromLightHeaderError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Height(BoundedIntError<i64>),
-    Timestamp(TryFromTimestampError),
-    ValidatorsHash(InvalidLength),
-    NextValidatorsHash(InvalidLength),
-    AppHash(InvalidLength),
+    #[error("invalid height")]
+    Height(#[source] BoundedIntError<i64>),
+    #[error("invalid timestamp")]
+    Timestamp(#[from] TryFromTimestampError),
+    #[error("invalid validators hash")]
+    ValidatorsHash(#[source] InvalidLength),
+    #[error("invalid next validators hash")]
+    NextValidatorsHash(#[source] InvalidLength),
+    #[error("invalid app hash")]
+    AppHash(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for LightHeader {
@@ -76,9 +82,7 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for Li
                 .height
                 .try_into()
                 .map_err(TryFromLightHeaderError::Height)?,
-            time: required!(value.time)?
-                .try_into()
-                .map_err(TryFromLightHeaderError::Timestamp)?,
+            time: required!(value.time)?.try_into()?,
             validators_hash: value
                 .validators_hash
                 .try_into()

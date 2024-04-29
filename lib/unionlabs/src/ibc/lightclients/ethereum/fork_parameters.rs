@@ -42,7 +42,7 @@ impl From<ForkParameters> for protos::union::ibc::lightclients::ethereum::v1::Fo
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromForkParametersError {
     MissingField(MissingField),
     InvalidLength(InvalidLength),

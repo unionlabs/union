@@ -17,8 +17,9 @@ impl From<Fraction> for protos::ibc::lightclients::tendermint::v1::Fraction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromFractionError {
+    #[error("zero denominator")]
     ZeroDenominator,
 }
 
@@ -38,7 +39,6 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::Fraction> for Fraction {
     }
 }
 
-// TODO(benluelo): This will be replaced with tendermint once the solidity contract types are regenerated
 #[cfg(feature = "ethabi")]
 impl From<Fraction> for contracts::glue::IbcLightclientsTendermintV1FractionData {
     fn from(value: Fraction) -> Self {
@@ -54,6 +54,7 @@ impl From<contracts::glue::IbcLightclientsTendermintV1FractionData> for Fraction
     fn from(value: contracts::glue::IbcLightclientsTendermintV1FractionData) -> Self {
         Self {
             numerator: value.numerator,
+            // TODO: Don't panic here lol
             denominator: NonZeroU64::new(value.denominator).expect("non-zero denominator"),
         }
     }

@@ -13,10 +13,12 @@ pub struct Proof {
     pub proof: Vec<Vec<u8>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromProofError {
-    Key(InvalidLength),
-    Value(InvalidLength),
+    #[error("unable to decode key")]
+    Key(#[source] InvalidLength),
+    #[error("unable to decode value")]
+    Value(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::Proof> for Proof {

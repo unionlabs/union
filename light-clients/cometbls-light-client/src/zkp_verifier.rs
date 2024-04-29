@@ -1,6 +1,6 @@
 use unionlabs::{hash::H256, ibc::lightclients::cometbls::light_header::LightHeader};
 
-pub trait ZKPVerifier {
+pub trait ZkpVerifier {
     fn verify_zkp(
         chain_id: &str,
         trusted_validators_hash: H256,
@@ -11,11 +11,11 @@ pub trait ZKPVerifier {
     }
 }
 
-impl ZKPVerifier for () {}
+impl ZkpVerifier for () {}
 
 pub struct MockZKPVerifier;
 
-impl ZKPVerifier for MockZKPVerifier {
+impl ZkpVerifier for MockZKPVerifier {
     fn verify_zkp(
         _chain_id: &str,
         _trusted_validators_hash: H256,

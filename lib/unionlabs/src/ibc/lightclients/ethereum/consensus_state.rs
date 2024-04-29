@@ -35,7 +35,7 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::ethereum::v1::Co
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromConsensusStateError {
     CurrentSyncCommittee(InvalidLength),
     NextSyncCommittee(InvalidLength),

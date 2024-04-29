@@ -92,9 +92,11 @@ pub mod errors;
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromProtoBytesError<E> {
-    TryFromProto(E),
+    #[error("unable to convert from the raw prost type")]
+    TryFromProto(#[source] E),
+    #[error("unable to decode from raw proto bytes")]
     Decode(prost::DecodeError),
 }
 

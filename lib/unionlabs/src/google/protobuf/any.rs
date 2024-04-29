@@ -1,5 +1,6 @@
 use core::{fmt::Debug, marker::PhantomData};
 
+use frame_support_procedural::DebugNoBound;
 use prost::Message;
 use serde::{
     de::{self, Visitor},
@@ -147,17 +148,35 @@ impl<T: Encode<Proto> + TypeUrl> Encode<Proto> for Any<T> {
 //     const TYPE_URL: &'static str = "/google.protobuf.Any";
 // }
 
-#[derive(Debug)]
-pub enum TryFromAnyError<E> {
-    IncorrectTypeUrl { found: String, expected: String },
-    Decode(E),
+#[derive(DebugNoBound, thiserror::Error)]
+pub enum TryFromAnyError<T: Decode<Proto> + TypeUrl> {
+    #[error(
+        "incorrect type url, expected `{expected}` but found `{found}`",
+        expected = T::type_url()
+    )]
+    IncorrectTypeUrl { found: String },
+    #[error("unable to decode inner type")]
+    Decode(DecodeErrorOf<Proto, T>),
+}
+
+impl<T: Decode<Proto, Error: PartialEq> + TypeUrl> PartialEq for TryFromAnyError<T> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                TryFromAnyError::IncorrectTypeUrl { found: this },
+                TryFromAnyError::IncorrectTypeUrl { found: other },
+            ) => this == other,
+            (TryFromAnyError::Decode(this), TryFromAnyError::Decode(other)) => this == other,
+            _ => false,
+        }
+    }
 }
 
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
 where
     T: Decode<Proto> + TypeUrl,
 {
-    type Error = TryFromAnyError<T::Error>;
+    type Error = TryFromAnyError<T>;
 
     fn try_from(value: protos::google::protobuf::Any) -> Result<Self, Self::Error> {
         if value.type_url == T::type_url() {
@@ -167,26 +186,29 @@ where
         } else {
             Err(TryFromAnyError::IncorrectTypeUrl {
                 found: value.type_url,
-                expected: T::type_url(),
             })
         }
     }
 }
 
-impl<T: Decode<Proto> + TypeUrl> Decode<Proto> for Any<T> {
-    type Error = TryFromProtoBytesError<TryFromAnyError<DecodeErrorOf<Proto, T>>>;
+impl<T> Decode<Proto> for Any<T>
+where
+    T: Decode<Proto> + TypeUrl,
+{
+    type Error = TryFromProtoBytesError<TryFromAnyError<T>>;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
         <protos::google::protobuf::Any as ::prost::Message>::decode(bytes)
-            .map_err(crate::TryFromProtoBytesError::Decode)
+            .map_err(TryFromProtoBytesError::Decode)
             .and_then(|proto| {
                 proto
                     .try_into()
-                    .map_err(crate::TryFromProtoBytesError::TryFromProto)
+                    .map_err(TryFromProtoBytesError::TryFromProto)
             })
     }
 }
 
+// for use with raw prost generated types
 #[must_use]
 pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobuf::Any {
     let bz = t.encode_to_vec();

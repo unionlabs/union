@@ -19,9 +19,10 @@ impl From<StorageProof> for protos::union::ibc::lightclients::ethereum::v1::Stor
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromStorageProofError {
-    Proofs(TryFromProofError),
+    #[error("unable to decode proofs")]
+    Proofs(#[from] TryFromProofError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::StorageProof> for StorageProof {
@@ -34,7 +35,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::StorageProof> for S
             proofs: value
                 .proofs
                 .into_iter()
-                .map(|proof| proof.try_into().map_err(TryFromStorageProofError::Proofs))
+                .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
         })
     }

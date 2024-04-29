@@ -61,7 +61,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TryFromClientStateError {
     MissingField(MissingField),
     ChainId(FromDecStrErr),

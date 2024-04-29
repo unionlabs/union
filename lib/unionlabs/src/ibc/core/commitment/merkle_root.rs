@@ -24,7 +24,7 @@ impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromMerkleRootError {
     Hash(InvalidLength),
 }

@@ -18,13 +18,18 @@ pub enum CommitmentProof {
     CompressedBatch(CompressedBatchProof),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCommitmentProofError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Exist(TryFromExistenceProofError),
-    Nonexist(TryFromNonExistenceProofError),
-    Batch(TryFromBatchProofError),
-    CompressedBatch(TryFromCompressedBatchProofProofError),
+    #[error("invalid existence proof")]
+    Exist(#[from] TryFromExistenceProofError),
+    #[error("invalid non existence proof")]
+    Nonexist(#[from] TryFromNonExistenceProofError),
+    #[error("invalid batch proof")]
+    Batch(#[from] TryFromBatchProofError),
+    #[error("invalid compressed batch proof")]
+    CompressedBatch(#[from] TryFromCompressedBatchProofProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CommitmentProof> for CommitmentProof {

@@ -265,10 +265,12 @@ impl From<Timestamp> for protos::google::protobuf::Timestamp {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromTimestampError {
-    Seconds(BoundedIntError<i64>),
-    Nanos(BoundedIntError<i32>),
+    #[error("invalid seconds")]
+    Seconds(#[source] BoundedIntError<i64>),
+    #[error("invalid nanos")]
+    Nanos(#[source] BoundedIntError<i32>),
 }
 
 impl TryFrom<protos::google::protobuf::Timestamp> for Timestamp {

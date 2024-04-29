@@ -11,7 +11,7 @@ use ics008_wasm_client::{
         save_consensus_state, save_subject_client_state, save_subject_consensus_state,
         update_client_state,
     },
-    IbcClient, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
+    IbcClient, IbcClientError, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
 };
 use sha3::Digest;
 use unionlabs::{
@@ -73,7 +73,7 @@ impl IbcClient for EthereumLightClient {
         proof: Vec<u8>,
         mut path: MerklePath,
         value: ics008_wasm_client::StorageState,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
@@ -116,7 +116,7 @@ impl IbcClient for EthereumLightClient {
         deps: Deps<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let trusted_sync_committee = header.trusted_sync_committee;
         let wasm_consensus_state =
             read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(
@@ -146,7 +146,8 @@ impl IbcClient for EthereumLightClient {
             current_slot,
             wasm_client_state.data.genesis_validators_root,
             VerificationContext { deps },
-        )?;
+        )
+        .map_err(Error::ValidateLightClient)?;
 
         // check whether at least 2/3 of the sync committee signed
         ensure(
@@ -163,7 +164,8 @@ impl IbcClient for EthereumLightClient {
             &wasm_client_state.data.ibc_contract_address,
             &proof_data.proof,
             &proof_data.storage_root,
-        )?;
+        )
+        .map_err(Error::VerifyAccountStorageRoot)?;
 
         Ok(())
     }
@@ -172,7 +174,7 @@ impl IbcClient for EthereumLightClient {
         deps: Deps<Self::CustomQuery>,
         env: Env,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         // There is no point to check for misbehaviour when the headers are not for the same height
         // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
         let (slot_1, slot_2) = (
@@ -212,7 +214,8 @@ impl IbcClient for EthereumLightClient {
             current_slot,
             wasm_client_state.data.genesis_validators_root,
             VerificationContext { deps },
-        )?;
+        )
+        .map_err(Error::ValidateLightClient)?;
 
         validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
             &ctx,
@@ -220,7 +223,8 @@ impl IbcClient for EthereumLightClient {
             current_slot,
             wasm_client_state.data.genesis_validators_root,
             VerificationContext { deps },
-        )?;
+        )
+        .map_err(Error::ValidateLightClient)?;
 
         Ok(())
     }
@@ -229,7 +233,7 @@ impl IbcClient for EthereumLightClient {
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<Vec<Height>, Self::Error> {
+    ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let trusted_sync_committee = header.trusted_sync_committee;
         let trusted_height = trusted_sync_committee.trusted_height;
 
@@ -288,7 +292,7 @@ impl IbcClient for EthereumLightClient {
 
             if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
                 client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
-                update_client_state(deps.branch(), client_state, updated_height);
+                update_client_state::<Self>(deps.branch(), client_state, updated_height);
             }
         }
 
@@ -297,7 +301,7 @@ impl IbcClient for EthereumLightClient {
             revision_height: updated_height,
         };
 
-        save_consensus_state(deps, consensus_state, &updated_height);
+        save_consensus_state::<Self>(deps, consensus_state, &updated_height);
 
         Ok(vec![updated_height])
     }
@@ -306,10 +310,10 @@ impl IbcClient for EthereumLightClient {
         deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         _client_message: Vec<u8>,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         client_state.data.frozen_height = FROZEN_HEIGHT;
-        save_client_state(deps, client_state);
+        save_client_state::<Self>(deps, client_state);
 
         Ok(())
     }
@@ -317,15 +321,13 @@ impl IbcClient for EthereumLightClient {
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
-    ) -> Result<bool, Self::Error> {
+    ) -> Result<bool, IbcClientError<Self>> {
         let height = Height {
             revision_number: 0,
             revision_height: header.consensus_update.attested_header.beacon.slot,
         };
 
-        if let Some(consensus_state) =
-            read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
-        {
+        if let Some(consensus_state) = read_consensus_state::<Self>(deps, &height)? {
             // New header is given with the same height but the storage roots don't match.
             if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
                 || consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot
@@ -346,7 +348,7 @@ impl IbcClient for EthereumLightClient {
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<bool, Self::Error> {
+    ) -> Result<bool, IbcClientError<Self>> {
         if misbehaviour.update_1.attested_header.beacon.slot
             == misbehaviour.update_2.attested_header.beacon.slot
         {
@@ -366,11 +368,13 @@ impl IbcClient for EthereumLightClient {
         _upgrade_consensus_state: Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
-    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
+    fn migrate_client_store(
+        mut deps: DepsMut<Self::CustomQuery>,
+    ) -> Result<(), IbcClientError<Self>> {
         let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
 
@@ -390,14 +394,14 @@ impl IbcClient for EthereumLightClient {
                     substitute_client_state.latest_height,
                 ))?;
 
-        save_subject_consensus_state(
+        save_subject_consensus_state::<Self>(
             deps.branch(),
             substitute_consensus_state,
             &substitute_client_state.latest_height,
         );
 
         let scs = substitute_client_state.data;
-        save_subject_client_state(
+        save_subject_client_state::<Self>(
             deps,
             WasmClientState {
                 data: ClientState {
@@ -421,17 +425,15 @@ impl IbcClient for EthereumLightClient {
         Ok(())
     }
 
-    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error> {
+    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != ZERO_HEIGHT {
             return Ok(Status::Frozen);
         }
 
-        let Some(consensus_state) = read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(
-            deps,
-            &client_state.latest_height,
-        )?
+        let Some(consensus_state) =
+            read_consensus_state::<Self>(deps, &client_state.latest_height)?
         else {
             return Ok(Status::Expired);
         };
@@ -450,20 +452,18 @@ impl IbcClient for EthereumLightClient {
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,
         _env: &Env,
-    ) -> Result<Vec<GenesisMetadata>, Self::Error> {
+    ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
         Ok(Vec::new())
     }
 
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,
-    ) -> Result<u64, Self::Error> {
-        Ok(
-            read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
-                .ok_or(Error::ConsensusStateNotFound(height))?
-                .data
-                .timestamp,
-        )
+    ) -> Result<u64, IbcClientError<Self>> {
+        Ok(read_consensus_state::<Self>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height))?
+            .data
+            .timestamp)
     }
 }
 
@@ -540,7 +540,7 @@ fn do_verify_membership(
         &rlp::encode(&storage_proof.value),
         &storage_proof.proof,
     )
-    .map_err(Into::into)
+    .map_err(Error::VerifyStorageProof)
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
@@ -556,7 +556,9 @@ fn do_verify_non_membership(
         H256(storage_proof.key.to_be_bytes()),
     )?;
 
-    if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)? {
+    if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)
+        .map_err(Error::VerifyStorageAbsence)?
+    {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)
@@ -689,9 +691,9 @@ mod test {
         let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_client_state(deps.as_mut(), wasm_client_state);
+        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state);
 
-        save_consensus_state(
+        save_consensus_state::<EthereumLightClient>(
             deps.as_mut(),
             wasm_consensus_state,
             &INITIAL_CONSENSUS_STATE_HEIGHT,
@@ -721,7 +723,7 @@ mod test {
 
         wasm_client_state.data.frozen_height = FROZEN_HEIGHT;
 
-        save_client_state(deps.as_mut(), wasm_client_state);
+        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state);
 
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &mock_env()),
@@ -742,7 +744,7 @@ mod test {
         let mut wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        save_client_state(deps.as_mut(), wasm_client_state.clone());
+        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state.clone());
 
         // Client returns expired here because it cannot find the consensus state
         assert_eq!(
@@ -753,14 +755,14 @@ mod test {
         let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_consensus_state(
+        save_consensus_state::<EthereumLightClient>(
             deps.as_mut(),
             wasm_consensus_state.clone(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
         );
 
         wasm_client_state.data.trusting_period = 10;
-        save_client_state(deps.as_mut(), wasm_client_state.clone());
+        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state.clone());
         let mut env = mock_env();
 
         env.block.time = Timestamp::from_nanos(
@@ -796,8 +798,8 @@ mod test {
         let wasm_consensus_state: WasmConsensusState =
             serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-        save_client_state(deps.as_mut(), wasm_client_state);
-        save_consensus_state(
+        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state);
+        save_consensus_state::<EthereumLightClient>(
             deps.as_mut(),
             wasm_consensus_state,
             &INITIAL_CONSENSUS_STATE_HEIGHT,
@@ -817,15 +819,16 @@ mod test {
                 > update.trusted_sync_committee.trusted_height.revision_height
             {
                 // It's a finality update
-                let wasm_consensus_state: WasmConsensusState = read_consensus_state(
-                    deps.as_ref(),
-                    &Height {
-                        revision_number: 0,
-                        revision_height: update.consensus_update.attested_header.beacon.slot,
-                    },
-                )
-                .unwrap()
-                .unwrap();
+                let wasm_consensus_state: WasmConsensusState =
+                    read_consensus_state::<EthereumLightClient>(
+                        deps.as_ref(),
+                        &Height {
+                            revision_number: 0,
+                            revision_height: update.consensus_update.attested_header.beacon.slot,
+                        },
+                    )
+                    .unwrap()
+                    .unwrap();
                 // Slot is updated.
                 assert_eq!(
                     wasm_consensus_state.data.slot,
@@ -838,7 +841,8 @@ mod test {
                 );
                 // Latest slot is updated.
                 // TODO(aeryz): Add cases for `store_period == update_period` and `update_period == store_period + 1`
-                let wasm_client_state: WasmClientState = read_client_state(deps.as_ref()).unwrap();
+                let wasm_client_state: WasmClientState =
+                    read_client_state::<EthereumLightClient>(deps.as_ref()).unwrap();
                 assert_eq!(
                     wasm_client_state.data.latest_slot,
                     update.consensus_update.attested_header.beacon.slot
@@ -849,15 +853,16 @@ mod test {
                     update.trusted_sync_committee.trusted_height.revision_height,
                     update.consensus_update.attested_header.beacon.slot,
                 );
-                let wasm_consensus_state: WasmConsensusState = read_consensus_state(
-                    deps.as_ref(),
-                    &Height {
-                        revision_number: 0,
-                        revision_height: updated_height,
-                    },
-                )
-                .unwrap()
-                .unwrap();
+                let wasm_consensus_state: WasmConsensusState =
+                    read_consensus_state::<EthereumLightClient>(
+                        deps.as_ref(),
+                        &Height {
+                            revision_number: 0,
+                            revision_height: updated_height,
+                        },
+                    )
+                    .unwrap()
+                    .unwrap();
 
                 assert_eq!(
                     wasm_consensus_state.data.next_sync_committee.unwrap(),
@@ -933,8 +938,8 @@ mod test {
             serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
                 .unwrap();
 
-        save_client_state(deps.as_mut(), wasm_client_state);
-        save_consensus_state(
+        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state);
+        save_consensus_state::<EthereumLightClient>(
             deps.as_mut(),
             wasm_consensus_state.clone(),
             &INITIAL_CONSENSUS_STATE_HEIGHT,
@@ -1235,7 +1240,8 @@ mod test {
 
         EthereumLightClient::migrate_client_store(deps.as_mut()).unwrap();
 
-        let wasm_client_state: WasmClientState = read_subject_client_state(deps.as_ref()).unwrap();
+        let wasm_client_state: WasmClientState =
+            read_subject_client_state::<EthereumLightClient>(deps.as_ref()).unwrap();
         // we didn't miss updating any fields
         assert_eq!(wasm_client_state, substitute_wasm_client_state);
         // client is unfrozen
@@ -1243,9 +1249,12 @@ mod test {
 
         // the new consensus state is saved under the correct height
         assert_eq!(
-            read_subject_consensus_state(deps.as_ref(), &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
-                .unwrap()
-                .unwrap(),
+            read_subject_consensus_state::<EthereumLightClient>(
+                deps.as_ref(),
+                &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT
+            )
+            .unwrap()
+            .unwrap(),
             substitute_wasm_consensus_state
         )
     }
@@ -1285,7 +1294,7 @@ mod test {
             );
             assert_eq!(
                 EthereumLightClient::migrate_client_store(deps.as_mut()),
-                Err(Error::MigrateFieldsChanged)
+                Err(Error::MigrateFieldsChanged.into())
             );
         }
     }
@@ -1312,7 +1321,7 @@ mod test {
 
         assert_eq!(
             EthereumLightClient::migrate_client_store(deps.as_mut()),
-            Err(Error::SubstituteClientFrozen)
+            Err(Error::SubstituteClientFrozen.into())
         );
     }
 }

@@ -5,7 +5,7 @@ use ics008_wasm_client::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
         update_client_state,
     },
-    IbcClient, Status, StorageState,
+    IbcClient, IbcClientError, Status, StorageState,
 };
 use scroll_codec::{
     batch_header::BatchHeader,
@@ -68,7 +68,7 @@ impl IbcClient for ScrollLightClient {
         proof: Vec<u8>,
         mut path: MerklePath,
         value: ics008_wasm_client::StorageState,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
@@ -80,12 +80,10 @@ impl IbcClient for ScrollLightClient {
 
         let storage_proof = {
             let mut proofs = StorageProof::decode(&proof)
-                .map_err(|e| Error::DecodeFromProto {
-                    reason: format!("when decoding storage proof: {e:#?}"),
-                })?
+                .map_err(Error::StorageProofDecode)?
                 .proofs;
             if proofs.len() > 1 {
-                return Err(Error::BatchingProofsNotSupported);
+                return Err(Error::BatchingProofsNotSupported.into());
             }
             proofs.pop().ok_or(Error::EmptyProof)?
         };
@@ -113,19 +111,21 @@ impl IbcClient for ScrollLightClient {
         deps: Deps<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
         let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
             deps,
             &env,
             client_state.data.l1_client_id.clone(),
             header.l1_height,
-        )?;
+        )
+        .map_err(Error::CustomQuery)?;
         scroll_verifier::verify_header(
             client_state.data,
             header,
             l1_consensus_state.data.state_root,
-        )?;
+        )
+        .map_err(Error::Verify)?;
         Ok(())
     }
 
@@ -133,32 +133,37 @@ impl IbcClient for ScrollLightClient {
         _deps: Deps<Self::CustomQuery>,
         _env: Env,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<Vec<Height>, Self::Error> {
+    ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
-        let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)?;
+        let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)
+            .map_err(Error::CommitBatchDecode)?;
 
-        let timestamp = match BatchHeader::decode(call.parent_batch_header)? {
+        let timestamp = match BatchHeader::decode(call.parent_batch_header)
+            .map_err(Error::BatchHeaderDecode)?
+        {
             BatchHeader::V0(_) => {
                 call.chunks
                     .last()
                     .map(ChunkV0::decode)
-                    .ok_or(Error::EmptyBatch)??
+                    .ok_or(Error::EmptyBatch)?
+                    .map_err(Error::ChunkV0Decode)?
                     .blocks
             }
             BatchHeader::V1(_) => {
                 call.chunks
                     .last()
                     .map(ChunkV1::decode)
-                    .ok_or(Error::EmptyBatch)??
+                    .ok_or(Error::EmptyBatch)?
+                    .map_err(Error::ChunkV1Decode)?
                     .blocks
             }
         }
@@ -168,7 +173,7 @@ impl IbcClient for ScrollLightClient {
 
         if client_state.data.latest_batch_index < header.last_batch_index {
             client_state.data.latest_batch_index = header.last_batch_index;
-            update_client_state(deps.branch(), client_state, header.last_batch_index);
+            update_client_state::<Self>(deps.branch(), client_state, header.last_batch_index);
         }
 
         let consensus_state = WasmConsensusState {
@@ -178,7 +183,7 @@ impl IbcClient for ScrollLightClient {
                 timestamp: 1_000_000_000 * timestamp,
             },
         };
-        save_consensus_state(deps, consensus_state, &header.l1_height);
+        save_consensus_state::<Self>(deps, consensus_state, &header.l1_height);
         Ok(vec![header.l1_height])
     }
 
@@ -186,28 +191,28 @@ impl IbcClient for ScrollLightClient {
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         _client_message: Vec<u8>,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         client_state.data.frozen_height = Height {
             revision_number: client_state.latest_height.revision_number,
             revision_height: env.block.height,
         };
-        save_client_state(deps, client_state);
+        save_client_state::<Self>(deps, client_state);
         Ok(())
     }
 
     fn check_for_misbehaviour_on_header(
         _deps: Deps<Self::CustomQuery>,
         _header: Self::Header,
-    ) -> Result<bool, Self::Error> {
+    ) -> Result<bool, IbcClientError<Self>> {
         Ok(false)
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<bool, Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<bool, IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
     fn verify_upgrade_and_update_state(
@@ -216,26 +221,22 @@ impl IbcClient for ScrollLightClient {
         _upgrade_consensus_state: Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    ) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
-    fn migrate_client_store(_deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    fn migrate_client_store(_deps: DepsMut<Self::CustomQuery>) -> Result<(), IbcClientError<Self>> {
+        Err(Error::Unimplemented.into())
     }
 
-    fn status(deps: Deps<Self::CustomQuery>, _env: &Env) -> Result<Status, Self::Error> {
+    fn status(deps: Deps<Self::CustomQuery>, _env: &Env) -> Result<Status, IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != Height::default() {
             return Ok(Status::Frozen);
         }
 
-        let Some(_) = read_consensus_state::<Self::CustomQuery, ConsensusState>(
-            deps,
-            &client_state.latest_height,
-        )?
-        else {
+        let Some(_) = read_consensus_state::<Self>(deps, &client_state.latest_height)? else {
             return Ok(Status::Expired);
         };
 
@@ -245,20 +246,18 @@ impl IbcClient for ScrollLightClient {
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,
         _env: &Env,
-    ) -> Result<Vec<GenesisMetadata>, Self::Error> {
+    ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
         Ok(Vec::new())
     }
 
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,
-    ) -> Result<u64, Self::Error> {
-        Ok(
-            read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
-                .ok_or(Error::ConsensusStateNotFound(height))?
-                .data
-                .timestamp,
-        )
+    ) -> Result<u64, IbcClientError<Self>> {
+        Ok(read_consensus_state::<Self>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height))?
+            .data
+            .timestamp)
     }
 }
 
@@ -277,23 +276,19 @@ fn do_verify_membership(
 
     let path = path
         .parse::<Path<String, Height>>()
-        .map_err(|_| Error::UnknownIbcPath(path))?;
+        .map_err(Error::PathParse)?;
 
     let canonical_value = match path {
         Path::ClientState(_) => {
             Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
-                .map_err(|e| Error::DecodeFromProto {
-                    reason: format!("{e:?}"),
-                })?
+                .map_err(Error::CometblsClientStateDecode)?
                 .0
                 .encode_as::<EthAbi>()
         }
         Path::ClientConsensusState(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
         >::decode(raw_value.as_ref())
-        .map_err(|e| Error::DecodeFromProto {
-            reason: format!("{e:?}"),
-        })?
+        .map_err(Error::CometblsConsensusStateDecode)?
         .0
         .data
         .encode_as::<EthAbi>(),

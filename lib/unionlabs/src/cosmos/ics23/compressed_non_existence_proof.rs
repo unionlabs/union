@@ -20,11 +20,14 @@ pub struct CompressedNonExistenceProof {
     pub right: Option<CompressedExistenceProof>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCompressedNonExistenceProofError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Left(TryFromCompressedExistenceProofError),
-    Right(TryFromCompressedExistenceProofError),
+    #[error("left proof invalid")]
+    Left(#[source] TryFromCompressedExistenceProofError),
+    #[error("right proof invalid")]
+    Right(#[source] TryFromCompressedExistenceProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CompressedNonExistenceProof>

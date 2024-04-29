@@ -28,7 +28,7 @@ impl From<Header> for protos::ibc::lightclients::tendermint::v1::Header {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
     SignedHeader(TryFromSignedHeaderError),

@@ -48,14 +48,20 @@ impl From<ClientState> for protos::ibc::lightclients::tendermint::v1::ClientStat
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
+    #[error(transparent)]
     MissingField(MissingField),
-    TrustLevel(TryFromFractionError),
-    TrustingPeriod(DurationError),
-    UnbondingPeriod(DurationError),
-    MaxClockDrift(DurationError),
-    ProofSpecs(TryFromProofSpecError),
+    #[error("invalid trust level")]
+    TrustLevel(#[source] TryFromFractionError),
+    #[error("invalid trusting period")]
+    TrustingPeriod(#[source] DurationError),
+    #[error("invalid unbonding period")]
+    UnbondingPeriod(#[source] DurationError),
+    #[error("invalid max clock drift")]
+    MaxClockDrift(#[source] DurationError),
+    #[error("invalid proof specs")]
+    ProofSpecs(#[source] TryFromProofSpecError),
 }
 
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::ClientState> for ClientState {

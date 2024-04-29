@@ -20,7 +20,7 @@ pub struct ConsensusState {
     pub next_validators_hash: H256,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromConsensusStateError {
     MissingField(MissingField),
     Root(TryFromMerkleRootError),

@@ -1,46 +1,62 @@
-use cosmwasm_std::StdError;
-use ethereum_verifier::{
-    ValidateLightClientError, VerifyAccountStorageRootError, VerifyStorageAbsenceError,
-    VerifyStorageProofError,
-};
+use ics008_wasm_client::IbcClientError;
 use scroll_codec::{
     batch_header::BatchHeaderDecodeError,
     chunk::{ChunkV0DecodeError, ChunkV1DecodeError},
 };
-use thiserror::Error as ThisError;
 use unionlabs::{
-    hash::{H160, H256},
-    ibc::core::client::height::Height,
+    encoding::{DecodeErrorOf, Proto},
+    google::protobuf::any::Any,
+    hash::H256,
+    ibc::{core::client::height::Height, lightclients::wasm},
+    ics24::PathParseError,
 };
 
-#[derive(ThisError, Debug)]
+use crate::client::ScrollLightClient;
+
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
-    #[error("{0}")]
-    Std(#[from] StdError),
+    #[error("unable to decode storage proof")]
+    StorageProofDecode(
+        #[source]
+        DecodeErrorOf<Proto, unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof>,
+    ),
+    #[error("unable to decode counterparty's stored cometbls client state")]
+    CometblsClientStateDecode(
+        #[source]
+        DecodeErrorOf<
+            Proto,
+            Any<unionlabs::ibc::lightclients::cometbls::client_state::ClientState>,
+        >,
+    ),
+    #[error("unable to decode counterparty's stored cometbls consensus state")]
+    CometblsConsensusStateDecode(
+        #[source]
+        DecodeErrorOf<
+            Proto,
+            Any<
+                wasm::consensus_state::ConsensusState<
+                    unionlabs::ibc::lightclients::cometbls::consensus_state::ConsensusState,
+                >,
+            >,
+        >,
+    ),
+    #[error("unable to decode client state")]
+    ClientStateDecode(
+        #[source]
+        DecodeErrorOf<Proto, unionlabs::ibc::lightclients::scroll::client_state::ClientState>,
+    ),
+    #[error("unable to decode consensus state")]
+    ConsensusStateDecode(
+        #[source]
+        DecodeErrorOf<
+            Proto,
+            unionlabs::ibc::lightclients::scroll::consensus_state::ConsensusState,
+        >,
+    ),
 
-    #[error("error while decoding proto ({reason})")]
-    DecodeFromProto { reason: String },
-
-    #[error("client state not found")]
-    ClientStateNotFound,
-
-    #[error("invalid proof format ({0})")]
-    InvalidProofFormat(String),
-
+    // REVIEW: Move this variant to IbcClientError?
     #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
-
-    #[error("{0}")]
-    ValidateLightClient(#[from] ValidateLightClientError),
-
-    #[error("{0}")]
-    VerifyAccountStorageRoot(#[from] VerifyAccountStorageRootError),
-
-    #[error("{0}")]
-    VerifyStorageAbsence(#[from] VerifyStorageAbsenceError),
-
-    #[error("{0}")]
-    VerifyStorageProof(#[from] VerifyStorageProofError),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,
@@ -51,29 +67,17 @@ pub enum Error {
     #[error("proof is empty")]
     EmptyProof,
 
-    #[error("counterparty storage not nil")]
-    CounterpartyStorageNotNil,
-
     #[error("batching proofs are not supported")]
     BatchingProofsNotSupported,
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
 
-    #[error("storage root mismatch, expected `{expected}` but found `{found}`")]
-    StorageRootMismatch { expected: H256, found: H256 },
+    #[error("unable to parse ics24 path")]
+    PathParse(#[from] PathParseError),
 
-    #[error("wasm client error ({0})")]
-    Wasm(String),
-
-    #[error("the proof path {0} is not unknown")]
-    UnknownIbcPath(String),
-
-    #[error("the given contract address ({given}) doesn't match the stored value ({expected})")]
-    IbcContractAddressMismatch { given: H160, expected: H160 },
-
-    #[error("failed to verify scroll header: {0}")]
-    Verifier(#[from] scroll_verifier::Error),
+    #[error("failed to verify scroll header")]
+    Verify(#[from] scroll_verifier::Error),
 
     #[error("the operation has not been implemented yet")]
     Unimplemented,
@@ -81,36 +85,21 @@ pub enum Error {
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 
+    // TODO: Condense all of these together?
     #[error("error decoding commit batch calldata")]
     CommitBatchDecode(#[from] ethers_core::abi::AbiError),
-
     #[error("empty batch")]
     EmptyBatch,
-
     #[error("error decoding v0 chunk")]
     ChunkV0Decode(#[from] ChunkV0DecodeError),
-
     #[error("error decoding v1 chunk")]
     ChunkV1Decode(#[from] ChunkV1DecodeError),
-
     #[error("error decoding batch header")]
     BatchHeaderDecode(#[from] BatchHeaderDecodeError),
 }
 
-impl From<ics008_wasm_client::storage_utils::Error> for Error {
-    fn from(error: ics008_wasm_client::storage_utils::Error) -> Self {
-        match error {
-            ics008_wasm_client::storage_utils::Error::ClientStateNotFound => {
-                Error::ClientStateNotFound
-            }
-            ics008_wasm_client::storage_utils::Error::ClientStateDecode => Error::DecodeFromProto {
-                reason: error.to_string(),
-            },
-            ics008_wasm_client::storage_utils::Error::ConsensusStateDecode => {
-                Error::DecodeFromProto {
-                    reason: error.to_string(),
-                }
-            }
-        }
+impl From<Error> for IbcClientError<ScrollLightClient> {
+    fn from(value: Error) -> Self {
+        IbcClientError::ClientSpecific(value)
     }
 }

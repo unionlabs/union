@@ -34,7 +34,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TryFromMisbehaviourError {
     MissingField(MissingField),
     TrustedSyncCommittee(TryFromTrustedSyncCommitteeError),

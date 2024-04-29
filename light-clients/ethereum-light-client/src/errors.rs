@@ -1,16 +1,10 @@
-use cosmwasm_std::StdError;
-use ethereum_verifier::{
-    ValidateLightClientError, VerifyAccountStorageRootError, VerifyStorageAbsenceError,
-    VerifyStorageProofError,
-};
-use thiserror::Error as ThisError;
+use ics008_wasm_client::IbcClientError;
 use unionlabs::{bls::BlsPublicKey, hash::H256, ibc::core::client::height::Height};
 
-#[derive(ThisError, Debug, PartialEq)]
-pub enum Error {
-    #[error("{0}")]
-    Std(#[from] StdError),
+use crate::client::EthereumLightClient;
 
+#[derive(thiserror::Error, Debug, PartialEq)]
+pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
 
@@ -20,8 +14,8 @@ pub enum Error {
     #[error("client state not found")]
     ClientStateNotFound,
 
-    #[error("invalid proof format ({0})")]
-    InvalidProofFormat(String),
+    #[error("custom query error")]
+    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 
     #[error(
         "given trusted sync committee doesn't match the given aggregate public \
@@ -38,17 +32,17 @@ pub enum Error {
     #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
 
-    #[error("{0}")]
-    ValidateLightClient(#[from] ValidateLightClientError),
+    #[error("validate light client error")]
+    ValidateLightClient(#[source] ethereum_verifier::Error),
 
-    #[error("{0}")]
-    VerifyAccountStorageRoot(#[from] VerifyAccountStorageRootError),
+    #[error("verify account storage root error")]
+    VerifyAccountStorageRoot(#[source] ethereum_verifier::Error),
 
-    #[error("{0}")]
-    VerifyStorageAbsence(#[from] VerifyStorageAbsenceError),
+    #[error("verify storage absence error")]
+    VerifyStorageAbsence(#[source] ethereum_verifier::Error),
 
-    #[error("{0}")]
-    VerifyStorageProof(#[from] VerifyStorageProofError),
+    #[error("verify storage proof error")]
+    VerifyStorageProof(#[source] ethereum_verifier::Error),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,
@@ -71,23 +65,8 @@ pub enum Error {
     #[error("expected value ({expected:?}) and stored value ({stored:?}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
 
-    #[error("storage root mismatch, expected `{expected}` but found `{found}`")]
-    StorageRootMismatch { expected: H256, found: H256 },
-
-    #[error("wasm client error ({0})")]
-    Wasm(String),
-
-    #[error("next sync committee can't be changed after being set")]
-    NextSyncCommitteeCannotBeModified,
-
-    #[error("the slot number that is saved previously to the consensus state cannot be changed")]
-    SlotCannotBeModified,
-
     #[error("the proof path {0} is not unknown")]
     UnknownIbcPath(String),
-
-    #[error("error while calling custom query: {0}")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 
     #[error("not enough signatures")]
     NotEnoughSignatures,
@@ -105,20 +84,8 @@ pub enum Error {
     MisbehaviourCannotExist(u64, u64),
 }
 
-impl From<ics008_wasm_client::storage_utils::Error> for Error {
-    fn from(error: ics008_wasm_client::storage_utils::Error) -> Self {
-        match error {
-            ics008_wasm_client::storage_utils::Error::ClientStateNotFound => {
-                Error::ClientStateNotFound
-            }
-            ics008_wasm_client::storage_utils::Error::ClientStateDecode => Error::DecodeFromProto {
-                reason: error.to_string(),
-            },
-            ics008_wasm_client::storage_utils::Error::ConsensusStateDecode => {
-                Error::DecodeFromProto {
-                    reason: error.to_string(),
-                }
-            }
-        }
+impl From<Error> for IbcClientError<EthereumLightClient> {
+    fn from(value: Error) -> Self {
+        IbcClientError::ClientSpecific(value)
     }
 }

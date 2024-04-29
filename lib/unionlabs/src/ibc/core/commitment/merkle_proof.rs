@@ -10,9 +10,10 @@ pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromMerkleProofError {
-    Proofs(TryFromCommitmentProofError),
+    #[error("invalid proofs")]
+    Proofs(#[from] TryFromCommitmentProofError),
 }
 
 impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {

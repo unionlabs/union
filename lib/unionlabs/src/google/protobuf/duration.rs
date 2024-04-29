@@ -276,7 +276,6 @@ impl Duration {
 
         // false positive (fixed in newer versions)
         // https://github.com/rust-lang/rust-clippy/pull/10811
-        #[allow(clippy::match_wild_err_arm)]
         #[allow(clippy::cast_possible_truncation)] // invariant checked above
         match BoundedI32::new(value as i32) {
             Ok(ok) => ok,
@@ -287,11 +286,13 @@ impl Duration {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum DurationError {
+    #[error("invalid seconds")]
     Seconds(BoundedIntError<i64>),
+    #[error("invalid nanos")]
     Nanos(BoundedIntError<i32>),
-    /// The nanos field was the incorrect sign.
+    #[error("incorrect sign for nanos")]
     Sign,
 }
 

@@ -51,10 +51,12 @@ impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData 
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromHeaderError {
+    #[error(transparent)]
     MissingField(MissingField),
-    SignedHeader(TryFromLightHeaderError),
+    #[error("invalid signed header")]
+    SignedHeader(#[from] TryFromLightHeaderError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
@@ -64,9 +66,7 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header 
         value: protos::union::ibc::lightclients::cometbls::v1::Header,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            signed_header: required!(value.signed_header)?
-                .try_into()
-                .map_err(TryFromHeaderError::SignedHeader)?,
+            signed_header: required!(value.signed_header)?.try_into()?,
             trusted_height: required!(value.trusted_height)?.into(),
             zero_knowledge_proof: value.zero_knowledge_proof,
         })

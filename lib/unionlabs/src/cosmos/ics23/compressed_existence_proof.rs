@@ -19,11 +19,14 @@ pub struct CompressedExistenceProof {
     pub path: Vec<BoundedI32<0, { i32::MAX }>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCompressedExistenceProofError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Leaf(TryFromLeafOpError),
-    Path(BoundedIntError<i32>),
+    #[error("invalid leaf")]
+    Leaf(#[from] TryFromLeafOpError),
+    #[error("invalid path")]
+    Path(#[source] BoundedIntError<i32>),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CompressedExistenceProof> for CompressedExistenceProof {

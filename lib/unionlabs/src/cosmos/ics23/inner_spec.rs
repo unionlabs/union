@@ -56,16 +56,25 @@ impl From<InnerSpec> for protos::cosmos::ics23::v1::InnerSpec {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromInnerSpecError {
-    Hash(UnknownEnumVariant<i32>),
-    ChildOrder(BoundedIntError<usize>),
-    ChildSize(BoundedIntError<usize>),
-    MinPrefixLength(BoundedIntError<usize>),
-    MaxPrefixLength(BoundedIntError<usize>),
+    #[error("invalid hash")]
+    Hash(#[from] UnknownEnumVariant<i32>),
+    #[error("invalid child order")]
+    ChildOrder(#[source] BoundedIntError<usize>),
+    #[error("invalid child size")]
+    ChildSize(#[source] BoundedIntError<usize>),
+    #[error("invalid min prefix length")]
+    MinPrefixLength(#[source] BoundedIntError<usize>),
+    #[error("invalid max prefix length")]
+    MaxPrefixLength(#[source] BoundedIntError<usize>),
+    #[error("negative child order")]
     NegativeChildOrder,
+    #[error("negative child size")]
     NegativeChildSize,
+    #[error("negative min prefix length")]
     NegativeMinPrefixLength,
+    #[error("negative max prefix length")]
     NegativeMaxPrefixLength,
 }
 
