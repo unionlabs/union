@@ -1,0 +1,41 @@
+syntax = "proto3";
+package differedack.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "ibc/core/channel/v1/channel.proto";
+import "ibc/applications/transfer/v2/packet.proto";
+
+option go_package = "union/x/differedack/types";
+
+// Msg defines the differedack module's gRPC message service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  rpc WriteDifferedAck(MsgWriteDifferedAck) returns (MsgWriteDifferedAckResponse);
+}
+
+message MsgWriteDifferedAck {
+  ibc.core.channel.v1.Packet packet = 1;
+  ibc.applications.transfer.v2.FungibleTokenPacketData data = 2;
+  DifferedPacketInfo differedPacketInfo = 3;
+  ibc.core.channel.v1.Acknowledgement ack = 4;
+}
+
+message MsgWriteDifferedAckResponse {
+  
+}
+
+message DifferedPacketInfo {
+  string original_sender_address  = 1;
+  string refund_channel_id        = 2;
+  string refund_port_id           = 3;
+  string packet_src_channel_id    = 4;
+  string packet_src_port_id       = 5;
+  uint64 packet_timeout_timestamp = 6;
+  string packet_timeout_height    = 7;
+  bytes  packet_data              = 8;
+  uint64 refund_sequence          = 9;
+  uint64 timeout                  = 10;
+  bool   nonrefundable            = 11;
+}
