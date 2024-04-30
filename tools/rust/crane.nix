@@ -335,53 +335,54 @@
         in
         craneLib.cargoClippy (attrs // { cargoArtifacts = craneLib.buildDepsOnly attrs; });
 
-      packages.rust-coverage =
-        let
-          craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.dev;
-        in
-        craneLib.cargoLlvmCov {
-          pname = "workspace-cargo-llvm-cov";
-          version = "0.0.0";
-          cargoLlvmCovExtraArgs = lib.concatStringsSep " " [
-            "--workspace"
-            "--html"
-            "--output-dir=$out"
-            "--ignore-filename-regex='((nix/store)|(generated))/.+'"
-            "--exclude=zerg"
-            "--exclude=parse-wasm-client-type"
-            "--exclude=protos"
-            "--exclude=contracts"
-            "--exclude=unionvisor" # TODO: Figure out why unionvisor tests are flakey
-            "--exclude=tidy"
-            "--exclude=generate-rust-sol-bindings"
-            "--exclude=ensure-blocks"
-            "--exclude=ucli"
-            "--hide-instantiations"
-          ];
-          SQLX_OFFLINE = true;
-          cargoArtifacts = craneLib.buildDepsOnly {
-            pname = "workspace-build-deps-only";
-            version = "0.0.0";
-            cargoExtraArgs = "--locked";
-            doCheck = false;
+      # FIXME: currently ICE, https://github.com/unionlabs/union/actions/runs/8882618404/job/24387814904
+      # packages.rust-coverage =
+      #   let
+      #     craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.dev;
+      #   in
+      #   craneLib.cargoLlvmCov {
+      #     pname = "workspace-cargo-llvm-cov";
+      #     version = "0.0.0";
+      #     cargoLlvmCovExtraArgs = lib.concatStringsSep " " [
+      #       "--workspace"
+      #       "--html"
+      #       "--output-dir=$out"
+      #       "--ignore-filename-regex='((nix/store)|(generated))/.+'"
+      #       "--exclude=zerg"
+      #       "--exclude=parse-wasm-client-type"
+      #       "--exclude=protos"
+      #       "--exclude=contracts"
+      #       "--exclude=unionvisor" # TODO: Figure out why unionvisor tests are flakey
+      #       "--exclude=tidy"
+      #       "--exclude=generate-rust-sol-bindings"
+      #       "--exclude=ensure-blocks"
+      #       "--exclude=ucli"
+      #       "--hide-instantiations"
+      #     ];
+      #     SQLX_OFFLINE = true;
+      #     cargoArtifacts = craneLib.buildDepsOnly {
+      #       pname = "workspace-build-deps-only";
+      #       version = "0.0.0";
+      #       cargoExtraArgs = "--locked";
+      #       doCheck = false;
 
-            buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
-              lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-            );
-            src = cargoWorkspaceSrc;
-          };
-          preBuild = ''
-            cp --no-preserve=mode ${self'.packages.uniond}/bin/uniond $(pwd)/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
-            echo 'patching testdata'
-            patchShebangs $(pwd)/unionvisor/src/testdata
-          '';
-          ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
-          ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
+      #       buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
+      #         lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+      #       );
+      #       src = cargoWorkspaceSrc;
+      #     };
+      #     preBuild = ''
+      #       cp --no-preserve=mode ${self'.packages.uniond}/bin/uniond $(pwd)/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
+      #       echo 'patching testdata'
+      #       patchShebangs $(pwd)/unionvisor/src/testdata
+      #     '';
+      #     ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+      #     ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
-          buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
-            lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-          );
-          src = cargoWorkspaceSrc;
-        };
+      #     buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
+      #       lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+      #     );
+      #     src = cargoWorkspaceSrc;
+      #   };
     };
 }
