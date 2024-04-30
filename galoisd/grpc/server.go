@@ -349,7 +349,6 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 				},
 			}, nil
 		case *grpc.ProveResponse:
-			p.results.Delete(proveKey)
 			return &grpc.PollResponse{
 				Result: &grpc.PollResponse_Done{
 					Done: &grpc.ProveRequestDone{
