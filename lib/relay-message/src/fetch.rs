@@ -31,6 +31,8 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
 
     LatestHeight(FetchLatestHeight<Hc, Tr>),
 
+    UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState<Hc, Tr>),
+
     SelfClientState(FetchSelfClientState<Hc, Tr>),
     SelfConsensusState(FetchSelfConsensusState<Hc, Tr>),
 
@@ -107,6 +109,11 @@ pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
 pub struct FetchLatestHeight<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {}
 
 #[queue_msg]
+pub struct FetchUnfinalizedTrustedClientState<Hc: ChainExt, #[cover] Tr: ChainExt> {
+    client_id: Hc::ClientId,
+}
+
+#[queue_msg]
 pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
 impl<Hc, Tr> Fetch<Hc, Tr>
@@ -140,6 +147,21 @@ where
                     __marker: PhantomData,
                 },
             )),
+            Fetch::UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState {
+                client_id,
+                __marker: _,
+            }) => {
+                let _client_state = Hc::query_unfinalized_trusted_client_state(&c, client_id).await;
+
+                // data(id(
+                //     c.chain_id(),
+                //     UnfinalizedTrustedClientState {
+                //         height,
+                //         client_state,
+                //     },
+                // ))
+                todo!()
+            }
             Fetch::SelfClientState(FetchSelfClientState {
                 at: height,
                 __marker: _,

@@ -28,6 +28,21 @@ impl ScrollClient {
             .await
             .unwrap()
     }
+
+    // #[instrument(level = "debug", skip(self))]
+    // pub async fn batches(&self, page: u64, per_page: u64) -> BatchResponse {
+    //     self.client
+    //         .get(format!(
+    //             "{}/api/batches?page={page}&per_page={per_page}",
+    //             self.base_url
+    //         ))
+    //         .send()
+    //         .await
+    //         .unwrap()
+    //         .json()
+    //         .await
+    //         .unwrap()
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

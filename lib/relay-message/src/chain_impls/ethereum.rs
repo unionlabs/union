@@ -392,15 +392,13 @@ where
         ))
     }
 
-    async fn query_client_state(
+    async fn query_unfinalized_trusted_client_state(
         hc: &Self,
         client_id: Self::ClientId,
-        height: Self::Height,
     ) -> Tr::SelfClientState {
         hc.ibc_handler()
             .ibc_state_read::<_, Ethereum<C>, Tr>(
-                hc.execution_height_of_beacon_slot(height.revision_height)
-                    .await,
+                hc.provider.get_block_number().await.unwrap().as_u64(),
                 ClientStatePath { client_id },
             )
             .await
