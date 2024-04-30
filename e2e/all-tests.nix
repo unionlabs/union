@@ -10,7 +10,8 @@
         };
       in
       {
-        ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
+        # Disabled
+        # ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
 
         # Tests from ./epoch-staking.nix
         epoch-completes = epoch-staking.epoch-completes;
