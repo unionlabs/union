@@ -58,7 +58,7 @@ pub fn verify_header(
             client_state.rollup_finalized_state_roots_slot,
             header.last_batch_index.into(),
         ),
-        &rlp::encode(&header.l2_state_root),
+        &rlp::encode(&U256::from_be_bytes(header.l2_state_root.into())),
         &header.l2_state_proof.proofs[0].proof,
     )
     .map_err(Error::InvalidRollupProof)?;
@@ -76,7 +76,7 @@ pub fn verify_header(
             client_state.rollup_committed_batches_slot,
             header.last_batch_index.into(),
         ),
-        &rlp::encode(&batch_hash),
+        &rlp::encode(&U256::from_be_bytes(batch_hash.into())),
         &header.batch_hash_proof.proofs[0].proof,
     )
     .map_err(Error::InvalidRollupProof)?;
