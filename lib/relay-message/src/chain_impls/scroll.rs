@@ -18,7 +18,7 @@ use unionlabs::{
     encoding::{Decode, Encode, EthAbi},
     hash::{H160, H256},
     ibc::{
-        core::client::{height::IsHeight, msg_update_client::MsgUpdateClient},
+        core::client::msg_update_client::MsgUpdateClient,
         lightclients::{
             ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
             scroll,
@@ -104,17 +104,14 @@ where
         ))
     }
 
-    async fn query_client_state(
+    async fn query_unfinalized_trusted_client_state(
         hc: &Self,
         client_id: Self::ClientId,
-        height: Self::Height,
-    ) -> Tr::SelfClientState {
+    ) -> Self::StoredClientState<Tr> {
+        let latest_scroll_height = hc.provider.get_block_number().await.unwrap().as_u64();
+
         hc.ibc_handler()
-            .ibc_state_read::<_, Scroll, Tr>(
-                hc.execution_height_of_beacon_slot(height.revision_height())
-                    .await,
-                ClientStatePath { client_id },
-            )
+            .ibc_state_read::<_, Scroll, Tr>(latest_scroll_height, ClientStatePath { client_id })
             .await
             .unwrap()
     }

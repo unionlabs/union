@@ -134,10 +134,8 @@ where
                 counterparty_chain_id,
                 height,
             }) => {
-                let latest_height = c.query_latest_height_as_destination().await.unwrap();
-
                 let trusted_client_state =
-                    Hc::query_client_state(c, client_id.clone(), latest_height).await;
+                    Hc::query_unfinalized_trusted_client_state(c, client_id.clone()).await;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
                     tracing::debug!(

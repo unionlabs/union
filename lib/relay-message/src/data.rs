@@ -24,6 +24,7 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     SelfConsensusState(SelfConsensusState<Hc, Tr>),
 
     LatestHeight(LatestHeight<Hc, Tr>),
+    UnfinalizedClientState(UnfinalizedTrustedClientState<Hc, Tr>),
 
     PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
@@ -82,6 +83,12 @@ pub struct SelfConsensusState<Hc: ChainExt, #[cover] Tr: ChainExt> {
 #[queue_msg]
 pub struct LatestHeight<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub height: HeightOf<Hc>,
+}
+
+#[queue_msg]
+pub struct UnfinalizedTrustedClientState<Hc: ChainExt, Tr: ChainExt> {
+    pub height: HeightOf<Hc>,
+    pub client_state: Hc::StoredClientState<Tr>,
 }
 
 #[queue_msg]

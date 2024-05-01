@@ -247,11 +247,12 @@ where
         ])
     }
 
-    async fn query_client_state(
+    async fn query_unfinalized_trusted_client_state(
         hc: &Hc,
         client_id: Hc::ClientId,
-        height: Hc::Height,
     ) -> Hc::StoredClientState<Tr> {
+        let height = hc.query_latest_height().await.unwrap();
+
         let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
             hc,
             ClientStatePath { client_id }.into(),

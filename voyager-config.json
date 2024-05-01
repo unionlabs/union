@@ -1,7 +1,7 @@
 {
   "chain": {
     "scroll-testnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "scroll",
       "ibc_handler_address": "0x915eccda242f8353f901e26466a54e67396653c0",
       "signers": [
@@ -27,7 +27,7 @@
       "union_grpc_url": "https://grpc.testnet.bonlulu.uno:443"
     },
     "ethereum-devnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
@@ -53,7 +53,7 @@
     },
     "union-devnet": {
       "chain_type": "union",
-      "enabled": false,
+      "enabled": true,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"

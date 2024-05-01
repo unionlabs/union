@@ -394,10 +394,9 @@ pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
 
     // SEE: <https://github.com/unionlabs/union/issues/1813>
-    fn query_client_state(
+    fn query_unfinalized_trusted_client_state(
         hc: &Hc,
         client_id: Hc::ClientId,
-        height: Hc::Height,
     ) -> impl Future<Output = Hc::StoredClientState<Tr>> + '_;
 }
 
