@@ -78,12 +78,14 @@ Assuming your private validator key is in the default location:
 <Tabs>
   <TabItem label='uniond-release'>
     ```sh frame="none"
-	export POSSESSION_PROOF=$(uniond prove-possession $(jq -r '.priv_key.value' ~/.union/config/priv_validator_key.json))
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.union/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
 	```
   </TabItem>
   <TabItem label='Unionvisor'>
     ```sh frame="none"
-	export POSSESSION_PROOF=$(uniond prove-possession $(jq -r '.priv_key.value' ~/.unionvisor/home/config/priv_validator_key.json))
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.unionvisor/home/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
 	```
   </TabItem>
 </Tabs>
