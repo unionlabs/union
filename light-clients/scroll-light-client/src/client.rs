@@ -171,9 +171,18 @@ impl IbcClient for ScrollLightClient {
         .ok_or(Error::EmptyBatch)?
         .timestamp;
 
-        if client_state.data.latest_batch_index < header.last_batch_index {
-            client_state.data.latest_batch_index = header.last_batch_index;
-            update_client_state::<Self>(deps.branch(), client_state, header.last_batch_index);
+        let updated_height = Height {
+            revision_number: client_state.latest_height.revision_number,
+            revision_height: header.l1_height.revision_height,
+        };
+
+        if client_state.latest_height < header.l1_height {
+            client_state.data.latest_slot = updated_height.revision_height;
+            update_client_state::<Self>(
+                deps.branch(),
+                client_state,
+                updated_height.revision_height,
+            );
         }
 
         let consensus_state = WasmConsensusState {
@@ -183,8 +192,8 @@ impl IbcClient for ScrollLightClient {
                 timestamp: 1_000_000_000 * timestamp,
             },
         };
-        save_consensus_state::<Self>(deps, consensus_state, &header.l1_height);
-        Ok(vec![header.l1_height])
+        save_consensus_state::<Self>(deps, consensus_state, &updated_height);
+        Ok(vec![updated_height])
     }
 
     fn update_state_on_misbehaviour(

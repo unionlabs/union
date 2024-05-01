@@ -181,7 +181,7 @@ mod tests {
         let scroll_client_state = ClientState {
             l1_client_id: "cometbls-1".to_string(),
             chain_id: 534351.into(),
-            latest_batch_index: 65327,
+            latest_slot: 65327,
             latest_batch_index_slot: 156.into(),
             frozen_height: Height {
                 revision_number: 0,

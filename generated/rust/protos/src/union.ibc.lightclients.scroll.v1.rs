@@ -8,7 +8,7 @@ pub struct ClientState {
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "3")]
-    pub latest_batch_index: u64,
+    pub latest_slot: u64,
     /// TODO: Should be rollup_
     #[prost(bytes = "vec", tag = "4")]
     pub latest_batch_index_slot: ::prost::alloc::vec::Vec<u8>,
