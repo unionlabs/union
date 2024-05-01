@@ -6,6 +6,7 @@
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
+    "lib": ["ESNext"],
     "target": "ESNext",
     "module": "ESNext",
     "skipLibCheck": true,
@@ -25,14 +26,13 @@
     "allowImportingTsExtensions": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "forceConsistentCasingInFileNames": true,
     "noPropertyAccessFromIndexSignature": true,
-    "types": ["node"],
+    "types": ["node", "bun"],
     "paths": {
       "#/*": ["src/*"]
     }
   },
   "include": ["src", "scripts", "test"],
-  "files": ["reset.d.ts", "tsup.config.ts", "environment.d.ts"]
+  "files": ["reset.d.ts", "environment.d.ts", "vitest.config.ts"]
 }

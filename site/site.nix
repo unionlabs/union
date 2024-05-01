@@ -2,7 +2,7 @@
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [ vips nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ vips nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {

@@ -1,9 +1,9 @@
 <script lang="ts">
-import { cn } from "$lib/utilities/shadcn.ts"
-import { badgeVariants, type Variant } from "."
+import { type Variant, badgeVariants } from "./index.js"
+import { cn } from "$/lib/utilities/shadcn.js"
 
-let className: string | undefined | null
-export let href: string | undefined
+let className: string | undefined | null = undefined
+export let href: string | undefined = undefined
 export let variant: Variant = "default"
 export { className as class }
 </script>

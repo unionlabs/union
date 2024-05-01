@@ -1,5 +1,5 @@
 ---
-const { class: className, padded, ...rest } = Astro.props;
+const { class: className, padded, ...rest } = Astro.props
 ---
 
 <div class:list={["bg-black/30 backdrop-blur-xl rounded border border-border/50 shadow-xl", {"p-4 md:p-6": padded}, className]} {...rest} >

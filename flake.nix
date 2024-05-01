@@ -488,8 +488,8 @@
             ]) ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
               postgresql
-              nodejs_21
               nodePackages.graphqurl
+              nodePackages_latest.nodejs
               nodePackages.svelte-language-server
               nodePackages."@astrojs/language-server"
               nodePackages.typescript-language-server

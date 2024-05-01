@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 import { fetcher } from "#/utilities"
-import type { Coin } from "@cosmjs/amino"
-import { getUnoFromFaucet } from "#/utilities/faucet.ts"
+import { getUnoFromFaucet } from "#/faucet"
 
-// bun ./scripts/faucet.ts --address union1rph0kfwlew2dqs78uydcs93pwza5qqnc22n6ln
+interface Coin {
+  readonly denom: string
+  readonly amount: string
+}
 
 const REST_API_URL = "https://api.testnet.bonlulu.uno"
 

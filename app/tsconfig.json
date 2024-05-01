@@ -1,10 +1,12 @@
 {
-  "extends": "./.svelte-kit/tsconfig.json",
+  "extends": ["./.svelte-kit/tsconfig.json"],
   "compilerOptions": {
     "strict": true,
+    "noEmit": true,
     "allowJs": true,
     "checkJs": true,
     "sourceMap": true,
+    "module": "ESNext",
     "skipLibCheck": true,
     "alwaysStrict": true,
     "esModuleInterop": true,
@@ -12,7 +14,12 @@
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["@cloudflare/workers-types", "typed-query-selector/strict"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
+    "paths": {
+      "$*": ["./src/*"],
+      "$/*": ["./src/*"]
+    },
+    "types": ["typed-query-selector/strict"],
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",
@@ -27,7 +34,7 @@
       }
     ]
   },
-  "include": ["./src"],
+  "include": ["src", "scripts"],
   "exclude": ["./src/lib/components/ui"],
   "files": [
     "reset.d.ts",
@@ -37,8 +44,4 @@
     "postcss.config.cjs",
     "tailwind.config.ts"
   ]
-  // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
-  //
-  // If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
-  // from the referenced tsconfig.json - TypeScript does not merge them in
 }

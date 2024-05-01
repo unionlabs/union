@@ -136,6 +136,8 @@
         "noNamespace": "off",
         "noDefaultExport": "off",
         "useFragmentSyntax": "off",
+        "noParameterAssign": "off",
+        "noNamespaceImport": "off",
         "useBlockStatements": "off",
         "useNamingConvention": "off",
         "useShorthandArrayType": "off",
@@ -161,6 +163,7 @@
       },
       "performance": {
         "all": true,
+        "noDelete": "off",
         "noBarrelFile": "off",
         "noReExportAll": "off",
         "noAccumulatingSpread": "warn"
@@ -175,7 +178,8 @@
         "noConsoleLog": "off",
         "noExplicitAny": "off",
         "noCatchAssign": "off",
-        "noEmptyInterface": "off"
+        "noEmptyInterface": "off",
+        "noAssignInExpressions": "off"
       },
       "complexity": {
         "all": true,
@@ -269,11 +273,13 @@
           },
           "style": {
             "useConst": "off",
+            "noNamespace": "off",
             "useImportType": "off",
             "useFilenamingConvention": "off"
           },
           "suspicious": {
-            "noConfusingLabels": "off"
+            "noConfusingLabels": "off",
+            "noAssignInExpressions": "off"
           }
         }
       }
@@ -289,7 +295,7 @@
       }
     },
     {
-      "include": ["./app/src/patch.ts"],
+      "include": ["./app/src/polyfill.ts"],
       "linter": {
         "rules": {
           "style": {

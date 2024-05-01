@@ -6,7 +6,3 @@ interface BigInt {
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
-
-interface Window {
-  ethereum: { request(...args: any): Promise<any> }
-}

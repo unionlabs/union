@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { Application } from "@splinetool/runtime";
-  export let model: string;
+import { onMount } from "svelte"
+import { Application } from "@splinetool/runtime"
+export let model: string
 
-  let canvas: HTMLCanvasElement;
+let canvas: HTMLCanvasElement
 
-  onMount(() => {
-    const app = new Application(canvas);
-    app.load(model);
-  });
+onMount(() => {
+  const app = new Application(canvas)
+  app.load(model)
+})
 </script>
 
 <div class="size-full aspect-h-1 aspect-w-2 overflow-hidden rounded-t">

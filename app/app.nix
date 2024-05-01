@@ -2,19 +2,20 @@
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [ nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-yZ1tygnZX07qovPOGK4sF0uVCxyVS4qdfMUStVvVFrs=";
+          npmDepsHash = "sha256-XdJ5sX2F8kUceoAiB8KuSZkm0iOEn81M1qYMxHvOF0A=";
           src = ./.;
           sourceRoot = "app";
+          npmFlags = [ "--legacy-peer-deps" ];
           pname = packageJSON.name;
           version = packageJSON.version;
-          nativeBuildInputs = combinedDeps ++ [ pkgs.python3 ];
+          nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out

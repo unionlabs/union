@@ -37,12 +37,14 @@ Devs
 Disket
 Distinctio
 Djuric
+ECTO
 EigenLayer
 F1bonacc1
 FLUSHCOMPLETE
 Fatalf
 Feegrant
 Feiock
+Fil
 Filenaming
 Founderheads
 Frontmatter
@@ -73,12 +75,14 @@ Jemalloc
 Joye
 KEYPAIR
 Karel
+Keplr
 Keybase
 Kubat
 LIBVIPS
 Lahcen
 Layerzero
 Lightshift
+Livenesses
 MARKETCAP
 Mathjax
 Maxblocks
@@ -87,6 +91,7 @@ Merkleize
 Merkleizes
 Merklization
 Mgoogle
+Millis
 Mimc
 Misbehaviour
 Monaspace
@@ -96,6 +101,7 @@ Neue
 Nonexist
 Noto
 Npcwo
+Nullam
 PINGPONG
 PRECOMMIT
 PREVOTE
@@ -110,12 +116,15 @@ PoisonPhang
 Polkadot
 Prefixer
 Protobuf
+Proxiable
 RUSTFLAGS
 Recvs
 Redelegate
+Redelegates
 Redelegation
 Redelegations
 Repr
+Rewardses
 Roboto
 Rollup
 Ronin
@@ -124,12 +133,15 @@ Rustup
 SEPOLIA
 SIGINT
 SMALLVEC
+SOURCIFY
 SSWU
+SUBNETWORK
 SVDW
 Secp
 Segoe
 Shacham
 Snapshotter
+Solana
 Subdemom
 Sublist
 Subo
@@ -143,6 +155,7 @@ UDHC
 UNBONDED
 UNBONDING
 UNNEST
+UUPS
 Ucli
 Unbonding
 Uncons
@@ -174,11 +187,17 @@ acknowledgemets
 acks
 adce
 addresscodec
+adipiscing
 aeryz
+agoric
 aitlahcen
+akash
 alloc
+alltables
 amcl
+amet
 ankr
+antialised
 anypb
 anys
 appchain
@@ -192,6 +211,7 @@ arion
 arkworks
 arnaucube
 asref
+assetmantle
 astro
 astrojs
 attrsets
@@ -212,6 +232,7 @@ autotests
 awkroot
 axelar
 backoff
+backported
 bankkeeper
 banktypes
 baseapp
@@ -227,12 +248,15 @@ bindgen
 bindir
 biomejs
 bitarray
+bitcanna
+bitconnect
 bitfield
 bitfield's
 bitfields
 bitlist
 bitsize
 bitslice
+bitsong
 bitvec
 bitvector
 blabla
@@ -247,6 +271,7 @@ bools
 bootnode
 builtins
 bumpp
+bunx
 byteorder
 bytevec
 cachix
@@ -262,6 +287,7 @@ cdylib
 chainer
 chainid
 chainsafe
+cheqd
 chevdor
 chrono
 circom
@@ -272,6 +298,7 @@ clienttx
 clienttypes
 clippy
 clsx
+cmdk
 cmds
 cmov
 cmtcfg
@@ -283,6 +310,7 @@ codespace
 coeff
 cofactor
 coinbases
+comdex
 cometbft
 cometbls
 cometbn254
@@ -290,6 +318,7 @@ comettypes
 commitizen
 commitmenttypes
 committes
+compat
 composability
 concat
 configurator
@@ -307,6 +336,7 @@ conv
 converstion
 corcoder
 corestoretypes
+coreum
 coreutils
 cosmjs
 cosmosgen
@@ -326,6 +356,7 @@ cratedir
 crisiskeeper
 crisistypes
 crossorigin
+cryptocom
 cryptware
 ctxt
 ctypes
@@ -356,17 +387,21 @@ distrtypes
 dlmalloc
 docgen
 doctest
+dollarize
 doloribus
 domrehype
 dont
 downcasting
 drawio
+dudx
+dydx
 dyld
 dylib
+dymension
 echarts
-ecto
 eitherway
 elems
+elit
 endianness
 enumorph
 errorsmod
@@ -380,6 +415,7 @@ etherbase
 ethkey
 evidencekeeper
 evidencetypes
+evmos
 extldflags
 extralight
 fastnode
@@ -396,8 +432,10 @@ fmtlib
 foldl
 fontsource
 formkit
+formsnap
 founderheads
 frunk
+functionx
 fuzzer
 galois
 galoisd
@@ -414,6 +452,7 @@ genutils
 genutiltypes
 getenv
 githook
+gitopia
 gnark
 gnused
 goblingarden
@@ -428,6 +467,7 @@ goroutines
 gotest
 gotools
 govclient
+govgen
 govkeeper
 govtypes
 govv1
@@ -450,6 +490,7 @@ healthz
 heredocs
 herumi
 hexlify
+hideable
 hlist
 hmac
 holiman
@@ -487,6 +528,7 @@ icahost
 icahostkeeper
 icahosttypes
 icatypes
+iconify
 identifer
 identifing
 idents
@@ -499,6 +541,7 @@ incentivizes
 includedir
 infima
 informations
+injective
 inplace
 instanceof
 interchain
@@ -524,6 +567,7 @@ katex
 katexremark
 keccak
 keepertest
+keplr
 keybase
 keyframes
 keygen
@@ -531,7 +575,12 @@ keyof
 keypair
 keypairs
 keypreimage
+keyval
+kichain
+kujira
 kwallet
+kysely
+kyve
 laddr
 lahcen
 launchbadge
@@ -540,7 +589,9 @@ lcfur
 lcgadget
 ldflags
 leapwallet
+legendapp
 legendres
+legos
 libblst
 libcxx
 libdir
@@ -555,6 +606,7 @@ lifecycles
 lightclient
 lightclients
 linkmode
+livenesses
 lmfao
 lnav
 lnxk
@@ -564,6 +616,7 @@ logformat
 logline
 logtostderr
 lspec
+lucide
 mapstructure
 mathjax
 maxdepth
@@ -579,6 +632,7 @@ merklizer
 metadatas
 metas
 mgoogle
+migaloo
 milagro
 mimc
 miminum
@@ -615,6 +669,7 @@ newacc
 newtype
 nextest
 nextval
+nibiru
 nixbuildnet
 nixfmt
 nixos
@@ -623,7 +678,9 @@ nodeservice
 nodetime
 nodiscover
 noexecstack
+nois
 nolint
+nolus
 nonexist
 noopener
 noreferrer
@@ -635,10 +692,12 @@ observablehq
 oceanlewis
 omit
 omnichain
+omniflix
 oneof
 openapi
 openapiv
 opsz
+orai
 osmo
 osmosisd
 outdir
@@ -648,6 +707,7 @@ overrrides
 oxalica
 oxlint
 pagefind
+paloma
 paramaters
 paramproposal
 paramsclient
@@ -671,6 +731,7 @@ pipefail
 pkey
 pkgconfig
 pkgs
+planq
 plpgsql
 pname
 poisonphang
@@ -700,6 +761,7 @@ protos
 provercmd
 provergrpc
 provergrpcapi
+proxiable
 proxied
 pruningtypes
 prysm
@@ -711,6 +773,7 @@ pubkey's
 pubkeys
 publint
 punct
+purgecss
 pushd
 pvalue
 pxplusqx
@@ -728,6 +791,7 @@ readarray
 receiveds
 recursiving
 redelegate
+redelegates
 redelegating
 redelegation
 redelegations
@@ -748,6 +812,7 @@ retryable
 rgba
 ripemd
 rlib
+rlig
 rlpdump
 roadmap
 rollup
@@ -770,6 +835,7 @@ schemars
 schnorr
 scrollbars
 scrollproof
+scure
 sdkerrors
 sdkmath
 secp
@@ -785,8 +851,10 @@ sgxlib
 shacham
 shadcn
 shazow
+shentu
 shiki
 shikiji
+sifchain
 sigint
 sigtypes
 simapp
@@ -800,7 +868,7 @@ smallvec
 snapshotter
 snapshottypes
 solomachine
-sourcify
+sonner
 spearbit
 specialized
 spents
@@ -843,17 +911,18 @@ subdetail
 submessage
 submessages
 submsg
-subnetwork
 subroot
 subsec
 subslice
 substituters
 substores
 sumbitter
+superforms
 supermajority
 svooltip
 svrcmd
 symlinker
+syncedstore
 syncmode
 tablist
 tada
@@ -866,6 +935,7 @@ tempdirs
 tempfile
 tendermint
 tera
+teritori
 testdata
 testkeeper
 testkey
@@ -917,6 +987,7 @@ ucli
 ucosm
 uints
 ulidx
+umee
 unbond
 unbonded
 unbonding
@@ -949,8 +1020,10 @@ unopinionated
 unprefixed
 unsetting
 unshifted
+unstake
 unstorage
 unsuffixed
+ununifi
 unvalidated
 unwithdrawn
 uosmo
@@ -969,6 +1042,7 @@ valcons
 valconspub
 valeyo
 valgentx
+valibot
 validatordata
 validatorsets
 valkey
@@ -990,6 +1064,7 @@ vmdebug
 vuex
 wagmi
 wakey
+walletconnect
 wasi
 wasmd
 wasmer
@@ -1003,6 +1078,13 @@ webpki
 wght
 whistleblower
 withdrawability
+woestijne
+wormchain
+xbonlulu
+xion
+xkaiserkarel
+xlpa
+xpla
 xprv
 xqxp
 yamlfmt
@@ -1011,6 +1093,7 @@ yqyp
 zellij
 zerg
 zerolog
+zetachain
 zkps
 zktrie
 zstd
