@@ -417,6 +417,10 @@ func (e *EmulatedAPI) Psi(q *gadget.G2Affine) *gadget.G2Affine {
 	return &point
 }
 
+// Scalar multiplication by bn254 seed.
+// The input point must not be the infinity point.
+
+// NOTE: we only use this function in cofactor clearing in hashing to curve.
 func (e *EmulatedAPI) ScalarMulBySeed(q *gadget.G2Affine) *gadget.G2Affine {
 	z := e.Double(q)
 	t0 := e.Add(q, z)
