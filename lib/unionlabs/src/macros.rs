@@ -12,13 +12,12 @@ macro_rules! hex_string_array_wrapper {
                 Eq,
                 PartialOrd,
                 Ord,
-                ::ssz::Encode,
-                ::ssz::Decode,
+                ::ssz::Ssz,
                 ::serde::Serialize,
                 ::serde::Deserialize,
                 Hash
             )]
-            #[ssz(struct_behaviour = "transparent")]
+            #[ssz(transparent)]
             #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
 
@@ -103,26 +102,6 @@ macro_rules! hex_string_array_wrapper {
             impl ::core::fmt::Display for $Struct {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     write!(f, "0x{}", hex::encode(self.0).as_str())
-                }
-            }
-
-            // arrays and `FixedVector`s are effectively the exact same type, implement
-            // the former in terms of the latter
-            impl ::ssz::tree_hash::TreeHash for $Struct {
-                fn tree_hash_type() -> ::ssz::tree_hash::TreeHashType {
-                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_type()
-                }
-
-                fn tree_hash_packed_encoding(&self) -> ::ssz::tree_hash::PackedEncoding {
-                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packed_encoding(&self.0.into())
-                }
-
-                fn tree_hash_packing_factor() -> usize {
-                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_packing_factor()
-                }
-
-                fn tree_hash_root(&self) -> ::ssz::tree_hash::Hash256 {
-                    ssz::types::FixedVector::<u8, ::typenum::U<$N>>::tree_hash_root(&self.0.into())
                 }
             }
 

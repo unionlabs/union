@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{DecodeError, MAX_UNION_SELECTOR};
 
 /// Provides the one-byte "selector" from the SSZ union specification:
 ///

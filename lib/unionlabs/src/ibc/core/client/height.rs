@@ -6,9 +6,9 @@ use core::{
 
 use macros::model;
 use serde::{Deserialize, Serialize};
-use ssz::TreeHash;
+use ssz::Ssz;
 
-#[derive(ssz::Encode, ssz::Decode, TreeHash, Default, Copy)]
+#[derive(Ssz, Default, Copy)]
 #[model(proto(raw(protos::ibc::core::client::v1::Height), into, from))]
 #[debug("Height({self})")]
 pub struct Height {

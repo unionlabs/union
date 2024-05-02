@@ -3,8 +3,8 @@ use core::fmt::Debug;
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};
 use ssz::{
-    types::{BitList, FixedVector, VariableList},
-    Decode, Encode, TreeHash,
+    types::{BitList, List, Vector},
+    Ssz,
 };
 
 use self::config::MAX_BLOB_COMMITMENTS_PER_BLOCK;
@@ -54,7 +54,7 @@ impl DomainType {
     pub const APPLICATION_MASK: Self               = Self(hex!("00000001"));
 }
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ForkData {
     pub current_version: Version,
@@ -62,7 +62,7 @@ pub struct ForkData {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#signingdata>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SigningData {
     pub object_root: H256,
@@ -70,7 +70,7 @@ pub struct SigningData {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#signedbeaconblockheader>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SignedBeaconBlockHeader {
     pub message: BeaconBlockHeader,
@@ -78,7 +78,7 @@ pub struct SignedBeaconBlockHeader {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#signedbeaconblock>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct SignedBeaconBlock<
     C: MAX_PROPOSER_SLASHINGS
@@ -102,7 +102,7 @@ pub struct SignedBeaconBlock<
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#eth1data>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Eth1Data {
     pub deposit_root: H256,
@@ -112,7 +112,7 @@ pub struct Eth1Data {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#proposerslashing>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProposerSlashing {
     pub signed_header_1: SignedBeaconBlockHeader,
@@ -120,7 +120,7 @@ pub struct ProposerSlashing {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#attesterslashing>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AttesterSlashing<C: MAX_VALIDATORS_PER_COMMITTEE> {
     pub attestation_1: IndexedAttestation<C>,
@@ -128,16 +128,16 @@ pub struct AttesterSlashing<C: MAX_VALIDATORS_PER_COMMITTEE> {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#indexedattestation>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct IndexedAttestation<C: MAX_VALIDATORS_PER_COMMITTEE> {
-    pub attesting_indices: VariableList<u64, C::MAX_VALIDATORS_PER_COMMITTEE>,
+    pub attesting_indices: List<u64, C::MAX_VALIDATORS_PER_COMMITTEE>,
     pub data: AttestationData,
     pub signature: BlsSignature,
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#attestationdata>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AttestationData {
     #[serde(with = "::serde_utils::string")]
@@ -152,7 +152,7 @@ pub struct AttestationData {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#checkpoint>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Checkpoint {
     #[serde(with = "::serde_utils::string")]
@@ -161,7 +161,7 @@ pub struct Checkpoint {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#attestation>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Attestation<C: MAX_VALIDATORS_PER_COMMITTEE> {
     pub aggregation_bits: BitList<C::MAX_VALIDATORS_PER_COMMITTEE>,
@@ -170,16 +170,16 @@ pub struct Attestation<C: MAX_VALIDATORS_PER_COMMITTEE> {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#deposit>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Deposit<C: DEPOSIT_CONTRACT_TREE_DEPTH> {
     /// Merkle path to deposit root
-    pub proof: FixedVector<[u8; 32], C::DEPOSIT_CONTRACT_TREE_DEPTH>,
+    pub proof: Vector<[u8; 32], C::DEPOSIT_CONTRACT_TREE_DEPTH>,
     pub data: DepositData,
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#depositdata>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DepositData {
     pub pubkey: BlsPublicKey,
@@ -191,7 +191,7 @@ pub struct DepositData {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#signedvoluntaryexit>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SignedVoluntaryExit {
     pub message: VoluntaryExit,
@@ -199,7 +199,7 @@ pub struct SignedVoluntaryExit {
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#voluntaryexit>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct VoluntaryExit {
     /// Earliest epoch when voluntary exit can be processed

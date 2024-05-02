@@ -1,5 +1,5 @@
 use macros::model;
-use ssz::{Decode, Encode};
+use ssz::Ssz;
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
@@ -14,7 +14,7 @@ use crate::{
         ethers_contract_derive::EthAbiCodec
     )
 )]
-#[derive(Encode, Decode)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ForkParameters),
     into,

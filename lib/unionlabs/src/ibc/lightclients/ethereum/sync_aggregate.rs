@@ -1,9 +1,9 @@
 use macros::model;
-use ssz::{types::BitVector, TreeHash};
+use ssz::{types::BitVector, Ssz};
 
 use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(ssz::Encode, ssz::Decode, TreeHash)]
+#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::SyncAggregate),
     into,
@@ -41,7 +41,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TryFromSyncAggregateError {
-    Bits(ssz::types::Error),
+    Bits(ssz::types::bitfield::BitlistFromBytesError),
     Signature(InvalidLength),
 }
 

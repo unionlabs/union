@@ -1,0 +1,21 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "ssz-tests-generator"
+publish                = false
+repository.workspace   = true
+version                = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+hex.workspace       = true
+serde               = { workspace = true, features = ["derive"] }
+serde-utils         = { workspace = true }
+serde_json          = { workspace = true }
+serde_yaml          = "0.9.34"
+snap                = "1.1.1"
+ssz.workspace       = true
+typenum.workspace   = true
+unionlabs.workspace = true

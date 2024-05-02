@@ -3,11 +3,11 @@
 //! Useful for `cargo flamegraph`.
 
 use ssz::{
-    types::{typenum::U8192, VariableList},
-    Decode, Encode,
+    types::{typenum::U8192, List},
+    Ssz,
 };
 
-#[derive(Clone, Copy, Encode, Decode)]
+#[derive(Debug, Clone, Copy, Ssz)]
 pub struct FixedLen {
     a: u64,
     b: u64,
@@ -23,11 +23,11 @@ fn main() {
         d: 42,
     };
 
-    let vec: VariableList<FixedLen, U8192> = vec![fixed_len; 8192].try_into().unwrap();
+    let vec: List<FixedLen, U8192> = vec![fixed_len; 8192].try_into().unwrap();
 
     let output = (0..40_000)
-        .map(|_| VariableList::from_ssz_bytes(&vec.as_ssz_bytes()).unwrap())
-        .collect::<Vec<VariableList<FixedLen, U8192>>>();
+        .map(|_| List::from_ssz_bytes(&vec.as_ssz_bytes()).unwrap())
+        .collect::<Vec<List<FixedLen, U8192>>>();
 
     println!("{}", output.len());
 }

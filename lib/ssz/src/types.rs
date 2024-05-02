@@ -1,7 +1,7 @@
 //! Provides types with unique properties required for SSZ serialization and Merklization:
 //!
-//! - `FixedVector`: A heap-allocated list with a size that is fixed at compile time.
-//! - `VariableList`: A heap-allocated list that cannot grow past a type-level maximum length.
+//! - `Vector`: A heap-allocated list with a size that is fixed at compile time.
+//! - `List`: A heap-allocated list that cannot grow past a type-level maximum length.
 //! - `BitList`: A heap-allocated bitfield that with a type-level _maximum_ length.
 //! - `BitVector`: A heap-allocated bitfield that with a type-level _fixed__ length.
 //!
@@ -20,15 +20,15 @@
 //! pub struct Example {
 //!     bit_vector: BitVector<typenum::U8>,
 //!     bit_list: BitList<typenum::U8>,
-//!     variable_list: VariableList<u64, typenum::U8>,
-//!     fixed_vector: FixedVector<u64, typenum::U8>,
+//!     variable_list: List<u64, typenum::U8>,
+//!     fixed_vector: Vector<u64, typenum::U8>,
 //! }
 //!
 //! let mut example = Example {
 //!     bit_vector: Bitfield::new(),
 //!     bit_list: Bitfield::with_capacity(4).unwrap(),
-//!     variable_list: VariableList::try_from(vec![0, 1]).unwrap(),
-//!     fixed_vector: FixedVector::try_from(vec![2, 3, 0, 0, 0, 0, 0, 0]).unwrap(),
+//!     variable_list: List::try_from(vec![0, 1]).unwrap(),
+//!     fixed_vector: Vector::try_from(vec![2, 3, 0, 0, 0, 0, 0, 0]).unwrap(),
 //! };
 //!
 //! assert_eq!(example.bit_vector.len(), 8);
@@ -39,14 +39,14 @@
 
 #[macro_use]
 pub mod bitfield;
-pub mod fixed_vector;
+pub mod list;
 pub mod tree_hash;
-pub mod variable_list;
+pub mod vector;
 
 pub use bitfield::{BitList, BitVector, Bitfield};
-pub use fixed_vector::FixedVector;
+pub use list::List;
 pub use typenum;
-pub use variable_list::VariableList;
+pub use vector::Vector;
 
 pub mod length {
     pub use crate::types::bitfield::{Fixed, Variable};

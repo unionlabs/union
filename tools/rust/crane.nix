@@ -316,7 +316,7 @@
       _module.args = {
         crane = {
           lib = craneLib;
-          inherit buildWorkspaceMember;
+          inherit buildWorkspaceMember cargoWorkspaceSrc;
         } //
         (import ./buildWasmContract.nix {
           inherit buildWorkspaceMember crateCargoToml pkgs lib rust craneLib dbg;
