@@ -16,10 +16,13 @@ service Msg {
 }
 
 message MsgWriteDifferedAck {
-  ibc.core.channel.v1.Packet packet = 1;
-  ibc.applications.transfer.v2.FungibleTokenPacketData data = 2;
-  DifferedPacketInfo differedPacketInfo = 3;
-  ibc.core.channel.v1.Acknowledgement ack = 4;
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string                                               sender             = 1 [ (gogoproto.moretags) = "yaml:\"sender\"" ];
+  ibc.core.channel.v1.Packet                           packet             = 2;
+  ibc.applications.transfer.v2.FungibleTokenPacketData data               = 3;
+  DifferedPacketInfo                                   differedPacketInfo = 4;
+  ibc.core.channel.v1.Acknowledgement                  ack                = 5;
 }
 
 message MsgWriteDifferedAckResponse {
