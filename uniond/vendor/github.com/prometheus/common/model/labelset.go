@@ -14,10 +14,12 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
-	"strings"
+	"strconv"
 )
 
 // A LabelSet is a collection of LabelName and LabelValue pairs.  The LabelSet
@@ -129,14 +131,27 @@ func (l LabelSet) Merge(other LabelSet) LabelSet {
 	return result
 }
 
+// String will look like `{foo="bar", more="less"}`. Names are sorted alphabetically.
 func (l LabelSet) String() string {
-	lstrs := make([]string, 0, len(l))
-	for l, v := range l {
-		lstrs = append(lstrs, fmt.Sprintf("%s=%q", l, v))
+	var lna [32]LabelName // On stack to avoid memory allocation for sorting names.
+	labelNames := lna[:0]
+	for name := range l {
+		labelNames = append(labelNames, name)
 	}
-
-	sort.Strings(lstrs)
-	return fmt.Sprintf("{%s}", strings.Join(lstrs, ", "))
+	slices.Sort(labelNames)
+	var bytea [1024]byte // On stack to avoid memory allocation while building the output.
+	b := bytes.NewBuffer(bytea[:0])
+	b.WriteByte('{')
+	for i, name := range labelNames {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(string(name))
+		b.WriteByte('=')
+		b.Write(strconv.AppendQuote(b.AvailableBuffer(), string(l[name])))
+	}
+	b.WriteByte('}')
+	return b.String()
 }
 
 // Fingerprint returns the LabelSet's fingerprint.

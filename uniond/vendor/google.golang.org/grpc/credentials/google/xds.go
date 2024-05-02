@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/internal"
+	"google.golang.org/grpc/internal/xds"
 )
 
 const cfeClusterNamePrefix = "google_cfe_"
@@ -63,7 +63,7 @@ func clusterName(ctx context.Context) string {
 	if chi.Attributes == nil {
 		return ""
 	}
-	cluster, _ := internal.GetXDSHandshakeClusterName(chi.Attributes)
+	cluster, _ := xds.GetXDSHandshakeClusterName(chi.Attributes)
 	return cluster
 }
 

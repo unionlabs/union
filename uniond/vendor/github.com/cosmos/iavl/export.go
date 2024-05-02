@@ -90,8 +90,8 @@ func (e *Exporter) Next() (*ExportNode, error) {
 // Close closes the exporter. It is safe to call multiple times.
 func (e *Exporter) Close() {
 	e.cancel()
-	for range e.ch { // drain channel
-	}
+	for range e.ch { //nolint:revive
+	} // drain channel
 	if e.tree != nil {
 		e.tree.ndb.decrVersionReaders(e.tree.version)
 	}

@@ -1,7 +1,7 @@
 package types
 
 import (
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 
 	errorsmod "cosmossdk.io/errors"
 )
@@ -86,6 +86,9 @@ var (
 	ErrNoSuchCodeFn = WasmVMFlavouredErrorFactory(errorsmod.Register(DefaultCodespace, 28, "no such code"),
 		func(id uint64) error { return wasmvmtypes.NoSuchCode{CodeID: id} },
 	)
+
+	// ErrVMError means an error occurred in wasmvm (not in the contract itself, but in the host environment)
+	ErrVMError = errorsmod.Register(DefaultCodespace, 29, "wasmvm error")
 )
 
 // WasmVMErrorable mapped error type in wasmvm and are not redacted
@@ -148,4 +151,35 @@ func (e WasmVMFlavouredError) Wrap(desc string) error { return errorsmod.Wrap(e,
 // It's a handy function to call Wrapf with sdk errors.
 func (e WasmVMFlavouredError) Wrapf(desc string, args ...interface{}) error {
 	return errorsmod.Wrapf(e, desc, args...)
+}
+
+// DeterministicError is a wrapper type around an error that the creator guarantees to have
+// a deterministic error message.
+// This means that the `Error()` function must always return the same string on all nodes.
+// The DeterministicError has the same error message as the wrapped error.
+// DeterministicErrors are not redacted when returned to a contract,
+// so not upholding this guarantee can lead to consensus failures.
+type DeterministicError struct {
+	error
+}
+
+var _ error = DeterministicError{}
+
+// MarkErrorDeterministic marks an error as deterministic.
+// Make sure to only do that if the error message is deterministic between systems.
+// See [DeterministicError] for more details.
+func MarkErrorDeterministic(e error) DeterministicError {
+	return DeterministicError{error: e}
+}
+
+// Unwrap implements the built-in errors.Unwrap
+func (e DeterministicError) Unwrap() error {
+	return e.error
+}
+
+// Cause is the same as unwrap but used by ABCIInfo
+// By returning the wrapped error here, we ensure that the DeterministicError inherits
+// the ABCIInfo of the wrapped error.
+func (e DeterministicError) Cause() error {
+	return e.Unwrap()
 }

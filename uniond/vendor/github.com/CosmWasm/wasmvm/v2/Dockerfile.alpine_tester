@@ -1,0 +1,7 @@
+FROM golang:1.21.4-alpine
+
+RUN apk add build-base
+
+# prepare go cache dirs
+RUN mkdir -p /.cache/go-build
+RUN chmod -R 777 /.cache

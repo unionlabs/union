@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 
-	wasmvm "github.com/CosmWasm/wasmvm"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 
@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
@@ -78,32 +77,30 @@ func GetCmdBuildAddress() *cobra.Command {
 		Aliases: []string{"address"},
 		Args:    cobra.RangeArgs(3, 4),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			codeHash, err := hex.DecodeString(args[0])
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
-				return fmt.Errorf("code-hash: %s", err)
-			}
-			creator, err := sdk.AccAddressFromBech32(args[1])
-			if err != nil {
-				return fmt.Errorf("creator: %s", err)
-			}
-			salt, err := hex.DecodeString(args[2])
-			switch {
-			case err != nil:
-				return fmt.Errorf("salt: %s", err)
-			case len(salt) == 0:
-				return errors.New("empty salt")
+				return err
 			}
 
-			if len(args) == 3 {
-				cmd.Println(keeper.BuildContractAddressPredictable(codeHash, creator, salt, []byte{}).String())
-				return nil
+			var initArgs []byte
+			if len(args) == 4 {
+				initArgs = types.RawContractMessage(args[3])
 			}
-			msg := types.RawContractMessage(args[3])
-			if err := msg.ValidateBasic(); err != nil {
-				return fmt.Errorf("init message: %s", err)
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.BuildAddress(
+				context.Background(),
+				&types.QueryBuildAddressRequest{
+					CodeHash:       args[0],
+					CreatorAddress: args[1],
+					Salt:           args[2],
+					InitArgs:       initArgs,
+				},
+			)
+			if err != nil {
+				return err
 			}
-			cmd.Println(keeper.BuildContractAddressPredictable(codeHash, creator, salt, msg).String())
-			return nil
+			return clientCtx.PrintProto(res)
 		},
 		SilenceUsage: true,
 	}

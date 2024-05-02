@@ -22,7 +22,7 @@ import (
 
 const (
 	adcSetupURL           = "https://cloud.google.com/docs/authentication/external/set-up-adc"
-	universeDomainDefault = "googleapis.com"
+	defaultUniverseDomain = "googleapis.com"
 )
 
 // Credentials holds Google credentials, including "Application Default Credentials".
@@ -58,7 +58,7 @@ type Credentials struct {
 // See also [The attached service account](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa).
 func (c *Credentials) UniverseDomain() string {
 	if c.universeDomain == "" {
-		return universeDomainDefault
+		return defaultUniverseDomain
 	}
 	return c.universeDomain
 }
@@ -89,7 +89,7 @@ func (c *Credentials) GetUniverseDomain() (string, error) {
 	// computeUniverseDomain that did not set universeDomain, set the default
 	// universe domain.
 	if c.universeDomain == "" {
-		c.universeDomain = universeDomainDefault
+		c.universeDomain = defaultUniverseDomain
 	}
 	return c.universeDomain, nil
 }
@@ -103,7 +103,7 @@ func (c *Credentials) computeUniverseDomain() error {
 	if err != nil {
 		if _, ok := err.(metadata.NotDefinedError); ok {
 			// http.StatusNotFound (404)
-			c.universeDomain = universeDomainDefault
+			c.universeDomain = defaultUniverseDomain
 			return nil
 		} else {
 			return err
@@ -287,7 +287,7 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 	}
 	// Authorized user credentials are only supported in the googleapis.com universe.
 	if f.Type == userCredentialsKey {
-		universeDomain = universeDomainDefault
+		universeDomain = defaultUniverseDomain
 	}
 
 	ts, err := f.tokenSource(ctx, params)

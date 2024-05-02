@@ -1791,6 +1791,50 @@ func (opts *Options) EnableStatistics() {
 	C.rocksdb_options_enable_statistics(opts.c)
 }
 
+// SetTTL sets TTL. This option has different meanings for different compaction styles:
+//
+// Leveled: Non-bottom-level files with all keys older than TTL will go
+//
+//	through the compaction process. This usually happens in a cascading
+//	way so that those entries will be compacted to bottommost level/file.
+//	The feature is used to remove stale entries that have been deleted or
+//	updated from the file system.
+//
+// FIFO: Files with all keys older than TTL will be deleted. TTL is only
+//
+//	supported if option max_open_files is set to -1.
+//
+// Universal: users should only set the option `periodic_compaction_seconds`
+//
+//	below instead. For backward compatibility, this option has the same
+//	meaning as `periodic_compaction_seconds`. See more in comments for
+//	`periodic_compaction_seconds` on the interaction between these two
+//	options.
+//
+// This option only supports block based table format for any compaction
+// style.
+//
+// unit: seconds. Ex: 1 day = 1 * 24 * 60 * 60
+// 0 means disabling.
+// UINT64_MAX - 1 (0xfffffffffffffffe) is special flag to allow RocksDB to
+// pick default.
+//
+// Default: 30 days if using block based table. 0 (disable) otherwise.
+//
+// Dynamically changeable through SetOptions() API
+// Note that dynamically changing this option only works for leveled and FIFO
+// compaction. For universal compaction, dynamically changing this option has
+// no effect, users should dynamically change `periodic_compaction_seconds`
+// instead.
+func (opts *Options) SetTTL(seconds uint64) {
+	C.rocksdb_options_set_ttl(opts.c, C.uint64_t(seconds))
+}
+
+// GetTTL gets TTL option.
+func (opts *Options) GetTTL() uint64 {
+	return uint64(C.rocksdb_options_get_ttl(opts.c))
+}
+
 // SetPeriodicCompactionSeconds sets periodic_compaction_seconds option.
 //
 // This option has different meanings for different compaction styles:

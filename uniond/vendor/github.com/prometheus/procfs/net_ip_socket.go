@@ -50,10 +50,13 @@ type (
 		// UsedSockets shows the total number of parsed lines representing the
 		// number of used sockets.
 		UsedSockets uint64
+		// Drops shows the total number of dropped packets of all UPD sockets.
+		Drops *uint64
 	}
 
 	// netIPSocketLine represents the fields parsed from a single line
 	// in /proc/net/{t,u}dp{,6}. Fields which are not used by IPSocket are skipped.
+	// Drops is non-nil for udp{,6}, but nil for tcp{,6}.
 	// For the proc file format details, see https://linux.die.net/man/5/proc.
 	netIPSocketLine struct {
 		Sl        uint64
@@ -66,6 +69,7 @@ type (
 		RxQueue   uint64
 		UID       uint64
 		Inode     uint64
+		Drops     *uint64
 	}
 )
 
@@ -77,13 +81,14 @@ func newNetIPSocket(file string) (NetIPSocket, error) {
 	defer f.Close()
 
 	var netIPSocket NetIPSocket
+	isUDP := strings.Contains(file, "udp")
 
 	lr := io.LimitReader(f, readLimit)
 	s := bufio.NewScanner(lr)
 	s.Scan() // skip first line with headers
 	for s.Scan() {
 		fields := strings.Fields(s.Text())
-		line, err := parseNetIPSocketLine(fields)
+		line, err := parseNetIPSocketLine(fields, isUDP)
 		if err != nil {
 			return nil, err
 		}
@@ -104,19 +109,25 @@ func newNetIPSocketSummary(file string) (*NetIPSocketSummary, error) {
 	defer f.Close()
 
 	var netIPSocketSummary NetIPSocketSummary
+	var udpPacketDrops uint64
+	isUDP := strings.Contains(file, "udp")
 
 	lr := io.LimitReader(f, readLimit)
 	s := bufio.NewScanner(lr)
 	s.Scan() // skip first line with headers
 	for s.Scan() {
 		fields := strings.Fields(s.Text())
-		line, err := parseNetIPSocketLine(fields)
+		line, err := parseNetIPSocketLine(fields, isUDP)
 		if err != nil {
 			return nil, err
 		}
 		netIPSocketSummary.TxQueueLength += line.TxQueue
 		netIPSocketSummary.RxQueueLength += line.RxQueue
 		netIPSocketSummary.UsedSockets++
+		if isUDP {
+			udpPacketDrops += *line.Drops
+			netIPSocketSummary.Drops = &udpPacketDrops
+		}
 	}
 	if err := s.Err(); err != nil {
 		return nil, err
@@ -149,7 +160,7 @@ func parseIP(hexIP string) (net.IP, error) {
 }
 
 // parseNetIPSocketLine parses a single line, represented by a list of fields.
-func parseNetIPSocketLine(fields []string) (*netIPSocketLine, error) {
+func parseNetIPSocketLine(fields []string, isUDP bool) (*netIPSocketLine, error) {
 	line := &netIPSocketLine{}
 	if len(fields) < 10 {
 		return nil, fmt.Errorf(
@@ -222,6 +233,15 @@ func parseNetIPSocketLine(fields []string) (*netIPSocketLine, error) {
 	// inode
 	if line.Inode, err = strconv.ParseUint(fields[9], 0, 64); err != nil {
 		return nil, fmt.Errorf("%s: Cannot parse inode value in %q: %w", ErrFileParse, line.Inode, err)
+	}
+
+	// drops
+	if isUDP {
+		drops, err := strconv.ParseUint(fields[12], 0, 64)
+		if err != nil {
+			return nil, fmt.Errorf("%s: Cannot parse drops value in %q: %w", ErrFileParse, drops, err)
+		}
+		line.Drops = &drops
 	}
 
 	return line, nil

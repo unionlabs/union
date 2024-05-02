@@ -76,7 +76,7 @@
     };
     wasmd = {
       url =
-        "github:CosmWasm/wasmd?rev=03f3c72a6ce447fafc2da023a1322899327433f8";
+        "github:CosmWasm/wasmd?rev=7b418de3f6cf8fbac1e9cb11c57983fcc17264d0";
       flake = false;
     };
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
@@ -87,6 +87,10 @@
     };
     wasmvm-1_5_0 = {
       url = "github:CosmWasm/wasmvm/v1.5.0";
+      flake = false;
+    };
+    wasmvm-2_0_1 = {
+      url = "github:CosmWasm/wasmvm/v2.0.1";
       flake = false;
     };
     biome = {

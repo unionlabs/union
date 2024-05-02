@@ -155,6 +155,10 @@ func EncodeUvarintSize(u uint64) int {
 
 // EncodeVarint writes a varint-encoded integer to an io.Writer.
 func EncodeVarint(w io.Writer, i int64) error {
+	if bw, ok := w.(io.ByteWriter); ok {
+		return fVarintEncode(bw, i)
+	}
+
 	// Use a pool here to reduce allocations.
 	//
 	// Though this allocates just 10 bytes on the stack, doing allocation for every calls
@@ -171,6 +175,26 @@ func EncodeVarint(w io.Writer, i int64) error {
 	varintPool.Put(buf)
 
 	return err
+}
+
+func fVarintEncode(bw io.ByteWriter, x int64) error {
+	// Firstly convert it into a uvarint
+	ux := uint64(x) << 1
+	if x < 0 {
+		ux = ^ux
+	}
+	for ux >= 0x80 { // While there are 7 or more bits in the value, keep going
+		// Convert it into a byte then toggle the
+		// 7th bit to indicate that more bytes coming.
+		// byte(x & 0x7f) is redundant but useful for illustrative
+		// purposes when translating to other languages
+		if err := bw.WriteByte(byte(ux&0x7f) | 0x80); err != nil {
+			return err
+		}
+		ux >>= 7
+	}
+
+	return bw.WriteByte(byte(ux & 0x7f))
 }
 
 // EncodeVarintSize returns the byte size of the given integer as a varint.

@@ -75,6 +75,7 @@ func (ccr *ccResolverWrapper) start() error {
 			DialCreds:            ccr.cc.dopts.copts.TransportCredentials,
 			CredsBundle:          ccr.cc.dopts.copts.CredsBundle,
 			Dialer:               ccr.cc.dopts.copts.Dialer,
+			Authority:            ccr.cc.authority,
 		}
 		var err error
 		ccr.resolver, err = ccr.cc.resolverBuilder.Build(ccr.cc.parsedTarget, ccr, opts)
@@ -96,7 +97,7 @@ func (ccr *ccResolverWrapper) resolveNow(o resolver.ResolveNowOptions) {
 // finished shutting down, the channel should block on ccr.serializer.Done()
 // without cc.mu held.
 func (ccr *ccResolverWrapper) close() {
-	channelz.Info(logger, ccr.cc.channelzID, "Closing the name resolver")
+	channelz.Info(logger, ccr.cc.channelz, "Closing the name resolver")
 	ccr.mu.Lock()
 	ccr.closed = true
 	ccr.mu.Unlock()
@@ -146,7 +147,7 @@ func (ccr *ccResolverWrapper) ReportError(err error) {
 		return
 	}
 	ccr.mu.Unlock()
-	channelz.Warningf(logger, ccr.cc.channelzID, "ccResolverWrapper: reporting error to cc: %v", err)
+	channelz.Warningf(logger, ccr.cc.channelz, "ccResolverWrapper: reporting error to cc: %v", err)
 	ccr.cc.updateResolverStateAndUnlock(resolver.State{}, err)
 }
 
@@ -193,5 +194,5 @@ func (ccr *ccResolverWrapper) addChannelzTraceEvent(s resolver.State) {
 	} else if len(ccr.curState.Addresses) == 0 && len(s.Addresses) > 0 {
 		updates = append(updates, "resolver returned new addresses")
 	}
-	channelz.Infof(logger, ccr.cc.channelzID, "Resolver state updated: %s (%v)", pretty.ToJSON(s), strings.Join(updates, "; "))
+	channelz.Infof(logger, ccr.cc.channelz, "Resolver state updated: %s (%v)", pretty.ToJSON(s), strings.Join(updates, "; "))
 }

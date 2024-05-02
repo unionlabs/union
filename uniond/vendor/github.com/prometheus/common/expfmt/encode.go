@@ -76,18 +76,18 @@ func Negotiate(h http.Header) Format {
 		if ac.Type+"/"+ac.SubType == ProtoType && ac.Params["proto"] == ProtoProtocol {
 			switch ac.Params["encoding"] {
 			case "delimited":
-				return FmtProtoDelim + escapingScheme
+				return fmtProtoDelim + escapingScheme
 			case "text":
-				return FmtProtoText + escapingScheme
+				return fmtProtoText + escapingScheme
 			case "compact-text":
-				return FmtProtoCompact + escapingScheme
+				return fmtProtoCompact + escapingScheme
 			}
 		}
 		if ac.Type == "text" && ac.SubType == "plain" && (ver == TextVersion || ver == "") {
-			return FmtText + escapingScheme
+			return fmtText + escapingScheme
 		}
 	}
-	return FmtText + escapingScheme
+	return fmtText + escapingScheme
 }
 
 // NegotiateIncludingOpenMetrics works like Negotiate but includes
@@ -109,26 +109,26 @@ func NegotiateIncludingOpenMetrics(h http.Header) Format {
 		if ac.Type+"/"+ac.SubType == ProtoType && ac.Params["proto"] == ProtoProtocol {
 			switch ac.Params["encoding"] {
 			case "delimited":
-				return FmtProtoDelim + escapingScheme
+				return fmtProtoDelim + escapingScheme
 			case "text":
-				return FmtProtoText + escapingScheme
+				return fmtProtoText + escapingScheme
 			case "compact-text":
-				return FmtProtoCompact + escapingScheme
+				return fmtProtoCompact + escapingScheme
 			}
 		}
 		if ac.Type == "text" && ac.SubType == "plain" && (ver == TextVersion || ver == "") {
-			return FmtText + escapingScheme
+			return fmtText + escapingScheme
 		}
 		if ac.Type+"/"+ac.SubType == OpenMetricsType && (ver == OpenMetricsVersion_0_0_1 || ver == OpenMetricsVersion_1_0_0 || ver == "") {
 			switch ver {
 			case OpenMetricsVersion_1_0_0:
-				return FmtOpenMetrics_1_0_0 + escapingScheme
+				return fmtOpenMetrics_1_0_0 + escapingScheme
 			default:
-				return FmtOpenMetrics_0_0_1 + escapingScheme
+				return fmtOpenMetrics_0_0_1 + escapingScheme
 			}
 		}
 	}
-	return FmtText + escapingScheme
+	return fmtText + escapingScheme
 }
 
 // NewEncoder returns a new encoder based on content type negotiation. All
@@ -139,7 +139,13 @@ func NegotiateIncludingOpenMetrics(h http.Header) Format {
 // interface is kept for backwards compatibility.
 // In cases where the Format does not allow for UTF-8 names, the global
 // NameEscapingScheme will be applied.
-func NewEncoder(w io.Writer, format Format) Encoder {
+//
+// NewEncoder can be called with additional options to customize the OpenMetrics text output.
+// For example:
+// NewEncoder(w, FmtOpenMetrics_1_0_0, WithCreatedLines())
+//
+// Extra options are ignored for all other formats.
+func NewEncoder(w io.Writer, format Format, options ...EncoderOption) Encoder {
 	escapingScheme := format.ToEscapingScheme()
 
 	switch format.FormatType() {
@@ -178,7 +184,7 @@ func NewEncoder(w io.Writer, format Format) Encoder {
 	case TypeOpenMetrics:
 		return encoderCloser{
 			encode: func(v *dto.MetricFamily) error {
-				_, err := MetricFamilyToOpenMetrics(w, model.EscapeMetricFamily(v, escapingScheme))
+				_, err := MetricFamilyToOpenMetrics(w, model.EscapeMetricFamily(v, escapingScheme), options...)
 				return err
 			},
 			close: func() error {

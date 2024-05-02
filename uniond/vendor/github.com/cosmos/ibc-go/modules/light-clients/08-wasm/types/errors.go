@@ -19,4 +19,5 @@ var (
 	ErrWasmContractCallFailed          = errorsmod.Register(ModuleName, 14, "wasm contract call failed")
 	ErrWasmInvalidResponseData         = errorsmod.Register(ModuleName, 15, "wasm contract returned invalid response data")
 	ErrWasmInvalidContractModification = errorsmod.Register(ModuleName, 16, "wasm contract made invalid state modifications")
+	ErrVMError                         = errorsmod.Register(ModuleName, 17, "wasm VM error")
 )

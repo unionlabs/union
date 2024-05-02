@@ -1,8 +1,8 @@
 package types
 
 import (
-	wasmvm "github.com/CosmWasm/wasmvm"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 
 	storetypes "cosmossdk.io/store/types"
 )
@@ -12,30 +12,20 @@ const DefaultMaxQueryStackSize uint32 = 10
 
 // WasmEngine defines the WASM contract runtime engine.
 type WasmEngine interface {
-	// Create will compile the wasm code, and store the resulting pre-compile
-	// as well as the original code. Both can be referenced later via CodeID
+	// StoreCode will compile the Wasm code, and store the resulting compiled module
+	// as well as the original code. Both can be referenced later via Checksum.
 	// This must be done one time for given code, after which it can be
-	// instatitated many times, and each instance called many times.
+	// instantiated many times, and each instance called many times.
 	//
-	// For example, the code for all ERC-20 contracts should be the same.
-	// This function stores the code for that contract only once, but it can
-	// be instantiated with custom inputs in the future.
-	//
-	// Deprecated: use StoreCode instead.
-	Create(code wasmvm.WasmCode) (wasmvm.Checksum, error)
+	// Returns both the checksum, as well as the gas cost of compilation (in CosmWasm Gas) or an error.
+	StoreCode(code wasmvm.WasmCode, gasLimit uint64) (wasmvm.Checksum, uint64, error)
 
-	// Create will compile the wasm code, and store the resulting pre-compile
+	// StoreCodeUnchecked will compile the wasm code, and store the resulting pre-compile
 	// as well as the original code. Both can be referenced later via checksum
 	// This must be done one time for given code, after which it can be
-	// instatitated many times, and each instance called many times.
-	// It does the same as StoreCodeUnchecked plus the static checks.
-	StoreCode(code wasmvm.WasmCode) (wasmvm.Checksum, error)
-
-	// Create will compile the wasm code, and store the resulting pre-compile
-	// as well as the original code. Both can be referenced later via checksum
-	// This must be done one time for given code, after which it can be
-	// instatitated many times, and each instance called many times.
+	// instantiated many times, and each instance called many times.
 	// It does the same as StoreCode but without the static checks.
+	// Use this for adding code that was checked before, particularly in the case of state sync.
 	StoreCodeUnchecked(code wasmvm.WasmCode) (wasmvm.Checksum, error)
 
 	// AnalyzeCode will statically analyze the code.
@@ -61,7 +51,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// Execute calls a given contract. Since the only difference between contracts with the same CodeID is the
 	// data in their local storage, and their address in the outside world, we need no ContractID here.
@@ -80,7 +70,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// Query allows a client to execute a contract-specific query. If the result is not empty, it should be
 	// valid json-encoded data to return to the client.
@@ -95,7 +85,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) ([]byte, uint64, error)
+	) (*wasmvmtypes.QueryResult, uint64, error)
 
 	// Migrate will migrate an existing contract to a new code binary.
 	// This takes storage of the data from the original contract and the CodeID of the new contract that should
@@ -113,7 +103,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// Sudo runs an existing contract in read/write mode (like Execute), but is never exposed to external callers
 	// (either transactions or government proposals), but can only be called by other native Go modules directly.
@@ -130,7 +120,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// Reply is called on the original dispatching contract after running a submessage
 	Reply(
@@ -143,7 +133,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// GetCode will load the original wasm code for the given code id.
 	// This will only succeed if that code id was previously returned from
@@ -169,7 +159,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.IBC3ChannelOpenResponse, uint64, error)
+	) (*wasmvmtypes.IBCChannelOpenResult, uint64, error)
 
 	// IBCChannelConnect is available on IBC-enabled contracts and is a hook to call into
 	// during the handshake phase
@@ -183,7 +173,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.IBCBasicResponse, uint64, error)
+	) (*wasmvmtypes.IBCBasicResult, uint64, error)
 
 	// IBCChannelClose is available on IBC-enabled contracts and is a hook to call into
 	// at the end of the channel lifetime
@@ -197,7 +187,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.IBCBasicResponse, uint64, error)
+	) (*wasmvmtypes.IBCBasicResult, uint64, error)
 
 	// IBCPacketReceive is available on IBC-enabled contracts and is called when an incoming
 	// packet is received on a channel belonging to this contract
@@ -226,7 +216,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.IBCBasicResponse, uint64, error)
+	) (*wasmvmtypes.IBCBasicResult, uint64, error)
 
 	// IBCPacketTimeout is available on IBC-enabled contracts and is called when an
 	// outgoing packet (previously sent by this contract) will probably never be executed.
@@ -241,7 +231,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.IBCBasicResponse, uint64, error)
+	) (*wasmvmtypes.IBCBasicResult, uint64, error)
 
 	// Pin pins a code to an in-memory cache, such that is
 	// always loaded quickly when executed.

@@ -372,6 +372,13 @@ func (p *PrometheusSink) IncrCounterWithLabels(parts []string, val float32, labe
 	key, hash := flattenKey(parts, labels)
 	pc, ok := p.counters.Load(hash)
 
+	// Prometheus Counter.Add() panics if val < 0. We don't want this to
+	// cause applications to crash, so log an error instead.
+	if val < 0 {
+		log.Printf("[ERR] Attempting to increment Prometheus counter %v with value negative value %v", key, val)
+		return
+	}
+
 	// Does the counter exist?
 	if ok {
 		localCounter := *pc.(*counter)

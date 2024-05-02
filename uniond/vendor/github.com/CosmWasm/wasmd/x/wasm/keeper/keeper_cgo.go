@@ -5,7 +5,7 @@ package keeper
 import (
 	"path/filepath"
 
-	wasmvm "github.com/CosmWasm/wasmvm"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
 
 	"cosmossdk.io/collections"
 	corestoretypes "cosmossdk.io/core/store"
@@ -33,7 +33,7 @@ func NewKeeper(
 	_ GRPCQueryRouter,
 	homeDir string,
 	wasmConfig types.WasmConfig,
-	availableCapabilities string,
+	availableCapabilities []string,
 	authority string,
 	opts ...Option,
 ) Keeper {
