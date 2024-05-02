@@ -80,9 +80,10 @@ pub trait EthereumChain:
         address: H160,
         location: U256,
         block: u64,
-    ) -> impl Future<Output = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof>;
+    ) -> impl Future<Output = StorageProof>;
 }
 
+#[diagnostic::on_unimplemented(message = "{Self} does not implement `EthereumChain`")]
 pub trait EthereumChainExt: EthereumChain {
     /// Convenience method to construct an [`IBCHandler`] instance for this chain.
     fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
@@ -108,41 +109,8 @@ impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
         self.ibc_handler_address
     }
 
-    async fn get_proof(
-        &self,
-        address: H160,
-        location: U256,
-        block: u64,
-    ) -> unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
-        let proof = self
-            .provider
-            .get_proof(
-                ethers::types::H160::from(address),
-                vec![location.to_be_bytes().into()],
-                Some(block.into()),
-            )
-            .await
-            .unwrap();
-
-        let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-            Ok([proof]) => proof,
-            Err(invalid) => {
-                panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-            }
-        };
-
-        unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
-            proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-                value: proof.value.into(),
-                proof: proof
-                    .proof
-                    .into_iter()
-                    .map(|bytes| bytes.to_vec())
-                    .collect(),
-            }]
-            .to_vec(),
-        }
+    async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
+        get_proof(self, address, location, block).await
     }
 }
 
@@ -347,7 +315,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
 
     type Error = beacon_api::errors::Error;
 
-    type StateProof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof;
+    type StateProof = StorageProof;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
@@ -539,6 +507,44 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
             provider: Arc::new(provider),
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         })
+    }
+}
+
+/// Fetch an eth_getProof call on an Ethereum-based chain that has the exact same response type as Ethereum.
+pub async fn get_proof<Hc: EthereumChain>(
+    hc: &Hc,
+    address: H160,
+    location: U256,
+    block: u64,
+) -> StorageProof {
+    let proof = hc
+        .provider()
+        .get_proof(
+            ethers::types::H160::from(address),
+            vec![location.to_be_bytes().into()],
+            Some(block.into()),
+        )
+        .await
+        .unwrap();
+
+    let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+        Ok([proof]) => proof,
+        Err(invalid) => {
+            panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+        }
+    };
+
+    StorageProof {
+        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
+            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+            value: proof.value.into(),
+            proof: proof
+                .proof
+                .into_iter()
+                .map(|bytes| bytes.to_vec())
+                .collect(),
+        }]
+        .to_vec(),
     }
 }
 

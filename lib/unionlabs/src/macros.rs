@@ -31,6 +31,10 @@ macro_rules! hex_string_array_wrapper {
                 pub fn to_string_unprefixed(&self) -> String {
                     hex::encode(&self)
                 }
+
+                pub fn iter(&self) -> core::slice::Iter<u8> {
+                    (&self).into_iter()
+                }
             }
 
             impl core::str::FromStr for $Struct {
@@ -44,6 +48,24 @@ macro_rules! hex_string_array_wrapper {
             impl Default for $Struct {
                 fn default() -> Self {
                     Self([0_u8; $N])
+                }
+            }
+
+            impl<'a> IntoIterator for &'a $Struct {
+                type Item = &'a u8;
+                type IntoIter = core::slice::Iter<'a, u8>;
+
+                fn into_iter(self) -> core::slice::Iter<'a, u8> {
+                    self.0.iter()
+                }
+            }
+
+            impl IntoIterator for $Struct {
+                type Item = u8;
+                type IntoIter = core::array::IntoIter<u8, $N>;
+
+                fn into_iter(self) -> Self::IntoIter {
+                    self.0.into_iter()
                 }
             }
 

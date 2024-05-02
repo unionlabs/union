@@ -326,6 +326,8 @@ pub enum Command {
     Relay,
     #[command(subcommand)]
     Queue(QueueCmd),
+    #[command(subcommand)]
+    Util(UtilCmd),
     Query {
         #[arg(long)]
         on: String,
@@ -349,7 +351,7 @@ pub async fn any_state_proof_to_json<Hc, Tr>(
     path: ics24::Path<Hc::ClientId, Tr::Height>,
     c: Hc,
     height: QueryHeight<HeightOf<Hc>>,
-) -> String
+) -> serde_json::Value
 where
     Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr>,
     Tr: ChainExt,
@@ -392,7 +394,7 @@ where
     Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
 {
-    use serde_json::to_string_pretty as json;
+    use serde_json::to_value as json;
 
     let height = match height {
         QueryHeight::Latest => c.query_latest_height().await.unwrap(),
@@ -652,6 +654,21 @@ pub enum QueueCmd {
         #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
         per_page: Pg64,
     },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum UtilCmd {
+    QueryLatestHeight {
+        on: String,
+    },
+    #[command(subcommand)]
+    Arbitrum(ArbitrumCmd),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ArbitrumCmd {
+    LatestConfirmedAtBeaconSlot { on: String, slot: u64 },
+    ExecutionHeightOfBeaconSlot { on: String, slot: u64 },
 }
 
 #[derive(Debug, Subcommand)]

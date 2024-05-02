@@ -43,4 +43,3 @@ message IdentifiedL1MessageHash {
   uint64 queue_index = 1;
   bytes message_hash = 2;
 }
-

@@ -212,6 +212,7 @@
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix
         ./light-clients/scroll-light-client/scroll-light-client.nix
+        ./light-clients/arbitrum-light-client/arbitrum-light-client.nix
         ./lib/cometbls-groth16-verifier/default.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix

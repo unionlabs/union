@@ -1,0 +1,28 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "arbitrum-verifier"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+# test-include = ["lib/arbitrum-verifier/tests"]
+
+[dependencies]
+ethereum-verifier     = { workspace = true }
+ethers-core.workspace = true
+hex                   = { workspace = true }
+hex-literal.workspace = true
+rlp                   = { workspace = true }
+serde                 = { workspace = true }
+serde-utils           = { workspace = true }
+serde_json            = { workspace = true }
+sha3                  = { workspace = true }
+thiserror             = { workspace = true }
+unionlabs             = { workspace = true }
+
+[dev-dependencies]
+error_reporter = "1.0.0"

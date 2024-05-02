@@ -270,6 +270,7 @@ proto_full = [
   "union+galois+api+v1",
   "union+galois+api+v2",
   "union+galois+api+v3",
+  "union+ibc+lightclients+arbitrum+v1",
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
   "union+ibc+lightclients+scroll+v1",
@@ -299,6 +300,7 @@ proto_full = [
 "union+galois+api+v1" = ["tendermint+types"]
 "union+galois+api+v2" = ["tendermint+types"]
 "union+galois+api+v3" = ["tendermint+types"]
+"union+ibc+lightclients+arbitrum+v1" = ["ibc+core+client+v1", "union+ibc+lightclients+ethereum+v1"]
 "union+ibc+lightclients+cometbls+v1" = [
   "google+protobuf",
   "ibc+core+client+v1",

@@ -27,6 +27,7 @@ pub enum Fetch<C: ChainExt> {
 }
 
 impl HandleFetch<BlockMessageTypes> for AnyChainIdentified<AnyFetch> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
         store: &<BlockMessageTypes as QueueMessageTypes>::Store,

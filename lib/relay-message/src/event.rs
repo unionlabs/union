@@ -37,6 +37,7 @@ pub enum Event<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleEvent<RelayMessageTypes> for AnyLightClientIdentified<AnyEvent> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         store: &<RelayMessageTypes as QueueMessageTypes>::Store,

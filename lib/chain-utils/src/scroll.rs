@@ -292,6 +292,7 @@ impl Chain for Scroll {
         scroll::client_state::ClientState {
             l1_client_id: self.l1_client_id.to_string(),
             chain_id: self.chain_id(),
+            // REVIEW: Should we query the l1 latest slot here?
             latest_slot: height.revision_height,
             latest_batch_index_slot: self.rollup_last_finalized_batch_index_slot,
             frozen_height: Height {

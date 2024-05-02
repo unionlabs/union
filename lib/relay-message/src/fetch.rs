@@ -45,6 +45,7 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
         store: &<RelayMessageTypes as QueueMessageTypes>::Store,

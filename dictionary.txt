@@ -204,6 +204,7 @@ appchain
 appchains
 appmodule
 appparams
+arbitrum
 arbtest
 arethetypeswrong
 argjson
@@ -393,6 +394,7 @@ domrehype
 dont
 downcasting
 drawio
+drpc
 dudx
 dydx
 dyld
@@ -412,6 +414,7 @@ ethabicodec
 ethash
 ethcall
 etherbase
+ethevent
 ethkey
 evidencekeeper
 evidencetypes

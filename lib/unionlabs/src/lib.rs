@@ -141,6 +141,7 @@ pub enum WasmClientType {
     Cometbls,
     Tendermint,
     Scroll,
+    Arbitrum,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -172,6 +173,7 @@ impl FromStr for WasmClientType {
             "Cometbls" => Ok(WasmClientType::Cometbls),
             "Tendermint" => Ok(WasmClientType::Tendermint),
             "Scroll" => Ok(WasmClientType::Scroll),
+            "Arbitrum" => Ok(WasmClientType::Arbitrum),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }

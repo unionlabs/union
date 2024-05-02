@@ -56,6 +56,7 @@ where
 }
 
 impl HandleWait<BlockMessageTypes> for AnyChainIdentified<AnyWait> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(self, store: &Chains) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let wait = self;
 

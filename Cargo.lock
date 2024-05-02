@@ -145,6 +145,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrum-light-client"
+version = "0.1.0"
+dependencies = [
+ "arbitrum-verifier",
+ "base64 0.21.7",
+ "cosmwasm-std 1.5.2",
+ "ethereum-verifier",
+ "ethers-core",
+ "hex",
+ "ics008-wasm-client",
+ "protos",
+ "rlp",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "tiny-keccak",
+ "unionlabs",
+]
+
+[[package]]
+name = "arbitrum-verifier"
+version = "0.1.0"
+dependencies = [
+ "error_reporter",
+ "ethereum-verifier",
+ "ethers-core",
+ "hex",
+ "hex-literal",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "arith"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -796,10 +837,12 @@ dependencies = [
  "contracts",
  "crossbeam-queue",
  "dashmap",
+ "enumorph",
  "ethers",
  "frame-support-procedural",
  "futures",
  "hex",
+ "hex-literal",
  "ics23",
  "num_enum",
  "prost",
@@ -2198,6 +2241,12 @@ dependencies = [
  "libc",
  "windows-sys 0.52.0",
 ]
+
+[[package]]
+name = "error_reporter"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31ae425815400e5ed474178a7a22e275a9687086a12ca63ec793ff292d8fdae8"
 
 [[package]]
 name = "etcetera"
@@ -5031,6 +5080,7 @@ name = "relay-message"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrum-verifier",
  "beacon-api",
  "chain-utils",
  "contracts",
@@ -7428,6 +7478,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
+ "sha3",
  "ssz",
  "static_assertions",
  "subtle-encoding",

@@ -2,7 +2,9 @@
 
 use std::{collections::VecDeque, fmt::Debug};
 
-use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, Chains};
+use chain_utils::{
+    arbitrum::Arbitrum, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, Chains,
+};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
@@ -61,6 +63,17 @@ pub enum AnyChainIdentified<T: AnyChain> {
     EthMainnet(Identified<Ethereum<Mainnet>, InnerOf<T, Ethereum<Mainnet>>>),
     EthMinimal(Identified<Ethereum<Minimal>, InnerOf<T, Ethereum<Minimal>>>),
     Scroll(Identified<Scroll, InnerOf<T, Scroll>>),
+    Arbitrum(Identified<Arbitrum, InnerOf<T, Arbitrum>>),
+}
+
+impl<T: AnyChain> AnyChainIdentified<T> {
+    fn chain_id(&self) -> String {
+        let i = self;
+
+        any_chain! {
+            |i| i.chain_id.to_string()
+        }
+    }
 }
 
 pub trait AnyChain {
@@ -216,6 +229,7 @@ macro_rules! any_chain {
             AnyChainIdentified::Union($msg) => $expr,
             AnyChainIdentified::Cosmos($msg) => $expr,
             AnyChainIdentified::Scroll($msg) => $expr,
+            AnyChainIdentified::Arbitrum($msg) => $expr,
         }
     };
 }

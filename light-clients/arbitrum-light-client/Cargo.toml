@@ -1,0 +1,35 @@
+[package]
+authors      = ["Union Labs"]
+edition      = "2021"
+license-file = { workspace = true }
+name         = "arbitrum-light-client"
+publish      = false
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+arbitrum-verifier     = { workspace = true }
+cosmwasm-std          = { workspace = true, features = ["abort"] }
+ethereum-verifier     = { workspace = true }
+ethers-core.workspace = true
+hex                   = { workspace = true }
+ics008-wasm-client    = { workspace = true }
+protos                = { workspace = true }
+rlp                   = { workspace = true }
+schemars              = { workspace = true }
+serde                 = { workspace = true, features = ["derive"] }
+serde-json-wasm       = { workspace = true }
+sha3                  = { workspace = true }
+thiserror             = { workspace = true }
+tiny-keccak           = { workspace = true, features = ["keccak"] }
+unionlabs             = { workspace = true, features = ["ethabi", "stargate"] }
+
+[dev-dependencies]
+base64     = { workspace = true }
+hex        = { workspace = true }
+serde_json = { workspace = true }

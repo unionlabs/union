@@ -115,6 +115,7 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleAggregate<RelayMessageTypes> for AnyLightClientIdentified<AnyAggregate> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         data: VecDeque<<RelayMessageTypes as QueueMessageTypes>::Data>,

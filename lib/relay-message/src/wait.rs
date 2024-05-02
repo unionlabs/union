@@ -30,6 +30,7 @@ pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleWait<RelayMessageTypes> for AnyLightClientIdentified<AnyWait> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
         store: &<RelayMessageTypes as QueueMessageTypes>::Store,

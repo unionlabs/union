@@ -15,7 +15,7 @@ use axum::{
 };
 use chain_utils::{AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
+use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStreamExt};
 use queue_msg::{Engine, InMemoryQueue, Queue, QueueMessageTypes, QueueMsg};
 use relay_message::RelayMessageTypes;
 use reqwest::StatusCode;
@@ -274,13 +274,12 @@ impl Voyager {
             join_set.spawn(async move {
                 reactor
                     .run(&mut q)
-                    .for_each(|x| async {
-                        let msg = x.unwrap();
+                    .try_for_each(|data| async move {
+                        tracing::info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
 
-                        tracing::info!(data = %serde_json::to_string(&msg).unwrap(), "received data outside of an aggregation");
+                        Ok(())
                     })
-                    .await;
-                Ok(())
+                    .await
             });
         }
 
@@ -288,7 +287,17 @@ impl Voyager {
 
         // TODO: figure out
         while let Some(res) = join_set.join_next().await {
-            res.unwrap().unwrap();
+            match res {
+                Ok(Ok(())) => {}
+                Ok(Err(err)) => {
+                    tracing::error!(%err, "error processing message");
+                    panic!();
+                }
+                Err(err) => {
+                    tracing::error!(%err, "error processing message");
+                    panic!();
+                }
+            }
         }
 
         // while let Some(res) = join_set.join_next().await {
@@ -317,6 +326,7 @@ pub async fn chains_from_config(
     let mut ethereum_minimal = HashMap::new();
     let mut ethereum_mainnet = HashMap::new();
     let mut scroll = HashMap::new();
+    let mut arbitrum = HashMap::new();
 
     fn insert_into_chain_map<C: Chain>(
         map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
@@ -356,6 +366,9 @@ pub async fn chains_from_config(
             AnyChain::Scroll(c) => {
                 insert_into_chain_map(&mut scroll, c);
             }
+            AnyChain::Arbitrum(c) => {
+                insert_into_chain_map(&mut arbitrum, c);
+            }
         }
     }
 
@@ -365,6 +378,7 @@ pub async fn chains_from_config(
         ethereum_mainnet,
         union,
         cosmos,
+        arbitrum,
     })
 }
 
