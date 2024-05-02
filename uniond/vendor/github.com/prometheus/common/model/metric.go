@@ -204,7 +204,6 @@ func EscapeMetricFamily(v *dto.MetricFamily, scheme EscapingScheme) *dto.MetricF
 	out := &dto.MetricFamily{
 		Help: v.Help,
 		Type: v.Type,
-		Unit: v.Unit,
 	}
 
 	// If the name is nil, copy as-is, don't try to escape.

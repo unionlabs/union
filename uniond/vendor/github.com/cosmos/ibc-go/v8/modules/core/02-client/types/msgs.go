@@ -151,7 +151,7 @@ func (msg MsgUpdateClient) UnpackInterfaces(unpacker codectypes.AnyUnpacker) err
 
 // NewMsgUpgradeClient creates a new MsgUpgradeClient instance
 func NewMsgUpgradeClient(clientID string, clientState exported.ClientState, consState exported.ConsensusState,
-	proofUpgradeClient, proofUpgradeConsState []byte, signer string,
+	upgradeClientProof, upgradeConsensusStateProof []byte, signer string,
 ) (*MsgUpgradeClient, error) {
 	anyClient, err := PackClientState(clientState)
 	if err != nil {
@@ -166,8 +166,8 @@ func NewMsgUpgradeClient(clientID string, clientState exported.ClientState, cons
 		ClientId:                   clientID,
 		ClientState:                anyClient,
 		ConsensusState:             anyConsState,
-		ProofUpgradeClient:         proofUpgradeClient,
-		ProofUpgradeConsensusState: proofUpgradeConsState,
+		ProofUpgradeClient:         upgradeClientProof,
+		ProofUpgradeConsensusState: upgradeConsensusStateProof,
 		Signer:                     signer,
 	}, nil
 }

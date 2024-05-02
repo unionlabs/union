@@ -1,5 +1,13 @@
 package types
 
+import (
+	"cosmossdk.io/log"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+)
+
 // IBC 08-wasm events
 const (
 	// EventTypeStoreWasmCode defines the event type for bytecode storage
@@ -16,3 +24,8 @@ const (
 
 	AttributeValueCategory = ModuleName
 )
+
+// Logger returns a module-specific logger.
+func Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+exported.ModuleName+"-"+ModuleName)
+}

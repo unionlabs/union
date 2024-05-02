@@ -8,9 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	wasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
-	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
@@ -20,29 +18,19 @@ var (
 	_ exported.ConsensusState = (*ConsensusState)(nil)
 )
 
-type Keeper struct {
+type ConsensusHost struct {
 	cdc           codec.BinaryCodec
-	clientKeeper  connectiontypes.ClientKeeper
 	stakingKeeper clienttypes.StakingKeeper
 }
 
-func NewKeeper(cdc codec.BinaryCodec, clientKeeper clientkeeper.Keeper, stakingKeeper clienttypes.StakingKeeper) connectiontypes.ClientKeeper {
-	return Keeper{
+func NewConsensusHost(cdc codec.BinaryCodec, stakingKeeper clienttypes.StakingKeeper) ConsensusHost {
+	return ConsensusHost{
 		cdc:           cdc,
-		clientKeeper:  clientKeeper,
 		stakingKeeper: stakingKeeper,
 	}
 }
 
-func (k Keeper) GetClientState(ctx sdk.Context, clientID string) (exported.ClientState, bool) {
-	return k.clientKeeper.GetClientState(ctx, clientID)
-}
-
-func (k Keeper) GetClientConsensusState(ctx sdk.Context, clientID string, height exported.Height) (exported.ConsensusState, bool) {
-	return k.clientKeeper.GetClientConsensusState(ctx, clientID, height)
-}
-
-func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error) {
+func (k ConsensusHost) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error) {
 	selfHeight, ok := height.(clienttypes.Height)
 	if !ok {
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "expected %T, got %T", clienttypes.Height{}, height)
@@ -80,21 +68,9 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (
 
 }
 
-func (k Keeper) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientState) error {
+func (k ConsensusHost) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientState) error {
 	// we don't have to verify cometbls client state
 	return nil
-}
-
-func (k Keeper) IterateClientStates(ctx sdk.Context, prefix []byte, cb func(clientID string, cs exported.ClientState) bool) {
-	k.clientKeeper.IterateClientStates(ctx, prefix, cb)
-}
-
-func (k Keeper) ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore {
-	return k.clientKeeper.ClientStore(ctx, clientID)
-}
-
-func (k Keeper) GetClientStatus(ctx sdk.Context, clientState exported.ClientState, clientID string) exported.Status {
-	return k.clientKeeper.GetClientStatus(ctx, clientState, clientID)
 }
 
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {

@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -119,8 +118,6 @@ import (
 	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm"
 	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-	ibcconnectionkeeper "github.com/cosmos/ibc-go/v8/modules/core/03-connection/keeper"
-	ibcchannelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	ibcporttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
@@ -131,7 +128,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	wasmvm "github.com/CosmWasm/wasmvm"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
 
 	unioncustomquery "union/app/custom_query"
 
@@ -488,21 +485,8 @@ func NewUnionApp(
 	 client state to tendermint client state by default. This was blocking
 	 the ConnectionOpenTry to succeed.
 	*/
-	ibcCometblsClient := ibccometblsclient.NewKeeper(appCodec, ibcKeeper.ClientKeeper, app.StakingKeeper)
-	ibcKeeper.ConnectionKeeper = ibcconnectionkeeper.NewKeeper(
-		appCodec,
-		keys[ibcexported.StoreKey],
-		app.GetSubspace(ibcexported.ModuleName),
-		ibcCometblsClient,
-	)
-	ibcKeeper.ChannelKeeper = ibcchannelkeeper.NewKeeper(
-		appCodec,
-		keys[ibcexported.StoreKey],
-		ibcCometblsClient,
-		ibcKeeper.ConnectionKeeper,
-		ibcKeeper.PortKeeper,
-		scopedIBCKeeper,
-	)
+	ibcCometblsClient := ibccometblsclient.NewConsensusHost(appCodec, app.StakingKeeper)
+	ibcKeeper.SetConsensusHost(ibcCometblsClient)
 	app.IBCKeeper = ibcKeeper
 
 	// IBC Fee Module keeper
@@ -542,6 +526,7 @@ func NewUnionApp(
 		app.MsgServiceRouter(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 
 	icaControllerKeeper := icacontrollerkeeper.NewKeeper(
 		appCodec,
@@ -597,10 +582,9 @@ func NewUnionApp(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	availableCapabilities := strings.Join(AllCapabilities(), ",")
 	wasmer, err := wasmvm.NewVM(
 		wasmDir,
-		availableCapabilities,
+		AllCapabilities(),
 		contractMemoryLimit,
 		wasmConfig.ContractDebugMode,
 		wasmConfig.MemoryCacheSize,
@@ -626,7 +610,7 @@ func NewUnionApp(
 		app.GRPCQueryRouter(),
 		wasmDir,
 		wasmConfig,
-		availableCapabilities,
+		AllCapabilities(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmOpts...,
 	)

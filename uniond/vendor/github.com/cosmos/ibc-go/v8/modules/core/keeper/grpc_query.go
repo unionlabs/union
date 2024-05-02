@@ -53,6 +53,11 @@ func (k Keeper) UpgradedConsensusState(c context.Context, req *clienttypes.Query
 	return k.ClientKeeper.UpgradedConsensusState(c, req)
 }
 
+// VerifyMembership implements the IBC QueryServer interface.
+func (k Keeper) VerifyMembership(c context.Context, req *clienttypes.QueryVerifyMembershipRequest) (*clienttypes.QueryVerifyMembershipResponse, error) {
+	return k.ClientKeeper.VerifyMembership(c, req)
+}
+
 // Connection implements the IBC QueryServer interface
 func (k Keeper) Connection(c context.Context, req *connectiontypes.QueryConnectionRequest) (*connectiontypes.QueryConnectionResponse, error) {
 	return k.ConnectionKeeper.Connection(c, req)
@@ -151,4 +156,19 @@ func (k Keeper) NextSequenceReceive(c context.Context, req *channeltypes.QueryNe
 // NextSequenceSend implements the IBC QueryServer interface
 func (k Keeper) NextSequenceSend(c context.Context, req *channeltypes.QueryNextSequenceSendRequest) (*channeltypes.QueryNextSequenceSendResponse, error) {
 	return k.ChannelKeeper.NextSequenceSend(c, req)
+}
+
+// UpgradeError implements the IBC QueryServer interface
+func (k Keeper) UpgradeError(c context.Context, req *channeltypes.QueryUpgradeErrorRequest) (*channeltypes.QueryUpgradeErrorResponse, error) {
+	return k.ChannelKeeper.UpgradeErrorReceipt(c, req)
+}
+
+// Upgrade implements the IBC QueryServer interface
+func (k Keeper) Upgrade(c context.Context, req *channeltypes.QueryUpgradeRequest) (*channeltypes.QueryUpgradeResponse, error) {
+	return k.ChannelKeeper.Upgrade(c, req)
+}
+
+// ChannelParams implements the IBC QueryServer interface
+func (k Keeper) ChannelParams(c context.Context, req *channeltypes.QueryChannelParamsRequest) (*channeltypes.QueryChannelParamsResponse, error) {
+	return k.ChannelKeeper.ChannelParams(c, req)
 }

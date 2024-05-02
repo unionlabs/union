@@ -10,8 +10,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 )
 
@@ -64,15 +65,15 @@ func (ws *WasmSnapshotter) SnapshotExtension(height uint64, payloadWriter snapsh
 		return err
 	}
 
-	ctx := sdk.NewContext(cacheMS, cmtproto.Header{}, false, nil)
+	ctx := sdk.NewContext(cacheMS, tmproto.Header{}, false, nil)
 
-	checksums, err := ws.keeper.GetAllChecksums(ctx)
+	checksums, err := types.GetAllChecksums(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, checksum := range checksums {
-		wasmCode, err := ws.keeper.GetVM().GetCode(checksum)
+		wasmCode, err := ibcwasm.GetVM().GetCode(checksum)
 		if err != nil {
 			return err
 		}
@@ -106,17 +107,17 @@ func restoreV1(ctx sdk.Context, k *Keeper, compressedCode []byte) error {
 		return errorsmod.Wrap(types.ErrInvalidData, "expected wasm code is not gzip format")
 	}
 
-	wasmCode, err := types.Uncompress(compressedCode, types.MaxWasmSize)
+	wasmCode, err := types.Uncompress(compressedCode, types.MaxWasmByteSize())
 	if err != nil {
 		return errorsmod.Wrap(err, "failed to uncompress wasm code")
 	}
 
-	checksum, err := k.GetVM().StoreCodeUnchecked(wasmCode)
+	checksum, err := ibcwasm.GetVM().StoreCodeUnchecked(wasmCode)
 	if err != nil {
 		return errorsmod.Wrap(err, "failed to store wasm code")
 	}
 
-	if err := k.GetVM().Pin(checksum); err != nil {
+	if err := ibcwasm.GetVM().Pin(checksum); err != nil {
 		return errorsmod.Wrapf(err, "failed to pin checksum: %s to in-memory cache", hex.EncodeToString(checksum))
 	}
 
@@ -128,7 +129,7 @@ func (ws *WasmSnapshotter) processAllItems(
 	payloadReader snapshot.ExtensionPayloadReader,
 	cb func(sdk.Context, *Keeper, []byte) error,
 ) error {
-	ctx := sdk.NewContext(ws.cms, cmtproto.Header{Height: int64(height)}, false, nil)
+	ctx := sdk.NewContext(ws.cms, tmproto.Header{Height: int64(height)}, false, nil)
 	for {
 		payload, err := payloadReader()
 		if err == io.EOF {

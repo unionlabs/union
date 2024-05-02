@@ -1,7 +1,6 @@
 package plan
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	neturl "net/url"
@@ -9,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-getter"
 )
 
@@ -26,9 +24,8 @@ import (
 // NOTE: This functions does not check the provided url for validity.
 func DownloadUpgrade(dstRoot, url, daemonName string) error {
 	target := filepath.Join(dstRoot, "bin", daemonName)
-
 	// First try to download it as a single file. If there's no error, it's okay and we're done.
-	if err := getFile(url, target); err != nil {
+	if err := getter.GetFile(target, url); err != nil {
 		// If it was a checksum error, no need to try as directory.
 		if _, ok := err.(*getter.ChecksumError); ok {
 			return err
@@ -112,8 +109,7 @@ func DownloadURL(url string) (string, error) {
 	}
 	defer os.RemoveAll(tempDir)
 	tempFile := filepath.Join(tempDir, "content")
-
-	if err := getFile(url, tempFile); err != nil {
+	if err = getter.GetFile(tempFile, url); err != nil {
 		return "", fmt.Errorf("could not download url \"%s\": %w", url, err)
 	}
 	tempFileBz, rerr := os.ReadFile(tempFile)
@@ -139,28 +135,4 @@ func ValidateURL(urlStr string, mustChecksum bool) error {
 	}
 
 	return nil
-}
-
-// getFile downloads the given url into the provided directory.
-func getFile(url, dst string) error {
-	httpGetter := &getter.HttpGetter{
-		Client:                cleanhttp.DefaultClient(),
-		XTerraformGetDisabled: true,
-	}
-
-	goGetterGetters := getter.Getters
-	goGetterGetters["http"] = httpGetter
-	goGetterGetters["https"] = httpGetter
-
-	// https://github.com/hashicorp/go-getter#security-options
-	getterClient := &getter.Client{
-		Ctx:             context.Background(),
-		DisableSymlinks: true,
-		Src:             url,
-		Dst:             dst,
-		Pwd:             dst,
-		Getters:         goGetterGetters,
-	}
-
-	return getterClient.Get()
 }

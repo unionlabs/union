@@ -19,7 +19,7 @@ const (
 	DefaultDeserializationCostPerByte = 1
 )
 
-var CostJSONDeserialization = wasmvmtypes.UFraction{
+var costJSONDeserialization = wasmvmtypes.UFraction{
 	Numerator:   DefaultDeserializationCostPerByte * DefaultGasMultiplier,
 	Denominator: 1,
 }

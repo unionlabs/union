@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -17,6 +18,7 @@ import (
 	portkeeper "github.com/cosmos/ibc-go/v8/modules/core/05-port/keeper"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/types"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 )
 
 var _ types.QueryServer = (*Keeper)(nil)
@@ -64,7 +66,7 @@ func NewKeeper(
 	portKeeper := portkeeper.NewKeeper(scopedKeeper)
 	channelKeeper := channelkeeper.NewKeeper(cdc, key, clientKeeper, connectionKeeper, &portKeeper, scopedKeeper)
 
-	return &Keeper{
+	keeper := &Keeper{
 		cdc:              cdc,
 		ClientKeeper:     clientKeeper,
 		ConnectionKeeper: connectionKeeper,
@@ -72,11 +74,25 @@ func NewKeeper(
 		PortKeeper:       &portKeeper,
 		authority:        authority,
 	}
+
+	keeper.SetConsensusHost(ibctm.NewConsensusHost(stakingKeeper))
+
+	return keeper
 }
 
 // Codec returns the IBC module codec.
 func (k Keeper) Codec() codec.BinaryCodec {
 	return k.cdc
+}
+
+// SetConsensusHost sets a custom ConsensusHost for self client state and consensus state validation.
+func (k *Keeper) SetConsensusHost(consensusHost clienttypes.ConsensusHost) {
+	if consensusHost == nil {
+		panic(fmt.Errorf("cannot set a nil self consensus host"))
+	}
+
+	k.ClientKeeper.SetConsensusHost(consensusHost)
+	k.ConnectionKeeper.SetConsensusHost(consensusHost)
 }
 
 // SetRouter sets the Router in IBC Keeper and seals it. The method panics if

@@ -9,8 +9,7 @@ import (
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 )
 
-// MaxWasmSize denotes the maximum size (in bytes) a contract is allowed to be.
-const MaxWasmSize uint64 = 3 * 1024 * 1024
+const maxWasmSize = 3 * 1024 * 1024
 
 // ValidateWasmCode valides that the size of the wasm code is in the allowed range
 // and that the contents are of a wasm binary.
@@ -18,11 +17,16 @@ func ValidateWasmCode(code []byte) error {
 	if len(code) == 0 {
 		return ErrWasmEmptyCode
 	}
-	if uint64(len(code)) > MaxWasmSize {
+	if len(code) > maxWasmSize {
 		return ErrWasmCodeTooLarge
 	}
 
 	return nil
+}
+
+// MaxWasmByteSize returns the maximum allowed number of bytes for wasm bytecode
+func MaxWasmByteSize() uint64 {
+	return maxWasmSize
 }
 
 // ValidateWasmChecksum validates that the checksum is of the correct length

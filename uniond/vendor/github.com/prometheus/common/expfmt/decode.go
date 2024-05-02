@@ -45,7 +45,7 @@ func ResponseFormat(h http.Header) Format {
 
 	mediatype, params, err := mime.ParseMediaType(ct)
 	if err != nil {
-		return fmtUnknown
+		return FmtUnknown
 	}
 
 	const textType = "text/plain"
@@ -53,21 +53,21 @@ func ResponseFormat(h http.Header) Format {
 	switch mediatype {
 	case ProtoType:
 		if p, ok := params["proto"]; ok && p != ProtoProtocol {
-			return fmtUnknown
+			return FmtUnknown
 		}
 		if e, ok := params["encoding"]; ok && e != "delimited" {
-			return fmtUnknown
+			return FmtUnknown
 		}
-		return fmtProtoDelim
+		return FmtProtoDelim
 
 	case textType:
 		if v, ok := params["version"]; ok && v != TextVersion {
-			return fmtUnknown
+			return FmtUnknown
 		}
-		return fmtText
+		return FmtText
 	}
 
-	return fmtUnknown
+	return FmtUnknown
 }
 
 // NewDecoder returns a new decoder based on the given input format.
@@ -75,14 +75,14 @@ func ResponseFormat(h http.Header) Format {
 func NewDecoder(r io.Reader, format Format) Decoder {
 	switch format.FormatType() {
 	case TypeProtoDelim:
-		return &protoDecoder{r: bufio.NewReader(r)}
+		return &protoDecoder{r: r}
 	}
 	return &textDecoder{r: r}
 }
 
 // protoDecoder implements the Decoder interface for protocol buffers.
 type protoDecoder struct {
-	r protodelim.Reader
+	r io.Reader
 }
 
 // Decode implements the Decoder interface.
@@ -90,7 +90,7 @@ func (d *protoDecoder) Decode(v *dto.MetricFamily) error {
 	opts := protodelim.UnmarshalOptions{
 		MaxSize: -1,
 	}
-	if err := opts.UnmarshalFrom(d.r, v); err != nil {
+	if err := opts.UnmarshalFrom(bufio.NewReader(d.r), v); err != nil {
 		return err
 	}
 	if !model.IsValidMetricName(model.LabelValue(v.GetName())) {

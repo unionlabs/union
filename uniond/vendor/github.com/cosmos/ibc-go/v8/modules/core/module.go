@@ -22,6 +22,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	connectionkeeper "github.com/cosmos/ibc-go/v8/modules/core/03-connection/keeper"
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/client/cli"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -157,6 +158,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}); err != nil {
 		panic(err)
 	}
+
+	channelMigrator := channelkeeper.NewMigrator(am.keeper.ChannelKeeper)
+	err := cfg.RegisterMigration(exported.ModuleName, 5, channelMigrator.MigrateParams)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // InitGenesis performs genesis initialization for the ibc module. It returns
@@ -177,7 +184,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 5 }
+func (AppModule) ConsensusVersion() uint64 { return 6 }
 
 // BeginBlock returns the begin blocker for the ibc module.
 func (am AppModule) BeginBlock(ctx context.Context) error {

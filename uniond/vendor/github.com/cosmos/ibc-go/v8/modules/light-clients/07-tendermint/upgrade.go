@@ -30,7 +30,7 @@ import (
 func (cs ClientState) VerifyUpgradeAndUpdateState(
 	ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore,
 	upgradedClient exported.ClientState, upgradedConsState exported.ConsensusState,
-	proofUpgradeClient, proofUpgradeConsState []byte,
+	upgradeClientProof, upgradeConsStateProof []byte,
 ) error {
 	if len(cs.UpgradePath) == 0 {
 		return errorsmod.Wrap(clienttypes.ErrInvalidUpgradeClient, "cannot upgrade client, no upgrade path set")
@@ -60,10 +60,10 @@ func (cs ClientState) VerifyUpgradeAndUpdateState(
 
 	// unmarshal proofs
 	var merkleProofClient, merkleProofConsState commitmenttypes.MerkleProof
-	if err := cdc.Unmarshal(proofUpgradeClient, &merkleProofClient); err != nil {
+	if err := cdc.Unmarshal(upgradeClientProof, &merkleProofClient); err != nil {
 		return errorsmod.Wrapf(commitmenttypes.ErrInvalidProof, "could not unmarshal client merkle proof: %v", err)
 	}
-	if err := cdc.Unmarshal(proofUpgradeConsState, &merkleProofConsState); err != nil {
+	if err := cdc.Unmarshal(upgradeConsStateProof, &merkleProofConsState); err != nil {
 		return errorsmod.Wrapf(commitmenttypes.ErrInvalidProof, "could not unmarshal consensus state merkle proof: %v", err)
 	}
 

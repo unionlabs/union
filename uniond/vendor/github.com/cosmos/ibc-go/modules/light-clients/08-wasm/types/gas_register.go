@@ -63,14 +63,10 @@ const (
 
 // default: 0.15 gas.
 // see https://github.com/CosmWasm/wasmd/pull/898#discussion_r937727200
-var (
-	defaultPerByteUncompressCost = wasmvmtypes.UFraction{
-		Numerator:   15,
-		Denominator: 100,
-	}
-
-	VMGasRegister = NewDefaultWasmGasRegister()
-)
+var defaultPerByteUncompressCost = wasmvmtypes.UFraction{
+	Numerator:   15,
+	Denominator: 100,
+}
 
 // DefaultPerByteUncompressCost is how much SDK gas we charge per source byte to unpack
 func DefaultPerByteUncompressCost() wasmvmtypes.UFraction {
@@ -84,7 +80,7 @@ type GasRegister interface {
 	// SetupContractCost are charged when interacting with a Wasm contract, i.e. every time
 	// the contract is prepared for execution through any entry point (execute/instantiate/sudo/query/ibc_*/...).
 	SetupContractCost(discount bool, msgLen int) storetypes.Gas
-	// ReplyCosts costs to handle a message reply
+	// ReplyCosts costs to to handle a message reply
 	ReplyCosts(discount bool, reply wasmvmtypes.Reply) storetypes.Gas
 	// EventCosts costs to persist an event
 	EventCosts(attrs []wasmvmtypes.EventAttribute, events wasmvmtypes.Array[wasmvmtypes.Event]) storetypes.Gas
@@ -190,7 +186,7 @@ func (g WasmGasRegister) SetupContractCost(discount bool, msgLen int) storetypes
 	return g.c.InstanceCost + dataCost
 }
 
-// ReplyCosts costs to handle a message reply.
+// ReplyCosts costs to to handle a message reply.
 // Set discount to true in cases where you can reasonably assume the contract
 // is loaded from an in-memory cache (e.g. pinned contracts or replys).
 func (g WasmGasRegister) ReplyCosts(discount bool, reply wasmvmtypes.Reply) storetypes.Gas {

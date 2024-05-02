@@ -38,8 +38,8 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Dependencies
 
-* [\#6193](https://github.com/cosmos/ibc-go/pull/6193) Bump Cosmos SDK to v0.50.6.
-* [\#6193](https://github.com/cosmos/ibc-go/pull/6193) Bump `cosmossdk.io/store` to v1.1.0.
+* [#\5975](https://github.com/cosmos/ibc-go/pull/5975) Upgrade Cosmos SDK to v0.50.5.
+* [#\5909](https://github.com/cosmos/ibc-go/pull/5909) Update wasmvm to v2.0.0 and cometBFT to v0.38.6.
 * [#\6097](https://github.com/cosmos/ibc-go/pull/6097) Update wasmvm to v2.0.1.
 
 ### API Breaking

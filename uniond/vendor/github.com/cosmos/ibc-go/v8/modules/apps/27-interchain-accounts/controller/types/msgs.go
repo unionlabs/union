@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 )
@@ -24,12 +25,25 @@ var (
 	_ sdk.HasValidateBasic = (*MsgUpdateParams)(nil)
 )
 
-// NewMsgRegisterInterchainAccount creates a new instance of MsgRegisterInterchainAccount
+// NewMsgRegisterInterchainAccountWithOrdering creates a new instance of MsgRegisterInterchainAccount.
+func NewMsgRegisterInterchainAccountWithOrdering(connectionID, owner, version string, ordering channeltypes.Order) *MsgRegisterInterchainAccount {
+	return &MsgRegisterInterchainAccount{
+		ConnectionId: connectionID,
+		Owner:        owner,
+		Version:      version,
+		Ordering:     ordering,
+	}
+}
+
+// NewMsgRegisterInterchainAccount creates a new instance of MsgRegisterInterchainAccount.
+// It uses channeltypes.ORDERED as the default ordering. Breakage in v9.0.0 will allow the ordering to be provided
+// directly. Use NewMsgRegisterInterchainAccountWithOrder to provide the ordering in previous versions.
 func NewMsgRegisterInterchainAccount(connectionID, owner, version string) *MsgRegisterInterchainAccount {
 	return &MsgRegisterInterchainAccount{
 		ConnectionId: connectionID,
 		Owner:        owner,
 		Version:      version,
+		Ordering:     channeltypes.ORDERED,
 	}
 }
 

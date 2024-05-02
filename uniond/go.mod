@@ -23,7 +23,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.50.6
 	github.com/cosmos/gogoproto v1.4.12
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0-20240429115824-34164efb37fe
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0
 	github.com/cosmos/ibc-go/v8 v8.0.0
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.1
@@ -227,11 +227,17 @@ require (
 )
 
 replace (
+	cosmossdk.io/x/evidence => cosmossdk.io/x/evidence v0.1.0
+	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.1.0
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
-	// github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
-	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240408193244-9289688332be
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0-20240429153234-e1e6da7e4ead
+	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
+	// TODO(aeryz): `go mod tidy` upgrades this to `0.52.x` although the major version is `0` which means any update can be breaking.
+	// This upgrade breaks `cosmos-sdk`, hence I had to pin it to 0.47. Leaving a todo to myself to update this when it's possible.
+	github.com/prometheus/common => github.com/prometheus/common v0.47.0
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

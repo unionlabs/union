@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	gogoproto "github.com/cosmos/gogoproto/proto"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+
+	msgv1 "cosmossdk.io/api/cosmos/msg/v1"
+	queryv1 "cosmossdk.io/api/cosmos/query/v1"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -16,6 +22,7 @@ import (
 	genesistypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/genesis/types"
 	"github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
@@ -35,7 +42,11 @@ type Keeper struct {
 
 	scopedKeeper exported.ScopedKeeper
 
-	msgRouter icatypes.MessageRouter
+	msgRouter   icatypes.MessageRouter
+	queryRouter icatypes.QueryRouter
+
+	// mqsAllowList is a list of all module safe query paths
+	mqsAllowList []string
 
 	// the address capable of executing a MsgUpdateParams message. Typically, this
 	// should be the x/gov module account.
@@ -68,20 +79,42 @@ func NewKeeper(
 		accountKeeper:  accountKeeper,
 		scopedKeeper:   scopedKeeper,
 		msgRouter:      msgRouter,
+		mqsAllowList:   newModuleQuerySafeAllowList(),
 		authority:      authority,
 	}
 }
 
 // WithICS4Wrapper sets the ICS4Wrapper. This function may be used after
-// the keepers creation to set the middleware which is above this module
+// the keeper's creation to set the middleware which is above this module
 // in the IBC application stack.
 func (k *Keeper) WithICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
 	k.ics4Wrapper = wrapper
 }
 
+// WithQueryRouter sets the QueryRouter. This function may be used after
+// the keeper's creation to set the query router to which queries in the
+// ICA packet data will be routed to if they are module_safe_query.
+// Panics if the queryRouter is nil.
+func (k *Keeper) WithQueryRouter(queryRouter icatypes.QueryRouter) {
+	if queryRouter == nil {
+		panic(errors.New("cannot set a nil query router"))
+	}
+
+	k.queryRouter = queryRouter
+}
+
 // Logger returns the application logger, scoped to the associated module
 func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s-%s", exported.ModuleName, icatypes.ModuleName))
+}
+
+// getConnectionID returns the connection id for the given port and channelIDs.
+func (k Keeper) getConnectionID(ctx sdk.Context, portID, channelID string) (string, error) {
+	channel, found := k.channelKeeper.GetChannel(ctx, portID, channelID)
+	if !found {
+		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID)
+	}
+	return channel.ConnectionHops[0], nil
 }
 
 // setPort sets the provided portID in state.
@@ -111,20 +144,14 @@ func (k Keeper) GetAppVersion(ctx sdk.Context, portID, channelID string) (string
 	return k.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
 
-// GetAppMetadata retrieves the interchain accounts channel metadata from the store associated with the provided portID and channelID
+// getAppMetadata retrieves the interchain accounts channel metadata from the store associated with the provided portID and channelID
 func (k Keeper) getAppMetadata(ctx sdk.Context, portID, channelID string) (icatypes.Metadata, error) {
 	appVersion, found := k.GetAppVersion(ctx, portID, channelID)
 	if !found {
 		return icatypes.Metadata{}, errorsmod.Wrapf(ibcerrors.ErrNotFound, "app version not found for port %s and channel %s", portID, channelID)
 	}
 
-	var metadata icatypes.Metadata
-	if err := icatypes.ModuleCdc.UnmarshalJSON([]byte(appVersion), &metadata); err != nil {
-		// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
-		return icatypes.Metadata{}, errorsmod.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain accounts metadata")
-	}
-
-	return metadata, nil
+	return icatypes.MetadataFromVersion(appVersion)
 }
 
 // GetActiveChannelID retrieves the active channelID from the store keyed by the provided connectionID and portID
@@ -148,7 +175,7 @@ func (k Keeper) GetOpenActiveChannel(ctx sdk.Context, connectionID, portID strin
 
 	channel, found := k.channelKeeper.GetChannel(ctx, portID, channelID)
 
-	if found && channel.IsOpen() {
+	if found && channel.State == channeltypes.OPEN {
 		return channelID, true
 	}
 
@@ -251,4 +278,41 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&params)
 	store.Set([]byte(types.ParamsKey), bz)
+}
+
+// newModuleQuerySafeAllowList returns a list of all query paths labeled with module_query_safe in the proto files.
+func newModuleQuerySafeAllowList() []string {
+	protoFiles, err := gogoproto.MergedRegistry()
+	if err != nil {
+		panic(err)
+	}
+
+	allowList := []string{}
+	protoFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		for i := 0; i < fd.Services().Len(); i++ {
+			// Get the service descriptor
+			sd := fd.Services().Get(i)
+
+			// Skip services that are annotated with the "cosmos.msg.v1.service" option.
+			if ext := proto.GetExtension(sd.Options(), msgv1.E_Service); ext != nil && ext.(bool) {
+				continue
+			}
+
+			for j := 0; j < sd.Methods().Len(); j++ {
+				// Get the method descriptor
+				md := sd.Methods().Get(j)
+
+				// Skip methods that are not annotated with the "cosmos.query.v1.module_query_safe" option.
+				if ext := proto.GetExtension(md.Options(), queryv1.E_ModuleQuerySafe); ext == nil || !ext.(bool) {
+					continue
+				}
+
+				// Add the method to the whitelist
+				allowList = append(allowList, fmt.Sprintf("/%s/%s", sd.FullName(), md.Name()))
+			}
+		}
+		return true
+	})
+
+	return allowList
 }

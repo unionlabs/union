@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
@@ -67,10 +68,9 @@ func (k Keeper) TimeoutPacket(
 		return err
 	}
 
-	timeoutHeight := packet.GetTimeoutHeight()
-	if (timeoutHeight.IsZero() || proofHeight.LT(timeoutHeight)) &&
-		(packet.GetTimeoutTimestamp() == 0 || proofTimestamp < packet.GetTimeoutTimestamp()) {
-		return errorsmod.Wrap(types.ErrPacketTimeout, "packet timeout has not been reached for height or timestamp")
+	timeout := types.NewTimeout(packet.GetTimeoutHeight().(clienttypes.Height), packet.GetTimeoutTimestamp())
+	if !timeout.Elapsed(proofHeight.(clienttypes.Height), proofTimestamp) {
+		return errorsmod.Wrap(timeout.ErrTimeoutNotReached(proofHeight.(clienttypes.Height), proofTimestamp), "packet timeout not reached")
 	}
 
 	commitment := k.GetPacketCommitment(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
@@ -82,13 +82,6 @@ func (k Keeper) TimeoutPacket(
 		// for a packet never sent. Core IBC will treat this error as a no-op in order to
 		// prevent an entire relay transaction from failing and consuming unnecessary fees.
 		return types.ErrNoOpMsg
-	}
-
-	if !channel.IsOpen() {
-		return errorsmod.Wrapf(
-			types.ErrInvalidChannelState,
-			"channel state is not OPEN (got %s)", channel.State.String(),
-		)
 	}
 
 	packetCommitment := types.CommitPacket(k.cdc, packet)
@@ -132,6 +125,9 @@ func (k Keeper) TimeoutPacket(
 
 // TimeoutExecuted deletes the commitment send from this chain after it verifies timeout.
 // If the timed-out packet came from an ORDERED channel then this channel will be closed.
+// If the channel is in the FLUSHING state and there is a counterparty upgrade, then the
+// upgrade will be aborted if the upgrade has timed out. Otherwise, if there are no more inflight packets,
+// then the channel will be set to the FLUSHCOMPLETE state.
 //
 // CONTRACT: this function must be called in the IBC handler
 func (k Keeper) TimeoutExecuted(
@@ -154,9 +150,39 @@ func (k Keeper) TimeoutExecuted(
 
 	k.deletePacketCommitment(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 
+	// if an upgrade is in progress, handling packet flushing and update channel state appropriately
+	if channel.State == types.FLUSHING && channel.Ordering == types.UNORDERED {
+		counterpartyUpgrade, found := k.GetCounterpartyUpgrade(ctx, packet.GetSourcePort(), packet.GetSourceChannel())
+		// once we have received the counterparty timeout in the channel UpgradeAck or UpgradeConfirm handshake steps
+		// then we can move to flushing complete if the timeout has not passed and there are no in-flight packets
+		if found {
+			timeout := counterpartyUpgrade.Timeout
+			selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(ctx.BlockTime().UnixNano())
+
+			if timeout.Elapsed(selfHeight, selfTimestamp) {
+				// packet flushing timeout has expired, abort the upgrade and return nil,
+				// committing an error receipt to state, restoring the channel and successfully timing out the packet.
+				k.MustAbortUpgrade(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), timeout.ErrTimeoutElapsed(selfHeight, selfTimestamp))
+			} else if !k.HasInflightPackets(ctx, packet.GetSourcePort(), packet.GetSourceChannel()) {
+				// set the channel state to flush complete if all packets have been flushed.
+				channel.State = types.FLUSHCOMPLETE
+				k.SetChannel(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), channel)
+				emitChannelFlushCompleteEvent(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), channel)
+			}
+		}
+	}
+
 	if channel.Ordering == types.ORDERED {
+		// NOTE: if the channel is ORDERED and a packet is timed out in FLUSHING state then
+		// the upgrade is aborted and the channel is set to CLOSED.
+		if channel.State == types.FLUSHING {
+			// an error receipt is written to state and the channel is restored to OPEN
+			k.MustAbortUpgrade(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), errorsmod.Wrap(types.ErrTimeoutElapsed, "packet timeout elapsed on ORDERED channel"))
+		}
+
 		channel.State = types.CLOSED
 		k.SetChannel(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), channel)
+		emitChannelClosedEvent(ctx, packet, channel)
 	}
 
 	k.Logger(ctx).Info(
@@ -171,10 +197,6 @@ func (k Keeper) TimeoutExecuted(
 	// emit an event marking that we have processed the timeout
 	emitTimeoutPacketEvent(ctx, packet, channel)
 
-	if channel.Ordering == types.ORDERED && channel.IsClosed() {
-		emitChannelClosedEvent(ctx, packet, channel)
-	}
-
 	return nil
 }
 
@@ -186,9 +208,30 @@ func (k Keeper) TimeoutOnClose(
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	proof,
-	proofClosed []byte,
+	closedProof []byte,
 	proofHeight exported.Height,
 	nextSequenceRecv uint64,
+) error {
+	return k.TimeoutOnCloseWithCounterpartyUpgradeSequence(ctx, chanCap, packet, proof, closedProof, proofHeight, nextSequenceRecv, 0)
+}
+
+// TimeoutOnCloseWithCounterpartyUpgradeSequence is called by a module in order
+// to prove that the channel to which an unreceived packet was addressed has
+// been closed, so the packet will never be received (even if the timeoutHeight
+// has not yet been reached). The difference with TimeoutOnClose is that it
+// accepts an extra argument counterpartyUpgradeSequence that was needed for
+// channel upgradability.
+//
+// This function will be removed in ibc-go v9.0.0 and the API of TimeoutOnClose will be updated.
+func (k Keeper) TimeoutOnCloseWithCounterpartyUpgradeSequence(
+	ctx sdk.Context,
+	chanCap *capabilitytypes.Capability,
+	packet exported.PacketI,
+	proof,
+	closedProof []byte,
+	proofHeight exported.Height,
+	nextSequenceRecv uint64,
+	counterpartyUpgradeSequence uint64,
 ) error {
 	channel, found := k.GetChannel(ctx, packet.GetSourcePort(), packet.GetSourceChannel())
 	if !found {
@@ -243,13 +286,18 @@ func (k Keeper) TimeoutOnClose(
 	counterpartyHops := []string{connectionEnd.GetCounterparty().GetConnectionID()}
 
 	counterparty := types.NewCounterparty(packet.GetSourcePort(), packet.GetSourceChannel())
-	expectedChannel := types.NewChannel(
-		types.CLOSED, channel.Ordering, counterparty, counterpartyHops, channel.Version,
-	)
+	expectedChannel := types.Channel{
+		State:           types.CLOSED,
+		Ordering:        channel.Ordering,
+		Counterparty:    counterparty,
+		ConnectionHops:  counterpartyHops,
+		Version:         channel.Version,
+		UpgradeSequence: counterpartyUpgradeSequence,
+	}
 
 	// check that the opposing channel end has closed
 	if err := k.connectionKeeper.VerifyChannelState(
-		ctx, connectionEnd, proofHeight, proofClosed,
+		ctx, connectionEnd, proofHeight, closedProof,
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		expectedChannel,
 	); err != nil {

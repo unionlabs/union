@@ -28,6 +28,9 @@ const (
 
 	// ChannelPrefix is the prefix used when creating a channel identifier
 	ChannelPrefix = "channel-"
+
+	// ParamsKey defines the key to store the params in the keeper.
+	ParamsKey = "channelParams"
 )
 
 // FormatChannelIdentifier returns the channel identifier with the sequence appended.

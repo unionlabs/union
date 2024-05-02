@@ -46,10 +46,6 @@ func (msg MsgRegisterPayee) ValidateBasic() error {
 		return err
 	}
 
-	if msg.Relayer == msg.Payee {
-		return errorsmod.Wrap(ibcerrors.ErrInvalidRequest, "relayer address and payee must not be equal")
-	}
-
 	_, err := sdk.AccAddressFromBech32(msg.Relayer)
 	if err != nil {
 		return errorsmod.Wrap(err, "failed to create sdk.AccAddress from relayer address")

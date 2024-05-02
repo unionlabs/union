@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 )
@@ -21,7 +22,7 @@ func (k Keeper) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*type
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	checksum, err := k.storeWasmCode(ctx, msg.WasmByteCode, k.GetVM().StoreCode)
+	checksum, err := k.storeWasmCode(ctx, msg.WasmByteCode, ibcwasm.GetVM().StoreCode)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to store wasm bytecode")
 	}
@@ -39,17 +40,17 @@ func (k Keeper) RemoveChecksum(goCtx context.Context, msg *types.MsgRemoveChecks
 		return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
 	}
 
-	if !k.HasChecksum(goCtx, msg.Checksum) {
+	if !types.HasChecksum(goCtx, msg.Checksum) {
 		return nil, types.ErrWasmChecksumNotFound
 	}
 
-	err := k.GetChecksums().Remove(goCtx, msg.Checksum)
+	err := ibcwasm.Checksums.Remove(goCtx, msg.Checksum)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to remove checksum")
 	}
 
 	// unpin the code from the vm in-memory cache
-	if err := k.GetVM().Unpin(msg.Checksum); err != nil {
+	if err := ibcwasm.GetVM().Unpin(msg.Checksum); err != nil {
 		return nil, errorsmod.Wrapf(err, "failed to unpin contract with checksum (%s) from vm cache", hex.EncodeToString(msg.Checksum))
 	}
 

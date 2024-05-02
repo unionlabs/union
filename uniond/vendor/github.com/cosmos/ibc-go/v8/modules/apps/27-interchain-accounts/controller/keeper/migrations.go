@@ -55,9 +55,10 @@ func (m Migrator) AssertChannelCapabilityMigrations(ctx sdk.Context) error {
 // MigrateParams migrates the controller submodule's parameters from the x/params to self store.
 func (m Migrator) MigrateParams(ctx sdk.Context) error {
 	if m.keeper != nil {
-		var params controllertypes.Params
-		m.keeper.legacySubspace.GetParamSet(ctx, &params)
-
+		params := controllertypes.DefaultParams()
+		if m.keeper.legacySubspace != nil {
+			m.keeper.legacySubspace.GetParamSetIfExists(ctx, &params)
+		}
 		m.keeper.SetParams(ctx, params)
 		m.keeper.Logger(ctx).Info("successfully migrated ica/controller submodule to self-manage params")
 	}

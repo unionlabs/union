@@ -31,6 +31,9 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryUnreceivedAcks(),
 		GetCmdQueryNextSequenceReceive(),
 		GetCmdQueryNextSequenceSend(),
+		GetCmdQueryUpgradeError(),
+		GetCmdQueryUpgrade(),
+		GetCmdChannelParams(),
 	)
 
 	return queryCmd
@@ -46,7 +49,10 @@ func NewTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	txCmd.AddCommand()
+	txCmd.AddCommand(
+		newUpgradeChannelsTxCmd(),
+		newPruneAcknowledgementsTxCmd(),
+	)
 
 	return txCmd
 }

@@ -98,7 +98,7 @@ func (m Migrator) MigrateTotalEscrowForDenom(ctx sdk.Context) error {
 		m.keeper.SetTotalEscrowForDenom(ctx, totalEscrow)
 	}
 
-	m.keeper.Logger(ctx).Info("successfully set total escrow for %d denominations", totalEscrowed.Len())
+	m.keeper.Logger(ctx).Info("successfully set total escrow", "number of denominations", totalEscrowed.Len())
 	return nil
 }
 

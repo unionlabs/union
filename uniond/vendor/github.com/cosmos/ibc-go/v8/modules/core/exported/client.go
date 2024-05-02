@@ -136,8 +136,8 @@ type ClientState interface {
 		store storetypes.KVStore,
 		newClient ClientState,
 		newConsState ConsensusState,
-		proofUpgradeClient,
-		proofUpgradeConsState []byte,
+		upgradeClientProof,
+		upgradeConsensusStateProof []byte,
 	) error
 }
 

@@ -366,6 +366,90 @@ func (k Keeper) VerifyNextSequenceRecv(
 	return nil
 }
 
+// VerifyChannelUpgradeError verifies a proof of the provided upgrade error receipt.
+func (k Keeper) VerifyChannelUpgradeError(
+	ctx sdk.Context,
+	connection exported.ConnectionI,
+	height exported.Height,
+	proof []byte,
+	portID,
+	channelID string,
+	errorReceipt channeltypes.ErrorReceipt,
+) error {
+	clientID := connection.GetClientID()
+	clientState, clientStore, err := k.getClientStateAndVerificationStore(ctx, clientID)
+	if err != nil {
+		return err
+	}
+
+	if status := k.clientKeeper.GetClientStatus(ctx, clientState, clientID); status != exported.Active {
+		return errorsmod.Wrapf(clienttypes.ErrClientNotActive, "client (%s) status is %s", clientID, status)
+	}
+
+	merklePath := commitmenttypes.NewMerklePath(host.ChannelUpgradeErrorPath(portID, channelID))
+	merklePath, err = commitmenttypes.ApplyPrefix(connection.GetCounterparty().GetPrefix(), merklePath)
+	if err != nil {
+		return err
+	}
+
+	bz, err := k.cdc.Marshal(&errorReceipt)
+	if err != nil {
+		return err
+	}
+
+	if err := clientState.VerifyMembership(
+		ctx, clientStore, k.cdc, height,
+		0, 0, // skip delay period checks for non-packet processing verification
+		proof, merklePath, bz,
+	); err != nil {
+		return errorsmod.Wrapf(err, "failed upgrade error receipt verification for client (%s)", clientID)
+	}
+
+	return nil
+}
+
+// VerifyChannelUpgrade verifies the proof that a particular proposed upgrade has been stored in the upgrade path.
+func (k Keeper) VerifyChannelUpgrade(
+	ctx sdk.Context,
+	connection exported.ConnectionI,
+	proofHeight exported.Height,
+	upgradeProof []byte,
+	portID,
+	channelID string,
+	upgrade channeltypes.Upgrade,
+) error {
+	clientID := connection.GetClientID()
+	clientState, clientStore, err := k.getClientStateAndVerificationStore(ctx, clientID)
+	if err != nil {
+		return err
+	}
+
+	if status := k.clientKeeper.GetClientStatus(ctx, clientState, clientID); status != exported.Active {
+		return errorsmod.Wrapf(clienttypes.ErrClientNotActive, "client (%s) status is %s", clientID, status)
+	}
+
+	merklePath := commitmenttypes.NewMerklePath(host.ChannelUpgradePath(portID, channelID))
+	merklePath, err = commitmenttypes.ApplyPrefix(connection.GetCounterparty().GetPrefix(), merklePath)
+	if err != nil {
+		return err
+	}
+
+	bz, err := k.cdc.Marshal(&upgrade)
+	if err != nil {
+		return err
+	}
+
+	if err := clientState.VerifyMembership(
+		ctx, clientStore, k.cdc, proofHeight,
+		0, 0, // skip delay period checks for non-packet processing verification
+		upgradeProof, merklePath, bz,
+	); err != nil {
+		return errorsmod.Wrapf(err, "failed upgrade verification for client (%s) on channel (%s)", clientID, channelID)
+	}
+
+	return nil
+}
+
 // getBlockDelay calculates the block delay period from the time delay of the connection
 // and the maximum expected time per block.
 func (k Keeper) getBlockDelay(ctx sdk.Context, connection exported.ConnectionI) uint64 {
