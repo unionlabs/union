@@ -26,7 +26,7 @@
     "bits-ui": "^0.21.7",
     "cmdk-sv": "^0.0.17",
     "formsnap": "^1.0.0",
-    "gql.tada": "^1.6.3",
+    "gql.tada": "^1.7.0",
     "graphql-request": "^6.1.0",
     "graphql-ws": "^5.16.0",
     "mode-watcher": "^0.3.0",
@@ -92,6 +92,6 @@
     "vite": "^5.2.11",
     "vite-plugin-inspect": "^0.8.4",
     "vite-plugin-tailwind-purgecss": "^0.3.3",
-    "vitest": "^1.5.3"
+    "vitest": "^1.6.0"
   }
 }
