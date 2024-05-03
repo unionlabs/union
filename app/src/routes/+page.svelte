@@ -1,6 +1,6 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
-import SvelteLogo from 'virtual:icons/logos/svelte-icon'
+import SvelteLogo from "virtual:icons/logos/svelte-icon"
 </script>
 
 <main

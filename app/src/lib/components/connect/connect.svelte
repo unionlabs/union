@@ -8,7 +8,7 @@ import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import { Separator } from "$lib/components/ui/separator"
 import * as Collapsible from "$lib/components/ui/collapsible"
-import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down"
+import ChevronsUpDown from "virtual:icons/lucide/chevrons-up-down"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 

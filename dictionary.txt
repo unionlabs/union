@@ -693,6 +693,7 @@ noopener
 noreferrer
 notrunc
 nowrap
+nromalized
 nums
 numtide
 observablehq
@@ -932,6 +933,7 @@ svrcmd
 symlinker
 syncedstore
 syncmode
+tabler
 tablist
 tada
 tailwindcss

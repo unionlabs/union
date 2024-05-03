@@ -20,6 +20,7 @@ export const cosmosWalletsInformation = [
 ] as const
 
 export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
+export type CosmosWalletName = (typeof cosmosWalletsInformation)[number]["name"]
 
 const stored = localStorage.getItem("cosmos-config") || "{}"
 

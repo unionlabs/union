@@ -12,11 +12,11 @@ import {
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { setContext, onMount } from "svelte"
+import { Toaster } from "svelte-french-toast"
 import { page, navigating } from "$app/stores"
 import { setContextClient } from "@urql/svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
-import { Toaster } from "$lib/components/ui/sonner"
 import { graphqlClient } from "$lib/graphql/client"
 import Header from "$lib/components/header/header.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
@@ -100,7 +100,7 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 {/if}
 
 <ModeWatcher />
-<Toaster richColors />
+<Toaster />
 
 <QueryClientProvider client={queryClient}>
   <Header />

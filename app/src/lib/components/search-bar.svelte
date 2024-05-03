@@ -1,13 +1,13 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import Smile from "lucide-svelte/icons/smile"
-import Table from "lucide-svelte/icons/table"
-import Brain from "lucide-svelte/icons/brain"
-import Search from "lucide-svelte/icons/search"
+import Smile from "virtual:icons/lucide/smile"
+import Table from "virtual:icons/lucide/table"
+import Brain from "virtual:icons/lucide/brain"
+import Search from "virtual:icons/lucide/search"
 import { Input } from "$lib/components/ui/input"
 import { debounce } from "$lib/utilities/index.ts"
 import * as Command from "$lib/components/ui/command/index.ts"
-import DollarSign from "lucide-svelte/icons/badge-dollar-sign"
+import DollarSign from "virtual:icons/lucide/badge-dollar-sign"
 
 let commandDialogOpen = false
 let searchInput: string

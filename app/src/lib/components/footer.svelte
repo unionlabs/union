@@ -1,11 +1,11 @@
 <script lang="ts">
-import { toast } from "svelte-sonner"
+import toast from "svelte-french-toast"
 import { cn } from "$lib/utilities/shadcn.ts"
-import MenuIcon from "lucide-svelte/icons/menu"
-import HomeIcon from "lucide-svelte/icons/home"
+import HomeIcon from "virtual:icons/lucide/home"
+import MenuIcon from "virtual:icons/lucide/menu"
+import WalletMinimalIcon from "virtual:icons/lucide/wallet"
 import Button from "$lib/components/ui/button/button.svelte"
-import ArrowDownUpIcon from "lucide-svelte/icons/arrow-down-up"
-import WalletMinimalIcon from "lucide-svelte/icons/wallet-minimal"
+import ArrowDownUpIcon from "virtual:icons/lucide/arrow-up-down"
 
 const onWalletClick = () => document.querySelector("button[data-dialog-trigger]")?.click()
 
@@ -58,11 +58,10 @@ const navigationIconStyle = "size-7 min-w-6 hover:text-white text-zinc-300"
     type="button"
     variant="ghost"
     on:click={() => {
-      toast.message("I haven't been configured yet", {
-        class:
+      toast("I haven't been configured yet", {
+        className:
           'h-10 p-3 border-[1.75px] border-solid border-accent-foreground bg-accent-foreground bg-opacity-10',
         position: 'top-center',
-        cancel: { label: 'X' },
       })
     }}
     class={navigationButtonStyle}

@@ -1,5 +1,5 @@
-import { bech32 } from "@scure/base"
 import { isAddress, getAddress } from "viem"
+import { normalizeBech32 } from "@cosmjs/encoding"
 import type { CosmosAddress, EvmAddress } from "$lib/wallet/types.ts"
 
 export function isValidEvmAddress(address: unknown): address is EvmAddress {
@@ -17,13 +17,8 @@ export function isValidCosmosAddress(
   if (typeof address !== "string") return false
 
   try {
-    const { prefix, words } = bech32.decode(address)
-    if (expectedPrefixes && !expectedPrefixes.includes(prefix)) return false
-
-    const size = bech32.fromWords(words).length
-    if (size !== 20 && size !== 32) return false
-
-    return true
+    const nromalized = normalizeBech32(address)
+    return expectedPrefixes.includes(nromalized.slice(0, nromalized.indexOf("1")))
   } catch (error) {
     return false
   }

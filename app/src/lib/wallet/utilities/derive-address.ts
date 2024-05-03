@@ -1,18 +1,18 @@
-import { bech32 } from "@scure/base"
-import { getAddress, isHex } from "viem"
-import { uint8ArrayToHex, hexToUint8Array } from "uint8array-extras"
+import { isHex, bytesToHex } from "viem"
+import { hexToUint8Array } from "uint8array-extras"
+import { fromBech32, toBech32 } from "@cosmjs/encoding"
+
 import type { CosmosAddress, EvmAddress } from "$lib/wallet/types.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 
 export function cosmosToEvmAddress(address: CosmosAddress): EvmAddress {
   if (!isValidCosmosAddress(address)) throw new Error("Invalid Cosmos address")
-  const { words } = bech32.decode(address)
-  return getAddress(`0x${uint8ArrayToHex(bech32.fromWords(words))}`)
+  return bytesToHex(fromBech32(address).data)
 }
 
 export function evmToCosmosAddress(address: EvmAddress): CosmosAddress {
-  const words = bech32.toWords(hexToUint8Array(address.slice(2)))
-  return bech32.encode("union", words)
+  const addressToBuffer = hexToUint8Array(address)
+  return toBech32("union", addressToBuffer) as CosmosAddress
 }
 
 export const normalizeToCosmosAddress = (address: string): CosmosAddress =>

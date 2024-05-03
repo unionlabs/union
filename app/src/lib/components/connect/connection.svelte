@@ -2,12 +2,12 @@
 import type { Props } from "./index.ts"
 import clsx from "clsx"
 import { copy } from "@svelte-put/copy"
-import XIcon from "lucide-svelte/icons/x"
+import XIcon from "virtual:icons/lucide/x"
 import { cn } from "$lib/utilities/shadcn.ts"
-import CopyIcon from "lucide-svelte/icons/copy"
-import CheckIcon from "lucide-svelte/icons/check"
+import CopyIcon from "virtual:icons/lucide/copy"
+import CheckIcon from "virtual:icons/lucide/check"
 import { Button } from "$lib/components/ui/button"
-import LoaderCircleIcon from "lucide-svelte/icons/loader-circle"
+import LoaderCircleIcon from "virtual:icons/lucide/loader-circle"
 import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
 export let chain: "cosmos" | "evm"
@@ -53,7 +53,9 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   <span
     class={cn([
       'w-full text-left',
-      connectText === 'Sepolia' || connectText === 'Union' ? 'text-lg sm:text-sm' : 'text-[12.5px] sm:text-sm',
+      connectText === 'Sepolia' || connectText === 'Union'
+        ? 'text-lg sm:text-sm'
+        : 'text-[12.5px] sm:text-sm',
     ])}
   >
     {connectText}

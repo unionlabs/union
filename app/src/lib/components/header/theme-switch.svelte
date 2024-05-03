@@ -1,6 +1,6 @@
 <script lang="ts">
-import Sun from "lucide-svelte/icons/sun"
-import Moon from "lucide-svelte/icons/moon"
+import Sun from "virtual:icons/lucide/sun"
+import Moon from "virtual:icons/lucide/moon"
 
 import { toggleMode } from "mode-watcher"
 import { Button } from "$lib/components/ui/button/index.ts"

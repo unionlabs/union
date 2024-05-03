@@ -42,6 +42,7 @@ dump
 fuzzing-code-coverage
 
 *.wasm
+stats
 !uniond/vendor/**/*.wasm
 _
 .astro

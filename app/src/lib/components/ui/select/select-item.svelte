@@ -1,5 +1,5 @@
 <script lang="ts">
-import Check from "lucide-svelte/icons/check"
+import Check from "virtual:icons/lucide/check"
 import { Select as SelectPrimitive } from "bits-ui"
 import { cn } from "$lib/utilities/shadcn.js"
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { routes } from "./index.ts"
-import Menu from "lucide-svelte/icons/menu"
+import Menu from "virtual:icons/lucide/menu"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { page, navigating } from "$app/stores"
 import { Button } from "$lib/components/ui/button/index.ts"

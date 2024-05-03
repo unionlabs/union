@@ -1,7 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 
-import { toast } from "svelte-sonner"
+import toast from "svelte-french-toast"
 import { browser } from "$app/environment"
 import { valibot } from "sveltekit-superforms/adapters"
 import * as Form from "$lib/components/ui/form/index.js"
@@ -10,7 +10,7 @@ import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
-import SuperDebug, { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
+import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
 
 /**
  * TODO:
@@ -23,13 +23,11 @@ const form = superForm(defaults(valibot(faucetFormSchema)), {
   SPA: true,
   validators: valibot(faucetFormSchema),
   onUpdate: event => {
-    if (!event.form.valid) return toast.error("No good", { class: "font-mono text-lg" })
+    if (!event.form.valid) return toast.error("No good", { className: "font-mono text-lg" })
 
-    toast.success("Faucet request submitted 🤌", {
+    toast.success("Faucet request submitted 🤌 Check wallet for $UNO in a few moments", {
       duration: 5_000,
-      class: "text-sm p-2.5",
-      descriptionClass: "text-xs",
-      description: "Check wallet for $UNO in a few moments"
+      className: "text-sm p-2.5"
     })
   },
   multipleSubmits: "prevent"
@@ -139,11 +137,5 @@ const handleMouseLeave = () => {
   {/if}
 
   <section class="mt-6 hidden sm:block w-full max-w-[520px] text-sm">
-    <SuperDebug
-      theme="vscode"
-      data={$formData}
-      collapsible={false}
-      display={browser && import.meta.env.DEV}
-    />
   </section>
 </main>

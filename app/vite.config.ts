@@ -23,7 +23,7 @@ export default defineConfig(config => {
   ] satisfies Array<PluginOption>
 
   if (INSPECT === "true") plugins.push(Inspect())
-  if (VISUALIZE === "true") plugins.push(visualizer())
+  if (VISUALIZE === "true") plugins.push(visualizer({ filename: `stats/${Date.now()}_stats.html` }))
 
   return {
     plugins,
@@ -31,17 +31,7 @@ export default defineConfig(config => {
       drop: ["console", "debugger"]
     },
     optimizeDeps: {
-      include: [
-        "clsx",
-        "valibot",
-        "@urql/svelte",
-        "lucide-svelte",
-        "@cosmjs/stargate",
-        "@cosmjs/tendermint-rpc",
-        "@tanstack/svelte-query",
-        "@cosmjs/cosmwasm-stargate",
-        "@tanstack/svelte-query-devtools"
-      ]
+      include: ["@tanstack/svelte-query-devtools"]
     },
     server: {
       port: Number(PORT)
