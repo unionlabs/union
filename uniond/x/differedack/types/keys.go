@@ -16,3 +16,5 @@ const (
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_differedack"
 )
+
+var ParamsKey = []byte{0x00}

@@ -8,6 +8,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -22,6 +23,7 @@ type (
 	Keeper struct {
 		cdc           codec.BinaryCodec
 		storeKey      storetypes.StoreKey
+		paramSpace    paramtypes.Subspace
 		ics4Wrapper   porttypes.ICS4Wrapper
 		channelKeeper channelkeeper.Keeper
 	}

@@ -42,11 +42,11 @@ func init() {
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
-		&MsgAck{},
+		&MsgWriteDifferedAck{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgAck{}, differedAckAck, nil)
+	cdc.RegisterConcrete(&MsgWriteDifferedAck{}, differedAckAck, nil)
 }
