@@ -5,7 +5,7 @@ import {
   debugExchange,
   subscriptionExchange
 } from "@urql/svelte"
-import { URLS } from "$/lib/constants"
+import { URLS } from "$lib/constants"
 import { devtoolsExchange } from "@urql/devtools"
 import { retryExchange } from "@urql/exchange-retry"
 import { createClient as createWSClient, type SubscribePayload } from "graphql-ws"

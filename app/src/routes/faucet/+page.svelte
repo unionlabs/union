@@ -1,15 +1,15 @@
 <script lang="ts">
-import { cn } from "$/lib/utilities/shadcn.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 
 import { toast } from "svelte-sonner"
 import { browser } from "$app/environment"
 import { valibot } from "sveltekit-superforms/adapters"
-import * as Form from "$/lib/components/ui/form/index.js"
-import { Input } from "$/lib/components/ui/input/index.js"
-import { getUnoFromFaucet } from "$/lib/mutations/faucet.ts"
-import { unionTransfersQuery } from "$/lib/queries/transfers.ts"
+import * as Form from "$lib/components/ui/form/index.js"
+import { Input } from "$lib/components/ui/input/index.js"
+import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
+import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
-import DraftPageNotice from "$/lib/components/draft-page-notice.svelte"
+import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import SuperDebug, { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
 
 /**

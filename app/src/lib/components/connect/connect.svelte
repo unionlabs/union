@@ -2,15 +2,15 @@
 import { navigating } from "$app/stores"
 import { slide } from "svelte/transition"
 import Connection from "./connection.svelte"
-import { cn } from "$/lib/utilities/shadcn.ts"
-import * as Sheet from "$/lib/components/ui/sheet"
-import { Button } from "$/lib/components/ui/button"
-import * as Avatar from "$/lib/components/ui/avatar"
-import { Separator } from "$/lib/components/ui/separator"
-import * as Collapsible from "$/lib/components/ui/collapsible"
+import { cn } from "$lib/utilities/shadcn.ts"
+import * as Sheet from "$lib/components/ui/sheet"
+import { Button } from "$lib/components/ui/button"
+import * as Avatar from "$lib/components/ui/avatar"
+import { Separator } from "$lib/components/ui/separator"
+import * as Collapsible from "$lib/components/ui/collapsible"
 import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down"
-import { sepoliaStore, evmWalletsInformation } from "$/lib/wallet/evm/index.ts"
-import { cosmosStore, cosmosWalletsInformation } from "$/lib/wallet/cosmos/index.ts"
+import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
+import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 
 /**
  * TODO: check both chains
@@ -39,20 +39,6 @@ let collapsibleOpen = true
       ])}
     >
       <span class="">{buttonText}</span>
-      <!-- 
-      <img
-        width={25}
-        alt="union icon"
-        src="/images/icons/union.svg"
-        class="text-white bg-foreground rounded-lg"
-      />
-      <img
-        width={25}
-        alt="ethereum icon"
-        src="/images/icons/ethereum.svg"
-        class="text-white bg-foreground rounded-lg"
-      />
-       -->
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
@@ -101,7 +87,7 @@ let collapsibleOpen = true
           onDisconnectClick={sepoliaStore.disconnect}
           connectStatus={$sepoliaStore.connectionStatus}
           chainWalletsInformation={evmWalletsInformation}
-          connectedWalletName={$sepoliaStore.connectedWallet}
+          connectedWalletId={$sepoliaStore.connectedWallet}
         />
         <Separator class={cn(['bg-[#303033] my-1.5'])} />
         <Connection
@@ -112,7 +98,7 @@ let collapsibleOpen = true
           onDisconnectClick={cosmosStore.disconnect}
           connectStatus={$cosmosStore.connectionStatus}
           chainWalletsInformation={cosmosWalletsInformation}
-          connectedWalletName={$cosmosStore.connectedWallet}
+          connectedWalletId={$cosmosStore.connectedWallet}
         />
       </Collapsible.Content>
     </Collapsible.Root>

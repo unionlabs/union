@@ -1,9 +1,9 @@
 import { graphql } from "gql.tada"
-import { URLS } from "$/lib/constants"
+import { URLS } from "$lib/constants"
 import { request } from "graphql-request"
-import { fetcher } from "$/lib/utilities/index.ts"
+import { fetcher } from "$lib/utilities/index.ts"
 import { createQueries, createQuery } from "@tanstack/svelte-query"
-import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 
 /**
  * TODO:

@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as FormPrimitive from "formsnap"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = FormPrimitive.FieldErrorsProps & {
   errorClasses?: string | undefined | null

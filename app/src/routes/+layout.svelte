@@ -1,6 +1,6 @@
 <script lang="ts">
-import "$/polyfill.ts"
-import "$/styles/index.css"
+import "$lib/polyfill"
+import "$styles/index.css"
 import {
   hydrate,
   dehydrate,
@@ -14,13 +14,13 @@ import { browser } from "$app/environment"
 import { setContext, onMount } from "svelte"
 import { page, navigating } from "$app/stores"
 import { setContextClient } from "@urql/svelte"
-import { cosmosStore } from "$/lib/wallet/cosmos"
-import Footer from "$/lib/components/footer.svelte"
-import { Toaster } from "$/lib/components/ui/sonner"
-import { graphqlClient } from "$/lib/graphql/client"
-import Header from "$/lib/components/header/header.svelte"
-import { updateTheme } from "$/lib/utilities/update-theme.ts"
-import OnlineStatus from "$/lib/components/online-status.svelte"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import Footer from "$lib/components/footer.svelte"
+import { Toaster } from "$lib/components/ui/sonner"
+import { graphqlClient } from "$lib/graphql/client"
+import Header from "$lib/components/header/header.svelte"
+import { updateTheme } from "$lib/utilities/update-theme.ts"
+import OnlineStatus from "$lib/components/online-status.svelte"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
 

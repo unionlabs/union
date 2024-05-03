@@ -1,6 +1,6 @@
 import { bech32 } from "@scure/base"
 import { isAddress, getAddress } from "viem"
-import type { CosmosAddress, EvmAddress } from "$/lib/wallet/types.ts"
+import type { CosmosAddress, EvmAddress } from "$lib/wallet/types.ts"
 
 export function isValidEvmAddress(address: unknown): address is EvmAddress {
   return (

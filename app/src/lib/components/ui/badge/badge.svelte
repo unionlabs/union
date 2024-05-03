@@ -1,6 +1,6 @@
 <script lang="ts">
 import { type Variant, badgeVariants } from "./index.js"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 let className: string | undefined | null = undefined
 export let href: string | undefined = undefined

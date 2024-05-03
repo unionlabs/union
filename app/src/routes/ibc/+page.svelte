@@ -9,13 +9,13 @@ import {
   addResizedColumns
 } from "svelte-headless-table/plugins"
 import type { PageData } from "./$types.ts"
-import { cn } from "$/lib/utilities/shadcn.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 import { readable, derived } from "svelte/store"
 import CaretSort from "svelte-radix/CaretSort.svelte"
-import Label from "$/lib/components/ui/label/label.svelte"
-import * as Table from "$/lib/components/ui/table/index.js"
-import Button from "$/lib/components/ui/button/button.svelte"
-import DraftPageNotice from "$/lib/components/draft-page-notice.svelte"
+import Label from "$lib/components/ui/label/label.svelte"
+import * as Table from "$lib/components/ui/table/index.js"
+import Button from "$lib/components/ui/button/button.svelte"
+import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { Render, Subscribe, createRender, createTable } from "svelte-headless-table"
 
 export let data: PageData

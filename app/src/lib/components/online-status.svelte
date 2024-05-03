@@ -1,6 +1,6 @@
 <script lang="ts">
-import { cn } from "$/lib/utilities/shadcn.ts"
-import { onlineStatus } from "$/lib/online-status.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { onlineStatus } from "$lib/online-status.ts"
 import { flyAndScale } from "$lib/utilities/shadcn.ts"
 import { blockHeightQuery } from "$lib/queries/block.ts"
 import { Button } from "$lib/components/ui/button/index.ts"

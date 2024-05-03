@@ -1,4 +1,4 @@
-import "$/polyfill.ts"
+import "$lib/polyfill.ts"
 import {
   http,
   fallback,
@@ -18,9 +18,9 @@ import {
 } from "@wagmi/core"
 import { createClient } from "viem"
 import { writable } from "svelte/store"
-import { sleep } from "$/lib/utilities"
+import { sleep } from "$lib/utilities"
 import { sepolia } from "@wagmi/core/chains"
-import type { ChainWalletStore } from "$/lib/wallet/types"
+import type { ChainWalletStore } from "$lib/wallet/types"
 import { walletConnect, injected } from "@wagmi/connectors"
 import { walletActionsEip5792, walletActionsEip3074 } from "viem/experimental"
 
@@ -83,7 +83,7 @@ export function createSepoliaStore(
     hoverState: "none",
     address: getAccount(config).address,
     connectionStatus: getAccount(config).status,
-    connectedWallet: getAccount(config).connector?.name
+    connectedWallet: getAccount(config).connector?.id
   }
 ) {
   console.log("[sepoliaStore] previousState", previousState)
@@ -94,7 +94,6 @@ export function createSepoliaStore(
     subscribe,
     connect: async (walletId: EvmWalletId) => {
       console.log("[evm] connect --", { walletId })
-      console.log(evmWalletsInformation.map(evmWallet => evmWallet.name))
       const walletName = evmWalletsInformation.find(evmWallet => evmWallet.id === walletId)?.name
       await evmConnect(walletId, sepolia.id)
       await sleep(1_000)
@@ -137,11 +136,12 @@ export const evmWalletsInformation = config.connectors
   .map(connector => ({
     ...connector,
     name: connector.name.toLowerCase().includes("injected") ? "Browser Wallet" : connector.name,
-    icon: connector.name.toLowerCase().includes("injected")
-      ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 32 32'%3E%3Cpath fill='%23f7f7f7' fill-rule='evenodd' d='m15.65 3.64-9.6 4.8 10.2 5.1 10.2-5.1-9.6-4.8a1.35 1.35 0 0 0-1.2 0ZM28 10.46l-10.5 5.25v12.81l9.75-4.87a1.35 1.35 0 0 0 .75-1.21V10.46ZM15 28.53V15.7L4.5 10.46v11.97a1.35 1.35 0 0 0 .74 1.22L15 28.53Zm-.48 2.55-10.4-5.2A3.85 3.85 0 0 1 2 22.42V10.05A3.85 3.85 0 0 1 4.13 6.6l10.4-5.2a3.85 3.85 0 0 1 3.43 0l10.4 5.2a3.85 3.85 0 0 1 2.14 3.45v12.39a3.85 3.85 0 0 1-2.13 3.44l-10.4 5.2a3.85 3.85 0 0 1-3.45 0Z' clip-rule='evenodd'/%3E%3C/svg%3E"
-      : connector.name.toLowerCase().includes("walletconnect")
-        ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f7f7f7' d='M4.91 7.52a10.18 10.18 0 0 1 14.18 0l.47.46a.48.48 0 0 1 0 .7l-1.61 1.57a.25.25 0 0 1-.36 0l-.65-.63a7.1 7.1 0 0 0-9.88 0l-.7.68a.26.26 0 0 1-.35 0L4.4 8.72a.48.48 0 0 1 0-.7zm17.5 3.26 1.44 1.4a.48.48 0 0 1 0 .7l-6.46 6.33a.51.51 0 0 1-.71 0l-4.59-4.5a.13.13 0 0 0-.18 0l-4.59 4.5a.51.51 0 0 1-.7 0L.14 12.88a.48.48 0 0 1 0-.7l1.43-1.4a.51.51 0 0 1 .71 0l4.59 4.5c.05.04.13.04.18 0l4.59-4.5a.51.51 0 0 1 .7 0l4.6 4.5c.04.04.12.04.17 0l4.6-4.5a.5.5 0 0 1 .7 0'/%3E%3C/svg%3E"
-        : connector.icon,
+    icon:
+      connector.name.toLowerCase().includes("injected") || connector.icon === undefined
+        ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 32 32'%3E%3Cpath fill='%23f7f7f7' fill-rule='evenodd' d='m15.65 3.64-9.6 4.8 10.2 5.1 10.2-5.1-9.6-4.8a1.35 1.35 0 0 0-1.2 0ZM28 10.46l-10.5 5.25v12.81l9.75-4.87a1.35 1.35 0 0 0 .75-1.21V10.46ZM15 28.53V15.7L4.5 10.46v11.97a1.35 1.35 0 0 0 .74 1.22L15 28.53Zm-.48 2.55-10.4-5.2A3.85 3.85 0 0 1 2 22.42V10.05A3.85 3.85 0 0 1 4.13 6.6l10.4-5.2a3.85 3.85 0 0 1 3.43 0l10.4 5.2a3.85 3.85 0 0 1 2.14 3.45v12.39a3.85 3.85 0 0 1-2.13 3.44l-10.4 5.2a3.85 3.85 0 0 1-3.45 0Z' clip-rule='evenodd'/%3E%3C/svg%3E"
+        : connector.name.toLowerCase().includes("walletconnect")
+          ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f7f7f7' d='M4.91 7.52a10.18 10.18 0 0 1 14.18 0l.47.46a.48.48 0 0 1 0 .7l-1.61 1.57a.25.25 0 0 1-.36 0l-.65-.63a7.1 7.1 0 0 0-9.88 0l-.7.68a.26.26 0 0 1-.35 0L4.4 8.72a.48.48 0 0 1 0-.7zm17.5 3.26 1.44 1.4a.48.48 0 0 1 0 .7l-6.46 6.33a.51.51 0 0 1-.71 0l-4.59-4.5a.13.13 0 0 0-.18 0l-4.59 4.5a.51.51 0 0 1-.7 0L.14 12.88a.48.48 0 0 1 0-.7l1.43-1.4a.51.51 0 0 1 .71 0l4.59 4.5c.05.04.13.04.18 0l4.59-4.5a.51.51 0 0 1 .7 0l4.6 4.5c.04.04.12.04.17 0l4.6-4.5a.5.5 0 0 1 .7 0'/%3E%3C/svg%3E"
+          : connector.icon,
     type: connector.type as ConnectorType,
     download: ""
   }))

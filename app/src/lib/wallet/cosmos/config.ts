@@ -1,23 +1,25 @@
 import { get, writable } from "svelte/store"
-import { CHAIN, URLS } from "$/lib/constants"
-import { sleep } from "$/lib/utilities/index.ts"
-import type { ChainWalletStore } from "$/lib/wallet/types"
+import { CHAIN, URLS } from "$lib/constants"
+import { sleep } from "$lib/utilities/index.ts"
+import type { ChainWalletStore } from "$lib/wallet/types"
 import { GasPrice, SigningStargateClient } from "@cosmjs/stargate"
 
 export const cosmosWalletsInformation = [
   {
+    id: "leap",
     name: "leap",
     icon: "https://assets.leapwallet.io/logos/leap-cosmos-logo.svg",
     download: "https://www.leapwallet.io/download"
   },
   {
+    id: "keplr",
     name: "keplr",
     icon: "https://assets-global.website-files.com/63eb7ddf41cf5b1c8fdfbc74/63fc1eaf76d6a3bd547b017c_Keplr_icon_ver.1.3_2.svg",
     download: "https://www.keplr.app/download"
   }
 ] as const
 
-export type CosmosWalletName = (typeof cosmosWalletsInformation)[number]["name"]
+export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
 
 const stored = localStorage.getItem("cosmos-config") || "{}"
 
@@ -66,14 +68,14 @@ function createCosmosStore(
       await sleep(2_000)
     },
     disconnect: async () => {
-      const cosmosWalletName = get({ subscribe }).connectedWallet as CosmosWalletName
+      const cosmosWalletId = get({ subscribe }).connectedWallet as CosmosWalletId
       console.log("[cosmos] cosmosDisconnectClick", get(cosmosStore))
-      if (cosmosWalletName && cosmosWalletName === "keplr" && window[cosmosWalletName]) {
-        await window[cosmosWalletName]?.disable([CHAIN.UNION.ID])
+      if (cosmosWalletId && cosmosWalletId === "keplr" && window[cosmosWalletId]) {
+        await window[cosmosWalletId]?.disable([CHAIN.UNION.ID])
         update(v => ({ ...v, connectedWallet: "none", connectionStatus: "disconnected" }))
       }
-      if (cosmosWalletName && cosmosWalletName === "leap" && window[cosmosWalletName]) {
-        await window[cosmosWalletName]?.disconnect(CHAIN.UNION.ID)
+      if (cosmosWalletId && cosmosWalletId === "leap" && window[cosmosWalletId]) {
+        await window[cosmosWalletId]?.disconnect(CHAIN.UNION.ID)
         update(v => ({ ...v, connectedWallet: "none", connectionStatus: "disconnected" }))
       }
     }

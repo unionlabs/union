@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Avatar as AvatarPrimitive } from "bits-ui"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = AvatarPrimitive.Props
 

@@ -1,3 +1,4 @@
+import Icons from "unplugin-icons/vite"
 import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
 import { visualizer } from "rollup-plugin-visualizer"
@@ -14,7 +15,12 @@ export default defineConfig(config => {
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
-  const plugins = [purgeCss(), TurboConsole(), sveltekit()] satisfies Array<PluginOption>
+  const plugins = [
+    purgeCss(),
+    TurboConsole(), // has to be before sveltekit
+    sveltekit(),
+    Icons({ compiler: "svelte", autoInstall: true })
+  ] satisfies Array<PluginOption>
 
   if (INSPECT === "true") plugins.push(Inspect())
   if (VISUALIZE === "true") plugins.push(visualizer())

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Drawer as DrawerPrimitive } from "vaul-svelte"
 import DrawerOverlay from "./drawer-overlay.svelte"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = DrawerPrimitive.ContentProps
 

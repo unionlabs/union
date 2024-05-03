@@ -1,9 +1,9 @@
 <script lang="ts">
 import { toast } from "svelte-sonner"
-import { cn } from "$/lib/utilities/shadcn.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 import MenuIcon from "lucide-svelte/icons/menu"
 import HomeIcon from "lucide-svelte/icons/home"
-import Button from "$/lib/components/ui/button/button.svelte"
+import Button from "$lib/components/ui/button/button.svelte"
 import ArrowDownUpIcon from "lucide-svelte/icons/arrow-down-up"
 import WalletMinimalIcon from "lucide-svelte/icons/wallet-minimal"
 

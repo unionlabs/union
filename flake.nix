@@ -204,7 +204,6 @@
         ./lib/tendermint-verifier/tendermint-verifier.nix
         ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix
-        ./typescript-sdk/typescript-sdk.nix
         ./app/app.nix
         ./site/site.nix
         ./site/openapi.nix

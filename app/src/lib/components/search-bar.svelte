@@ -4,9 +4,9 @@ import Smile from "lucide-svelte/icons/smile"
 import Table from "lucide-svelte/icons/table"
 import Brain from "lucide-svelte/icons/brain"
 import Search from "lucide-svelte/icons/search"
-import { Input } from "$/lib/components/ui/input"
-import { debounce } from "$/lib/utilities/index.ts"
-import * as Command from "$/lib/components/ui/command/index.ts"
+import { Input } from "$lib/components/ui/input"
+import { debounce } from "$lib/utilities/index.ts"
+import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSign from "lucide-svelte/icons/badge-dollar-sign"
 
 let commandDialogOpen = false

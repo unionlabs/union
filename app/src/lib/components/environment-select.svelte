@@ -1,5 +1,5 @@
 <script lang="ts">
-import * as Select from "$/lib/components/ui/select/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
 
 const environments = ["testnet", "mainnet"] as const
 

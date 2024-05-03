@@ -15,10 +15,6 @@
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "paths": {
-      "$*": ["./src/*"],
-      "$/*": ["./src/*"]
-    },
     "types": ["typed-query-selector/strict"],
     "plugins": [
       {

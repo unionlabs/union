@@ -1,13 +1,14 @@
 <script lang="ts">
 import type { Props } from "./index.ts"
+import clsx from "clsx"
 import { copy } from "@svelte-put/copy"
 import XIcon from "lucide-svelte/icons/x"
-import { cn } from "$/lib/utilities/shadcn.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 import CopyIcon from "lucide-svelte/icons/copy"
 import CheckIcon from "lucide-svelte/icons/check"
-import { Button } from "$/lib/components/ui/button"
+import { Button } from "$lib/components/ui/button"
 import LoaderCircleIcon from "lucide-svelte/icons/loader-circle"
-import { truncateEvmAddress, truncateUnionAddress } from "$/lib/wallet/utilities/format.ts"
+import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
 export let chain: "cosmos" | "evm"
 type T = $$Generic<typeof chain>
@@ -19,7 +20,7 @@ export let hoverState: $$Props["hoverState"]
 export let connectStatus: $$Props["connectStatus"]
 export let onConnectClick: $$Props["onConnectClick"]
 export let onDisconnectClick: $$Props["onDisconnectClick"]
-export let connectedWalletName: $$Props["connectedWalletName"]
+export let connectedWalletId: $$Props["connectedWalletId"]
 export let chainWalletsInformation: $$Props["chainWalletsInformation"]
 
 $: connectText =
@@ -51,8 +52,8 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 >
   <span
     class={cn([
-      'text-[12.5px] w-full sm:text-sm text-left',
-      { 'text-lg sm:text-lg': connectText === 'Sepolia' || connectText === 'Union' },
+      'w-full text-left',
+      connectText === 'Sepolia' || connectText === 'Union' ? 'text-lg sm:text-sm' : 'text-[12.5px] sm:text-sm',
     ])}
   >
     {connectText}
@@ -69,58 +70,60 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 <div class="mt-2 mx-auto flex items-center flex-col">
   {#each chainWalletsInformation as { name, id, icon, download }, index (index)}
     {@const walletIdentifier = chain === 'evm' ? id : name}
-    <div
-      role="row"
-      tabindex={0}
-      data-index={index}
-      on:mouseleave={() => (hoverState = connectedWalletName === name ? 'none' : 'none')}
-      on:mouseenter={() => (hoverState = connectedWalletName === name ? 'hover' : 'none')}
-      class={cn([
-        'flex flex-col w-full justify-start mb-3',
-        {
-          'animate-pulse animation-delay-75':
-            connectStatus === 'connecting' || connectStatus === 'reconnecting',
-          hidden: connectStatus === 'connected' && connectedWalletName !== name,
-          block: connectStatus === 'disconnected' || connectStatus === 'connected',
-        },
-      ])}
-    >
-      <Button
-        type="button"
-        variant="outline"
-        disabled={connectStatus === 'connected' &&
-          (['connecting', 'reconnecting'].includes(connectStatus) || connectedWalletName !== name)}
+    {#if connectStatus === 'disconnected' || connectStatus === 'connected' || connectStatus === 'connecting' || connectStatus === 'reconnecting'}
+      <div
+        role="row"
+        tabindex={0}
+        data-index={index}
+        on:mouseleave={() => (hoverState = connectedWalletId === name ? 'none' : 'none')}
+        on:mouseenter={() => (hoverState = connectedWalletId === name ? 'hover' : 'none')}
         class={cn([
-          'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
-          {
-            'opacity-60 hover:opacity-100':
-              connectStatus === 'disconnected' || connectStatus == undefined,
-            'border-[#037791]': connectStatus === 'connected' && connectedWalletName === name,
-            'hover:text-rose-50 border-rose-900 hover:bg-transparent':
-              hoverState === 'hover' && connectedWalletName === name,
-          },
+          'flex',
+          'flex-col w-full justify-start mb-3',
+          (connectStatus === 'connecting' || connectStatus === 'reconnecting') &&
+            'animate-pulse animation-delay-75',
+          connectStatus === 'connected' && [connectedWalletId !== name ? 'hidden' : ''],
         ])}
-        on:click={() =>
-          connectStatus === 'connected' ? onDisconnectClick() : onConnectClick(walletIdentifier)}
       >
-        <img src={icon} alt={name} class="size-7 mr-3 text-white" />
-        {name}
-        {#if connectStatus === 'connected'}
-          {#if connectedWalletName === name}
-            {#if hoverState === 'hover'}
-              <XIcon class="ml-auto" />
+        <Button
+          type="button"
+          variant="outline"
+          disabled={connectStatus === 'connected' &&
+            (['connecting', 'reconnecting'].includes(connectStatus) || connectedWalletId !== name)}
+          class={cn([
+            'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
+            (connectStatus === 'disconnected' || connectStatus == undefined) &&
+              'opacity-60 hover:opacity-100',
+            connectStatus === 'connected' && connectedWalletId === name && 'border-[#037791]',
+            hoverState === 'hover' &&
+              connectedWalletId === name &&
+              'hover:text-rose-50 border-rose-900 hover:bg-transparent',
+          ])}
+          on:click={() => {
+            if (!walletIdentifier) return
+            if (connectStatus === 'connected') onDisconnectClick()
+            else onConnectClick(walletIdentifier)
+          }}
+        >
+          <img src={icon} alt={name} class="size-7 mr-3 text-white" />
+          {name}
+          {#if connectStatus === 'connected'}
+            {#if connectedWalletId === name}
+              {#if hoverState === 'hover'}
+                <XIcon class="ml-auto" />
+              {:else}
+                <CheckIcon class="ml-auto" />
+              {/if}
+            {/if}
+          {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
+            {#if connectedWalletId === name}
+              <LoaderCircleIcon class="animate-spin ml-auto" />
             {:else}
-              <CheckIcon class="ml-auto" />
+              <LoaderCircleIcon class="animate-spin ml-auto opacity-0" />
             {/if}
           {/if}
-        {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
-          {#if connectedWalletName === name}
-            <LoaderCircleIcon class="animate-spin ml-auto" />
-          {:else}
-            <LoaderCircleIcon class="animate-spin ml-auto opacity-0" />
-          {/if}
-        {/if}
-      </Button>
-    </div>
+        </Button>
+      </div>
+    {/if}
   {/each}
 </div>

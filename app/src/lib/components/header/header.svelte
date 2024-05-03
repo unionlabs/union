@@ -1,11 +1,11 @@
 <script lang="ts">
-import { cn } from "$/lib/utilities/shadcn.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 import { page } from "$app/stores"
 // import ThemeSwitch from "./theme-switch.svelte"
-import SearchBar from "$/lib/components/search-bar.svelte"
-import Connect from "$/lib/components/connect/connect.svelte"
-import Button from "$/lib/components/ui/button/button.svelte"
-import { Navigation, routes } from "$/lib/components/navigation/index.ts"
+import SearchBar from "$lib/components/search-bar.svelte"
+import Connect from "$lib/components/connect/connect.svelte"
+import Button from "$lib/components/ui/button/button.svelte"
+import { Navigation, routes } from "$lib/components/navigation/index.ts"
 </script>
 
 <header

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { cn } from "$/lib/utilities/shadcn.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 
 let [progress, visible] = [0, false]
 onMount(() => {

@@ -2,7 +2,7 @@
 import { Checkbox as CheckboxPrimitive } from "bits-ui"
 import Check from "lucide-svelte/icons/check"
 import Minus from "lucide-svelte/icons/minus"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = CheckboxPrimitive.Props
 type $$Events = CheckboxPrimitive.Events

@@ -1,8 +1,8 @@
 import { graphql } from "gql.tada"
-import { URLS } from "$/lib/constants"
+import { URLS } from "$lib/constants"
 import { request } from "graphql-request"
 import { createQuery } from "@tanstack/svelte-query"
-import type { Chain, ChainAsset } from "$/lib/constants/assets"
+import type { Chain, ChainAsset } from "$lib/constants/assets"
 
 /**
  * TODO:
