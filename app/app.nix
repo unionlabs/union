@@ -5,7 +5,8 @@
       nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
-    in {
+    in
+    {
       packages = {
         app = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-hv90SONYIJ22EwgYC2b2i5/hUUNTJQOYjdZklxZ5CAA=";
