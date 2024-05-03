@@ -21,3 +21,5 @@ func NewMsgWriteDifferedAck(packet channeltypes.Packet, data transfertypes.Fungi
 		Ack:                &ack,
 	}
 }
+
+func (m MsgWriteDifferedAck) Type() string { return TypeMsgWriteDifferedAck }

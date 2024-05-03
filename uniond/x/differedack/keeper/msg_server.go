@@ -27,8 +27,10 @@ func (server msgServer) WriteDifferedAck(goCtx context.Context, req *types.MsgWr
 		return nil, err
 	}
 
-	ctx.EventManager().EmitEvent(sdk.Events{
-		sdk.NewEvent()
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.TypeMsgWriteDifferedAck,
+		),
 	})
 
 	return &types.MsgWriteDifferedAckResponse{}, nil

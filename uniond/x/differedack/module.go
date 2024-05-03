@@ -21,6 +21,7 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
 	"union/x/differedack/keeper"
+	"union/x/differedack/simulation"
 	"union/x/differedack/types"
 )
 
@@ -81,7 +82,9 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 type AppModule struct {
 	AppModuleBasic
 
-	keeper keeper.Keeper
+	keeper        keeper.Keeper
+	accountKeeper types.AccountKeeper
+	bankKeeper    types.BankKeeper
 }
 
 func NewAppModule(
