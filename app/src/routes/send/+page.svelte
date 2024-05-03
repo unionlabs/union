@@ -251,7 +251,12 @@ let buttonText = "Connect Wallet" satisfies
 </main>
 
 <!-- from-dialog -->
-<Dialog.Root closeOnEscape={true} preventScroll={true} closeOnOutsideClick={true} open={true}>
+<Dialog.Root
+  closeOnEscape={true}
+  preventScroll={true}
+  closeOnOutsideClick={true}
+  bind:open={dialogOpen.fromChain}
+>
   <Dialog.Content
     class={cn([
       'border-solid border-accent overflow-auto flex flex-col items-start rounded-md',

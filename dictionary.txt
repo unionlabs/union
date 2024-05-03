@@ -17,7 +17,6 @@ CFLAGS
 CMOV
 Celestia
 Certus
-unplugin
 Chainer
 Cleper
 Codehash
@@ -1026,6 +1025,7 @@ unloadable
 unmarshal
 unmarshalling
 unopinionated
+unplugin
 unprefixed
 unsetting
 unshifted
