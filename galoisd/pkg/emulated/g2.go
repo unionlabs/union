@@ -507,8 +507,9 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 	}
 	elements := make([]*emulated.Element[emulated.BN254Fp], 4)
 	for i := 0; i < 4; i++ {
+		// The modulus is 31<m<32 bytes, we split the random bytes in two chunks [0..17] and [17..48] then recombine them.
+		// We split at 17 and not 31 because of endianness.
 		elemBits := pseudoRandomBits[i*48*8 : (i+1)*48*8]
-		// sadly this result is >limbs than expected and looks like gnark don't like it
 		splitPoint := int64(17)
 		l := e.field.FromBits(elemBits[:splitPoint*8]...)
 		r := e.field.FromBits(elemBits[splitPoint*8:]...)
