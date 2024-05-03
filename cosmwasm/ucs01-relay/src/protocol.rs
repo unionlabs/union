@@ -7,8 +7,8 @@ use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     middleware::{
-        take_pfm_fee_from_tokens, InFlightPfmPacket, Memo, MiddlewareError, PacketForward,
-        PacketForwardError, PacketReturnInfo, PacketSequence,
+        InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError,
+        PacketReturnInfo, PacketSequence,
     },
     protocol::TransferProtocol,
     types::{
@@ -766,19 +766,10 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         nonrefundable: bool,
         return_info: PacketReturnInfo,
     ) -> IbcReceiveResponse<Self::CustomMsg> {
-        // Pay fees
-        // Assume an ordered denom list and take fee out of first denom.
-        let fee = Decimal::percent(5);
-        let (fee_token, packet_tokens) = take_pfm_fee_from_tokens(tokens, fee);
-        let fees_message: CosmosMsg<Self::CustomMsg> =
-            CosmosMsg::Distribution(DistributionMsg::FundCommunityPool {
-                amount: vec![fee_token],
-            });
-
         // Prepare forward message
         let msg_info = MessageInfo {
             sender: receiver,
-            funds: packet_tokens,
+            funds: tokens,
         };
 
         let timeout = forward.get_effective_timeout();
@@ -853,7 +844,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         // TODO: Once updated to cosmwasm 2.1, defer to async ack
         IbcReceiveResponse::new()
-            .add_message(fees_message)
             .add_messages(transfer_messages)
             .add_events(transfer.events)
     }
