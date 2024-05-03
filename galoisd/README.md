@@ -2,6 +2,8 @@
 
 Galois daemon (galoisd) is a gRPC service providing consensus proof generation for CometBLS block headers. It requires another service, such as an IBC relayer, to send block data for zpk generation.
 
+The circuits developed under this service are tailored for the light client. Various implementations are partial and may not be sound if reused in a different context. We do not recommend reusing part of the circuits independently.
+
 ## Usage
 
 Call `galoisd --help` to see an up-to-date overview of functions. The CLI is self-documenting.
