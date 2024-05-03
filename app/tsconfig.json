@@ -15,7 +15,7 @@
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["typed-query-selector/strict"],
+    "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",

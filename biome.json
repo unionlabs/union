@@ -293,7 +293,7 @@
       }
     },
     {
-      "include": ["./app/src/polyfill.ts"],
+      "include": ["./app/src/lib/polyfill.ts"],
       "linter": {
         "rules": {
           "style": {
