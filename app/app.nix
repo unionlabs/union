@@ -5,11 +5,10 @@
       nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
-    in
-    {
+    in {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-ir5badMbuCUHbkUqHIIUwZ3imU2oddQPKSM4Byt+Y34=";
+          npmDepsHash = "sha256-hv90SONYIJ22EwgYC2b2i5/hUUNTJQOYjdZklxZ5CAA=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--legacy-peer-deps" ];
