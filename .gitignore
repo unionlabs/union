@@ -44,7 +44,6 @@ fuzzing-code-coverage
 *.wasm
 !uniond/vendor/**/*.wasm
 _
-bun.lockb
 .astro
 ._*
 .wrangler

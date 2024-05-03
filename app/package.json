@@ -16,27 +16,22 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
-    "@cosmjs/tendermint-rpc": "0.32.3",
-
     "@leapwallet/cosmos-snap-provider": "^0.1.26",
     "@scure/base": "^1.1.6",
     "@tanstack/svelte-query": "^5.32.1",
-
     "@urql/exchange-persisted": "^4.2.0",
     "@urql/exchange-retry": "^1.2.1",
     "@urql/svelte": "^4.1.1",
-    "@wagmi/connectors": "^4.3.0",
-    "@wagmi/core": "^2.8.0",
-    "bits-ui": "^0.21.6",
+    "@wagmi/connectors": "^4.3.1",
+    "@wagmi/core": "^2.9.0",
+    "bits-ui": "^0.21.7",
     "cmdk-sv": "^0.0.17",
     "formsnap": "^1.0.0",
     "gql.tada": "^1.6.3",
     "graphql-request": "^6.1.0",
     "graphql-ws": "^5.16.0",
-
-    "lucide-svelte": "^0.376.1",
+    "lucide-svelte": "^0.377.0",
     "mode-watcher": "^0.3.0",
-
     "svelte-legos": "^0.2.2",
     "svelte-local-storage-store": "^0.6.4",
     "svelte-radix": "^1.1.0",
@@ -45,10 +40,11 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.30.0",
     "vaul-svelte": "^0.3.0",
-    "viem": "^2.9.29"
+    "viem": "^2.9.31"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.1",
+    "@cosmjs/tendermint-rpc": "0.32.3",
     "@keplr-wallet/types": "^0.12.83",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.1",
@@ -62,8 +58,7 @@
     "@tailwindcss/typography": "^0.5.13",
     "@tanstack/svelte-query-devtools": "^5.32.1",
     "@total-typescript/ts-reset": "^0.5.1",
-
-    "@types/node": "^20.12.7",
+    "@types/node": "^20.12.8",
     "@types/postcss-import": "^14.0.3",
     "@urql/devtools": "^2.0.3",
     "autoprefixer": "^10.4.19",
@@ -76,7 +71,7 @@
     "process": "^0.11.10",
     "rollup-plugin-visualizer": "^5.12.0",
     "svelte": "^4.2.15",
-    "svelte-check": "^3.7.0",
+    "svelte-check": "^3.7.1",
     "svelte-headless-table": "^0.18.2",
     "svelte-preprocess": "^5.1.4",
     "sveltekit-rate-limiter": "^0.5.1",
@@ -87,10 +82,11 @@
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
     "tslib": "^2.6.2",
-    "tsx": "^4.7.3",
+    "tsx": "^4.8.2",
     "typed-query-selector": "^2.11.2",
     "typescript": "^5.4.5",
-    "vite": "^5.2.10",
+    "unplugin-turbo-console": "^1.8.6",
+    "vite": "^5.2.11",
     "vite-plugin-inspect": "^0.8.4",
     "vite-plugin-tailwind-purgecss": "^0.3.3",
     "vitest": "^1.5.3"

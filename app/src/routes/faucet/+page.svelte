@@ -1,5 +1,6 @@
 <script lang="ts">
-import clsx from "clsx"
+import { cn } from "$/lib/utilities/shadcn.ts"
+
 import { toast } from "svelte-sonner"
 import { browser } from "$app/environment"
 import { valibot } from "sveltekit-superforms/adapters"
@@ -91,7 +92,7 @@ const handleMouseLeave = () => {
   <form
     use:enhance
     method="POST"
-    class={clsx([
+    class={cn([
       'sm:w-[400px] w-[350px] max-w-[500px] space-y-6',
       ($delayed || $submitting || $message?.status === 'success') && 'invisible',
     ])}

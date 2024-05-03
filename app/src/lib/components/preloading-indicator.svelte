@@ -1,6 +1,6 @@
 <script lang="ts">
-import clsx from "clsx"
 import { onMount } from "svelte"
+import { cn } from "$/lib/utilities/shadcn.ts"
 
 let [progress, visible] = [0, false]
 onMount(() => {
@@ -18,7 +18,7 @@ onMount(() => {
   <div class="absolute w-full h-1 z-[999] left-0 top-0">
     <div
       style="width: {progress * 100}%"
-      class={clsx(['absolute h-full bg-cyan-300 transition-[width] duration-[0.4s] left-0 top-0'])}
+      class={cn(['absolute h-full bg-cyan-300 transition-[width] duration-500 left-0 top-0'])}
     />
   </div>
 {/if}

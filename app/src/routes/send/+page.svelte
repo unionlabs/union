@@ -1,6 +1,6 @@
 <script lang="ts">
-import clsx from "clsx"
 import type { PageData } from "./$types.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
 import Search from "lucide-svelte/icons/search"
 import Settings from "lucide-svelte/icons/settings"
 import * as Dialog from "$/lib/components/ui/dialog"
@@ -99,12 +99,12 @@ let buttonText = "Connect Wallet" satisfies
       </Button>
     </Card.Header>
     <Card.Content
-      class={clsx(['size-full max-h-[77%] pb-3 px-1 flex flex-col justify-between', devBorder])}
+      class={cn(['size-full max-h-[77%] pb-3 px-1 flex flex-col justify-between', devBorder])}
     >
       <!-- from section -->
       <div
         data-transfer-from-section
-        class={clsx(devBorder, 'w-full pb-0 mt-4 mb-2 h-min flex flex-row justify-between')}
+        class={cn(devBorder, 'w-full pb-0 mt-4 mb-2 h-min flex flex-row justify-between')}
       >
         <Button
           variant="ghost"
@@ -159,18 +159,18 @@ let buttonText = "Connect Wallet" satisfies
         </Button>
       </div>
       <!-- asset -->
-      <div class={clsx('size-full h-20 max-h-20 mt-1 mb-auto')}>
+      <div class={cn('size-full h-20 max-h-20 mt-1 mb-auto')}>
         <p class="text-center text-2xl mb-2 font-extrabold">Asset</p>
         <Button
           variant="outline"
-          class={clsx(devBorder, 'size-full max-h-20 flex flex-row justify-between pl-0')}
+          class={cn(devBorder, 'size-full max-h-20 flex flex-row justify-between pl-0')}
         >
           <img src="/images/icons/osmosis.svg" alt="asset" class="size-16 mb-2" />
           <div></div>
           <ChevronDown class="size-6" />
         </Button>
       </div>
-      <div class={clsx(['mt-1'])}>
+      <div class={cn(['mt-1'])}>
         <p class="text-center text-2xl mb-2 font-extrabold">Amount</p>
 
         <Input
@@ -181,15 +181,15 @@ let buttonText = "Connect Wallet" satisfies
           data-transfer-from-amount
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
-          class={clsx(['text-4xl h-20 mt-2 mb-0 focus-visible:ring-0'])}
+          class={cn(['text-4xl h-20 mt-2 mb-0 focus-visible:ring-0'])}
         />
       </div>
       <!-- middle section -->
-      <!-- <div class={clsx([devBorder, 'h-min w-full mx-auto flex self-center items-center'])}>
+      <!-- <div class={cn([devBorder, 'h-min w-full mx-auto flex self-center items-center'])}>
         <Button
           size="icon"
           variant="outline"
-          class={clsx([devBorder, 'p-2 rounded-xl mx-auto h-9 z-10'])}
+          class={cn([devBorder, 'p-2 rounded-xl mx-auto h-9 z-10'])}
         >
           <ArrowUpDown class="size-6 rounded-full" />
         </Button>
@@ -199,7 +199,7 @@ let buttonText = "Connect Wallet" satisfies
       <!-- 
       <div
         data-transfer-to-section
-        class={clsx(
+        class={cn(
           devBorder,
           'w-full p-2 pb-0 my-1 h-full max-h-[45%] flex flex-col justify-between',
         )}
@@ -212,9 +212,9 @@ let buttonText = "Connect Wallet" satisfies
           data-transfer-to-amount
           bind:value={inputValue.to}
           pattern="^[0-9]*[.,]?[0-9]*$"
-          class={clsx(['text-2xl h-14 mt-2 mb-0 focus-visible:ring-0'])}
+          class={cn(['text-2xl h-14 mt-2 mb-0 focus-visible:ring-0'])}
         />
-        <div class={clsx([devBorder, 'flex space-x-3 w-1/2 h-22'])}>
+        <div class={cn([devBorder, 'flex space-x-3 w-1/2 h-22'])}>
           <Button
             variant="outline"
             class="pr-2 w-full h-full flex flex-col space-y-2 border-none pt-0"
@@ -253,7 +253,7 @@ let buttonText = "Connect Wallet" satisfies
 <!-- from-dialog -->
 <Dialog.Root closeOnEscape={true} preventScroll={true} closeOnOutsideClick={true} open={true}>
   <Dialog.Content
-    class={clsx([
+    class={cn([
       'border-solid border-accent overflow-auto flex flex-col items-start rounded-md',
       'max-w-[90%] sm:max-w-[375px] border-[1px] pt-4 pb-1 px-2',
     ])}
@@ -283,7 +283,7 @@ let buttonText = "Connect Wallet" satisfies
       <ul class="my-3 mx-2 space-y-1">
         {#each chainSearchResults as { name, id: chainId, icon, live }, index}
           <li
-            class={clsx([
+            class={cn([
               live ? 'cursor-pointer' : 'cursor-not-allowed',
               'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
             ])}
@@ -292,7 +292,7 @@ let buttonText = "Connect Wallet" satisfies
               disabled={!live}
               on:click={() => handleChainSelect(name.toLowerCase(), 'fromChain')}
               variant={$queryParams.from === name.toLowerCase() ? 'secondary' : 'ghost'}
-              class={clsx([
+              class={cn([
                 'w-full flex justify-start space-x-4 p-2 rounded-none pl-3 h-[55px] my-auto',
               ])}
             >
@@ -343,7 +343,7 @@ let buttonText = "Connect Wallet" satisfies
       <ul class="my-3 mx-2 space-y-1">
         {#each tokenSearchResults as { name, id: chainId, icon, live }, index}
           <li
-            class={clsx([
+            class={cn([
               live ? 'cursor-pointer' : 'cursor-not-allowed',
               'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
             ])}
@@ -352,7 +352,7 @@ let buttonText = "Connect Wallet" satisfies
               disabled={!live}
               on:click={() => handleChainSelect(name.toLowerCase(), 'fromChain')}
               variant={$queryParams.from === name.toLowerCase() ? 'secondary' : 'ghost'}
-              class={clsx([
+              class={cn([
                 'w-full flex justify-start space-x-4 p-2 rounded-none pl-3 h-[55px] my-auto',
               ])}
             >

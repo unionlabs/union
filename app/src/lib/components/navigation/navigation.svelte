@@ -1,7 +1,7 @@
 <script lang="ts">
-import clsx from "clsx"
 import { routes } from "./index.ts"
 import Menu from "lucide-svelte/icons/menu"
+import { cn } from "$/lib/utilities/shadcn.ts"
 import { page, navigating } from "$app/stores"
 import { Button } from "$/lib/components/ui/button/index.ts"
 import * as Drawer from "$/lib/components/ui/drawer/index.ts"
@@ -30,7 +30,7 @@ $: if ($navigating) drawerOpen = false
           size="lg"
           href={path}
           variant="link"
-          class={clsx([
+          class={cn([
             'rounded-none py-2 text-center text-6xl font-bold w-full hover:bg-white/5 h-full',
             ' decoration-transparent no-underline ring-0 focus:ring-0 focus:ring-offset-0 outline-none focus-visible:outline-none focus-visible:ring-0',
             { 'bg-white/15': isCurrentPage },

@@ -1,8 +1,8 @@
 <script lang="ts">
-import clsx from "clsx"
 import { navigating } from "$app/stores"
 import { slide } from "svelte/transition"
 import Connection from "./connection.svelte"
+import { cn } from "$/lib/utilities/shadcn.ts"
 import * as Sheet from "$/lib/components/ui/sheet"
 import { Button } from "$/lib/components/ui/button"
 import * as Avatar from "$/lib/components/ui/avatar"
@@ -29,7 +29,7 @@ let collapsibleOpen = true
       variant="outline"
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
-      class={clsx([
+      class={cn([
         'truncate max-w-44 space-x-2 px-4 text-lg',
         {
           'border-cyan-300/50':
@@ -55,12 +55,14 @@ let collapsibleOpen = true
        -->
     </Button>
   </Sheet.Trigger>
-  <Sheet.Content class="border-solid border-white/20 min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2">
+  <Sheet.Content
+    class="border-solid border-white/20 min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2"
+  >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title>
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={clsx(['size-8', { hidden: $sepoliaStore.connectionStatus !== 'connected' }])}
+          class={cn(['size-8', { hidden: $sepoliaStore.connectionStatus !== 'connected' }])}
         >
           <Avatar.Image
             alt="ethereum avatar"
@@ -78,7 +80,7 @@ let collapsibleOpen = true
     >
       <Collapsible.Trigger
         tabindex={-1}
-        class={clsx([
+        class={cn([
           'mb-3 font-bold w-full flex justify-between items-center align-middle transition-all active:scale-98 rounded-md px-2',
           'border-solid border-[1px] border-transparent hover:bg-white/10',
           { 'border-accent': !collapsibleOpen },
@@ -101,7 +103,7 @@ let collapsibleOpen = true
           chainWalletsInformation={evmWalletsInformation}
           connectedWalletName={$sepoliaStore.connectedWallet}
         />
-        <Separator class={clsx(['bg-[#303033] my-1.5'])} />
+        <Separator class={cn(['bg-[#303033] my-1.5'])} />
         <Connection
           chain="cosmos"
           address={$cosmosStore.address}

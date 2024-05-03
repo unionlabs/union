@@ -1,8 +1,8 @@
 <script lang="ts">
-import clsx from "clsx"
 import type { Props } from "./index.ts"
 import { copy } from "@svelte-put/copy"
 import XIcon from "lucide-svelte/icons/x"
+import { cn } from "$/lib/utilities/shadcn.ts"
 import CopyIcon from "lucide-svelte/icons/copy"
 import CheckIcon from "lucide-svelte/icons/check"
 import { Button } from "$/lib/components/ui/button"
@@ -43,14 +43,14 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   on:click={_event => onCopyClick()}
   builders={[{ action: node => copy(node, { text: address }) }]}
   variant={connectStatus === 'connected' ? 'default' : 'ghost'}
-  class={clsx(
+  class={cn(
     ['px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start'],
     connectStatus === 'disconnected' &&
       'hover:bg-transparent !text-white pointer-events-none text-md font-bold',
   )}
 >
   <span
-    class={clsx([
+    class={cn([
       'text-[12.5px] w-full sm:text-sm text-left',
       { 'text-lg sm:text-lg': connectText === 'Sepolia' || connectText === 'Union' },
     ])}
@@ -75,7 +75,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
       data-index={index}
       on:mouseleave={() => (hoverState = connectedWalletName === name ? 'none' : 'none')}
       on:mouseenter={() => (hoverState = connectedWalletName === name ? 'hover' : 'none')}
-      class={clsx([
+      class={cn([
         'flex flex-col w-full justify-start mb-3',
         {
           'animate-pulse animation-delay-75':
@@ -90,7 +90,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
         variant="outline"
         disabled={connectStatus === 'connected' &&
           (['connecting', 'reconnecting'].includes(connectStatus) || connectedWalletName !== name)}
-        class={clsx([
+        class={cn([
           'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
           {
             'opacity-60 hover:opacity-100':

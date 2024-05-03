@@ -124,7 +124,15 @@ watchAccount(config, {
 })
 reconnect(config)
 
-const desiredWallets = ["injected", "walletConnect", "metamask", "phantom", "tokenary"]
+const desiredWalletIds = [
+  "injected",
+  "io.metamask",
+  "app.phantom",
+  "io.tokenary",
+  "walletconnect",
+  "io.metamask.flask"
+]
+
 export const evmWalletsInformation = config.connectors
   .map(connector => ({
     ...connector,
@@ -137,7 +145,7 @@ export const evmWalletsInformation = config.connectors
     type: connector.type as ConnectorType,
     download: ""
   }))
-  .filter(connector => desiredWallets.includes(connector.name.toLowerCase()))
+  .filter(connector => desiredWalletIds.includes(connector.id.toLowerCase()))
 
 export type EvmWalletName = (typeof evmWalletsInformation)[number]["name"]
 export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]

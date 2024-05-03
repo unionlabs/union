@@ -203,4 +203,8 @@ export class UnionClient implements IUnionClient {
       (params as { instructions: Array<ExecuteInstruction> }).instructions
     )
   }
+
+  public evmWriteContract = () => {
+    throw new Error("Not implemented")
+  }
 }

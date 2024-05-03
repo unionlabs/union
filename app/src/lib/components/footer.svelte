@@ -1,6 +1,6 @@
 <script lang="ts">
-import clsx from "clsx"
 import { toast } from "svelte-sonner"
+import { cn } from "$/lib/utilities/shadcn.ts"
 import MenuIcon from "lucide-svelte/icons/menu"
 import HomeIcon from "lucide-svelte/icons/home"
 import Button from "$/lib/components/ui/button/button.svelte"
@@ -15,7 +15,7 @@ const navigationIconStyle = "size-7 min-w-6 hover:text-white text-zinc-300"
 </script>
 
 <footer
-  class={clsx([
+  class={cn([
     'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 py-2',
     'grid md:hidden grid-cols-4 gap-y-2 place-content-center divide-x-2 divide-[#fafafa25]',
     'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-sm',

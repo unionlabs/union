@@ -1,8 +1,8 @@
 import { bech32 } from "@scure/base"
 import { raise } from "./utilities.ts"
 import { fromBech32 } from "@cosmjs/encoding"
-import type { UnionAddress, EvmAddress } from "./types.ts"
 import { getAddress, isHex, isAddress } from "viem"
+import type { UnionAddress, EvmAddress } from "./types.ts"
 
 export const isValidEvmAddress = (address: unknown): address is EvmAddress =>
   typeof address === "string" && //

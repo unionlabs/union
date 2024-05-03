@@ -1,6 +1,7 @@
 import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
 import { visualizer } from "rollup-plugin-visualizer"
+import TurboConsole from "unplugin-turbo-console/vite"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
 
@@ -13,7 +14,7 @@ export default defineConfig(config => {
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
-  const plugins = [purgeCss(), sveltekit()] satisfies Array<PluginOption>
+  const plugins = [purgeCss(), TurboConsole(), sveltekit()] satisfies Array<PluginOption>
 
   if (INSPECT === "true") plugins.push(Inspect())
   if (VISUALIZE === "true") plugins.push(visualizer())

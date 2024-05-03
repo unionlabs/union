@@ -1,5 +1,5 @@
 <script lang="ts">
-import clsx from "clsx"
+import { cn } from "$/lib/utilities/shadcn.ts"
 import { page } from "$app/stores"
 // import ThemeSwitch from "./theme-switch.svelte"
 import SearchBar from "$/lib/components/search-bar.svelte"
@@ -28,7 +28,7 @@ import { Navigation, routes } from "$/lib/components/navigation/index.ts"
           size="sm"
           variant="link"
           href={path}
-          class={clsx([
+          class={cn([
             'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400 hover:bg-zinc-800/70',
             {
               'bg-zinc-800/70': $page.route.id === path,

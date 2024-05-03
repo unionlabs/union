@@ -17,6 +17,7 @@ CFLAGS
 CMOV
 Celestia
 Certus
+unplugin
 Chainer
 Cleper
 Codehash
