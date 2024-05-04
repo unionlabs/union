@@ -6,7 +6,6 @@ import {
   subscriptionExchange
 } from "@urql/svelte"
 import { URLS } from "$lib/constants"
-import { raise } from "$/lib/utilities"
 import { devtoolsExchange } from "@urql/devtools"
 import { retryExchange } from "@urql/exchange-retry"
 import type { TadaPersistedDocumentNode } from "gql.tada"

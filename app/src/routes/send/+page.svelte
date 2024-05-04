@@ -1,26 +1,21 @@
 <script lang="ts">
+import { onMount } from "svelte"
+import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import Search from "virtual:icons/lucide/search"
-import Settings from "virtual:icons/lucide/settings"
 import * as Dialog from "$lib/components/ui/dialog"
+import Settings from "virtual:icons/lucide/settings"
 import { debounce, dollarize } from "$lib/utilities"
-import { queryParameters } from "sveltekit-search-params"
+import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.js"
+import { queryParameters } from "sveltekit-search-params"
 import { Input } from "$lib/components/ui/input/index.js"
 import ChevronDown from "virtual:icons/lucide/chevron-down"
-import ArrowUpDown from "virtual:icons/lucide/arrow-up-down"
 import { Button } from "$lib/components/ui/button/index.js"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { Separator } from "$lib/components/ui/separator/index.js"
-import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
-
-import { UnionClient } from "@union/client"
-import { sepoliaStore } from "$/lib/wallet/evm/config.ts"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { onMount } from "svelte"
-import type { OfflineSigner } from "@leapwallet/types"
 import SendDialog from "$/lib/components/send/dialogs/chain.svelte"
+import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 
 let unionClient: UnionClient
 onMount(() => {
@@ -43,7 +38,7 @@ onMount(() => {
 
 export let data: PageData
 
-const devBorder = "outline outline-[1px] outline-pink-200/40"
+const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
 
 const queryParams = queryParameters(
   {
@@ -205,10 +200,11 @@ let buttonText = "Send it 🔥" satisfies
           variant="outline"
           class={cn(
             devBorder,
-            'size-full max-h-20 flex flex-row justify-start space-x-2 pl-2.5 pr-2 pt-1.5',
+            'size-full max-h-20 flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5',
           )}
         >
-          <div class={cn([devBorder, 'h-full mr-1 flex flex-row justify-start items-center'])}>
+          <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
+          <!-- <div class={cn([devBorder, 'h-full mr-1 flex flex-row justify-start items-center'])}>
             <img
               alt="asset"
               src="/images/icons/union.svg"
@@ -233,11 +229,16 @@ let buttonText = "Send it 🔥" satisfies
             <p class="text-2xl font-black text-left mb-auto">Osmosis OSMO</p>
           </div>
 
-          <p class={cn([devBorder, 'amount font-sans text-3xl font-black mb-auto ml-auto tabular-nums'])}>
+          <p
+            class={cn([
+              devBorder,
+              'amount font-sans text-3xl font-black mb-auto ml-auto tabular-nums',
+            ])}
+          >
             {dollarize(420.69)}
-          </p>
+          </p> -->
 
-          <ChevronDown class={cn([devBorder, 'size-6 mb-auto mt-0.5 mr-auto self-end'])} />
+          <ChevronDown class={cn([devBorder, 'size-6 mb-auto mt-0.5 ml-auto'])} />
         </Button>
       </div>
       <div class={cn(['mt-1'])}>
@@ -250,7 +251,7 @@ let buttonText = "Send it 🔥" satisfies
           data-transfer-from-amount
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
-          class={cn(['text-4xl h-20 mt-2 mb-0 focus-visible:ring-0'])}
+          class={cn(['text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums'])}
         />
       </div>
     </Card.Content>
