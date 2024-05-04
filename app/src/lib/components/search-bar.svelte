@@ -37,6 +37,7 @@ onMount(() => {
     type="search"
     pattern="[a-z]"
     autocorrect="off"
+    autocomplete="off"
     spellcheck="false"
     autocapitalize="off"
     placeholder="Search..."

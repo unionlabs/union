@@ -102,20 +102,23 @@ const handleMouseLeave = () => {
         <div class="relative">
           <Input
             {...attrs}
-            spellcheck={false}
-            bind:value={$formData.address}
-            pattern={unionAddressRegex.source}
-            on:focus={handleFocus}
+            autocorrect="off"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="none"
             on:blur={handleBlur}
-            on:mouseenter={handleMouseEnter}
+            on:focus={handleFocus}
+            bind:value={$formData.address}
             on:mouseleave={handleMouseMove}
+            on:mouseenter={handleMouseEnter}
+            pattern={unionAddressRegex.source}
             placeholder="union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
             class="h-12 w-full cursor-default rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors duration-500 placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9] focus:outline-none"
             title="Must be a valid Union address (bech32, starts with `union`)"
           />
           <input
-            bind:this={input}
             disabled
+            bind:this={input}
             aria-hidden="true"
             style={`
               opacity: ${opacity};
