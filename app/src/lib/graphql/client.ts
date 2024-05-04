@@ -54,9 +54,6 @@ export const graphqlClient = new Client({
   ],
   fetchSubscriptions: true,
   fetchOptions: () => ({
-    headers: {
-      "X-Hasura-Admin-Secret":
-        import.meta.env.PUBLIC_HASURA_ADMIN_SECRET ?? raise("Missing PUBLIC_HASURA_ADMIN_SECRET")
-    }
+    headers: { "X-Hasura-Role": "app" }
   })
 })
