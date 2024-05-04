@@ -1,12 +1,12 @@
 <script lang="ts">
 import { onMount } from "svelte"
+import { debounce } from "$lib/utilities"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
 import Settings from "virtual:icons/lucide/settings"
-import { debounce, dollarize } from "$lib/utilities"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.js"
 import { queryParameters } from "sveltekit-search-params"
