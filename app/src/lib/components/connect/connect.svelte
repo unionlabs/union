@@ -42,7 +42,7 @@ let collapsibleOpen = true
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="border-solid border-white/20 min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2"
+    class="border-solid border-[1px] border-accent min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2"
   >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title>

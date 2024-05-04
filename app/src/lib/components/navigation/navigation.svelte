@@ -11,7 +11,7 @@ $: if ($navigating) drawerOpen = false
 </script>
 
 <Drawer.Root bind:open={drawerOpen} closeOnEscape={true} closeOnOutsideClick={true}>
-  <Drawer.Trigger asChild let:builder class="">
+  <Drawer.Trigger asChild let:builder>
     <Button
       size="icon"
       variant="outline"
@@ -33,7 +33,7 @@ $: if ($navigating) drawerOpen = false
           class={cn([
             'rounded-none py-2 text-center text-6xl font-bold w-full hover:bg-white/5 h-full',
             ' decoration-transparent no-underline ring-0 focus:ring-0 focus:ring-offset-0 outline-none focus-visible:outline-none focus-visible:ring-0',
-            { 'bg-white/15': isCurrentPage },
+            isCurrentPage && 'bg-white/15',
           ])}
         >
           {name}
@@ -42,10 +42,3 @@ $: if ($navigating) drawerOpen = false
     </nav>
   </Drawer.Content>
 </Drawer.Root>
-
-<style lang="postcss">
-  :global([data-dialog-overlay]) {
-    backdrop-filter: blur(3px);
-    background-color: hsl(var(--background), 0.8);
-  }
-</style>

@@ -24,7 +24,7 @@ import type { ChainWalletStore } from "$lib/wallet/types"
 import { walletConnect, injected } from "@wagmi/connectors"
 import { walletActionsEip5792, walletActionsEip3074 } from "viem/experimental"
 
-const WALLET_CONNECT_PROJECT_ID = "640277c8235dc052b811d0cb88515fa5"
+const WALLET_CONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
 const ankrId = "bced07c1a0ee36409ee84dae4e4f65a25b57715ddd8f3f2fd261f2a6b5508505"
 
 const chains = [sepolia] as const

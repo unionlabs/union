@@ -1,6 +1,11 @@
 @import url('./reset.css');
 @import url('./tailwind.css');
 
+::selection {
+  color: #0d0d0d;
+  background-color: #a0ecfd;
+}
+
 .truncate {
   overflow: hidden;
   white-space: nowrap;

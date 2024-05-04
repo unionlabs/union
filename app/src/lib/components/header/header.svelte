@@ -14,7 +14,7 @@ import { Navigation, routes } from "$lib/components/navigation/index.ts"
   <Button
     variant="link"
     href="/"
-    class="px-1 sm:pl-3 text-xl text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
+    class="px-1 sm:pl-3 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
   >
     union
   </Button>

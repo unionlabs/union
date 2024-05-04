@@ -91,6 +91,15 @@ onMount(() => {
 })
 
 $: if ($navigating) console.log("Navigating to", $page.url.pathname)
+
+const backgroundColors = {
+  background: "#09090b",
+  dotColor: "#4545538c",
+  dotColorsBackground: "#09090b"
+}
+/**
+ * background-image: radial-gradient(#4545538c 0.3px,#09090b 1px);
+ */
 </script>
 
 <svelte:head>
@@ -103,7 +112,6 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 {/if}
 
 <ModeWatcher />
-<Toaster />
 
 <QueryClientProvider client={queryClient}>
   <Header />
@@ -125,7 +133,9 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 <OnlineStatus />
 
 <div
-  class="absolute top-0 z-[-2] size-full bg-[#000000] bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)] bg-[size:20px_20px]"
+  id="background-dotted-grid"
+  data-background-dotted-grid="true"
+  class="absolute top-0 z-[-2] size-full bg-[#99e6ff20] bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)] bg-[size:20px_20px]"
 ></div>
 
 <svelte:window on:beforeunload={unload} />
