@@ -36,6 +36,6 @@ export let readonly: $$Props["readonly"] = undefined
   on:mouseleave
   on:paste
   on:input
-  on:wheel
+  on:wheel|passive
   {...$$restProps}
 />

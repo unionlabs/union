@@ -6,11 +6,16 @@ import {
   subscriptionExchange
 } from "@urql/svelte"
 import { URLS } from "$lib/constants"
+import { raise } from "$/lib/utilities"
 import { devtoolsExchange } from "@urql/devtools"
 import { retryExchange } from "@urql/exchange-retry"
+import type { TadaPersistedDocumentNode } from "gql.tada"
 import { persistedExchange } from "@urql/exchange-persisted"
 import { createClient as createWSClient, type SubscribePayload } from "graphql-ws"
-import type { TadaPersistedDocumentNode } from "gql.tada"
+
+/**
+ * @see https://commerce.nearform.com/open-source/urql/docs/
+ */
 
 const wsClient = createWSClient({
   url: URLS.GRAPHQL_WSS,
@@ -19,6 +24,7 @@ const wsClient = createWSClient({
 
 export const graphqlClient = new Client({
   url: URLS.GRAPHQL,
+  requestPolicy: "cache-and-network",
   exchanges: [
     devtoolsExchange,
     cacheExchange,
@@ -47,10 +53,10 @@ export const graphqlClient = new Client({
     debugExchange
   ],
   fetchSubscriptions: true,
-
   fetchOptions: () => ({
     headers: {
-      "X-Hasura-Admin-Secret": import.meta.env.PUBLIC_HASURA_ADMIN_SECRET ?? ""
+      "X-Hasura-Admin-Secret":
+        import.meta.env.PUBLIC_HASURA_ADMIN_SECRET ?? raise("Missing PUBLIC_HASURA_ADMIN_SECRET")
     }
   })
 })

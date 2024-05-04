@@ -41,6 +41,9 @@ onMount(() => {
   else if (window?.leap) cosmosStore.connect("leap")
 })
 
+/**
+ * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
+ */
 setContextClient(graphqlClient)
 
 const queryClient: QueryClient = new QueryClient({

@@ -14,6 +14,7 @@ import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
 
 /**
  * TODO:
+ * [ ] - Fetch address from wallet and pass it as default, allow user to change it
  * [ ] - Display user received transactions & show spinner while loading
  */
 

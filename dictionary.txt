@@ -805,6 +805,8 @@ redelegation
 redelegations
 reencode
 reentrancy
+reexcute
+reexecute
 reflectionv
 regclass
 regen

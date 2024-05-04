@@ -13,27 +13,23 @@ import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
  */
 
 export function ibcTransfersQuery({ address, limit = 100 }: { address: string; limit?: number }) {
+  const query = graphql(/* GraphQL */ `
+    query userTransfers($address: String!, $limit: Int!) {
+      v0_wasm_ibc_transfers(limit: $limit, where: {
+        _or: [{sender: {_eq: $address}}, {receiver: {_eq: $address}}]
+      }) {
+        sender
+        receiver
+        amount
+        denom
+        transaction_hash
+        _contract_address
+      }
+    }
+  `)
   return createQuery({
     queryKey: ["ibc-transfers", address],
-    queryFn: async () =>
-      request(
-        URLS.GRAPHQL,
-        graphql(/* GraphQL */ `
-          query userTransfers($address: String!, $limit: Int!) {
-            v0_wasm_ibc_transfers(limit: $limit, where: {
-              _or: [{sender: {_eq: $address}}, {receiver: {_eq: $address}}]
-            }) {
-              sender
-              receiver
-              amount
-              denom
-              transaction_hash
-              _contract_address
-            }
-          }
-        `),
-        { address, limit }
-      ),
+    queryFn: async () => request(URLS.GRAPHQL, query, { address, limit }),
     enabled: !!address
   })
 }
@@ -51,6 +47,19 @@ export function unionTransfersQuery({
   refetchInterval?: number
   enabled?: boolean
 }) {
+  const query = graphql(/* GraphQL */ `
+    query CosmosSDKUnionTransfers($address: String!, $limit: Int!) {
+      v0_transfers(limit:  $limit, where: {_or: [{sender: {_eq: $address}}, {recipient: {_eq: $address}}]}) {
+        sender
+        recipient
+        amount
+        denom
+        height
+        chain_id
+        transaction_hash
+      }
+    }
+  `)
   const baseUrl = `${URLS.UNION.REST}/cosmos/tx/v1beta1/txs`
   if (!isValidCosmosAddress(address)) return null
   return createQueries({
