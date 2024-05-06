@@ -20,6 +20,7 @@ import (
 var (
 	_ porttypes.IBCModule             = (*IBCModule)(nil)
 	_ porttypes.PacketDataUnmarshaler = (*IBCModule)(nil)
+	_ porttypes.UpgradableModule      = (*IBCModule)(nil)
 )
 
 // IBCModule implements the ICS26 interface for interchain accounts host chains
@@ -118,6 +119,7 @@ func (im IBCModule) OnRecvPacket(
 	logger := im.keeper.Logger(ctx)
 	if !im.keeper.GetParams(ctx).HostEnabled {
 		logger.Info("host submodule is disabled")
+		keeper.EmitHostDisabledEvent(ctx, packet)
 		return channeltypes.NewErrorAcknowledgement(types.ErrHostSubModuleDisabled)
 	}
 
@@ -127,7 +129,7 @@ func (im IBCModule) OnRecvPacket(
 		ack = channeltypes.NewErrorAcknowledgement(err)
 		logger.Error(fmt.Sprintf("%s sequence %d", err.Error(), packet.Sequence))
 	} else {
-		logger.Info("successfully handled packet sequence: %d", packet.Sequence)
+		logger.Info("successfully handled packet", "sequence", packet.Sequence)
 	}
 
 	// Emit an event indicating a successful or failed acknowledgement.
@@ -154,6 +156,29 @@ func (IBCModule) OnTimeoutPacket(
 	relayer sdk.AccAddress,
 ) error {
 	return errorsmod.Wrap(icatypes.ErrInvalidChannelFlow, "cannot cause a packet timeout on a host channel end, a host chain does not send a packet over the channel")
+}
+
+// OnChanUpgradeInit implements the IBCModule interface
+func (IBCModule) OnChanUpgradeInit(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, proposedVersion string) (string, error) {
+	return "", errorsmod.Wrap(icatypes.ErrInvalidChannelFlow, "channel upgrade handshake must be initiated by controller chain")
+}
+
+// OnChanUpgradeTry implements the IBCModule interface
+func (im IBCModule) OnChanUpgradeTry(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, counterpartyVersion string) (string, error) {
+	if !im.keeper.GetParams(ctx).HostEnabled {
+		return "", types.ErrHostSubModuleDisabled
+	}
+
+	return im.keeper.OnChanUpgradeTry(ctx, portID, channelID, proposedOrder, proposedConnectionHops, counterpartyVersion)
+}
+
+// OnChanUpgradeAck implements the IBCModule interface
+func (IBCModule) OnChanUpgradeAck(ctx sdk.Context, portID, channelID, counterpartyVersion string) error {
+	return errorsmod.Wrap(icatypes.ErrInvalidChannelFlow, "channel upgrade handshake must be initiated by controller chain")
+}
+
+// OnChanUpgradeOpen implements the IBCModule interface
+func (IBCModule) OnChanUpgradeOpen(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, proposedVersion string) {
 }
 
 // UnmarshalPacketData attempts to unmarshal the provided packet data bytes

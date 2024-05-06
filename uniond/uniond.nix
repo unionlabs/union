@@ -1,8 +1,9 @@
 { inputs, ... }: {
   perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, mkCi, ... }:
     let
+      libwasmvm = self'.packages.libwasmvm-2_0_1;
       CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
-      CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
+      CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
       CGO_LD_TEST_FLAGS = "-L${self'.packages.bls-eth}/lib";
 
       mkUniondImage = uniond: pkgs.dockerTools.buildImage {
@@ -75,7 +76,7 @@
             buildInputs = [ pkgs.makeWrapper ];
             postFixup = ''
               wrapProgram $out/bin/uniond \
-              --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ self'.packages.libwasmvm ])};
+              --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
             '';
             ldflags = [
               "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"

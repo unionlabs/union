@@ -36,4 +36,5 @@ var (
 	ErrClientNotActive                        = errorsmod.Register(SubModuleName, 29, "client state is not active")
 	ErrFailedMembershipVerification           = errorsmod.Register(SubModuleName, 30, "membership verification failed")
 	ErrFailedNonMembershipVerification        = errorsmod.Register(SubModuleName, 31, "non-membership verification failed")
+	ErrClientTypeNotSupported                 = errorsmod.Register(SubModuleName, 32, "client type not supported")
 )

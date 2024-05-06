@@ -246,7 +246,7 @@ func (lb *lbBalancer) newRemoteBalancerCCWrapper() error {
 	// Explicitly set pickfirst as the balancer.
 	dopts = append(dopts, grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"pick_first"}`))
 	dopts = append(dopts, grpc.WithResolvers(lb.manualResolver))
-	dopts = append(dopts, grpc.WithChannelzParentID(lb.opt.ChannelzParentID))
+	dopts = append(dopts, grpc.WithChannelzParentID(lb.opt.ChannelzParent))
 
 	// Enable Keepalive for grpclb client.
 	dopts = append(dopts, grpc.WithKeepaliveParams(keepalive.ClientParameters{

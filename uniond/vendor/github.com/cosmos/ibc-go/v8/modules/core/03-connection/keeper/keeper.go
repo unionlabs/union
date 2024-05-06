@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
@@ -26,6 +27,7 @@ type Keeper struct {
 	legacySubspace types.ParamSubspace
 	cdc            codec.BinaryCodec
 	clientKeeper   types.ClientKeeper
+	consensusHost  clienttypes.ConsensusHost
 }
 
 // NewKeeper creates a new IBC connection Keeper instance
@@ -41,6 +43,15 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, legacySubspace ty
 // Logger returns a module-specific logger.
 func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+exported.ModuleName+"/"+types.SubModuleName)
+}
+
+// SetConsensusHost sets a custom ConsensusHost for self client state and consensus state validation.
+func (k *Keeper) SetConsensusHost(consensusHost clienttypes.ConsensusHost) {
+	if consensusHost == nil {
+		panic(fmt.Errorf("cannot set a nil self consensus host"))
+	}
+
+	k.consensusHost = consensusHost
 }
 
 // GetCommitmentPrefix returns the IBC connection store prefix as a commitment

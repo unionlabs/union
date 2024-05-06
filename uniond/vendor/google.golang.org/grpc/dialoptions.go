@@ -68,7 +68,7 @@ type dialOptions struct {
 	binaryLogger                binarylog.Logger
 	copts                       transport.ConnectOptions
 	callOptions                 []CallOption
-	channelzParentID            *channelz.Identifier
+	channelzParent              channelz.Identifier
 	disableServiceConfig        bool
 	disableRetry                bool
 	disableHealthCheck          bool
@@ -79,6 +79,7 @@ type dialOptions struct {
 	resolvers                   []resolver.Builder
 	idleTimeout                 time.Duration
 	recvBufferPool              SharedBufferPool
+	defaultScheme               string
 }
 
 // DialOption configures how we set up the connection.
@@ -154,9 +155,7 @@ func WithSharedWriteBuffer(val bool) DialOption {
 }
 
 // WithWriteBufferSize determines how much data can be batched before doing a
-// write on the wire. The corresponding memory allocation for this buffer will
-// be twice the size to keep syscalls low. The default value for this buffer is
-// 32KB.
+// write on the wire. The default value for this buffer is 32KB.
 //
 // Zero or negative values will disable the write buffer such that each write
 // will be on underlying connection. Note: A Send call may not directly
@@ -555,9 +554,9 @@ func WithAuthority(a string) DialOption {
 //
 // Notice: This API is EXPERIMENTAL and may be changed or removed in a
 // later release.
-func WithChannelzParentID(id *channelz.Identifier) DialOption {
+func WithChannelzParentID(c channelz.Identifier) DialOption {
 	return newFuncDialOption(func(o *dialOptions) {
-		o.channelzParentID = id
+		o.channelzParent = c
 	})
 }
 
@@ -645,6 +644,7 @@ func defaultDialOptions() dialOptions {
 		healthCheckFunc: internal.HealthCheckFunc,
 		idleTimeout:     30 * time.Minute,
 		recvBufferPool:  nopBufferPool{},
+		defaultScheme:   "dns",
 	}
 }
 
@@ -656,6 +656,14 @@ func defaultDialOptions() dialOptions {
 func withMinConnectDeadline(f func() time.Duration) DialOption {
 	return newFuncDialOption(func(o *dialOptions) {
 		o.minConnectTimeout = f
+	})
+}
+
+// withDefaultScheme is used to allow Dial to use "passthrough" as the default
+// name resolver, while NewClient uses "dns" otherwise.
+func withDefaultScheme(s string) DialOption {
+	return newFuncDialOption(func(o *dialOptions) {
+		o.defaultScheme = s
 	})
 }
 

@@ -108,8 +108,7 @@ prometheus-retention-time = 0
 #
 # Example:
 # [["chain_id", "cosmoshub-1"]]
-global-labels = [
-]
+global-labels = []
 
 ###############################################################################
 ###                           API Configuration                             ###
@@ -237,7 +236,7 @@ streamers = []
 
 [streamers]
 [streamers.file]
-keys = ["*", ]
+keys = ["*"]
 write_dir = ""
 prefix = ""
 
@@ -250,10 +249,3 @@ stop-node-on-error = "true"
 
 # fsync specifies if call fsync after writing the files.
 fsync = "false"
-
-[wasm]
-# This is the maximum sdk gas (wasm and storage) that we allow for any x/wasm "smart" queries
-query_gas_limit = 300000
-# This is the number of wasm vm instances we keep cached in memory for speed-up
-# Warning: this is currently unstable and may lead to crashes, best to keep for 0 unless testing locally
-lru_size = 0

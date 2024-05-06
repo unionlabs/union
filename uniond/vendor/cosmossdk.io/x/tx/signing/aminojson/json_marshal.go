@@ -7,6 +7,7 @@ import (
 	"io"
 	"sort"
 
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -55,7 +56,7 @@ type Encoder struct {
 // rules.
 func NewEncoder(options EncoderOptions) Encoder {
 	if options.FileResolver == nil {
-		options.FileResolver = protoregistry.GlobalFiles
+		options.FileResolver = gogoproto.HybridResolver
 	}
 	if options.TypeResolver == nil {
 		options.TypeResolver = protoregistry.GlobalTypes
@@ -72,6 +73,7 @@ func NewEncoder(options EncoderOptions) Encoder {
 		},
 		aminoFieldEncoders: map[string]FieldEncoder{
 			"legacy_coins": nullSliceAsEmptyEncoder,
+			"inline_json":  cosmosInlineJSON,
 		},
 		protoTypeEncoders: map[string]MessageEncoder{
 			"google.protobuf.Timestamp": marshalTimestamp,
@@ -162,6 +164,9 @@ func (enc Encoder) DefineTypeEncoding(typeURL string, encoder MessageEncoder) En
 func (enc Encoder) Marshal(message proto.Message) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := enc.beginMarshal(message.ProtoReflect(), buf, false)
+	if err != nil {
+		return nil, err
+	}
 
 	if enc.indent != "" {
 		indentBuf := &bytes.Buffer{}
@@ -169,10 +174,10 @@ func (enc Encoder) Marshal(message proto.Message) ([]byte, error) {
 			return nil, err
 		}
 
-		return indentBuf.Bytes(), err
+		return indentBuf.Bytes(), nil
 	}
 
-	return buf.Bytes(), err
+	return buf.Bytes(), nil
 }
 
 func (enc Encoder) beginMarshal(msg protoreflect.Message, writer io.Writer, isAny bool) error {

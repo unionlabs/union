@@ -23,6 +23,8 @@ func NewChannel(
 		Counterparty:   counterparty,
 		ConnectionHops: hops,
 		Version:        version,
+		// UpgradeSequence is intentionally left empty as a new channel has not performed an upgrade.
+		UpgradeSequence: 0,
 	}
 }
 
@@ -115,13 +117,14 @@ func (c Counterparty) ValidateBasic() error {
 // NewIdentifiedChannel creates a new IdentifiedChannel instance
 func NewIdentifiedChannel(portID, channelID string, ch Channel) IdentifiedChannel {
 	return IdentifiedChannel{
-		State:          ch.State,
-		Ordering:       ch.Ordering,
-		Counterparty:   ch.Counterparty,
-		ConnectionHops: ch.ConnectionHops,
-		Version:        ch.Version,
-		PortId:         portID,
-		ChannelId:      channelID,
+		State:           ch.State,
+		Ordering:        ch.Ordering,
+		Counterparty:    ch.Counterparty,
+		ConnectionHops:  ch.ConnectionHops,
+		Version:         ch.Version,
+		UpgradeSequence: ch.UpgradeSequence,
+		PortId:          portID,
+		ChannelId:       channelID,
 	}
 }
 

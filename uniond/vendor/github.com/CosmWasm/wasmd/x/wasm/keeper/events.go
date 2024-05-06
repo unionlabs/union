@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -28,7 +28,7 @@ func newWasmModuleEvent(customAttributes []wasmvmtypes.EventAttribute, contractA
 const eventTypeMinLength = 2
 
 // newCustomEvents converts wasmvm events from a contract response to sdk type events
-func newCustomEvents(evts wasmvmtypes.Events, contractAddr sdk.AccAddress) (sdk.Events, error) {
+func newCustomEvents(evts wasmvmtypes.Array[wasmvmtypes.Event], contractAddr sdk.AccAddress) (sdk.Events, error) {
 	events := make(sdk.Events, 0, len(evts))
 	for _, e := range evts {
 		typ := strings.TrimSpace(e.Type)

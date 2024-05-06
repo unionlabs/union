@@ -19,7 +19,7 @@ var (
 )
 
 // MaxMemoCharLength defines the maximum length for the InterchainAccountPacketData memo field
-const MaxMemoCharLength = 256
+const MaxMemoCharLength = 32768
 
 var (
 	// DefaultRelativePacketTimeoutHeight is the default packet timeout height (in blocks) relative

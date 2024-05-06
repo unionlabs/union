@@ -71,6 +71,7 @@ type Node struct {
 	leftNode      *Node
 	rightNode     *Node
 	subtreeHeight int8
+	isLegacy      bool
 }
 
 var _ cache.Node = (*Node)(nil)
@@ -87,6 +88,9 @@ func NewNode(key []byte, value []byte) *Node {
 
 // GetKey returns the key of the node.
 func (node *Node) GetKey() []byte {
+	if node.isLegacy {
+		return node.hash
+	}
 	return node.nodeKey.GetKey()
 }
 
@@ -239,6 +243,7 @@ func MakeLegacyNode(hash, buf []byte) (*Node, error) {
 		nodeKey:       &NodeKey{version: ver},
 		key:           key,
 		hash:          hash,
+		isLegacy:      true,
 	}
 
 	// Read node body.
@@ -280,11 +285,11 @@ func (node *Node) String() string {
 	if node.rightNode != nil && node.rightNode.nodeKey != nil {
 		child += fmt.Sprintf("{right %v}", node.rightNode.nodeKey)
 	}
-	return fmt.Sprintf("Node{%s:%s@ %v:%v-%v %d-%d}#%s\n",
+	return fmt.Sprintf("Node{%s:%s@ %v:%x-%x %d-%d %x}#%s\n",
 		color.ColoredBytes(node.key, color.Green, color.Blue),
 		color.ColoredBytes(node.value, color.Cyan, color.Blue),
 		node.nodeKey, node.leftNodeKey, node.rightNodeKey,
-		node.size, node.subtreeHeight, child)
+		node.size, node.subtreeHeight, node.hash, child)
 }
 
 // clone creates a shallow copy of a node with its hash set to nil.
@@ -526,25 +531,15 @@ func (node *Node) writeHashBytes(w io.Writer, version int64) error {
 			return fmt.Errorf("writing value, %w", err)
 		}
 	} else {
-		if (node.leftNode == nil && len(node.leftNodeKey) != 32) || (node.rightNode == nil && len(node.rightNodeKey) != 32) {
+		if node.leftNode == nil || node.rightNode == nil {
 			return ErrEmptyChild
 		}
-		// If left/rightNodeKey is 32 bytes, it is a legacy node whose value is just the hash.
-		// We may have skipped fetching leftNode/rightNode.
-		if len(node.leftNodeKey) == 32 {
-			err = encoding.Encode32BytesHash(w, node.leftNodeKey)
-		} else {
-			err = encoding.Encode32BytesHash(w, node.leftNode.hash)
-		}
-		if err != nil {
+
+		if err := encoding.Encode32BytesHash(w, node.leftNode.hash); err != nil {
 			return fmt.Errorf("writing left hash, %w", err)
 		}
-		if len(node.rightNodeKey) == 32 {
-			err = encoding.Encode32BytesHash(w, node.rightNodeKey)
-		} else {
-			err = encoding.Encode32BytesHash(w, node.rightNode.hash)
-		}
-		if err != nil {
+
+		if err := encoding.Encode32BytesHash(w, node.rightNode.hash); err != nil {
 			return fmt.Errorf("writing right hash, %w", err)
 		}
 	}

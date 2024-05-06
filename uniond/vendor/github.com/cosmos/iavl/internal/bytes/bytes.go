@@ -62,3 +62,33 @@ func (bz HexBytes) Format(s fmt.State, verb rune) {
 		s.Write([]byte(fmt.Sprintf("%X", []byte(bz))))
 	}
 }
+
+// Returns a copy of the given byte slice.
+func Cp(bz []byte) (ret []byte) {
+	ret = make([]byte, len(bz))
+	copy(ret, bz)
+	return ret
+}
+
+// Returns a slice of the same length (big endian)
+// except incremented by one.
+// Returns nil on overflow (e.g. if bz bytes are all 0xFF)
+// CONTRACT: len(bz) > 0
+func CpIncr(bz []byte) (ret []byte) {
+	if len(bz) == 0 {
+		panic("cpIncr expects non-zero bz length")
+	}
+	ret = Cp(bz)
+	for i := len(bz) - 1; i >= 0; i-- {
+		if ret[i] < byte(0xFF) {
+			ret[i]++
+			return
+		}
+		ret[i] = byte(0x00)
+		if i == 0 {
+			// Overflow
+			return nil
+		}
+	}
+	return nil
+}

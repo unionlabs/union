@@ -566,6 +566,78 @@ func (k Keeper) NextSequenceSend(c context.Context, req *types.QueryNextSequence
 	return types.NewQueryNextSequenceSendResponse(sequence, nil, selfHeight), nil
 }
 
+// UpgradeErrorReceipt implements the Query/UpgradeErrorReceipt gRPC method
+func (k Keeper) UpgradeErrorReceipt(c context.Context, req *types.QueryUpgradeErrorRequest) (*types.QueryUpgradeErrorResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := validategRPCRequest(req.PortId, req.ChannelId); err != nil {
+		return nil, err
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	found := k.HasChannel(ctx, req.PortId, req.ChannelId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrapf(types.ErrChannelNotFound, "port-id: %s, channel-id %s", req.PortId, req.ChannelId).Error(),
+		)
+	}
+
+	receipt, found := k.GetUpgradeErrorReceipt(ctx, req.PortId, req.ChannelId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrapf(types.ErrUpgradeErrorNotFound, "port-id %s, channel-id %s", req.PortId, req.ChannelId).Error(),
+		)
+	}
+
+	selfHeight := clienttypes.GetSelfHeight(ctx)
+	return types.NewQueryUpgradeErrorResponse(receipt, nil, selfHeight), nil
+}
+
+// Upgrade implements the Query/UpgradeSequence gRPC method
+func (k Keeper) Upgrade(c context.Context, req *types.QueryUpgradeRequest) (*types.QueryUpgradeResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := validategRPCRequest(req.PortId, req.ChannelId); err != nil {
+		return nil, err
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	found := k.HasChannel(ctx, req.PortId, req.ChannelId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrapf(types.ErrChannelNotFound, "port-id: %s, channel-id %s", req.PortId, req.ChannelId).Error(),
+		)
+	}
+
+	upgrade, found := k.GetUpgrade(ctx, req.PortId, req.ChannelId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrapf(types.ErrUpgradeNotFound, "port-id: %s, channel-id %s", req.PortId, req.ChannelId).Error(),
+		)
+	}
+
+	selfHeight := clienttypes.GetSelfHeight(ctx)
+	return types.NewQueryUpgradeResponse(upgrade, nil, selfHeight), nil
+}
+
+// ChannelParams implements the Query/ChannelParams gRPC method.
+func (k Keeper) ChannelParams(c context.Context, req *types.QueryChannelParamsRequest) (*types.QueryChannelParamsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	params := k.GetParams(ctx)
+
+	return &types.QueryChannelParamsResponse{
+		Params: &params,
+	}, nil
+}
+
 func validategRPCRequest(portID, channelID string) error {
 	if err := host.PortIdentifierValidator(portID); err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())

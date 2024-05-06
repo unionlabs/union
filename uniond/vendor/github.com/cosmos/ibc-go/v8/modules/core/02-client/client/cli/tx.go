@@ -229,10 +229,10 @@ func newUpgradeClientCmd() *cobra.Command {
 				}
 			}
 
-			proofUpgradeClient := []byte(args[3])
-			proofUpgradeConsensus := []byte(args[4])
+			upgradeClientProof := []byte(args[3])
+			upgradeConsensusProof := []byte(args[4])
 
-			msg, err := types.NewMsgUpgradeClient(clientID, clientState, consensusState, proofUpgradeClient, proofUpgradeConsensus, clientCtx.GetFromAddress().String())
+			msg, err := types.NewMsgUpgradeClient(clientID, clientState, consensusState, upgradeClientProof, upgradeConsensusProof, clientCtx.GetFromAddress().String())
 			if err != nil {
 				return err
 			}

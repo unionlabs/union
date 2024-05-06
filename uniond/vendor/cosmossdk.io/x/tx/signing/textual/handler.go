@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	cosmos_proto "github.com/cosmos/cosmos-proto"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -71,7 +72,7 @@ func NewSignModeHandler(o SignModeOptions) (*SignModeHandler, error) {
 		return nil, errors.New("coinMetadataQuerier must be non-empty")
 	}
 	if o.FileResolver == nil {
-		o.FileResolver = protoregistry.GlobalFiles
+		o.FileResolver = gogoproto.HybridResolver
 	}
 	if o.TypeResolver == nil {
 		o.TypeResolver = protoregistry.GlobalTypes

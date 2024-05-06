@@ -61,11 +61,11 @@ PROMU_URL     := https://github.com/prometheus/promu/releases/download/v$(PROMU_
 SKIP_GOLANGCI_LINT :=
 GOLANGCI_LINT :=
 GOLANGCI_LINT_OPTS ?=
-GOLANGCI_LINT_VERSION ?= v1.54.2
-# golangci-lint only supports linux, darwin and windows platforms on i386/amd64.
+GOLANGCI_LINT_VERSION ?= v1.55.2
+# golangci-lint only supports linux, darwin and windows platforms on i386/amd64/arm64.
 # windows isn't included here because of the path separator being different.
 ifeq ($(GOHOSTOS),$(filter $(GOHOSTOS),linux darwin))
-	ifeq ($(GOHOSTARCH),$(filter $(GOHOSTARCH),amd64 i386))
+	ifeq ($(GOHOSTARCH),$(filter $(GOHOSTARCH),amd64 i386 arm64))
 		# If we're in CI and there is an Actions file, that means the linter
 		# is being run in Actions, so we don't need to run it here.
 		ifneq (,$(SKIP_GOLANGCI_LINT))
@@ -169,10 +169,14 @@ common-vet:
 common-lint: $(GOLANGCI_LINT)
 ifdef GOLANGCI_LINT
 	@echo ">> running golangci-lint"
-# 'go list' needs to be executed before staticcheck to prepopulate the modules cache.
-# Otherwise staticcheck might fail randomly for some reason not yet explained.
-	$(GO) list -e -compiled -test=true -export=false -deps=true -find=false -tags= -- ./... > /dev/null
 	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_OPTS) $(pkgs)
+endif
+
+.PHONY: common-lint-fix
+common-lint-fix: $(GOLANGCI_LINT)
+ifdef GOLANGCI_LINT
+	@echo ">> running golangci-lint fix"
+	$(GOLANGCI_LINT) run --fix $(GOLANGCI_LINT_OPTS) $(pkgs)
 endif
 
 .PHONY: common-yamllint

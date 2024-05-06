@@ -61,7 +61,8 @@ func New(maxElementCount int) Cache {
 }
 
 func (c *lruCache) Add(node Node) Node {
-	if e, exists := c.dict[string(node.GetKey())]; exists {
+	key := string(node.GetKey())
+	if e, exists := c.dict[key]; exists {
 		c.ll.MoveToFront(e)
 		old := e.Value
 		e.Value = node
@@ -69,7 +70,7 @@ func (c *lruCache) Add(node Node) Node {
 	}
 
 	elem := c.ll.PushFront(node)
-	c.dict[string(node.GetKey())] = elem
+	c.dict[key] = elem
 
 	if c.ll.Len() > c.maxElementCount {
 		oldest := c.ll.Back()
@@ -96,8 +97,9 @@ func (c *lruCache) Len() int {
 }
 
 func (c *lruCache) Remove(key []byte) Node {
-	if elem, exists := c.dict[string(key)]; exists {
-		return c.remove(elem)
+	keyS := string(key)
+	if elem, exists := c.dict[keyS]; exists {
+		return c.removeWithKey(elem, keyS)
 	}
 	return nil
 }
@@ -105,5 +107,11 @@ func (c *lruCache) Remove(key []byte) Node {
 func (c *lruCache) remove(e *list.Element) Node {
 	removed := c.ll.Remove(e).(Node)
 	delete(c.dict, ibytes.UnsafeBytesToStr(removed.GetKey()))
+	return removed
+}
+
+func (c *lruCache) removeWithKey(e *list.Element, key string) Node {
+	removed := c.ll.Remove(e).(Node)
+	delete(c.dict, key)
 	return removed
 }

@@ -48,5 +48,6 @@
     {
       packages.libwasmvm = mkLibwasmvm inputs.wasmvm;
       packages.libwasmvm-1_5_0 = mkLibwasmvm inputs.wasmvm-1_5_0;
+      packages.libwasmvm-2_0_1 = mkLibwasmvm inputs.wasmvm-2_0_1;
     };
 }

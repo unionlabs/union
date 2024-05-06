@@ -190,12 +190,16 @@ var (
 	// function makes events more predictable than relying on timer events.
 	TriggerXDSResourceNameNotFoundForTesting any // func(func(xdsresource.Type, string), string, string) error
 
-	// TriggerXDSResourceNotFoundClient invokes the testing xDS Client singleton
-	// to invoke resource not found for a resource type name and resource name.
+	// TriggerXDSResourceNameNotFoundClient invokes the testing xDS Client
+	// singleton to invoke resource not found for a resource type name and
+	// resource name.
 	TriggerXDSResourceNameNotFoundClient any // func(string, string) error
 
 	// FromOutgoingContextRaw returns the un-merged, intermediary contents of metadata.rawMD.
 	FromOutgoingContextRaw any // func(context.Context) (metadata.MD, [][]string, bool)
+
+	// UserSetDefaultScheme is set to true if the user has overridden the default resolver scheme.
+	UserSetDefaultScheme bool = false
 )
 
 // HealthChecker defines the signature of the client-side LB channel health checking function.

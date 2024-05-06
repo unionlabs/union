@@ -1,6 +1,8 @@
 package channel
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
@@ -10,6 +12,10 @@ import (
 // InitGenesis initializes the ibc channel submodule's state from a provided genesis
 // state.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, gs types.GenesisState) {
+	if err := gs.Params.Validate(); err != nil {
+		panic(fmt.Sprintf("invalid ibc channel genesis state parameters: %v", err))
+	}
+	k.SetParams(ctx, gs.Params)
 	for _, channel := range gs.Channels {
 		ch := types.NewChannel(channel.State, channel.Ordering, channel.Counterparty, channel.ConnectionHops, channel.Version)
 		k.SetChannel(ctx, channel.PortId, channel.ChannelId, ch)
@@ -46,5 +52,6 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) types.GenesisState {
 		RecvSequences:       k.GetAllPacketRecvSeqs(ctx),
 		AckSequences:        k.GetAllPacketAckSeqs(ctx),
 		NextChannelSequence: k.GetNextChannelSequence(ctx),
+		Params:              k.GetParams(ctx),
 	}
 }

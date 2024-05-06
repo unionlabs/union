@@ -3,6 +3,8 @@ package keeper
 import (
 	"context"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"runtime/debug"
 
 	"google.golang.org/grpc/codes"
@@ -405,4 +407,37 @@ func ensurePaginationParams(req *query.PageRequest) (*query.PageRequest, error) 
 		req.Limit = maxResultEntries
 	}
 	return req, nil
+}
+
+func (q GrpcQuerier) BuildAddress(c context.Context, req *types.QueryBuildAddressRequest) (*types.QueryBuildAddressResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	codeHash, err := hex.DecodeString(req.CodeHash)
+	if err != nil {
+		return nil, fmt.Errorf("invalid code hash: %w", err)
+	}
+	creator, err := sdk.AccAddressFromBech32(req.CreatorAddress)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+	salt, err := hex.DecodeString(req.Salt)
+	if err != nil {
+		return nil, fmt.Errorf("invalid salt: %w", err)
+	}
+	if len(salt) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "empty salt")
+	}
+	if req.InitArgs == nil {
+		return &types.QueryBuildAddressResponse{
+			Address: BuildContractAddressPredictable(codeHash, creator, salt, []byte{}).String(),
+		}, nil
+	}
+	initMsg := types.RawContractMessage(req.InitArgs)
+	if err := initMsg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+	return &types.QueryBuildAddressResponse{
+		Address: BuildContractAddressPredictable(codeHash, creator, salt, initMsg).String(),
+	}, nil
 }

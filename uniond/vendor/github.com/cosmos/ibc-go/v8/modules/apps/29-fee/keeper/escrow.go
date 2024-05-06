@@ -97,8 +97,9 @@ func (k Keeper) distributePacketFeeOnAcknowledgement(ctx sdk.Context, refundAddr
 	// distribute fee for reverse relaying
 	k.distributeFee(ctx, reverseRelayer, refundAddr, packetFee.Fee.AckFee)
 
-	// refund timeout fee for unused timeout
-	k.distributeFee(ctx, refundAddr, refundAddr, packetFee.Fee.TimeoutFee)
+	// refund unused amount from the escrowed fee
+	refundCoins := packetFee.Fee.Total().Sub(packetFee.Fee.RecvFee...).Sub(packetFee.Fee.AckFee...)
+	k.distributeFee(ctx, refundAddr, refundAddr, refundCoins)
 }
 
 // DistributePacketsFeesOnTimeout pays all the timeout fees for a given packetID while refunding the acknowledgement & receive fees to the refund account.
@@ -137,14 +138,12 @@ func (k Keeper) DistributePacketFeesOnTimeout(ctx sdk.Context, timeoutRelayer sd
 
 // distributePacketFeeOnTimeout pays the timeout fee to the timeout relayer and refunds the acknowledgement & receive fee.
 func (k Keeper) distributePacketFeeOnTimeout(ctx sdk.Context, refundAddr, timeoutRelayer sdk.AccAddress, packetFee types.PacketFee) {
-	// refund receive fee for unused forward relaying
-	k.distributeFee(ctx, refundAddr, refundAddr, packetFee.Fee.RecvFee)
-
-	// refund ack fee for unused reverse relaying
-	k.distributeFee(ctx, refundAddr, refundAddr, packetFee.Fee.AckFee)
-
 	// distribute fee for timeout relaying
 	k.distributeFee(ctx, timeoutRelayer, refundAddr, packetFee.Fee.TimeoutFee)
+
+	// refund unused amount from the escrowed fee
+	refundCoins := packetFee.Fee.Total().Sub(packetFee.Fee.TimeoutFee...)
+	k.distributeFee(ctx, refundAddr, refundAddr, refundCoins)
 }
 
 // distributeFee will attempt to distribute the escrowed fee to the receiver address.

@@ -111,7 +111,7 @@ func (k Keeper) ChanOpenTry(
 	portCap *capabilitytypes.Capability,
 	counterparty types.Counterparty,
 	counterpartyVersion string,
-	proofInit []byte,
+	initProof []byte,
 	proofHeight exported.Height,
 ) (string, *capabilitytypes.Capability, error) {
 	// connection hops only supports a single connection
@@ -166,7 +166,7 @@ func (k Keeper) ChanOpenTry(
 	)
 
 	if err := k.connectionKeeper.VerifyChannelState(
-		ctx, connectionEnd, proofHeight, proofInit,
+		ctx, connectionEnd, proofHeight, initProof,
 		counterparty.PortId, counterparty.ChannelId, expectedChannel,
 	); err != nil {
 		return "", nil, err
@@ -221,7 +221,7 @@ func (k Keeper) ChanOpenAck(
 	chanCap *capabilitytypes.Capability,
 	counterpartyVersion,
 	counterpartyChannelID string,
-	proofTry []byte,
+	tryProof []byte,
 	proofHeight exported.Height,
 ) error {
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -259,7 +259,7 @@ func (k Keeper) ChanOpenAck(
 	)
 
 	return k.connectionKeeper.VerifyChannelState(
-		ctx, connectionEnd, proofHeight, proofTry,
+		ctx, connectionEnd, proofHeight, tryProof,
 		channel.Counterparty.PortId, counterpartyChannelID,
 		expectedChannel)
 }
@@ -297,7 +297,7 @@ func (k Keeper) ChanOpenConfirm(
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
-	proofAck []byte,
+	ackProof []byte,
 	proofHeight exported.Height,
 ) error {
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -336,8 +336,10 @@ func (k Keeper) ChanOpenConfirm(
 		counterpartyHops, channel.Version,
 	)
 
+	// NOTE: If the counterparty has initialized an upgrade in the same block as performing the
+	// ACK handshake step, this channel end will be incapable of opening.
 	return k.connectionKeeper.VerifyChannelState(
-		ctx, connectionEnd, proofHeight, proofAck,
+		ctx, connectionEnd, proofHeight, ackProof,
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		expectedChannel)
 }
@@ -385,7 +387,7 @@ func (k Keeper) ChanCloseInit(
 		return errorsmod.Wrapf(types.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID)
 	}
 
-	if channel.IsClosed() {
+	if channel.State == types.CLOSED {
 		return errorsmod.Wrap(types.ErrInvalidChannelState, "channel is already CLOSED")
 	}
 
@@ -429,8 +431,26 @@ func (k Keeper) ChanCloseConfirm(
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
-	proofInit []byte,
+	initProof []byte,
 	proofHeight exported.Height,
+) error {
+	return k.ChanCloseConfirmWithCounterpartyUpgradeSequence(ctx, portID, channelID, chanCap, initProof, proofHeight, 0)
+}
+
+// ChanCloseConfirmWithCounterpartyUpgradeSequence is called by the counterparty module to
+// close their end of the channel, since the other end has been closed. The difference with
+// ChanCloseConfirm is that it accepts an extra argument counterpartyUpgradeSequence that was
+// needed for channel upgradability.
+//
+// This function will be removed in ibc-go v9.0.0 and the API of ChanCloseConfirm will be updated.
+func (k Keeper) ChanCloseConfirmWithCounterpartyUpgradeSequence(
+	ctx sdk.Context,
+	portID,
+	channelID string,
+	chanCap *capabilitytypes.Capability,
+	initProof []byte,
+	proofHeight exported.Height,
+	counterpartyUpgradeSequence uint64,
 ) error {
 	if !k.scopedKeeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
 		return errorsmod.Wrap(types.ErrChannelCapabilityNotFound, "caller does not own capability for channel, port ID (%s) channel ID (%s)")
@@ -441,7 +461,7 @@ func (k Keeper) ChanCloseConfirm(
 		return errorsmod.Wrapf(types.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID)
 	}
 
-	if channel.IsClosed() {
+	if channel.State == types.CLOSED {
 		return errorsmod.Wrap(types.ErrInvalidChannelState, "channel is already CLOSED")
 	}
 
@@ -460,13 +480,17 @@ func (k Keeper) ChanCloseConfirm(
 	counterpartyHops := []string{connectionEnd.GetCounterparty().GetConnectionID()}
 
 	counterparty := types.NewCounterparty(portID, channelID)
-	expectedChannel := types.NewChannel(
-		types.CLOSED, channel.Ordering, counterparty,
-		counterpartyHops, channel.Version,
-	)
+	expectedChannel := types.Channel{
+		State:           types.CLOSED,
+		Ordering:        channel.Ordering,
+		Counterparty:    counterparty,
+		ConnectionHops:  counterpartyHops,
+		Version:         channel.Version,
+		UpgradeSequence: counterpartyUpgradeSequence,
+	}
 
 	if err := k.connectionKeeper.VerifyChannelState(
-		ctx, connectionEnd, proofHeight, proofInit,
+		ctx, connectionEnd, proofHeight, initProof,
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		expectedChannel,
 	); err != nil {

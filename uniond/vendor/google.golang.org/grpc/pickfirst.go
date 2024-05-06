@@ -38,19 +38,15 @@ const (
 	logPrefix             = "[pick-first-lb %p] "
 )
 
-func newPickfirstBuilder() balancer.Builder {
-	return &pickfirstBuilder{}
-}
-
 type pickfirstBuilder struct{}
 
-func (*pickfirstBuilder) Build(cc balancer.ClientConn, opt balancer.BuildOptions) balancer.Balancer {
+func (pickfirstBuilder) Build(cc balancer.ClientConn, opt balancer.BuildOptions) balancer.Balancer {
 	b := &pickfirstBalancer{cc: cc}
 	b.logger = internalgrpclog.NewPrefixLogger(logger, fmt.Sprintf(logPrefix, b))
 	return b
 }
 
-func (*pickfirstBuilder) Name() string {
+func (pickfirstBuilder) Name() string {
 	return PickFirstBalancerName
 }
 
@@ -63,7 +59,7 @@ type pfConfig struct {
 	ShuffleAddressList bool `json:"shuffleAddressList"`
 }
 
-func (*pickfirstBuilder) ParseConfig(js json.RawMessage) (serviceconfig.LoadBalancingConfig, error) {
+func (pickfirstBuilder) ParseConfig(js json.RawMessage) (serviceconfig.LoadBalancingConfig, error) {
 	var cfg pfConfig
 	if err := json.Unmarshal(js, &cfg); err != nil {
 		return nil, fmt.Errorf("pickfirst: unable to unmarshal LB policy config: %s, error: %v", string(js), err)
@@ -242,8 +238,4 @@ type idlePicker struct {
 func (i *idlePicker) Pick(balancer.PickInfo) (balancer.PickResult, error) {
 	i.subConn.Connect()
 	return balancer.PickResult{}, balancer.ErrNoSubConnAvailable
-}
-
-func init() {
-	balancer.Register(newPickfirstBuilder())
 }

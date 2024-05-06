@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	cosmos_proto "github.com/cosmos/cosmos-proto"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -79,7 +80,7 @@ type ProtoFileResolver interface {
 func NewContext(options Options) (*Context, error) {
 	protoFiles := options.FileResolver
 	if protoFiles == nil {
-		protoFiles = protoregistry.GlobalFiles
+		protoFiles = gogoproto.HybridResolver
 	}
 
 	protoTypes := options.TypeResolver

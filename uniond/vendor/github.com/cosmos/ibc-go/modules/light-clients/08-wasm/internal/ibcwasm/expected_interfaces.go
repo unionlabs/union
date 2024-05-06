@@ -1,8 +1,8 @@
 package ibcwasm
 
 import (
-	wasmvm "github.com/CosmWasm/wasmvm"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,12 +11,13 @@ import (
 var _ WasmEngine = (*wasmvm.VM)(nil)
 
 type WasmEngine interface {
-	// StoreCode will compile the wasm code, and store the resulting pre-compile
-	// as well as the original code. Both can be referenced later via checksum
+	// StoreCode will compile the Wasm code, and store the resulting compiled module
+	// as well as the original code. Both can be referenced later via Checksum.
 	// This must be done one time for given code, after which it can be
 	// instantiated many times, and each instance called many times.
-	// It does the same as StoreCodeUnchecked plus the static checks.
-	StoreCode(code wasmvm.WasmCode) (wasmvm.Checksum, error)
+	//
+	// Returns both the checksum, as well as the gas cost of compilation (in CosmWasm Gas) or an error.
+	StoreCode(code wasmvm.WasmCode, gasLimit uint64) (wasmvmtypes.Checksum, uint64, error)
 
 	// StoreCodeUnchecked will compile the wasm code, and store the resulting pre-compile
 	// as well as the original code. Both can be referenced later via checksum
@@ -45,7 +46,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// Query allows a client to execute a contract-specific query. If the result is not empty, it should be
 	// valid json-encoded data to return to the client.
@@ -60,9 +61,9 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) ([]byte, uint64, error)
+	) (*wasmvmtypes.QueryResult, uint64, error)
 
-	// Migrate migrates an existing contract to a new code binary.
+	// Migrate will migrate an existing contract to a new code binary.
 	// This takes storage of the data from the original contract and the checksum of the new contract that should
 	// replace it. This allows it to run a migration step if needed, or return an error if unable to migrate
 	// the given data.
@@ -78,7 +79,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// Sudo allows native Go modules to make priviledged (sudo) calls on the contract.
 	// The contract can expose entry points that cannot be triggered by any transaction, but only via
@@ -96,7 +97,7 @@ type WasmEngine interface {
 		gasMeter wasmvm.GasMeter,
 		gasLimit uint64,
 		deserCost wasmvmtypes.UFraction,
-	) (*wasmvmtypes.Response, uint64, error)
+	) (*wasmvmtypes.ContractResult, uint64, error)
 
 	// GetCode will load the original wasm code for the given checksum.
 	// This will only succeed if that checksum was previously returned from

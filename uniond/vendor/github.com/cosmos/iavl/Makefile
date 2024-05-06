@@ -36,7 +36,7 @@ format:
 
 # look into .golangci.yml for enabling / disabling linters
 golangci_lint_cmd=golangci-lint
-golangci_version=v1.51.2
+golangci_version=v1.55.2
 
 lint:
 	@echo "--> Running linter"

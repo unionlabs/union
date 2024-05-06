@@ -24,6 +24,7 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
 	authKeeper   feegrant.AccountKeeper
+	bankKeeper   feegrant.BankKeeper
 }
 
 var _ ante.FeegrantKeeper = &Keeper{}
@@ -35,6 +36,13 @@ func NewKeeper(cdc codec.BinaryCodec, storeService store.KVStoreService, ak feeg
 		storeService: storeService,
 		authKeeper:   ak,
 	}
+}
+
+// Super ugly hack to not be breaking in v0.50 and v0.47
+// DO NOT USE.
+func (k Keeper) SetBankKeeper(bk feegrant.BankKeeper) Keeper {
+	k.bankKeeper = bk
+	return k
 }
 
 // Logger returns a module-specific logger.
@@ -52,6 +60,10 @@ func (k Keeper) GrantAllowance(ctx context.Context, granter, grantee sdk.AccAddr
 	// create the account if it is not in account state
 	granteeAcc := k.authKeeper.GetAccount(ctx, grantee)
 	if granteeAcc == nil {
+		if k.bankKeeper.BlockedAddr(grantee) {
+			return errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", grantee)
+		}
+
 		granteeAcc = k.authKeeper.NewAccountWithAddress(ctx, grantee)
 		k.authKeeper.SetAccount(ctx, granteeAcc)
 	}

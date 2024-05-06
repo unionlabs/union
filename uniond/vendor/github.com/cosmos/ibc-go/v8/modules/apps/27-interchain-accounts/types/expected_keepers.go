@@ -37,4 +37,5 @@ type PortKeeper interface {
 // ParamSubspace defines the expected Subspace interface for module parameters.
 type ParamSubspace interface {
 	GetParamSet(ctx sdk.Context, ps paramtypes.ParamSet)
+	GetParamSetIfExists(ctx sdk.Context, ps paramtypes.ParamSet)
 }
