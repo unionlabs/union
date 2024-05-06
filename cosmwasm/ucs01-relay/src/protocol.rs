@@ -508,7 +508,69 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         forward: PacketForward,
         processed: bool,
     ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
-        todo!()
+        let mut msgs: Vec<CosmosMsg<Self::CustomMsg>> = Vec::new();
+        // Override the receiving address for intermediate transfers on this chain with the contract address
+        let override_addr = self.self_addr().to_owned();
+
+        // If not already processed by other middleware, receive tokens into the contract address.
+        if !processed {
+            msgs.append(&mut match self.receive_transfer(
+                &override_addr.clone().into_string(),
+                packet.tokens().to_vec(),
+            ) {
+                Ok(msgs) => msgs,
+                Err(error) => {
+                    return Self::receive_error(error);
+                }
+            });
+        }
+
+        // Normalize tokens for transfer
+        let tokens: Vec<Coin> = packet
+            .tokens()
+            .iter()
+            .map(|transfer_token| -> Coin {
+                let transfer_token = self
+                    .normalize_for_ibc_transfer(transfer_token.clone())
+                    .expect("can normalize denom");
+                Coin {
+                    denom: transfer_token.denom,
+                    amount: transfer_token
+                        .amount
+                        .try_into()
+                        .expect("CosmWasm require transferred amount to be Uint128..."),
+                }
+            })
+            .collect();
+
+        // Forward the packet
+        // TODO: deteamine how to process/store `nonrefundable`
+        let forward_response = self.forward_transfer_packet(
+            tokens,
+            forward,
+            override_addr,
+            false,
+            PacketReturnInfo::NewPacket(PacketSequence {
+                height: self.common.env.block.height,
+                index: self
+                    .common
+                    .env
+                    .transaction
+                    .clone()
+                    .expect("transaction has tx info")
+                    .index,
+            }),
+        );
+        let forward_response_messages = forward_response
+            .messages
+            .iter()
+            .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
+
+        // TODO: Once updated to cosmwasm 2.0, return nil ack
+        IbcReceiveResponse::new()
+            .add_messages(msgs)
+            .add_messages(forward_response_messages)
+            .add_events(forward_response.events)
     }
 
     fn forward_transfer_packet(
@@ -519,7 +581,86 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         nonrefundable: bool,
         return_info: PacketReturnInfo,
     ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
-        todo!()
+        // Prepare forward message
+        let msg_info = MessageInfo {
+            sender: receiver,
+            funds: tokens,
+        };
+
+        let timeout = forward.get_effective_timeout();
+
+        // TODO: persist full memo
+        let memo = match forward.next {
+            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next }).unwrap(),
+            None => "".to_owned(),
+        };
+
+        let transfer_msg = TransferMsg {
+            channel: forward.channel.clone().value(),
+            receiver: forward.receiver.value(),
+            timeout: Some(timeout),
+            memo,
+        };
+
+        // Send forward message
+        let transfer = execute_transfer(
+            self.common.deps.branch(),
+            self.common.env.clone(),
+            msg_info,
+            transfer_msg,
+        )
+        .unwrap();
+
+        let (refund_sequence, in_flight_packet) = match return_info {
+            PacketReturnInfo::InFlight(in_flight_packet) => {
+                (in_flight_packet.refund_sequence.clone(), in_flight_packet)
+            }
+            PacketReturnInfo::NewPacket(refund_sequence) => (
+                refund_sequence.clone(),
+                InFlightPfmPacket {
+                    nonrefundable,
+                    original_sender_addr: self.common.info.sender.clone(),
+                    // TODO: use real value
+                    packet_data: "TODO".to_owned(),
+                    packet_src_channel_id: self
+                        .common
+                        .channel
+                        .counterparty_endpoint
+                        .channel_id
+                        .clone(),
+                    packet_src_port_id: self.common.channel.counterparty_endpoint.port_id.clone(),
+                    refund_channel_id: forward.channel.value(),
+                    refund_port_id: forward.port.value(),
+                    refund_sequence,
+                    timeout,
+                },
+            ),
+        };
+
+        let refund_packet_key = PfmRefundPacketKey {
+            channel_id: self.common.channel.endpoint.channel_id.clone(),
+            port_id: self.common.channel.endpoint.port_id.clone(),
+            height: refund_sequence.height,
+            index: refund_sequence.index,
+        };
+
+        let _ = IN_FLIGHT_PFM_PACKETS
+            .update(
+                self.common.deps.storage,
+                refund_packet_key,
+                |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
+            )
+            .expect("infallible update");
+
+        let transfer_messages = transfer
+            .messages
+            .iter()
+            .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
+
+        // TODO: Once updated to cosmwasm 2.1, defer to async ack
+        IbcReceiveResponse::new()
+            .add_messages(transfer_messages)
+            .add_events(transfer.events)
     }
 
     fn pfm_ack(
@@ -806,7 +947,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                     nonrefundable,
                     original_sender_addr: self.common.info.sender.clone(),
                     // TODO: use real value
-                    packet_data: "".to_owned(),
+                    packet_data: "TODO".to_owned(),
                     packet_src_channel_id: self
                         .common
                         .channel
