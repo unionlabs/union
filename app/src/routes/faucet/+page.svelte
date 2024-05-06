@@ -1,15 +1,14 @@
 <script lang="ts">
-import { cn } from "$lib/utilities/shadcn.ts"
-
 import toast from "svelte-french-toast"
 import { browser } from "$app/environment"
+import { cn } from "$lib/utilities/shadcn.ts"
 import { valibot } from "sveltekit-superforms/adapters"
 import * as Form from "$lib/components/ui/form/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
-import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
 
 /**
@@ -23,7 +22,8 @@ import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
 const form = superForm(defaults(valibot(faucetFormSchema)), {
   SPA: true,
   validators: valibot(faucetFormSchema),
-  onUpdate: event => {
+  // biome-ignore lint/suspicious/useAwait: <explanation>
+  onUpdate: async event => {
     if (!event.form.valid) return toast.error("No good", { className: "font-mono text-lg" })
 
     toast.success("Faucet request submitted 🤌 Check wallet for $UNO in a few moments", {
@@ -31,6 +31,8 @@ const form = superForm(defaults(valibot(faucetFormSchema)), {
       className: "text-sm p-2.5"
     })
   },
+  resetForm: false,
+  clearOnSubmit: "errors-and-message",
   multipleSubmits: "prevent"
 })
 
@@ -39,7 +41,8 @@ const { enhance, message, delayed, errors, submitting, form: formData } = form
 $: unionTransfers = unionTransfersQuery({
   address: $formData.address,
   include: ["RECEIVED"],
-  refetchInterval: 5_000
+  refetchInterval: 5_000,
+  enabled: !!$formData.address && isValidCosmosAddress($formData.address)
 })
 
 $: newTransfers =
@@ -140,6 +143,5 @@ const handleMouseLeave = () => {
     {/each}
   {/if}
 
-  <section class="mt-6 hidden sm:block w-full max-w-[520px] text-sm">
-  </section>
+  <section class="mt-6 hidden sm:block w-full max-w-[520px] text-sm"></section>
 </main>

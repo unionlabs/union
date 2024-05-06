@@ -15,7 +15,8 @@ export const URLS = {
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array
      */
     RPC: "https://rpc.testnet.bonlulu.uno",
-    REST: "https://api.testnet.bonlulu.uno"
+    // REST: "https://api.testnet.bonlulu.uno"
+    REST: "https://union-testnet-api.polkachu.com"
   },
   SEPOLIA: {
     RPC: "https://rpc.ankr.com/eth_sepolia/6c72c8d164912bed4694cb882fc4ca55574126511a4f5f66828a53fa2448a20a",

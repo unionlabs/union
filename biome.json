@@ -278,6 +278,9 @@
           },
           "suspicious": {
             "noConfusingLabels": "off"
+          },
+          "nursery": {
+            "noUselessUndefinedInitialization": "off"
           }
         }
       }

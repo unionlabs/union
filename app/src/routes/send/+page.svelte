@@ -14,8 +14,8 @@ import { Input } from "$lib/components/ui/input/index.js"
 import ChevronDown from "virtual:icons/lucide/chevron-down"
 import { Button } from "$lib/components/ui/button/index.js"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import SendDialog from "$/lib/components/send/dialogs/chain.svelte"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+import { ChinDialog, SettingsDialog } from "$lib/components/send/dialogs/index.ts"
 
 let unionClient: UnionClient
 onMount(() => {
@@ -49,7 +49,7 @@ const queryParams = queryParameters(
   { debounceHistory: 1_000, showDefaults: true }
 )
 
-let dialogOpen = { fromChain: false, toChain: false, token: false }
+let dialogOpen = { fromChain: false, toChain: false, token: false, settings: false }
 
 let [chainSearch, chainSearchResults] = ["", data.chains]
 
@@ -129,7 +129,12 @@ let buttonText = "Send it 🔥" satisfies
   >
     <Card.Header class="pt-1 px-3 pb-0 flex flex-row w-full justify-between items-start h-10">
       <Card.Title class="text-2xl font-black mt-1">Transfer</Card.Title>
-      <Button size="icon" variant="ghost" class="size-8 bg-card text-foreground">
+      <Button
+        size="icon"
+        variant="ghost"
+        class="size-8 bg-card text-foreground"
+        on:click={() => (dialogOpen.settings = !dialogOpen.settings)}
+      >
         <Settings class="size-6" />
       </Button>
     </Card.Header>
@@ -296,7 +301,7 @@ let buttonText = "Send it 🔥" satisfies
 </main>
 
 <!-- from-dialog -->
-<SendDialog
+<ChinDialog
   kind="from"
   {handleChainSearch}
   {handleChainSelect}
@@ -305,7 +310,8 @@ let buttonText = "Send it 🔥" satisfies
   dialogOpen={dialogOpen.fromChain}
 />
 
-<SendDialog
+<!-- to-dialog -->
+<ChinDialog
   kind="to"
   {handleChainSearch}
   {handleChainSelect}
@@ -373,6 +379,8 @@ let buttonText = "Send it 🔥" satisfies
     </Dialog.Description>
   </Dialog.Content>
 </Dialog.Root>
+
+<SettingsDialog dialogOpen={dialogOpen.settings} />
 
 <svelte:head>
   <title>Union - Send</title>

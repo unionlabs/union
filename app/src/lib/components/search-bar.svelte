@@ -75,7 +75,11 @@ onMount(() => {
   <Command.List data-search-dialog>
     <Command.Empty>No results found.</Command.Empty>
     <Command.Group heading="Suggestions">
-      <Command.Item>
+      <Command.Item
+      onSelect={value => {
+        console.log('Selected:', value)
+      }}
+      >
         <DollarSign class="mr-2 size-4" />
         <span>Send & Swap</span>
       </Command.Item>

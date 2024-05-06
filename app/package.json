@@ -30,7 +30,6 @@
     "gql.tada": "^1.7.0",
     "graphql-request": "^6.1.0",
     "graphql-ws": "^5.16.0",
-    "lucide-svelte": "^0.378.0",
     "mode-watcher": "^0.3.0",
     "svelte-french-toast": "^1.2.0",
     "svelte-legos": "^0.2.2",
