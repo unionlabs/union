@@ -169,6 +169,12 @@
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
         }
+        {
+          network = "arbitrum-testnet";
+          rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
+          private-key = ''"$1"'';
+          extra-args = "";
+        }
       ];
 
       eth-deploy = { rpc-url, private-key, extra-args, ... }: pkgs.writeShellApplication {
