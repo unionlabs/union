@@ -20,7 +20,6 @@ export const cosmosWalletsInformation = [
 ] as const
 
 export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
-export type CosmosWalletName = (typeof cosmosWalletsInformation)[number]["name"]
 
 const stored = localStorage.getItem("cosmos-config") || "{}"
 
@@ -41,16 +40,16 @@ function createCosmosStore(
     set,
     update,
     subscribe,
-    connect: async (walletName: string) => {
-      if (!walletName || (walletName !== "keplr" && walletName !== "leap")) return
+    connect: async (walletId: string) => {
+      if (!walletId || (walletId !== "keplr" && walletId !== "leap")) return
       update(v => ({ ...v, connectionStatus: "connecting" }))
-      if (!window[walletName]) {
-        alert(`Please install ${walletName} wallet`)
+      if (!window[walletId]) {
+        alert(`Please install ${walletId} wallet`)
         update(v => ({ ...v, connectionStatus: "disconnected" }))
         return
       }
-      await window[walletName]?.enable(CHAIN.UNION.ID)
-      const offlineSigner = window[walletName as "keplr"]?.getOfflineSigner(CHAIN.UNION.ID, {
+      await window[walletId]?.enable(CHAIN.UNION.ID)
+      const offlineSigner = window[walletId as "keplr"]?.getOfflineSigner(CHAIN.UNION.ID, {
         disableBalanceCheck: false
       })
       if (!offlineSigner) return console.error("[cosmos] No offline signer found")
@@ -65,7 +64,7 @@ function createCosmosStore(
         offlineSigner,
         { gasPrice: GasPrice.fromString("0.025muno") }
       )
-      update(v => ({ ...v, connectedWallet: walletName, signingStargateClient: stargateClient }))
+      update(v => ({ ...v, connectedWallet: walletId, signingStargateClient: stargateClient }))
       await sleep(2_000)
     },
     disconnect: async () => {

@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { Props } from "./index.ts"
-import clsx from "clsx"
 import { copy } from "@svelte-put/copy"
 import XIcon from "virtual:icons/lucide/x"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -71,61 +70,57 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
 <div class="mt-2 mx-auto flex items-center flex-col">
   {#each chainWalletsInformation as { name, id, icon, download }, index (index)}
-    {@const walletIdentifier = chain === 'evm' ? id : name}
-    {#if connectStatus === 'disconnected' || connectStatus === 'connected' || connectStatus === 'connecting' || connectStatus === 'reconnecting'}
-      <div
-        role="row"
-        tabindex={0}
-        data-index={index}
-        on:mouseleave={() => (hoverState = connectedWalletId === name ? 'none' : 'none')}
-        on:mouseenter={() => (hoverState = connectedWalletId === name ? 'hover' : 'none')}
+    {@const walletIdentifier = id}
+    <div
+      role="row"
+      tabindex={0}
+      data-index={index}
+      on:mouseleave={() => (hoverState = connectedWalletId === name ? 'none' : 'none')}
+      on:mouseenter={() => (hoverState = connectedWalletId === name ? 'hover' : 'none')}
+      class={cn([
+        'flex',
+        'flex-col w-full justify-start mb-3',
+        connectStatus === 'connected' && [connectedWalletId !== name ? 'hidden' : ''],
+      ])}
+    >
+      <Button
+        type="button"
+        variant="outline"
+        disabled={connectStatus === 'connected' &&
+          (['connecting', 'reconnecting'].includes(connectStatus) || connectedWalletId !== name)}
         class={cn([
-          'flex',
-          'flex-col w-full justify-start mb-3',
-          (connectStatus === 'connecting' || connectStatus === 'reconnecting') &&
-            'animate-pulse animation-delay-75',
-          connectStatus === 'connected' && [connectedWalletId !== name ? 'hidden' : ''],
+          'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
+          connectStatus === 'connected' && connectedWalletId === name && 'border-[#037791]',
+          (connectStatus === 'disconnected' || connectStatus == undefined) &&
+            'opacity-60 hover:opacity-100',
+          hoverState === 'hover' &&
+            connectedWalletId === id &&
+            'hover:text-rose-50 border-rose-900 hover:bg-transparent',
         ])}
+        on:click={() => {
+          if (!walletIdentifier) return
+          if (connectStatus === 'connected') onDisconnectClick()
+          else onConnectClick(walletIdentifier)
+        }}
       >
-        <Button
-          type="button"
-          variant="outline"
-          disabled={connectStatus === 'connected' &&
-            (['connecting', 'reconnecting'].includes(connectStatus) || connectedWalletId !== name)}
-          class={cn([
-            'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
-            (connectStatus === 'disconnected' || connectStatus == undefined) &&
-              'opacity-60 hover:opacity-100',
-            connectStatus === 'connected' && connectedWalletId === name && 'border-[#037791]',
-            hoverState === 'hover' &&
-              connectedWalletId === name &&
-              'hover:text-rose-50 border-rose-900 hover:bg-transparent',
-          ])}
-          on:click={() => {
-            if (!walletIdentifier) return
-            if (connectStatus === 'connected') onDisconnectClick()
-            else onConnectClick(walletIdentifier)
-          }}
-        >
-          <img src={icon} alt={name} class="size-7 mr-3 text-white" />
-          {name}
-          {#if connectStatus === 'connected'}
-            {#if connectedWalletId === name}
-              {#if hoverState === 'hover'}
-                <XIcon class="ml-auto" />
-              {:else}
-                <CheckIcon class="ml-auto" />
-              {/if}
-            {/if}
-          {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
-            {#if connectedWalletId === name}
-              <LoaderCircleIcon class="animate-spin ml-auto" />
+        <img src={icon} alt={name} class="size-7 mr-3 text-white" />
+        {name}
+        {#if connectStatus === 'connected'}
+          {#if connectedWalletId === name}
+            {#if hoverState === 'hover'}
+              <XIcon class="ml-auto" />
             {:else}
-              <LoaderCircleIcon class="animate-spin ml-auto opacity-0" />
+              <CheckIcon class="ml-auto" />
             {/if}
           {/if}
-        </Button>
-      </div>
-    {/if}
+        {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
+          {#if connectedWalletId === id}
+            <LoaderCircleIcon class="animate-spin ml-auto" />
+          {:else}
+            <LoaderCircleIcon class="animate-spin ml-auto opacity-0" />
+          {/if}
+        {/if}
+      </Button>
+    </div>
   {/each}
 </div>

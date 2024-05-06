@@ -1,5 +1,5 @@
 <script lang="ts">
-import "$lib/polyfill"
+import "$lib/polyfill.ts"
 import "$styles/index.css"
 import {
   hydrate,
@@ -37,8 +37,8 @@ onMount(() => {
 })
 
 onMount(() => {
-  if (window?.keplr) cosmosStore.connect("keplr")
-  else if (window?.leap) cosmosStore.connect("leap")
+  if (window?.leap) cosmosStore.connect("leap")
+  else if (window?.keplr) cosmosStore.connect("keplr")
 })
 
 /**
@@ -91,15 +91,6 @@ onMount(() => {
 })
 
 $: if ($navigating) console.log("Navigating to", $page.url.pathname)
-
-const backgroundColors = {
-  background: "#09090b",
-  dotColor: "#4545538c",
-  dotColorsBackground: "#09090b"
-}
-/**
- * background-image: radial-gradient(#4545538c 0.3px,#09090b 1px);
- */
 </script>
 
 <svelte:head>
@@ -112,6 +103,7 @@ const backgroundColors = {
 {/if}
 
 <ModeWatcher />
+<Toaster />
 
 <QueryClientProvider client={queryClient}>
   <Header />
