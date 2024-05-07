@@ -31,7 +31,7 @@ let collapsibleOpen = true
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn([
-        'truncate space-x-2 px-4 text-lg w-full min-w-[165px]',
+        'truncate space-x-2 px-4 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
         ($sepoliaStore.connectionStatus === 'connected' ||
           $cosmosStore.connectionStatus === 'connected') &&
           'border-cyan-300/50',
@@ -89,7 +89,7 @@ let collapsibleOpen = true
           chainWalletsInformation={evmWalletsInformation}
           connectedWalletId={$sepoliaStore.connectedWallet}
         />
-        <Separator class={cn(['bg-[#303033] my-1.5'])} />
+        <Separator class={cn(['px-0 bg-[#303033] my-1.5'])} />
         <Connection
           chain="cosmos"
           address={$cosmosStore.address}
@@ -102,6 +102,5 @@ let collapsibleOpen = true
         />
       </Collapsible.Content>
     </Collapsible.Root>
-    <Separator class="mb-3 bg-[#303033]" />
   </Sheet.Content>
 </Sheet.Root>

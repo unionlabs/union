@@ -147,10 +147,10 @@ let buttonText = "Send it 🔥" satisfies
 
 <main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
   <Card.Root
-    class="size-full max-w-[460px] h-[500px] border-accent/45 border-solid mt-16 p-2 bg-card/60 bg-opacity-60"
+    class="size-full max-w-[475px] h-[490px] sm:mt-16 mt-6 p-2 bg-transparent"
   >
     <Card.Header
-      class="pt-0.5 pl-3 pr-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-2"
+      class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-2 mb-4"
     >
       <Card.Title class="text-2xl font-black mt-1">Transfer</Card.Title>
       <Button
@@ -175,7 +175,10 @@ let buttonText = "Send it 🔥" satisfies
       </Button>
     </Card.Header>
     <Card.Content
-      class={cn(['size-full max-h-[77%] pb-3 px-1 flex flex-col justify-between', devBorder])}
+      class={cn(['size-full max-h-[375px] pb-3 px-3.5 flex flex-col justify-between', devBorder,
+    
+    'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/5 border-none outline outline-1 outline-accent/50 rounded-md'
+    ])}
     >
       <div
         data-transfer-from-section
@@ -185,7 +188,7 @@ let buttonText = "Send it 🔥" satisfies
           variant="ghost"
           data-transfer-from-chain=""
           on:click={() => (dialogOpenFromChain = !dialogOpenFromChain)}
-          class="flex flex-row justify-between space-x-2 px-2 py-2 border-none rounded-sm size-full"
+          class="flex flex-row justify-between space-x-2 p-2 border-none rounded-sm size-full"
         >
           <div class="flex space-x-1.5 h-full">
             <img
@@ -194,7 +197,7 @@ let buttonText = "Send it 🔥" satisfies
               alt={`${selectedFromChain?.name} logo`}
             />
             <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
-              <span class="text-[1.5rem] font-extrabold mr-auto w-full text-left">
+              <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
                 {selectedFromChain?.name}
               </span>
               <span class="text-xs text-muted-foreground">{selectedFromChain?.id}</span>
@@ -216,7 +219,7 @@ let buttonText = "Send it 🔥" satisfies
           variant="ghost"
           data-transfer-to-chain=""
           on:click={() => (dialogOpenToChain = !dialogOpenToChain)}
-          class="flex flex-row justify-between space-x-2 px-2 py-2 border-none rounded-sm size-full"
+          class="flex flex-row justify-between space-x-2 p-2 border-none rounded-sm size-full"
         >
           <div class="flex space-x-1.5 h-full">
             <img
@@ -225,7 +228,7 @@ let buttonText = "Send it 🔥" satisfies
               alt={`${selectedToChain?.name} logo`}
             />
             <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
-              <span class="text-[1.5rem] font-extrabold mr-auto w-full text-left">
+              <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
                 {selectedToChain?.name}
               </span>
               <span class="text-xs text-muted-foreground">{selectedToChain?.id}</span>
@@ -235,14 +238,15 @@ let buttonText = "Send it 🔥" satisfies
         </Button>
       </div>
       <!-- asset -->
-      <div class={cn('size-full h-[5.5rem] max-h-[5.5rem] mt-2 mb-auto')}>
-        <p class="text-center text-2xl mb-2 font-extrabold">Asset</p>
+      <div class={cn('size-full h-[5.5rem] max-h-[5.5rem] mb-auto')}>
+        <p class="text-left text-2xl my-2 font-extrabold ml-2">Asset</p>
         <Button
           variant="outline"
           on:click={() => (dialogOpenToken = !dialogOpenToken)}
           class={cn(
             devBorder,
-            'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5 border-accent/90',
+            'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5 border-none',
+            'outline outline-1 outline-accent/90'
           )}
         >
           <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
@@ -256,14 +260,14 @@ let buttonText = "Send it 🔥" satisfies
               alt="asset"
               src="/images/icons/union.svg"
               class={cn(
-                'w-14 overflow-clip outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
+                'size-14 outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
                 'p-1 z-10',
               )}
             />
             <img
               src="/images/icons/osmosis.svg"
               alt="asset"
-              class={cn('size-12 z-50 my-auto mt-3 -ml-6')}
+              class={cn('size-12 z-50 my-auto mt-4 -ml-8')}
             />
           </div>
 
@@ -281,8 +285,8 @@ let buttonText = "Send it 🔥" satisfies
           <ChevronDown class={cn([devBorder, 'size-6 mb-auto mt-0.5 ml-auto'])} />
         </Button>
       </div>
-      <div class={cn(['mt-1'])}>
-        <p class="text-center text-2xl mb-2 font-extrabold">Amount</p>
+      <div class={cn(['mb-2'])}>
+        <p class="text-left text-2xl font-extrabold ml-2">Amount</p>
         <Input
           minlength={1}
           maxlength={64}
@@ -292,15 +296,16 @@ let buttonText = "Send it 🔥" satisfies
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
           class={cn([
-            'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums text-center border-accent/90',
+            'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
+            'outline-1 outline-accent/90 outline'
           ])}
         />
       </div>
     </Card.Content>
-    <Card.Footer class="py-0 px-2 mt-4">
+    <Card.Footer class="py-0 px-0 mt-4">
       <Button
         type="button"
-        class="w-full"
+        class="w-full bg-secondary-foreground/90 text-xl font-bold"
         disabled={false}
         data-transfer-button
         on:click={async event => {
@@ -360,19 +365,13 @@ let buttonText = "Send it 🔥" satisfies
 <SettingsDialog dialogOpen={dialogOpenSettings} />
 
 <!-- token dialog -->
-<AssetsDialog
-  dialogOpen={//
-  // true
-  dialogOpenToken}
-  {handleAssetSearch}
-  {handleAssetSelect}
-/>
+<AssetsDialog dialogOpen={dialogOpenToken} {handleAssetSearch} {handleAssetSelect} />
 
 <svelte:head>
   <title>Union - Send</title>
 </svelte:head>
 
-<DraftPageNotice />
+<DraftPageNotice className='hidden sm:inline' />
 
 <style lang="postcss">
 </style>

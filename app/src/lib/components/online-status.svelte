@@ -20,7 +20,7 @@ $: blockHeight = $blockHeightStore.data
         onlineStatus ? 'bg-green-500 hover:bg-green-500' : 'bg-red-500 hover:bg-red-500',
       ])}
     ></Button>
-    <span class="my-auto mb-2 text-xs text-foreground/60">{blockHeight}</span>
+    <span class="my-auto mb-2 text-xs text-foreground/90">{blockHeight}</span>
   </Tooltip.Trigger>
   <Tooltip.Content
     sideOffset={8}
