@@ -241,7 +241,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -261,7 +260,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -303,7 +301,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         vm.prank(malicious);
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -332,7 +329,6 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -363,7 +359,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrInvalidTimeoutHeight.selector);
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -384,7 +379,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrInvalidTimeoutTimestamp.selector);
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -622,9 +616,7 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(acknowledgement.length > 0);
         vm.prank(address(app));
-        handler.writeAcknowledgement(
-            address(app).toHexString(), channelId, sequence, acknowledgement
-        );
+        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
     }
 
     function test_writeAcknowledgement_alreadyExist(
@@ -634,14 +626,10 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(acknowledgement.length > 0);
         client.pushValidMembership();
         vm.prank(address(app));
-        handler.writeAcknowledgement(
-            address(app).toHexString(), channelId, sequence, acknowledgement
-        );
+        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrAcknowledgementAlreadyExists.selector);
-        handler.writeAcknowledgement(
-            address(app).toHexString(), channelId, sequence, acknowledgement
-        );
+        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
     }
 
     function test_writeAcknowledgement_emptyAcknowledgement(uint64 sequence)
@@ -649,9 +637,7 @@ contract IBCPacketHandlerTest is TestPlus {
     {
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
-        handler.writeAcknowledgement(
-            address(app).toHexString(), channelId, sequence, bytes("")
-        );
+        handler.writeAcknowledgement(channelId, sequence, bytes(""));
     }
 
     function test_writeAcknowledgement_unauthorized(
@@ -663,9 +649,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(acknowledgement.length > 0);
         vm.prank(address(malicious));
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
-        handler.writeAcknowledgement(
-            address(app).toHexString(), channelId, sequence, acknowledgement
-        );
+        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
     }
 
     function test_acknowledgePacket_ok(
@@ -681,7 +665,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -718,7 +701,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -769,7 +751,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -832,7 +813,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -869,7 +849,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -909,7 +888,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -945,89 +923,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
-            channelId,
-            ClientHeight.Data({revision_number: 0, revision_height: 0}),
-            0,
-            payload
-        );
-        client.pushValidMembership();
-        vm.prank(relayer);
-        vm.expectRevert(IBCPacketLib.ErrInvalidPacketCommitment.selector);
-        handler.timeoutPacket(
-            MsgMocks.packetTimeout(
-                address(app).toHexString(),
-                channelId,
-                LATEST_HEIGHT,
-                0,
-                0,
-                abi.encodePacked(payload, hex"00")
-            )
-        );
-    }
-
-    function test_timeoutPacket_notSent(
-        address relayer,
-        bytes memory payload
-    ) public {
-        vm.assume(relayer != address(0) && relayer != address(app));
-        client.pushValidMembership();
-        vm.prank(relayer);
-        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
-        handler.timeoutPacket(
-            MsgMocks.packetTimeout(
-                address(app).toHexString(),
-                channelId,
-                LATEST_HEIGHT,
-                0,
-                0,
-                payload
-            )
-        );
-    }
-
-    function test_timeoutPacket_invalidDestinationPort(
-        address relayer,
-        bytes memory payload
-    ) public {
-        vm.assume(relayer != address(0) && relayer != address(app));
-        IBCMsgs.MsgPacketTimeout memory msg_ = MsgMocks.packetTimeout(
-            address(app).toHexString(), channelId, LATEST_HEIGHT, 0, 0, payload
-        );
-        msg_.packet.destination_port = "invalid";
-        client.pushValidMembership();
-        vm.prank(relayer);
-        vm.expectRevert(
-            IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch.selector
-        );
-        handler.timeoutPacket(msg_);
-    }
-
-    function test_timeoutPacket_invalidDestinationChannel(
-        address relayer,
-        bytes memory payload
-    ) public {
-        vm.assume(relayer != address(0) && relayer != address(app));
-        IBCMsgs.MsgPacketTimeout memory msg_ = MsgMocks.packetTimeout(
-            address(app).toHexString(), channelId, LATEST_HEIGHT, 0, 0, payload
-        );
-        msg_.packet.destination_channel = "invalid";
-        client.pushValidMembership();
-        vm.prank(relayer);
-        vm.expectRevert(
-            IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch.selector
-        );
-        handler.timeoutPacket(msg_);
-    }
-
-    function test_timeoutPacket_noTimeout(
-        address relayer,
-        bytes memory payload
-    ) public {
-        vm.assume(relayer != address(0) && relayer != address(app));
-        vm.prank(address(app));
-        handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({revision_number: 0, revision_height: 0}),
             0,
@@ -1057,7 +952,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -1099,7 +993,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -1154,7 +1047,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -1196,7 +1088,6 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({
                 revision_number: 0,
@@ -1243,7 +1134,6 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({revision_number: 0, revision_height: 0}),
             (timeoutTimestamp - 1) * 1e9,
@@ -1287,7 +1177,6 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         vm.prank(address(app));
         handler.sendPacket(
-            address(app).toHexString(),
             channelId,
             ClientHeight.Data({revision_number: 0, revision_height: 0}),
             (timeoutTimestamp - 1) * 1e9,

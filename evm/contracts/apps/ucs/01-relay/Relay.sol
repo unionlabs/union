@@ -38,24 +38,21 @@ struct RelayPacket {
 
 interface IRelay is IIBCModule {
     function getDenomAddress(
-        string memory sourcePort,
         string memory sourceChannel,
         string memory denom
     ) external view returns (address);
 
     function getOutstanding(
-        string memory sourcePort,
         string memory sourceChannel,
         address token
     ) external view returns (uint256);
 
     function send(
-        string calldata sourcePort,
         string calldata sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
-        uint64 counterpartyTimeoutRevisionNumber,
-        uint64 counterpartyTimeoutRevisionHeight
+        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint64 timeoutTimestamp
     ) external;
 }
 
@@ -186,14 +183,11 @@ contract UCS01Relay is
     IIBCPacket private ibcHandler;
 
     // A mapping from remote denom to local ERC20 wrapper.
-    mapping(string => mapping(string => mapping(string => address))) private
-        denomToAddress;
+    mapping(string => mapping(string => address)) private denomToAddress;
     // A mapping from a local ERC20 wrapper to the remote denom.
     // Required to determine whether an ERC20 token is originating from a remote chain.
-    mapping(string => mapping(string => mapping(address => string))) private
-        addressToDenom;
-    mapping(string => mapping(string => mapping(address => uint256))) private
-        outstanding;
+    mapping(string => mapping(address => string)) private addressToDenom;
+    mapping(string => mapping(address => uint256)) private outstanding;
 
     constructor() {
         _disableInitializers();
@@ -213,42 +207,38 @@ contract UCS01Relay is
 
     // Return the ERC20 wrapper for the given remote-native denom.
     function getDenomAddress(
-        string memory sourcePort,
         string memory sourceChannel,
         string memory denom
     ) external view override returns (address) {
-        return denomToAddress[sourcePort][sourceChannel][denom];
+        return denomToAddress[sourceChannel][denom];
     }
 
     // Return the amount of tokens submitted through the given port/channel.
     function getOutstanding(
-        string memory sourcePort,
         string memory sourceChannel,
         address token
     ) external view override returns (uint256) {
-        return outstanding[sourcePort][sourceChannel][token];
+        return outstanding[sourceChannel][token];
     }
 
     // Increase the oustanding amount on the given port/channel.
     // Happens when we send the token.
     function increaseOutstanding(
-        string memory sourcePort,
         string memory sourceChannel,
         address token,
         uint256 amount
     ) internal {
-        outstanding[sourcePort][sourceChannel][token] += amount;
+        outstanding[sourceChannel][token] += amount;
     }
 
     // Decrease the outstanding amount on the given port/channel.
     // Happens either when receiving previously sent tokens or when refunding.
     function decreaseOutstanding(
-        string memory sourcePort,
         string memory sourceChannel,
         address token,
         uint256 amount
     ) internal {
-        outstanding[sourcePort][sourceChannel][token] -= amount;
+        outstanding[sourceChannel][token] -= amount;
     }
 
     // Internal function
@@ -256,13 +246,12 @@ contract UCS01Relay is
     // If token is native, we increase the oustanding amount and escrow it. Otherwise, we burn the amount.
     // The operation is symmetric with the counterparty, if we burn locally, the remote relay will unescrow. If we escrow locally, the remote relay will mint.
     function sendToken(
-        string calldata sourcePort,
         string calldata sourceChannel,
         LocalToken calldata localToken
     ) internal returns (string memory) {
         // If the token is originating from the counterparty channel, we must have saved it's denom.
         string memory addressDenom =
-            addressToDenom[sourcePort][sourceChannel][localToken.denom];
+            addressToDenom[sourceChannel][localToken.denom];
         if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
             IERC20Denom(localToken.denom).burn(msg.sender, localToken.amount);
@@ -276,7 +265,7 @@ contract UCS01Relay is
             );
             // Token originating from the local chain, increase outstanding and escrow the amount.
             increaseOutstanding(
-                sourcePort, sourceChannel, localToken.denom, localToken.amount
+                sourceChannel, localToken.denom, localToken.amount
             );
             addressDenom = localToken.denom.toHexString();
         }
@@ -284,19 +273,17 @@ contract UCS01Relay is
     }
 
     function send(
-        string calldata sourcePort,
         string calldata sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
-        uint64 counterpartyTimeoutRevisionNumber,
-        uint64 counterpartyTimeoutRevisionHeight
+        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint64 timeoutTimestamp
     ) external override {
         Token[] memory normalizedTokens = new Token[](tokens.length);
         uint256 tokensLength = tokens.length;
         for (uint256 i = 0; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
-            normalizedTokens[i].denom =
-                sendToken(sourcePort, sourceChannel, localToken);
+            normalizedTokens[i].denom = sendToken(sourceChannel, localToken);
             normalizedTokens[i].amount = uint256(localToken.amount);
         }
         string memory sender = msg.sender.toHexString();
@@ -305,18 +292,8 @@ contract UCS01Relay is
             receiver: receiver,
             tokens: normalizedTokens
         });
-        IbcCoreClientV1Height.Data memory timeoutHeight = IbcCoreClientV1Height
-            .Data({
-            revision_number: counterpartyTimeoutRevisionNumber,
-            revision_height: counterpartyTimeoutRevisionHeight
-        });
         uint64 packetSequence = ibcHandler.sendPacket(
-            sourcePort,
-            sourceChannel,
-            timeoutHeight,
-            // TODO: do we want to allow both height and timestamp timeouts?
-            0,
-            packet.encode()
+            sourceChannel, timeoutHeight, timeoutTimestamp, packet.encode()
         );
         for (uint256 i = 0; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
@@ -335,7 +312,6 @@ contract UCS01Relay is
 
     function refundTokens(
         uint64 sequence,
-        string memory portId,
         string memory channelId,
         RelayPacket calldata packet
     ) internal {
@@ -344,8 +320,7 @@ contract UCS01Relay is
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
-            address denomAddress =
-                denomToAddress[portId][channelId][token.denom];
+            address denomAddress = denomToAddress[channelId][token.denom];
             if (denomAddress != address(0)) {
                 // The token was originating from the remote chain, we burnt it.
                 // Refund means minting in this case.
@@ -356,9 +331,7 @@ contract UCS01Relay is
 
                 // It's an ERC20 string 0x prefixed hex address
                 denomAddress = Hex.hexToAddress(token.denom);
-                decreaseOutstanding(
-                    portId, channelId, denomAddress, token.amount
-                );
+                decreaseOutstanding(channelId, denomAddress, token.amount);
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
             emit RelayLib.Refunded(
@@ -402,10 +375,7 @@ contract UCS01Relay is
                 denomAddress = Hex.hexToAddress(denom);
                 // The token must be outstanding.
                 decreaseOutstanding(
-                    ibcPacket.destination_port,
-                    ibcPacket.destination_channel,
-                    denomAddress,
-                    token.amount
+                    ibcPacket.destination_channel, denomAddress, token.amount
                 );
                 IERC20(denomAddress).transfer(receiver, token.amount);
             } else {
@@ -416,14 +386,14 @@ contract UCS01Relay is
                     ibcPacket.destination_channel,
                     token.denom
                 );
-                denomAddress = denomToAddress[ibcPacket.destination_port][ibcPacket
-                    .destination_channel][denom];
+                denomAddress =
+                    denomToAddress[ibcPacket.destination_channel][denom];
                 if (denomAddress == address(0)) {
                     denomAddress = address(new ERC20Denom(token.denom));
-                    denomToAddress[ibcPacket.destination_port][ibcPacket
-                        .destination_channel][denom] = denomAddress;
-                    addressToDenom[ibcPacket.destination_port][ibcPacket
-                        .destination_channel][denomAddress] = denom;
+                    denomToAddress[ibcPacket.destination_channel][denom] =
+                        denomAddress;
+                    addressToDenom[ibcPacket.destination_channel][denomAddress]
+                    = denom;
                     emit RelayLib.DenomCreated(
                         ibcPacket.sequence,
                         ibcPacket.source_channel,
@@ -487,7 +457,6 @@ contract UCS01Relay is
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.sequence,
-                ibcPacket.source_port,
                 ibcPacket.source_channel,
                 RelayPacketLib.decode(ibcPacket.data)
             );
@@ -500,7 +469,6 @@ contract UCS01Relay is
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         refundTokens(
             ibcPacket.sequence,
-            ibcPacket.source_port,
             ibcPacket.source_channel,
             RelayPacketLib.decode(ibcPacket.data)
         );

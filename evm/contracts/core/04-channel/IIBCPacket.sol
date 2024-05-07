@@ -9,7 +9,6 @@ interface IIBCPacket {
      * is returned if one occurs.
      */
     function sendPacket(
-        string calldata sourcePort,
         string calldata sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
@@ -27,7 +26,6 @@ interface IIBCPacket {
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
     function writeAcknowledgement(
-        string calldata destinationPortId,
         string calldata destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement
