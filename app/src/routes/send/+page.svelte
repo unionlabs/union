@@ -28,11 +28,11 @@ onMount(() => {
   ) as OfflineSigner
 
   unionClient = new UnionClient({
+    cosmosOfflineSigner,
     bech32Prefix: "union",
     chainId: "union-testnet-8",
     gas: { denom: "muno", amount: "0.0025" },
-    rpcUrl: "https://rpc.testnet.bonlulu.uno",
-    offlineSigner: cosmosOfflineSigner
+    rpcUrl: "https://rpc.testnet.bonlulu.uno"
   })
 })
 

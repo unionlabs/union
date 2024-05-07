@@ -8,4 +8,5 @@ import { cn } from "$lib/utilities/shadcn.ts"
   ])}
 >
   <p class="text-9xl font-black">zkGM</p>
+  <a href='https://leapcosmoswallet.page.link/1'>goto</a>
 </main>

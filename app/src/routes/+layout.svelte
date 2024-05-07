@@ -127,7 +127,7 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
     position="bottom"
     client={queryClient}
     initialIsOpen={false}
-    buttonPosition="bottom-right"
+    buttonPosition="bottom-left"
   />
 </QueryClientProvider>
 <OnlineStatus />

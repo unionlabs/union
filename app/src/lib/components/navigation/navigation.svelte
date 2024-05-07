@@ -1,26 +1,25 @@
 <script lang="ts">
 import { routes } from "./index.ts"
-import Menu from "virtual:icons/lucide/menu"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { page, navigating } from "$app/stores"
 import { Button } from "$lib/components/ui/button/index.ts"
 import * as Drawer from "$lib/components/ui/drawer/index.ts"
 
-let drawerOpen = false
-$: if ($navigating) drawerOpen = false
+export let navigationDrawerOpen = false
+$: if ($navigating) navigationDrawerOpen = false
 </script>
 
-<Drawer.Root bind:open={drawerOpen} closeOnEscape={true} closeOnOutsideClick={true}>
-  <Drawer.Trigger asChild let:builder>
-    <Button
+<Drawer.Root bind:open={navigationDrawerOpen} closeOnEscape={true} closeOnOutsideClick={true}>
+  <Drawer.Trigger let:builder open>
+    <!-- <Button
       size="icon"
       variant="outline"
       builders={[builder]}
       class="border-none lg:hidden flex"
-      on:click={() => (drawerOpen = !drawerOpen)}
+      on:click={() => (navigationDrawerOpen = !navigationDrawerOpen)}
     >
       <Menu class="size-9" />
-    </Button>
+    </Button> -->
   </Drawer.Trigger>
   <Drawer.Content class="border-t-[1px] border-solid border-accent h-[60%] w-full min-w-full my-2">
     <nav class="flex flex-col space-y-2 justify-between h-full pt-2">
@@ -31,7 +30,7 @@ $: if ($navigating) drawerOpen = false
           href={path}
           variant="link"
           class={cn([
-            'rounded-none py-2 text-center text-6xl font-bold w-full hover:bg-white/5 h-full',
+            'rounded-none py-2 text-left text-6xl font-bold w-full hover:bg-white/5 size-full',
             ' decoration-transparent no-underline ring-0 focus:ring-0 focus:ring-offset-0 outline-none focus-visible:outline-none focus-visible:ring-0',
             isCurrentPage && 'bg-white/15',
           ])}

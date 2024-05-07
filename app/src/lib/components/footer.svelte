@@ -1,17 +1,21 @@
 <script lang="ts">
-import toast from "svelte-french-toast"
+import { navigating } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
 import HomeIcon from "virtual:icons/lucide/home"
 import MenuIcon from "virtual:icons/lucide/menu"
 import WalletMinimalIcon from "virtual:icons/lucide/wallet"
 import Button from "$lib/components/ui/button/button.svelte"
 import ArrowDownUpIcon from "virtual:icons/lucide/arrow-up-down"
+import { Navigation } from "$lib/components/navigation/index.ts"
 
 const onWalletClick = () => document.querySelector("button[data-dialog-trigger]")?.click()
 
+let navigationDrawerOpen = false
+$: if ($navigating) navigationDrawerOpen = false
+
 const navigationButtonStyle =
-  "my-auto self-center hover:bg-transparent h-16 w-full rounded-none hover:bg-muted border-solid"
-const navigationIconStyle = "size-7 min-w-6 hover:text-white text-zinc-accent"
+  "my-auto self-center hover:bg-transparent h-16 w-full rounded-none hover:bg-muted border-solid border-t-0"
+const navigationIconStyle = "size-9 min-w-6 hover:text-white text-zinc-accent"
 </script>
 
 <footer
@@ -32,7 +36,7 @@ const navigationIconStyle = "size-7 min-w-6 hover:text-white text-zinc-accent"
     <HomeIcon class={navigationIconStyle} />
   </Button>
   <Button
-    size="lg"
+    size="icon"
     name="send"
     href="/send"
     variant="link"
@@ -42,10 +46,10 @@ const navigationIconStyle = "size-7 min-w-6 hover:text-white text-zinc-accent"
     <ArrowDownUpIcon class={navigationIconStyle} />
   </Button>
   <Button
-    size="lg"
+    size="icon"
     name="wallet"
     type="button"
-    variant="ghost"
+    variant="outline"
     on:click={() => onWalletClick()}
     class={navigationButtonStyle}
   >
@@ -53,19 +57,14 @@ const navigationIconStyle = "size-7 min-w-6 hover:text-white text-zinc-accent"
   </Button>
 
   <Button
-    size="lg"
+    size="icon"
     name="menu"
     type="button"
     variant="ghost"
-    on:click={() => {
-      toast("I haven't been configured yet", {
-        className:
-          'h-10 p-3 border-[1.75px] border-solid border-accent-foreground bg-accent-foreground bg-opacity-10',
-        position: 'top-center',
-      })
-    }}
+    on:click={() => (navigationDrawerOpen = !navigationDrawerOpen)}
     class={navigationButtonStyle}
   >
     <MenuIcon class={navigationIconStyle} />
+    <Navigation {navigationDrawerOpen} />
   </Button>
 </footer>

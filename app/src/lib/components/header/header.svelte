@@ -21,7 +21,7 @@ import { Navigation, routes } from "$lib/components/navigation/index.ts"
     <SearchBar />
   </div>
   <div class="flex flex-row space-x-0 sm:space-x-2 my-auto">
-    <nav class="my-auto hidden lg:flex space-x-0 sm:space-x-2 mr-6">
+    <nav class="my-auto hidden lg:flex space-x-0 sm:space-x-2">
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button
           size="sm"
@@ -40,6 +40,6 @@ import { Navigation, routes } from "$lib/components/navigation/index.ts"
       <Connect />
       <!-- <ThemeSwitch /> -->
     </div>
-    <Navigation />
+    <!-- <Navigation /> -->
   </div>
 </header>

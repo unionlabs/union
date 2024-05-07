@@ -22,7 +22,7 @@ const unionClient = await UnionClient.connectWithSecret({
 })
 
 const contractAddress = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
-const osmoFromUnionToSepolia = await unionClient.transferAssets({
+const unoFromUnionToSepolia = await unionClient.transferAssets({
   kind: "cosmwasm",
   instructions: [
     {
@@ -30,18 +30,16 @@ const osmoFromUnionToSepolia = await unionClient.transferAssets({
       msg: {
         transfer: {
           channel: "channel-0",
-          receiver: "0x50C9C35e0197e781e9aD7a3F6baDD8d01E45c377".slice(2),
-          memo: "sending wrapped OSMO from Union to Sepolia"
+          receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd".slice(2),
+          memo: "sending UNO from Union to Sepolia"
         }
       },
       funds: [
-        {
-          amount: "30",
-          denom: `factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
-        }
+        // denom: `factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
+        { amount: "3000", denom: `muno` }
       ]
     }
   ]
 })
 
-console.log(osmoFromUnionToSepolia.transactionHash)
+console.log(unoFromUnionToSepolia.transactionHash)
