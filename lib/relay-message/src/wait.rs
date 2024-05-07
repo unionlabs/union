@@ -59,14 +59,7 @@ where
         match self {
             Wait::Height(WaitForHeight { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
-
-                assert_eq!(
-                    chain_height.revision_number(),
-                    height.revision_number(),
-                    "chain_height: {chain_height}, height: {height}",
-                );
-
-                if chain_height.revision_height() >= height.revision_height() {
+                if chain_height >= height {
                     QueueMsg::Noop
                 } else {
                     seq([
