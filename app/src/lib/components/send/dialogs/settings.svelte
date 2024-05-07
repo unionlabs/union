@@ -1,9 +1,6 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
-import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
-import { Input } from "$lib/components/ui/input/index.js"
-import { Button } from "$lib/components/ui/button/index.js"
 
 export let dialogOpen = false
 </script>

@@ -11,17 +11,3 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-
-.amount {
-  font-weight: 700;
-  font-style: normal;
-  font-variant-ligatures: common-ligatures;
-  font-variant-numeric: tabular-nums;
-}
-
-/* stuff after fraction should be `diagonal-fraction` */
-.amount::after {
-  content: '.';
-  color: pink;
-  font-variant-numeric: diagonal-fractions;
-}

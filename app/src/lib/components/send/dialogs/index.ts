@@ -1,4 +1,5 @@
 import Chain from "./chain.svelte"
-import Settings from "./setttings.svelte"
+import Assets from "./assets.svelte"
+import Settings from "./settings.svelte"
 
-export { Chain as ChinDialog, Settings as SettingsDialog }
+export { Chain as ChainDialog, Settings as SettingsDialog, Assets as AssetsDialog }

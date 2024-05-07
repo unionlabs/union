@@ -1,11 +1,10 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { debounce } from "$lib/utilities"
+import { debounce, dollarize } from "$lib/utilities"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import Search from "virtual:icons/lucide/search"
-import * as Dialog from "$lib/components/ui/dialog"
 import Settings from "virtual:icons/lucide/settings"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.js"
@@ -15,7 +14,7 @@ import ChevronDown from "virtual:icons/lucide/chevron-down"
 import { Button } from "$lib/components/ui/button/index.js"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
-import { ChinDialog, SettingsDialog } from "$lib/components/send/dialogs/index.ts"
+import { ChainDialog, SettingsDialog, AssetsDialog } from "$lib/components/send/dialogs/index.ts"
 
 let unionClient: UnionClient
 onMount(() => {
@@ -49,7 +48,10 @@ const queryParams = queryParameters(
   { debounceHistory: 1_000, showDefaults: true }
 )
 
-let dialogOpen = { fromChain: false, toChain: false, token: false, settings: false }
+let dialogOpenFromChain = false
+let dialogOpenToChain = false
+let dialogOpenToken = false
+let dialogOpenSettings = false
 
 let [chainSearch, chainSearchResults] = ["", data.chains]
 
@@ -63,7 +65,18 @@ function handleChainSearch(event: InputEvent) {
 }
 
 const handleChainSelect = (name: string, target: "fromChain" | "toChain") =>
-  debounce(() => [($queryParams[target] = name), (dialogOpen[target] = !dialogOpen[target])], 200)()
+  debounce(
+    () => [
+      ($queryParams[target] = name),
+      ([dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
+        false,
+        false,
+        false,
+        false
+      ])
+    ],
+    200
+  )()
 
 let selectedFromChain = data.chains.find(
   chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
@@ -72,9 +85,16 @@ $: selectedFromChain = data.chains.find(
   chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
 )
 
+let selectedToChain = data.chains.find(
+  chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
+)
+$: selectedToChain = data.chains.find(
+  chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
+)
+
 let [tokenSearch, tokenSearchResults] = ["", selectedFromChain?.assets]
 
-function handleTokenSearch(event: InputEvent) {
+function handleAssetSearch(event: InputEvent) {
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   tokenSearch = target.value
@@ -83,16 +103,17 @@ function handleTokenSearch(event: InputEvent) {
   )
 }
 
-let selectedToken = selectedFromChain?.assets.find(
+let selectedAsset = selectedFromChain?.assets.find(
   token => token.symbol.toLowerCase() === $queryParams.token.toLowerCase()
 )
-$: selectedToken = selectedFromChain?.assets.find(
+$: selectedAsset = selectedFromChain?.assets.find(
   token => token?.symbol?.toLowerCase() === $queryParams?.token?.toLowerCase()
 )
 
-$: selectedToChain = data.chains.find(
-  chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
-)
+function handleAssetSelect(symbol: string) {
+  $queryParams.token = symbol
+  dialogOpenToken = false
+}
 
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 let inputValue = { from: "", to: "" }
@@ -101,7 +122,7 @@ $: {
   inputValue.to = inputValue.to.replaceAll(amountRegex, "")
 }
 
-function swapChainsClick(event: MouseEvent) {
+function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$queryParams.fromChain, $queryParams.toChain]
   $queryParams.fromChain = toChain
   $queryParams.toChain = fromChain
@@ -133,7 +154,7 @@ let buttonText = "Send it 🔥" satisfies
         size="icon"
         variant="ghost"
         class="size-8 bg-card text-foreground"
-        on:click={() => (dialogOpen.settings = !dialogOpen.settings)}
+        on:click={() => (dialogOpenSettings = !dialogOpenSettings)}
       >
         <Settings class="size-6" />
       </Button>
@@ -147,8 +168,8 @@ let buttonText = "Send it 🔥" satisfies
       >
         <Button
           variant="ghost"
-          data-transfer-from-chain
-          on:click={() => (dialogOpen.fromChain = !dialogOpen.fromChain)}
+          data-transfer-from-chain=""
+          on:click={() => (dialogOpenFromChain = !dialogOpenFromChain)}
           class="flex flex-row justify-between space-x-2 px-2 py-2 border-none rounded-sm size-full"
         >
           <div class="flex space-x-1.5 h-full">
@@ -178,8 +199,8 @@ let buttonText = "Send it 🔥" satisfies
 
         <Button
           variant="ghost"
-          data-transfer-to-chain
-          on:click={() => (dialogOpen.toChain = !dialogOpen.toChain)}
+          data-transfer-to-chain=""
+          on:click={() => (dialogOpenToChain = !dialogOpenToChain)}
           class="flex flex-row justify-between space-x-2 px-2 py-2 border-none rounded-sm size-full"
         >
           <div class="flex space-x-1.5 h-full">
@@ -203,45 +224,44 @@ let buttonText = "Send it 🔥" satisfies
         <p class="text-center text-2xl mb-2 font-extrabold">Asset</p>
         <Button
           variant="outline"
+          on:click={() => (dialogOpenToken = !dialogOpenToken)}
           class={cn(
             devBorder,
             'size-full max-h-20 flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5',
           )}
         >
           <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
-          <!-- <div class={cn([devBorder, 'h-full mr-1 flex flex-row justify-start items-center'])}>
+          <div
+            class={cn([
+              devBorder,
+              'w-full max-w-[65px] h-full mr-1 flex flex-row justify-start items-center',
+            ])}
+          >
             <img
               alt="asset"
               src="/images/icons/union.svg"
               class={cn(
-                'size-14 outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
+                'size-12 outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
                 'p-1 z-10',
               )}
             />
             <img
               src="/images/icons/osmosis.svg"
               alt="asset"
-              class={cn('size-12 z-50 my-auto mt-3 -ml-6')}
+              class={cn('size-10 z-50 my-auto mt-4 -ml-6')}
             />
           </div>
 
-          <div
-            class={cn([
-              devBorder,
-              'size-full max-w-[250px] flex flex-col items-start justify-start ',
-            ])}
-          >
-            <p class="text-2xl font-black text-left mb-auto">Osmosis OSMO</p>
+          <div class={cn([devBorder, 'size-full max-w-[250px] flex flex-col'])}>
+            <p class="text-2xl font-black m-auto">OSMO</p>
+            <p class="text-xl m-auto">Osmosis</p>
           </div>
-
-          <p
-            class={cn([
-              devBorder,
-              'amount font-sans text-3xl font-black mb-auto ml-auto tabular-nums',
-            ])}
-          >
-            {dollarize(420.69)}
-          </p> -->
+          <div class="h-full">
+            <p class={cn([devBorder, 'font-sans text-2xl font-black m-auto tabular-nums'])}>
+              420.69
+            </p>
+            <p class="">balance</p>
+          </div>
 
           <ChevronDown class={cn([devBorder, 'size-6 mb-auto mt-0.5 ml-auto'])} />
         </Button>
@@ -301,86 +321,36 @@ let buttonText = "Send it 🔥" satisfies
 </main>
 
 <!-- from-dialog -->
-<ChinDialog
+<ChainDialog
   kind="from"
   {handleChainSearch}
   {handleChainSelect}
   {chainSearchResults}
   queryParams={$queryParams}
-  dialogOpen={dialogOpen.fromChain}
+  dialogOpen={dialogOpenFromChain}
 />
 
 <!-- to-dialog -->
-<ChinDialog
+<ChainDialog
   kind="to"
   {handleChainSearch}
   {handleChainSelect}
   {chainSearchResults}
   queryParams={$queryParams}
-  dialogOpen={dialogOpen.toChain}
+  dialogOpen={dialogOpenToChain}
 />
 
-<!-- token dialog -->
-<Dialog.Root
-  closeOnEscape={true}
-  preventScroll={true}
-  closeOnOutsideClick={true}
-  bind:open={dialogOpen.token}
->
-  <Dialog.Content
-    class="max-w-[90%] sm:max-w-[350px] border-[1px] border-solid border-accent overflow-auto px-0 pt-3 pb-0 flex flex-col items-start rounded-md"
-  >
-    <Dialog.Header class="max-h-min h-8 p-2">
-      <Dialog.Title class="font-extrabold text-2xl pl-3 -mt-2">Select a token</Dialog.Title>
-    </Dialog.Header>
-    <Dialog.Description class="size-full">
-      <div class="relative mr-auto flex-1 w-full">
-        <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-        <Input
-          type="search"
-          pattern="[a-z]"
-          autocorrect="off"
-          spellcheck="false"
-          placeholder="union…"
-          autocapitalize="off"
-          on:input={handleTokenSearch}
-          class="w-full rounded-none bg-current/95 pl-8 self-stretch lowercase border-x-0 focus-visible:ring-0"
-        />
-      </div>
-      <!-- <ul class="my-3 mx-2 space-y-1">
-        {#each tokenSearchResults as { name, id: chainId, icon, live }, index}
-          <li
-            class={cn([
-              live ? 'cursor-pointer' : 'cursor-not-allowed',
-              'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
-            ])}
-          >
-            <Button
-              disabled={!live}
-              on:click={() => handleChainSelect(name.toLowerCase(), 'fromChain')}
-              variant={$queryParams.from === name.toLowerCase() ? 'secondary' : 'ghost'}
-              class={cn([
-                'w-full flex justify-start space-x-4 p-2 rounded-none pl-3 h-[55px] my-auto',
-              ])}
-            >
-              <img src={icon} alt={`${name} logo`} class="size-10 my-auto mr-auto" />
-              <div class="size-full mr-auto flex flex-col items-start">
-                <span
-                  class="my-auto text-[22px] font-extrabold mr-auto w-full text-left justify-between"
-                >
-                  {name}
-                </span>
-                <span class="text-xs text-muted-foreground">{chainId}</span>
-              </div>
-            </Button>
-          </li>
-        {/each}
-      </ul> -->
-    </Dialog.Description>
-  </Dialog.Content>
-</Dialog.Root>
+<!-- settings dialog -->
+<SettingsDialog dialogOpen={dialogOpenSettings} />
 
-<SettingsDialog dialogOpen={dialogOpen.settings} />
+<!-- token dialog -->
+<AssetsDialog
+  dialogOpen={//
+  // true
+  dialogOpenToken}
+  {handleAssetSearch}
+  {handleAssetSelect}
+/>
 
 <svelte:head>
   <title>Union - Send</title>

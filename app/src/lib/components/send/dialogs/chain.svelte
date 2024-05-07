@@ -16,8 +16,8 @@ export let queryParams: any
 <Dialog.Root
   closeOnEscape={true}
   preventScroll={true}
-  closeOnOutsideClick={true}
   bind:open={dialogOpen}
+  closeOnOutsideClick={true}
 >
   <Dialog.Content
     class={cn([
@@ -26,7 +26,7 @@ export let queryParams: any
     ])}
   >
     <Dialog.Header class="max-h-min h-16 p-2 w-full space-y-3">
-      <Dialog.Title class="font-extrabold text-2xl text-center -mt-2">Select Network</Dialog.Title>
+      <Dialog.Title class="font-extrabold text-2xl text-center -mt-2">Select {kind} Network</Dialog.Title>
       <ul class="flex space-x-4 w-full justify-start">
         <li>all</li>
         <li>evm</li>
