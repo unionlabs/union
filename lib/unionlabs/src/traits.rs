@@ -107,7 +107,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
     type StoredConsensusState<Tr: Chain>: Member;
 
     // this is just Height
-    type Height: Member + IsHeight + MaybeArbitrary;
+    type Height: Member + IsHeight + MaybeArbitrary + PartialOrd;
 
     type ClientId: Member + Id + TryFrom<ClientId> + Into<ClientId> + MaybeArbitrary;
 
