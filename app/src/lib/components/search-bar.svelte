@@ -85,7 +85,13 @@ onMount(() => {
         <DollarSign class="mr-2 size-4" />
         <span>Send & Swap</span>
       </Command.Item>
-      <Command.Item>
+      <Command.Item
+        class="hover:cursor-pointer"
+        onSelect={() => {
+          goto(`/faucet`)
+          commandDialogOpen = false
+        }}
+      >
         <Smile class="mr-2 size-4" />
         <span>Get tokens from faucet</span>
       </Command.Item>
@@ -96,7 +102,13 @@ onMount(() => {
         <Brain class="mr-2 size-4" />
         <span>Investigate IBC activity</span>
       </Command.Item>
-      <Command.Item>
+      <Command.Item
+        class="hover:cursor-pointer"
+        onSelect={() => {
+          goto(`/transfers`)
+          commandDialogOpen = false
+        }}
+      >
         <Table class="mr-2 size-4" />
         <span>View your past transfers</span>
       </Command.Item>
