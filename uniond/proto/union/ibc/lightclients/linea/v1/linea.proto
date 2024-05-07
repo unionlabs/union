@@ -1,0 +1,62 @@
+syntax = "proto3";
+package union.ibc.lightclients.linea.v1;
+
+option go_package = "union/ibc/lightclients/linea";
+import "ibc/core/client/v1/client.proto";
+import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
+
+message ClientState {
+  string chain_id = 1;
+  .ibc.core.client.v1.Height l1_latest_height = 2;
+  string l1_client_id = 3;
+  bytes l1_rollup_contract_address = 4;
+  bytes l1_rollup_current_l2_block_number_slot = 5;
+  bytes l1_rollup_current_l2_timestamp_slot = 6;
+  bytes l1_rollup_l2_state_root_hashes_slot = 7;
+  bytes l2_ibc_contract_address = 8;
+  bytes l2_ibc_contract_commitment_slot = 9;
+  .ibc.core.client.v1.Height frozen_height = 10;
+}
+
+message ConsensusState {
+  bytes ibc_storage_root = 1;
+  uint64 timestamp = 2;
+}
+
+message Header {
+  .ibc.core.client.v1.Height l1_height = 1;
+  .union.ibc.lightclients.ethereum.v1.AccountProof l1_rollup_contract_proof = 2;
+  uint64 l2_block_number = 3;
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_block_number_proof = 4;
+  bytes l2_state_root = 5;
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_root_proof = 6;
+  uint64 l2_timestamp = 7;
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_timestamp_proof = 8;
+  MerkleProof l2_ibc_contract_proof = 9;
+}
+
+message MerklePath {
+  bytes value = 1;
+  repeated bytes proof_related_nodes = 2;
+}
+
+message InclusionProof {
+  bytes key = 1;
+  uint64 leaf_index = 2;
+  MerklePath merkle_path = 3;
+}
+
+message NonInclusionProof {
+  bytes key = 1;
+  uint64 left_leaf_index = 2;
+  MerklePath left_proof = 3;
+  uint64 right_leaf_index = 4;
+  MerklePath right_proof = 5;
+}
+
+message MerkleProof {
+  oneof proof {
+    InclusionProof inclusion = 1;
+    NonInclusionProof noninclusion = 2;
+  }
+}

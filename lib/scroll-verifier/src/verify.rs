@@ -212,7 +212,7 @@ mod tests {
         let proof: Proof =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
                 .unwrap();
-        assert!(matches!(
+        assert_eq!(
             verify_zktrie_storage_proof(
                 H256(hex!(
                     "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
@@ -222,7 +222,7 @@ mod tests {
                 &proof.proof
             ),
             Ok(())
-        ))
+        )
     }
 
     #[test]
@@ -230,7 +230,7 @@ mod tests {
         let proof: Proof =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_absent.json").unwrap())
                 .unwrap();
-        assert!(matches!(
+        assert_eq!(
             verify_zktrie_storage_absence(
                 H256(hex!(
                     "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
@@ -239,6 +239,6 @@ mod tests {
                 &proof.proof
             ),
             Ok(())
-        ))
+        )
     }
 }

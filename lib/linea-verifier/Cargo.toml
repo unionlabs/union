@@ -1,0 +1,28 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "linea-verifier"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = ["lib/scroll-verifier/tests"]
+
+[dependencies]
+ethereum-verifier      = { workspace = true }
+ethers-core.workspace  = true
+gnark-mimc             = { workspace = true }
+hex                    = { workspace = true }
+hex-literal.workspace  = true
+linea-zktrie           = { workspace = true }
+rlp                    = { workspace = true }
+scroll-codec.workspace = true
+serde                  = { workspace = true }
+serde-utils            = { workspace = true }
+serde_json             = { workspace = true }
+sha3                   = { workspace = true }
+thiserror              = { workspace = true }
+unionlabs              = { workspace = true }

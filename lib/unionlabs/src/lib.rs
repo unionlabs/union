@@ -53,6 +53,9 @@ pub mod union;
 /// Types specific to the scroll protocol.
 pub mod scroll;
 
+/// Types specific to the linea protocol.
+pub mod linea;
+
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
 
@@ -142,6 +145,7 @@ pub enum WasmClientType {
     Tendermint,
     Scroll,
     Arbitrum,
+    Linea,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -174,6 +178,7 @@ impl FromStr for WasmClientType {
             "Tendermint" => Ok(WasmClientType::Tendermint),
             "Scroll" => Ok(WasmClientType::Scroll),
             "Arbitrum" => Ok(WasmClientType::Arbitrum),
+            "Linea" => Ok(WasmClientType::Linea),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
@@ -188,6 +193,7 @@ impl Display for WasmClientType {
             Self::Tendermint => write!(f, "Tendermint"),
             Self::Scroll => write!(f, "Scroll"),
             Self::Arbitrum => write!(f, "Arbitrum"),
+            Self::Linea => write!(f, "Linea"),
         }
     }
 }
