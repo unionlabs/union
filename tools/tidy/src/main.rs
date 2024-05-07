@@ -47,6 +47,16 @@ fn main() -> ExitCode {
         for (dep_name, dep) in deps {
             match dep {
                 InheritableDependency::Value(_) => {
+                    if dep_name.as_ref() == "cosmwasm-schema"
+                        || dep_name.as_ref() == "cosmwasm-std"
+                        || dep_name.as_ref() == "cw-storage-plus"
+                    {
+                        tracing::warn!(
+                            member = %member.name,
+                            "{dep_name} is being ignored for deduplication checks as we gradually migrate to cosmwasm 2.0"
+                        );
+                        continue;
+                    }
                     if workspace_dependencies.contains_key(dep_name) {
                         is_err = true;
 
