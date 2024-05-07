@@ -27,7 +27,7 @@ const osmoFromUnionToOsmosis = await unionClient.cosmwasmMessageExecuteContract(
     contractAddress,
     msg: {
       transfer: {
-        channel: "channel-5",
+        channel: "channel-6",
         receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
         memo: "sending wrapped OSMO from Union to Osmosis"
       }

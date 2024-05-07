@@ -1,16 +1,17 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { debounce, dollarize } from "$lib/utilities"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
-import Search from "virtual:icons/lucide/search"
+import Timer from "virtual:icons/lucide/timer"
 import Settings from "virtual:icons/lucide/settings"
+import { debounce, dollarize } from "$lib/utilities"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.js"
 import { queryParameters } from "sveltekit-search-params"
 import { Input } from "$lib/components/ui/input/index.js"
 import ChevronDown from "virtual:icons/lucide/chevron-down"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.js"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
@@ -19,8 +20,8 @@ import { ChainDialog, SettingsDialog, AssetsDialog } from "$lib/components/send/
 let unionClient: UnionClient
 onMount(() => {
   const cosmosOfflineSigner = (
-    window.keplr
-      ? window.keplr.getOfflineSigner("union-testnet-8", {})
+    $cosmosStore.connectedWallet === "keplr"
+      ? window?.keplr?.getOfflineSigner("union-testnet-8", {})
       : window.leap
         ? window.leap.getOfflineSigner("union-testnet-8", {})
         : undefined
@@ -144,19 +145,33 @@ let buttonText = "Send it 🔥" satisfies
   | String
 </script>
 
-<main class="flex justify-center items-start w-full px-0 sm:px-3 min-h-full">
+<main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
   <Card.Root
-    class="size-full max-w-[460px] h-[480px] border-accent border-[1px] border-solid mt-16 bg-transparent p-2"
+    class="size-full max-w-[460px] h-[500px] border-accent/45 border-solid mt-16 p-2 bg-card/60 bg-opacity-60"
   >
-    <Card.Header class="pt-1 px-3 pb-0 flex flex-row w-full justify-between items-start h-10">
+    <Card.Header
+      class="pt-0.5 pl-3 pr-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-2"
+    >
       <Card.Title class="text-2xl font-black mt-1">Transfer</Card.Title>
       <Button
         size="icon"
+        type="button"
         variant="ghost"
-        class="size-8 bg-card text-foreground"
+        title="Ongoing transactions"
+        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl ml-auto"
+        on:click={event => {
+          console.warn('Not implemented yet')
+        }}
+      >
+        <Timer class="size-5" />
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl"
         on:click={() => (dialogOpenSettings = !dialogOpenSettings)}
       >
-        <Settings class="size-6" />
+        <Settings class="size-5" />
       </Button>
     </Card.Header>
     <Card.Content
@@ -220,14 +235,14 @@ let buttonText = "Send it 🔥" satisfies
         </Button>
       </div>
       <!-- asset -->
-      <div class={cn('size-full h-20 max-h-20 mt-1 mb-auto')}>
+      <div class={cn('size-full h-[5.5rem] max-h-[5.5rem] mt-2 mb-auto')}>
         <p class="text-center text-2xl mb-2 font-extrabold">Asset</p>
         <Button
           variant="outline"
           on:click={() => (dialogOpenToken = !dialogOpenToken)}
           class={cn(
             devBorder,
-            'size-full max-h-20 flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5',
+            'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5 border-accent/90',
           )}
         >
           <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
@@ -276,7 +291,9 @@ let buttonText = "Send it 🔥" satisfies
           data-transfer-from-amount
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
-          class={cn(['text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums'])}
+          class={cn([
+            'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums text-center border-accent/90',
+          ])}
         />
       </div>
     </Card.Content>
@@ -287,11 +304,8 @@ let buttonText = "Send it 🔥" satisfies
         disabled={false}
         data-transfer-button
         on:click={async event => {
-          console.log(inputValue.from)
           const amount = parseFloat(inputValue.from)
-          const account = await unionClient.getAccount()
           const contractAddress = 'union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7'
-
           const transfers = await unionClient.transferAssets({
             kind: 'cosmwasm',
             instructions: [
@@ -299,7 +313,7 @@ let buttonText = "Send it 🔥" satisfies
                 contractAddress,
                 msg: {
                   transfer: {
-                    channel: 'channel-5',
+                    channel: 'channel-6',
                     receiver: 'osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0',
                     memo: 'sending wrapped OSMO from Union to Osmosis through the App',
                   },
@@ -314,8 +328,10 @@ let buttonText = "Send it 🔥" satisfies
             ],
           })
           console.log(transfers.transactionHash)
-        }}>{buttonText}</Button
+        }}
       >
+        {buttonText}
+      </Button>
     </Card.Footer>
   </Card.Root>
 </main>
