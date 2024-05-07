@@ -177,7 +177,7 @@ let buttonText = "Send it 🔥" satisfies
     <Card.Content
       class={cn(['size-full max-h-[375px] pb-3 px-3.5 flex flex-col justify-between', devBorder,
     
-    'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/5 border-none outline outline-1 outline-accent/50 rounded-md'
+    'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md'
     ])}
     >
       <div

@@ -1,8 +1,8 @@
 <script lang="ts">
-import { cn } from '$/lib/utilities/shadcn'
-import { Badge } from '$lib/components/ui/badge'
+import { cn } from "$/lib/utilities/shadcn"
+import { Badge } from "$lib/components/ui/badge"
 
-export let className = ''
+export let className = ""
 </script>
 
 <Badge

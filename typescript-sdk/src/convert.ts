@@ -5,9 +5,7 @@ import { getAddress, isHex, isAddress } from "viem"
 import type { UnionAddress, EvmAddress } from "./types.ts"
 
 export const isValidEvmAddress = (address: unknown): address is EvmAddress =>
-  typeof address === "string" && //
-  isAddress(address) &&
-  getAddress(address) === address
+  typeof address === "string" && isAddress(address) && getAddress(address) === address
 
 export function isValidCosmosAddress(
   address: unknown,

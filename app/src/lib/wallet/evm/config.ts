@@ -150,7 +150,7 @@ reconnect(config)
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
-  chainId: ConfiguredChainId | undefined = sepolia.id
+  chainId: ConfiguredChainId = sepolia.id
 ) {
   const connectors = config.connectors.filter(connector => connector.id === evmWalletId)
   const connector = connectors[0] ?? connectors[1]
