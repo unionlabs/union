@@ -1,11 +1,10 @@
-import "./patch.ts"
 import {
   type ExecuteResult,
   SigningCosmWasmClient,
   type ExecuteInstruction
 } from "@cosmjs/cosmwasm-stargate"
-import { raise } from "#/utilities.ts"
-import { ucs01relayAbi } from "#/abi/ucs01-relay.ts"
+import { raise } from "./utilities.ts"
+import { ucs01relayAbi } from "./abi/ucs01-relay.ts"
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 import type { Optional, Coin, ExtractParameters } from "./types.ts"
 import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
@@ -259,12 +258,12 @@ export class UnionClient implements IUnionClient {
         sourceChannel,
         unionToEvmAddress(receiver),
         [{ denom: denomAddress, amount }],
-        BigInt(8),
+        8n,
         10_000_000n
       ]
     } as const
     if (!simulate) return await signer.writeContract(writeContractParameters)
-    const { request, result } = await signer.simulateContract(writeContractParameters)
+    const { request } = await signer.simulateContract(writeContractParameters)
     return await signer.writeContract(request)
   }
 }

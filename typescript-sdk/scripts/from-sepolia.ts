@@ -3,7 +3,7 @@ import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { UnionClient } from "#/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, erc20Abi, fallback, publicActions, createWalletClient } from "viem"
+import { http, erc20Abi, publicActions, createWalletClient } from "viem"
 
 /* `bun scripts/to-sepolia.ts --private-key "..."` */
 
@@ -20,7 +20,7 @@ const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 const evmSigner = createWalletClient({
   chain: sepolia,
   account: evmAccount,
-  transport: fallback([http(`https://rpc2.sepolia.org`)])
+  transport: http(`https://rpc2.sepolia.org`)
 }).extend(publicActions)
 
 const unionClient = await UnionClient.connectWithSecret({
