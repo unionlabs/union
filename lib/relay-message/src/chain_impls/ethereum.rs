@@ -130,7 +130,6 @@ where
                 ConnectionOpenInitCall {
                     msg: contracts::ibc_handler::MsgConnectionOpenInit {
                         client_id: data.client_id.to_string(),
-                        version: data.version.into(),
                         counterparty: data.counterparty.into(),
                         delay_period: data.delay_period,
                     },
