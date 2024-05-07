@@ -41,18 +41,14 @@ function createCosmosStore(
     update,
     subscribe,
     connect: async (walletId: string) => {
-      console.log({ walletId })
-      // alert("Please install Keplr wallet")
       if (!walletId || (walletId !== "keplr" && walletId !== "leap")) return
       update(v => ({ ...v, connectionStatus: "connecting", connectedWallet: walletId }))
-      console.log({ walletId })
       if (!window[walletId]) {
         alert(`Please install ${walletId} wallet`)
-        update(v => ({ ...v, connectionStatus: "disconnected", connectedWallet: walletId }))
-        return
+        return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
+      await window[walletId]?.enable(["union-testnet-8"])
       const account = await window[walletId]?.getKey("union-testnet-8")
-      console.log({ account })
       update(v => ({
         ...v,
         connectionStatus: "connected",
