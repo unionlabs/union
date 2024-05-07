@@ -43,6 +43,8 @@ impl KeyDeserialize for IbcEndpointKey {
     fn from_vec(value: Vec<u8>) -> cosmwasm_std::StdResult<Self::Output> {
         <(String, String) as KeyDeserialize>::from_vec(value)
     }
+
+    const KEY_ELEMS: u16 = todo!();
 }
 
 impl<'a> PrimaryKey<'a> for IbcEndpointKey {

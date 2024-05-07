@@ -258,8 +258,7 @@ pub trait TransferProtocol {
                 Event::new(PACKET_EVENT).add_attribute("memo", &memo)
             };
 
-            Ok(IbcReceiveResponse::new()
-                .set_ack(Self::ack_success().try_into()?)
+            Ok(IbcReceiveResponse::new(Self::ack_success().try_into()?)
                 .add_event(
                     packet_event
                         .add_attributes([
@@ -284,16 +283,15 @@ pub trait TransferProtocol {
 
     fn receive_error(error: impl Debug) -> IbcReceiveResponse<Self::CustomMsg> {
         let error = format!("{:?}", error);
-        IbcReceiveResponse::new()
-            .set_ack(
-                Self::ack_failure(error.clone())
-                    .try_into()
-                    .expect("impossible"),
-            )
-            .add_event(Event::new(PACKET_EVENT).add_attributes([
-                ("module", MODULE_NAME),
-                ("success", "false"),
-                ("error", &error),
-            ]))
+        IbcReceiveResponse::new(
+            Self::ack_failure(error.clone())
+                .try_into()
+                .expect("impossible"),
+        )
+        .add_event(Event::new(PACKET_EVENT).add_attributes([
+            ("module", MODULE_NAME),
+            ("success", "false"),
+            ("error", &error),
+        ]))
     }
 }

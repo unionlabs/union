@@ -82,7 +82,7 @@ pub fn execute(
             if info.sender != env.contract.address {
                 Err(ContractError::Unauthorized)
             } else {
-                let normalized_hash = hash.0.try_into().expect("impossible");
+                let normalized_hash = hash.as_slice().try_into().expect("impossible");
                 FOREIGN_DENOM_TO_HASH.save(
                     deps.storage,
                     (local_endpoint.clone().into(), denom.clone()),
@@ -180,7 +180,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 fn query_port(deps: Deps) -> StdResult<PortResponse> {
     let query = IbcQuery::PortId {}.into();
-    let PortIdResponse { port_id } = deps.querier.query(&query)?;
+    let PortIdResponse { port_id, .. } = deps.querier.query(&query)?;
     Ok(PortResponse { port_id })
 }
 

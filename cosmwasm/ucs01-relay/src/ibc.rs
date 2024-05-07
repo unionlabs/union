@@ -23,11 +23,16 @@ fn to_response<T>(
         ..
     }: IbcReceiveResponse<T>,
 ) -> Response<T> {
-    Response::<T>::new()
+    let response = Response::<T>::new()
         .add_submessages(messages)
         .add_attributes(attributes)
-        .add_events(events)
-        .set_data(acknowledgement)
+        .add_events(events);
+
+    if let Some(ack) = acknowledgement {
+        response.set_data(ack)
+    } else {
+        response
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
