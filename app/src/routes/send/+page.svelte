@@ -234,21 +234,21 @@ let buttonText = "Send it 🔥" satisfies
           <div
             class={cn([
               devBorder,
-              'w-full max-w-[65px] h-full mr-1 flex flex-row justify-start items-center',
+              'w-full max-w-[65px] h-full mr-1 flex flex-row justify-start items-center z-50',
             ])}
           >
             <img
               alt="asset"
               src="/images/icons/union.svg"
               class={cn(
-                'size-12 outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
+                'w-14 overflow-clip outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
                 'p-1 z-10',
               )}
             />
             <img
               src="/images/icons/osmosis.svg"
               alt="asset"
-              class={cn('size-10 z-50 my-auto mt-4 -ml-6')}
+              class={cn('size-12 z-50 my-auto mt-3 -ml-6')}
             />
           </div>
 
@@ -256,11 +256,11 @@ let buttonText = "Send it 🔥" satisfies
             <p class="text-2xl font-black m-auto">OSMO</p>
             <p class="text-xl m-auto">Osmosis</p>
           </div>
-          <div class="h-full">
+          <div class="h-full space-y-2">
+            <p class="">balance</p>
             <p class={cn([devBorder, 'font-sans text-2xl font-black m-auto tabular-nums'])}>
               420.69
             </p>
-            <p class="">balance</p>
           </div>
 
           <ChevronDown class={cn([devBorder, 'size-6 mb-auto mt-0.5 ml-auto'])} />

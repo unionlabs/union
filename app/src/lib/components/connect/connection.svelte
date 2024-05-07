@@ -41,8 +41,8 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   {...$$restProps}
   id={`${chain}-connect`}
   on:click={_event => onCopyClick()}
-  builders={[{ action: node => copy(node, { text: address }) }]}
   variant={connectStatus === 'connected' ? 'default' : 'ghost'}
+  builders={[{ action: node => copy(node, { text: address }) }]}
   class={cn(
     ['px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start'],
     connectStatus === 'disconnected' &&
@@ -75,22 +75,21 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
       role="row"
       tabindex={0}
       data-index={index}
-      on:mouseleave={() => (hoverState = connectedWalletId === name ? 'none' : 'none')}
-      on:mouseenter={() => (hoverState = connectedWalletId === name ? 'hover' : 'none')}
+      on:mouseleave={() => (hoverState = connectedWalletId === id ? 'none' : 'none')}
+      on:mouseenter={() => (hoverState = connectedWalletId === id ? 'hover' : 'none')}
       class={cn([
         'flex',
         'flex-col w-full justify-start mb-3',
-        connectStatus === 'connected' && [connectedWalletId !== name ? 'hidden' : ''],
+        connectStatus === 'connected' && connectedWalletId !== id ? 'hidden' : 'flex',
       ])}
     >
       <Button
         type="button"
         variant="outline"
-        disabled={connectStatus === 'connected' &&
-          (['connecting', 'reconnecting'].includes(connectStatus) || connectedWalletId !== name)}
+        
         class={cn([
           'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
-          connectStatus === 'connected' && connectedWalletId === name && 'border-[#037791]',
+          connectStatus === 'connected' && connectedWalletId === id && 'border-[#037791]',
           (connectStatus === 'disconnected' || connectStatus == undefined) &&
             'opacity-60 hover:opacity-100',
           hoverState === 'hover' &&
@@ -106,7 +105,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
         <img src={icon} alt={name} class="size-7 mr-3 text-white" />
         {name}
         {#if connectStatus === 'connected'}
-          {#if connectedWalletId === name}
+          {#if connectedWalletId === id}
             {#if hoverState === 'hover'}
               <XIcon class="ml-auto" />
             {:else}

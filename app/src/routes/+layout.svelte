@@ -37,8 +37,16 @@ onMount(() => {
 })
 
 onMount(() => {
-  if (window?.leap) cosmosStore.connect("leap")
-  else if (window?.keplr) cosmosStore.connect("keplr")
+  const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
+  if (
+    lastConnectedWallet &&
+    ["leap", "keplr"].includes(lastConnectedWallet) &&
+    window[lastConnectedWallet]
+  ) {
+    return cosmosStore.connect(lastConnectedWallet)
+  }
+  if (window?.keplr) cosmosStore.connect("keplr")
+  else if (window?.leap) cosmosStore.connect("leap")
 })
 
 /**

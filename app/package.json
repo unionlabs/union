@@ -33,7 +33,7 @@
     "mode-watcher": "^0.3.0",
     "svelte-french-toast": "^1.2.0",
     "svelte-legos": "^0.2.2",
-    "svelte-local-storage-store": "^0.6.4",
+    "svelte-persisted-store": "^0.9.2",
     "svelte-radix": "^1.1.0",
     "sveltekit-superforms": "^2.13.0",
     "uint8array-extras": "^1.1.0",

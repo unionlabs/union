@@ -94,7 +94,6 @@ export function createSepoliaStore(
     subscribe,
     connect: async (walletId: EvmWalletId) => {
       console.log("[evm] connect --", { walletId })
-      const walletName = evmWalletsInformation.find(evmWallet => evmWallet.id === walletId)?.name
       await evmConnect(walletId, sepolia.id)
       await sleep(1_000)
     },
@@ -144,7 +143,7 @@ watchAccount(config, {
       hoverState: "none",
       address: account.address,
       connectionStatus: account.status,
-      connectedWallet: account.connector?.name
+      connectedWallet: account.connector?.id
     })
 })
 reconnect(config)

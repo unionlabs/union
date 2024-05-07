@@ -58,7 +58,6 @@ onMount(() => {
 </div>
 
 <Command.Dialog
-  data-search-dialog
   bind:open={commandDialogOpen}
   class="rounded-lg border-[1.5px] border-solid shadow-xl border-accent w-full"
 >
@@ -76,9 +75,9 @@ onMount(() => {
     <Command.Empty>No results found.</Command.Empty>
     <Command.Group heading="Suggestions">
       <Command.Item
-      onSelect={value => {
-        console.log('Selected:', value)
-      }}
+        onSelect={value => {
+          console.log('Selected:', value)
+        }}
       >
         <DollarSign class="mr-2 size-4" />
         <span>Send & Swap</span>
