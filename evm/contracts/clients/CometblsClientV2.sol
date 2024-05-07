@@ -30,6 +30,9 @@ library CometblsClientLib {
     error ErrInvalidZKP();
     error ErrDelayPeriodNotExpired();
     error ErrInvalidUntrustedValidatorsHash();
+    error ErrInvalidMisbehaviorHeadersSequence();
+    error ErrInvalidMisbehavior();
+    error ErrClientFrozen();
 }
 
 contract CometblsClient is
@@ -112,6 +115,67 @@ contract CometblsClient is
             }),
             true
         );
+    }
+
+    function misbehavior(
+        string calldata clientId,
+        UnionIbcLightclientsCometblsV1Header.Data calldata headerA,
+        UnionIbcLightclientsCometblsV1Header.Data calldata headerB
+    ) public {
+        UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
+            clientStates[clientId];
+        bool fraud = checkMisbehavior(clientId, clientState, headerA, headerB);
+        if (!fraud) {
+            revert CometblsClientLib.ErrInvalidMisbehavior();
+        }
+        // Similar to tendermint https://github.com/cosmos/ibc-go/blob/bbdcc8c6e965c8a2f607dfb2b61cd13712dd966a/modules/light-clients/07-tendermint/misbehaviour.go#L19
+        clientState.frozen_height =
+            IbcCoreClientV1Height.Data({revision_number: 0, revision_height: 1});
+    }
+
+    function checkMisbehavior(
+        string calldata clientId,
+        UnionIbcLightclientsCometblsV1ClientState.Data storage clientState,
+        UnionIbcLightclientsCometblsV1Header.Data calldata headerA,
+        UnionIbcLightclientsCometblsV1Header.Data calldata headerB
+    ) internal returns (bool) {
+        // Ensures that A >= B to simplify the misbehavior of time violation check
+        if (!headerA.trusted_height.gte(headerB.trusted_height)) {
+            revert CometblsClientLib.ErrInvalidMisbehaviorHeadersSequence();
+        }
+
+        OptimizedConsensusState storage consensusStateA =
+            consensusStates[clientId][headerA.trusted_height.toUint128()];
+        OptimizedConsensusState storage consensusStateB =
+            consensusStates[clientId][headerB.trusted_height.toUint128()];
+
+        // Check that the headers would have been accepted in an update
+        (
+            uint64 untrustedHeightNumberA,
+            uint64 untrustedTimestampA,
+            bytes32 untrustedValidatorsHashA
+        ) = verifyHeader(headerA, consensusStateA, clientState);
+        (
+            uint64 untrustedHeightNumberB,
+            uint64 untrustedTimestampB,
+            bytes32 untrustedValidatorsHashB
+        ) = verifyHeader(headerB, consensusStateB, clientState);
+
+        if (headerA.trusted_height.eq(headerB.trusted_height)) {
+            bytes32 hashA = keccak256(abi.encode(headerA.signed_header));
+            bytes32 hashB = keccak256(abi.encode(headerB.signed_header));
+            if (hashA != hashB) {
+                // Misbehavior of a fork
+                return true;
+            }
+        } else {
+            // Guarantee that A > B
+            if (untrustedTimestampA <= untrustedTimestampB) {
+                // Misbehavior of time violation
+                return true;
+            }
+        }
+        return false;
     }
 
     function verifyHeader(
@@ -197,6 +261,11 @@ contract CometblsClient is
             clientMessageBytes.unmarshalEthABI();
         UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
             clientStates[clientId];
+
+        if (!clientState.frozen_height.isZero()) {
+            revert CometblsClientLib.ErrClientFrozen();
+        }
+
         OptimizedConsensusState storage consensusState =
             consensusStates[clientId][header.trusted_height.toUint128()];
 

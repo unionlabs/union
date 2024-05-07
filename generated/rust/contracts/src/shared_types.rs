@@ -152,7 +152,7 @@ pub struct MsgConnectionOpenConfirm {
     pub proof_ack: ::ethers::core::types::Bytes,
     pub proof_height: IbcCoreClientV1HeightData,
 }
-///`MsgConnectionOpenInit(string,(string,string,(bytes)),uint64)`
+///`MsgConnectionOpenInit(string,(string,string[]),(string,string,(bytes)),uint64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -165,6 +165,7 @@ pub struct MsgConnectionOpenConfirm {
 )]
 pub struct MsgConnectionOpenInit {
     pub client_id: ::std::string::String,
+    pub version: IbcCoreConnectionV1VersionData,
     pub counterparty: IbcCoreConnectionV1CounterpartyData,
     pub delay_period: u64,
 }
