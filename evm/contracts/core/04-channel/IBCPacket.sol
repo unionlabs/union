@@ -1,6 +1,8 @@
 pragma solidity ^0.8.23;
 
+import "solady/utils/LibString.sol";
 import "@openzeppelin/utils/Strings.sol";
+
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../25-handler/IBCMsgs.sol";
 import "../02-client/IBCHeight.sol";
@@ -63,6 +65,7 @@ library IBCPacketLib {
  */
 contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     using IBCHeight for IbcCoreClientV1Height.Data;
+    using LibString for *;
 
     /**
      * @dev sendPacket is called by a module in order to send an IBC packet on a channel.
@@ -70,12 +73,12 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * is returned if one occurs.
      */
     function sendPacket(
-        string calldata sourcePort,
         string calldata sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external override returns (uint64) {
+        string memory sourcePort = msg.sender.toHexString();
         if (
             !authenticateCapability(
                 channelCapabilityPath(sourcePort, sourceChannel)
@@ -273,7 +276,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     }
 
     function _writeAcknowledgement(
-        string calldata destinationPort,
+        string memory destinationPort,
         string calldata destinationChannel,
         uint64 sequence,
         bytes memory acknowledgement
@@ -306,11 +309,11 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
     function writeAcknowledgement(
-        string calldata destinationPort,
         string calldata destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement
     ) external override {
+        string memory destinationPort = msg.sender.toHexString();
         if (
             !authenticateCapability(
                 channelCapabilityPath(destinationPort, destinationChannel)
@@ -603,7 +606,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     }
 
     function ensureChannelState(
-        string calldata portId,
+        string memory portId,
         string calldata channelId
     ) internal returns (IbcCoreChannelV1Channel.Data storage) {
         IbcCoreChannelV1Channel.Data storage channel =

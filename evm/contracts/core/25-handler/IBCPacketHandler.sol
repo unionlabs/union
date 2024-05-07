@@ -13,7 +13,6 @@ abstract contract IBCPacketHandler is IIBCPacket, ModuleManager {
     address ibcPacket;
 
     function sendPacket(
-        string calldata sourcePort,
         string calldata sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
@@ -30,7 +29,6 @@ abstract contract IBCPacketHandler is IIBCPacket, ModuleManager {
     }
 
     function writeAcknowledgement(
-        string calldata destinationPortId,
         string calldata destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement

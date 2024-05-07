@@ -47,7 +47,6 @@ contract PingPong is IBCAppBase {
     using PingPongLib for *;
 
     IBCHandler private ibcHandler;
-    string private portId;
     string private channelId;
     uint64 private revisionNumber;
     uint64 private timeout;
@@ -74,7 +73,6 @@ contract PingPong is IBCAppBase {
             revert PingPongLib.ErrNoChannel();
         }
         ibcHandler.sendPacket(
-            portId,
             channelId,
             // No height timeout
             IbcCoreClientV1Height.Data({revision_number: 0, revision_height: 0}),
@@ -177,7 +175,6 @@ contract PingPong is IBCAppBase {
         string calldata _counterpartyVersion
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.
-        portId = _portId;
         channelId = _channelId;
     }
 
@@ -186,7 +183,6 @@ contract PingPong is IBCAppBase {
         string calldata _channelId
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenAck
-        portId = _portId;
         channelId = _channelId;
     }
 

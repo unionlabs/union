@@ -16,6 +16,7 @@ import {IBCHandler} from
 import {IBCConnection} from
     "../../../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../../../contracts/core/02-client/IBCClient.sol";
+import {IBCHeight} from "../../../../../contracts/core/02-client/IBCHeight.sol";
 import {IBCChannelHandshake} from
     "../../../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import {IIBCPacket} from
@@ -23,11 +24,12 @@ import {IIBCPacket} from
 import {IBCPacket} from "../../../../../contracts/core/04-channel/IBCPacket.sol";
 
 contract IBCHandlerFake is IBCHandler {
+    using LibString for *;
+
     IbcCoreChannelV1Packet.Data[] packets;
     uint64 sequence;
 
     function sendPacket(
-        string calldata sourcePort,
         string calldata sourceChannel,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
@@ -38,7 +40,7 @@ contract IBCHandlerFake is IBCHandler {
         packets.push(
             IbcCoreChannelV1Packet.Data({
                 sequence: packetSequence,
-                source_port: sourcePort,
+                source_port: msg.sender.toHexString(),
                 source_channel: sourceChannel,
                 destination_port: "dummy-port",
                 destination_channel: "dummy-channel",
@@ -142,7 +144,7 @@ contract RelayTests is Test {
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(sender);
-        relay.send(sourcePort, sourceChannel, receiver, localTokens, 0, 0);
+        relay.send(sourceChannel, receiver, localTokens, IBCHeight.zero(), 0);
 
         return denomAddress;
     }
@@ -170,7 +172,7 @@ contract RelayTests is Test {
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(receiver);
-        relay.send(sourcePort, sourceChannel, sender, localTokens, 0, 0);
+        relay.send(sourceChannel, sender, localTokens, IBCHeight.zero(), 0);
     }
 
     function receiveRemoteToken(
@@ -646,7 +648,7 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            destinationPort, destinationChannel, receiver, localTokens, 0, 0
+            destinationChannel, receiver, localTokens, IBCHeight.zero(), 0
         );
 
         Token[] memory tokens = new Token[](1);
@@ -664,9 +666,8 @@ contract RelayTests is Test {
             sequence, sourceChannel, "", address(0), "", address(0), 0
         );
 
-        uint256 outstandingBefore = relay.getOutstanding(
-            destinationPort, destinationChannel, denomAddress
-        );
+        uint256 outstandingBefore =
+            relay.getOutstanding(destinationChannel, denomAddress);
 
         vm.prank(address(ibcHandler));
         relay.onRecvPacket(
@@ -694,9 +695,7 @@ contract RelayTests is Test {
 
         // Local tokens are tracked, outstanding for the channel must be diminished by the amount
         assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ) + amount,
+            relay.getOutstanding(destinationChannel, denomAddress) + amount,
             outstandingBefore
         );
     }
@@ -768,12 +767,7 @@ contract RelayTests is Test {
         vm.prank(sender);
         IERC20Denom(denomAddress).approve(address(relay), amount);
 
-        assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
-            0
-        );
+        assertEq(relay.getOutstanding(destinationChannel, denomAddress), 0);
 
         vm.expectEmit();
         emit IERC20.Transfer(address(sender), address(relay), amount);
@@ -783,16 +777,11 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            destinationPort, destinationChannel, receiver, localTokens, 0, 0
+            destinationChannel, receiver, localTokens, IBCHeight.zero(), 0
         );
 
         // Local tokens must be tracked as outstanding for the channel
-        assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
-            amount
-        );
+        assertEq(relay.getOutstanding(destinationChannel, denomAddress), amount);
     }
 
     function test_send_remote(
@@ -836,7 +825,6 @@ contract RelayTests is Test {
 
         {
             address denomAddress = relay.getDenomAddress(
-                destinationPort,
                 destinationChannel,
                 RelayLib.makeForeignDenom(
                     destinationPort, destinationChannel, denomName
@@ -859,23 +847,20 @@ contract RelayTests is Test {
                 sequence, sourceChannel, address(0), "", "", address(0), 0
             );
 
-            uint256 outstandingBefore = relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            );
+            uint256 outstandingBefore =
+                relay.getOutstanding(destinationChannel, denomAddress);
 
             vm.prank(receiver);
             relay.send(
-                destinationPort,
                 destinationChannel,
                 abi.encodePacked(receiver),
                 localTokens,
-                0,
+                IBCHeight.zero(),
                 0
             );
 
-            uint256 outstandingAfter = relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            );
+            uint256 outstandingAfter =
+                relay.getOutstanding(destinationChannel, denomAddress);
 
             // Remote tokens are not tracked as outstanding
             assertEq(outstandingBefore, outstandingAfter);
@@ -939,7 +924,6 @@ contract RelayTests is Test {
 
         {
             address denomAddress = relay.getDenomAddress(
-                destinationPort,
                 "channel-1",
                 RelayLib.makeForeignDenom(
                     destinationPort, "channel-1", denomName
@@ -954,7 +938,7 @@ contract RelayTests is Test {
             IERC20Denom(denomAddress).approve(address(relay), amount);
 
             uint256 outstandingBefore =
-                relay.getOutstanding(destinationPort, "channel-2", denomAddress);
+                relay.getOutstanding("channel-2", denomAddress);
 
             vm.expectEmit();
             emit IERC20.Transfer(address(receiver), address(relay), amount);
@@ -966,16 +950,15 @@ contract RelayTests is Test {
 
             vm.prank(receiver);
             relay.send(
-                destinationPort,
                 "channel-2",
                 abi.encodePacked(receiver),
                 localTokens,
-                0,
+                IBCHeight.zero(),
                 0
             );
 
             uint256 outstandingAfter =
-                relay.getOutstanding(destinationPort, "channel-2", denomAddress);
+                relay.getOutstanding("channel-2", denomAddress);
 
             // Remote tokens are not tracked as outstanding
             assertEq(outstandingBefore + amount, outstandingAfter);
@@ -1110,23 +1093,13 @@ contract RelayTests is Test {
             0, sourceChannel, address(0), "", "", address(this), 0
         );
 
-        assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
-            amount
-        );
+        assertEq(relay.getOutstanding(destinationChannel, denomAddress), amount);
 
         vm.prank(address(ibcHandler));
         relay.onTimeoutPacket(packet, relayer);
 
         /* Tokens must be unescrowed and no longer outstanding */
-        assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
-            0
-        );
+        assertEq(relay.getOutstanding(destinationChannel, denomAddress), 0);
     }
 
     function test_onTimeout_refund_remote(
@@ -1174,7 +1147,6 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
-            destinationPort,
             destinationChannel,
             RelayLib.makeForeignDenom(
                 destinationPort, destinationChannel, denomName
@@ -1200,18 +1172,15 @@ contract RelayTests is Test {
             sequence, sourceChannel, address(0), "", "", address(this), 0
         );
 
-        uint256 outstandingBefore = relay.getOutstanding(
-            destinationPort, destinationChannel, denomAddress
-        );
+        uint256 outstandingBefore =
+            relay.getOutstanding(destinationChannel, denomAddress);
 
         vm.prank(address(ibcHandler));
         relay.onTimeoutPacket(packet, relayer);
 
         // Outstanding must not be touched
         assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
+            relay.getOutstanding(destinationChannel, denomAddress),
             outstandingBefore
         );
     }
@@ -1254,12 +1223,7 @@ contract RelayTests is Test {
             0, sourceChannel, address(0), "", "", address(this), 0
         );
 
-        assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
-            amount
-        );
+        assertEq(relay.getOutstanding(destinationChannel, denomAddress), amount);
 
         vm.prank(address(ibcHandler));
         relay.onAcknowledgementPacket(
@@ -1267,12 +1231,7 @@ contract RelayTests is Test {
         );
 
         /* Tokens must be unescrowed and no longer outstanding */
-        assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
-            0
-        );
+        assertEq(relay.getOutstanding(destinationChannel, denomAddress), 0);
     }
 
     function test_ack_failure_refund_remote(
@@ -1320,7 +1279,6 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
-            destinationPort,
             destinationChannel,
             RelayLib.makeForeignDenom(
                 destinationPort, destinationChannel, denomName
@@ -1346,9 +1304,8 @@ contract RelayTests is Test {
             sequence, sourceChannel, address(0), "", "", address(this), 0
         );
 
-        uint256 outstandingBefore = relay.getOutstanding(
-            destinationPort, destinationChannel, denomAddress
-        );
+        uint256 outstandingBefore =
+            relay.getOutstanding(destinationChannel, denomAddress);
 
         vm.prank(address(ibcHandler));
         relay.onAcknowledgementPacket(
@@ -1357,9 +1314,7 @@ contract RelayTests is Test {
 
         // Outstanding must not be touched
         assertEq(
-            relay.getOutstanding(
-                destinationPort, destinationChannel, denomAddress
-            ),
+            relay.getOutstanding(destinationChannel, denomAddress),
             outstandingBefore
         );
     }
@@ -1446,7 +1401,6 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
-            destinationPort,
             destinationChannel,
             RelayLib.makeForeignDenom(
                 destinationPort, destinationChannel, denomName
