@@ -20,7 +20,7 @@
     "@cosmjs/encoding": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
     "@cosmjs/tendermint-rpc": "0.32.3",
-    "viem": "^2.9.31"
+    "viem": "^2.10.1"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
@@ -29,13 +29,13 @@
     "@scure/base": "^1.1.6",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.1",
-    "@types/node": "^20.12.8",
+    "@types/node": "^20.12.10",
     "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",
-    "tsx": "^4.8.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.5",
     "vite-tsconfig-paths": "^4.3.2",
-    "vitest": "^1.5.3"
+    "vitest": "^1.6.0"
   },
   "repository": {
     "type": "git",

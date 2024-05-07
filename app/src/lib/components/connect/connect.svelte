@@ -6,9 +6,10 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Sheet from "$lib/components/ui/sheet"
 import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
+import WalletIcon from "virtual:icons/lucide/wallet"
 import { Separator } from "$lib/components/ui/separator"
 import * as Collapsible from "$lib/components/ui/collapsible"
-import ChevronsUpDown from "virtual:icons/lucide/chevrons-up-down"
+import ChevronsUpDownIcon from "virtual:icons/lucide/chevrons-up-down"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 
@@ -24,21 +25,20 @@ let collapsibleOpen = true
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
-  <Sheet.Trigger asChild let:builder>
+  <Sheet.Trigger asChild let:builder class="w-full">
     <Button
       variant="outline"
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn([
-        'truncate max-w-44 space-x-2 px-4 text-lg',
-        {
-          'border-cyan-300/50':
-            $sepoliaStore.connectionStatus === 'connected' ||
-            $cosmosStore.connectionStatus === 'connected',
-        },
+        'truncate space-x-2 px-4 text-lg w-full min-w-[165px]',
+        ($sepoliaStore.connectionStatus === 'connected' ||
+          $cosmosStore.connectionStatus === 'connected') &&
+          'border-cyan-300/50',
       ])}
     >
-      <span class="">{buttonText}</span>
+      <WalletIcon class="size-6 text-accent-foreground/90" />
+      <span class="uppercase tracking-wide font-semibold">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
@@ -74,7 +74,7 @@ let collapsibleOpen = true
       >
         <span class="mb-0.5 text-center w-full text-lg">Connect Wallets</span>
         <Button variant="ghost" size="sm" class="w-9 p-0 my-auto h-10 hover:bg-transparent">
-          <ChevronsUpDown class="w-6 h-6" />
+          <ChevronsUpDownIcon class="w-6 h-6" />
           <span class="sr-only">Toggle</span>
         </Button>
       </Collapsible.Trigger>

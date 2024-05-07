@@ -29,9 +29,7 @@ import { Navigation, routes } from "$lib/components/navigation/index.ts"
           href={path}
           class={cn([
             'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400 hover:bg-zinc-800/70',
-            {
-              'bg-zinc-800/70': $page.route.id === path,
-            },
+            $page.route.id === path && 'bg-muted-foreground/10',
           ])}
         >
           {name}
