@@ -44,7 +44,8 @@ impl KeyDeserialize for IbcEndpointKey {
         <(String, String) as KeyDeserialize>::from_vec(value)
     }
 
-    const KEY_ELEMS: u16 = todo!();
+    // PrimaryKey is made up of 2 elements
+    const KEY_ELEMS: u16 = 2;
 }
 
 impl<'a> PrimaryKey<'a> for IbcEndpointKey {
