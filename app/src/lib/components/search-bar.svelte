@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte"
+import { goto } from "$app/navigation"
 import Smile from "virtual:icons/lucide/smile"
 import Table from "virtual:icons/lucide/table"
 import Brain from "virtual:icons/lucide/brain"
@@ -48,7 +49,7 @@ onMount(() => {
     on:click={() => {
       if (windowSize.width < 720) commandDialogOpen = true
     }}
-    class="w-full rounded-lg bg-background pl-8 self-stretch lowercase"
+    class="w-full rounded-lg bg-background pl-8 self-stretch lowercase border-[1px] bprder-[#fafafa25]/10"
   />
   <kbd
     class="absolute right-2.5 top-2.5 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"
@@ -59,7 +60,7 @@ onMount(() => {
 
 <Command.Dialog
   bind:open={commandDialogOpen}
-  class="rounded-lg border-[1.5px] border-solid shadow-xl border-accent w-full"
+  class="rounded-lg border-[1.5px] border-solid shadow-2xl border-accent w-full"
 >
   <Command.Input
     type="search"
@@ -71,12 +72,14 @@ onMount(() => {
     placeholder="Type a command or search..."
   />
 
-  <Command.List data-search-dialog>
+  <Command.List data-search-dialog="">
     <Command.Empty>No results found.</Command.Empty>
     <Command.Group heading="Suggestions">
       <Command.Item
-        onSelect={value => {
-          console.log('Selected:', value)
+        class="hover:cursor-pointer"
+        onSelect={() => {
+          goto(`/send`)
+          commandDialogOpen = false
         }}
       >
         <DollarSign class="mr-2 size-4" />

@@ -8,7 +8,7 @@ import { Navigation, routes } from "$lib/components/navigation/index.ts"
 </script>
 
 <header
-  class="text-red flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/50 py-4 px-2 lg:px-4 min-w-full w-screen"
+  class="bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30 py-4 px-2 lg:px-4 min-w-full w-screen"
 >
   <Button
     href="/"
