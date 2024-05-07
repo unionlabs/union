@@ -7,6 +7,7 @@ members = [
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
+  "cosmwasm/ibc-contract",
   "devnet-compose",
 
   "e2e/ensure-blocks",
@@ -23,6 +24,7 @@ members = [
   "lib/chain-utils",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
+  "lib/ibc-vm-rs",
   "lib/ics-008-wasm-client",
   "lib/ics23",
   "lib/linea-verifier",
@@ -120,6 +122,7 @@ ucs01-relay-api           = { path = "cosmwasm/ucs01-relay-api", default-feature
 unionlabs                 = { path = "lib/unionlabs", default-features = false }
 voyager-message           = { path = "lib/voyager-message", default-features = false }
 zktrie                    = { path = "lib/zktrie-rs", default-features = false }
+ibc-vm-rs                 = { path = "lib/ibc-vm-rs", default-features = false }
 
 # external dependencies
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
