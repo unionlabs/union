@@ -52,17 +52,11 @@ export default defineConfig({
         },
         {
           tag: "meta",
-          attrs: {
-            name: "og:image",
-            content: "/og.png"
-          }
+          attrs: { property: "og:image", content: `${SITE_URL}/og.png` }
         },
         {
           tag: "meta",
-          attrs: {
-            name: "twitter:image",
-            content: "/og.png"
-          }
+          attrs: { name: "twitter:image", content: `${SITE_URL}/og.png` }
         },
         {
           tag: "script",

@@ -50,7 +50,7 @@ function seriesValue(value: any, name: string): string {
   }
 }
 
-const hiddenData = Array(128 / 4)
+const hiddenData = new Array(128 / 4)
   .fill(0)
   .map((_, i) => [i * 4, "-"])
 
