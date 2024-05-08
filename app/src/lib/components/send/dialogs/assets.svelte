@@ -2,8 +2,8 @@
 import { cn } from "$lib/utilities/shadcn.ts"
 import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
+import type { Asset } from "$lib/constants/assets.js"
 import { Input } from "$lib/components/ui/input/index.js"
-import type { Asset } from "$lib/components/send/types.ts"
 import { Button } from "$lib/components/ui/button/index.js"
 
 export let dialogOpen = false

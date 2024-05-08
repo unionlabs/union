@@ -1,5 +1,5 @@
 import type { PageLoad } from "./$types.ts"
-import type { Asset } from "$/lib/components/send/types.ts"
+import { assets, type Asset } from "$/lib/constants/assets.ts"
 
 interface Chain {
   id: string
@@ -69,55 +69,6 @@ export const load = (_context => {
         live: false
       }
     ] as Array<Chain>,
-    assets: [
-      {
-        destination: "union-testnet-8",
-        channel: "channel-7775",
-        port: "transfer",
-        client: "07-tendermint-20",
-        connection: "connection-7",
-        denom: "uosmo",
-        symbol: "OSMO",
-        display: "unionOSMO",
-        explorerLink: "https://www.mintscan.io/osmosis-testnet/tx/"
-      },
-      {
-        destination: "osmo-test-5",
-        channel: "channel-6",
-        port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-        client: "07-tendermint-20",
-        connection: "connection-7",
-        denom:
-          "factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3",
-        symbol: "OSMO",
-        contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-        display: "OSMO",
-        explorerLink: "https://testnet.bonlulu.uno/union/tx/"
-      },
-      {
-        destination: "osmo-test-5",
-        channel: "channel-6",
-        denom: "muno",
-        symbol: "UNO",
-        port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-        client: "07-tendermint-20",
-        connection: "connection-7",
-        contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-        display: "osmosisUNO",
-        explorerLink: "https://testnet.bonlulu.uno/union/tx/"
-      },
-      {
-        destination: "11155111",
-        channel: "channel-0",
-        port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-        client: "08-wasm-0",
-        connection: "connection-1",
-        denom: "muno",
-        symbol: "UNO",
-        contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-        display: "ethUNO",
-        explorerLink: "https://sepolia.etherscan.io/tx"
-      }
-    ] as Array<Asset>
+    assets: assets as Array<Asset>
   }
 }) satisfies PageLoad<{ chains: Array<Chain>; assets: Array<Asset> }>

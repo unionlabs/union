@@ -14,6 +14,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@builder.io/partytown": "^0.10.2",
     "@cosmjs/cosmwasm-stargate": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
     "@leapwallet/cosmos-snap-provider": "^0.1.26",

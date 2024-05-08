@@ -21,6 +21,7 @@ import { graphqlClient } from "$lib/graphql/client"
 import Header from "$lib/components/header/header.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import OnlineStatus from "$lib/components/online-status.svelte"
+import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
 
@@ -99,11 +100,22 @@ onMount(() => {
 })
 
 $: if ($navigating) console.log("Navigating to", $page.url.pathname)
+
+/** @docs https://monogram.io/blog/add-partytown-to-svelte */
+let partytownScriptElement: HTMLScriptElement
+onMount(() => {
+  if (!partytownScriptElement) return
+  partytownScriptElement.textContent = partytownSnippet()
+})
 </script>
 
 <svelte:head>
   <title>Union App Beta</title>
   <meta name="description" content="Union Web App" />
+  <script>
+    partytown = { forward: ['dataLayer.push'] }
+  </script>
+  <script bind:this={partytownScriptElement}></script>
 </svelte:head>
 
 {#if $navigating}
@@ -127,7 +139,7 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
     position="bottom"
     client={queryClient}
     initialIsOpen={false}
-    buttonPosition="bottom-left"
+    buttonPosition="bottom-right"
   />
 </QueryClientProvider>
 <OnlineStatus />
