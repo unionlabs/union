@@ -7,7 +7,6 @@ import CopyIcon from "virtual:icons/lucide/copy"
 import CheckIcon from "virtual:icons/lucide/check"
 import { Button } from "$lib/components/ui/button"
 import LoaderCircleIcon from "virtual:icons/lucide/loader-circle"
-import { goto } from "$app/navigation"
 import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
 export let chain: "cosmos" | "evm"
@@ -97,15 +96,9 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
             'hover:text-rose-50 border-rose-900 hover:bg-transparent',
         ])}
         on:click={() => {
-          // goto('https://api.leapwallet.io/deeplink?dapp-url=https%3A%2F%2Fapp.union.build')
           if (!walletIdentifier) return
           if (connectStatus === 'connected') onDisconnectClick()
-          // else onConnectClick(walletIdentifier)
-          else
-            goto(
-              'https://api.leapwallet.io/deeplink?dapp-url=https%3A%2F%2F6914-104-28-203-59.ngrok-free.app',
-              { replaceState: true },
-            )
+          else onConnectClick(walletIdentifier)
         }}
       >
         <img src={icon} alt={name} class="size-7 mr-3 text-white" />

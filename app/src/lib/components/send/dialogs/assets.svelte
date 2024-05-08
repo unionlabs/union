@@ -3,11 +3,13 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
 import { Input } from "$lib/components/ui/input/index.js"
+import type { Asset } from "$lib/components/send/types.ts"
 import { Button } from "$lib/components/ui/button/index.js"
 
 export let dialogOpen = false
 export let handleAssetSearch: (event: InputEvent) => void
 export let handleAssetSelect: (asset: string) => void
+export let assetSearchResults: Array<Asset>
 </script>
 
 <Dialog.Root
@@ -37,35 +39,37 @@ export let handleAssetSelect: (asset: string) => void
         />
       </div>
       <ul class="my-3 mx-2 space-y-1">
-        <li
-          class={cn([
-            // live ? 'cursor-pointer' : 'cursor-not-allowed',
-            'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
-          ])}
-        >
-          <Button
-            variant="ghost"
+        {#each assetSearchResults as { denom, symbol, explorerLink }, index}
+          <li
             class={cn([
-              'w-full flex justify-start space-x-4 p-2 rounded-none pl-3 h-[55px] my-auto',
+              // live ? 'cursor-pointer' : 'cursor-not-allowed',
+              'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
             ])}
-            on:click={() => handleAssetSelect('osmo-test-1')}
           >
-            <img
-              alt={`osmosis logo`}
-              class="size-10 my-auto mr-auto"
-              src={'/images/icons/osmosis.svg'}
-            />
-            <div class="size-full mr-auto flex flex-col items-start">
-              <span
-                class="my-auto text-[22px] font-extrabold mr-auto w-full text-left justify-between text-foreground"
-              >
-                OSMO
-              </span>
-              <span class="text-xs text-muted-foreground">osmo-test-5</span>
-            </div>
-            <p class="mb-auto text-lg font-black">420.69</p>
-          </Button>
-        </li>
+            <Button
+              variant="ghost"
+              class={cn([
+                'w-full flex justify-start space-x-4 p-2 rounded-none pl-3 h-[55px] my-auto',
+              ])}
+              on:click={() => handleAssetSelect('osmo-test-1')}
+            >
+              <img
+                alt={`osmosis logo`}
+                class="size-10 my-auto mr-auto"
+                src={'/images/icons/osmosis.svg'}
+              />
+              <div class="size-full mr-auto flex flex-col items-start">
+                <span
+                  class="my-auto text-[22px] font-extrabold mr-auto w-full text-left justify-between text-foreground"
+                >
+                  {symbol}
+                </span>
+                <span class="text-xs text-muted-foreground">osmo-test-5</span>
+              </div>
+              <p class="mb-auto text-lg font-black">420.69</p>
+            </Button>
+          </li>
+        {/each}
       </ul>
     </Dialog.Description>
   </Dialog.Content>

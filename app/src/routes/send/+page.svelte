@@ -37,6 +37,7 @@ onMount(() => {
 })
 
 export let data: PageData
+const { chains, assets } = data
 
 const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
 
@@ -54,13 +55,13 @@ let dialogOpenToChain = false
 let dialogOpenToken = false
 let dialogOpenSettings = false
 
-let [chainSearch, chainSearchResults] = ["", data.chains]
+let [chainSearch, chainSearchResults] = ["", chains]
 
 function handleChainSearch(event: InputEvent) {
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   chainSearch = target.value
-  chainSearchResults = data.chains.filter(chain =>
+  chainSearchResults = chains.filter(chain =>
     chain.name.toLowerCase().includes(chainSearch.toLowerCase())
   )
 }
@@ -79,35 +80,35 @@ const handleChainSelect = (name: string, target: "fromChain" | "toChain") =>
     200
   )()
 
-let selectedFromChain = data.chains.find(
+let selectedFromChain = chains.find(
   chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
 )
-$: selectedFromChain = data.chains.find(
+$: selectedFromChain = chains.find(
   chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
 )
 
-let selectedToChain = data.chains.find(
+let selectedToChain = chains.find(
   chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
 )
-$: selectedToChain = data.chains.find(
+$: selectedToChain = chains.find(
   chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
 )
 
-let [tokenSearch, tokenSearchResults] = ["", selectedFromChain?.assets]
+let [tokenSearch, assetSearchResults] = ["", assets]
 
 function handleAssetSearch(event: InputEvent) {
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   tokenSearch = target.value
-  tokenSearchResults = selectedFromChain?.assets.filter(asset =>
+  assetSearchResults = assets.filter(asset =>
     asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase())
   )
 }
 
-let selectedAsset = selectedFromChain?.assets.find(
+let selectedAsset = assets.find(
   token => token.symbol.toLowerCase() === $queryParams.token.toLowerCase()
 )
-$: selectedAsset = selectedFromChain?.assets.find(
+$: selectedAsset = assets.find(
   token => token?.symbol?.toLowerCase() === $queryParams?.token?.toLowerCase()
 )
 
@@ -146,9 +147,7 @@ let buttonText = "Send it 🔥" satisfies
 </script>
 
 <main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
-  <Card.Root
-    class="size-full max-w-[475px] h-[490px] sm:mt-16 mt-6 p-2 bg-transparent"
-  >
+  <Card.Root class="size-full max-w-[475px] h-[490px] sm:mt-16 mt-6 p-2 bg-transparent">
     <Card.Header
       class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-2 mb-4"
     >
@@ -175,10 +174,12 @@ let buttonText = "Send it 🔥" satisfies
       </Button>
     </Card.Header>
     <Card.Content
-      class={cn(['size-full max-h-[375px] pb-3 px-3.5 flex flex-col justify-between', devBorder,
-    
-    'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md'
-    ])}
+      class={cn([
+        'size-full max-h-[375px] pb-3 px-3.5 flex flex-col justify-between',
+        devBorder,
+
+        'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md',
+      ])}
     >
       <div
         data-transfer-from-section
@@ -246,7 +247,7 @@ let buttonText = "Send it 🔥" satisfies
           class={cn(
             devBorder,
             'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5 border-none',
-            'outline outline-1 outline-accent/90'
+            'outline outline-1 outline-accent/90',
           )}
         >
           <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
@@ -297,7 +298,7 @@ let buttonText = "Send it 🔥" satisfies
           pattern="^[0-9]*[.,]?[0-9]*$"
           class={cn([
             'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
-            'outline-1 outline-accent/90 outline'
+            'outline-1 outline-accent/90 outline',
           ])}
         />
       </div>
@@ -365,13 +366,13 @@ let buttonText = "Send it 🔥" satisfies
 <SettingsDialog dialogOpen={dialogOpenSettings} />
 
 <!-- token dialog -->
-<AssetsDialog dialogOpen={dialogOpenToken} {handleAssetSearch} {handleAssetSelect} />
+<AssetsDialog dialogOpen={dialogOpenToken} {handleAssetSearch} {handleAssetSelect} {assetSearchResults} />
 
 <svelte:head>
   <title>Union - Send</title>
 </svelte:head>
 
-<DraftPageNotice className='hidden sm:inline' />
+<DraftPageNotice className="hidden sm:inline" />
 
 <style lang="postcss">
 </style>

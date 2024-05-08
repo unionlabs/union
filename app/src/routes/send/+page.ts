@@ -1,4 +1,5 @@
 import type { PageLoad } from "./$types.ts"
+import type { Asset } from "$/lib/components/send/types.ts"
 
 interface Chain {
   id: string
@@ -6,15 +7,6 @@ interface Chain {
   ecosystem: "evm" | "cosmos"
   icon: string
   live: boolean
-  assets: Array<{
-    destination: "union-testnet-8" | "11155111" | "osmo-test-5" | "stargaze-1" | "534352"
-    port: string
-    client: string
-    channel: string
-    connection: string
-    contractAddress?: string
-    symbol: string
-  }>
 }
 
 export const load = (_context => {
@@ -43,16 +35,7 @@ export const load = (_context => {
         ecosystem: "evm",
         icon: "/images/icons/ethereum.svg",
         id: "11155111",
-        live: true,
-        assets: [
-          {
-            port: "sepolia-port",
-            client: "sepolia-client",
-            channel: "sepolia-channel",
-            connection: "sepolia-connection",
-            destination: "union-testnet-8"
-          }
-        ]
+        live: true
       },
       {
         name: "osmosis",
@@ -76,17 +59,65 @@ export const load = (_context => {
         ecosystem: "cosmos",
         icon: "/images/icons/stargaze.svg",
         id: "stargaze-1",
-        live: false,
-        assets: []
+        live: false
       },
       {
         name: "scroll",
         ecosystem: "cosmos",
         icon: "/images/icons/scroll.svg",
         id: "534352",
-        live: false,
-        assets: []
+        live: false
       }
-    ] as Array<Chain>
+    ] as Array<Chain>,
+    assets: [
+      {
+        destination: "union-testnet-8",
+        channel: "channel-7775",
+        port: "transfer",
+        client: "07-tendermint-20",
+        connection: "connection-7",
+        denom: "uosmo",
+        symbol: "OSMO",
+        display: "unionOSMO",
+        explorerLink: "https://www.mintscan.io/osmosis-testnet/tx/"
+      },
+      {
+        destination: "osmo-test-5",
+        channel: "channel-6",
+        port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+        client: "07-tendermint-20",
+        connection: "connection-7",
+        denom:
+          "factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3",
+        symbol: "OSMO",
+        contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+        display: "OSMO",
+        explorerLink: "https://testnet.bonlulu.uno/union/tx/"
+      },
+      {
+        destination: "osmo-test-5",
+        channel: "channel-6",
+        denom: "muno",
+        symbol: "UNO",
+        port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+        client: "07-tendermint-20",
+        connection: "connection-7",
+        contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+        display: "osmosisUNO",
+        explorerLink: "https://testnet.bonlulu.uno/union/tx/"
+      },
+      {
+        destination: "11155111",
+        channel: "channel-0",
+        port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+        client: "08-wasm-0",
+        connection: "connection-1",
+        denom: "muno",
+        symbol: "UNO",
+        contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+        display: "ethUNO",
+        explorerLink: "https://sepolia.etherscan.io/tx"
+      }
+    ] as Array<Asset>
   }
-}) satisfies PageLoad<{ chains: Array<Chain> }>
+}) satisfies PageLoad<{ chains: Array<Chain>; assets: Array<Asset> }>
