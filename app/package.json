@@ -54,6 +54,7 @@
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.79.0",
     "@svelte-put/copy": "^3.0.0",
+    "@svelte-put/shortcut": "^3.1.0",
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.5.7",
     "@sveltejs/vite-plugin-svelte": "^3.1.0",
