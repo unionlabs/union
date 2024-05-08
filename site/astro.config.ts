@@ -56,7 +56,7 @@ export default defineConfig({
         },
         {
           tag: "meta",
-          attrs: { name: "twitter:image", content: `${SITE_URL}/og.png` }
+          attrs: { property: "twitter:image", content: `${SITE_URL}/og.png` }
         },
         {
           tag: "script",
