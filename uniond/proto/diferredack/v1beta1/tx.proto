@@ -1,35 +1,35 @@
 syntax = "proto3";
-package differedack.v1beta1;
+package diferredack.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "cosmos/msg/v1/msg.proto";
 import "ibc/core/channel/v1/channel.proto";
 import "ibc/applications/transfer/v2/packet.proto";
 
-option go_package = "union/x/differedack/types";
+option go_package = "union/x/diferredack/types";
 
-// Msg defines the differedack module's gRPC message service.
+// Msg defines the diferredack module's gRPC message service.
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  rpc WriteDifferedAck(MsgWriteDifferedAck) returns (MsgWriteDifferedAckResponse);
+  rpc WriteDiferredAck(MsgWriteDiferredAck) returns (MsgWriteDiferredAckResponse);
 }
 
-message MsgWriteDifferedAck {
+message MsgWriteDiferredAck {
   option (cosmos.msg.v1.signer) = "sender";
 
   string                                               sender             = 1 [ (gogoproto.moretags) = "yaml:\"sender\"" ];
   ibc.core.channel.v1.Packet                           packet             = 2;
   ibc.applications.transfer.v2.FungibleTokenPacketData data               = 3;
-  DifferedPacketInfo                                   differedPacketInfo = 4;
+  DiferredPacketInfo                                   diferredPacketInfo = 4;
   ibc.core.channel.v1.Acknowledgement                  ack                = 5;
 }
 
-message MsgWriteDifferedAckResponse {
+message MsgWriteDiferredAckResponse {
   
 }
 
-message DifferedPacketInfo {
+message DiferredPacketInfo {
   string original_sender_address  = 1;
   string refund_channel_id        = 2;
   string refund_port_id           = 3;

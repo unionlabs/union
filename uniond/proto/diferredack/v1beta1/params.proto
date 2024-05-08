@@ -1,12 +1,12 @@
 syntax = "proto3";
-package differedack.v1beta1;
+package diferredack.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
 
-option go_package = "union/x/differedack/types";
+option go_package = "union/x/diferredack/types";
 
-// Params defines the parameters for the differedack module.
+// Params defines the parameters for the diferredack module.
 message Params {
   string fee_percentage = 1 [
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",

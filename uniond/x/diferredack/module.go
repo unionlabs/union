@@ -1,7 +1,7 @@
 /*
-The differedack module allows for an IBC ack to be sent after previously being differed/ignored.
+The diferredack module allows for an IBC ack to be sent after previously being diferred/ignored.
 */
-package differedack
+package diferredack
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	"union/x/differedack/keeper"
-	"union/x/differedack/simulation"
-	"union/x/differedack/types"
+	"union/x/diferredack/keeper"
+	"union/x/diferredack/simulation"
+	"union/x/diferredack/types"
 )
 
 var (

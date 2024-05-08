@@ -1,0 +1,14 @@
+syntax = "proto3";
+package diferredack.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "diferredack/v1beta1/params.proto";
+
+
+option go_package = "union/x/diferredack/types";
+
+// GenesisState defines the diferredack module's genesis state.
+message GenesisState {
+  // params defines the paramaters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
