@@ -17,11 +17,11 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-cosmwasm-schema   = { workspace = true }
-cosmwasm-std      = { workspace = true, features = ["stargate", "ibc3", "cosmwasm_1_3"] }
-cw-controllers    = { version = "1.1" }
-cw-storage-plus   = { workspace = true }
-cw2               = { version = "1.1" }
+cosmwasm-schema   = { version = "2.0.0" }
+cosmwasm-std      = { version = "2.0.0", features = ["stargate", "cosmwasm_2_0"] }
+cw-controllers    = { version = "2.0.0" }
+cw-storage-plus   = { version = "2.0.0" }
+cw2               = { version = "2.0.0" }
 dlmalloc          = { workspace = true, features = ["global"] }
 ethabi            = { workspace = true }
 hex               = { workspace = true }

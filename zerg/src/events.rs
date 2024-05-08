@@ -71,7 +71,8 @@ impl Event {
         finalization_timestamp: Option<u64>,
     ) -> Event {
         let transfer =
-            Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
+            Ucs01TransferPacket::try_from(cosmwasm_std::Binary::new(e.packet_data_hex.clone()))
+                .unwrap();
 
         let timed_event = TimedEvent::new(chain_id, execution_timestamp, finalization_timestamp);
 

@@ -243,7 +243,8 @@ impl Context {
 
     async fn send_from_eth(self, e: unionlabs::events::RecvPacket) {
         let transfer =
-            Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
+            Ucs01TransferPacket::try_from(cosmwasm_std::Binary::new(e.packet_data_hex.clone()))
+                .unwrap();
 
         let wallet = if let Some(wallet) = self
             .ethereum_accounts
