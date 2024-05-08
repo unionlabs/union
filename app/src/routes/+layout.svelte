@@ -1,113 +1,113 @@
 <script lang="ts">
-  import '$lib/polyfill.ts'
-  import '$styles/index.css'
-  import {
-    hydrate,
-    dehydrate,
-    QueryClient,
-    MutationCache,
-    notifyManager,
-    QueryClientProvider,
-  } from '@tanstack/svelte-query'
-  import { ModeWatcher } from 'mode-watcher'
-  import { browser } from '$app/environment'
-  import { setContext, onMount } from 'svelte'
-  import { Toaster } from 'svelte-french-toast'
-  import { page, navigating } from '$app/stores'
-  import { shortcut } from '@svelte-put/shortcut'
-  import { setContextClient } from '@urql/svelte'
-  import { cosmosStore } from '$lib/wallet/cosmos'
-  import Footer from '$lib/components/footer.svelte'
-  import { graphqlClient } from '$lib/graphql/client'
-  import Header from '$lib/components/header/header.svelte'
-  import { updateTheme } from '$lib/utilities/update-theme.ts'
-  import OnlineStatus from '$lib/components/online-status.svelte'
-  import { partytownSnippet } from '@builder.io/partytown/integration'
-  import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools'
-  import PreloadingIndicator from '$lib/components/preloading-indicator.svelte'
+import "$lib/polyfill.ts"
+import "$styles/index.css"
+import {
+  hydrate,
+  dehydrate,
+  QueryClient,
+  MutationCache,
+  notifyManager,
+  QueryClientProvider
+} from "@tanstack/svelte-query"
+import { ModeWatcher } from "mode-watcher"
+import { browser } from "$app/environment"
+import { setContext, onMount } from "svelte"
+import { Toaster } from "svelte-french-toast"
+import { page, navigating } from "$app/stores"
+import { shortcut } from "@svelte-put/shortcut"
+import { setContextClient } from "@urql/svelte"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import Footer from "$lib/components/footer.svelte"
+import { graphqlClient } from "$lib/graphql/client"
+import Header from "$lib/components/header/header.svelte"
+import { updateTheme } from "$lib/utilities/update-theme.ts"
+import OnlineStatus from "$lib/components/online-status.svelte"
+import { partytownSnippet } from "@builder.io/partytown/integration"
+import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
+import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
 
-  if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
+if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
-  $: updateTheme({ path: $page.url.pathname, activeTheme: 'dark' })
+$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
-  onMount(() => {
-    /* fix for iOS Safari viewport zooming on input focus */
-    if (navigator.userAgent.indexOf('iPhone') === -1) return
-    const metaElement = document.querySelector('meta[name=viewport]')
-    if (!metaElement) return
-    metaElement.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1')
-  })
+onMount(() => {
+  /* fix for iOS Safari viewport zooming on input focus */
+  if (navigator.userAgent.indexOf("iPhone") === -1) return
+  const metaElement = document.querySelector("meta[name=viewport]")
+  if (!metaElement) return
+  metaElement.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1")
+})
 
-  onMount(() => {
-    const lastConnectedWallet = $cosmosStore['connectedWallet'] as 'leap' | 'keplr'
-    if (
-      lastConnectedWallet &&
-      window[lastConnectedWallet] &&
-      ['leap', 'keplr'].includes(lastConnectedWallet)
-    )
-      return cosmosStore.connect(lastConnectedWallet)
+onMount(() => {
+  const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
+  if (
+    lastConnectedWallet &&
+    window[lastConnectedWallet] &&
+    ["leap", "keplr"].includes(lastConnectedWallet)
+  )
+    return cosmosStore.connect(lastConnectedWallet)
 
-    if (window?.keplr) cosmosStore.connect('keplr')
-    else if (window?.leap) cosmosStore.connect('leap')
-  })
+  if (window?.keplr) cosmosStore.connect("keplr")
+  else if (window?.leap) cosmosStore.connect("leap")
+})
 
-  /**
-   * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
-   */
-  setContextClient(graphqlClient)
+/**
+ * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
+ */
+setContextClient(graphqlClient)
 
-  const queryClient: QueryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        enabled: browser,
-        refetchOnReconnect: () => !queryClient.isMutating(),
-      },
-    },
-    mutationCache: new MutationCache({
-      onSettled: () => {
-        if (queryClient.isMutating() === 1) {
-          return queryClient.invalidateQueries()
-        }
-      },
-    }),
-  })
-  setContext('$$_queryClient', queryClient)
-
-  function hydrateClient() {
-    try {
-      const storeValue = localStorage.getItem('QUERY_CLIENT')
-      if (!storeValue) return
-      const persistedValue = JSON.parse(storeValue) as Record<string, any>
-      if ('timestamp' in persistedValue && persistedValue?.['timestamp']) {
-        const MAX_AGE = 1000 * 60 * 60 * 24
-        const expired = Date.now() - persistedValue['timestamp'] > MAX_AGE
-        if (!expired) hydrate(queryClient, persistedValue.clientState)
-      } else localStorage.removeItem('QUERY_CLIENT')
-    } catch (error) {
-      localStorage.removeItem('QUERY_CLIENT')
+const queryClient: QueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      enabled: browser,
+      refetchOnReconnect: () => !queryClient.isMutating()
     }
+  },
+  mutationCache: new MutationCache({
+    onSettled: () => {
+      if (queryClient.isMutating() === 1) {
+        return queryClient.invalidateQueries()
+      }
+    }
+  })
+})
+setContext("$$_queryClient", queryClient)
+
+function hydrateClient() {
+  try {
+    const storeValue = localStorage.getItem("QUERY_CLIENT")
+    if (!storeValue) return
+    const persistedValue = JSON.parse(storeValue) as Record<string, any>
+    if ("timestamp" in persistedValue && persistedValue?.["timestamp"]) {
+      const MAX_AGE = 1000 * 60 * 60 * 24
+      const expired = Date.now() - persistedValue["timestamp"] > MAX_AGE
+      if (!expired) hydrate(queryClient, persistedValue.clientState)
+    } else localStorage.removeItem("QUERY_CLIENT")
+  } catch (error) {
+    localStorage.removeItem("QUERY_CLIENT")
   }
-  const saveClient = () =>
-    localStorage.setItem(
-      'QUERY_CLIENT',
-      JSON.stringify({ timestamp: Date.now(), clientState: dehydrate(queryClient, {}) }),
-    )
+}
+const saveClient = () =>
+  localStorage.setItem(
+    "QUERY_CLIENT",
+    JSON.stringify({ timestamp: Date.now(), clientState: dehydrate(queryClient, {}) })
+  )
 
-  const unload = () => saveClient()
-  onMount(() => {
-    hydrateClient()
-    queryClient.mount()
-    return () => queryClient.unmount()
-  })
+const unload = () => saveClient()
+onMount(() => {
+  hydrateClient()
+  queryClient.mount()
+  return () => queryClient.unmount()
+})
 
-  $: if ($navigating) console.log('Navigating to', $page.url.pathname)
+$: if ($navigating) console.log("Navigating to", $page.url.pathname)
 
-  /** @docs https://monogram.io/blog/add-partytown-to-svelte */
-  let partytownScriptElement: HTMLScriptElement
-  onMount(() => {
-    if (!partytownScriptElement) return
-    partytownScriptElement.textContent = partytownSnippet()
-  })
+/** @docs https://monogram.io/blog/add-partytown-to-svelte */
+let partytownScriptElement: HTMLScriptElement
+onMount(() => {
+  if (!partytownScriptElement) return
+  partytownScriptElement.textContent = partytownSnippet()
+})
 </script>
 
 <svelte:head>
