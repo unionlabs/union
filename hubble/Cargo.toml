@@ -1,6 +1,6 @@
 [package]
 edition      = { workspace = true }
-include      = ["../.sqlx"]
+include      = [".sqlx"]
 license-file = { workspace = true }
 name         = "hubble"
 publish      = false
