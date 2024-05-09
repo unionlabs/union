@@ -18,27 +18,33 @@ name = "hubble"
 path = "src/main.rs"
 
 [dependencies]
-axum               = { workspace = true, features = ["macros", "tokio"] }
-base64             = { workspace = true }
-clap               = { workspace = true, features = ["derive", "env"] }
-color-eyre         = { workspace = true, features = ["default"] }
-ethers             = { workspace = true, features = ["default", "std"] }
-futures            = { workspace = true, features = ["async-await"] }
-lazy_static        = { workspace = true }
-prometheus         = { version = "0.13.3", features = ["process"] }
-reqwest            = { workspace = true, features = ["json", "blocking"] }
-serde              = { workspace = true, features = ["derive"] }
-serde_json         = { workspace = true }
-sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }
-tendermint         = { workspace = true, features = ["std"] }
-tendermint-rpc     = { workspace = true, features = ["http-client", "tokio"] }
-thiserror          = { workspace = true }
-time               = { version = "0.3.30", features = ["serde"] }
-tokio              = { workspace = true, features = ["full"] }
-tracing            = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
-url                = { version = "2.4.1", features = ["serde"] }
-valuable           = { version = "0.1.0", features = ["derive"] }
+axum                = { workspace = true, features = ["macros", "tokio"] }
+base64              = { workspace = true }
+clap                = { workspace = true, features = ["derive", "env"] }
+color-eyre          = { workspace = true, features = ["default"] }
+contracts.workspace = true
+ethers              = { workspace = true, features = ["default", "std"] }
+futures             = { workspace = true, features = ["async-await"] }
+hex.workspace       = true
+lazy_static         = { workspace = true }
+prometheus          = { version = "0.13.3", features = ["process"] }
+prost.workspace     = true
+protos              = { workspace = true, features = ["client"] }
+reqwest             = { workspace = true, features = ["json", "blocking"] }
+serde               = { workspace = true, features = ["derive"] }
+serde_json          = { workspace = true }
+sqlx                = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }
+tendermint          = { workspace = true, features = ["std"] }
+tendermint-rpc      = { workspace = true, features = ["http-client", "tokio"] }
+thiserror           = { workspace = true }
+time                = { version = "0.3.30", features = ["serde"] }
+tokio               = { workspace = true, features = ["full"] }
+tonic               = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tracing             = { workspace = true }
+tracing-subscriber  = { workspace = true, features = ["env-filter"] }
+unionlabs           = { workspace = true, features = ["ethabi"] }
+url                 = { version = "2.4.1", features = ["serde"] }
+valuable            = { version = "0.1.0", features = ["derive"] }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.5"
