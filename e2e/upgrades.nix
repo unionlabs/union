@@ -62,6 +62,7 @@ in
       union.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
       ${upgradeTo "v0.22.0" 10}
+      ${upgradeTo "v0.23.0" 20}
     '';
 
     nodes = {
