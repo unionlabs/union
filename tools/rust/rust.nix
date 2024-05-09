@@ -43,19 +43,18 @@
         };
 
       mkToolchain =
-        { target ? null
+        { targets ? [ ]
         , components ? [ ]
         , channel ? defaultChannel
         ,
         }:
         pkgs.rust-bin.fromRustupToolchain {
-          inherit channel;
+          inherit channel targets;
           # this is the easiest way to pull in the least amount possible, even though rust-std
           # isn't required for all use cases (i.e. -Z build-std, where we use rust-src instead)
           #
           # it should be possible to construct the toolchains manually, but this works for now
           profile = "minimal";
-          targets = if target != null then assert builtins.isString target; [ target ] else [ ];
           components = pkgs.lib.checkListOfEnum
             "rustup components"
             (builtins.attrValues availableComponents)
@@ -64,20 +63,20 @@
         };
 
       mkBuildStdToolchain =
-        { target ? null
+        { targets ? [ ]
         , channel ? defaultChannel
         }:
         mkToolchain {
-          inherit target;
+          inherit targets;
           components = with availableComponents; [ rustc cargo rust-src ];
         };
 
       mkNightly =
-        { target ? null
+        { targets ? [ ]
         , channel ? defaultChannel
         }:
         mkToolchain {
-          inherit target channel;
+          inherit targets channel;
           components = with availableComponents; [ rustc cargo rust-std clippy ];
         };
     in

@@ -103,7 +103,7 @@ in
     , maxSize ? DEFAULT_MAX_SIZE
     }:
     let
-      craneLib' = craneLib.overrideToolchain (rust.mkBuildStdToolchain { target = CARGO_BUILD_TARGET; });
+      craneLib' = craneLib.overrideToolchain (rust.mkBuildStdToolchain { targets = [ CARGO_BUILD_TARGET ]; });
 
       attrs = {
         pname = contractFileNameWithoutExt;
