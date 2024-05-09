@@ -21,7 +21,7 @@
             inputs.arion.nixosModules.arion
           ];
           virtualisation = {
-            diskSize = 4 * 1024;
+            diskSize = 8 * 1024;
             memorySize = 4 * 1024;
             arion = {
               backend = "docker";
