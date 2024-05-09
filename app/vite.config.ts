@@ -51,6 +51,8 @@ export default defineConfig(config => {
     resolve: {
       alias: {
         "node:buffer": "buffer",
+        "node:events": "events",
+        "node:process": "process",
         stream: "rollup-plugin-node-polyfills/polyfills/stream"
       }
     }

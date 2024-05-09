@@ -54,6 +54,7 @@ let dialogOpenFromChain = false
 let dialogOpenToChain = false
 let dialogOpenToken = false
 let dialogOpenSettings = false
+let dialogOpenPast = false
 
 let [chainSearch, chainSearchResults] = ["", chains]
 
@@ -149,7 +150,7 @@ let buttonText = "Send it 🔥" satisfies
 <main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
   <Card.Root class="size-full max-w-[475px] h-[490px] sm:mt-16 mt-6 p-2 bg-transparent">
     <Card.Header
-      class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-2 mb-4"
+      class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-4"
     >
       <Card.Title class="text-2xl font-black mt-1">Transfer</Card.Title>
       <Button
@@ -158,9 +159,7 @@ let buttonText = "Send it 🔥" satisfies
         variant="ghost"
         title="Ongoing transactions"
         class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl ml-auto"
-        on:click={event => {
-          console.warn('Not implemented yet')
-        }}
+        on:click={() => (dialogOpenPast = !dialogOpenPast)}
       >
         <Timer class="size-5" />
       </Button>
@@ -252,10 +251,10 @@ let buttonText = "Send it 🔥" satisfies
         >
           <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
           <div
-            class={cn([
+            class={cn(
               devBorder,
               'w-full max-w-[65px] h-full mr-1 flex flex-row justify-start items-center z-50',
-            ])}
+            )}
           >
             <img
               alt="asset"
@@ -272,21 +271,19 @@ let buttonText = "Send it 🔥" satisfies
             />
           </div>
 
-          <div class={cn([devBorder, 'size-full max-w-[250px] flex flex-col'])}>
+          <div class={cn(devBorder, 'size-full max-w-[250px] flex flex-col')}>
             <p class="text-2xl font-black m-auto">OSMO</p>
             <p class="text-xl m-auto">Osmosis</p>
           </div>
           <div class="h-full space-y-2">
             <p class="">balance</p>
-            <p class={cn([devBorder, 'font-sans text-2xl font-black m-auto tabular-nums'])}>
-              420.69
-            </p>
+            <p class={cn(devBorder, 'font-sans text-2xl font-black m-auto tabular-nums')}>420.69</p>
           </div>
 
-          <ChevronDown class={cn([devBorder, 'size-6 mb-auto mt-0.5 ml-auto'])} />
+          <ChevronDown class={cn(devBorder, 'size-6 mb-auto mt-0.5 ml-auto')} />
         </Button>
       </div>
-      <div class={cn(['mb-2'])}>
+      <div class={cn('mb-2')}>
         <p class="text-left text-2xl font-extrabold ml-2">Amount</p>
         <Input
           minlength={1}
@@ -296,10 +293,10 @@ let buttonText = "Send it 🔥" satisfies
           data-transfer-from-amount
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
-          class={cn([
+          class={cn(
             'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
             'outline-1 outline-accent/90 outline',
-          ])}
+          )}
         />
       </div>
     </Card.Content>
@@ -342,6 +339,12 @@ let buttonText = "Send it 🔥" satisfies
   </Card.Root>
 </main>
 
+<!-- settings dialog -->
+<SettingsDialog dialogOpen={dialogOpenSettings} title="Preferences" />
+
+<!-- past dialog -->
+<SettingsDialog dialogOpen={dialogOpenPast} title="Past" />
+
 <!-- from-dialog -->
 <ChainDialog
   kind="from"
@@ -362,11 +365,13 @@ let buttonText = "Send it 🔥" satisfies
   dialogOpen={dialogOpenToChain}
 />
 
-<!-- settings dialog -->
-<SettingsDialog dialogOpen={dialogOpenSettings} />
-
 <!-- token dialog -->
-<AssetsDialog dialogOpen={dialogOpenToken} {handleAssetSearch} {handleAssetSelect} {assetSearchResults} />
+<AssetsDialog
+  dialogOpen={dialogOpenToken}
+  {handleAssetSearch}
+  {handleAssetSelect}
+  {assetSearchResults}
+/>
 
 <svelte:head>
   <title>Union - Send</title>

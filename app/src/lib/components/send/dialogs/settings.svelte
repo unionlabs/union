@@ -3,6 +3,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Dialog from "$lib/components/ui/dialog"
 
 export let dialogOpen = false
+export let title: string
 </script>
 
 <Dialog.Root
@@ -18,7 +19,7 @@ export let dialogOpen = false
     ])}
   >
     <Dialog.Header class="max-h-min h-16 p-2 w-full space-y-3">
-      <Dialog.Title class="font-extrabold text-2xl text-center -mt-2">Preference</Dialog.Title>
+      <Dialog.Title class="font-extrabold text-2xl text-center -mt-2">{title}</Dialog.Title>
     </Dialog.Header>
     <Dialog.Description class="size-full">
      
