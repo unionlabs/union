@@ -132,18 +132,16 @@ pub fn fold<'a, T: ibc_vm_rs::Runnable<CwIbcHost<'a>>>(
 ) -> Result<Response, ContractError> {
     let mut ibc_msg;
     loop {
-        (runnable, ibc_msg) = runnable.process(host, response).unwrap();
+        let either = runnable.process(host, response).unwrap();
 
-        if let Some(ibc_event) = runnable.should_emit() {
-            return Ok(Response::new().add_event(ibc_event_to_cw(ibc_event)));
-        }
-
-        let Some(msg) = ibc_msg else {
-            response = IbcResponse::Empty;
-            continue;
+        (runnable, ibc_msg) = match either {
+            ibc_vm_rs::Either::Left(left) => left,
+            ibc_vm_rs::Either::Right(event) => {
+                return Ok(Response::new().add_event(ibc_event_to_cw(event)));
+            }
         };
 
-        match msg {
+        match ibc_msg {
             IbcMsg::Initialize {
                 client_id,
                 client_type,

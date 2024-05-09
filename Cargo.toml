@@ -192,3 +192,4 @@ typenum                  = { version = "1.17.0", default-features = false }
 
 [patch."crates-io"]
 arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
+parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
