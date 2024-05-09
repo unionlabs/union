@@ -1,8 +1,7 @@
 <script lang="ts">
+import { toggleMode } from "mode-watcher"
 import Sun from "virtual:icons/lucide/sun"
 import Moon from "virtual:icons/lucide/moon"
-
-import { toggleMode } from "mode-watcher"
 import { Button } from "$lib/components/ui/button/index.ts"
 </script>
 

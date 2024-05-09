@@ -5,7 +5,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 let [progress, visible] = [0, false]
 onMount(() => {
   visible = true
-  function next() {
+  const next = () => {
     progress += 0.1
     const remaining = 1 - progress
     if (remaining > 0.15) setTimeout(next, 500 / remaining)

@@ -44,18 +44,18 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   variant={connectStatus === 'connected' ? 'default' : 'ghost'}
   builders={[{ action: node => copy(node, { text: address }) }]}
   class={cn(
-    ['px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start'],
+    'px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start',
     connectStatus === 'disconnected' &&
       'hover:bg-transparent !text-white pointer-events-none text-md font-bold',
   )}
 >
   <span
-    class={cn([
+    class={cn(
       'w-full text-left',
       connectText === 'Sepolia' || connectText === 'Union'
         ? 'text-lg sm:text-sm'
         : 'text-[12.5px] sm:text-sm',
-    ])}
+    )}
   >
     {connectText}
   </span>
@@ -77,16 +77,16 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
       data-index={index}
       on:mouseleave={() => (hoverState = connectedWalletId === id ? 'none' : 'none')}
       on:mouseenter={() => (hoverState = connectedWalletId === id ? 'hover' : 'none')}
-      class={cn([
+      class={cn(
         'flex',
         'flex-col w-full justify-start mb-3',
         connectStatus === 'connected' && connectedWalletId !== id ? 'hidden' : 'flex',
-      ])}
+      )}
     >
       <Button
         type="button"
         variant="outline"
-        class={cn([
+        class={cn(
           'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
           connectStatus === 'connected' && connectedWalletId === id && 'border-[#037791]',
           (connectStatus === 'disconnected' || connectStatus == undefined) &&
@@ -94,7 +94,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
           hoverState === 'hover' &&
             connectedWalletId === id &&
             'hover:text-rose-50 border-rose-900 hover:bg-transparent',
-        ])}
+        )}
         on:click={() => {
           if (!walletIdentifier) return
           if (connectStatus === 'connected') onDisconnectClick()

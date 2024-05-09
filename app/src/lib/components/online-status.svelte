@@ -6,6 +6,11 @@ import { blockHeightQuery } from "$lib/queries/block.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import * as Tooltip from "$lib/components/ui/tooltip/index.ts"
 
+/**
+ * TODO:
+ * - Split checks into two: app status and block height status
+ */
+
 $: blockHeightStore = blockHeightQuery()
 $: blockHeight = $blockHeightStore.data
 </script>
@@ -15,10 +20,10 @@ $: blockHeight = $blockHeightStore.data
     <Button
       variant="outline"
       builders={[builder]}
-      class={cn([
+      class={cn(
         'rounded-full size-3 p-0 animate-pulse -mb-0.5',
         onlineStatus ? 'bg-green-500 hover:bg-green-500' : 'bg-red-500 hover:bg-red-500',
-      ])}
+      )}
     ></Button>
     <span class="my-auto mb-2 text-xs text-foreground/90">{blockHeight}</span>
   </Tooltip.Trigger>
@@ -29,10 +34,10 @@ $: blockHeight = $blockHeightStore.data
     transitionConfig={{ y: 8, duration: 150 }}
   >
     <div
-      class={cn([
+      class={cn(
         onlineStatus ? 'border-cyan-300/30' : 'border-rose-500/30',
         'flex flex-col items-start justify-center border bg-background p-3 text-sm font-medium border-solid rounded-md',
-      ])}
+      )}
     >
       <span>App is online</span>
       <span>Height {blockHeight}</span>

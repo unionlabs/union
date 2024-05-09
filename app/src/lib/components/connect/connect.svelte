@@ -30,12 +30,12 @@ let collapsibleOpen = true
       variant="outline"
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
-      class={cn([
+      class={cn(
         'truncate space-x-2 px-4 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
         ($sepoliaStore.connectionStatus === 'connected' ||
           $cosmosStore.connectionStatus === 'connected') &&
           'border-cyan-300/50',
-      ])}
+      )}
     >
       <WalletIcon class="size-6 text-accent-foreground/90" />
       <span class="uppercase tracking-wide font-semibold">{buttonText}</span>

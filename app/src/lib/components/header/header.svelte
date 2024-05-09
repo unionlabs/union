@@ -4,7 +4,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import SearchBar from "$lib/components/search-bar.svelte"
 import Connect from "$lib/components/connect/connect.svelte"
 import Button from "$lib/components/ui/button/button.svelte"
-import { Navigation, routes } from "$lib/components/navigation/index.ts"
+import { routes } from "$lib/components/navigation/index.ts"
 </script>
 
 <header
@@ -27,10 +27,10 @@ import { Navigation, routes } from "$lib/components/navigation/index.ts"
           size="sm"
           variant="link"
           href={path}
-          class={cn([
+          class={cn(
             'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400 hover:bg-zinc-800/70',
             $page.route.id === path && 'bg-muted-foreground/10',
-          ])}
+          )}
         >
           {name}
         </Button>
