@@ -21,7 +21,7 @@
   },
   "union-testnet-8": {
     "versions": ["v0.21.0", "v0.22.0"],
-    "current": "v0.21.0",
+    "current": "v0.22.0",
     "seeds": "c2bf0d5b2ad3a1df0f4e9cc32debffa239c0af90@testnet.seed.poisonphang.com:26656"
   }
 }
