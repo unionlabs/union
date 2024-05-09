@@ -1,7 +1,6 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, DistributionMsg, Env,
-    HexBinary, IbcBasicResponse, IbcEndpoint, IbcOrder, IbcReceiveResponse, MessageInfo, Uint128,
-    Uint512,
+    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcBasicResponse,
+    IbcEndpoint, IbcOrder, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
@@ -566,8 +565,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .iter()
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
-        // TODO: Once updated to cosmwasm 2.0, return nil ack
-        IbcReceiveResponse::new()
+        IbcReceiveResponse::without_ack()
             .add_messages(msgs)
             .add_messages(forward_response_messages)
             .add_events(forward_response.events)
@@ -657,8 +655,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .iter()
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
-        // TODO: Once updated to cosmwasm 2.1, defer to async ack
-        IbcReceiveResponse::new()
+        IbcReceiveResponse::without_ack()
             .add_messages(transfer_messages)
             .add_events(transfer.events)
     }
@@ -893,7 +890,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
         // TODO: Once updated to cosmwasm 2.0, return nil ack
-        IbcReceiveResponse::new()
+        IbcReceiveResponse::without_ack()
             .add_messages(msgs)
             .add_messages(forward_response_messages)
             .add_events(forward_response.events)
@@ -984,7 +981,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
         // TODO: Once updated to cosmwasm 2.1, defer to async ack
-        IbcReceiveResponse::new()
+        IbcReceiveResponse::without_ack()
             .add_messages(transfer_messages)
             .add_events(transfer.events)
     }
