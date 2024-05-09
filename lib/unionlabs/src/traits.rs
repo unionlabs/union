@@ -16,7 +16,7 @@ use crate::{
     hash::H256,
     ibc::{
         core::client::height::{Height, IsHeight},
-        lightclients::{cometbls, ethereum, scroll, tendermint, wasm},
+        lightclients::{arbitrum, cometbls, ethereum, scroll, tendermint, wasm},
     },
     id::{ChannelId, ClientId, PortId},
     uint::U256,
@@ -200,6 +200,23 @@ impl ClientState for scroll::client_state::ClientState {
     }
 }
 
+impl ClientState for arbitrum::client_state::ClientState {
+    type ChainId = U256;
+    type Height = Height;
+
+    fn height(&self) -> Self::Height {
+        Height {
+            // TODO: Make ETHEREUM_REVISION_NUMBER a constant in this crate
+            revision_number: 0,
+            revision_height: self.l1_latest_slot,
+        }
+    }
+
+    fn chain_id(&self) -> Self::ChainId {
+        self.chain_id
+    }
+}
+
 impl<Data: ClientState> ClientState for wasm::client_state::ClientState<Data> {
     type ChainId = Data::ChainId;
     type Height = Data::Height;
@@ -271,6 +288,12 @@ impl Header for scroll::header::Header {
     }
 }
 
+impl Header for arbitrum::header::Header {
+    fn trusted_height(&self) -> Height {
+        self.l1_height
+    }
+}
+
 impl<Data: Header> Header for wasm::client_message::ClientMessage<Data> {
     fn trusted_height(&self) -> Height {
         self.data.trusted_height()
@@ -300,6 +323,12 @@ impl ConsensusState for ethereum::consensus_state::ConsensusState {
 }
 
 impl ConsensusState for scroll::consensus_state::ConsensusState {
+    fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
+}
+
+impl ConsensusState for arbitrum::consensus_state::ConsensusState {
     fn timestamp(&self) -> u64 {
         self.timestamp
     }

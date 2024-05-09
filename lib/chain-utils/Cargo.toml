@@ -19,6 +19,7 @@ bip32                    = { workspace = true, features = ["secp256k1"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 crossbeam-queue          = { workspace = true, features = ["std"] }
 dashmap                  = { workspace = true }
+enumorph                 = { workspace = true }
 ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
 futures                  = { workspace = true }
@@ -42,4 +43,5 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 arbitrary = ["dep:arbitrary"]
 
 [dev-dependencies]
+hex-literal        = { workspace = true }
 tracing-subscriber = "0.3.18"

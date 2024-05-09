@@ -127,6 +127,8 @@ where
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
+    tracing::debug!(%from_slot, %to_slot, "fetching logs in beacon block range");
+
     let event_height = Height {
         revision_number,
         revision_height: to_slot,
@@ -135,39 +137,45 @@ where
     let from_block = c.execution_height_of_beacon_slot(from_slot).await;
     let to_block = c.execution_height_of_beacon_slot(to_slot).await;
 
-    // REVIEW: Surely transactions and events can be fetched in parallel?
-    conc(
-        futures::stream::iter(
-            c.provider()
-                .get_logs(
-                    &Filter::new()
-                        .address(ethers::types::H160::from(c.ibc_handler_address()))
-                        .from_block(from_block)
-                        // NOTE: This -1 is very important, else events will be double fetched
-                        .to_block(to_block - 1),
-                )
-                .await
-                .unwrap(),
-        )
-        .filter_map(|log| async {
-            let tx_hash = log
-                .transaction_hash
-                .expect("log should have transaction_hash")
-                .into();
+    if from_block == to_block {
+        tracing::debug!(%from_block, %to_block, %from_slot, %to_slot, "beacon block range is empty");
+        QueueMsg::Noop
+    } else {
+        tracing::debug!(%from_block, %to_block, "fetching block range");
+        // REVIEW: Surely transactions and events can be fetched in parallel?
+        conc(
+            futures::stream::iter(
+                c.provider()
+                    .get_logs(
+                        &Filter::new()
+                            .address(ethers::types::H160::from(c.ibc_handler_address()))
+                            .from_block(from_block)
+                            // NOTE: This -1 is very important, else events will be double fetched
+                            .to_block(to_block - 1),
+                    )
+                    .await
+                    .unwrap(),
+            )
+            .filter_map(|log| async {
+                let tx_hash = log
+                    .transaction_hash
+                    .expect("log should have transaction_hash")
+                    .into();
 
-            tracing::debug!(?log, "raw log");
+                tracing::debug!(?log, "raw log");
 
-            match IBCHandlerEvents::decode_log(&log.into()) {
-                Ok(event) => Some(mk_aggregate_event(c, event, event_height, tx_hash).await),
-                Err(e) => {
-                    tracing::warn!("could not decode evm event {}", e);
-                    None
+                match IBCHandlerEvents::decode_log(&log.into()) {
+                    Ok(event) => Some(mk_aggregate_event(c, event, event_height, tx_hash).await),
+                    Err(e) => {
+                        tracing::warn!("could not decode evm event {}", e);
+                        None
+                    }
                 }
-            }
-        })
-        .collect::<Vec<_>>()
-        .await,
-    )
+            })
+            .collect::<Vec<_>>()
+            .await,
+        )
+    }
 }
 
 pub(crate) async fn fetch_beacon_block_range<C, Hc>(
@@ -181,6 +189,8 @@ where
 
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
 {
+    tracing::debug!(%from_slot, %to_slot, "fetching beacon block range");
+
     assert!(from_slot < to_slot);
 
     if to_slot - from_slot == 1 {
@@ -190,7 +200,7 @@ where
         ))
     } else {
         // attempt to shrink from..to
-        // note that this is *exclusive* on the `to`
+        // note that this is *exclusive* on `to`
         for slot in (from_slot + 1)..to_slot {
             tracing::info!("querying slot {slot}");
             match beacon_api_client
@@ -246,6 +256,8 @@ where
 
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
+    tracing::debug!(%height, %path, "fetching channel");
+
     data(id(
         c.chain_id(),
         Data::<Hc>::specific(ChannelData {
@@ -277,6 +289,8 @@ where
     Hc: EthereumChainExt<Data: From<ConnectionData<Hc>>>,
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
+    tracing::debug!(%height, %path, "fetching connection");
+
     data(id(
         c.chain_id(),
         Data::<Hc>::specific(ConnectionData(

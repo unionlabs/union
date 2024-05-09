@@ -119,5 +119,6 @@ pub mod cosmos_sdk;
 pub mod cosmos;
 pub mod union;
 
+pub mod arbitrum;
 pub mod ethereum;
 pub mod scroll;

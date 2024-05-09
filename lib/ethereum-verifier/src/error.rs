@@ -45,7 +45,7 @@ pub enum Error {
         "irrelevant update since the order of the slots in the update data, and stored data is not correct"
     )]
     IrrelevantUpdate,
-    #[error("the order of the slots in the update data, and stored data is not correct")]
+    #[error("the order of the slots in the update data and stored data is not correct")]
     InvalidSlots,
     #[error(
         "signature period ({signature_period}) must be equal to `store_period` \
@@ -84,9 +84,10 @@ pub enum Error {
     ValueMissing { value: Vec<u8> },
     #[error("trie error ({0:?})")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
-    #[error("rlp decoding failed ({0:?})")]
+    // we us debug here because the display implementation for rlp::DecoderError is stupid
+    #[error("rlp decoding failed: {0:?}")]
     RlpDecode(#[from] rlp::DecoderError),
-    #[error("custom query error")]
+    #[error("custom query error: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
     // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
     #[error(transparent)]

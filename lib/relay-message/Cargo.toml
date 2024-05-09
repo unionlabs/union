@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
+arbitrum-verifier        = { workspace = true }
 beacon-api               = { workspace = true }
 chain-utils              = { workspace = true }
 contracts                = { workspace = true, features = ["providers"] }

@@ -5,6 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
 use crossbeam_queue::ArrayQueue;
+use enumorph::Enumorph;
 use futures::Future;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -15,6 +16,7 @@ use unionlabs::{
 };
 
 use crate::{
+    arbitrum::{Arbitrum, ArbitrumInitError},
     cosmos::{Cosmos, CosmosInitError},
     ethereum::{Ethereum, EthereumInitError},
     private_key::PrivateKey,
@@ -23,6 +25,7 @@ use crate::{
     wasm::Wasm,
 };
 
+pub mod arbitrum;
 pub mod cosmos;
 pub mod ethereum;
 pub mod scroll;
@@ -125,6 +128,7 @@ pub struct Chains {
     pub union: ChainMap<Union>,
     pub cosmos: ChainMap<Cosmos>,
     pub scroll: ChainMap<Scroll>,
+    pub arbitrum: ChainMap<Arbitrum>,
 }
 
 impl GetChain<Union> for Chains {
@@ -142,6 +146,12 @@ impl GetChain<Cosmos> for Chains {
 impl GetChain<Scroll> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Scroll>) -> Option<Scroll> {
         self.scroll.get(chain_id).cloned()
+    }
+}
+
+impl GetChain<Arbitrum> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Arbitrum>) -> Option<Arbitrum> {
+        self.arbitrum.get(chain_id).cloned()
     }
 }
 
@@ -176,6 +186,7 @@ pub enum ChainConfigType {
     Cosmos(cosmos::Config),
     Ethereum(EthereumChainConfig),
     Scroll(scroll::Config),
+    Arbitrum(arbitrum::Config),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -195,12 +206,14 @@ pub struct EthereumChainConfig {
     pub eth_beacon_rpc_api: String,
 }
 
+#[derive(Debug, Enumorph)]
 pub enum AnyChain {
     Union(Union),
     Cosmos(Cosmos),
     EthereumMainnet(Ethereum<Mainnet>),
     EthereumMinimal(Ethereum<Minimal>),
     Scroll(Scroll),
+    Arbitrum(Arbitrum),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -213,6 +226,8 @@ pub enum AnyChainTryFromConfigError {
     Ethereum(#[from] EthereumInitError),
     #[error("error initializing a scroll chain")]
     Scroll(#[from] ScrollInitError),
+    #[error("error initializing an arbitrum chain")]
+    Arbitrum(#[from] ArbitrumInitError),
 }
 
 impl AnyChain {
@@ -239,6 +254,7 @@ impl AnyChain {
                 }
             }
             ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),
+            ChainConfigType::Arbitrum(arbitrum) => Self::Arbitrum(Arbitrum::new(arbitrum).await?),
         })
     }
 }
@@ -270,6 +286,14 @@ impl LightClientType<Wasm<Union>> for Scroll {
 
 impl LightClientType<Scroll> for Wasm<Union> {
     const TYPE: ClientType = ClientType::Wasm(WasmClientType::Scroll);
+}
+
+impl LightClientType<Wasm<Union>> for Arbitrum {
+    const TYPE: ClientType = ClientType::Cometbls;
+}
+
+impl LightClientType<Arbitrum> for Wasm<Union> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::Arbitrum);
 }
 
 impl LightClientType<Ethereum<Mainnet>> for Wasm<Union> {

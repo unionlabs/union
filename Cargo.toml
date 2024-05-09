@@ -21,8 +21,6 @@ members = [
   "lib/beacon-api",
   "lib/block-message",
   "lib/chain-utils",
-  "lib/cometbls-groth16-verifier",
-  "lib/ethereum-verifier",
   "lib/gnark-key-parser",
   "lib/ics-008-wasm-client",
   "lib/ics23",
@@ -36,17 +34,21 @@ members = [
   "lib/scroll-codec",
   "lib/scroll-codec/fetch-test-vectors",
   "lib/scroll-rpc",
-  "lib/scroll-verifier",
   "lib/serde-utils",
   "lib/ssz",
   "lib/ssz/tests-generator",
   "lib/ssz-derive",
-  "lib/tendermint-verifier",
   "lib/unionlabs",
   "lib/voyager-message",
   "lib/zktrie-rs",
-  "lib/gnark-key-parser",
 
+  "lib/arbitrum-verifier",
+  "lib/cometbls-groth16-verifier",
+  "lib/ethereum-verifier",
+  "lib/scroll-verifier",
+  "lib/tendermint-verifier",
+
+  "light-clients/arbitrum-light-client",
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
   "light-clients/scroll-light-client",
@@ -75,7 +77,11 @@ disallowed_types = "deny"
 lto       = "thin"
 opt-level = 3
 
+[profile.dev]
+strip = true
+
 [workspace.dependencies]
+arbitrum-verifier         = { path = "lib/arbitrum-verifier", default-features = false }
 beacon-api                = { path = "lib/beacon-api", default-features = false }
 block-message             = { path = "lib/block-message", default-features = false }
 chain-utils               = { path = "lib/chain-utils", default-features = false }

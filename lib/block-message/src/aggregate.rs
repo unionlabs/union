@@ -25,6 +25,7 @@ pub enum Aggregate<C: ChainExt> {
 }
 
 impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {
+    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         data: VecDeque<<BlockMessageTypes as QueueMessageTypes>::Data>,

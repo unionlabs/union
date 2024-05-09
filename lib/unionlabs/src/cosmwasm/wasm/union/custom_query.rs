@@ -85,6 +85,7 @@ use {
 pub fn query_consensus_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
+    // TODO: Use ClientId here
     client_id: String,
     height: Height,
 ) -> Result<T, Error>

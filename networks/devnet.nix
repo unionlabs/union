@@ -37,6 +37,11 @@
         validatorCount = 4;
         genesisOverwrites = {
           app_state = {
+            gov.params = {
+              max_deposit_period = "12s";
+              voting_period = "30s";
+              expedited_voting_period = "6s";
+            };
             staking.params = {
               epoch_length = "8";
               jailed_validator_threshold = "10";

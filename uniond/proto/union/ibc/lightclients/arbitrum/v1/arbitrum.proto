@@ -1,0 +1,96 @@
+syntax = "proto3";
+package union.ibc.lightclients.arbitrum.v1;
+
+option go_package = "union/ibc/lightclients/arbitrum";
+import "ibc/core/client/v1/client.proto";
+import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
+
+message ClientState {
+  string l1_client_id = 1;
+  string chain_id = 2;
+  uint64 l1_latest_slot = 3;
+
+  bytes l1_contract_address = 4;
+
+  // _latestConfirmed
+  bytes l1_latest_confirmed_slot = 5;
+  // _nodes[_latestConfirmed].confirmData
+  bytes l1_nodes_slot = 6;
+  // offset of Node.confirmData
+  bytes confirm_data_offset = 7;
+
+  .ibc.core.client.v1.Height frozen_height = 8;
+
+  bytes l2_ibc_contract_address = 9;
+  bytes l2_ibc_commitment_slot = 10;
+}
+
+message ConsensusState {
+  bytes ibc_storage_root = 1;
+  uint64 timestamp = 2;
+}
+
+message Header {
+  .ibc.core.client.v1.Height l1_height = 1;
+
+  // Proof of the L1 rollup account in the L1 state root.
+  .union.ibc.lightclients.ethereum.v1.AccountProof l1_account_proof = 2;
+
+  // Proof of the l2 ibc contract address in the l2 state root.
+  .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 3;
+
+  // The latest confirmed node number, as stored in `_latestConfirmed`.
+  //
+  // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L60
+  uint64 latest_confirmed = 6;
+
+  // Proof of `latest_confirmed`.
+  .union.ibc.lightclients.ethereum.v1.StorageProof l1_latest_confirmed_slot_proof = 7;
+  // The proof of the [`_nodes`] mapping at `latest_confirmed`, offset to [`Node.confirmData`].
+  //
+  // [`_nodes`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L64
+  // [`Node.confirmData`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L27
+  .union.ibc.lightclients.ethereum.v1.StorageProof l1_nodes_slot_proof = 8;
+
+  // Arbitrum block header, used to recompute the block hash and verify the timestamp.
+  L2Header l2_header = 9;
+}
+
+// The Arbitrum header as returned from `eth_getBlockByNumber`, with all non-standard fields removed.
+//
+// Note that certain fields are different than a typical eth_getBlockByNumber response; see [here](https://docs.arbitrum.io/build-decentralized-apps/arbitrum-vs-ethereum/rpc-methods#existing-fields-with-different-behavior-1) for more information.
+//
+// https://github.com/OffchainLabs/go-ethereum/blob/f94174378de6ea7cf02963d99489e69b6671d1aa/core/types/block.go#L66-L80
+message L2Header {
+  // H256
+  bytes parent_hash = 1;
+  // H256
+  bytes sha3_uncles = 2;
+  // H160
+  bytes miner = 3;
+  // H256
+  bytes state_root = 4;
+  // H256
+  bytes transactions_root = 5;
+  // H256
+  bytes receipts_root = 6;
+  // H2048
+  bytes logs_bloom = 7;
+  // U256
+  bytes difficulty = 8;
+  // U256
+  bytes number = 9;
+  uint64 gas_limit = 10;
+  uint64 gas_used = 11;
+  uint64 timestamp = 12;
+  // This field is equivalent to sendRoot.
+  //
+  // H256
+  bytes extra_data = 13;
+  // H256
+  bytes mix_hash = 14;
+  // H64
+  bytes nonce = 15;
+  // U256
+  bytes base_fee_per_gas = 16;
+}
