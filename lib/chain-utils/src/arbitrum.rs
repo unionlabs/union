@@ -6,6 +6,7 @@ use ethers::{
     contract::EthEvent,
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
 };
+use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::EthAbi,
@@ -24,8 +25,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, get_proof, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
-        EthereumSignersConfig, ReadWrite, Readonly,
+        self, get_proof, read_ack, Ethereum, EthereumChain, EthereumInitError,
+        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
     union::Union,
@@ -266,7 +267,7 @@ impl Chain for Arbitrum {
     }
 
     async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        todo!()
+        self.l1.query_latest_timestamp().map_err(Into::into).await
     }
 
     async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
@@ -319,12 +320,19 @@ impl Chain for Arbitrum {
 
     async fn read_ack(
         &self,
-        _tx_hash: unionlabs::hash::H256,
-        _destination_channel_id: unionlabs::id::ChannelId,
-        _destination_port_id: unionlabs::id::PortId,
-        _sequence: std::num::NonZeroU64,
+        tx_hash: unionlabs::hash::H256,
+        destination_channel_id: unionlabs::id::ChannelId,
+        destination_port_id: unionlabs::id::PortId,
+        sequence: std::num::NonZeroU64,
     ) -> Vec<u8> {
-        todo!()
+        read_ack(
+            self,
+            tx_hash,
+            destination_port_id,
+            destination_channel_id,
+            sequence,
+        )
+        .await
     }
 }
 
