@@ -11,14 +11,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 
 	appparams "union/app/params"
-	"union/x/differedack/types"
+	"union/x/diferredack/types"
 )
 
 // Simulation operation weights constants
 //
 //nolint:gosec
 const (
-	OpWeightMsgWriteDifferedAck = "op_weight_write_differed_ack"
+	OpWeightMsgWriteDiferredAck = "op_weight_write_diferred_ack"
 )
 
 type AccountKeeper interface {
@@ -32,29 +32,29 @@ type BankKeeper interface {
 	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 }
 
-type DifferedAckKeeper interface {
+type DiferredAckKeeper interface {
 	GetParams(ctx sdk.Context) (params types.Params)
 }
 
 func WeightedOperations(
 	simstate *module.SimulationState,
-	daKeeper DifferedAckKeeper,
+	daKeeper DiferredAckKeeper,
 	ak AccountKeeper,
 	bk BankKeeper,
 ) simulation.WeightedOperations {
 	var (
-		weightMsgWriteDifferedAck int
+		weightMsgWriteDiferredAck int
 	)
 
-	simstate.AppParams.GetOrGenerate(OpWeightMsgWriteDifferedAck, &weightMsgWriteDifferedAck, nil,
+	simstate.AppParams.GetOrGenerate(OpWeightMsgWriteDiferredAck, &weightMsgWriteDiferredAck, nil,
 		func(_ *rand.Rand) {
-			weightMsgWriteDifferedAck = appparams.DefaultWeightMsgCreateDenom
+			weightMsgWriteDiferredAck = appparams.DefaultWeightMsgCreateDenom
 		},
 	)
 	return simulation.WeightedOperations{
 		simulation.NewWeightedOperation(
-			weightMsgWriteDifferedAck,
-			SimulateMsgWriteDifferedAck(
+			weightMsgWriteDiferredAck,
+			SimulateMsgWriteDiferredAck(
 				daKeeper,
 				ak,
 				bk,
@@ -63,8 +63,8 @@ func WeightedOperations(
 	}
 }
 
-func SimulateMsgWriteDifferedAck(
-	keeper DifferedAckKeeper,
+func SimulateMsgWriteDiferredAck(
+	keeper DiferredAckKeeper,
 	ak AccountKeeper,
 	bk BankKeeper,
 ) simtypes.Operation {
@@ -76,7 +76,7 @@ func SimulateMsgWriteDifferedAck(
 		chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		// TODO: Simulate ack packet
-		msg := types.MsgWriteDifferedAck{}
+		msg := types.MsgWriteDiferredAck{}
 
 		account, _ := simtypes.RandomAcc(r, accs)
 

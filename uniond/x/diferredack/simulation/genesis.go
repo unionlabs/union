@@ -3,7 +3,7 @@ package simulation
 import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"union/x/differedack/types"
+	"union/x/diferredack/types"
 )
 
 func RandomizedGenState(simstate *module.SimulationState) {

@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"union/x/differedack/types"
+	"union/x/diferredack/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

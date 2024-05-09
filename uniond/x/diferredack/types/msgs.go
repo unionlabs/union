@@ -8,18 +8,18 @@ import (
 )
 
 const (
-	TypeMsgWriteDifferedAck = "write_differed_ack"
+	TypeMsgWriteDiferredAck = "write_diferred_ack"
 )
 
-var _ sdk.Msg = &MsgWriteDifferedAck{}
+var _ sdk.Msg = &MsgWriteDiferredAck{}
 
-func NewMsgWriteDifferedAck(packet channeltypes.Packet, data transfertypes.FungibleTokenPacketData, info DifferedPacketInfo, ack channeltypes.Acknowledgement) *MsgWriteDifferedAck {
-	return &MsgWriteDifferedAck{
+func NewMsgWriteDiferredAck(packet channeltypes.Packet, data transfertypes.FungibleTokenPacketData, info DiferredPacketInfo, ack channeltypes.Acknowledgement) *MsgWriteDiferredAck {
+	return &MsgWriteDiferredAck{
 		Packet:             &packet,
 		Data:               &data,
-		DifferedPacketInfo: &info,
+		DiferredPacketInfo: &info,
 		Ack:                &ack,
 	}
 }
 
-func (m MsgWriteDifferedAck) Type() string { return TypeMsgWriteDifferedAck }
+func (m MsgWriteDiferredAck) Type() string { return TypeMsgWriteDiferredAck }

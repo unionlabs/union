@@ -22,7 +22,7 @@ var (
 )
 
 const (
-	differedAckAck = "differedack/ack"
+	diferredAckAck = "diferredack/ack"
 )
 
 func init() {
@@ -42,11 +42,11 @@ func init() {
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
-		&MsgWriteDifferedAck{},
+		&MsgWriteDiferredAck{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgWriteDifferedAck{}, differedAckAck, nil)
+	cdc.RegisterConcrete(&MsgWriteDiferredAck{}, diferredAckAck, nil)
 }

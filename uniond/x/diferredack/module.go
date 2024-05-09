@@ -30,7 +30,7 @@ var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-// ConsensusVersion defines the current x/differedack module consensus version.
+// ConsensusVersion defines the current x/diferredack module consensus version.
 const ConsensusVersion = 1
 
 // AppModuleBasic implements the AppModuleBasic interface for the capability module.
@@ -40,7 +40,7 @@ func NewAppModuleBasic() AppModuleBasic {
 	return AppModuleBasic{}
 }
 
-// Name returns the x/differedack module's name.
+// Name returns the x/diferredack module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
@@ -54,12 +54,12 @@ func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
 	types.RegisterInterfaces(reg)
 }
 
-// DefaultGenesis returns the x/differedack module's default genesis state.
+// DefaultGenesis returns the x/diferredack module's default genesis state.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesis())
 }
 
-// ValidateGenesis performs genesis state validation for the x/differedack module.
+// ValidateGenesis performs genesis state validation for the x/diferredack module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var genState types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
@@ -104,12 +104,12 @@ func (am AppModule) IsOnePerModuleType() { // marker
 func (am AppModule) IsAppModule() { // marker
 }
 
-// Name returns the x/differedack module's name.
+// Name returns the x/diferredack module's name.
 func (am AppModule) Name() string {
 	return am.AppModuleBasic.Name()
 }
 
-// QuerierRoute returns the x/differedack module's query routing key.
+// QuerierRoute returns the x/diferredack module's query routing key.
 func (AppModule) QuerierRoute() string { return types.QuerierRoute }
 
 // RegisterServices registers a GRPC query service to respond to the
@@ -122,10 +122,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	// m := keeper.NewMigrator(am.keeper, am.legacySubspace)
 }
 
-// RegisterInvariants registers the x/differedack module's invariants.
+// RegisterInvariants registers the x/diferredack module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// InitGenesis performs the x/differedack module's genesis initialization. It
+// InitGenesis performs the x/diferredack module's genesis initialization. It
 // returns no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.RawMessage) []abci.ValidatorUpdate {
 	var genState types.GenesisState
@@ -136,7 +136,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.Ra
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the x/differedack module's exported genesis state as raw
+// ExportGenesis returns the x/diferredack module's exported genesis state as raw
 // JSON bytes.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	genState := am.keeper.ExportGenesis(ctx)

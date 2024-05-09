@@ -16,7 +16,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 
-	"union/x/differedack/types"
+	"union/x/diferredack/types"
 )
 
 type (
@@ -41,22 +41,22 @@ func NewKeeper(
 	}
 }
 
-func (k *Keeper) WriteDifferedAck(ctx sdk.Context, packet channeltypes.Packet, data transfertypes.FungibleTokenPacketData, differedPacketInfo *types.DifferedPacketInfo, ack channeltypes.Acknowledgement) error {
-	_, chanCap, err := k.channelKeeper.LookupModuleByChannel(ctx, differedPacketInfo.RefundPortId, differedPacketInfo.RefundChannelId)
+func (k *Keeper) WriteDiferredAck(ctx sdk.Context, packet channeltypes.Packet, data transfertypes.FungibleTokenPacketData, diferredPacketInfo *types.DiferredPacketInfo, ack channeltypes.Acknowledgement) error {
+	_, chanCap, err := k.channelKeeper.LookupModuleByChannel(ctx, diferredPacketInfo.RefundPortId, diferredPacketInfo.RefundChannelId)
 
 	if err != nil {
 		return errorsmod.Wrap(err, "could not retrieve module from port-id")
 	}
 
 	return k.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, channeltypes.Packet{
-		Sequence:           differedPacketInfo.RefundSequence,
-		SourcePort:         differedPacketInfo.PacketSrcPortId,
-		SourceChannel:      differedPacketInfo.PacketSrcChannelId,
-		DestinationPort:    differedPacketInfo.RefundPortId,
-		DestinationChannel: differedPacketInfo.RefundChannelId,
-		Data:               differedPacketInfo.PacketData,
-		TimeoutHeight:      clienttypes.MustParseHeight(differedPacketInfo.PacketTimeoutHeight),
-		TimeoutTimestamp:   differedPacketInfo.PacketTimeoutTimestamp,
+		Sequence:           diferredPacketInfo.RefundSequence,
+		SourcePort:         diferredPacketInfo.PacketSrcPortId,
+		SourceChannel:      diferredPacketInfo.PacketSrcChannelId,
+		DestinationPort:    diferredPacketInfo.RefundPortId,
+		DestinationChannel: diferredPacketInfo.RefundChannelId,
+		Data:               diferredPacketInfo.PacketData,
+		TimeoutHeight:      clienttypes.MustParseHeight(diferredPacketInfo.PacketTimeoutHeight),
+		TimeoutTimestamp:   diferredPacketInfo.PacketTimeoutTimestamp,
 	}, ack)
 }
 
