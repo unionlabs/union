@@ -1,0 +1,11 @@
+[package]
+edition = "2021"
+name    = "diferred-ack-api"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+cosmwasm-schema = { version = "2.0.0" }
+cosmwasm-std    = { version = "2.0.0" }

@@ -2042,6 +2042,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "diferred-ack-api"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.0.2",
+ "cosmwasm-std 2.0.2",
+]
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
