@@ -1,4 +1,4 @@
-export const arraySizeN = (n: number) => Array.from(Array(n).keys())
+export const arraySizeN = (n: number) => Array.from(new Array(n).keys())
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
 

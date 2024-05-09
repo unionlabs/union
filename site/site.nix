@@ -8,7 +8,7 @@
     {
       packages = {
         site = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-dd0rU/5WHM0NVxJWjGLM34VS3Y4Hmc4vRIot49E+NuE=";
+          npmDepsHash = "sha256-iacabyQyragOOO1AsWc0+N14e9cyl2p3Kq+egRaSGYc=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";

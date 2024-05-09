@@ -19,8 +19,15 @@ const openApiSchemaUrl = `/openapi/${slug}.json`
   <body>
     <script id="api-reference" is:inline></script>
     <script is:inline define:vars={{ openApiSchemaUrl }}>
+
+      const url = new URL(window.location.href)
+      const [, queryParametersString] = url.href.split('?')
+      const queryParameters = new URLSearchParams(queryParametersString)
+
       const configuration = {
-        theme: 'default',
+        theme: queryParameters.get('theme') || 'default',
+        layout: queryParameters.get('layout') || 'classic',
+        darkMode: queryParameters.get('dark') !== 'false',
       }
       const apiReference = document.querySelector('script#api-reference')
       if (apiReference) {

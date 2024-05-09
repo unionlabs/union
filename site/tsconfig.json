@@ -22,7 +22,7 @@
         "name": "@astrojs/ts-plugin"
       }
     ],
-    "types": ["node", "bun", "@cloudflare/workers-types", "typed-query-selector/strict"]
+    "types": ["node", "bun", "typed-query-selector/strict"]
   },
   "include": ["src", "public", "scripts"],
   "files": [
