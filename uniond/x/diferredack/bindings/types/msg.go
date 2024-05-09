@@ -19,7 +19,6 @@ type DiferredAckMsg struct {
 // The created denom's admin is the creating contract address,
 // but this admin can be changed using the ChangeAdmin binding.
 type WriteDiferredAck struct {
-	Subdenom           string `json:"subdenom"`
 	Packet             channeltypes.Packet
 	Data               transfertypes.FungibleTokenPacketData
 	DiferredPacketInfo types.DiferredPacketInfo `json:"diferred_packet_info"`
