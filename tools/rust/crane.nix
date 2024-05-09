@@ -127,7 +127,7 @@
                 (
                   if buildStdTarget == null
                   then rust.toolchains.nightly
-                  else rust.mkBuildStdToolchain { target = buildStdTarget; }
+                  else rust.mkBuildStdToolchain { targets = [ buildStdTarget ]; }
                 )
               else cargoBuildRustToolchain;
 

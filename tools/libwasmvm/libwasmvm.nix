@@ -12,7 +12,7 @@
 
       rustToolchain = rust.mkNightly {
         channel = "nightly-2024-01-27";
-        target = CARGO_BUILD_TARGET;
+        targets = [ CARGO_BUILD_TARGET ];
       };
 
       mkLibwasmvm =

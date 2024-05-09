@@ -16,7 +16,7 @@
         else
           throwBadSystem;
 
-      rustToolchain = rust.mkNightly { target = CARGO_BUILD_TARGET; };
+      rustToolchain = rust.mkNightly { targets = [ CARGO_BUILD_TARGET ]; };
 
       BIOME_VERSION = "1.7.3";
 
