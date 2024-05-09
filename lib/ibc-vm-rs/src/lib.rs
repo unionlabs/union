@@ -46,9 +46,11 @@ pub enum IbcEvent {
 }
 
 pub trait Runnable<T: IbcHost>: Serialize + Sized {
-    fn process(self, host: &mut T, resp: IbcResponse) -> Result<(Self, Option<IbcMsg>), ()>;
-
-    fn should_emit(&self) -> Option<IbcEvent>;
+    fn process(
+        self,
+        host: &mut T,
+        resp: IbcResponse,
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()>;
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -79,26 +81,19 @@ pub enum CreateClient {
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
     },
+}
 
-    CommitState {
-        client_id: String,
-        client_type: String,
-        initial_height: u64,
-        client_state: Vec<u8>,
-        consensus_state: Vec<u8>,
-    },
-
-    EmitEvent {
-        client_id: String,
-        client_type: String,
-        initial_height: u64,
-        client_state: Vec<u8>,
-        consensus_state: Vec<u8>,
-    },
+pub enum Either<L, R> {
+    Left(L),
+    Right(R),
 }
 
 impl<T: IbcHost> Runnable<T> for CreateClient {
-    fn process(self, host: &mut T, resp: IbcResponse) -> Result<(Self, Option<IbcMsg>), ()> {
+    fn process(
+        self,
+        host: &mut T,
+        resp: IbcResponse,
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
         match self {
             CreateClient::Init {
                 client_type,
@@ -107,20 +102,20 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
             } => match resp {
                 IbcResponse::Empty => {
                     let client_id = host.next_client_identifier(&client_type);
-                    (
+                    Either::Left((
                         CreateClient::Initialize {
                             client_type: client_type.clone(),
                             client_id: client_id.clone(),
                             client_state: client_state.clone(),
                             consensus_state: consensus_state.clone(),
                         },
-                        Some(IbcMsg::Initialize {
+                        IbcMsg::Initialize {
                             client_id,
                             client_state,
                             consensus_state,
                             client_type,
-                        }),
-                    )
+                        },
+                    ))
                 }
                 _ => panic!("invalid action"),
             },
@@ -130,15 +125,15 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                 client_state,
                 consensus_state,
             } => match resp {
-                IbcResponse::Initialize => (
+                IbcResponse::Initialize => Either::Left((
                     CreateClient::FetchStatus {
                         client_id: client_id.clone(),
                         client_type: client_type.clone(),
                         client_state,
                         consensus_state,
                     },
-                    Some(IbcMsg::Status { client_id }),
-                ),
+                    IbcMsg::Status { client_id },
+                )),
                 _ => panic!("invalid action"),
             },
             CreateClient::FetchStatus {
@@ -152,17 +147,17 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                         return Err(());
                     }
                     let client_id = client_id.clone();
-                    (
+                    Either::Left((
                         CreateClient::FetchLatestHeight {
                             client_id: client_id.clone(),
                             client_type: client_type.clone(),
                             client_state,
                             consensus_state,
                         },
-                        Some(IbcMsg::LatestHeight {
+                        IbcMsg::LatestHeight {
                             client_id: client_id.clone(),
-                        }),
-                    )
+                        },
+                    ))
                 }
                 _ => panic!("invalid action"),
             },
@@ -172,67 +167,26 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                 client_state,
                 consensus_state,
             } => match resp {
-                IbcResponse::LatestHeight { height } => (
-                    CreateClient::EmitEvent {
-                        client_id: client_id.clone(),
-                        client_type: client_type.clone(),
-                        initial_height: height,
-                        client_state,
-                        consensus_state,
-                    },
-                    None,
-                ),
-
-                _ => panic!("invalid action"),
-            },
-            CreateClient::CommitState {
-                client_id,
-                client_type,
-                initial_height,
-                client_state,
-                consensus_state,
-            } => {
-                host.commit(
-                    format!("clients/{client_id}/clientState"),
-                    client_state.clone(),
-                );
-                host.commit(
-                    format!("clients/{client_id}/consensusStates/{initial_height}"),
-                    consensus_state.clone(),
-                );
-                (
-                    CreateClient::EmitEvent {
+                IbcResponse::LatestHeight { height } => {
+                    host.commit(
+                        format!("clients/{client_id}/clientState"),
+                        client_state.clone(),
+                    );
+                    host.commit(
+                        format!("clients/{client_id}/consensusStates/{height}"),
+                        consensus_state.clone(),
+                    );
+                    Either::Right(IbcEvent::ClientCreated {
                         client_id,
                         client_type,
-                        initial_height,
-                        client_state,
-                        consensus_state,
-                    },
-                    None,
-                )
-            }
-            CreateClient::EmitEvent { .. } => (self, None),
+                        initial_height: height,
+                    })
+                }
+                _ => panic!("invalid action"),
+            },
         };
 
         Err(())
-    }
-
-    fn should_emit(&self) -> Option<IbcEvent> {
-        if let CreateClient::EmitEvent {
-            client_id,
-            client_type,
-            initial_height,
-            ..
-        } = self
-        {
-            Some(IbcEvent::ClientCreated {
-                client_id: client_id.clone(),
-                client_type: client_type.clone(),
-                initial_height: *initial_height,
-            })
-        } else {
-            None
-        }
     }
 }
 
