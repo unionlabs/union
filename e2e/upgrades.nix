@@ -88,6 +88,8 @@ in
 
       ${upgradeTo "v0.22.0" 10}
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m\"') == true ]]")
+      ${upgradeTo "v0.23.0" 10}
+      union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m\"') == true ]]")
     '';
 
     nodes = {
