@@ -7,7 +7,8 @@ use unionlabs::{parse_wasm_client_type, WasmClientType};
 #[command(arg_required_else_help = true)]
 struct Args {
     file_path: OsString,
-    expected_client_type: WasmClientType,
+    /// Optionally provide a client type to expect, exiting with a non-zero status code if it's incorrect.
+    expected_client_type: Option<WasmClientType>,
 }
 
 fn main() {
@@ -15,9 +16,10 @@ fn main() {
 
     let bz = std::fs::read(args.file_path).unwrap();
 
-    match parse_wasm_client_type(bz) {
-        Ok(Some(ty)) => assert_eq!(ty, args.expected_client_type),
-        Ok(None) => panic!("file does not contain a wasm client type"),
-        Err(err) => panic!("{err}"),
+    match (parse_wasm_client_type(bz), args.expected_client_type) {
+        (Ok(Some(ty)), Some(expected)) => assert_eq!(ty, expected),
+        (Ok(Some(ty)), None) => println!("{ty}"),
+        (Ok(None), _) => panic!("file does not contain a wasm client type"),
+        (Err(err), _) => panic!("{err}"),
     }
 }
