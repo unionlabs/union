@@ -21,7 +21,8 @@
             inputs.arion.nixosModules.arion
           ];
           virtualisation = {
-            diskSize = 4 * 1024;
+            diskSize = 8 * 1024;
+            memorySize = 4 * 1024;
             arion = {
               backend = "docker";
               projects.devnet-eth.settings = networks.modules.devnet-eth;
@@ -39,6 +40,7 @@
           ];
           virtualisation = {
             diskSize = 4 * 1024;
+            memorySize = 4 * 1024;
             arion = {
               backend = "docker";
               projects.union-devnet.settings = networks.modules.devnet-union-minimal;
@@ -55,7 +57,8 @@
             inputs.arion.nixosModules.arion
           ];
           virtualisation = {
-            diskSize = 2 * 1024;
+            diskSize = 4 * 1024;
+            memorySize = 4 * 1024;
             arion = {
               backend = "docker";
               projects.union.settings = networks.modules.devnet-union;
