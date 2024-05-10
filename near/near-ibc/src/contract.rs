@@ -36,7 +36,7 @@ impl IbcHost for Contract {
 }
 
 #[near_bindgen]
-#[derive(PanicOnDefault, BorshDeserialize, BorshSerialize, Owner)]
+#[derive(BorshDeserialize, BorshSerialize, Owner)]
 pub struct Contract {
     commitments: UnorderedMap<String, Vec<u8>>,
     client_index: u64,
@@ -45,13 +45,25 @@ pub struct Contract {
     clients: UnorderedMap<String, AccountId>,
 }
 
+impl Default for Contract {
+    fn default() -> Self {
+        Contract {
+            commitments: UnorderedMap::new(b"commitments".as_slice()),
+            client_index: 0,
+            account_ids: UnorderedMap::new(b"account_ids".as_slice()),
+            clients: UnorderedMap::new(b"clients".as_slice()),
+        }
+    }
+}
+
 #[near_bindgen]
 impl Contract {
-    pub fn register_client(&mut self, client_type: String, account: AccountId) {
+    pub fn register_client(&mut self, client_type: String, account: String) {
+        let account_id: AccountId = account.try_into().unwrap();
         match self.account_ids.entry(client_type) {
             unordered_map::Entry::Occupied(_) => panic!("already registered"),
             unordered_map::Entry::Vacant(entry) => {
-                entry.insert(account);
+                entry.insert(account_id);
             }
         }
     }
@@ -69,7 +81,38 @@ impl Contract {
     #[private]
     pub fn callback_initialize(&mut self, current_state: Vec<u8>) -> Promise {
         let current_state: CreateClient = serde_json::from_slice(&current_state).unwrap();
+        match &current_state {
+            CreateClient::Initialize {
+                client_id,
+                client_type,
+                ..
+            } => {
+                let account_id = self.account_ids.get(client_type).unwrap();
+                let _ = self.clients.insert(client_id.clone(), account_id.clone());
+            }
+            _ => panic!("wut?"),
+        };
         fold(self, current_state, IbcResponse::Initialize).unwrap()
+    }
+
+    #[private]
+    pub fn callback_status(
+        &mut self,
+        current_state: Vec<u8>,
+        #[callback_unwrap] status: Status,
+    ) -> Option<Promise> {
+        let current_state: CreateClient = serde_json::from_slice(&current_state).unwrap();
+        fold(self, current_state, IbcResponse::Status { status })
+    }
+
+    #[private]
+    pub fn callback_height(
+        &mut self,
+        current_state: Vec<u8>,
+        #[callback_unwrap] height: u64,
+    ) -> Option<Promise> {
+        let current_state: CreateClient = serde_json::from_slice(&current_state).unwrap();
+        fold(self, current_state, IbcResponse::LatestHeight { height })
     }
 }
 
@@ -83,8 +126,9 @@ pub fn fold<'a, T: ibc_vm_rs::Runnable<Contract>>(
 
     let (runnable, ibc_msg) = match either {
         ibc_vm_rs::Either::Left(cont) => cont,
-        ibc_vm_rs::Either::Right(_event) => {
+        ibc_vm_rs::Either::Right(event) => {
             // TODO(aeryz): emit event
+            env::log_str(&serde_json::to_string(&event).unwrap());
             return None;
         }
     };
@@ -108,15 +152,30 @@ pub fn fold<'a, T: ibc_vm_rs::Runnable<Contract>>(
         }
         ibc_vm_rs::IbcMsg::Status { client_id } => {
             let account_id = host.clients.get(&client_id).unwrap();
-            return Some(light_client::ext(account_id.clone()).status());
+            return Some(
+                light_client::ext(account_id.clone()).status().then(
+                    Contract::ext(env::current_account_id())
+                        .callback_status(serde_json::to_vec(&runnable).unwrap()),
+                ),
+            );
         }
-        ibc_vm_rs::IbcMsg::LatestHeight { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::LatestHeight { client_id } => {
+            let account_id = host.clients.get(&client_id).unwrap();
+            return Some(
+                light_client::ext(account_id.clone()).latest_height().then(
+                    Contract::ext(env::current_account_id())
+                        .callback_height(serde_json::to_vec(&runnable).unwrap()),
+                ),
+            );
+        }
     }
 }
 
 #[ext_contract(light_client)]
 pub trait LightClient {
-    fn initialize(&self, client_id: String, client_state: Vec<u8>, consensus_state: Vec<u8>);
+    fn initialize(client_id: String, client_state: Vec<u8>, consensus_state: Vec<u8>) -> Self;
 
     fn status(&self) -> Status;
+
+    fn latest_height(&self) -> u64;
 }

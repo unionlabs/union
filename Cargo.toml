@@ -70,6 +70,7 @@ members = [
   "zerg",
   "lib/linea-zktrie",
   "near/near-ibc",
+  "near/dummy-light-client"
 ]
 
 [workspace.package]

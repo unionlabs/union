@@ -6,7 +6,7 @@ pub trait IbcHost {
     fn commit(&mut self, key: String, value: Vec<u8>);
 }
 
-#[derive(PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub enum Status {
     Active,
     Frozen,
@@ -37,6 +37,7 @@ pub enum IbcMsg {
     },
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum IbcEvent {
     ClientCreated {
         client_id: String,
@@ -94,7 +95,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
         host: &mut T,
         resp: IbcResponse,
     ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
-        match self {
+        let res = match self {
             CreateClient::Init {
                 client_type,
                 client_state,
@@ -186,7 +187,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
             },
         };
 
-        Err(())
+        Ok(res)
     }
 }
 
