@@ -145,6 +145,7 @@ Solana
 Subdemom
 Sublist
 Subo
+Subtrie
 Tada
 Tempdirs
 Tendermint
@@ -172,6 +173,7 @@ Wrapf
 XMSB
 YMSB
 Yair
+ZKACCOUNT
 ZKTRIE
 Zerg
 aarch
@@ -608,6 +610,7 @@ libwasmvmstatic
 lifecycles
 lightclient
 lightclients
+linea
 linkmode
 livenesses
 lmfao
@@ -685,6 +688,7 @@ nois
 nolint
 nolus
 nonexist
+noninclusion
 noopener
 noreferrer
 notrunc
@@ -919,6 +923,7 @@ subsec
 subslice
 substituters
 substores
+subtrie
 sumbitter
 superforms
 supermajority

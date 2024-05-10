@@ -119,7 +119,7 @@ impl<'a, F: PrimeField, const K: usize, const E: u64> MiMC<'a, F, K, E> {
 
     // https://github.com/Consensys/gnark-crypto/blob/564b6f724c3beac52d805e6e600d0a1fda9770b5/ecc/bn254/fr/mimc/mimc.go#L105
     pub fn update(mut self, elements: impl AsRef<[u8]>) -> Result<Self, Error> {
-        // Slight difference, we only accept a mutiple of the field. No hidden, implicit padding.
+        // Slight difference, we only accept a multiple of the field. No hidden, implicit padding.
         let elements = elements.as_ref();
         if elements.len() % Self::FIELD_ELEMENT_BYTES_LEN != 0 {
             return Err(Error::InvalidLength(InvalidLength {

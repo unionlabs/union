@@ -71,7 +71,7 @@ pub enum Error {
     #[error("invalid mimc hashing: {0:?}")]
     MimcError(gnark_mimc::Error),
     #[error("could not decode leaf value")]
-    CouldntDecodeValue,
+    CouldNotDecodeValue,
     #[error("invalid trie root, actual: {actual}, expected: {expected}")]
     RootMismatch { actual: H256, expected: H256 },
     #[error("invalid subtrie root, actual: {actual}, expected: {expected}")]
@@ -242,15 +242,15 @@ pub fn verify_inclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
             }
         }
         // For non inclusion proof, we don't know the key of the left/right
-        // nodes. We instead verify that the expected key is sandwitched after
+        // nodes. We instead verify that the expected key is sandwiched after
         // verifying inclusion. Hence, nothing is done there.
         None => {}
     }
     // The value is decoded then hashed, the decoding is required as the value
     // may need to be transformed before being hashed (ZkAccount keccak field
     // that need to be split in two elements to fit in the scalar field for
-    // instane)
-    let value = V::try_from(merkle_path.value.as_ref()).map_err(|_| Error::CouldntDecodeValue)?;
+    // instance)
+    let value = V::try_from(merkle_path.value.as_ref()).map_err(|_| Error::CouldNotDecodeValue)?;
     // Verify that the value is related to the leaf
     let recomputed_value = value.clone().hash(constants)?;
     if verifiable_path.leaf.value != recomputed_value {
@@ -748,7 +748,7 @@ mod tests {
 
     // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/core/src/test/java/net/consensys/shomei/ZkAccountTest.java#L34
     #[test]
-    fn test_hash_zeroaccount() {
+    fn test_hash_zero_account() {
         let mimc_constants = new_mimc_constants_bls12_377();
         let mimc = new_mimc_bls12_377(&mimc_constants);
         let hash = mimc
