@@ -8,6 +8,9 @@
       near-integration-tests = crane.buildWorkspaceMember {
         crateDirFromRoot = "near/near-ibc";
         cargoBuildExtraArgs = "--example integration-tests";
+        extraEnv = {
+          NEAR_SANDBOX_BIN_PATH = "${near-sandbox}/bin/neard";
+        };
       };
 
       rustToolchain = rust.mkNightly {
@@ -45,7 +48,9 @@
       };
     in
     {
-      packages.near-sandbox = near-sandbox;
+      packages = { 
+        near-sandbox = near-sandbox;
+      } // near-integration-tests.packages;
 
     };
 }
