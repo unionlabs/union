@@ -11,7 +11,7 @@
 extern crate alloc;
 
 use core::{
-    fmt::{Debug, Display},
+    fmt::{self, Debug, Display},
     ptr::addr_of,
     str::FromStr,
 };
@@ -132,7 +132,7 @@ macro_rules! export_wasm_client_type {
 
 /// This type is used to discriminate 08-wasm light clients.
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
-/// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE: WasmClientType = WasmClientType::...` variable.
+/// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum WasmClientType {
@@ -175,6 +175,19 @@ impl FromStr for WasmClientType {
             "Scroll" => Ok(WasmClientType::Scroll),
             "Arbitrum" => Ok(WasmClientType::Arbitrum),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
+        }
+    }
+}
+
+impl Display for WasmClientType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EthereumMinimal => write!(f, "EthereumMinimal"),
+            Self::EthereumMainnet => write!(f, "EthereumMainnet"),
+            Self::Cometbls => write!(f, "Cometbls"),
+            Self::Tendermint => write!(f, "Tendermint"),
+            Self::Scroll => write!(f, "Scroll"),
+            Self::Arbitrum => write!(f, "Arbitrum"),
         }
     }
 }
