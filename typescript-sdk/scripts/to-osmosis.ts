@@ -34,7 +34,7 @@ const unoFromUnionToOsmosis = await unionClient.cosmwasmMessageExecuteContract([
     },
     funds: [
       {
-        amount: "77",
+        amount: "2",
         denom: `muno`
         // denom: `factory/${contractAddress}/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
       }

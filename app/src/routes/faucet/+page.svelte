@@ -5,12 +5,12 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import { valibot } from "sveltekit-superforms/adapters"
 import * as Form from "$lib/components/ui/form/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
-
 /**
  * TODO:
  * [ ] - Fetch address from wallet and pass it as default, allow user to change it
@@ -22,8 +22,12 @@ import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
 const form = superForm(defaults(valibot(faucetFormSchema)), {
   SPA: true,
   validators: valibot(faucetFormSchema),
+  onChange: event => {
+    console.log(event)
+  },
   // biome-ignore lint/suspicious/useAwait: <explanation>
   onUpdate: async event => {
+    console.log(JSON.stringify(event.result.data, undefined, 2))
     if (!event.form.valid) return toast.error("No good", { className: "font-mono text-lg" })
 
     toast.success("Faucet request submitted 🤌 Check wallet for $UNO in a few moments", {
@@ -111,7 +115,7 @@ const handleMouseLeave = () => {
             autocapitalize="none"
             on:blur={handleBlur}
             on:focus={handleFocus}
-            bind:value={$formData.address}
+            bind:value={$cosmosStore.address}
             on:mouseleave={handleMouseMove}
             on:mouseenter={handleMouseEnter}
             pattern={unionAddressRegex.source}

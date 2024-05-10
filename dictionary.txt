@@ -657,6 +657,7 @@ mollitia
 monitonically
 monniker
 moreutils
+mosmo
 msgservice
 msvc
 muldefs
