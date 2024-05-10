@@ -21,20 +21,21 @@ pub struct ZkAccount {
 }
 
 impl ZkAccount {
+    #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
         self.into()
     }
 }
 
-impl Into<Vec<u8>> for ZkAccount {
-    fn into(self) -> Vec<u8> {
+impl From<ZkAccount> for Vec<u8> {
+    fn from(value: ZkAccount) -> Vec<u8> {
         [
-            self.nonce.to_be_bytes().as_ref(),
-            self.balance.to_be_bytes().as_ref(),
-            &self.storage_root.into_bytes(),
-            &self.mimc_code_hash.into_bytes(),
-            &self.keccak_code_hash.into_bytes(),
-            self.code_size.to_be_bytes().as_ref(),
+            value.nonce.to_be_bytes().as_ref(),
+            value.balance.to_be_bytes().as_ref(),
+            &value.storage_root.into_bytes(),
+            &value.mimc_code_hash.into_bytes(),
+            &value.keccak_code_hash.into_bytes(),
+            value.code_size.to_be_bytes().as_ref(),
         ]
         .concat()
     }
@@ -65,6 +66,7 @@ pub struct MimcSafeBytes {
 }
 
 impl MimcSafeBytes {
+    #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
         [self.lsb.0, self.msb.0].concat()
     }

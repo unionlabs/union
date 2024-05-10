@@ -32,7 +32,7 @@ impl ZkKey for H160 {
     fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
         let mut padded_key = [0u8; 32];
         padded_key[12..32].copy_from_slice(self.as_ref());
-        mimc_sum_bl12377(constants, &padded_key)
+        mimc_sum_bl12377(constants, padded_key)
     }
 }
 
@@ -81,7 +81,10 @@ pub enum Error {
     #[error("value mismatch, actual: {actual}, expected: {expected}")]
     ValueMismatch { actual: H256, expected: H256 },
     #[error("non adjacent node, left: {left:?}, right: {right:?}")]
-    NonAdjacentNode { left: LeafNode, right: LeafNode },
+    NonAdjacentNode {
+        left: Box<LeafNode>,
+        right: Box<LeafNode>,
+    },
     #[error("key not in center, left: {left}, key: {key} right: {right}")]
     KeyNotInCenter { left: H256, key: H256, right: H256 },
 }
@@ -189,16 +192,16 @@ pub fn verify_noninclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
         != U256::from(noninclusion_proof.left_leaf_index)
     {
         return Err(Error::NonAdjacentNode {
-            left: left_path.leaf,
-            right: right_path.leaf,
+            left: left_path.leaf.into(),
+            right: right_path.leaf.into(),
         });
     }
     // N-.Next == i+
     if U256::from_be_bytes(left_path.leaf.next.0) != U256::from(noninclusion_proof.right_leaf_index)
     {
         return Err(Error::NonAdjacentNode {
-            left: left_path.leaf,
-            right: right_path.leaf,
+            left: left_path.leaf.into(),
+            right: right_path.leaf.into(),
         });
     }
     // HKey- < hash(k) < HKey+
@@ -230,21 +233,18 @@ pub fn verify_inclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
             expected: root,
         });
     }
-    match key {
-        Some(key) => {
-            // Verify that they leaf is related to our key
-            let recomputed_key = key.hash(constants)?;
-            if verifiable_path.leaf.hashed_key != recomputed_key {
-                return Err(Error::KeyMismatch {
-                    actual: recomputed_root,
-                    expected: verifiable_path.leaf.hashed_key,
-                });
-            }
+    // For non inclusion proof, we don't know the key of the left/right
+    // nodes. We instead verify that the expected key is sandwiched after
+    // verifying right/left inclusion. Hence, nothing is done there.
+    if let Some(key) = key {
+        // Verify that they leaf is related to our key
+        let recomputed_key = key.hash(constants)?;
+        if verifiable_path.leaf.hashed_key != recomputed_key {
+            return Err(Error::KeyMismatch {
+                actual: recomputed_root,
+                expected: verifiable_path.leaf.hashed_key,
+            });
         }
-        // For non inclusion proof, we don't know the key of the left/right
-        // nodes. We instead verify that the expected key is sandwiched after
-        // verifying inclusion. Hence, nothing is done there.
-        None => {}
     }
     // The value is decoded then hashed, the decoding is required as the value
     // may need to be transformed before being hashed (ZkAccount keccak field
@@ -267,26 +267,20 @@ pub fn verify_inclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
     let leaf_hash = verifiable_path.leaf.hash(constants)?;
     // Starts with the leaf hash, then recursively walk back to the tip of the
     // tree.
-    let subtrie_root = verifiable_path
-        .path
-        .iter()
-        .zip(inner_path)
-        .rev()
-        .into_iter()
-        .try_fold(
-            leaf_hash,
-            |current_hash, (node, direction)| -> Result<H256, Error> {
-                let node_hash = node.hash(constants)?;
-                let to_hash = match direction {
-                    // We went on the left branch, we hash against the right sibling
-                    DIRECTION_LEFT => [current_hash.as_ref(), node_hash.as_ref()].concat(),
-                    // We went on the right branch, we hash against the left sibling
-                    DIRECTION_RIGHT => [node_hash.as_ref(), current_hash.as_ref()].concat(),
-                    d => return Err(Error::InvalidDirection(d)),
-                };
-                Ok(mimc_sum_bl12377(constants, to_hash)?)
-            },
-        )?;
+    let subtrie_root = verifiable_path.path.iter().zip(inner_path).rev().try_fold(
+        leaf_hash,
+        |current_hash, (node, direction)| -> Result<H256, Error> {
+            let node_hash = node.hash(constants)?;
+            let to_hash = match direction {
+                // We went on the left branch, we hash against the right sibling
+                DIRECTION_LEFT => [current_hash.as_ref(), node_hash.as_ref()].concat(),
+                // We went on the right branch, we hash against the left sibling
+                DIRECTION_RIGHT => [node_hash.as_ref(), current_hash.as_ref()].concat(),
+                d => return Err(Error::InvalidDirection(d)),
+            };
+            Ok(mimc_sum_bl12377(constants, to_hash)?)
+        },
+    )?;
     // Verify the subtrie root
     if verifiable_path.root.child_hash != subtrie_root {
         return Err(Error::SubtrieRootMismatch {

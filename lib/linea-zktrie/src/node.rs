@@ -16,8 +16,7 @@ pub const LEAF_TYPE_VALUE: u8 = 0x16;
 pub fn bytes_to_leaf_path(bytes: &[u8], terminator_path: u8) -> Vec<u8> {
     let mut path = vec![0u8; bytes.len() * 2 + 1];
     let mut j = 0;
-    for i in j..bytes.len() {
-        let b = bytes[i];
+    for b in bytes.iter().skip(j) {
         path[j] = b >> 4 & 15;
         path[j + 1] = b & 15;
         j += 2;
@@ -29,7 +28,7 @@ pub fn bytes_to_leaf_path(bytes: &[u8], terminator_path: u8) -> Vec<u8> {
 // TODO: use bitvec
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/path/PathResolver.java#L82
 pub fn node_index_to_bytes(trie_depth: usize, node_index: u64) -> Vec<u8> {
-    hex::decode(&format!("{node_index:0>trie_depth$b}")).unwrap()
+    hex::decode(format!("{node_index:0>trie_depth$b}")).unwrap()
 }
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/path/PathResolver.java#L71
@@ -166,7 +165,7 @@ impl Node {
             Node::Leaf(node) => node.hash(constants),
             Node::Branch(node) => node.hash(constants),
             Node::Root(node) => node.hash(constants),
-            Node::EmptyLeaf(_) => return Ok(EmptyLeafNode::HASH),
+            Node::EmptyLeaf(_) => Ok(EmptyLeafNode::HASH),
         }
     }
 }
