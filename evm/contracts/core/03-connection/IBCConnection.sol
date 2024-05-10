@@ -10,10 +10,26 @@ import "../24-host/IBCCommitment.sol";
 import "../03-connection/IIBCConnection.sol";
 
 library IBCConnectionLib {
-    event ConnectionOpenInit(string connectionId);
-    event ConnectionOpenTry(string connectionId);
-    event ConnectionOpenAck(string connectionId);
-    event ConnectionOpenConfirm(string connectionId);
+    event ConnectionOpenInit(
+        string indexed connectionId,
+        string indexed clientId,
+        string indexed counterpartyClientId
+    );
+    event ConnectionOpenTry(
+        string indexed connectionId,
+        string indexed clientId,
+        string indexed counterpartyClientId
+    );
+    event ConnectionOpenAck(
+        string indexed connectionId,
+        string indexed clientId,
+        string indexed counterpartyClientId
+    );
+    event ConnectionOpenConfirm(
+        string indexed connectionId,
+        string indexed clientId,
+        string indexed counterpartyClientId
+    );
 
     error ErrConnectionAlreadyExists();
     error ErrValidateSelfClient();
@@ -347,7 +363,9 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.counterparty = msg_.counterparty;
         updateConnectionCommitment(connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenInit(connectionId);
+        emit IBCConnectionLib.ConnectionOpenInit(
+            connectionId, msg_.clientId, msg_.counterparty.client_id
+        );
 
         return connectionId;
     }
@@ -431,7 +449,9 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
 
         updateConnectionCommitment(connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenTry(connectionId);
+        emit IBCConnectionLib.ConnectionOpenTry(
+            connectionId, msg_.clientId, msg_.counterparty.client_id
+        );
 
         return connectionId;
     }
@@ -509,7 +529,11 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.counterparty.connection_id = msg_.counterpartyConnectionID;
         updateConnectionCommitment(msg_.connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenAck(msg_.connectionId);
+        emit IBCConnectionLib.ConnectionOpenAck(
+            msg_.connectionId,
+            connection.client_id,
+            connection.counterparty.connection_id
+        );
     }
 
     /**
@@ -561,7 +585,11 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;
         updateConnectionCommitment(msg_.connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenConfirm(msg_.connectionId);
+        emit IBCConnectionLib.ConnectionOpenConfirm(
+            msg_.connectionId,
+            connection.client_id,
+            connection.counterparty.connection_id
+        );
     }
 
     function updateConnectionCommitment(string memory connectionId) private {
