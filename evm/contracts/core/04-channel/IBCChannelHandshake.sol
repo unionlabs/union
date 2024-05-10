@@ -11,22 +11,36 @@ import "../05-port/IIBCModule.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
-        string channelId,
-        string connectionId,
-        string portId,
-        string counterpartyPortId
-    );
-    event ChannelOpenTry(
-        string channelId,
-        string connectionId,
-        string portId,
+        string indexed portId,
+        string indexed channelId,
         string counterpartyPortId,
+        string indexed connectionId,
         string version
     );
-    event ChannelOpenAck(string channelId, string portId);
-    event ChannelOpenConfirm(string channelId, string portId);
-    event ChannelCloseInit(string channelId, string portId);
-    event ChannelCloseConfirm(string channelId, string portId);
+    event ChannelOpenTry(
+        string indexed portId,
+        string indexed channelId,
+        string counterpartyPortId,
+        string counterpartyChannelId,
+        string indexed connectionId,
+        string version
+    );
+    event ChannelOpenAck(
+        string indexed portId,
+        string indexed channelId,
+        string counterpartyPortId,
+        string counterpartyChannelId,
+        string indexed connectionId
+    );
+    event ChannelOpenConfirm(
+        string indexed portId,
+        string indexed channelId,
+        string counterpartyPortId,
+        string counterpartyChannelId,
+        string indexed connectionId
+    );
+    event ChannelCloseInit(string indexed channelId, string indexed portId);
+    event ChannelCloseConfirm(string indexed channelId, string indexed portId);
 
     error ErrConnNotSingleHop();
     error ErrConnNotSingleVersion();
@@ -128,10 +142,11 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         );
 
         emit IBCChannelLib.ChannelOpenInit(
-            channelId,
-            connectionId,
             msg_.portId,
-            msg_.channel.counterparty.port_id
+            channelId,
+            msg_.channel.counterparty.port_id,
+            connectionId,
+            msg_.channel.version
         );
 
         return channelId;
@@ -212,10 +227,11 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         );
 
         emit IBCChannelLib.ChannelOpenTry(
-            channelId,
-            connectionId,
             msg_.portId,
+            channelId,
             msg_.channel.counterparty.port_id,
+            msg_.channel.counterparty.channel_id,
+            connectionId,
             msg_.counterpartyVersion
         );
 
@@ -277,7 +293,13 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             msg_.counterpartyVersion
         );
 
-        emit IBCChannelLib.ChannelOpenAck(msg_.channelId, msg_.portId);
+        emit IBCChannelLib.ChannelOpenAck(
+            msg_.portId,
+            msg_.channelId,
+            channel.counterparty.port_id,
+            channel.counterparty.channel_id,
+            channel.connection_hops[0]
+        );
     }
 
     /**
@@ -330,7 +352,13 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             msg_.portId, msg_.channelId
         );
 
-        emit IBCChannelLib.ChannelOpenConfirm(msg_.channelId, msg_.portId);
+        emit IBCChannelLib.ChannelOpenConfirm(
+            msg_.portId,
+            msg_.channelId,
+            channel.counterparty.port_id,
+            channel.counterparty.channel_id,
+            channel.connection_hops[0]
+        );
     }
 
     /**

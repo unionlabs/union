@@ -123,21 +123,6 @@ contract IBCChannelHandlerTest is TestPlus {
     MockApp app;
     string portId;
 
-    event ChannelOpenInit(
-        string channelId,
-        string connectionId,
-        string portId,
-        string counterpartyPortId
-    );
-
-    event ChannelOpenTry(
-        string channelId,
-        string connectionId,
-        string portId,
-        string counterpartyPortId,
-        string version
-    );
-
     function setUp() public {
         handler = IBCHandler_Testable(
             address(
@@ -251,7 +236,7 @@ contract IBCChannelHandlerTest is TestPlus {
         IBCMsgs.MsgChannelOpenInit memory msg_init =
             MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenInit("", "", "", "");
+        emit IBCChannelLib.ChannelOpenInit("", "", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
@@ -271,7 +256,7 @@ contract IBCChannelHandlerTest is TestPlus {
         IBCMsgs.MsgChannelOpenInit memory msg_init =
             MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenInit("", "", "", "");
+        emit IBCChannelLib.ChannelOpenInit("", "", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
@@ -348,7 +333,7 @@ contract IBCChannelHandlerTest is TestPlus {
         IBCMsgs.MsgChannelOpenInit memory msg_init =
             MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenInit("", "", "", "");
+        emit IBCChannelLib.ChannelOpenInit("", "", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
@@ -374,7 +359,7 @@ contract IBCChannelHandlerTest is TestPlus {
         IBCMsgs.MsgChannelOpenInit memory msg_init =
             MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenInit("", "", "", "");
+        emit IBCChannelLib.ChannelOpenInit("", "", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
@@ -401,7 +386,7 @@ contract IBCChannelHandlerTest is TestPlus {
         IBCMsgs.MsgChannelOpenInit memory msg_init =
             MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenInit("", "", "", "");
+        emit IBCChannelLib.ChannelOpenInit("", "", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
@@ -427,7 +412,7 @@ contract IBCChannelHandlerTest is TestPlus {
             MsgMocks.channelOpenTry(connId, portId, proofHeight);
         client.pushValidMembership();
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenTry("", "", "", "", "");
+        emit IBCChannelLib.ChannelOpenTry("", "", "", "", "", "");
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
@@ -450,7 +435,7 @@ contract IBCChannelHandlerTest is TestPlus {
             MsgMocks.channelOpenTry(connId, portId, proofHeight);
         client.pushValidMembership();
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenTry("", "", "", "", "");
+        emit IBCChannelLib.ChannelOpenTry("", "", "", "", "", "");
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
@@ -497,7 +482,7 @@ contract IBCChannelHandlerTest is TestPlus {
             MsgMocks.channelOpenTry(connId, portId, proofHeight);
         client.pushValidMembership();
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenTry("", "", "", "", "");
+        emit IBCChannelLib.ChannelOpenTry("", "", "", "", "", "");
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
@@ -525,7 +510,7 @@ contract IBCChannelHandlerTest is TestPlus {
 
         client.pushValidMembership();
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenTry("", "", "", "", "");
+        emit IBCChannelLib.ChannelOpenTry("", "", "", "", "", "");
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
@@ -554,7 +539,7 @@ contract IBCChannelHandlerTest is TestPlus {
 
         client.pushValidMembership();
         vm.expectEmit(false, false, false, false);
-        emit ChannelOpenTry("", "", "", "", "");
+        emit IBCChannelLib.ChannelOpenTry("", "", "", "", "", "");
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
