@@ -39,7 +39,7 @@ impl<'a> ibc_vm_rs::IbcHost for CwIbcHost<'a> {
         format!("{client_type}-{index}")
     }
 
-    fn commit(&mut self, key: String, value: Vec<u8>) {
+    fn commit_raw(&mut self, key: String, value: Vec<u8>) {
         COMMITMENTS.save(self.deps.storage, key, &value).unwrap();
     }
 }

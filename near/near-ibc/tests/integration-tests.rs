@@ -1,5 +1,11 @@
+use ibc_vm_rs::DEFAULT_IBC_VERSION;
 use near_units::parse_near;
 use serde_json::json;
+use unionlabs::ibc::core::{
+    client::height::Height,
+    commitment::merkle_prefix::MerklePrefix,
+    connection::{counterparty::Counterparty, version::Version},
+};
 use workspaces::{
     network::Sandbox,
     prelude::*,
@@ -50,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("calling register");
     test_create_client(&sandbox, &user, &contract, &lc).await?;
+    test_open_connection_starting_from_init(&sandbox, &user, &contract, &lc).await?;
 
     Ok(())
 }
@@ -67,6 +74,23 @@ struct CreateClient {
     consensus_state: Vec<u8>,
 }
 
+#[derive(serde::Serialize)]
+struct ConnectionOpenInit {
+    client_id: String,
+    counterparty: Counterparty<String, String>,
+    version: Version,
+    delay_period: u64,
+}
+
+#[derive(serde::Serialize)]
+struct ConnectionOpenAck {
+    connection_id: String,
+    version: Version,
+    counterparty_connection_id: String,
+    connection_end_proof: Vec<u8>,
+    proof_height: Height,
+}
+
 async fn test_create_client(
     sandbox: &Worker<Sandbox>,
     user: &Account,
@@ -80,6 +104,53 @@ async fn test_create_client(
     let res = user
         .call(contract.id(), "register_client")
         .args_json(register)
+        .transact()
+        .await
+        .unwrap();
+
+    println!("Register result {res:?}");
+    println!("moving a block");
+    sandbox.fast_forward(1).await.unwrap();
+    println!("moved");
+
+    let create = CreateClient {
+        client_type: "wasm".into(),
+        client_state: vec![1, 2, 3],
+        consensus_state: vec![4, 5, 6],
+    };
+    let res = user
+        .call(contract.id(), "create_client")
+        .args_json(create)
+        .gas(300000000000000)
+        .transact()
+        .await
+        .unwrap();
+    println!("Create result {res:?}");
+
+    Ok(())
+}
+
+async fn test_open_connection_starting_from_init(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    contract: &Contract,
+    lc: &Contract,
+) -> anyhow::Result<()> {
+    let open_init = ConnectionOpenInit {
+        client_id: "wasm-0".into(),
+        counterparty: Counterparty {
+            client_id: "cometbls-0".into(),
+            connection_id: "".into(),
+            prefix: MerklePrefix {
+                key_prefix: b"ibc".into(),
+            },
+        },
+        version: DEFAULT_IBC_VERSION[0].clone(),
+        delay_period: 0,
+    };
+    let res = user
+        .call(contract.id(), "connection_open_init")
+        .args_json(open_init)
         .transact()
         .await
         .unwrap();

@@ -12,6 +12,7 @@ ibc-vm-rs.workspace = true
 serde_json.workspace = true
 serde.workspace = true
 borsh = { version = "1.5.0", features = ["borsh-derive"] }
+unionlabs.workspace = true
 
 [dev-dependencies]
 tokio = { version = "1.18.1", features = ["full"] }

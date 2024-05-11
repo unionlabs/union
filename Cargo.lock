@@ -4207,7 +4207,9 @@ dependencies = [
 name = "ibc-vm-rs"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "serde",
+ "unionlabs",
 ]
 
 [[package]]
@@ -5107,6 +5109,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "unionlabs",
  "workspaces",
 ]
 
