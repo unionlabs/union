@@ -36,7 +36,7 @@ import { routes } from "$lib/components/navigation/index.ts"
         </Button>
       {/each}
     </nav>
-    <div class="hidden md:flex space-x-3">
+    <div class="hidden sm:flex space-x-3">
       <Connect />
       <!-- <ThemeSwitch /> -->
     </div>

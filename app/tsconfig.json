@@ -16,15 +16,19 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
     "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
+    "paths": {
+      "$*": ["./src/*"]
+    },
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",
         "template": "gql",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://introspect.unionlabs.workers.dev",
+          "url": "https://noble-pika-27.hasura.app/v1/graphql",
           "headers": {
-            "X-For": "introspection"
+            "X-Hasura-Admin-Secret": "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2dfdfdjihgfchsdasdsadasda"
+            // "X-Hasura-Role": "app"
           }
         }
       }

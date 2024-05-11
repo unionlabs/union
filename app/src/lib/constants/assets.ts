@@ -9,7 +9,7 @@ type Chains =
       sourceChainId: Exclude<ChainId, "union-testnet-8">
       destinationChainId: "union-testnet-8"
     }
-type ChainAssets = {
+export type ChainAssets = {
   port: string
   channel: string
   client: string

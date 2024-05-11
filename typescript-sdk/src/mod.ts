@@ -236,6 +236,9 @@ export class UnionClient implements IUnionClient {
     )
   }
 
+  /**
+   * TODO: Add description
+   */
   public async transferEvmAsset({
     account,
     receiver,

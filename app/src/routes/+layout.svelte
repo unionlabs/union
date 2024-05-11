@@ -148,7 +148,7 @@ onMount(() => {
 <div
   id="background-dotted-grid"
   data-background-dotted-grid="true"
-  class="absolute top-0 z-[-2] size-full bg-[#99e6ff20] bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)] bg-[size:20px_20px]"
+  class="absolute top-0 z-[-2] size-full min-h-screen bg-[#99e6ff20] bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)] bg-[size:20px_20px]"
 ></div>
 
 <svelte:window
@@ -160,6 +160,7 @@ onMount(() => {
         key: 'h',
         modifier: ['ctrl'],
         callback: () => {
+          console.log('Hiding tanstack devtools')
           const tanstackDevtoolsElement = document.querySelector('div.tsqd-transitions-container')
           if (!tanstackDevtoolsElement) return
           tanstackDevtoolsElement.classList.toggle('hidden')

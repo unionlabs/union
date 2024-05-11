@@ -21,7 +21,7 @@ const navigationIconStyle = "size-9 min-w-6 hover:text-white text-zinc-accent"
 <footer
   class={cn(
     'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 py-2',
-    'grid md:hidden grid-cols-4 gap-y-2 place-content-center divide-x-[1px] divide-[#fafafa25]',
+    'grid lg:hidden grid-cols-4 gap-y-2 place-content-center divide-x-[1px] divide-[#fafafa25]',
     'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-md',
   )}
 >

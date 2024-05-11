@@ -36,6 +36,8 @@ const unionClient = await UnionClient.connectWithSecret({
 const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789" // LINK contract address
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 
+const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+
 const approve = await evmSigner.writeContract({
   account: evmAccount,
   address: LINK_CONTRACT_ADDRESS,
@@ -49,16 +51,6 @@ const approve = await evmSigner.writeContract({
 })
 
 console.log(approve)
-
-/**
- * 
-cast send \ 
-        --rpc-url https://rpc2.sepolia.org \
-        --private-key <KEY> \
-        0x3d0eb16ad2619666dbde1921282cd885b58eeefe \
-        "send(string, string, bytes, (address, uint128)[], uint64, uint64)" "0x3d0eb16ad2619666dbde1921282cd885b58eeefe" "channel-0" "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed" "[(0x3C148Ec863404e48d88757E88e456963A14238ef, 1)]" "8" "10000000"
-
- */
 
 const linkFromSepoliaToUnion = await unionClient.transferEvmAsset({
   account: evmAccount,

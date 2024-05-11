@@ -1,4 +1,4 @@
-import "$lib/polyfill.ts"
+// import "$lib/polyfill.ts"
 import {
   http,
   fallback,
@@ -17,15 +17,15 @@ import {
   createStorage as createWagmiStorage
 } from "@wagmi/core"
 import { createClient } from "viem"
-import { writable } from "svelte/store"
 import { sleep } from "$lib/utilities"
+import { writable } from "svelte/store"
 import { sepolia } from "@wagmi/core/chains"
+import { API_KEY } from "$lib/constants/keys.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { walletConnect, injected } from "@wagmi/connectors"
+import { walletConnect, injected, coinbaseWallet } from "@wagmi/connectors"
 import { walletActionsEip5792, walletActionsEip3074 } from "viem/experimental"
 
 const WALLET_CONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
-const ankrId = "bced07c1a0ee36409ee84dae4e4f65a25b57715ddd8f3f2fd261f2a6b5508505"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
@@ -45,8 +45,8 @@ export const config = createConfig({
       batch: { multicall: true },
       transport: fallback([
         unstable_connector(injected),
-        http(`https://rpc.ankr.com/eth_sepolia/${ankrId}`),
-        webSocket(`wss://rpc.ankr.com/eth_sepolia/ws/${ankrId}`)
+        http(`https://ethereum-sepolia.core.chainstack.com/${API_KEY.CHAINSTACK}`),
+        webSocket(`wss://ethereum-sepolia.core.chainstack.com/ws/${API_KEY.CHAINSTACK}`)
       ])
     })
       .extend(walletActionsEip5792())
@@ -65,14 +65,21 @@ export const config = createConfig({
     walletConnect({
       projectId: WALLET_CONNECT_PROJECT_ID,
       qrModalOptions: {
+        themeMode: "dark",
         enableExplorer: true
       },
       metadata: {
-        name: "Union App",
-        description: "Union App",
+        name: "Union",
+        description: "Union App (beta)",
         url: "https://app.union.build",
-        icons: []
+        icons: ["/images/icons/union.svg", "/images/logo.png"]
       }
+    }),
+    coinbaseWallet({
+      darkMode: true,
+      appName: "Union",
+      appLogoUrl: "/images/logo.png",
+      jsonRpcUrl: `https://ethereum-sepolia.core.chainstack.com/${API_KEY.CHAINSTACK}`
     })
   ]
 })

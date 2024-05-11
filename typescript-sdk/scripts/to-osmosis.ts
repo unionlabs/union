@@ -29,12 +29,12 @@ const unoFromUnionToOsmosis = await unionClient.cosmwasmMessageExecuteContract([
       transfer: {
         channel: "channel-6",
         receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
-        memo: "sending UNO from Union to Osmosis"
+        memo: "sending UNO from Union to Osmosissss"
       }
     },
     funds: [
       {
-        amount: "2",
+        amount: "1",
         denom: `muno`
         // denom: `factory/${contractAddress}/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
       }

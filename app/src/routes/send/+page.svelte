@@ -17,6 +17,11 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { ChainDialog, SettingsDialog, AssetsDialog } from "$lib/components/send/dialogs/index.ts"
 
+/**
+ * TODO:
+ * - [ ]
+ */
+
 let unionClient: UnionClient
 onMount(() => {
   const cosmosOfflineSigner = (
@@ -249,7 +254,6 @@ let buttonText = "Send it 🔥" satisfies
             'outline outline-1 outline-accent/90',
           )}
         >
-          <!-- <img src="/images/icons/osmosis.svg" alt="asset" class={cn('size-12 z-50 my-auto')} /> -->
           <div
             class={cn(
               devBorder,
