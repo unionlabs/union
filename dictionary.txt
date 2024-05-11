@@ -15,6 +15,7 @@ Boiron
 Boneh
 CCTP
 CFLAGS
+CHAINSTACK
 CMOV
 Celestia
 Certus
@@ -153,6 +154,7 @@ Tendermint
 Testcase
 Timestamptz
 Tioga
+Tjpl
 UDHC
 UNBONDED
 UNBONDING

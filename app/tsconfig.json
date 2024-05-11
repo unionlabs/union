@@ -25,10 +25,9 @@
         "template": "gql",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://noble-pika-27.hasura.app/v1/graphql",
+          "url": "https://graphql.union.build/v1/graphql",
           "headers": {
-            "X-Hasura-Admin-Secret": "3N5Mt2f4Y1AC7dE663AsGqRy66yiHBuZ3RMgUjM6X4Q3Ma8G2dfdfdjihgfchsdasdsadasda"
-            // "X-Hasura-Role": "app"
+            "X-Hasura-Role": "app"
           }
         }
       }

@@ -59,7 +59,7 @@ export type EvmBalances = v.Output<typeof evmBalancesResponseSchema>
 
 /**
  * @docs https://docs.alchemy.com/reference/alchemy-gettokenbalances
- * @note the paramters here match the API parameters 1:1. See docs
+ * @note the parameters here match the API parameters 1:1. See docs
  */
 export function evmBalancesQuery({
   address,
