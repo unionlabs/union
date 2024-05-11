@@ -125,12 +125,17 @@ contract IBCClient is IBCStore, IIBCClient {
         private
         returns (string memory)
     {
+        uint256 nextClientSequence =
+            uint256(commitments[nextClientSequencePath]);
+
         string memory identifier = string(
             abi.encodePacked(
                 clientType, "-", Strings.toString(nextClientSequence)
             )
         );
-        nextClientSequence++;
+
+        commitments[nextClientSequencePath] = bytes32(nextClientSequence + 1);
+
         return identifier;
     }
 }

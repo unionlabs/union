@@ -643,12 +643,16 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     /* Internal functions */
 
     function generateConnectionIdentifier() private returns (string memory) {
+        uint256 nextConnectionSequence =
+            uint256(commitments[nextConnectionSequencePath]);
+
         string memory identifier = string(
             abi.encodePacked(
                 "connection-", Strings.toString(nextConnectionSequence)
             )
         );
-        nextConnectionSequence++;
+        commitments[nextConnectionSequencePath] =
+            bytes32(nextConnectionSequence + 1);
         return identifier;
     }
 

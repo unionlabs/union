@@ -484,10 +484,13 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
     }
 
     function generateChannelIdentifier() internal returns (string memory) {
+        uint256 nextChannelSequence =
+            uint256(commitments[nextChannelSequencePath]);
+
         string memory identifier = string(
             abi.encodePacked("channel-", Strings.toString(nextChannelSequence))
         );
-        nextChannelSequence++;
+        commitments[nextChannelSequencePath] = bytes32(nextChannelSequence + 1);
         return identifier;
     }
 
