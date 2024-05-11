@@ -8,7 +8,7 @@ use unionlabs::{
         channel::order::Order,
         client::height::Height,
         commitment::merkle_path::MerklePath,
-        connection::{self, connection_end::ConnectionEnd, version::Version},
+        connection::{self, version::Version},
     },
 };
 
@@ -24,7 +24,7 @@ pub trait IbcHost {
 
     fn next_connection_identifier(&mut self) -> String;
 
-    fn client_state(&self) -> Option<Vec<u8>>;
+    fn client_state(&self, client_id: &str) -> Option<Vec<u8>>;
 
     fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T>;
 
@@ -34,7 +34,7 @@ pub trait IbcHost {
     fn commit<T: Encode<Proto>>(&mut self, key: String, value: T);
 }
 
-#[derive(Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum Status {
     Active,
     Frozen,
@@ -46,7 +46,7 @@ pub enum IbcResponse {
     Empty,
     Initialize,
     Status { status: Status },
-    LatestHeight { height: u64 },
+    LatestHeight { height: Height },
     VerifyMembership { valid: bool },
 }
 

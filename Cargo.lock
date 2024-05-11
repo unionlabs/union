@@ -2534,6 +2534,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "unionlabs",
  "workspaces",
 ]
 

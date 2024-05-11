@@ -135,7 +135,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     Either::Right(IbcEvent::ClientCreated {
                         client_id,
                         client_type,
-                        initial_height: height,
+                        initial_height: height.revision_height,
                     })
                 }
                 _ => panic!("invalid action"),
@@ -205,7 +205,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                 let connection_id = host.next_connection_identifier();
 
                 // TODO(aeryz): maybe add `client_exists` here?
-                let _ = host.client_state().ok_or(())?;
+                let _ = host.client_state(&client_id).ok_or(())?;
 
                 // TODO(aeryz): We commit all connections here. Check if this is needed
                 // k.SetClientConnectionPaths(ctx, clientID, conns)
