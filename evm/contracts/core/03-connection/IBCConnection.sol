@@ -39,6 +39,7 @@ library IBCConnectionLib {
     error ErrInvalidProof();
     error ErrInvalidConnectionState();
 
+    // yes, these are all defined as strings in the ibc spec
     string internal constant IBC_VERSION_IDENTIFIER = "1";
     string internal constant ORDER_ORDERED = "ORDER_ORDERED";
     string internal constant ORDER_UNORDERED = "ORDER_UNORDERED";
