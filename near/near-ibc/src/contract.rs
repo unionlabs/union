@@ -39,19 +39,22 @@ impl IbcHost for Contract {
     }
 
     fn next_connection_identifier(&mut self) -> String {
-        todo!()
+        self.connection_index += 1;
+        format!("connection-{}", self.connection_index)
     }
 
-    fn client_state(&self) -> Option<Vec<u8>> {
-        todo!()
+    fn client_state(&self, client_id: &str) -> Option<Vec<u8>> {
+        self.commitments
+            .get(&format!("clients/{client_id}/clientState"))
+            .map(|item| item.clone())
     }
 
-    fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T> {
+    fn read<T: Decode<Proto>>(&self, _key: &str) -> Option<T> {
         todo!()
     }
 
     fn commit<T: Encode<Proto>>(&mut self, key: String, value: T) {
-        todo!()
+        self.commitments.insert(key, value.encode());
     }
 }
 
@@ -60,6 +63,7 @@ impl IbcHost for Contract {
 pub struct Contract {
     commitments: UnorderedMap<String, Vec<u8>>,
     client_index: u64,
+    connection_index: u64,
     account_ids: UnorderedMap<String, AccountId>,
     // client id -> account id
     clients: UnorderedMap<String, AccountId>,
@@ -72,6 +76,7 @@ impl Default for Contract {
             client_index: 0,
             account_ids: UnorderedMap::new(b"account_ids".as_slice()),
             clients: UnorderedMap::new(b"clients".as_slice()),
+            connection_index: 0,
         }
     }
 }
@@ -158,6 +163,16 @@ impl Contract {
         fold(self, runnable, IbcResponse::Empty).unwrap()
     }
 
+    // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
+    // when I try to fetch the contract state
+    pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
+        self.account_ids.get(&client_type).map(|item| item.clone())
+    }
+
+    pub fn get_commitment(&self, key: String) -> Option<Vec<u8>> {
+        self.commitments.get(&key).map(|item| item.clone())
+    }
+
     #[private]
     pub fn callback_initialize(&mut self, current_state: Vec<u8>) -> Promise {
         let current_state: IbcState = serde_json::from_slice(&current_state).unwrap();
@@ -189,7 +204,7 @@ impl Contract {
     pub fn callback_height(
         &mut self,
         current_state: Vec<u8>,
-        #[callback_unwrap] height: u64,
+        #[callback_unwrap] height: Height,
     ) -> Option<Promise> {
         let current_state: IbcState = serde_json::from_slice(&current_state).unwrap();
         fold(self, current_state, IbcResponse::LatestHeight { height })
@@ -290,7 +305,7 @@ pub trait LightClient {
 
     fn status(&self) -> Status;
 
-    fn latest_height(&self) -> u64;
+    fn latest_height(&self) -> Height;
 
     fn verify_membership(
         &self,

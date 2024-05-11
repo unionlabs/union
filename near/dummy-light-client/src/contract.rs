@@ -7,6 +7,7 @@ use near_sdk::{
 use near_sdk_contract_tools::owner::OwnerExternal;
 #[allow(clippy::wildcard_imports)]
 use near_sdk_contract_tools::Owner;
+use unionlabs::ibc::core::client::height::Height;
 
 #[near_bindgen]
 #[derive(PanicOnDefault, BorshDeserialize, BorshSerialize, Owner)]
@@ -23,7 +24,10 @@ impl Contract {
         Status::Active
     }
 
-    pub fn latest_height(&self) -> u64 {
-        10
+    pub fn latest_height(&self) -> Height {
+        Height {
+            revision_number: 0,
+            revision_height: 100,
+        }
     }
 }
