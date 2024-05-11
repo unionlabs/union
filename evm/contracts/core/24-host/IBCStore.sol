@@ -23,9 +23,12 @@ abstract contract IBCStore {
     mapping(string => address) public capabilities;
 
     // Sequences for identifier
-    uint64 public nextClientSequence;
-    uint64 public nextConnectionSequence;
-    uint64 public nextChannelSequence;
+    bytes32 public constant nextClientSequencePath =
+        keccak256("nextClientSequence");
+    bytes32 public constant nextConnectionSequencePath =
+        keccak256("nextClientSequence");
+    bytes32 public constant nextChannelSequencePath =
+        keccak256("nextClientSequence");
 
     string public constant COMMITMENT_PREFIX = "ibc";
 
