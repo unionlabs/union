@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
     println!("calling register");
 
     test_register_client(&user, &contract, &lc).await;
-    test_create_client(&user, &contract, &lc).await;
+    test_create_client(&user, &contract).await;
 
     // test_open_connection_starting_from_init(&sandbox, &user, &contract, &lc).await?;
 
@@ -145,7 +145,7 @@ async fn test_register_client(user: &Account, contract: &Contract, lc: &Contract
     println!("[ + ] `test_register_client`: Client successfully registered");
 }
 
-async fn test_create_client(user: &Account, contract: &Contract, lc: &Contract) {
+async fn test_create_client(user: &Account, contract: &Contract) {
     let create = CreateClient {
         client_type: CLIENT_TYPE.into(),
         client_state: vec![1, 2, 3],
@@ -179,7 +179,7 @@ async fn test_create_client(user: &Account, contract: &Contract, lc: &Contract) 
         outcomes[3].clone().into_result().unwrap(),
         ValueOrReceiptId::ReceiptId(..)
     ));
-    // result of `client.latest_height`
+    // result of `client.status`
     match outcomes[4].clone().into_result().unwrap() {
         ValueOrReceiptId::Value(val) => assert_eq!(val.json::<Status>().unwrap(), Status::Active),
         ValueOrReceiptId::ReceiptId(_) => panic!("expected to get value"),
