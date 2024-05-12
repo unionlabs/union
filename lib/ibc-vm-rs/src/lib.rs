@@ -5,11 +5,12 @@ use states::{
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     ibc::core::{
-        channel::order::Order,
+        channel::{self, order::Order},
         client::height::Height,
         commitment::merkle_path::MerklePath,
         connection::{self, version::Version},
     },
+    id::ConnectionId,
 };
 
 pub mod states;
@@ -23,6 +24,8 @@ pub trait IbcHost {
     fn next_client_identifier(&mut self, client_type: &String) -> String;
 
     fn next_connection_identifier(&mut self) -> String;
+
+    fn next_channel_identifier(&mut self) -> String;
 
     fn client_state(&self, client_id: &str) -> Option<Vec<u8>>;
 
@@ -45,9 +48,31 @@ pub enum Status {
 pub enum IbcResponse {
     Empty,
     Initialize,
-    Status { status: Status },
-    LatestHeight { height: Height },
-    VerifyMembership { valid: bool },
+    Status {
+        status: Status,
+    },
+    LatestHeight {
+        height: Height,
+    },
+    VerifyMembership {
+        valid: bool,
+    },
+    OnChannelOpenInit {
+        // TODO(aeryz): what's gonna be the error type?
+        err: bool,
+    },
+    OnChannelOpenTry {
+        // TODO(aeryz): what's gonna be the error type?
+        err: bool,
+    },
+    OnChannelOpenAck {
+        // TODO(aeryz): what's gonna be the error type?
+        err: bool,
+    },
+    OnChannelOpenConfirm {
+        // TODO(aeryz): what's gonna be the error type?
+        err: bool,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -117,6 +142,36 @@ pub enum IbcMsg {
         path: MerklePath,
         value: Vec<u8>,
     },
+
+    OnChannelOpenInit {
+        order: Order,
+        connection_hops: Vec<ConnectionId>,
+        port_id: String,
+        channel_id: String,
+        counterparty: channel::counterparty::Counterparty,
+        version: String,
+    },
+
+    OnChannelOpenTry {
+        order: Order,
+        connection_hops: Vec<ConnectionId>,
+        port_id: String,
+        channel_id: String,
+        counterparty: channel::counterparty::Counterparty,
+        counterparty_version: String,
+    },
+
+    OnChannelOpenAck {
+        port_id: String,
+        channel_id: String,
+        counterparty_channel_id: String,
+        counterparty_version: String,
+    },
+
+    OnChannelOpenConfirm {
+        port_id: String,
+        channel_id: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -152,6 +207,39 @@ pub enum IbcEvent {
         client_id: String,
         counterparty_client_id: String,
         counterparty_connection_id: String,
+    },
+
+    ChannelOpenInit {
+        port_id: String,
+        channel_id: String,
+        counterparty_port_id: String,
+        connection_id: String,
+        version: String,
+    },
+
+    ChannelOpenTry {
+        port_id: String,
+        channel_id: String,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
+        connection_id: String,
+        version: String,
+    },
+
+    ChannelOpenAck {
+        port_id: String,
+        channel_id: String,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
+        connection_id: String,
+    },
+
+    ChannelOpenConfirm {
+        port_id: String,
+        channel_id: String,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
+        connection_id: String,
     },
 }
 
