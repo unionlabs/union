@@ -53,7 +53,6 @@ pub fn read_client_state<T>(
 ) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
 where
     T: IbcClient,
-    Any<wasm::client_state::ClientState<T::ClientState>>: Decode<Proto>,
 {
     read_prefixed_client_state::<T>(deps, "")
 }
@@ -71,7 +70,6 @@ pub fn read_consensus_state<T>(
     height: &Height,
 ) -> Result<Option<wasm::consensus_state::ConsensusState<T::ConsensusState>>, IbcClientError<T>>
 where
-    Any<wasm::consensus_state::ConsensusState<T::ConsensusState>>: Decode<Proto>,
     T: IbcClient,
 {
     read_prefixed_consensus_state::<T>(deps, height, "")
@@ -150,7 +148,6 @@ pub fn read_subject_client_state<T>(
     deps: Deps<T::CustomQuery>,
 ) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
 where
-    Any<wasm::client_state::ClientState<T::ClientState>>: Decode<Proto>,
     T: IbcClient,
 {
     read_prefixed_client_state::<T>(deps, SUBJECT_CLIENT_STORE_PREFIX)
@@ -161,7 +158,6 @@ pub fn read_substitute_client_state<T>(
     deps: Deps<T::CustomQuery>,
 ) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
 where
-    Any<wasm::client_state::ClientState<T::ClientState>>: Decode<Proto>,
     T: IbcClient,
 {
     read_prefixed_client_state::<T>(deps, SUBSTITUTE_CLIENT_STORE_PREFIX)
