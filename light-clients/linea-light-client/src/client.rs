@@ -154,21 +154,13 @@ impl IbcClient for LineaLightClient {
             );
         }
 
-        // TODO: perhaps force the proof to be an actual inclusion proof off-chain
-        let account = match header.l2_ibc_contract_proof {
-            unionlabs::linea::proof::MerkleProof::Inclusion(inclusion) => {
-                // Guaranteed to success as we previously verified the proof
-                // which involved decoding and hashing the account.
-                ZkAccount::decode(inclusion.proof.value).expect("impossible")
-            }
-            unionlabs::linea::proof::MerkleProof::NonInclusion(_) => {
-                return Err(Error::InvalidL2AccountProof.into())
-            }
-        };
+        // Guaranteed to succeed as we previously verified the header
+        let zk_account =
+            ZkAccount::decode(header.l2_ibc_contract_proof.proof.value).expect("impossible");
 
         let consensus_state = WasmConsensusState {
             data: ConsensusState {
-                ibc_storage_root: account.storage_root,
+                ibc_storage_root: zk_account.storage_root,
                 // must be nanos
                 timestamp: 1_000_000_000 * header.l2_timestamp,
             },

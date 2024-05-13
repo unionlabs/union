@@ -80,19 +80,16 @@ pub fn verify_header(
     .map_err(Error::InvalidL2StateRootProof)?;
 
     // 5.
-    // TODO: perhaps force the proof to be an actual inclusion proof off-chain
-    let account = linea_zktrie::verify::verify::<ZkAccount>(
+    linea_zktrie::verify::verify_inclusion_and_key::<ZkAccount>(
         &new_mimc_constants_bls12_377(),
-        &header.l2_ibc_contract_proof,
+        header.l2_ibc_contract_proof.leaf_index,
+        &header.l2_ibc_contract_proof.proof,
         header.l2_state_root,
         client_state.l2_ibc_contract_address,
     )
     .map_err(Error::InvalidL2IbcContractProof)?;
 
-    match account {
-        Some(_) => Ok(()),
-        None => Err(Error::L2IbcContractProofIsNotInclusion),
-    }
+    Ok(())
 }
 
 pub fn state_root_hashes_mapping_key(slot: U256, l2_block_number: U256) -> U256 {

@@ -10,7 +10,7 @@ use crate::{
             storage_proof::{StorageProof, TryFromStorageProofError},
         },
     },
-    linea::proof::{MerkleProof, TryFromMerkleProofError},
+    linea::proof::{InclusionProof, TryFromMerkleProofError},
 };
 
 #[model(proto(raw(protos::union::ibc::lightclients::linea::v1::Header), into, from))]
@@ -23,7 +23,7 @@ pub struct Header {
     pub l2_state_root_proof: StorageProof,
     pub l2_timestamp: u64,
     pub l2_timestamp_proof: StorageProof,
-    pub l2_ibc_contract_proof: MerkleProof,
+    pub l2_ibc_contract_proof: InclusionProof,
 }
 
 impl From<Header> for protos::union::ibc::lightclients::linea::v1::Header {

@@ -32,7 +32,7 @@ message Header {
   .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_root_proof = 6;
   uint64 l2_timestamp = 7;
   .union.ibc.lightclients.ethereum.v1.StorageProof l2_timestamp_proof = 8;
-  MerkleProof l2_ibc_contract_proof = 9;
+  InclusionProof l2_ibc_contract_proof = 9;
 }
 
 message MerklePath {

@@ -68,7 +68,7 @@ pub struct Header {
     #[prost(message, optional, tag = "8")]
     pub l2_timestamp_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
     #[prost(message, optional, tag = "9")]
-    pub l2_ibc_contract_proof: ::core::option::Option<MerkleProof>,
+    pub l2_ibc_contract_proof: ::core::option::Option<InclusionProof>,
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";
