@@ -1284,24 +1284,6 @@ pub mod glue {
     pub struct IbcCoreCommitmentV1MerkleRootData {
         pub hash: ::ethers::core::types::Bytes,
     }
-    ///`IbcCoreConnectionV1ConnectionEndData(string,(string,string[])[],uint8,(string,string,(bytes)),uint64)`
-    #[derive(
-        Clone,
-        ::ethers::contract::EthAbiType,
-        ::ethers::contract::EthAbiCodec,
-        Default,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-    )]
-    pub struct IbcCoreConnectionV1ConnectionEndData {
-        pub client_id: ::std::string::String,
-        pub versions: ::std::vec::Vec<IbcCoreConnectionV1VersionData>,
-        pub state: u8,
-        pub counterparty: IbcCoreConnectionV1CounterpartyData,
-        pub delay_period: u64,
-    }
     ///`IbcLightclientsTendermintV1ClientStateData(string,(uint64,uint64),(int64,int32),(int64,int32),(int64,int32),(uint64,uint64),(uint64,uint64),((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)[],string[],bool,bool)`
     #[derive(
         Clone,
