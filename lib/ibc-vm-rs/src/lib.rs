@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use states::{
-    ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient,
+    channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
+    connection_handshake::{
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+        Counterparty as ConnectionCounterparty,
+    },
+    CreateClient,
 };
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
@@ -8,9 +13,9 @@ use unionlabs::{
         channel::{self, order::Order},
         client::height::Height,
         commitment::merkle_path::MerklePath,
-        connection::{self, version::Version},
+        connection::version::Version,
     },
-    id::ConnectionId,
+    id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
 pub mod states;
@@ -21,11 +26,11 @@ lazy_static::lazy_static! {
 }
 
 pub trait IbcHost {
-    fn next_client_identifier(&mut self, client_type: &String) -> String;
+    fn next_client_identifier(&mut self, client_type: &String) -> Result<ClientId, ()>;
 
-    fn next_connection_identifier(&mut self) -> String;
+    fn next_connection_identifier(&mut self) -> Result<ConnectionId, ()>;
 
-    fn next_channel_identifier(&mut self) -> String;
+    fn next_channel_identifier(&mut self) -> Result<ChannelId, ()>;
 
     fn client_state(&self, client_id: &str) -> Option<Vec<u8>>;
 
@@ -77,11 +82,15 @@ pub enum IbcResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum IbcState {
-    CreateClient(states::CreateClient),
-    ConnectionOpenInit(states::ConnectionOpenInit),
-    ConnectionOpenTry(states::ConnectionOpenTry),
-    ConnectionOpenAck(states::ConnectionOpenAck),
-    ConnectionOpenConfirm(states::ConnectionOpenConfirm),
+    CreateClient(CreateClient),
+    ConnectionOpenInit(ConnectionOpenInit),
+    ConnectionOpenTry(ConnectionOpenTry),
+    ConnectionOpenAck(ConnectionOpenAck),
+    ConnectionOpenConfirm(ConnectionOpenConfirm),
+    ChannelOpenInit(ChannelOpenInit),
+    ChannelOpenTry(ChannelOpenTry),
+    ChannelOpenAck(ChannelOpenAck),
+    ChannelOpenConfirm(ChannelOpenConfirm),
 }
 
 macro_rules! cast_either {
@@ -110,7 +119,11 @@ impl<T: IbcHost> Runnable<T> for IbcState {
                 ConnectionOpenInit,
                 ConnectionOpenTry,
                 ConnectionOpenAck,
-                ConnectionOpenConfirm
+                ConnectionOpenConfirm,
+                ChannelOpenInit,
+                ChannelOpenTry,
+                ChannelOpenAck,
+                ChannelOpenConfirm
             ]
         );
         Ok(res)
@@ -120,20 +133,20 @@ impl<T: IbcHost> Runnable<T> for IbcState {
 #[derive(Deserialize)]
 pub enum IbcMsg {
     Initialize {
-        client_id: String,
+        client_id: ClientId,
         client_type: String,
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
     },
     Status {
-        client_id: String,
+        client_id: ClientId,
     },
     LatestHeight {
-        client_id: String,
+        client_id: ClientId,
     },
 
     VerifyMembership {
-        client_id: String,
+        client_id: ClientId,
         height: Height,
         // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,
@@ -146,8 +159,8 @@ pub enum IbcMsg {
     OnChannelOpenInit {
         order: Order,
         connection_hops: Vec<ConnectionId>,
-        port_id: String,
-        channel_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
         counterparty: channel::counterparty::Counterparty,
         version: String,
     },
@@ -155,89 +168,89 @@ pub enum IbcMsg {
     OnChannelOpenTry {
         order: Order,
         connection_hops: Vec<ConnectionId>,
-        port_id: String,
-        channel_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
         counterparty: channel::counterparty::Counterparty,
         counterparty_version: String,
     },
 
     OnChannelOpenAck {
-        port_id: String,
-        channel_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
         counterparty_channel_id: String,
         counterparty_version: String,
     },
 
     OnChannelOpenConfirm {
-        port_id: String,
-        channel_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
     },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum IbcEvent {
     ClientCreated {
-        client_id: String,
+        client_id: ClientId,
         client_type: String,
         initial_height: u64,
     },
 
     ConnectionOpenInit {
         connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
     },
 
     ConnectionOpenTry {
         connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
         counterparty_connection_id: String,
     },
 
     ConnectionOpenAck {
         connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
         counterparty_connection_id: String,
     },
 
     ConnectionOpenConfirm {
         connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
         counterparty_connection_id: String,
     },
 
     ChannelOpenInit {
-        port_id: String,
-        channel_id: String,
-        counterparty_port_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
         connection_id: String,
         version: String,
     },
 
     ChannelOpenTry {
-        port_id: String,
-        channel_id: String,
-        counterparty_port_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
         counterparty_channel_id: String,
         connection_id: String,
         version: String,
     },
 
     ChannelOpenAck {
-        port_id: String,
-        channel_id: String,
-        counterparty_port_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
         counterparty_channel_id: String,
         connection_id: String,
     },
 
     ChannelOpenConfirm {
-        port_id: String,
-        channel_id: String,
-        counterparty_port_id: String,
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
         counterparty_channel_id: String,
         connection_id: String,
     },
@@ -269,8 +282,8 @@ pub fn create_client(
 }
 
 pub fn connection_open_init(
-    client_id: String,
-    counterparty: connection::counterparty::Counterparty<String, String>,
+    client_id: ClientId,
+    counterparty: ConnectionCounterparty,
     version: Version,
     delay_period: u64,
 ) -> IbcState {
@@ -283,8 +296,8 @@ pub fn connection_open_init(
 }
 
 pub fn connection_open_try(
-    client_id: String,
-    counterparty: connection::counterparty::Counterparty<String, String>,
+    client_id: ClientId,
+    counterparty: ConnectionCounterparty,
     counterparty_versions: Vec<Version>,
     connection_end_proof: Vec<u8>,
     proof_height: Height,
