@@ -23,7 +23,7 @@ export let connectedWalletName: $$Props["connectedWalletName"]
 export let chainWalletsInformation: $$Props["chainWalletsInformation"]
 
 $: connectText =
-  connectStatus === "connected" && address?.length
+  connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
       : truncateUnionAddress(address, -1)

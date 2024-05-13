@@ -50,9 +50,7 @@ function seriesValue(value: any, name: string): string {
   }
 }
 
-const hiddenData = new Array(128 / 4)
-  .fill(0)
-  .map((_, i) => [i * 4, "-"])
+const hiddenData = new Array(128 / 4).fill(0).map((_, i) => [i * 4, "-"])
 
 let myChart: HTMLElement | null
 
