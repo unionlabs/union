@@ -21,16 +21,19 @@ const unionClient = await UnionClient.connectWithSecret({
   rpcUrl: "https://rpc.testnet.osmosis.zone:443"
 })
 
-const osmoFromOsmosisToUnion = await unionClient.ibcMessageTransfers([
-  {
-    sourcePort: "transfer",
-    sourceChannel: "channel-7775",
-    token: { denom: "uosmo", amount: "100" },
-    sender: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
-    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    memo: "sending wrapped OSMO from Osmosis to Union",
-    timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
-  }
-])
+const osmoFromOsmosisToUnion = await unionClient.transferAssets({
+  kind: "ibc",
+  messageTransfers: [
+    {
+      sourcePort: "transfer",
+      sourceChannel: "channel-7775",
+      token: { denom: "uosmo", amount: "1" },
+      sender: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
+      receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+      memo: "sending OSMO from Osmosis to Union x",
+      timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
+    }
+  ]
+})
 
 console.log(osmoFromOsmosisToUnion.transactionHash)

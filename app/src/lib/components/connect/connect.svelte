@@ -9,6 +9,7 @@ import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
 import { Separator } from "$lib/components/ui/separator"
 import * as Collapsible from "$lib/components/ui/collapsible"
+import ThemeSwitch from "$lib/components/header/theme-switch.svelte"
 import ChevronsUpDownIcon from "virtual:icons/lucide/chevrons-up-down"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
@@ -42,13 +43,13 @@ let collapsibleOpen = true
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="border-solid border-[1px] border-accent min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2"
+    class="h-full border-solid border-[1px] border-accent min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2 flex flex-col justify-start"
   >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title>
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn(['size-8', $sepoliaStore.connectionStatus !== 'connected' && 'hidden'])}
+          class={cn('size-8', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
         >
           <Avatar.Image
             alt="ethereum avatar"
@@ -62,15 +63,15 @@ let collapsibleOpen = true
       open={true}
       tabindex={-1}
       onOpenChange={() => (collapsibleOpen = !collapsibleOpen)}
-      class="focus:ring-0 ring-transparent focus-visible:ring-0 mb-0 pb-0"
+      class="h-3/5 focus:ring-0 ring-transparent focus-visible:ring-0 mb-auto pb-0"
     >
       <Collapsible.Trigger
         tabindex={-1}
-        class={cn([
+        class={cn(
           'mb-3 font-bold w-full flex justify-between items-center align-middle transition-all active:scale-98 rounded-md px-2',
           'border-solid border-[1px] border-transparent hover:bg-white/10',
           !collapsibleOpen && 'border-accent',
-        ])}
+        )}
       >
         <span class="mb-0.5 text-center w-full text-lg">Connect Wallets</span>
         <Button variant="ghost" size="sm" class="w-9 p-0 my-auto h-10 hover:bg-transparent">
@@ -102,5 +103,8 @@ let collapsibleOpen = true
         />
       </Collapsible.Content>
     </Collapsible.Root>
+    <div class="">
+      <ThemeSwitch />
+    </div>
   </Sheet.Content>
 </Sheet.Root>

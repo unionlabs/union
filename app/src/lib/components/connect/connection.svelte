@@ -63,7 +63,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
     {#if copyClicked}
       <CheckIcon class="size-4 ml-auto" />
     {:else}
-      <CopyIcon class="size-4 ml-auto text-black/70" />
+      <CopyIcon class="size-4 ml-auto dark:text-black/70" />
     {/if}
   {/if}
 </Button>
@@ -93,7 +93,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
             'opacity-60 hover:opacity-100',
           hoverState === 'hover' &&
             connectedWalletId === id &&
-            'hover:text-rose-50 border-rose-900 hover:bg-transparent',
+            'hover:text-rose-500 border-rose-900 hover:bg-transparent',
         )}
         on:click={() => {
           if (!walletIdentifier) return
@@ -101,7 +101,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
           else onConnectClick(walletIdentifier)
         }}
       >
-        <img src={icon} alt={name} class="size-7 mr-3 text-white" />
+        <img src={icon} alt={name} class="size-7 mr-3 dark:text-white" />
         {name}
         {#if connectStatus === 'connected'}
           {#if connectedWalletId === id}

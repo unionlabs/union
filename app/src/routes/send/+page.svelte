@@ -214,10 +214,10 @@ let buttonText = "Send it 🔥" satisfies
         <Button
           size="icon"
           variant="outline"
-          class="size-full max-w-8 max-h-8 rounded-xl text-white my-auto mx-3"
+          class="size-full max-w-8 max-h-8 rounded-xl dark:text-white my-auto mx-3"
           on:click={swapChainsClick}
         >
-          <ArrowLeftRight class="size-5 text-white" />
+          <ArrowLeftRight class="size-5 dark:text-white" />
         </Button>
 
         <Button

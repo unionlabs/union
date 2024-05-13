@@ -25,6 +25,7 @@ import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
+import { cn } from "$lib/utilities/shadcn"
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
@@ -148,7 +149,11 @@ onMount(() => {
 <div
   id="background-dotted-grid"
   data-background-dotted-grid="true"
-  class="absolute top-0 z-[-2] size-full min-h-screen bg-[#99e6ff20] bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)] bg-[size:20px_20px]"
+  class={cn(
+    'absolute top-0 z-[-2] size-full min-h-screen bg-[size:20px_20px]',
+    'bg-[#b9e9ff78]',
+    'dark:bg-[#99e6ff20] dark:bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)]'
+  )}
 ></div>
 
 <svelte:window

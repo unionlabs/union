@@ -11,6 +11,7 @@ import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import { superForm, setError, setMessage, defaults } from "sveltekit-superforms"
+
 /**
  * TODO:
  * [ ] - Fetch address from wallet and pass it as default, allow user to change it
@@ -115,9 +116,9 @@ const handleMouseLeave = () => {
             autocapitalize="none"
             on:blur={handleBlur}
             on:focus={handleFocus}
-            bind:value={$cosmosStore.address}
             on:mouseleave={handleMouseMove}
             on:mouseenter={handleMouseEnter}
+            bind:value={$cosmosStore.address}
             pattern={unionAddressRegex.source}
             placeholder="union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
             class="h-12 w-full cursor-default rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors duration-500 placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9] focus:outline-none"

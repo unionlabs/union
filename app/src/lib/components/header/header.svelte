@@ -1,6 +1,7 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
+import ThemeSwitch from "./theme-switch.svelte"
 import SearchBar from "$lib/components/search-bar.svelte"
 import Connect from "$lib/components/connect/connect.svelte"
 import Button from "$lib/components/ui/button/button.svelte"
@@ -38,7 +39,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     </nav>
     <div class="hidden sm:flex space-x-3">
       <Connect />
-      <!-- <ThemeSwitch /> -->
+      <ThemeSwitch />
     </div>
     <!-- <Navigation /> -->
   </div>
