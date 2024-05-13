@@ -49,6 +49,10 @@ pub struct EmptyLeafNode {}
 impl EmptyLeafNode {
     // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/node/EmptyLeafNode.java#L80
     pub const HASH: H256 = H256([0u8; 32]);
+
+    pub fn hash(&self) -> H256 {
+        Self::HASH
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -73,11 +77,9 @@ impl LeafNode {
             .concat(),
         )
     }
-}
 
-impl TryFrom<&[u8]> for LeafNode {
-    type Error = InvalidLength;
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+    pub fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength> {
+        let value = value.as_ref();
         let values = <[u8; 128]>::try_from(value).map_err(|_| InvalidLength {
             expected: ExpectedLength::Exact(128),
             found: value.len(),
@@ -105,11 +107,9 @@ impl BranchNode {
             [self.left.as_ref(), self.right.as_ref()].concat(),
         )
     }
-}
 
-impl TryFrom<&[u8]> for BranchNode {
-    type Error = InvalidLength;
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+    pub fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength> {
+        let value = value.as_ref();
         let values = <[u8; 64]>::try_from(value).map_err(|_| InvalidLength {
             expected: ExpectedLength::Exact(64),
             found: value.len(),
@@ -135,11 +135,9 @@ impl RootNode {
             [self.next_free_node.as_ref(), self.child_hash.as_ref()].concat(),
         )
     }
-}
 
-impl TryFrom<&[u8]> for RootNode {
-    type Error = InvalidLength;
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+    pub fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength> {
+        let value = value.as_ref();
         let values = <[u8; 64]>::try_from(value).map_err(|_| InvalidLength {
             expected: ExpectedLength::Exact(64),
             found: value.len(),
@@ -165,7 +163,7 @@ impl Node {
             Node::Leaf(node) => node.hash(constants),
             Node::Branch(node) => node.hash(constants),
             Node::Root(node) => node.hash(constants),
-            Node::EmptyLeaf(_) => Ok(EmptyLeafNode::HASH),
+            Node::EmptyLeaf(node) => Ok(node.hash()),
         }
     }
 }

@@ -159,7 +159,7 @@ impl IbcClient for LineaLightClient {
             unionlabs::linea::proof::MerkleProof::Inclusion(inclusion) => {
                 // Guaranteed to success as we previously verified the proof
                 // which involved decoding and hashing the account.
-                ZkAccount::try_from(inclusion.proof.value.as_ref()).expect("impossible")
+                ZkAccount::decode(inclusion.proof.value).expect("impossible")
             }
             unionlabs::linea::proof::MerkleProof::NonInclusion(_) => {
                 return Err(Error::InvalidL2AccountProof.into())
@@ -301,13 +301,12 @@ fn do_verify_membership(
         });
     }
 
-    let (_, _) = linea_zktrie::verify::verify_inclusion::<H256>(
+    linea_zktrie::verify::verify_inclusion_and_key::<H256>(
         &new_mimc_constants_bls12_377(),
         storage_proof.leaf_index,
         &storage_proof.proof,
         storage_root,
-        // Key will be verified
-        Some(key),
+        key,
     )?;
 
     Ok(())

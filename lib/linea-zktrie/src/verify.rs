@@ -26,6 +26,10 @@ pub trait ZkValue {
     type Key: ZkKey;
 
     fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error>;
+
+    fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength>
+    where
+        Self: Sized;
 }
 
 impl ZkKey for H160 {
@@ -42,6 +46,13 @@ impl ZkValue for ZkAccount {
     fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
         mimc_sum_bl12377(constants, self.into_bytes())
     }
+
+    fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength>
+    where
+        Self: Sized,
+    {
+        ZkAccount::decode(value)
+    }
 }
 
 impl ZkKey for H256 {
@@ -55,6 +66,13 @@ impl ZkValue for H256 {
 
     fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
         mimc_sum_bl12377(constants, MimcSafeBytes::from(self.0).into_bytes())
+    }
+
+    fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength>
+    where
+        Self: Sized,
+    {
+        H256::try_from(value.as_ref())
     }
 }
 
@@ -111,20 +129,13 @@ pub struct VerifiablePath {
 impl TryFrom<&MerklePath> for VerifiablePath {
     type Error = Error;
     fn try_from(value: &MerklePath) -> Result<Self, Self::Error> {
-        let root = RootNode::try_from(
+        let root = RootNode::decode(
             value
                 .proof_related_nodes
                 .first()
-                .ok_or(Error::MissingRoot)?
-                .as_ref(),
+                .ok_or(Error::MissingRoot)?,
         )?;
-        let leaf = LeafNode::try_from(
-            value
-                .proof_related_nodes
-                .last()
-                .ok_or(Error::MissingLeaf)?
-                .as_ref(),
-        )?;
+        let leaf = LeafNode::decode(value.proof_related_nodes.last().ok_or(Error::MissingLeaf)?)?;
         // Minus root/leaf
         let inner_path_len = value.proof_related_nodes.len() - 2;
         let path = value
@@ -132,11 +143,11 @@ impl TryFrom<&MerklePath> for VerifiablePath {
             .iter()
             .skip(1)
             .take(inner_path_len)
-            .map(|node| {
-                if node.len() == MiMCBls12377::FIELD_ELEMENT_BYTES_LEN * 2 {
-                    BranchNode::try_from(node.as_ref()).map(Node::Branch)
+            .map(|raw_node| {
+                if raw_node.len() == MiMCBls12377::FIELD_ELEMENT_BYTES_LEN * 2 {
+                    BranchNode::decode(raw_node).map(Node::Branch)
                 } else {
-                    LeafNode::try_from(node.as_ref()).map(Node::Leaf)
+                    LeafNode::decode(raw_node).map(Node::Leaf)
                 }
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -144,19 +155,19 @@ impl TryFrom<&MerklePath> for VerifiablePath {
     }
 }
 
-pub fn verify<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
+pub fn verify<V: ZkValue + Clone>(
     constants: &MiMCBls12377Constants,
     proof: &MerkleProof,
     root: H256,
     key: V::Key,
 ) -> Result<Option<V>, Error> {
     match proof {
-        MerkleProof::Inclusion(inclusion_proof) => verify_inclusion::<V>(
+        MerkleProof::Inclusion(inclusion_proof) => verify_inclusion_and_key::<V>(
             constants,
             inclusion_proof.leaf_index,
             &inclusion_proof.proof,
             root,
-            Some(key),
+            key,
         )
         .map(|(_, value)| Some(value)),
         MerkleProof::NonInclusion(noninclusion_proof) => {
@@ -165,7 +176,7 @@ pub fn verify<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
     }
 }
 
-pub fn verify_noninclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
+pub fn verify_noninclusion<V: ZkValue + Clone>(
     constants: &MiMCBls12377Constants,
     noninclusion_proof: &NonInclusionProof,
     root: H256,
@@ -177,7 +188,6 @@ pub fn verify_noninclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
         noninclusion_proof.left_leaf_index,
         &noninclusion_proof.left_proof,
         root,
-        None,
     )?;
     // right in root
     let (right_path, _) = verify_inclusion::<V>(
@@ -185,7 +195,6 @@ pub fn verify_noninclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
         noninclusion_proof.right_leaf_index,
         &noninclusion_proof.right_proof,
         root,
-        None,
     )?;
     // N+.Prev == i-
     if U256::from_be_bytes(right_path.leaf.previous.0)
@@ -216,12 +225,29 @@ pub fn verify_noninclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
     Ok(())
 }
 
-pub fn verify_inclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
+pub fn verify_inclusion_and_key<V: ZkValue + Clone>(
     constants: &MiMCBls12377Constants,
     leaf_index: u64,
     merkle_path: &MerklePath,
     root: H256,
-    key: Option<V::Key>,
+    key: V::Key,
+) -> Result<(VerifiablePath, V), Error> {
+    let (verifiable_path, value) = verify_inclusion::<V>(constants, leaf_index, merkle_path, root)?;
+    let recomputed_key = key.hash(constants)?;
+    if verifiable_path.leaf.hashed_key != recomputed_key {
+        return Err(Error::KeyMismatch {
+            actual: recomputed_key,
+            expected: verifiable_path.leaf.hashed_key,
+        });
+    }
+    Ok((verifiable_path, value))
+}
+
+pub fn verify_inclusion<V: ZkValue + Clone>(
+    constants: &MiMCBls12377Constants,
+    leaf_index: u64,
+    merkle_path: &MerklePath,
+    root: H256,
 ) -> Result<(VerifiablePath, V), Error> {
     let leaf_path = get_leaf_path(ZK_TRIE_DEPTH, leaf_index);
     let verifiable_path = VerifiablePath::try_from(merkle_path)?;
@@ -233,24 +259,11 @@ pub fn verify_inclusion<V: ZkValue + Clone + for<'a> TryFrom<&'a [u8]>>(
             expected: root,
         });
     }
-    // For non inclusion proof, we don't know the key of the left/right
-    // nodes. We instead verify that the expected key is sandwiched after
-    // verifying right/left inclusion. Hence, nothing is done there.
-    if let Some(key) = key {
-        // Verify that they leaf is related to our key
-        let recomputed_key = key.hash(constants)?;
-        if verifiable_path.leaf.hashed_key != recomputed_key {
-            return Err(Error::KeyMismatch {
-                actual: recomputed_root,
-                expected: verifiable_path.leaf.hashed_key,
-            });
-        }
-    }
     // The value is decoded then hashed, the decoding is required as the value
     // may need to be transformed before being hashed (ZkAccount keccak field
     // that need to be split in two elements to fit in the scalar field for
     // instance)
-    let value = V::try_from(merkle_path.value.as_ref()).map_err(|_| Error::CouldNotDecodeValue)?;
+    let value = V::decode(&merkle_path.value).map_err(|_| Error::CouldNotDecodeValue)?;
     // Verify that the value is related to the leaf
     let recomputed_value = value.clone().hash(constants)?;
     if verifiable_path.leaf.value != recomputed_value {

@@ -25,6 +25,22 @@ impl ZkAccount {
     pub fn into_bytes(self) -> Vec<u8> {
         self.into()
     }
+
+    pub fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength> {
+        let value = value.as_ref();
+        let value = <[u8; ZKACCOUNT_BYTES_LEN]>::try_from(value).map_err(|_| InvalidLength {
+            expected: ExpectedLength::Exact(ZKACCOUNT_BYTES_LEN),
+            found: value.len(),
+        })?;
+        Ok(ZkAccount {
+            nonce: U256::from_be_bytes(value.array_slice::<0, 32>()),
+            balance: U256::from_be_bytes(value.array_slice::<32, 32>()),
+            storage_root: value.array_slice::<64, 32>().into(),
+            mimc_code_hash: value.array_slice::<96, 32>().into(),
+            keccak_code_hash: value.array_slice::<128, 32>().into(),
+            code_size: U256::from_be_bytes(value.array_slice::<160, 32>()),
+        })
+    }
 }
 
 impl From<ZkAccount> for Vec<u8> {
@@ -38,24 +54,6 @@ impl From<ZkAccount> for Vec<u8> {
             value.code_size.to_be_bytes().as_ref(),
         ]
         .concat()
-    }
-}
-
-impl TryFrom<&[u8]> for ZkAccount {
-    type Error = InvalidLength;
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let value = <[u8; ZKACCOUNT_BYTES_LEN]>::try_from(value).map_err(|_| InvalidLength {
-            expected: ExpectedLength::Exact(ZKACCOUNT_BYTES_LEN),
-            found: value.len(),
-        })?;
-        Ok(ZkAccount {
-            nonce: U256::from_be_bytes(value.array_slice::<0, 32>()),
-            balance: U256::from_be_bytes(value.array_slice::<32, 32>()),
-            storage_root: value.array_slice::<64, 32>().into(),
-            mimc_code_hash: value.array_slice::<96, 32>().into(),
-            keccak_code_hash: value.array_slice::<128, 32>().into(),
-            code_size: U256::from_be_bytes(value.array_slice::<160, 32>()),
-        })
     }
 }
 

@@ -29,9 +29,10 @@ pub struct Account {
 
 impl Account {
     pub fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength> {
-        let value = <[u8; 160]>::try_from(value.as_ref()).map_err(|_| InvalidLength {
+        let value = value.as_ref();
+        let value = <[u8; 160]>::try_from(value).map_err(|_| InvalidLength {
             expected: ExpectedLength::Exact(160),
-            found: value.as_ref().len(),
+            found: value.len(),
         })?;
         Ok(Account {
             code_size: u64::from_be_bytes(value.array_slice::<16, 8>()),
