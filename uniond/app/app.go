@@ -139,7 +139,7 @@ import (
 	tfkeeper "union/x/tokenfactory/keeper"
 	tftypes "union/x/tokenfactory/types"
 
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"union/docs"
 

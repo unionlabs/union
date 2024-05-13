@@ -23,7 +23,7 @@ lazy_static        = { workspace = true }
 memory-db          = { version = "0.32.0", default-features = false }
 milagro_bls        = { workspace = true }
 primitive-types    = { workspace = true, features = ["rlp"] }
-rlp                = { workspace = true, features = ["derive"] }
+rlp                = { workspace = true, features = ["derive", "std"] }
 serde              = { workspace = true, features = ["derive"] }
 sha2               = { workspace = true }
 sha3               = { workspace = true }

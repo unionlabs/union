@@ -89,7 +89,7 @@
           # the directory that contains the Cargo.toml and src/ for the crate,
           # relative to the repository root.
           crateDirFromRoot
-        , # extra attributes to be passed to craneLib.cargoNextest.
+        , # extra attributes to be passed to craneLib.cargoTest.
           cargoTestExtraAttrs ? { }
         , # extra args to be passed to cargo build.
           cargoBuildExtraArgs ? ""
@@ -243,17 +243,17 @@
 
             artifacts = craneLib.buildDepsOnly crateAttrs;
 
-            cargoNextestAttrs =
+            cargoTestAttrs =
               builtins.addErrorContext
-                "while evaluating `cargoNextestArgs` for crate `${cratePname}`"
+                "while evaluating `cargoTestArgs` for crate `${cratePname}`"
                 (
                   let
-                    crateAttrsWithArtifactsNextest = crateAttrs // {
+                    crateAttrsWithArtifactsTest = crateAttrs // {
                       doNotLinkInheritedArtifacts = true;
                       cargoArtifacts = artifacts;
-                      buildPhaseCargoCommand = "cargo nextest run ${packageFilterArg}";
+                      buildPhaseCargoCommand = "cargo test ${packageFilterArg}";
                     };
-                    sharedAttrs = builtins.intersectAttrs crateAttrsWithArtifactsNextest cargoTestExtraAttrs;
+                    sharedAttrs = builtins.intersectAttrs crateAttrsWithArtifactsTest cargoTestExtraAttrs;
                   in
                   lib.throwIfNot
                     (sharedAttrs == { })
@@ -264,7 +264,7 @@
                       (attrName: "cargoTestExtraAttrs is overwriting attribute `${attrName}`")
                       (builtins.attrNames sharedAttrs))
                   }\n\nNOTE: if more configuration is needed, update `crane.buildWorkspaceMember`"
-                    (crateAttrsWithArtifactsNextest // cargoTestExtraAttrs)
+                    (crateAttrsWithArtifactsTest // cargoTestExtraAttrs)
                 );
 
           in
@@ -294,7 +294,7 @@
                 cargoArtifacts = artifacts;
                 cargoClippyExtraArgs = "--tests -- --deny warnings ${cargoClippyExtraArgs}";
               }));
-              tests = mkCi (system == "x86_64-linux") (craneLib.cargoNextest cargoNextestAttrs);
+              tests = mkCi (system == "x86_64-linux") (craneLib.cargoTest cargoTestAttrs);
             };
           };
 
