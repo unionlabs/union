@@ -2521,6 +2521,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
+name = "dummy-ibc-app"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "borsh 1.5.1",
+ "ibc-vm-rs",
+ "near-contract-standards",
+ "near-sdk",
+ "near-sdk-contract-tools",
+ "near-units",
+ "serde",
+ "serde_json",
+ "tokio",
+ "unionlabs",
+ "workspaces",
+]
+
+[[package]]
 name = "dummy-light-client"
 version = "0.1.0"
 dependencies = [

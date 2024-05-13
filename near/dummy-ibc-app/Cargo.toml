@@ -1,0 +1,40 @@
+[package]
+authors = ["Jacob Lindahl <jacob.lindahl@near.org>"]
+edition = "2021"
+name = "dummy-ibc-app"
+version = "0.1.0"
+
+[dependencies]
+near-contract-standards = "4.1.1"
+near-sdk = "4.1.1"
+near-sdk-contract-tools = "2.1.0"
+ibc-vm-rs.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+unionlabs.workspace = true
+borsh = { version = "1.5.0", features = ["borsh-derive"] }
+
+[dev-dependencies]
+tokio = { version = "1.18.1", features = ["full"] }
+anyhow = "1.0"
+near-units = "0.2.0"
+workspaces = "0.7.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints.clippy]
+pedantic = "warn"
+missing-panics-doc = "allow"
+module-name-repetitions = "allow"
+must-use-candidate = "allow"
+needless-pass-by-value = "allow"
+wildcard-imports = "allow"
+
+[profile.release]
+codegen-units = 1
+debug = false
+lto = true
+opt-level = "z"
+overflow-checks = true
+panic = "abort"
