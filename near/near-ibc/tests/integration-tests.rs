@@ -1,4 +1,6 @@
-use ibc_vm_rs::{IbcEvent, Status, DEFAULT_IBC_VERSION};
+use ibc_vm_rs::{
+    states::connection_handshake, IbcEvent, Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
+};
 use near_units::parse_near;
 use serde_json::json;
 use unionlabs::{
@@ -6,8 +8,9 @@ use unionlabs::{
     ibc::core::{
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
-        connection::{connection_end::ConnectionEnd, counterparty::Counterparty, version::Version},
+        connection::{self, version::Version},
     },
+    validated::ValidateT,
 };
 use workspaces::{
     network::Sandbox,
@@ -23,7 +26,7 @@ const WASM_FILEPATH: &str =
 const LC_WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/dummy_light_client.wasm";
 
-const CLIENT_TYPE: &str = "union";
+const CLIENT_TYPE: &str = "cometbls";
 const INITIAL_HEIGHT: Height = Height {
     revision_number: 0,
     revision_height: 100,
@@ -68,8 +71,7 @@ async fn main() -> anyhow::Result<()> {
 
     test_register_client(&user, &contract, &lc).await;
     test_create_client(&user, &contract).await;
-
-    // test_open_connection_starting_from_init(&sandbox, &user, &contract, &lc).await?;
+    test_open_connection_starting_from_init(&user, &contract).await;
 
     Ok(())
 }
@@ -90,7 +92,7 @@ struct CreateClient {
 #[derive(serde::Serialize)]
 struct ConnectionOpenInit {
     client_id: String,
-    counterparty: Counterparty<String, String>,
+    counterparty: connection_handshake::Counterparty,
     version: Version,
     delay_period: u64,
 }
@@ -199,7 +201,7 @@ async fn test_create_client(user: &Account, contract: &Contract) {
     assert_eq!(outcomes[9].logs.len(), 1);
     assert_eq!(
         IbcEvent::ClientCreated {
-            client_id: format!("{CLIENT_TYPE}-1"),
+            client_id: format!("{CLIENT_TYPE}-1").validate().unwrap(),
             client_type: CLIENT_TYPE.into(),
             initial_height: INITIAL_HEIGHT.revision_height
         },
@@ -209,16 +211,11 @@ async fn test_create_client(user: &Account, contract: &Contract) {
     println!("[ + ] `test_create_client`: Client {CLIENT_TYPE}-1 created successfully");
 }
 
-async fn test_open_connection_starting_from_init(
-    sandbox: &Worker<Sandbox>,
-    user: &Account,
-    contract: &Contract,
-    lc: &Contract,
-) -> anyhow::Result<()> {
+async fn test_open_connection_starting_from_init(user: &Account, contract: &Contract) {
     let open_init = ConnectionOpenInit {
-        client_id: "wasm-1".into(),
-        counterparty: Counterparty {
-            client_id: "cometbls-0".into(),
+        client_id: "cometbls-1".into(),
+        counterparty: connection_handshake::Counterparty {
+            client_id: "08-wasm-0".to_string().validate().unwrap(),
             connection_id: "".into(),
             prefix: MerklePrefix {
                 key_prefix: b"ibc".into(),
@@ -242,16 +239,82 @@ async fn test_open_connection_starting_from_init(
             .args_json(GetCommitment {
                 key: "connections/connection-1".into(),
             })
-            .await?
+            .await
+            .unwrap()
             .result
             .as_slice(),
     )
     .unwrap();
 
     let connection_end =
-        ConnectionEnd::<String, String, String>::decode_as::<Proto>(&connection_end_bytes).unwrap();
+        connection_handshake::ConnectionEnd::decode_as::<Proto>(&connection_end_bytes).unwrap();
+
+    assert_eq!(
+        connection_handshake::ConnectionEnd {
+            client_id: "cometbls-1".to_string().validate().unwrap(),
+            versions: DEFAULT_IBC_VERSION.clone(),
+            state: connection::state::State::Init,
+            counterparty: connection_handshake::Counterparty {
+                client_id: "08-wasm-0".to_string().validate().unwrap(),
+                connection_id: "".into(),
+                prefix: DEFAULT_MERKLE_PREFIX.clone()
+            },
+            delay_period: 0
+        },
+        connection_end
+    );
 
     println!("Connection end: {connection_end:?}");
 
-    Ok(())
+    let open_ack = ConnectionOpenAck {
+        connection_id: "connection-1".to_string(),
+        version: DEFAULT_IBC_VERSION[0].clone(),
+        counterparty_connection_id: "connection-100".to_string(),
+        connection_end_proof: vec![1, 2, 3],
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: 120,
+        },
+    };
+
+    println!("calling connection open ack");
+    let res = user
+        .call(contract.id(), "connection_open_ack")
+        .args_json(open_ack)
+        .transact()
+        .await
+        .unwrap();
+
+    println!("connectionopenack res: {res:?}");
+
+    let connection_end_bytes: Vec<u8> = serde_json::from_slice(
+        user.view(contract.id(), "get_commitment")
+            .args_json(GetCommitment {
+                key: "connections/connection-1".into(),
+            })
+            .await
+            .unwrap()
+            .result
+            .as_slice(),
+    )
+    .unwrap();
+
+    let connection_end =
+        connection_handshake::ConnectionEnd::decode_as::<Proto>(&connection_end_bytes).unwrap();
+    assert_eq!(
+        connection_handshake::ConnectionEnd {
+            client_id: "cometbls-1".to_string().validate().unwrap(),
+            versions: DEFAULT_IBC_VERSION.clone(),
+            state: connection::state::State::Open,
+            counterparty: connection_handshake::Counterparty {
+                client_id: "08-wasm-0".to_string().validate().unwrap(),
+                connection_id: "connection-100".into(),
+                prefix: DEFAULT_MERKLE_PREFIX.clone()
+            },
+            delay_period: 0
+        },
+        connection_end
+    );
+
+    println!("[ + ] `test_open_connection_starting_from_init`: Connection opened.");
 }

@@ -1,4 +1,7 @@
-use ibc_vm_rs::{states::CreateClient, IbcHost, IbcResponse, IbcState, Runnable, Status};
+use ibc_vm_rs::{
+    states::{connection_handshake, CreateClient},
+    IbcHost, IbcResponse, IbcState, Runnable, Status,
+};
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, ext_contract, near_bindgen,
@@ -11,6 +14,8 @@ use near_sdk_contract_tools::Owner;
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     ibc::core::{client::height::Height, commitment::merkle_path::MerklePath, connection},
+    id::{ChannelId, ClientId, ConnectionId},
+    validated::ValidateT,
 };
 
 #[allow(unused)]
@@ -29,18 +34,22 @@ enum StorageKey {
 // }
 
 impl IbcHost for Contract {
-    fn next_client_identifier(&mut self, client_type: &String) -> String {
+    fn next_client_identifier(&mut self, client_type: &String) -> Result<ClientId, ()> {
         self.client_index += 1;
-        format!("{client_type}-{}", self.client_index)
+        Ok(format!("{client_type}-{}", self.client_index)
+            .validate()
+            .unwrap())
     }
 
     fn commit_raw(&mut self, key: String, value: Vec<u8>) {
         self.commitments.insert(key, value);
     }
 
-    fn next_connection_identifier(&mut self) -> String {
+    fn next_connection_identifier(&mut self) -> Result<ConnectionId, ()> {
         self.connection_index += 1;
-        format!("connection-{}", self.connection_index)
+        Ok(format!("connection-{}", self.connection_index)
+            .validate()
+            .unwrap())
     }
 
     fn client_state(&self, client_id: &str) -> Option<Vec<u8>> {
@@ -49,12 +58,41 @@ impl IbcHost for Contract {
             .map(|item| item.clone())
     }
 
-    fn read<T: Decode<Proto>>(&self, _key: &str) -> Option<T> {
-        todo!()
+    fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T> {
+        self.commitments
+            .get(key)
+            .map(|item| T::decode(item).unwrap())
     }
 
     fn commit<T: Encode<Proto>>(&mut self, key: String, value: T) {
         self.commitments.insert(key, value.encode());
+    }
+
+    fn next_channel_identifier(&mut self) -> Result<ChannelId, ()> {
+        self.channel_index += 1;
+        Ok(format!("channel-{}", self.channel_index)
+            .validate()
+            .unwrap())
+    }
+
+    fn read_raw(&self, key: &str) -> Option<Vec<u8>> {
+        self.commitments.get(key).map(|item| item.clone())
+    }
+
+    fn current_height(&self) -> Height {
+        Height {
+            revision_number: 0,
+            revision_height: env::block_height(),
+        }
+    }
+
+    fn current_timestamp(&self) -> u64 {
+        // TODO(aeryz): should this be in ms?
+        env::block_timestamp()
+    }
+
+    fn sha256(&self, data: Vec<u8>) -> Vec<u8> {
+        env::sha256(&data)
     }
 }
 
@@ -64,6 +102,7 @@ pub struct Contract {
     commitments: UnorderedMap<String, Vec<u8>>,
     client_index: u64,
     connection_index: u64,
+    channel_index: u64,
     account_ids: UnorderedMap<String, AccountId>,
     // client id -> account id
     clients: UnorderedMap<String, AccountId>,
@@ -74,6 +113,7 @@ impl Default for Contract {
         Contract {
             commitments: UnorderedMap::new(b"commitments".as_slice()),
             client_index: 0,
+            channel_index: 0,
             account_ids: UnorderedMap::new(b"account_ids".as_slice()),
             clients: UnorderedMap::new(b"clients".as_slice()),
             connection_index: 0,
@@ -105,8 +145,8 @@ impl Contract {
 
     pub fn connection_open_init(
         &mut self,
-        client_id: String,
-        counterparty: connection::counterparty::Counterparty<String, String>,
+        client_id: ClientId,
+        counterparty: connection_handshake::Counterparty,
         version: connection::version::Version,
         delay_period: u64,
     ) -> Promise {
@@ -116,8 +156,8 @@ impl Contract {
     }
     pub fn connection_open_try(
         &mut self,
-        client_id: String,
-        counterparty: connection::counterparty::Counterparty<String, String>,
+        client_id: ClientId,
+        counterparty: connection_handshake::Counterparty,
         counterparty_versions: Vec<connection::version::Version>,
         connection_end_proof: Vec<u8>,
         proof_height: Height,
@@ -183,7 +223,10 @@ impl Contract {
                 ..
             }) => {
                 let account_id = self.account_ids.get(client_type).unwrap();
-                let _ = self.clients.insert(client_id.clone(), account_id.clone());
+                // TODO(aeryz): we want to impl borsh serialize for validate types in unionlabs
+                let _ = self
+                    .clients
+                    .insert(client_id.clone().to_string(), account_id.clone());
             }
             _ => panic!("wut?"),
         };
@@ -252,6 +295,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
             );
         }
         ibc_vm_rs::IbcMsg::Status { client_id } => {
+            let client_id = client_id.to_string();
             let account_id = host.clients.get(&client_id).unwrap();
             return Some(
                 light_client::ext(account_id.clone()).status().then(
@@ -261,6 +305,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
             );
         }
         ibc_vm_rs::IbcMsg::LatestHeight { client_id } => {
+            let client_id = client_id.to_string();
             let account_id = host.clients.get(&client_id).unwrap();
             return Some(
                 light_client::ext(account_id.clone()).latest_height().then(
@@ -278,7 +323,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
             path,
             value,
         } => {
-            let account_id = host.clients.get(&client_id).unwrap();
+            let account_id = host.clients.get(&client_id.to_string()).unwrap();
             return Some(
                 light_client::ext(account_id.clone())
                     .verify_membership(
@@ -292,16 +337,21 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
                     )
                     .then(
                         Contract::ext(env::current_account_id())
-                            .callback_height(serde_json::to_vec(&runnable).unwrap()),
+                            .callback_verify_membership(serde_json::to_vec(&runnable).unwrap()),
                     ),
             );
         }
+        ibc_vm_rs::IbcMsg::OnChannelOpenInit { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::OnChannelOpenTry { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::OnChannelOpenAck { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::OnChannelOpenConfirm { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::OnRecvPacket { .. } => todo!(),
     }
 }
 
 #[ext_contract(light_client)]
 pub trait LightClient {
-    fn initialize(client_id: String, client_state: Vec<u8>, consensus_state: Vec<u8>) -> Self;
+    fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>) -> Self;
 
     fn status(&self) -> Status;
 
@@ -309,7 +359,7 @@ pub trait LightClient {
 
     fn verify_membership(
         &self,
-        client_id: String,
+        client_id: ClientId,
         height: Height,
         // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,
