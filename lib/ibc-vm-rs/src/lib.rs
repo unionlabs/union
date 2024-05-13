@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use serde::{Deserialize, Serialize};
 use states::{
     channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
@@ -10,7 +12,7 @@ use states::{
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     ibc::core::{
-        channel::{self, order::Order},
+        channel::{self, order::Order, packet::Packet},
         client::height::Height,
         commitment::merkle_path::MerklePath,
         connection::version::Version,
@@ -36,10 +38,18 @@ pub trait IbcHost {
 
     fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T>;
 
+    fn read_raw(&self, key: &str) -> Option<Vec<u8>>;
+
     fn commit_raw(&mut self, key: String, value: Vec<u8>);
 
     // TODO(aeryz): generic over encoding
     fn commit<T: Encode<Proto>>(&mut self, key: String, value: T);
+
+    fn current_height(&self) -> Height;
+
+    fn current_timestamp(&self) -> u64;
+
+    fn sha256(&self, data: Vec<u8>) -> Vec<u8>;
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -75,6 +85,10 @@ pub enum IbcResponse {
         err: bool,
     },
     OnChannelOpenConfirm {
+        // TODO(aeryz): what's gonna be the error type?
+        err: bool,
+    },
+    OnRecvPacket {
         // TODO(aeryz): what's gonna be the error type?
         err: bool,
     },
@@ -185,6 +199,11 @@ pub enum IbcMsg {
         port_id: PortId,
         channel_id: ChannelId,
     },
+
+    OnRecvPacket {
+        packet: Packet,
+        // TODO(aeryz): relayer address
+    },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -253,6 +272,19 @@ pub enum IbcEvent {
         counterparty_port_id: PortId,
         counterparty_channel_id: String,
         connection_id: String,
+    },
+
+    RecvPacket {
+        packet_data_hex: Vec<u8>,
+        packet_timeout_height: Height,
+        packet_timeout_timestamp: u64,
+        packet_sequence: NonZeroU64,
+        packet_src_port: PortId,
+        packet_src_channel: ChannelId,
+        packet_dst_port: PortId,
+        packet_dst_channel: ChannelId,
+        packet_channel_ordering: Order,
+        connection_id: ConnectionId,
     },
 }
 
