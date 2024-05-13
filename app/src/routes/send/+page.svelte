@@ -16,6 +16,7 @@ import { Button } from "$lib/components/ui/button/index.js"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { ChainDialog, SettingsDialog, AssetsDialog } from "$lib/components/send/dialogs/index.ts"
+import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 
 /**
  * TODO:
@@ -124,10 +125,19 @@ function handleAssetSelect(symbol: string) {
 }
 
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
-let inputValue = { from: "", to: "" }
+let inputValue = { from: "", to: "", recipient: "" }
+console.log(selectedToChain, $cosmosStore)
 $: {
   inputValue.from = inputValue.from.replaceAll(amountRegex, "")
   inputValue.to = inputValue.to.replaceAll(amountRegex, "")
+  inputValue.recipient =
+    selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
+      ? $sepoliaStore?.address
+      : selectedToChain?.ecosystem === "cosmos" &&
+          $cosmosStore?.address &&
+          $cosmosStore.address.startsWith(selectedToChain.name)
+        ? $cosmosStore?.address
+        : ""
 }
 
 function swapChainsClick(_event: MouseEvent) {
@@ -143,7 +153,7 @@ function swapChainsClick(_event: MouseEvent) {
   )
 }
 
-let buttonText = "Send it 🔥" satisfies
+let buttonText = "Send it" satisfies
   | "Send"
   | "Invalid amount"
   | "Connect Wallet"
@@ -153,7 +163,7 @@ let buttonText = "Send it 🔥" satisfies
 </script>
 
 <main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
-  <Card.Root class="size-full max-w-[475px] h-[490px] sm:mt-16 mt-6 p-2 bg-transparent">
+  <Card.Root class="size-full max-w-[475px] sm:mt-16 mt-6 p-2 bg-transparent border-none outline-none">
     <Card.Header
       class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-4"
     >
@@ -178,16 +188,16 @@ let buttonText = "Send it 🔥" satisfies
       </Button>
     </Card.Header>
     <Card.Content
-      class={cn([
-        'size-full max-h-[375px] pb-3 px-3.5 flex flex-col justify-between',
+      class={cn(
+        'size-full pb-3 px-3.5 flex flex-col justify-between',
         devBorder,
 
         'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md',
-      ])}
+      )}
     >
       <div
         data-transfer-from-section
-        class={cn(devBorder, 'w-full pb-0 mt-4 mb-2 h-min flex flex-row justify-between')}
+        class={cn(devBorder, 'w-full pb-0 mt-4 mb-2 flex flex-row justify-between')}
       >
         <Button
           variant="ghost"
@@ -198,8 +208,8 @@ let buttonText = "Send it 🔥" satisfies
           <div class="flex space-x-1.5 h-full">
             <img
               src={selectedFromChain?.icon}
-              class="size-11 my-auto mr-auto"
               alt={`${selectedFromChain?.name} logo`}
+              class="size-11 my-auto mr-auto invert dark:invert-0"
             />
             <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
               <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
@@ -229,8 +239,8 @@ let buttonText = "Send it 🔥" satisfies
           <div class="flex space-x-1.5 h-full">
             <img
               src={selectedToChain?.icon}
-              class="size-11 my-auto mr-auto"
               alt={`${selectedToChain?.name} logo`}
+              class="size-11 my-auto mr-auto"
             />
             <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
               <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
@@ -243,7 +253,7 @@ let buttonText = "Send it 🔥" satisfies
         </Button>
       </div>
       <!-- asset -->
-      <div class={cn('size-full h-[5.5rem] max-h-[5.5rem] mb-auto')}>
+      <div class={cn('size-full mb-auto')}>
         <p class="text-left text-2xl my-2 font-extrabold ml-2">Asset</p>
         <Button
           variant="outline"
@@ -287,7 +297,9 @@ let buttonText = "Send it 🔥" satisfies
           <ChevronDown class={cn(devBorder, 'size-6 mb-auto mt-0.5 ml-auto')} />
         </Button>
       </div>
-      <div class={cn('mb-2')}>
+      
+      <!-- amount -->
+      <div class={cn('my-2')}>
         <p class="text-left text-2xl font-extrabold ml-2">Amount</p>
         <Input
           minlength={1}
@@ -299,6 +311,22 @@ let buttonText = "Send it 🔥" satisfies
           pattern="^[0-9]*[.,]?[0-9]*$"
           class={cn(
             'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
+            'outline-1 outline-accent/90 outline',
+          )}
+        />
+      </div>
+      <!-- recipient -->
+      <div class={cn('my-2')}>
+        <p class="text-left text-md font-extrabold ml-2">Recipient</p>
+        <Input
+          minlength={1}
+          maxlength={64}
+          autocomplete="off"
+          data-transfer-recipient-address
+          placeholder="Destination address"
+          bind:value={inputValue.recipient}
+          class={cn(
+            'text-sm mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
             'outline-1 outline-accent/90 outline',
           )}
         />

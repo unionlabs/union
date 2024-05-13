@@ -29,7 +29,7 @@ import { routes } from "$lib/components/navigation/index.ts"
           variant="link"
           href={path}
           class={cn(
-            'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400 hover:bg-zinc-800/70',
+            'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
             $page.route.id === path && 'bg-muted-foreground/10',
           )}
         >

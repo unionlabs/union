@@ -20,10 +20,10 @@ export let queryParams: any
   closeOnOutsideClick={true}
 >
   <Dialog.Content
-    class={cn([
+    class={cn(
       'border-solid border-accent overflow-auto flex flex-col items-start rounded-md',
       'max-w-[90%] sm:max-w-[375px] border-[1px] pt-4 pb-1 px-2',
-    ])}
+    )}
   >
     <Dialog.Header class="max-h-min h-16 p-2 w-full space-y-3">
       <Dialog.Title class="font-extrabold text-2xl text-center -mt-2">Select {kind} Network</Dialog.Title>
