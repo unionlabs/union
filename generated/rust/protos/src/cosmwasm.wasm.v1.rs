@@ -1394,6 +1394,48 @@ impl ::prost::Name for QueryContractsByCreatorResponse {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
     }
 }
+/// QueryBuildAddressRequest is the request type for the Query/BuildAddress RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryBuildAddressRequest {
+    /// CodeHash is the hash of the code
+    #[prost(string, tag = "1")]
+    pub code_hash: ::prost::alloc::string::String,
+    /// CreatorAddress is the address of the contract instantiator
+    #[prost(string, tag = "2")]
+    pub creator_address: ::prost::alloc::string::String,
+    /// Salt is a hex encoded salt
+    #[prost(string, tag = "3")]
+    pub salt: ::prost::alloc::string::String,
+    /// InitArgs are optional json encoded init args to be used in contract address
+    /// building if provided
+    #[prost(bytes = "vec", tag = "4")]
+    pub init_args: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryBuildAddressRequest {
+    const NAME: &'static str = "QueryBuildAddressRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryBuildAddressResponse is the response type for the Query/BuildAddress RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryBuildAddressResponse {
+    /// Address is the contract address
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryBuildAddressResponse {
+    const NAME: &'static str = "QueryBuildAddressResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
 /// MsgStoreCode submit Wasm code to the system
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -2038,6 +2080,38 @@ pub struct MsgStoreAndMigrateContractResponse {
 }
 impl ::prost::Name for MsgStoreAndMigrateContractResponse {
     const NAME: &'static str = "MsgStoreAndMigrateContractResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateContractLabel sets a new label for a smart contract
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateContractLabel {
+    /// Sender is the that actor that signed the messages
+    #[prost(string, tag = "1")]
+    pub sender: ::prost::alloc::string::String,
+    /// NewLabel string to be set
+    #[prost(string, tag = "2")]
+    pub new_label: ::prost::alloc::string::String,
+    /// Contract is the address of the smart contract
+    #[prost(string, tag = "3")]
+    pub contract: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgUpdateContractLabel {
+    const NAME: &'static str = "MsgUpdateContractLabel";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateContractLabelResponse returns empty data
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateContractLabelResponse {}
+impl ::prost::Name for MsgUpdateContractLabelResponse {
+    const NAME: &'static str = "MsgUpdateContractLabelResponse";
     const PACKAGE: &'static str = "cosmwasm.wasm.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)

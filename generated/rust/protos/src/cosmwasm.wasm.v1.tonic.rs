@@ -298,6 +298,24 @@ pub mod query_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn build_address(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryBuildAddressRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryBuildAddressResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/BuildAddress");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "BuildAddress"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated client implementations.
@@ -708,6 +726,29 @@ pub mod msg_client {
             req.extensions_mut().insert(GrpcMethod::new(
                 "cosmwasm.wasm.v1.Msg",
                 "StoreAndMigrateContract",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn update_contract_label(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpdateContractLabel>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgUpdateContractLabelResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Msg/UpdateContractLabel");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmwasm.wasm.v1.Msg",
+                "UpdateContractLabel",
             ));
             self.inner.unary(req, path, codec).await
         }

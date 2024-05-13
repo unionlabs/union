@@ -1,5 +1,4 @@
 // @generated
-/// TODO: l2_ instead of rollup_
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
@@ -14,10 +13,10 @@ pub struct ClientState {
     /// _latestConfirmed
     #[prost(bytes = "vec", tag = "5")]
     pub l1_latest_confirmed_slot: ::prost::alloc::vec::Vec<u8>,
-    /// _nodes
+    /// _nodes\[_latestConfirmed\].confirmData
     #[prost(bytes = "vec", tag = "6")]
     pub l1_nodes_slot: ::prost::alloc::vec::Vec<u8>,
-    /// _nodes\[_latestConfirmed\].confirmData
+    /// offset of Node.confirmData
     #[prost(bytes = "vec", tag = "7")]
     pub confirm_data_offset: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "8")]
