@@ -306,7 +306,7 @@ pub struct IbcCoreChannelV1CounterpartyData {
     pub port_id: ::std::string::String,
     pub channel_id: ::std::string::String,
 }
-///`IbcCoreChannelV1PacketData(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
+///`Data(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -393,6 +393,22 @@ pub struct IbcCoreConnectionV1CounterpartyData {
 pub struct IbcCoreConnectionV1VersionData {
     pub identifier: ::std::string::String,
     pub features: ::std::vec::Vec<::std::string::String>,
+}
+///`UnionIbcLightclientsCometblsV1HeaderData((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct UnionIbcLightclientsCometblsV1HeaderData {
+    pub signed_header: UnionIbcLightclientsCometblsV1LightHeaderData,
+    pub trusted_height: IbcCoreClientV1HeightData,
+    pub zero_knowledge_proof: ::ethers::core::types::Bytes,
 }
 ///`UnionIbcLightclientsCometblsV1LightHeaderData(int64,(int64,int64),bytes,bytes,bytes)`
 #[derive(

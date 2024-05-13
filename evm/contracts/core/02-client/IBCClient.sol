@@ -97,14 +97,9 @@ contract IBCClient is IBCStore, IIBCClient {
         ) {
             revert IBCStoreLib.ErrClientNotFound();
         }
-        (
-            bytes32 clientStateCommitment,
-            ConsensusStateUpdate[] memory updates,
-            bool ok
-        ) = getClient(msg_.clientId).updateClient(
-            msg_.clientId, msg_.clientMessage
-        );
-        if (!ok) {
+        (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates) =
+        getClient(msg_.clientId).updateClient(msg_.clientId, msg_.clientMessage);
+        if (updates.length == 0) {
             revert IBCClientLib.ErrFailedToUpdateClient();
         }
 

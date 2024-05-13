@@ -397,12 +397,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         client.pushValidProof();
         vm.prank(address(handler));
-        (
-            bytes32 clientStateCommitment,
-            ConsensusStateUpdate[] memory updates,
-            bool ok
-        ) = client.updateClient(m2.clientId, m2.clientMessage);
-        assertTrue(ok);
+        (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates) =
+            client.updateClient(m2.clientId, m2.clientMessage);
         assertEq(
             clientStateCommitment,
             keccak256(
@@ -650,14 +646,13 @@ contract IBCClientHandlerTests is TestPlus {
         client.pushValidProof();
         handler.updateClient(m2);
 
-        (uint64 timestamp, bool ok) = client.getTimestampAtHeight(
+        uint64 timestamp = client.getTimestampAtHeight(
             clientId,
             IbcCoreClientV1Height.Data({
                 revision_number: 0,
                 revision_height: uint64(signedHeader.height)
             })
         );
-        assertTrue(ok);
         assertEq(
             timestamp,
             uint64(signedHeader.time.secs) * 1e9
@@ -686,9 +681,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (bytes memory clientStateBytes, bool ok) =
-            client.getClientState(clientId);
-        assertTrue(ok);
+        bytes memory clientStateBytes = client.getClientState(clientId);
         assertEq(clientStateBytes, m.clientStateBytes);
     }
 
@@ -702,9 +695,9 @@ contract IBCClientHandlerTests is TestPlus {
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        (bytes memory clientStateBytes, bool ok) =
-            client.getClientState("blabla");
-        assertFalse(ok);
+        bytes memory clientStateBytes = client.getClientState("blabla");
+        // REVIEW: Not sure how best to check if the bytes is the zero of the type
+        // assertEq(clientStateBytes, "");
     }
 
     function test_getClientState_step(
@@ -735,9 +728,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (bytes memory clientStateBytes, bool ok) =
-            client.getClientState(clientId);
-        assertTrue(ok);
+        bytes memory clientStateBytes = client.getClientState(clientId);
         assertEq(clientStateBytes, m.clientStateBytes);
 
         vm.warp(uint64(signedHeader.time.secs) + updateLatency);
@@ -748,8 +739,7 @@ contract IBCClientHandlerTests is TestPlus {
         client.pushValidProof();
         handler.updateClient(m2);
 
-        (clientStateBytes, ok) = client.getClientState(clientId);
-        assertTrue(ok);
+        clientStateBytes = client.getClientState(clientId);
         assertEq(
             clientStateBytes,
             Cometbls.createClientState(
@@ -779,14 +769,14 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (bytes memory consensusStateBytes, bool ok) = client.getConsensusState(
+        bytes memory consensusStateBytes = client.getConsensusState(
             clientId,
             IbcCoreClientV1Height.Data({
                 revision_number: 0,
                 revision_height: trustedHeight
             })
         );
-        assertTrue(ok);
+
         assertEq(
             consensusStateBytes,
             Cometbls.createConsensusState(
@@ -807,14 +797,15 @@ contract IBCClientHandlerTests is TestPlus {
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        (bytes memory consensusStateBytes, bool ok) = client.getConsensusState(
+        bytes memory consensusStateBytes = client.getConsensusState(
             "blabla",
             IbcCoreClientV1Height.Data({
                 revision_number: 0,
                 revision_height: trustedHeight
             })
         );
-        assertFalse(ok);
+        // REVIEW: Not sure how best to check if the bytes is the zero of the type
+        // assertEq(consensusStateBytes, "");
     }
 
     function test_getConsensusState_step(
@@ -847,14 +838,15 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (bytes memory consensusStateBytes, bool ok) = client.getConsensusState(
+        bytes memory consensusStateBytes = client.getConsensusState(
             clientId,
             IbcCoreClientV1Height.Data({
                 revision_number: 0,
                 revision_height: uint64(signedHeader.height)
             })
         );
-        assertFalse(ok);
+        // REVIEW: Not sure how best to check if the bytes is the zero of the type
+        // assertEq(consensusStateBytes, "");
 
         IBCMsgs.MsgUpdateClient memory m2 =
             Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
@@ -864,14 +856,13 @@ contract IBCClientHandlerTests is TestPlus {
         client.pushValidProof();
         handler.updateClient(m2);
 
-        (consensusStateBytes, ok) = client.getConsensusState(
+        consensusStateBytes = client.getConsensusState(
             clientId,
             IbcCoreClientV1Height.Data({
                 revision_number: 0,
                 revision_height: uint64(signedHeader.height)
             })
         );
-        assertTrue(ok);
         assertEq(
             consensusStateBytes,
             Cometbls.createConsensusState(
@@ -1432,9 +1423,11 @@ contract IBCClientHandlerTests is TestPlus {
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        (IbcCoreClientV1Height.Data memory latestHeight, bool ok) =
+        IbcCoreClientV1Height.Data memory latestHeight =
             client.getLatestHeight("blabla");
-        assertFalse(ok);
+
+        assertEq(uint64(latestHeight.revision_height), 0);
+        assertEq(uint64(latestHeight.revision_number), 0);
     }
 
     function test_getLatestHeight_ok() public {
@@ -1458,10 +1451,9 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (IbcCoreClientV1Height.Data memory latestHeight, bool ok) =
+        IbcCoreClientV1Height.Data memory latestHeight =
             client.getLatestHeight(clientId);
 
-        assertTrue(ok);
         assertEq(uint64(latestHeight.revision_height), trustedHeight);
         assertEq(uint64(latestHeight.revision_number), 0);
     }

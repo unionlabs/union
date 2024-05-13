@@ -18,11 +18,7 @@ use crate::{
 
 #[model(
     proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from),
-    ethabi(
-        raw(contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData),
-        into,
-        from
-    )
+    ethabi(raw(contracts::glue::IbcCoreConnectionV1ConnectionEndData), into, from)
 )]
 #[serde(bound(
     serialize = "
@@ -127,14 +123,14 @@ pub enum TryFromEthAbiConnectionEndError<
 
 #[cfg(feature = "ethabi")]
 impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
-    TryFrom<contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData>
+    TryFrom<contracts::glue::IbcCoreConnectionV1ConnectionEndData>
     for ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>
 {
     type Error =
         TryFromEthAbiConnectionEndError<ClientId, CounterpartyClientId, CounterpartyConnectionId>;
 
     fn try_from(
-        val: contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData,
+        val: contracts::glue::IbcCoreConnectionV1ConnectionEndData,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: val
@@ -165,7 +161,7 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
 #[cfg(feature = "ethabi")]
 impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
     From<ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>>
-    for contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData
+    for contracts::glue::IbcCoreConnectionV1ConnectionEndData
 {
     fn from(val: ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>) -> Self {
         Self {
@@ -176,4 +172,16 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
             delay_period: val.delay_period,
         }
     }
+}
+
+#[test]
+fn connection_decode() {
+    let hex = hex::decode("0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a636f6d6574626c732d3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000930382d7761736d2d300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c636f6e6e656374696f6e2d300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036962630000000000000000000000000000000000000000000000000000000000").unwrap();
+
+    let conn =
+        <contracts::glue::IbcCoreConnectionV1ConnectionEndData as ethers::abi::AbiDecode>::decode(
+            hex,
+        );
+
+    dbg!(conn);
 }
