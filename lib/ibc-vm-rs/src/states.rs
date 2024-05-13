@@ -1,5 +1,6 @@
 pub mod channel_handshake;
 pub mod connection_handshake;
+pub mod packet;
 
 use serde::{Deserialize, Serialize};
 use unionlabs::id::ClientId;
