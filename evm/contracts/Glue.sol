@@ -4,6 +4,7 @@ import "./core/02-client/ILightClient.sol";
 import "./core/02-client/IBCHeight.sol";
 import "./proto/ibc/core/client/v1/client.sol";
 import "./proto/ibc/core/commitment/v1/commitment.sol";
+import "./proto/ibc/core/connection/v1/connection.sol";
 import "./proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "./proto/cosmos/ics23/v1/proofs.sol";
 import "./proto/tendermint/types/types.sol";
@@ -26,6 +27,7 @@ contract Glue {
         IbcLightclientsTendermintV1ClientState.Data memory,
         IbcLightclientsTendermintV1ConsensusState.Data memory,
         IbcLightclientsTendermintV1Header.Data memory,
-        IbcCoreCommitmentV1MerkleProof.Data memory
+        IbcCoreCommitmentV1MerkleProof.Data memory,
+        IbcCoreConnectionV1ConnectionEnd.Data memory
     ) public pure {}
 }

@@ -36,7 +36,7 @@ interface ILightClient {
     function getTimestampAtHeight(
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
-    ) external view returns (uint64, bool);
+    ) external view returns (uint64);
 
     /**
      * @dev getLatestHeight returns the latest height of the client state corresponding to `clientId`.
@@ -44,7 +44,7 @@ interface ILightClient {
     function getLatestHeight(string calldata clientId)
         external
         view
-        returns (IbcCoreClientV1Height.Data memory, bool);
+        returns (IbcCoreClientV1Height.Data memory);
 
     /**
      * @dev updateClient updates the client corresponding to `clientId`.
@@ -65,8 +65,7 @@ interface ILightClient {
         external
         returns (
             bytes32 clientStateCommitment,
-            ConsensusStateUpdate[] memory updates,
-            bool ok
+            ConsensusStateUpdate[] memory updates
         );
 
     /**
@@ -105,7 +104,7 @@ interface ILightClient {
     function getClientState(string calldata clientId)
         external
         view
-        returns (bytes memory, bool);
+        returns (bytes memory);
 
     /**
      * @dev getConsensusState returns the consensusState corresponding to `clientId` and `height`.
@@ -114,5 +113,5 @@ interface ILightClient {
     function getConsensusState(
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
-    ) external view returns (bytes memory, bool);
+    ) external view returns (bytes memory);
 }

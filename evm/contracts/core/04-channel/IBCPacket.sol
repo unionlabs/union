@@ -94,9 +94,9 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             connections[channel.connection_hops[0]].client_id;
         ILightClient client = getClient(clientId);
 
-        (IbcCoreClientV1Height.Data memory latestHeight, bool found) =
+        IbcCoreClientV1Height.Data memory latestHeight =
             client.getLatestHeight(clientId);
-        if (!found) {
+        if (latestHeight.revision_height == 0) {
             revert IBCPacketLib.ErrLatestHeightNotFound();
         }
         if (!timeoutHeight.isZero() && latestHeight.gte(timeoutHeight)) {
@@ -104,9 +104,8 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         uint64 latestTimestamp;
-        (latestTimestamp, found) =
-            client.getTimestampAtHeight(clientId, latestHeight);
-        if (!found) {
+        latestTimestamp = client.getTimestampAtHeight(clientId, latestHeight);
+        if (latestTimestamp == 0) {
             revert IBCPacketLib.ErrLatestTimestampNotFound();
         }
         if (timeoutTimestamp != 0 && latestTimestamp >= timeoutTimestamp) {
@@ -490,9 +489,9 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         ILightClient client = getClient(connection.client_id);
-        (uint64 proofTimestamp, bool found) =
+        uint64 proofTimestamp =
             client.getTimestampAtHeight(connection.client_id, msg_.proofHeight);
-        if (!found) {
+        if (proofTimestamp == 0) {
             revert IBCPacketLib.ErrLatestTimestampNotFound();
         }
 

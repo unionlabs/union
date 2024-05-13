@@ -269,7 +269,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
+        ConnectionEnd.Data memory connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -302,7 +302,7 @@ contract IBCConnectionHandlerTests is TestPlus {
             msg_init.counterparty;
         expectedCounterparty.connection_id = msg_ack.counterpartyConnectionID;
 
-        (connection,) = handler.getConnection(connId);
+        connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -347,7 +347,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
+        ConnectionEnd.Data memory connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -389,7 +389,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
+        ConnectionEnd.Data memory connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -429,7 +429,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
+        ConnectionEnd.Data memory connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -467,7 +467,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preTryValidProofs();
         string memory connId = handler.connectionOpenTry(msg_try);
 
-        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
+        ConnectionEnd.Data memory connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch"
@@ -494,7 +494,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preConfirmValidProofs();
         handler.connectionOpenConfirm(msg_confirm);
 
-        (connection,) = handler.getConnection(connId);
+        connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch"
@@ -573,7 +573,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         preTryValidProofs();
         string memory connId = handler.connectionOpenTry(msg_try);
 
-        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
+        ConnectionEnd.Data memory connection = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch"

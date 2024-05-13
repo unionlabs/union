@@ -255,7 +255,7 @@ contract CometblsClient is
         external
         override
         onlyIBC
-        returns (bytes32, ConsensusStateUpdate[] memory, bool)
+        returns (bytes32, ConsensusStateUpdate[] memory)
     {
         UnionIbcLightclientsCometblsV1Header.Data calldata header =
             clientMessageBytes.unmarshalEthABI();
@@ -305,7 +305,7 @@ contract CometblsClient is
             height: untrustedHeight
         });
 
-        return (clientState.marshalToCommitmentEthABI(), updates, true);
+        return (clientState.marshalToCommitmentEthABI(), updates);
     }
 
     function verifyMembership(
@@ -372,56 +372,32 @@ contract CometblsClient is
     function getClientState(string calldata clientId)
         external
         view
-        returns (bytes memory, bool)
+        returns (bytes memory)
     {
-        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
-            clientStates[clientId];
-        if (clientState.latest_height.revision_height == 0) {
-            return (bytes(""), false);
-        }
-        return (clientState.marshalEthABI(), true);
+        return clientStates[clientId].marshalEthABI();
     }
 
     function getConsensusState(
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
-    ) external view returns (bytes memory, bool) {
-        OptimizedConsensusState memory consensusState =
-            consensusStates[clientId][height.toUint128()];
-        if (consensusState.timestamp == 0) {
-            return (bytes(""), false);
-        }
-        return (consensusState.marshalEthABI(), true);
+    ) external view returns (bytes memory) {
+        return consensusStates[clientId][height.toUint128()].marshalEthABI();
     }
 
     function getTimestampAtHeight(
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
-    ) external view override returns (uint64, bool) {
-        OptimizedConsensusState memory consensusState =
-            consensusStates[clientId][height.toUint128()];
-        // For some reason cosmos is using nanos, we try to follow their convention to avoid friction
-        return (consensusState.timestamp, consensusState.timestamp > 0);
+    ) external view override returns (uint64) {
+        return consensusStates[clientId][height.toUint128()].timestamp;
     }
 
     function getLatestHeight(string calldata clientId)
         external
         view
         override
-        returns (IbcCoreClientV1Height.Data memory, bool)
+        returns (IbcCoreClientV1Height.Data memory)
     {
-        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
-            clientStates[clientId];
-        if (clientState.latest_height.revision_height == 0) {
-            return (
-                IbcCoreClientV1Height.Data({
-                    revision_height: 0,
-                    revision_number: 0
-                }),
-                false
-            );
-        }
-        return (clientState.latest_height, true);
+        return clientStates[clientId].latest_height;
     }
 
     // ZKP VERIFICATION
