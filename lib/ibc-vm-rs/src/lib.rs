@@ -14,7 +14,7 @@ use unionlabs::{
     ibc::core::{
         channel::{self, order::Order, packet::Packet},
         client::height::Height,
-        commitment::merkle_path::MerklePath,
+        commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
         connection::version::Version,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
@@ -25,6 +25,8 @@ pub mod states;
 lazy_static::lazy_static! {
     // TODO(aeryz): we don't support ordered channels
     pub static ref DEFAULT_IBC_VERSION: Vec<Version> = vec![Version { identifier: String::from("1"), features: vec![Order::Unordered.into()] }];
+
+    pub static ref DEFAULT_MERKLE_PREFIX: MerklePrefix = MerklePrefix { key_prefix: b"ibc".into() };
 }
 
 pub trait IbcHost {
