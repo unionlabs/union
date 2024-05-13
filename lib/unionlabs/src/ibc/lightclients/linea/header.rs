@@ -2,7 +2,6 @@ use macros::model;
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    hash::H256,
     ibc::{
         core::client::height::Height,
         lightclients::ethereum::{
@@ -17,12 +16,9 @@ use crate::{
 pub struct Header {
     pub l1_height: Height,
     pub l1_rollup_contract_proof: AccountProof,
-    pub l2_block_number: u64,
-    pub l2_block_number_proof: StorageProof,
-    pub l2_state_root: H256,
-    pub l2_state_root_proof: StorageProof,
-    pub l2_timestamp: u64,
     pub l2_timestamp_proof: StorageProof,
+    pub l2_block_number_proof: StorageProof,
+    pub l2_state_root_proof: StorageProof,
     pub l2_ibc_contract_proof: InclusionProof,
 }
 
@@ -31,12 +27,9 @@ impl From<Header> for protos::union::ibc::lightclients::linea::v1::Header {
         Self {
             l1_height: Some(value.l1_height.into()),
             l1_rollup_contract_proof: Some(value.l1_rollup_contract_proof.into()),
-            l2_block_number: value.l2_block_number,
-            l2_block_number_proof: Some(value.l2_block_number_proof.into()),
-            l2_state_root: value.l2_state_root.into(),
-            l2_state_root_proof: Some(value.l2_state_root_proof.into()),
-            l2_timestamp: value.l2_timestamp,
             l2_timestamp_proof: Some(value.l2_timestamp_proof.into()),
+            l2_block_number_proof: Some(value.l2_block_number_proof.into()),
+            l2_state_root_proof: Some(value.l2_state_root_proof.into()),
             l2_ibc_contract_proof: Some(value.l2_ibc_contract_proof.into()),
         }
     }
@@ -66,21 +59,15 @@ impl TryFrom<protos::union::ibc::lightclients::linea::v1::Header> for Header {
             l1_rollup_contract_proof: required!(value.l1_rollup_contract_proof)?
                 .try_into()
                 .map_err(TryFromHeaderError::L1RollupContractProof)?,
-            l2_block_number: value.l2_block_number,
-            l2_block_number_proof: required!(value.l2_block_number_proof)?
-                .try_into()
-                .map_err(TryFromHeaderError::L2BlockNumberProof)?,
-            l2_state_root: value
-                .l2_state_root
-                .try_into()
-                .map_err(TryFromHeaderError::L2StateRoot)?,
-            l2_state_root_proof: required!(value.l2_state_root_proof)?
-                .try_into()
-                .map_err(TryFromHeaderError::L2StateRootProof)?,
-            l2_timestamp: value.l2_timestamp,
             l2_timestamp_proof: required!(value.l2_timestamp_proof)?
                 .try_into()
                 .map_err(TryFromHeaderError::L2TimestampProof)?,
+            l2_block_number_proof: required!(value.l2_block_number_proof)?
+                .try_into()
+                .map_err(TryFromHeaderError::L2BlockNumberProof)?,
+            l2_state_root_proof: required!(value.l2_state_root_proof)?
+                .try_into()
+                .map_err(TryFromHeaderError::L2StateRootProof)?,
             l2_ibc_contract_proof: required!(value.l2_ibc_contract_proof)?
                 .try_into()
                 .map_err(TryFromHeaderError::L2IbcContractProof)?,

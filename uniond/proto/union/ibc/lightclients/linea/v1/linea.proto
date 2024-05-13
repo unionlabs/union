@@ -26,13 +26,10 @@ message ConsensusState {
 message Header {
   .ibc.core.client.v1.Height l1_height = 1;
   .union.ibc.lightclients.ethereum.v1.AccountProof l1_rollup_contract_proof = 2;
-  uint64 l2_block_number = 3;
-  .union.ibc.lightclients.ethereum.v1.StorageProof l2_block_number_proof = 4;
-  bytes l2_state_root = 5;
-  .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_root_proof = 6;
-  uint64 l2_timestamp = 7;
-  .union.ibc.lightclients.ethereum.v1.StorageProof l2_timestamp_proof = 8;
-  InclusionProof l2_ibc_contract_proof = 9;
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_block_number_proof = 3;
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_root_proof = 4;
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_timestamp_proof = 5;
+  InclusionProof l2_ibc_contract_proof = 6;
 }
 
 message MerklePath {

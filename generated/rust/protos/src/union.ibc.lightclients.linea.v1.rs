@@ -55,19 +55,13 @@ pub struct Header {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(message, optional, tag = "2")]
     pub l1_rollup_contract_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    #[prost(uint64, tag = "3")]
-    pub l2_block_number: u64,
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub l2_block_number_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
-    #[prost(bytes = "vec", tag = "5")]
-    pub l2_state_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "4")]
     pub l2_state_root_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
-    #[prost(uint64, tag = "7")]
-    pub l2_timestamp: u64,
-    #[prost(message, optional, tag = "8")]
+    #[prost(message, optional, tag = "5")]
     pub l2_timestamp_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
-    #[prost(message, optional, tag = "9")]
+    #[prost(message, optional, tag = "6")]
     pub l2_ibc_contract_proof: ::core::option::Option<InclusionProof>,
 }
 impl ::prost::Name for Header {

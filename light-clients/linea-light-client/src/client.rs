@@ -162,7 +162,8 @@ impl IbcClient for LineaLightClient {
             data: ConsensusState {
                 ibc_storage_root: zk_account.storage_root,
                 // must be nanos
-                timestamp: 1_000_000_000 * header.l2_timestamp,
+                timestamp: 1_000_000_000
+                    * u64::try_from(header.l2_timestamp_proof.proofs[0].value).expect("impossible"),
             },
         };
         save_consensus_state::<Self>(deps, consensus_state, &updated_height);
