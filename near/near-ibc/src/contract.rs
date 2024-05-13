@@ -13,8 +13,8 @@ use near_sdk_contract_tools::owner::OwnerExternal;
 use near_sdk_contract_tools::Owner;
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
-    ibc::core::{client::height::Height, commitment::merkle_path::MerklePath, connection},
-    id::{ChannelId, ClientId, ConnectionId},
+    ibc::core::{channel, client::height::Height, commitment::merkle_path::MerklePath, connection},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     validated::ValidateT,
 };
 
@@ -203,6 +203,38 @@ impl Contract {
         fold(self, runnable, IbcResponse::Empty).unwrap()
     }
 
+    pub fn channel_open_init(
+        &mut self,
+        connection_hops: Vec<ConnectionId>,
+        port_id: PortId,
+        counterparty: channel::counterparty::Counterparty,
+        version: String,
+    ) -> Promise {
+        let runnable =
+            ibc_vm_rs::channel_open_init(connection_hops, port_id, counterparty, version);
+        fold(self, runnable, IbcResponse::Empty).unwrap()
+    }
+
+    pub fn channel_open_ack(
+        &mut self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_channel_id: String,
+        counterparty_version: String,
+        proof_try: Vec<u8>,
+        proof_height: Height,
+    ) -> Promise {
+        let runnable = ibc_vm_rs::channel_open_ack(
+            channel_id,
+            port_id,
+            counterparty_channel_id,
+            counterparty_version,
+            proof_try,
+            proof_height,
+        );
+        fold(self, runnable, IbcResponse::Empty).unwrap()
+    }
+
     // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
     // when I try to fetch the contract state
     pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
@@ -261,6 +293,24 @@ impl Contract {
     ) -> Option<Promise> {
         let current_state: IbcState = serde_json::from_slice(&current_state).unwrap();
         fold(self, current_state, IbcResponse::VerifyMembership { valid })
+    }
+
+    #[private]
+    pub fn callback_on_chan_open_init(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] err: bool,
+    ) -> Option<Promise> {
+        fold(self, current_state, IbcResponse::OnChannelOpenInit { err })
+    }
+
+    #[private]
+    pub fn callback_on_chan_open_ack(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] err: bool,
+    ) -> Option<Promise> {
+        fold(self, current_state, IbcResponse::OnChannelOpenAck { err })
     }
 }
 
@@ -341,14 +391,59 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
                     ),
             );
         }
-        ibc_vm_rs::IbcMsg::OnChannelOpenInit { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::OnChannelOpenInit {
+            order,
+            connection_hops,
+            port_id,
+            channel_id,
+            counterparty,
+            version,
+        } => {
+            let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+            Some(
+                ibc_app::ext(account_id)
+                    .on_channel_open_init(
+                        order,
+                        connection_hops,
+                        port_id,
+                        channel_id,
+                        counterparty,
+                        version,
+                    )
+                    .then(
+                        Contract::ext(env::current_account_id())
+                            .callback_on_chan_open_init(runnable),
+                    ),
+            )
+        }
         ibc_vm_rs::IbcMsg::OnChannelOpenTry { .. } => todo!(),
-        ibc_vm_rs::IbcMsg::OnChannelOpenAck { .. } => todo!(),
+        ibc_vm_rs::IbcMsg::OnChannelOpenAck {
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_version,
+        } => {
+            let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+            Some(
+                ibc_app::ext(account_id)
+                    .on_channel_open_ack(
+                        port_id,
+                        channel_id,
+                        counterparty_channel_id,
+                        counterparty_version,
+                    )
+                    .then(
+                        Contract::ext(env::current_account_id())
+                            .callback_on_chan_open_ack(runnable),
+                    ),
+            )
+        }
         ibc_vm_rs::IbcMsg::OnChannelOpenConfirm { .. } => todo!(),
         ibc_vm_rs::IbcMsg::OnRecvPacket { .. } => todo!(),
     }
 }
 
+// TODO(aeryz): these ext contract api's should be defined under `ibc-vm` by splitted into technologies such as `near/cosmwasm etc`
 #[ext_contract(light_client)]
 pub trait LightClient {
     fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>) -> Self;
@@ -367,5 +462,24 @@ pub trait LightClient {
         proof: Vec<u8>,
         path: MerklePath,
         value: Vec<u8>,
+    ) -> bool;
+}
+
+#[ext_contract(ibc_app)]
+pub trait IbcApp {
+    fn on_channel_open_init(
+        order: channel::order::Order,
+        connection_hops: Vec<ConnectionId>,
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty: channel::counterparty::Counterparty,
+        version: String,
+    ) -> bool;
+
+    fn on_channel_open_ack(
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_channel_id: String,
+        counterparty_version: String,
     ) -> bool;
 }

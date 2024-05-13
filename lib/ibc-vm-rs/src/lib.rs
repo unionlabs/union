@@ -374,3 +374,35 @@ pub fn connection_open_confirm(
         proof_height,
     })
 }
+
+pub fn channel_open_init(
+    connection_hops: Vec<ConnectionId>,
+    port_id: PortId,
+    counterparty: channel::counterparty::Counterparty,
+    version: String,
+) -> IbcState {
+    IbcState::ChannelOpenInit(ChannelOpenInit::Init {
+        connection_hops,
+        port_id,
+        counterparty,
+        version,
+    })
+}
+
+pub fn channel_open_ack(
+    channel_id: ChannelId,
+    port_id: PortId,
+    counterparty_channel_id: String,
+    counterparty_version: String,
+    proof_try: Vec<u8>,
+    proof_height: Height,
+) -> IbcState {
+    IbcState::ChannelOpenAck(ChannelOpenAck::Init {
+        channel_id,
+        port_id,
+        counterparty_channel_id,
+        counterparty_version,
+        proof_try,
+        proof_height,
+    })
+}

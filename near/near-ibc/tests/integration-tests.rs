@@ -6,10 +6,12 @@ use serde_json::json;
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     ibc::core::{
+        channel::{self, channel::Channel},
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
         connection::{self, version::Version},
     },
+    id::{ChannelId, ConnectionId, PortId},
     validated::ValidateT,
 };
 use workspaces::{
@@ -25,6 +27,8 @@ const WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/near_ibc.wasm";
 const LC_WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/dummy_light_client.wasm";
+const IBC_APP_WASM_FILEPATH: &str =
+    "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/dummy_ibc_app.wasm";
 
 const CLIENT_TYPE: &str = "cometbls";
 const INITIAL_HEIGHT: Height = Height {
@@ -39,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
     println!("herererere1??");
     let wasm = std::fs::read(WASM_FILEPATH)?;
     let lc_wasm = std::fs::read(LC_WASM_FILEPATH)?;
-    println!("herererere2??");
+    let ibc_app_wasm = std::fs::read(IBC_APP_WASM_FILEPATH)?;
 
     let ibc_account_id: AccountId = String::from("ibc.test.near").try_into()?;
     let ibc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
@@ -47,14 +51,22 @@ async fn main() -> anyhow::Result<()> {
         .create_tla_and_deploy(ibc_account_id.clone(), ibc_sk.clone(), &wasm)
         .await?
         .unwrap();
-    println!("herererere3??");
     let lc_account_id: AccountId = String::from("light-client.test.near").try_into()?;
     let lc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
     let lc = sandbox
         .create_tla_and_deploy(lc_account_id.clone(), lc_sk.clone(), &lc_wasm)
         .await?
         .unwrap();
-    println!("herererere4??");
+    let ibc_app_account_id: AccountId = String::from("ibc-app.test.near").try_into()?;
+    let ibc_app_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
+    let ibc_app = sandbox
+        .create_tla_and_deploy(
+            ibc_app_account_id.clone(),
+            ibc_app_sk.clone(),
+            &ibc_app_wasm,
+        )
+        .await?
+        .unwrap();
 
     println!("contract id ({:?}), lc id ({:?})", contract.id(), lc.id());
 
@@ -72,6 +84,7 @@ async fn main() -> anyhow::Result<()> {
     test_register_client(&user, &contract, &lc).await;
     test_create_client(&user, &contract).await;
     test_open_connection_starting_from_init(&user, &contract).await;
+    test_open_channel_starting_from_init(&user, &contract, &ibc_app).await;
 
     Ok(())
 }
@@ -103,6 +116,24 @@ struct ConnectionOpenAck {
     version: Version,
     counterparty_connection_id: String,
     connection_end_proof: Vec<u8>,
+    proof_height: Height,
+}
+
+#[derive(serde::Serialize)]
+struct ChannelOpenInit {
+    connection_hops: Vec<ConnectionId>,
+    port_id: PortId,
+    counterparty: channel::counterparty::Counterparty,
+    version: String,
+}
+
+#[derive(serde::Serialize)]
+struct ChannelOpenAck {
+    channel_id: ChannelId,
+    port_id: PortId,
+    counterparty_channel_id: String,
+    counterparty_version: String,
+    proof_try: Vec<u8>,
     proof_height: Height,
 }
 
@@ -317,4 +348,117 @@ async fn test_open_connection_starting_from_init(user: &Account, contract: &Cont
     );
 
     println!("[ + ] `test_open_connection_starting_from_init`: Connection opened.");
+}
+
+async fn test_open_channel_starting_from_init(
+    user: &Account,
+    contract: &Contract,
+    ibc_app: &Contract,
+) {
+    let port_id = ibc_app.id().to_string().validate().unwrap();
+    let channel_init = ChannelOpenInit {
+        connection_hops: vec!["connection-1".to_string().validate().unwrap()],
+        port_id: port_id.clone(),
+        counterparty: channel::counterparty::Counterparty {
+            port_id: "transfer".to_string().validate().unwrap(),
+            channel_id: "".into(),
+        },
+        version: "ucs01".into(),
+    };
+
+    println!("calling channel open init");
+    let res = user
+        .call(contract.id(), "channel_open_init")
+        .gas(300000000000000)
+        .args_json(channel_init)
+        .transact()
+        .await
+        .unwrap();
+    println!("channel open init res: {:?}", res);
+
+    let channel_end_bytes: Vec<u8> = serde_json::from_slice(
+        user.view(contract.id(), "get_commitment")
+            .args_json(GetCommitment {
+                key: format!(
+                    "channelEnds/ports/{}/channels/channel-1",
+                    port_id.to_string()
+                ),
+            })
+            .await
+            .unwrap()
+            .result
+            .as_slice(),
+    )
+    .unwrap();
+
+    let channel = Channel::decode_as::<Proto>(&channel_end_bytes).unwrap();
+
+    assert_eq!(
+        Channel {
+            state: channel::state::State::Init,
+            ordering: channel::order::Order::Unordered,
+            counterparty: channel::counterparty::Counterparty {
+                port_id: "transfer".to_string().validate().unwrap(),
+                channel_id: "".into()
+            },
+            connection_hops: vec!["connection-1".to_string().validate().unwrap()],
+            version: "ucs01".into()
+        },
+        channel
+    );
+
+    let channel_ack = ChannelOpenAck {
+        channel_id: "channel-1".to_string().validate().unwrap(),
+        port_id: port_id.clone(),
+        counterparty_channel_id: "channel-100".into(),
+        counterparty_version: "ucs01".into(),
+        proof_try: vec![1, 2, 3],
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: 100,
+        },
+    };
+
+    println!("calling channel open ack");
+    let res = user
+        .call(contract.id(), "channel_open_ack")
+        .gas(300000000000000)
+        .args_json(channel_ack)
+        .transact()
+        .await
+        .unwrap();
+    println!("channel open ack res: {:?}", res);
+
+    let channel_end_bytes: Vec<u8> = serde_json::from_slice(
+        user.view(contract.id(), "get_commitment")
+            .args_json(GetCommitment {
+                key: format!(
+                    "channelEnds/ports/{}/channels/channel-1",
+                    port_id.to_string()
+                ),
+            })
+            .await
+            .unwrap()
+            .result
+            .as_slice(),
+    )
+    .unwrap();
+
+    let channel = Channel::decode_as::<Proto>(&channel_end_bytes).unwrap();
+
+    assert_eq!(
+        Channel {
+            state: channel::state::State::Open,
+            ordering: channel::order::Order::Unordered,
+            counterparty: channel::counterparty::Counterparty {
+                port_id: "transfer".to_string().validate().unwrap(),
+                channel_id: "channel-100".into()
+            },
+            connection_hops: vec!["connection-1".to_string().validate().unwrap()],
+            version: "ucs01".into()
+        },
+        channel
+    );
+
+    println!("[ + ] - `test_open_channel_starting_from_init`: Channel opened.");
 }
