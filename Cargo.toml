@@ -22,8 +22,10 @@ members = [
   "lib/block-message",
   "lib/chain-utils",
   "lib/gnark-key-parser",
+  "lib/gnark-mimc",
   "lib/ics-008-wasm-client",
   "lib/ics23",
+  "lib/linea-verifier",
   "lib/macros",
   "lib/pg-queue",
   "lib/poseidon-rs",
@@ -53,6 +55,7 @@ members = [
   "light-clients/ethereum-light-client",
   "light-clients/scroll-light-client",
   "light-clients/tendermint-light-client",
+  "light-clients/linea-light-client",
 
   "tools/generate-rust-sol-bindings",
   "tools/keygen",
@@ -63,6 +66,7 @@ members = [
   "unionvisor",
   "voyager",
   "zerg",
+  "lib/linea-zktrie",
 ]
 
 [workspace.package]
@@ -89,8 +93,11 @@ cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-fe
 contracts                 = { path = "generated/rust/contracts", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
 gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
+gnark-mimc                = { path = "lib/gnark-mimc", default-features = false }
 ics008-wasm-client        = { path = "lib/ics-008-wasm-client", default-features = false }
 ics23                     = { path = "lib/ics23", default-features = false }
+linea-verifier            = { path = "lib/linea-verifier", default-features = false }
+linea-zktrie              = { path = "lib/linea-zktrie", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
