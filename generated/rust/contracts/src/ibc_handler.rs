@@ -727,6 +727,52 @@ pub mod ibc_handler {
                     },],
                 ),
                 (
+                    ::std::borrow::ToOwned::to_owned("getChannel"),
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("getChannel"),
+                        inputs: ::std::vec![
+                            ::ethers::core::abi::ethabi::Param {
+                                name: ::std::borrow::ToOwned::to_owned("portId"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                internal_type: ::core::option::Option::Some(
+                                    ::std::borrow::ToOwned::to_owned("string"),
+                                ),
+                            },
+                            ::ethers::core::abi::ethabi::Param {
+                                name: ::std::borrow::ToOwned::to_owned("channelId"),
+                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                internal_type: ::core::option::Option::Some(
+                                    ::std::borrow::ToOwned::to_owned("string"),
+                                ),
+                            },
+                        ],
+                        outputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::string::String::new(),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                ::ethers::core::abi::ethabi::ParamType::Uint(8usize),
+                                ::ethers::core::abi::ethabi::ParamType::Uint(8usize),
+                                ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                ],),
+                                ::ethers::core::abi::ethabi::ParamType::Array(
+                                    ::std::boxed::Box::new(
+                                        ::ethers::core::abi::ethabi::ParamType::String,
+                                    ),
+                                ),
+                                ::ethers::core::abi::ethabi::ParamType::String,
+                            ],),
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned(
+                                    "struct IbcCoreChannelV1Channel.Data",
+                                ),
+                            ),
+                        },],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                    },],
+                ),
+                (
                     ::std::borrow::ToOwned::to_owned("getClient"),
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("getClient"),
@@ -742,6 +788,53 @@ pub mod ibc_handler {
                             kind: ::ethers::core::abi::ethabi::ParamType::Address,
                             internal_type: ::core::option::Option::Some(
                                 ::std::borrow::ToOwned::to_owned("contract ILightClient"),
+                            ),
+                        },],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                    },],
+                ),
+                (
+                    ::std::borrow::ToOwned::to_owned("getConnection"),
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("getConnection"),
+                        inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::borrow::ToOwned::to_owned("connectionId"),
+                            kind: ::ethers::core::abi::ethabi::ParamType::String,
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned("string"),
+                            ),
+                        },],
+                        outputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::string::String::new(),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                ::ethers::core::abi::ethabi::ParamType::String,
+                                ::ethers::core::abi::ethabi::ParamType::Array(
+                                    ::std::boxed::Box::new(
+                                        ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                            ::ethers::core::abi::ethabi::ParamType::String,
+                                            ::ethers::core::abi::ethabi::ParamType::Array(
+                                                ::std::boxed::Box::new(
+                                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                                ),
+                                            ),
+                                        ],),
+                                    ),
+                                ),
+                                ::ethers::core::abi::ethabi::ParamType::Uint(8usize),
+                                ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                        ::ethers::core::abi::ethabi::ParamType::Bytes
+                                    ],),
+                                ],),
+                                ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                            ],),
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned(
+                                    "struct IbcCoreConnectionV1ConnectionEnd.Data",
+                                ),
                             ),
                         },],
                         constant: ::core::option::Option::None,
@@ -1596,6 +1689,16 @@ pub mod ibc_handler {
                 .method_hash([213, 162, 68, 129], (msg,))
                 .expect("method not found (this should never happen)")
         }
+        ///Calls the contract's `getChannel` (0x3000217a) function
+        pub fn get_channel(
+            &self,
+            port_id: ::std::string::String,
+            channel_id: ::std::string::String,
+        ) -> ::ethers::contract::builders::ContractCall<M, IbcCoreChannelV1ChannelData> {
+            self.0
+                .method_hash([48, 0, 33, 122], (port_id, channel_id))
+                .expect("method not found (this should never happen)")
+        }
         ///Calls the contract's `getClient` (0x7eb78932) function
         pub fn get_client(
             &self,
@@ -1603,6 +1706,16 @@ pub mod ibc_handler {
         ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
             self.0
                 .method_hash([126, 183, 137, 50], client_id)
+                .expect("method not found (this should never happen)")
+        }
+        ///Calls the contract's `getConnection` (0x27711a69) function
+        pub fn get_connection(
+            &self,
+            connection_id: ::std::string::String,
+        ) -> ::ethers::contract::builders::ContractCall<M, IbcCoreConnectionV1ConnectionEndData>
+        {
+            self.0
+                .method_hash([39, 113, 26, 105], connection_id)
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `initialize` (0x1459457a) function
@@ -2765,6 +2878,22 @@ pub mod ibc_handler {
     pub struct CreateClientCall {
         pub msg: MsgCreateClient,
     }
+    ///Container type for all input parameters for the `getChannel` function with signature `getChannel(string,string)` and selector `0x3000217a`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    #[ethcall(name = "getChannel", abi = "getChannel(string,string)")]
+    pub struct GetChannelCall {
+        pub port_id: ::std::string::String,
+        pub channel_id: ::std::string::String,
+    }
     ///Container type for all input parameters for the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
     #[derive(
         Clone,
@@ -2779,6 +2908,21 @@ pub mod ibc_handler {
     #[ethcall(name = "getClient", abi = "getClient(string)")]
     pub struct GetClientCall {
         pub client_id: ::std::string::String,
+    }
+    ///Container type for all input parameters for the `getConnection` function with signature `getConnection(string)` and selector `0x27711a69`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    #[ethcall(name = "getConnection", abi = "getConnection(string)")]
+    pub struct GetConnectionCall {
+        pub connection_id: ::std::string::String,
     }
     ///Container type for all input parameters for the `initialize` function with signature `initialize(address,address,address,address,address)` and selector `0x1459457a`
     #[derive(
@@ -3060,7 +3204,9 @@ pub mod ibc_handler {
         ConnectionOpenTry(ConnectionOpenTryCall),
         Connections(ConnectionsCall),
         CreateClient(CreateClientCall),
+        GetChannel(GetChannelCall),
         GetClient(GetClientCall),
+        GetConnection(GetConnectionCall),
         Initialize(InitializeCall),
         NextChannelSequencePath(NextChannelSequencePathCall),
         NextClientSequencePath(NextClientSequencePathCall),
@@ -3181,8 +3327,15 @@ pub mod ibc_handler {
             {
                 return Ok(Self::CreateClient(decoded));
             }
+            if let Ok(decoded) = <GetChannelCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+                return Ok(Self::GetChannel(decoded));
+            }
             if let Ok(decoded) = <GetClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::GetClient(decoded));
+            }
+            if let Ok(decoded) = <GetConnectionCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
+                return Ok(Self::GetConnection(decoded));
             }
             if let Ok(decoded) = <InitializeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::Initialize(decoded));
@@ -3291,7 +3444,9 @@ pub mod ibc_handler {
                 Self::ConnectionOpenTry(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::Connections(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::CreateClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::GetChannel(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::GetClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::GetConnection(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::Initialize(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::NextChannelSequencePath(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
@@ -3344,7 +3499,9 @@ pub mod ibc_handler {
                 Self::ConnectionOpenTry(element) => ::core::fmt::Display::fmt(element, f),
                 Self::Connections(element) => ::core::fmt::Display::fmt(element, f),
                 Self::CreateClient(element) => ::core::fmt::Display::fmt(element, f),
+                Self::GetChannel(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetClient(element) => ::core::fmt::Display::fmt(element, f),
+                Self::GetConnection(element) => ::core::fmt::Display::fmt(element, f),
                 Self::Initialize(element) => ::core::fmt::Display::fmt(element, f),
                 Self::NextChannelSequencePath(element) => ::core::fmt::Display::fmt(element, f),
                 Self::NextClientSequencePath(element) => ::core::fmt::Display::fmt(element, f),
@@ -3474,9 +3631,19 @@ pub mod ibc_handler {
             Self::CreateClient(value)
         }
     }
+    impl ::core::convert::From<GetChannelCall> for IBCHandlerCalls {
+        fn from(value: GetChannelCall) -> Self {
+            Self::GetChannel(value)
+        }
+    }
     impl ::core::convert::From<GetClientCall> for IBCHandlerCalls {
         fn from(value: GetClientCall) -> Self {
             Self::GetClient(value)
+        }
+    }
+    impl ::core::convert::From<GetConnectionCall> for IBCHandlerCalls {
+        fn from(value: GetConnectionCall) -> Self {
+            Self::GetConnection(value)
         }
     }
     impl ::core::convert::From<InitializeCall> for IBCHandlerCalls {
@@ -3749,6 +3916,18 @@ pub mod ibc_handler {
         Hash,
     )]
     pub struct CreateClientReturn(pub ::std::string::String);
+    ///Container type for all return fields from the `getChannel` function with signature `getChannel(string,string)` and selector `0x3000217a`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    pub struct GetChannelReturn(pub IbcCoreChannelV1ChannelData);
     ///Container type for all return fields from the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
     #[derive(
         Clone,
@@ -3761,6 +3940,18 @@ pub mod ibc_handler {
         Hash,
     )]
     pub struct GetClientReturn(pub ::ethers::core::types::Address);
+    ///Container type for all return fields from the `getConnection` function with signature `getConnection(string)` and selector `0x27711a69`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    pub struct GetConnectionReturn(pub IbcCoreConnectionV1ConnectionEndData);
     ///Container type for all return fields from the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
     #[derive(
         Clone,

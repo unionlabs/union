@@ -307,6 +307,7 @@ pub struct IbcCoreChannelV1CounterpartyData {
     pub channel_id: ::std::string::String,
 }
 ///`Data(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
+///`IbcCoreChannelV1PacketData(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -362,6 +363,24 @@ pub struct IbcCoreClientV1HeightData {
 )]
 pub struct IbcCoreCommitmentV1MerklePrefixData {
     pub key_prefix: ::ethers::core::types::Bytes,
+}
+///`IbcCoreConnectionV1ConnectionEndData(string,(string,string[])[],uint8,(string,string,(bytes)),uint64)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct IbcCoreConnectionV1ConnectionEndData {
+    pub client_id: ::std::string::String,
+    pub versions: ::std::vec::Vec<IbcCoreConnectionV1VersionData>,
+    pub state: u8,
+    pub counterparty: IbcCoreConnectionV1CounterpartyData,
+    pub delay_period: u64,
 }
 ///`IbcCoreConnectionV1CounterpartyData(string,string,(bytes))`
 #[derive(
