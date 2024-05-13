@@ -22,8 +22,6 @@ pub enum Error {
     InvalidL2StateRootProof(ethereum_verifier::Error),
     #[error("invalid l2 ibc contract proof {0}")]
     InvalidL2IbcContractProof(linea_zktrie::verify::Error),
-    #[error("the l2 ibc contract proof must be an inclusion proof, verify the address?")]
-    L2IbcContractProofIsNotInclusion,
 }
 
 /*
