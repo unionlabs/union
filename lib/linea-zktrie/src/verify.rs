@@ -10,10 +10,7 @@ use unionlabs::{
     uint::U256,
 };
 
-use crate::node::{get_leaf_path, BranchNode, LeafNode, Node, RootNode};
-
-pub const DIRECTION_LEFT: u8 = 0;
-pub const DIRECTION_RIGHT: u8 = 1;
+use crate::node::{get_leaf_path, BranchNode, Direction, LeafNode, Node, RootNode, Terminator};
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/ZKTrie.java#L64C1-L65C47
 pub const ZK_TRIE_DEPTH: usize = 40;
@@ -78,8 +75,8 @@ impl ZkValue for H256 {
 
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
 pub enum Error {
-    #[error("invalid direction {0}")]
-    InvalidDirection(u8),
+    #[error("invalid direction {0:?}")]
+    InvalidDirection(Direction),
     #[error("missing root node")]
     MissingRoot,
     #[error("missing leaf node")]
@@ -136,8 +133,8 @@ impl TryFrom<&MerklePath> for VerifiablePath {
                 .ok_or(Error::MissingRoot)?,
         )?;
         let leaf = LeafNode::decode(value.proof_related_nodes.last().ok_or(Error::MissingLeaf)?)?;
-        // Minus root/leaf
-        let inner_path_len = value.proof_related_nodes.len() - 2;
+        // Skip the root as we manually check against it
+        let inner_path_len = value.proof_related_nodes.len() - 1;
         let path = value
             .proof_related_nodes
             .iter()
@@ -273,25 +270,25 @@ pub fn verify_inclusion<V: ZkValue + Clone>(
         });
     }
     // The algorithm we use is slightly more explicit, we actually extract both
-    // the root and leaf so the inner path must exclude both root <path> leaf
+    // the root so the inner path must exclude it
     // Minus root/leaf
-    let inner_path_len = leaf_path.len() - 2;
-    let inner_path = leaf_path.into_iter().skip(1).take(inner_path_len);
-    let leaf_hash = verifiable_path.leaf.hash(constants)?;
+    let inner_path = leaf_path.into_iter().skip(1);
+    let hash = |x| mimc_sum_bl12377(constants, x);
     // Starts with the leaf hash, then recursively walk back to the tip of the
     // tree.
     let subtrie_root = verifiable_path.path.iter().zip(inner_path).rev().try_fold(
-        leaf_hash,
+        H256::default(),
         |current_hash, (node, direction)| -> Result<H256, Error> {
             let node_hash = node.hash(constants)?;
-            let to_hash = match direction {
+            let next_hash = match direction {
                 // We went on the left branch, we hash against the right sibling
-                DIRECTION_LEFT => [current_hash.as_ref(), node_hash.as_ref()].concat(),
+                Direction::Left => hash([current_hash.as_ref(), node_hash.as_ref()].concat())?,
                 // We went on the right branch, we hash against the left sibling
-                DIRECTION_RIGHT => [node_hash.as_ref(), current_hash.as_ref()].concat(),
-                d => return Err(Error::InvalidDirection(d)),
+                Direction::Right => hash([node_hash.as_ref(), current_hash.as_ref()].concat())?,
+                // We are at the leaf level, we start with it's hash
+                Direction::Terminator(Terminator::Value) => node_hash,
             };
-            Ok(mimc_sum_bl12377(constants, to_hash)?)
+            Ok(next_hash)
         },
     )?;
     // Verify the subtrie root

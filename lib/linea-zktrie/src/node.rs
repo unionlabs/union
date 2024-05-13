@@ -7,21 +7,39 @@ use unionlabs::{
 };
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/path/PathResolver.java#L27
-pub const SUB_TRIE_ROOT_PATH: [u8; 1] = [1];
+pub const SUB_TRIE_ROOT_PATH: Direction = Direction::Right;
 
-// https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/node/LeafType.java#L21-L24
-pub const LEAF_TYPE_VALUE: u8 = 0x16;
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Terminator {
+    // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/node/LeafType.java#L21-L24
+    Value,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Direction {
+    Left,
+    Right,
+    Terminator(Terminator),
+}
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/path/PathGenerator.java#L34
-pub fn bytes_to_leaf_path(bytes: &[u8], terminator_path: u8) -> Vec<u8> {
-    let mut path = vec![0u8; bytes.len() * 2 + 1];
+pub fn bytes_to_leaf_path(bytes: &[u8], terminator_path: Terminator) -> Vec<Direction> {
+    let mut path = vec![Direction::Left; bytes.len() * 2 + 1];
     let mut j = 0;
     for b in bytes.iter().skip(j) {
-        path[j] = b >> 4 & 15;
-        path[j + 1] = b & 15;
+        path[j] = if b >> 4 & 15 == 1 {
+            Direction::Right
+        } else {
+            Direction::Left
+        };
+        path[j + 1] = if b & 15 == 1 {
+            Direction::Right
+        } else {
+            Direction::Left
+        };
         j += 2;
     }
-    path[j] = terminator_path;
+    path[j] = Direction::Terminator(terminator_path);
     path
 }
 
@@ -32,12 +50,12 @@ pub fn node_index_to_bytes(trie_depth: usize, node_index: u64) -> Vec<u8> {
 }
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/path/PathResolver.java#L71
-pub fn get_leaf_path(trie_depth: usize, node_index: u64) -> Vec<u8> {
+pub fn get_leaf_path(trie_depth: usize, node_index: u64) -> Vec<Direction> {
     [
-        SUB_TRIE_ROOT_PATH.as_ref(),
+        [SUB_TRIE_ROOT_PATH].as_ref(),
         &bytes_to_leaf_path(
             &node_index_to_bytes(trie_depth, node_index),
-            LEAF_TYPE_VALUE,
+            Terminator::Value,
         ),
     ]
     .concat()
