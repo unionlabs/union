@@ -1,6 +1,22 @@
 @import url('./reset.css');
 @import url('./tailwind.css');
 
+/* If the user prefers dark mode, 
+we of course apply color-scheme: dark, as usual */
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* If the user prefers light mode, 
+we still enforce color-scheme: dark, despite the user preference */
+@media (prefers-color-scheme: light) {
+  html {
+    color-scheme: dark;
+  }
+}
+
 ::selection {
   color: #0d0d0d;
   background-color: #a0ecfd;

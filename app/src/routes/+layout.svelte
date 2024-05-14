@@ -130,9 +130,9 @@ onMount(() => {
 <QueryClientProvider client={queryClient}>
   <Header />
   <div
-    class="relative flex flex-col bg-background bg-opacity-10 mb-20"
     id="page"
     data-vaul-drawer-wrapper
+    class="relative flex flex-col bg-background bg-opacity-10 mb-20"
   >
     <slot />
   </div>
@@ -152,7 +152,7 @@ onMount(() => {
   class={cn(
     'absolute top-0 z-[-2] size-full min-h-screen bg-[size:20px_20px]',
     'bg-[#b9e9ff78] bg-[radial-gradient(#638c91_0.3px,#b9e9ff78_1px)]',
-    'dark:bg-[#99e6ff20] dark:bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)]'
+    'dark:bg-[#99e6ff20] dark:bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)]',
   )}
 ></div>
 
