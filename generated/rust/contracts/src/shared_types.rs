@@ -1,3 +1,18 @@
+///`ConsensusStateUpdate(bytes32,(uint64,uint64))`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct ConsensusStateUpdate {
+    pub consensus_state_commitment: [u8; 32],
+    pub height: IbcCoreClientV1HeightData,
+}
 ///`GoogleProtobufTimestampData(int64,int64)`
 #[derive(
     Clone,
@@ -306,7 +321,6 @@ pub struct IbcCoreChannelV1CounterpartyData {
     pub port_id: ::std::string::String,
     pub channel_id: ::std::string::String,
 }
-///`Data(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
 ///`IbcCoreChannelV1PacketData(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
 #[derive(
     Clone,

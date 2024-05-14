@@ -87,12 +87,12 @@ library NFTLib {
 
     event ClassCreated(
         uint64 indexed packetSequence,
-        string indexed channelId,
+        string channelId,
         address indexed nftClass
     );
     event Received(
         uint64 indexed packetSequence,
-        string indexed channelId,
+        string channelId,
         string sender,
         address receiver,
         address indexed nftClass,
@@ -100,7 +100,7 @@ library NFTLib {
     );
     event Sent(
         uint64 indexed packetSequence,
-        string indexed channelId,
+        string channelId,
         address sender,
         string receiver,
         address indexed nftClass,
@@ -108,7 +108,7 @@ library NFTLib {
     );
     event Refunded(
         uint64 indexed packetSequence,
-        string indexed channelId,
+        string channelId,
         address sender,
         string receiver,
         address indexed nftClass,

@@ -454,7 +454,10 @@ where
         }
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => QueueMsg::Noop,
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
-            ClientUpdatedFilter(client_id, consensus_height),
+            ClientUpdatedFilter {
+                client_id,
+                height: consensus_height,
+            },
         )) => {
             let client_type = c
                 .ibc_handler()

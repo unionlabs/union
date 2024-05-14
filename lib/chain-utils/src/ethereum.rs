@@ -3,25 +3,21 @@ use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, sync::Arc}
 use beacon_api::client::BeaconApiClient;
 use contracts::{
     cometbls_client::CometblsClientErrors,
+    i_light_client::ILightClient,
     ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
     ibc_client::{IBCClientErrors, IBCClientEvents},
     ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
-    ibc_handler::{
-        GetChannelCall, GetChannelReturn, GetConnectionCall, GetConnectionReturn, IBCHandler,
-        IbcCoreConnectionV1ConnectionEndData, NextClientSequencePathCall,
-        NextConnectionSequencePathCall, OwnershipTransferredFilter,
-    },
+    ibc_handler::{IBCHandler, OwnershipTransferredFilter},
     ibc_packet::{IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
-    shared_types::IbcCoreChannelV1ChannelData,
 };
 use ethers::{
-    abi::{AbiDecode, Tokenizable},
-    contract::{ContractError, EthCall, EthLogDecode, FunctionCall},
+    abi::AbiDecode,
+    contract::{ContractError, EthLogDecode},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::{LocalWallet, Wallet},
-    utils::secret_key_to_address,
+    utils::{keccak256, secret_key_to_address},
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::Future;
@@ -600,13 +596,13 @@ pub trait IbcHandlerExt<M: Middleware> {
         Hc: EthereumChain,
         Tr: Chain;
 
-    fn eth_call<Call>(
-        &self,
-        call: Call,
-        at_execution_height: u64,
-    ) -> impl Future<Output = Result<Call::Return, ContractError<M>>> + Send
-    where
-        Call: EthCallExt + 'static;
+    // fn eth_call<Call>(
+    //     &self,
+    //     call: Call,
+    //     at_execution_height: u64,
+    // ) -> impl Future<Output = Result<Call::Return, ContractError<M>>> + Send
+    // where
+    //     Call: EthCallExt + 'static;
 }
 
 impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
@@ -620,62 +616,26 @@ impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
         Hc: EthereumChain,
         Tr: Chain,
     {
-        self.method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
-            P::EthCall::selector(),
-            path.into_eth_call(),
-        )
-        .expect("valid contract selector")
-        .block(execution_block_number)
-        .call()
-        .await
-        .map(P::decode_ibc_state)
+        Ok(path.read(self, execution_block_number).await)
     }
 
-    async fn eth_call<Call>(
-        &self,
-        call: Call,
-        at_execution_height: u64,
-    ) -> Result<Call::Return, ContractError<M>>
-    where
-        Call: EthCallExt + 'static,
-    {
-        self.method_hash::<Call, Call::Return>(Call::selector(), call)
-            .expect("valid contract selector")
-            .block(at_execution_height)
-            .call()
-            .await
-    }
+    // async fn eth_call<Call>(
+    //     &self,
+    //     call: Call,
+    //     at_execution_height: u64,
+    // ) -> Result<Call::Return, ContractError<M>>
+    // where
+    //     Call: EthCallExt + 'static,
+    // {
+    //     self.method_hash::<Call, Call::Return>(Call::selector(), call)
+    //         .expect("valid contract selector")
+    //         .block(at_execution_height)
+    //         .call()
+    //         .await
+    // }
 }
 
 pub type EthereumClientId = ClientId;
-
-/// Wrapper trait for a contract call's signature, to map the input type to the return type.
-/// `ethers` generates both of these types, but doesn't correlate them.
-pub trait EthCallExt: EthCall {
-    type Return: Tokenizable + Send + Sync + 'static;
-}
-
-macro_rules! impl_eth_call_ext {
-    ($($Call:ident -> $Return:ident;)+) => {
-        $(
-            impl EthCallExt for $Call {
-                type Return = $Return;
-            }
-        )+
-    }
-}
-
-impl_eth_call_ext! {
-    // GetClientStateCall                           -> GetClientStateReturn;
-    // GetConsensusStateCall                        -> GetConsensusStateReturn;
-    GetConnectionCall                            -> GetConnectionReturn;
-    GetChannelCall                               -> GetChannelReturn;
-    // GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
-    // GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
-    // HasPacketReceiptCall                         -> bool;
-    // NextConnectionSequencePathCall                   -> u64;
-    // NextClientSequencePathCall                       -> u64;
-}
 
 pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
     let next_epoch_slot = slot + (C::SLOTS_PER_EPOCH::U64 - (slot % C::SLOTS_PER_EPOCH::U64));
@@ -687,7 +647,11 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    fn read<M: Middleware>(self, ibc_handler: &IBCHandler<M>) -> impl Future<Output = Self::Value>;
+    fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> impl Future<Output = Self::Value> + Send + '_;
 }
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientStatePath<ClientIdOf<Hc>>
@@ -696,23 +660,26 @@ where
     Tr: Chain,
     Self::Value: Decode<Hc::IbcStateEncoding>,
 {
-    fn read<M: Middleware>(self, ibc_handler: &IBCHandler<M>) -> impl Future<Output = Self::Value> {
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
         let client_address = ibc_handler
             .get_client(self.client_id.to_string())
+            .block(execution_block_number)
             .call()
             .await
             .unwrap();
-    }
-    type EthCall = GetClientStateCall;
 
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            client_id: self.client_id.to_string(),
-        }
-    }
+        let bytes = ILightClient::new(client_address, ibc_handler.client())
+            .get_client_state(self.client_id.to_string())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap();
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        <Self::Value as Decode<EthAbi>>::decode(&encoded.0).unwrap()
+        <Self::Value as Decode<EthAbi>>::decode(&bytes).unwrap()
     }
 }
 
@@ -722,17 +689,26 @@ where
     Tr: Chain,
     Self::Value: Decode<EthAbi>,
 {
-    type EthCall = GetConsensusStateCall;
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        let client_address = ibc_handler
+            .get_client(self.client_id.to_string())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap();
 
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            client_id: self.client_id.to_string(),
-            height: self.height.into_height().into(),
-        }
-    }
+        let bytes = ILightClient::new(client_address, ibc_handler.client())
+            .get_consensus_state(self.client_id.to_string(), self.height.into_height().into())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap();
 
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        <Self::Value as Decode<EthAbi>>::decode(&encoded.consensus_state_bytes).unwrap()
+        <Self::Value as Decode<EthAbi>>::decode(&bytes).unwrap()
     }
 }
 
@@ -741,16 +717,19 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = GetConnectionCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            connection_id: self.connection_id.to_string(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0.try_into().unwrap()
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        ibc_handler
+            .get_connection(self.connection_id.to_string())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap()
+            .try_into()
+            .unwrap()
     }
 }
 
@@ -759,17 +738,19 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = GetChannelCall;
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        let raw = ibc_handler
+            .get_channel(self.port_id.to_string(), self.channel_id.to_string())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap();
 
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0.try_into().unwrap()
+        raw.try_into().unwrap()
     }
 }
 
@@ -778,18 +759,21 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = GetHashedPacketCommitmentCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            sequence: self.sequence.get(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0.into()
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        ibc_handler
+            .client()
+            .get_storage_at(
+                ibc_handler.address(),
+                keccak256(self.to_string()).into(),
+                Some(execution_block_number.into()),
+            )
+            .await
+            .unwrap()
+            .into()
     }
 }
 
@@ -798,18 +782,21 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = GetHashedPacketAcknowledgementCommitmentCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            sequence: self.sequence.get(),
-        }
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded.0.into()
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        ibc_handler
+            .client()
+            .get_storage_at(
+                ibc_handler.address(),
+                keccak256(self.to_string()).into(),
+                Some(execution_block_number.into()),
+            )
+            .await
+            .unwrap()
+            .into()
     }
 }
 
@@ -818,14 +805,25 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = NextConnectionSequenceCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {}
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        U256::from_be_bytes(
+            ibc_handler
+                .client()
+                .get_storage_at(
+                    ibc_handler.address(),
+                    keccak256(self.to_string()).into(),
+                    Some(execution_block_number.into()),
+                )
+                .await
+                .unwrap()
+                .0,
+        )
+        .try_into()
+        .unwrap()
     }
 }
 
@@ -834,14 +832,25 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = NextClientSequenceCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {}
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        U256::from_be_bytes(
+            ibc_handler
+                .client()
+                .get_storage_at(
+                    ibc_handler.address(),
+                    keccak256(self.to_string()).into(),
+                    Some(execution_block_number.into()),
+                )
+                .await
+                .unwrap()
+                .0,
+        )
+        .try_into()
+        .unwrap()
     }
 }
 
@@ -850,18 +859,29 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall = HasPacketReceiptCall;
-
-    fn into_eth_call(self) -> Self::EthCall {
-        Self::EthCall {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            sequence: self.sequence.into(),
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        match u64::try_from(U256::from_be_bytes(
+            ibc_handler
+                .client()
+                .get_storage_at(
+                    ibc_handler.address(),
+                    keccak256(self.to_string()).into(),
+                    Some(execution_block_number.into()),
+                )
+                .await
+                .unwrap()
+                .0,
+        ))
+        .unwrap()
+        {
+            0 => false,
+            1 => true,
+            n => panic!("not a bool??? {n}"),
         }
-    }
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value {
-        encoded
     }
 }
 

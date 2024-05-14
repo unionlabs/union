@@ -11,36 +11,36 @@ import "../05-port/IIBCModule.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
-        string indexed portId,
-        string indexed channelId,
+        string portId,
+        string channelId,
         string counterpartyPortId,
-        string indexed connectionId,
+        string connectionId,
         string version
     );
     event ChannelOpenTry(
-        string indexed portId,
-        string indexed channelId,
+        string portId,
+        string channelId,
         string counterpartyPortId,
         string counterpartyChannelId,
-        string indexed connectionId,
+        string connectionId,
         string version
     );
     event ChannelOpenAck(
-        string indexed portId,
-        string indexed channelId,
+        string portId,
+        string channelId,
         string counterpartyPortId,
         string counterpartyChannelId,
-        string indexed connectionId
+        string connectionId
     );
     event ChannelOpenConfirm(
-        string indexed portId,
-        string indexed channelId,
+        string portId,
+        string channelId,
         string counterpartyPortId,
         string counterpartyChannelId,
-        string indexed connectionId
+        string connectionId
     );
-    event ChannelCloseInit(string indexed channelId, string indexed portId);
-    event ChannelCloseConfirm(string indexed channelId, string indexed portId);
+    event ChannelCloseInit(string channelId, string portId);
+    event ChannelCloseConfirm(string channelId, string portId);
 
     error ErrConnNotSingleHop();
     error ErrConnNotSingleVersion();
