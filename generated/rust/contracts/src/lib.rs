@@ -6,6 +6,7 @@
 pub mod cometbls_client;
 pub mod erc20;
 pub mod glue;
+pub mod i_light_client;
 pub mod ibc_channel_handshake;
 pub mod ibc_client;
 pub mod ibc_connection;

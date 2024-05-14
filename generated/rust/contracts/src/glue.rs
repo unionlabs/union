@@ -1403,7 +1403,7 @@ pub mod glue {
         pub secp_25_6k_1: ::ethers::core::types::Bytes,
         pub bn_254: ::ethers::core::types::Bytes,
     }
-    ///`Data(bytes,(uint32,bytes))`
+    ///`TendermintTypesBlockIDData(bytes,(uint32,bytes))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

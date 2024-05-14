@@ -76,14 +76,14 @@ library RelayLib {
 
     event DenomCreated(
         uint64 indexed packetSequence,
-        string indexed channelId,
-        string indexed denom,
+        string channelId,
+        string denom,
         address token
     );
     event Received(
         uint64 packetSequence,
         string channelId,
-        string indexed sender,
+        string sender,
         address indexed receiver,
         string denom,
         address indexed token,
@@ -93,7 +93,7 @@ library RelayLib {
         uint64 packetSequence,
         string channelId,
         address indexed sender,
-        string indexed receiver,
+        string receiver,
         string denom,
         address indexed token,
         uint256 amount
@@ -102,7 +102,7 @@ library RelayLib {
         uint64 packetSequence,
         string channelId,
         address indexed sender,
-        string indexed receiver,
+        string receiver,
         string denom,
         address indexed token,
         uint256 amount

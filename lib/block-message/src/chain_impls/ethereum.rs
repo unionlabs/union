@@ -14,7 +14,6 @@ use contracts::{
         ConnectionOpenAckFilter, ConnectionOpenConfirmFilter, ConnectionOpenInitFilter,
         ConnectionOpenTryFilter, IBCConnectionEvents,
     },
-    ibc_handler::{GetChannelCall, GetConnectionCall},
     ibc_packet::{AcknowledgePacketFilter, IBCPacketEvents, RecvPacketFilter, SendPacketFilter},
 };
 use enumorph::Enumorph;
@@ -28,7 +27,6 @@ use queue_msg::{
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    encoding::{DecodeAs, EthAbi},
     ethereum::config::ChainSpec,
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -45,7 +43,9 @@ use unionlabs::{
         lightclients::cometbls,
     },
     ics24::{ChannelEndPath, ConnectionPath},
+    id::ClientIdValidator,
     traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
+    validated::ValidateT,
 };
 
 use crate::{
@@ -165,7 +165,10 @@ where
                 tracing::debug!(?log, "raw log");
 
                 match IBCHandlerEvents::decode_log(&log.into()) {
-                    Ok(event) => Some(mk_aggregate_event(c, event, event_height, tx_hash).await),
+                    Ok(event) => {
+                        tracing::info!(?event, "found IBCHandler event");
+                        Some(mk_aggregate_event(c, event, event_height, tx_hash).await)
+                    }
                     Err(e) => {
                         tracing::warn!("could not decode evm event {}", e);
                         None
@@ -263,16 +266,12 @@ where
         Data::<Hc>::specific(ChannelData {
             channel: c
                 .ibc_handler()
-                .eth_call(
-                    GetChannelCall {
-                        port_id: path.port_id.to_string(),
-                        channel_id: path.channel_id.to_string(),
-                    },
+                .get_channel(path.port_id.to_string(), path.channel_id.to_string())
+                .block(
                     c.execution_height_of_beacon_slot(height.revision_height())
                         .await,
                 )
                 .await
-                .unwrap()
                 .unwrap()
                 .try_into()
                 .unwrap(),
@@ -295,15 +294,12 @@ where
         c.chain_id(),
         Data::<Hc>::specific(ConnectionData(
             c.ibc_handler()
-                .eth_call(
-                    GetConnectionCall {
-                        connection_id: path.connection_id.to_string(),
-                    },
+                .get_connection(path.connection_id.to_string())
+                .block(
                     c.execution_height_of_beacon_slot(height.revision_height())
                         .await,
                 )
                 .await
-                .unwrap()
                 .unwrap()
                 .try_into()
                 .unwrap(),
@@ -419,7 +415,7 @@ where
             raw_event,
         ),
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(
-            ClientCreatedFilter(client_id),
+            ClientCreatedFilter { client_id },
         )) => {
             let client_type = c
                 .ibc_handler()
@@ -427,16 +423,19 @@ where
                 .await
                 .unwrap();
 
-            let (client_state, success) = c
+            let client_state = c
                 .ibc_handler()
-                .get_client_state(client_id.clone())
-                .await
-                .unwrap();
-
-            assert!(success);
-
-            let client_state =
-                cometbls::client_state::ClientState::decode_as::<EthAbi>(&client_state).unwrap();
+                .get_client_state::<Hc, cometbls::client_state::ClientState>(
+                    client_id
+                        .clone()
+                        .validate::<ClientIdValidator>()
+                        .unwrap()
+                        .try_into()
+                        .unwrap(),
+                    c.execution_height_of_beacon_slot(event_height.revision_height())
+                        .await,
+                )
+                .await;
 
             data(id(
                 c.chain_id(),
@@ -454,7 +453,10 @@ where
         }
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => QueueMsg::Noop,
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
-            ClientUpdatedFilter(client_id, consensus_height),
+            ClientUpdatedFilter {
+                client_id,
+                height: consensus_height,
+            },
         )) => {
             let client_type = c
                 .ibc_handler()

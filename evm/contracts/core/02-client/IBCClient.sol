@@ -9,11 +9,9 @@ import "../02-client/IIBCClient.sol";
 import "../../proto/ibc/core/client/v1/client.sol";
 
 library IBCClientLib {
-    event ClientRegistered(string indexed clientType, address clientAddress);
-    event ClientCreated(string indexed clientId);
-    event ClientUpdated(
-        string indexed clientId, IbcCoreClientV1Height.Data height
-    );
+    event ClientRegistered(string clientType, address clientAddress);
+    event ClientCreated(string clientId);
+    event ClientUpdated(string clientId, IbcCoreClientV1Height.Data height);
 
     error ErrClientTypeAlreadyExists();
     error ErrClientMustNotBeSelf();

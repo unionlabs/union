@@ -11,24 +11,16 @@ import "../03-connection/IIBCConnection.sol";
 
 library IBCConnectionLib {
     event ConnectionOpenInit(
-        string indexed connectionId,
-        string indexed clientId,
-        string indexed counterpartyClientId
+        string connectionId, string clientId, string counterpartyClientId
     );
     event ConnectionOpenTry(
-        string indexed connectionId,
-        string indexed clientId,
-        string indexed counterpartyClientId
+        string connectionId, string clientId, string counterpartyClientId
     );
     event ConnectionOpenAck(
-        string indexed connectionId,
-        string indexed clientId,
-        string indexed counterpartyClientId
+        string connectionId, string clientId, string counterpartyClientId
     );
     event ConnectionOpenConfirm(
-        string indexed connectionId,
-        string indexed clientId,
-        string indexed counterpartyClientId
+        string connectionId, string clientId, string counterpartyClientId
     );
 
     error ErrConnectionAlreadyExists();

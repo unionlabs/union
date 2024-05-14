@@ -13,7 +13,6 @@ use contracts::{
     ibc_packet::SendPacketFilter,
     ucs01_relay::{self as ucs01relay, LocalToken},
 };
-use cosmwasm_std::Uint128;
 use ecdsa::SigningKey;
 use ethers::{
     abi::Address,
@@ -83,7 +82,7 @@ impl Context {
             zerg_config.union_contract, zerg_config.channel, zerg_config.union.fee_denom
         );
         let denom_address = ucs01_relay
-            .get_denom_address(zerg_config.port.clone(), zerg_config.channel.clone(), denom)
+            .get_denom_address(zerg_config.channel.clone(), denom)
             .call()
             .await
             .unwrap();
@@ -290,16 +289,16 @@ impl Context {
 
             if let Ok(pending) = ucs01_relay
                 .send(
-                    e.packet_dst_port.clone().to_string(),
                     e.packet_dst_channel.clone().to_string(),
                     transfer.sender().to_vec().into(),
                     vec![LocalToken {
                         denom: self.denom_address,
-                        amount: Uint128::try_from(transfer.tokens()[0].amount)
-                            .unwrap()
-                            .u128(),
+                        amount: transfer.tokens()[0].amount.u128(),
                     }],
-                    3,
+                    ucs01relay::IbcCoreClientV1HeightData {
+                        revision_number: 0,
+                        revision_height: 3,
+                    },
                     u64::MAX,
                 )
                 .send()

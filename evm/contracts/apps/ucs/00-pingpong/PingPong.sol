@@ -17,7 +17,7 @@ library PingPongLib {
     error ErrNoChannel();
     error ErrInfiniteGame();
 
-    event Ring(bool indexed ping);
+    event Ring(bool ping);
     event TimedOut();
     event Acknowledged();
 

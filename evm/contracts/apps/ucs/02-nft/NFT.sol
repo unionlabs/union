@@ -86,29 +86,29 @@ library NFTLib {
     uint256 public constant ACK_LENGTH = 1;
 
     event ClassCreated(
-        uint64 indexed packetSequence,
-        string indexed channelId,
+        uint64 packetSequence,
+        string channelId,
         address indexed nftClass
     );
     event Received(
-        uint64 indexed packetSequence,
-        string indexed channelId,
+        uint64 packetSequence,
+        string channelId,
         string sender,
         address receiver,
         address indexed nftClass,
         uint256[] tokenIds
     );
     event Sent(
-        uint64 indexed packetSequence,
-        string indexed channelId,
+        uint64 packetSequence,
+        string channelId,
         address sender,
         string receiver,
         address indexed nftClass,
         uint256[] tokenIds
     );
     event Refunded(
-        uint64 indexed packetSequence,
-        string indexed channelId,
+        uint64 packetSequence,
+        string channelId,
         address sender,
         string receiver,
         address indexed nftClass,

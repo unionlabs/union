@@ -3004,19 +3004,4 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct VerifyZKPReturn(pub bool);
-    ///`ConsensusStateUpdate(bytes32,(uint64,uint64))`
-    #[derive(
-        Clone,
-        ::ethers::contract::EthAbiType,
-        ::ethers::contract::EthAbiCodec,
-        Default,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-    )]
-    pub struct ConsensusStateUpdate {
-        pub consensus_state_commitment: [u8; 32],
-        pub height: IbcCoreClientV1HeightData,
-    }
 }

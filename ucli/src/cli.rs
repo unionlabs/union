@@ -63,12 +63,6 @@ pub enum EthereumTx {
     Transfer {
         #[arg(long)]
         relay_address: H160,
-        // #[arg(long)]
-        // from: Address,
-        // #[arg(long)]
-        // to: String,
-        #[arg(long)]
-        port_id: String,
         #[arg(long)]
         channel_id: String,
         #[arg(long)]
@@ -100,8 +94,6 @@ pub enum EthereumQuery {
         address: H160,
         #[arg(long)]
         channel_id: String,
-        #[arg(long)]
-        port_id: String,
     },
     Erc20Balance {
         #[arg(long)]
