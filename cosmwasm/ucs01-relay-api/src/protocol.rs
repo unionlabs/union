@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    Addr, Binary, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
-    IbcReceiveResponse, Response, SubMsg, Timestamp,
+    Addr, Attribute, Binary, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
+    IbcOrder, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
 
@@ -37,12 +37,20 @@ pub struct TransferInput {
     pub tokens: Vec<TransferToken>,
 }
 
+pub fn token_to_attr(TransferToken { denom, amount }: &TransferToken) -> Attribute {
+    (
+        "denom",
+        cosmwasm_std::to_json_string(&Coin::new(*amount, denom)).expect("impossible"),
+    )
+        .into()
+}
+
 // We follow the following module implementation, events and attributes are
 // almost 1:1 with the traditional go implementation. As we generalized the base
 // implementation for multi-tokens transfer, the events are not containing a
 // single ('denom', 'value') and ('amount', 'value') attributes but rather a set
-// of ('denom:x', 'amount_value') attributes for each denom `x` that is
-// transferred. i.e. [('denom:muno', '10'), ('denom:port/channel/weth', '150'), ..]
+// of ('denom', json_string(('x', '10'))) attributes for each denom `x` with
+// amount 10 that is transferred.
 // https://github.com/cosmos/ibc-go/blob/7be17857b10457c67cbf66a49e13a9751eb10e8e/modules/apps/transfer/ibc_module.go
 pub trait TransferProtocol {
     /// Must be unique per Protocol
@@ -144,9 +152,7 @@ pub trait TransferProtocol {
                         ("sender", input.sender.as_str()),
                         ("receiver", input.receiver.as_str()),
                     ])
-                    .add_attributes(input.tokens.into_iter().map(
-                        |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
-                    )),
+                    .add_attributes(input.tokens.into_iter().map(|token| token_to_attr(&token))),
                 Event::new("message").add_attribute("module", MODULE_NAME),
             ]))
     }
@@ -190,9 +196,12 @@ pub trait TransferProtocol {
                         ("receiver", packet.receiver().to_string().as_str()),
                         ("acknowledgement", &raw_ack.into().to_string()),
                     ])
-                    .add_attributes(packet.tokens().into_iter().map(
-                        |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
-                    )),
+                    .add_attributes(
+                        packet
+                            .tokens()
+                            .into_iter()
+                            .map(|token| token_to_attr(&token)),
+                    ),
             )
             .add_event(Event::new(PACKET_EVENT).add_attributes(ack_attr))
             .add_messages(ack_msgs))
@@ -221,9 +230,12 @@ pub trait TransferProtocol {
                         ("module", MODULE_NAME),
                         ("refund_receiver", packet.sender().to_string().as_str()),
                     ])
-                    .add_attributes(packet.tokens().into_iter().map(
-                        |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
-                    )),
+                    .add_attributes(
+                        packet
+                            .tokens()
+                            .into_iter()
+                            .map(|token| token_to_attr(&token)),
+                    ),
             )
             .add_messages(refund_msgs))
     }
@@ -267,9 +279,12 @@ pub trait TransferProtocol {
                             ("receiver", packet.receiver().to_string().as_str()),
                             ("success", "true"),
                         ])
-                        .add_attributes(packet.tokens().into_iter().map(
-                            |TransferToken { denom, amount }| (format!("denom:{}", denom), amount),
-                        )),
+                        .add_attributes(
+                            packet
+                                .tokens()
+                                .into_iter()
+                                .map(|token| token_to_attr(&token)),
+                        ),
                 )
                 .add_submessages(transfer_msgs))
         };
@@ -293,5 +308,25 @@ pub trait TransferProtocol {
             ("success", "false"),
             ("error", &error),
         ]))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{Coin, Uint128};
+
+    use crate::{protocol::token_to_attr, types::TransferToken};
+
+    #[test]
+    fn test_token_attr() {
+        let token = TransferToken {
+            denom: "factory/1/2/3".into(),
+            amount: 0xDEAD_u64.into(),
+        };
+        let attr = token_to_attr(&token);
+        let coin = cosmwasm_std::from_json::<Coin>(attr.value).unwrap();
+        assert_eq!(attr.key, "denom");
+        assert_eq!(coin.denom, "factory/1/2/3");
+        assert_eq!(coin.amount, Uint128::from(0xDEAD_u64));
     }
 }

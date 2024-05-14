@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, Uint256};
+use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, Uint128, Uint256};
 use ethabi::{ParamType, Token};
 
 pub type GenericAck = Result<Binary, String>;
@@ -23,14 +23,14 @@ pub struct TransferPacketCommon<T> {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct TransferToken {
     pub denom: String,
-    pub amount: Uint256,
+    pub amount: Uint128,
 }
 
 impl From<Coin> for TransferToken {
     fn from(value: Coin) -> Self {
         Self {
             denom: value.denom,
-            amount: value.amount.into(),
+            amount: value.amount,
         }
     }
 }
@@ -81,7 +81,7 @@ impl TryFrom<Ucs01TransferPacket> for Binary {
                     .map(|TransferToken { denom, amount }| {
                         Token::Tuple(vec![
                             Token::String(denom),
-                            Token::Uint(amount.to_be_bytes().into()),
+                            Token::Uint(Uint256::from(amount).to_be_bytes().into()),
                         ])
                     })
                     .collect(),
@@ -101,7 +101,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
                 ParamType::Bytes,
                 ParamType::Array(Box::new(ParamType::Tuple(vec![
                     ParamType::String,
-                    ParamType::Uint(256),
+                    ParamType::Uint(128),
                 ]))),
             ],
             &value,
@@ -121,8 +121,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
                                 match &encoded_token_inner[..] {
                                     [Token::String(denom), Token::Uint(amount)] => TransferToken {
                                         denom: denom.clone(),
-                                        // NOTE: both structures uses big endian by default
-                                        amount: Uint256::new((*amount).into()),
+                                        amount: Uint128::new(amount.as_u128()),
                                     },
                                     _ => unreachable!(),
                                 }
@@ -143,7 +142,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
 #[cw_serde]
 pub struct Ics20Packet {
     pub denom: String,
-    pub amount: Uint256,
+    pub amount: Uint128,
     pub sender: String,
     pub receiver: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
@@ -362,7 +361,7 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Binary, IbcEndpoint, Uint256};
+    use cosmwasm_std::{Binary, IbcEndpoint, Uint128};
 
     use super::{Ics20Packet, TransferToken, Ucs01Ack, Ucs01TransferPacket};
     use crate::types::{DenomOrigin, Ics20Ack};
@@ -375,15 +374,15 @@ mod tests {
             tokens: vec![
                 TransferToken {
                     denom: "denom-0".into(),
-                    amount: Uint256::from(1u32),
+                    amount: Uint128::from(1u32),
                 },
                 TransferToken {
                     denom: "denom-1".into(),
-                    amount: Uint256::MAX,
+                    amount: Uint128::MAX,
                 },
                 TransferToken {
                     denom: "denom-2".into(),
-                    amount: Uint256::from(1337u32),
+                    amount: Uint128::from(1337u32),
                 },
             ],
         };
@@ -412,7 +411,7 @@ mod tests {
     fn ics20_packet_encode_decode_iso() {
         let packet = Ics20Packet {
             denom: "a".into(),
-            amount: Uint256::from(1337u32),
+            amount: Uint128::from(1337u32),
             sender: "c".into(),
             receiver: "d".into(),
             memo: "bla".into(),
