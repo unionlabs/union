@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { HTMLInputAttributes } from "svelte/elements"
 import type { InputEvents } from "./index.js"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = HTMLInputAttributes
 type $$Events = InputEvents
@@ -32,10 +32,11 @@ export let readonly: $$Props["readonly"] = undefined
   on:keypress
   on:keyup
   on:mouseover
+  on:mousemove
   on:mouseenter
   on:mouseleave
   on:paste
   on:input
-  on:wheel
+  on:wheel|passive
   {...$$restProps}
 />

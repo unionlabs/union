@@ -1,7 +1,10 @@
+import Icons from "unplugin-icons/vite"
 import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
 import { visualizer } from "rollup-plugin-visualizer"
+import TurboConsole from "unplugin-turbo-console/vite"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
+import { partytownVite } from "@builder.io/partytown/utils"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
 
 export default defineConfig(config => {
@@ -13,10 +16,19 @@ export default defineConfig(config => {
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
-  const plugins = [purgeCss(), sveltekit()] satisfies Array<PluginOption>
+  const plugins = [
+    purgeCss(),
+    TurboConsole(), // has to be before sveltekit
+    sveltekit(),
+    partytownVite({
+      debug: NODE_ENV === "development",
+      dest: `${import.meta.dirname}/static/~partytown`
+    }),
+    Icons({ compiler: "svelte", autoInstall: true })
+  ] satisfies Array<PluginOption>
 
   if (INSPECT === "true") plugins.push(Inspect())
-  if (VISUALIZE === "true") plugins.push(visualizer())
+  if (VISUALIZE === "true") plugins.push(visualizer({ filename: `stats/${Date.now()}_stats.html` }))
 
   return {
     plugins,
@@ -24,17 +36,7 @@ export default defineConfig(config => {
       drop: ["console", "debugger"]
     },
     optimizeDeps: {
-      include: [
-        "clsx",
-        "valibot",
-        "@urql/svelte",
-        "lucide-svelte",
-        "@cosmjs/stargate",
-        "@cosmjs/tendermint-rpc",
-        "@tanstack/svelte-query",
-        "@cosmjs/cosmwasm-stargate",
-        "@tanstack/svelte-query-devtools"
-      ]
+      exclude: ["@urql/svelte", "@tanstack/svelte-query-devtools"]
     },
     server: {
       port: Number(PORT)
@@ -49,6 +51,8 @@ export default defineConfig(config => {
     resolve: {
       alias: {
         "node:buffer": "buffer",
+        "node:events": "events",
+        "node:process": "process",
         stream: "rollup-plugin-node-polyfills/polyfills/stream"
       }
     }

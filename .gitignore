@@ -42,9 +42,9 @@ dump
 fuzzing-code-coverage
 
 *.wasm
+stats
 !uniond/vendor/**/*.wasm
 _
-bun.lockb
 .astro
 ._*
 .wrangler

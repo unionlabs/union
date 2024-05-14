@@ -22,23 +22,27 @@ const unionClient = await UnionClient.connectWithSecret({
 })
 
 const contractAddress = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
-const osmoFromUnionToOsmosis = await unionClient.cosmwasmMessageExecuteContract([
-  {
-    contractAddress,
-    msg: {
-      transfer: {
-        channel: "channel-5",
-        receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
-        memo: "sending wrapped OSMO from Union to Osmosis"
-      }
-    },
-    funds: [
-      {
-        amount: "2",
-        denom: `factory/${contractAddress}/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
-      }
-    ]
-  }
-])
+const unoFromUnionToOsmosis = await unionClient.transferAssets({
+  kind: "cosmwasm",
+  instructions: [
+    {
+      contractAddress,
+      msg: {
+        transfer: {
+          channel: "channel-6",
+          receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
+          memo: "sending UNO from Union to Osmosissss"
+        }
+      },
+      funds: [
+        {
+          amount: "1",
+          denom: `muno`
+          // denom: `factory/${contractAddress}/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
+        }
+      ]
+    }
+  ]
+})
 
-console.log(osmoFromUnionToOsmosis.transactionHash)
+console.log(unoFromUnionToOsmosis.transactionHash)

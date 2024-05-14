@@ -1,7 +1,13 @@
 <script lang="ts">
-import clsx from "clsx"
+import { cn } from "$lib/utilities/shadcn.ts"
 </script>
 
+<svelte:head></svelte:head>
+
 <main
-  class={clsx(['mt-12 flex min-w-full flex-col items-center justify-center space-y-6 text-white'])}
-></main>
+  class={cn(
+    'mt-12 flex size-full min-w-full min-h-full flex-col items-center justify-center space-y-6 dark:text-white',
+  )}
+>
+  <p class="text-9xl font-black">zkGM</p>
+</main>

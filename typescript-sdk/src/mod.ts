@@ -3,14 +3,18 @@ import {
   SigningCosmWasmClient,
   type ExecuteInstruction
 } from "@cosmjs/cosmwasm-stargate"
-import { hexStringToUint8Array } from "./convert.ts"
+import { raise } from "./utilities.ts"
+import { ucs01relayAbi } from "./abi/ucs01-relay.ts"
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 import type { Optional, Coin, ExtractParameters } from "./types.ts"
-import type { AccountData, OfflineSigner } from "@cosmjs/proto-signing"
+import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
+import type { Account, PublicActions, WalletClient, Address, Hash } from "viem"
 import type { MsgTransfer } from "cosmjs-types/ibc/applications/transfer/v1/tx"
+import type { AccountData, OfflineSigner as CosmosOfflineSigner } from "@cosmjs/proto-signing"
 import { GasPrice, type DeliverTxResponse, type MsgTransferEncodeObject } from "@cosmjs/stargate"
 
 type MessageTransfer = Optional<MsgTransfer, "timeoutTimestamp" | "sender">
+type EvmClient = WalletClient & PublicActions
 
 export interface IUnionClient {
   rpcClient(): Promise<Comet38Client>
@@ -18,6 +22,16 @@ export interface IUnionClient {
   simulateIbcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<number>
   ibcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<DeliverTxResponse>
   cosmwasmMessageExecuteContract(instructions: Array<ExecuteInstruction>): Promise<ExecuteResult>
+  transferEvmAsset(parameters: {
+    receiver: `union${string}`
+    denomAddress: Address
+    sourcePort: string
+    sourceChannel: string
+    amount: bigint
+    account: Account | Address
+    contractAddress?: Address
+    simulate?: true
+  }): Promise<Hash>
   transferAssets<Kind extends "ibc" | "cosmwasm">({
     kind
   }: { kind: Kind } & (Kind extends "ibc"
@@ -77,25 +91,34 @@ export interface IUnionClient {
  * ```
  */
 export class UnionClient implements IUnionClient {
+  /** Cosmos */
   #rpcUrl: string
   public chainId: string
   public bech32Prefix: string
-  #offlineSigner: OfflineSigner
+  #cosmosOfflineSigner: CosmosOfflineSigner
   #gas?: Coin
-
+  /** EVM */
+  #evmSigner?: EvmClient
+  #UCS01_ADDRESS: Address = "0x3d0EB16AD2619666dbde1921282cd885b58eEefE" satisfies Address
+  #UCS02_ADDRESS: Address = "0xB455b205106c9b72E967399E15EFd8A025FD4A90" satisfies Address
+  #COMETBLS_ADDRESS: Address = "0xf906A05a25bf5b61a5e4Ff24bE9122E2Cea5F1E3" satisfies Address
+  #IBC_HANDLER_ADDRESS: Address = "0x6B6b60a68b8DCbB170F25045974d10098917F816" satisfies Address
+  #UNION_UCS01_ADDRESS = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
   constructor(arguments_: {
     rpcUrl: string
     chainId: string
     bech32Prefix: string
-    offlineSigner: OfflineSigner
+    cosmosOfflineSigner: CosmosOfflineSigner
     privateKeyOrMnemonic?: string
     gas?: Coin
+    evmSigner?: EvmClient
   }) {
     this.#rpcUrl = arguments_.rpcUrl
     this.chainId = arguments_.chainId
     this.bech32Prefix = arguments_.bech32Prefix
-    this.#offlineSigner = arguments_.offlineSigner
+    this.#cosmosOfflineSigner = arguments_.cosmosOfflineSigner
     this.#gas = arguments_.gas
+    this.#evmSigner = arguments_.evmSigner
   }
 
   #gasPrice = (gas = this.#gas) => GasPrice.fromString(`${gas?.amount}${gas?.denom}`)
@@ -106,35 +129,44 @@ export class UnionClient implements IUnionClient {
   public rpcClient = async (): Promise<Comet38Client> => await Comet38Client.connect(this.#rpcUrl)
 
   static async connectWithSecret(
-    params: Required<Omit<ExtractParameters<typeof UnionClient>, "offlineSigner">> & {
+    params: Required<
+      Omit<ExtractParameters<typeof UnionClient>, "cosmosOfflineSigner" | "evmSigner">
+    > & {
       secretType: "mnemonic" | "key"
+      evmSigner?: EvmClient
     }
   ): Promise<UnionClient> {
     if (!params.privateKeyOrMnemonic) throw new Error("privateKeyOrMnemonic is required")
-    let offlineSigner: OfflineSigner
+    let cosmosOfflineSigner: CosmosOfflineSigner
     if (params.secretType === "key") {
       const { DirectSecp256k1Wallet } = await import("@cosmjs/proto-signing")
-      offlineSigner = await DirectSecp256k1Wallet.fromKey(
+      cosmosOfflineSigner = await DirectSecp256k1Wallet.fromKey(
         Uint8Array.from(hexStringToUint8Array(params.privateKeyOrMnemonic)),
         params.bech32Prefix
       )
     } else {
       const { DirectSecp256k1HdWallet } = await import("@cosmjs/proto-signing")
-      offlineSigner = await DirectSecp256k1HdWallet.fromMnemonic(params.privateKeyOrMnemonic, {
-        prefix: params.bech32Prefix
-      })
+      cosmosOfflineSigner = await DirectSecp256k1HdWallet.fromMnemonic(
+        params.privateKeyOrMnemonic,
+        {
+          prefix: params.bech32Prefix
+        }
+      )
     }
-    return new UnionClient({ ...params, offlineSigner })
+    return new UnionClient({ ...params, cosmosOfflineSigner })
   }
 
   async getAccount(): Promise<AccountData> {
-    const [account] = await this.#offlineSigner.getAccounts()
+    const [account] = await this.#cosmosOfflineSigner.getAccounts()
     if (!account) throw new Error("Account not found")
     return account
   }
 
+  protected getEvmAccount = (): Account =>
+    this.#evmSigner?.account ?? raise("EVM account not found")
+
   #signingCosmWasmClient = async () =>
-    await SigningCosmWasmClient.connectWithSigner(this.#rpcUrl, this.#offlineSigner, {
+    await SigningCosmWasmClient.connectWithSigner(this.#rpcUrl, this.#cosmosOfflineSigner, {
       gasPrice: this.#gasPrice()
     })
 
@@ -202,5 +234,39 @@ export class UnionClient implements IUnionClient {
     return await this.cosmwasmMessageExecuteContract(
       (params as { instructions: Array<ExecuteInstruction> }).instructions
     )
+  }
+
+  /**
+   * TODO: Add description
+   */
+  public async transferEvmAsset({
+    account,
+    receiver,
+    denomAddress,
+    sourceChannel,
+    sourcePort,
+    amount,
+    contractAddress = this.#UCS01_ADDRESS,
+    simulate = true
+  }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<Hash> {
+    const signer = this.#evmSigner ?? raise("EVM signer not found")
+    const writeContractParameters = {
+      account,
+      abi: ucs01relayAbi,
+      functionName: "send",
+      address: contractAddress,
+      chain: signer.chain,
+      args: [
+        sourcePort,
+        sourceChannel,
+        unionToEvmAddress(receiver),
+        [{ denom: denomAddress, amount }],
+        8n,
+        10_000_000n
+      ]
+    } as const
+    if (!simulate) return await signer.writeContract(writeContractParameters)
+    const { request } = await signer.simulateContract(writeContractParameters)
+    return await signer.writeContract(request)
   }
 }

@@ -1,15 +1,15 @@
 <script lang="ts">
 import { graphql } from "gql.tada"
 import type { PageData } from "./$types.ts"
-import * as Table from "$/lib/components/ui/table"
-import { balanceQuery } from "$/lib/queries/balance"
-import { dollarize, relativeTime } from "$/lib/utilities"
-import * as Card from "$/lib/components/ui/card/index.ts"
+import * as Table from "$lib/components/ui/table"
+import { balanceQuery } from "$lib/queries/balance"
+import { dollarize, relativeTime } from "$lib/utilities"
+import * as Card from "$lib/components/ui/card/index.ts"
 import { getContextClient, queryStore } from "@urql/svelte"
-import { unionTransfersQuery } from "$/lib/queries/transfers"
-import Button from "$/lib/components/ui/button/button.svelte"
-import DraftPageNotice from "$/lib/components/draft-page-notice.svelte"
-import { truncateEvmAddress, truncateUnionAddress } from "$/lib/wallet/utilities/format.ts"
+import { unionTransfersQuery } from "$lib/queries/transfers"
+import Button from "$lib/components/ui/button/button.svelte"
+import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
 $: ibcTransfersQuery = queryStore({
   client: getContextClient(),
@@ -38,7 +38,7 @@ const pollingIntervalMS = 2_500
 </script>
 
 <svelte:head>
-  <title>Union - Transfers</title>
+  <title>Union | Transfers</title>
 </svelte:head>
 
 <DraftPageNotice />

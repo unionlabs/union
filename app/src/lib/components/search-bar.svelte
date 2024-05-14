@@ -1,13 +1,14 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import Smile from "lucide-svelte/icons/smile"
-import Table from "lucide-svelte/icons/table"
-import Brain from "lucide-svelte/icons/brain"
-import Search from "lucide-svelte/icons/search"
-import { Input } from "$/lib/components/ui/input"
-import { debounce } from "$/lib/utilities/index.ts"
-import * as Command from "$/lib/components/ui/command/index.ts"
-import DollarSign from "lucide-svelte/icons/badge-dollar-sign"
+import { goto } from "$app/navigation"
+import Smile from "virtual:icons/lucide/smile"
+import Table from "virtual:icons/lucide/table"
+import Brain from "virtual:icons/lucide/brain"
+import Search from "virtual:icons/lucide/search"
+import { Input } from "$lib/components/ui/input"
+import { debounce } from "$lib/utilities/index.ts"
+import * as Command from "$lib/components/ui/command/index.ts"
+import DollarSign from "virtual:icons/lucide/badge-dollar-sign"
 
 let commandDialogOpen = false
 let searchInput: string
@@ -31,14 +32,15 @@ onMount(() => {
 })
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-[445px]">
+<div class="relative mr-auto flex-1 w-full max-w-[475px]">
   <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
   <Input
     type="search"
     pattern="[a-z]"
     autocorrect="off"
+    autocomplete="off"
     spellcheck="false"
-    autocapitalize="off"
+    autocapitalize="none"
     placeholder="Search..."
     bind:value={searchInput}
     on:input={debounce(() => {
@@ -47,7 +49,7 @@ onMount(() => {
     on:click={() => {
       if (windowSize.width < 720) commandDialogOpen = true
     }}
-    class="w-full rounded-lg bg-background pl-8 self-stretch lowercase"
+    class="w-full rounded-lg bg-background pl-8 self-stretch lowercase border-[1px] bprder-[#fafafa25]/10"
   />
   <kbd
     class="absolute right-2.5 top-2.5 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"
@@ -57,9 +59,8 @@ onMount(() => {
 </div>
 
 <Command.Dialog
-  data-search-dialog
   bind:open={commandDialogOpen}
-  class="rounded-lg border-[1.5px] border-solid shadow-xl border-accent w-full"
+  class="rounded-lg border-[1.5px] border-solid shadow-2xl border-accent w-full"
 >
   <Command.Input
     type="search"
@@ -71,14 +72,26 @@ onMount(() => {
     placeholder="Type a command or search..."
   />
 
-  <Command.List data-search-dialog>
+  <Command.List data-search-dialog="">
     <Command.Empty>No results found.</Command.Empty>
     <Command.Group heading="Suggestions">
-      <Command.Item>
+      <Command.Item
+        class="hover:cursor-pointer"
+        onSelect={() => {
+          goto(`/send`)
+          commandDialogOpen = false
+        }}
+      >
         <DollarSign class="mr-2 size-4" />
         <span>Send & Swap</span>
       </Command.Item>
-      <Command.Item>
+      <Command.Item
+        class="hover:cursor-pointer"
+        onSelect={() => {
+          goto(`/faucet`)
+          commandDialogOpen = false
+        }}
+      >
         <Smile class="mr-2 size-4" />
         <span>Get tokens from faucet</span>
       </Command.Item>
@@ -89,7 +102,13 @@ onMount(() => {
         <Brain class="mr-2 size-4" />
         <span>Investigate IBC activity</span>
       </Command.Item>
-      <Command.Item>
+      <Command.Item
+        class="hover:cursor-pointer"
+        onSelect={() => {
+          goto(`/transfers`)
+          commandDialogOpen = false
+        }}
+      >
         <Table class="mr-2 size-4" />
         <span>View your past transfers</span>
       </Command.Item>

@@ -1,7 +1,16 @@
+:root {
+  --default-accent: #A0ECFD;
+}
+
 * {
   margin: 0;
   scrollbar-width: 0.1rem;
   scrollbar-color: transparent transparent;
+}
+
+input {
+  caret-shape: underscore;
+  caret-color: var(--default-accent);
 }
 
 input[type=number]::-webkit-inner-spin-button,

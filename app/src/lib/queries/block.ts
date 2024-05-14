@@ -13,6 +13,9 @@ export function blockHeightQuery() {
       console.log(data)
       return data.result.block.header.height
     },
-    enabled: true
+    enabled: true,
+    // Union default block time
+    refetchInterval: 6_000,
+    refetchOnWindowFocus: false
   })
 }

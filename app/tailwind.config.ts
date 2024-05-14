@@ -156,7 +156,7 @@ export default {
   ]
 } satisfies Config
 
-export function tailwindAnimationDelay() {
+function tailwindAnimationDelay() {
   return plugin(({ addUtilities, theme, e }) => {
     const defaultValues = {
       none: "0s",

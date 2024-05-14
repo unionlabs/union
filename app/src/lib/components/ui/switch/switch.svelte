@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Switch as SwitchPrimitive } from "bits-ui"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = SwitchPrimitive.Props
 type $$Events = SwitchPrimitive.Events

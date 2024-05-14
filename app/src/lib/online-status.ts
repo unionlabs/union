@@ -1,4 +1,4 @@
-import { toast } from "svelte-sonner"
+import toast from "svelte-french-toast"
 import { readable, type Readable } from "svelte/store"
 import { onlineManager } from "@tanstack/svelte-query"
 
@@ -8,6 +8,6 @@ export const onlineStatus = readable(true, set =>
     const isOnline = onlineManager.isOnline()
     set(isOnline)
     if (isOnline) toast.success("Welcome back")
-    else toast.warning("Your connection is offline", { duration: 3_500 })
+    else toast.error("Your connection is offline", { duration: 3_500 })
   })
 ) satisfies Readable<boolean>

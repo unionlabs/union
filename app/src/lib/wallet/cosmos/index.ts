@@ -1,5 +1,5 @@
 export {
   cosmosStore,
-  type CosmosWalletName,
+  type CosmosWalletId,
   cosmosWalletsInformation
 } from "./config.ts"

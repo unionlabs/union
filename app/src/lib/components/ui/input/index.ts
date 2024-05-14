@@ -16,6 +16,7 @@ export type InputEvents = {
   mouseover: FormInputEvent<MouseEvent>
   mouseenter: FormInputEvent<MouseEvent>
   mouseleave: FormInputEvent<MouseEvent>
+  mousemove: FormInputEvent<MouseEvent>
   paste: FormInputEvent<ClipboardEvent>
   input: FormInputEvent<InputEvent>
   wheel: FormInputEvent<WheelEvent>

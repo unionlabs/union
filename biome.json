@@ -133,6 +133,7 @@
       "all": true,
       "style": {
         "all": true,
+        "useConst": "off",
         "noNamespace": "off",
         "noDefaultExport": "off",
         "useFragmentSyntax": "off",
@@ -257,8 +258,7 @@
             "noUnusedImports": "off"
           },
           "style": {
-            "useImportType": "off",
-            "useFilenamingConvention": "off"
+            "useImportType": "off"
           }
         }
       }
@@ -274,13 +274,13 @@
           },
           "style": {
             "useConst": "off",
-            "noNamespace": "off",
-            "useImportType": "off",
-            "useFilenamingConvention": "off"
+            "useImportType": "off"
           },
           "suspicious": {
-            "noConfusingLabels": "off",
-            "noAssignInExpressions": "off"
+            "noConfusingLabels": "off"
+          },
+          "nursery": {
+            "noUselessUndefinedInitialization": "off"
           }
         }
       }
@@ -296,7 +296,7 @@
       }
     },
     {
-      "include": ["./app/src/polyfill.ts"],
+      "include": ["./app/src/lib/polyfill.ts"],
       "linter": {
         "rules": {
           "style": {

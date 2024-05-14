@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
-      pkgsDeps = with pkgs; [ pkg-config ];
+      pkgsDeps = with pkgs; [ pkg-config python3 ];
       nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
@@ -9,7 +9,7 @@
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-XdJ5sX2F8kUceoAiB8KuSZkm0iOEn81M1qYMxHvOF0A=";
+          npmDepsHash = "sha256-Y1GE1Obv8/xIhbujrTwTthNoW42j3vKbxEUbjUPPMI4=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--legacy-peer-deps" ];

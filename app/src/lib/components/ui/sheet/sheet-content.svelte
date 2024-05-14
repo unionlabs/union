@@ -1,9 +1,9 @@
 <script lang="ts">
 import { Dialog as SheetPrimitive } from "bits-ui"
-import X from "lucide-svelte/icons/x"
+import X from "virtual:icons/lucide/x"
 import { fly } from "svelte/transition"
 import { SheetOverlay, SheetPortal, type Side, sheetTransitions, sheetVariants } from "./index.js"
-import { cn } from "$/lib/utilities/shadcn.js"
+import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = SheetPrimitive.ContentProps & {
   side?: Side

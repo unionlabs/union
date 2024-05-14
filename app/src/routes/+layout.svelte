@@ -1,6 +1,6 @@
 <script lang="ts">
-import "$/polyfill.ts"
-import "$/styles/index.css"
+import "$lib/polyfill.ts"
+import "$styles/index.css"
 import {
   hydrate,
   dehydrate,
@@ -12,17 +12,20 @@ import {
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { setContext, onMount } from "svelte"
+import { Toaster } from "svelte-french-toast"
 import { page, navigating } from "$app/stores"
+import { shortcut } from "@svelte-put/shortcut"
 import { setContextClient } from "@urql/svelte"
-import { cosmosStore } from "$/lib/wallet/cosmos"
-import Footer from "$/lib/components/footer.svelte"
-import { Toaster } from "$/lib/components/ui/sonner"
-import { graphqlClient } from "$/lib/graphql/client"
-import Header from "$/lib/components/header/header.svelte"
-import { updateTheme } from "$/lib/utilities/update-theme.ts"
-import OnlineStatus from "$/lib/components/online-status.svelte"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import Footer from "$lib/components/footer.svelte"
+import { graphqlClient } from "$lib/graphql/client"
+import Header from "$lib/components/header/header.svelte"
+import { updateTheme } from "$lib/utilities/update-theme.ts"
+import OnlineStatus from "$lib/components/online-status.svelte"
+import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
+import { cn } from "$lib/utilities/shadcn"
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
@@ -37,10 +40,21 @@ onMount(() => {
 })
 
 onMount(() => {
+  const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
+  if (
+    lastConnectedWallet &&
+    window[lastConnectedWallet] &&
+    ["leap", "keplr"].includes(lastConnectedWallet)
+  )
+    return cosmosStore.connect(lastConnectedWallet)
+
   if (window?.keplr) cosmosStore.connect("keplr")
   else if (window?.leap) cosmosStore.connect("leap")
 })
 
+/**
+ * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
+ */
 setContextClient(graphqlClient)
 
 const queryClient: QueryClient = new QueryClient({
@@ -88,11 +102,22 @@ onMount(() => {
 })
 
 $: if ($navigating) console.log("Navigating to", $page.url.pathname)
+
+/** @docs https://monogram.io/blog/add-partytown-to-svelte */
+let partytownScriptElement: HTMLScriptElement
+onMount(() => {
+  if (!partytownScriptElement) return
+  partytownScriptElement.textContent = partytownSnippet()
+})
 </script>
 
 <svelte:head>
   <title>Union App Beta</title>
   <meta name="description" content="Union Web App" />
+  <script>
+    partytown = { forward: ['dataLayer.push'] }
+  </script>
+  <script bind:this={partytownScriptElement}></script>
 </svelte:head>
 
 {#if $navigating}
@@ -100,14 +125,14 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 {/if}
 
 <ModeWatcher />
-<Toaster richColors />
+<Toaster />
 
 <QueryClientProvider client={queryClient}>
   <Header />
   <div
-    class="relative flex flex-col bg-background bg-opacity-10 mb-20"
     id="page"
     data-vaul-drawer-wrapper
+    class="relative flex flex-col bg-background bg-opacity-10 mb-20"
   >
     <slot />
   </div>
@@ -122,7 +147,30 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 <OnlineStatus />
 
 <div
-  class="absolute top-0 z-[-2] size-full bg-[#000000] bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)] bg-[size:20px_20px]"
+  id="background-dotted-grid"
+  data-background-dotted-grid="true"
+  class={cn(
+    'absolute top-0 z-[-2] size-full min-h-screen bg-[size:20px_20px]',
+    'bg-[#b9e9ff78] bg-[radial-gradient(#638c91_0.3px,#b9e9ff78_1px)]',
+    'dark:bg-[#99e6ff20] dark:bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)]',
+  )}
 ></div>
 
-<svelte:window on:beforeunload={unload} />
+<svelte:window
+  on:beforeunload={unload}
+  use:shortcut={{
+    trigger: [
+      // easily hide tanstack devtools with ctrl + h
+      {
+        key: 'h',
+        modifier: ['ctrl'],
+        callback: () => {
+          console.log('Hiding tanstack devtools')
+          const tanstackDevtoolsElement = document.querySelector('div.tsqd-transitions-container')
+          if (!tanstackDevtoolsElement) return
+          tanstackDevtoolsElement.classList.toggle('hidden')
+        },
+      },
+    ],
+  }}
+/>

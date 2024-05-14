@@ -9,3 +9,4 @@ node_modules
 vite.config.*.timestamp-*
 .eslintcache
 .prettiercache
+stats

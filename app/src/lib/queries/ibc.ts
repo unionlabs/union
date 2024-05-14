@@ -1,4 +1,4 @@
-import { URLS } from "$/lib/constants"
+import { URLS } from "$lib/constants"
 import { createQuery } from "@tanstack/svelte-query"
 
 export function ibcConnectionsQuery() {

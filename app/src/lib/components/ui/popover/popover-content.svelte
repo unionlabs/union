@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Popover as PopoverPrimitive } from "bits-ui"
-import { cn, flyAndScale } from "$/lib/utilities/shadcn.js"
+import { cn, flyAndScale } from "$lib/utilities/shadcn.js"
 
 type $$Props = PopoverPrimitive.ContentProps
 let className: $$Props["class"] = undefined
