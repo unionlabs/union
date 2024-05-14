@@ -497,10 +497,10 @@
               postgresql
               nodePackages.graphqurl
               nodePackages_latest.nodejs
-              nodePackages.svelte-language-server
-              nodePackages."@astrojs/language-server"
-              nodePackages.typescript-language-server
-              nodePackages.vscode-css-languageserver-bin
+              nodePackages_latest.svelte-language-server
+              nodePackages_latest."@astrojs/language-server"
+              nodePackages_latest.typescript-language-server
+              nodePackages_latest.vscode-css-languageserver-bin
             ])
               ++ (with goPkgs; [
               go

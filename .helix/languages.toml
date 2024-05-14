@@ -8,14 +8,14 @@ args    = ["lsp-proxy"]
 command = "biome"
 
 [[language]]
-file-types       = ["astro"]
+indent           = { tab-width = 2, unit = "  " }
 injection-regex  = "astro"
 language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome"]
 name             = "astro"
+roots            = ["package.json", "astro.config.ts", "tsconfig.json"]
 scope            = "source.astro"
 # not yet released
 # block-comment-tokens = { start = "<!--", end = "-->" }
-roots = ["package.json", "astro.config.ts"]
 
 [[language]]
 auto-format      = true

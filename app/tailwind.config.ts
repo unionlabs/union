@@ -1,5 +1,6 @@
 import plugin from "tailwindcss/plugin"
 import type { Config } from "tailwindcss"
+import formsPlugin from "@tailwindcss/forms"
 import tailwindAnimate from "tailwindcss-animate"
 import defaultTheme from "tailwindcss/defaultTheme"
 import typographyPlugin from "@tailwindcss/typography"
@@ -133,6 +134,7 @@ export default {
     }
   },
   plugins: [
+    formsPlugin,
     tailwindAnimate,
     aspectRatioPlugin,
     typographyPlugin(),

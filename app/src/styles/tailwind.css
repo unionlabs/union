@@ -125,19 +125,6 @@
 
   /* === Scrollbars === */
 
-  ::-webkit-scrollbar {
-    @apply w-2;
-    @apply h-2;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply !bg-muted;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply rounded-sm !bg-muted-foreground/30;
-  }
-
   /* Firefox */
   /* https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-color#browser_compatibility */
   html {
