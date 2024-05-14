@@ -162,8 +162,14 @@ let buttonText = "Send it" satisfies
   | String
 </script>
 
+<svelte:head>
+  <title>Union | Send</title>
+</svelte:head>
+
 <main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
-  <Card.Root class="size-full max-w-[475px] sm:mt-16 mt-6 p-2 bg-transparent border-none outline-none">
+  <Card.Root
+    class="size-full max-w-[475px] sm:mt-16 mt-6 p-2 bg-transparent border-none outline-none"
+  >
     <Card.Header
       class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-4"
     >
@@ -297,7 +303,7 @@ let buttonText = "Send it" satisfies
           <ChevronDown class={cn(devBorder, 'size-6 mb-auto mt-0.5 ml-auto')} />
         </Button>
       </div>
-      
+
       <!-- amount -->
       <div class={cn('my-2')}>
         <p class="text-left text-2xl font-extrabold ml-2">Amount</p>
@@ -305,13 +311,16 @@ let buttonText = "Send it" satisfies
           minlength={1}
           maxlength={64}
           placeholder="0.00"
+          autocorrect="off"
           autocomplete="off"
+          spellcheck="false"
+          autocapitalize="none"
           data-transfer-from-amount
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
           class={cn(
-            'text-5xl font-bold h-20 mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
-            'outline-1 outline-accent/90 outline',
+            'text-5xl font-bold h-20 mt-2 mb-0 px-3 tabular-nums border-none',
+            'outline-1 outline-accent/80 outline',
           )}
         />
       </div>
@@ -321,13 +330,16 @@ let buttonText = "Send it" satisfies
         <Input
           minlength={1}
           maxlength={64}
+          autocorrect="off"
           autocomplete="off"
+          spellcheck="false"
+          autocapitalize="none"
           data-transfer-recipient-address
           placeholder="Destination address"
           bind:value={inputValue.recipient}
           class={cn(
-            'text-sm mt-2 mb-0 px-3 focus-visible:ring-0 tabular-nums border-none',
-            'outline-1 outline-accent/90 outline',
+            'text-sm mt-2 mb-0 px-3 tabular-nums border-none',
+            'outline-1 outline-accent/80 outline',
           )}
         />
       </div>
@@ -404,10 +416,6 @@ let buttonText = "Send it" satisfies
   {handleAssetSelect}
   {assetSearchResults}
 />
-
-<svelte:head>
-  <title>Union - Send</title>
-</svelte:head>
 
 <DraftPageNotice className="hidden sm:inline" />
 

@@ -26,11 +26,15 @@ import { routes } from "$lib/components/navigation/index.ts"
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button
           size="sm"
-          variant="link"
           href={path}
+          variant="link"
           class={cn(
-            'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
-            $page.route.id === path && 'bg-muted-foreground/10',
+            draft
+              ? 'hidden'
+              : [
+                  'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
+                  $page.route.id === path && 'bg-muted-foreground/10',
+                ],
           )}
         >
           {name}
@@ -39,7 +43,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     </nav>
     <div class="hidden sm:flex space-x-3">
       <Connect />
-      <ThemeSwitch />
+      <!-- <ThemeSwitch /> -->
     </div>
     <!-- <Navigation /> -->
   </div>

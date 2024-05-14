@@ -32,7 +32,7 @@ onMount(() => {
 })
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-[445px]">
+<div class="relative mr-auto flex-1 w-full max-w-[475px]">
   <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
   <Input
     type="search"
@@ -40,7 +40,7 @@ onMount(() => {
     autocorrect="off"
     autocomplete="off"
     spellcheck="false"
-    autocapitalize="off"
+    autocapitalize="none"
     placeholder="Search..."
     bind:value={searchInput}
     on:input={debounce(() => {

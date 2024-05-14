@@ -32,6 +32,7 @@ export let readonly: $$Props["readonly"] = undefined
   on:keypress
   on:keyup
   on:mouseover
+  on:mousemove
   on:mouseenter
   on:mouseleave
   on:paste

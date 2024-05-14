@@ -189,7 +189,7 @@ const hideableChannelsColumns = ["ordering", "version", "counterparty"]
 </script>
 
 <svelte:head>
-  <title>Union - IBC</title>
+  <title>Union | IBC</title>
 </svelte:head>
 
 <main

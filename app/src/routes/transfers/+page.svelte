@@ -38,7 +38,7 @@ const pollingIntervalMS = 2_500
 </script>
 
 <svelte:head>
-  <title>Union - Transfers</title>
+  <title>Union | Transfers</title>
 </svelte:head>
 
 <DraftPageNotice />

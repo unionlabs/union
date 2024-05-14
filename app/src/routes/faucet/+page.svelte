@@ -80,13 +80,13 @@ const handleMouseLeave = () => {
 </script>
 
 <svelte:head>
-  <title>Union - Faucet</title>
+  <title>Union | Faucet</title>
 </svelte:head>
 
-<main class="mx-auto w-full flex flex-col items-center px-4 mt-16">
+<main class="mx-auto w-full flex flex-col items-center px-4 mt-10">
   <DraftPageNotice />
 
-  <h1 class="text-3xl font-extrabold my-6">Faucet</h1>
+  <h1 class="text-4xl font-black my-4">Faucet</h1>
   {#if $delayed || $submitting}
     LOADING
   {/if}
@@ -100,7 +100,7 @@ const handleMouseLeave = () => {
     use:enhance
     method="POST"
     class={cn([
-      'sm:w-[400px] w-[350px] max-w-[500px] space-y-6',
+      'sm:w-[400px] w-[400px] max-w-[550px] space-y-6',
       ($delayed || $submitting || $message?.status === 'success') && 'invisible',
     ])}
   >
@@ -116,12 +116,16 @@ const handleMouseLeave = () => {
             autocapitalize="none"
             on:blur={handleBlur}
             on:focus={handleFocus}
-            on:mouseleave={handleMouseMove}
+            on:mousemove={handleMouseMove}
+            on:mouseleave={handleMouseLeave}
             on:mouseenter={handleMouseEnter}
             bind:value={$cosmosStore.address}
             pattern={unionAddressRegex.source}
             placeholder="union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
-            class="h-12 w-full cursor-default rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors duration-500 placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9] focus:outline-none"
+            class={cn(
+              'h-12 w-full cursor-default rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors duration-500 placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9]',
+              'focus:outline-none ring-0 focus:ring-0 focus-visible:ring-0',
+            )}
             title="Must be a valid Union address (bech32, starts with `union`)"
           />
           <input
