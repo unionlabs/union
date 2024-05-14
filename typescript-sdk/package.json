@@ -19,7 +19,9 @@
     "@cosmjs/cosmwasm-stargate": "0.32.3",
     "@cosmjs/encoding": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
-    "@cosmjs/tendermint-rpc": "0.32.3",
+    "@cosmjs/tendermint-rpc": "0.32.3"
+  },
+  "peerDependencies": {
     "viem": "^2.10.5"
   },
   "devDependencies": {
@@ -29,7 +31,7 @@
     "@scure/base": "^1.1.6",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.2",
-    "@types/node": "^20.12.11",
+    "@types/node": "^20.12.12",
     "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",
     "tsx": "^4.10.2",
