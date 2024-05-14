@@ -44,19 +44,4 @@ abstract contract IBCStore {
         }
         return ILightClient(clientImpl);
     }
-
-    function getConnection(string calldata connectionId)
-        external
-        view
-        returns (IbcCoreConnectionV1ConnectionEnd.Data memory)
-    {
-        return connections[connectionId];
-    }
-
-    function getChannel(
-        string calldata portId,
-        string calldata channelId
-    ) external view returns (IbcCoreChannelV1Channel.Data memory) {
-        return channels[portId][channelId];
-    }
 }

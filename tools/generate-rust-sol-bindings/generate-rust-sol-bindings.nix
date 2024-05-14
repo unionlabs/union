@@ -35,7 +35,8 @@
             ${self'.packages.evm-contracts}/out/Glue.sol/Glue.json \
             ${self'.packages.evm-contracts}/out/ERC20.sol/ERC20.json \
             ${self'.packages.evm-contracts}/out/Relay.sol/UCS01Relay.json \
-            ${self'.packages.evm-contracts}/out/CometblsClientV2.sol/CometblsClient.json
+            ${self'.packages.evm-contracts}/out/CometblsClientV2.sol/CometblsClient.json \
+            ${self'.packages.evm-contracts}/out/ILightClient.sol/ILightClient.json
 
           ls -al ./out/
 

@@ -7,20 +7,16 @@ use contracts::{
     ibc_client::{IBCClientErrors, IBCClientEvents},
     ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
     ibc_handler::{
-        GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
-        GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
-        GetHashedPacketAcknowledgementCommitmentCall,
-        GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, HasPacketReceiptCall, IBCHandler,
-        IbcCoreConnectionV1ConnectionEndData, NextClientSequenceCall, NextConnectionSequenceCall,
-        OwnershipTransferredFilter,
+        GetChannelCall, GetChannelReturn, GetConnectionCall, GetConnectionReturn, IBCHandler,
+        IbcCoreConnectionV1ConnectionEndData, NextClientSequencePathCall,
+        NextConnectionSequencePathCall, OwnershipTransferredFilter,
     },
     ibc_packet::{IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
     shared_types::IbcCoreChannelV1ChannelData,
 };
 use ethers::{
     abi::{AbiDecode, Tokenizable},
-    contract::{ContractError, EthCall, EthLogDecode},
+    contract::{ContractError, EthCall, EthLogDecode, FunctionCall},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
@@ -608,15 +604,9 @@ pub trait IbcHandlerExt<M: Middleware> {
         &self,
         call: Call,
         at_execution_height: u64,
-    ) -> impl Future<
-        Output = Result<
-            Option<<<Call as EthCallExt>::Return as TupleToOption>::Inner>,
-            ContractError<M>,
-        >,
-    > + Send
+    ) -> impl Future<Output = Result<Call::Return, ContractError<M>>> + Send
     where
-        Call: EthCallExt + 'static,
-        Call::Return: TupleToOption;
+        Call: EthCallExt + 'static;
 }
 
 impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
@@ -645,77 +635,19 @@ impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
         &self,
         call: Call,
         at_execution_height: u64,
-    ) -> Result<Option<<<Call as EthCallExt>::Return as TupleToOption>::Inner>, ContractError<M>>
+    ) -> Result<Call::Return, ContractError<M>>
     where
         Call: EthCallExt + 'static,
-        Call::Return: TupleToOption,
     {
         self.method_hash::<Call, Call::Return>(Call::selector(), call)
             .expect("valid contract selector")
             .block(at_execution_height)
             .call()
             .await
-            .map(Call::Return::tuple_to_option)
     }
 }
 
 pub type EthereumClientId = ClientId;
-
-/// Many contract calls return some form of [`(bool, T)`] as a way to emulate nullable/[`Option`].
-/// This trait allows for easy conversion from the aforementioned tuple to an [`Option`].
-pub trait TupleToOption {
-    type Inner;
-
-    fn tuple_to_option(self) -> Option<Self::Inner>;
-}
-
-impl TupleToOption for GetClientStateReturn {
-    type Inner = Vec<u8>;
-
-    fn tuple_to_option(self) -> Option<Self::Inner> {
-        self.1.then_some(self.0.to_vec())
-    }
-}
-
-impl TupleToOption for GetConsensusStateReturn {
-    type Inner = Vec<u8>;
-
-    fn tuple_to_option(self) -> Option<Self::Inner> {
-        self.p1.then_some(self.consensus_state_bytes.to_vec())
-    }
-}
-
-impl TupleToOption for GetConnectionReturn {
-    type Inner = IbcCoreConnectionV1ConnectionEndData;
-
-    fn tuple_to_option(self) -> Option<Self::Inner> {
-        self.1.then_some(self.0)
-    }
-}
-
-impl TupleToOption for GetChannelReturn {
-    type Inner = IbcCoreChannelV1ChannelData;
-
-    fn tuple_to_option(self) -> Option<Self::Inner> {
-        self.1.then_some(self.0)
-    }
-}
-
-impl TupleToOption for GetHashedPacketCommitmentReturn {
-    type Inner = [u8; 32];
-
-    fn tuple_to_option(self) -> Option<Self::Inner> {
-        self.1.then_some(self.0)
-    }
-}
-
-impl TupleToOption for GetHashedPacketAcknowledgementCommitmentReturn {
-    type Inner = [u8; 32];
-
-    fn tuple_to_option(self) -> Option<Self::Inner> {
-        self.1.then_some(self.0)
-    }
-}
 
 /// Wrapper trait for a contract call's signature, to map the input type to the return type.
 /// `ethers` generates both of these types, but doesn't correlate them.
@@ -734,15 +666,15 @@ macro_rules! impl_eth_call_ext {
 }
 
 impl_eth_call_ext! {
-    GetClientStateCall                           -> GetClientStateReturn;
-    GetConsensusStateCall                        -> GetConsensusStateReturn;
+    // GetClientStateCall                           -> GetClientStateReturn;
+    // GetConsensusStateCall                        -> GetConsensusStateReturn;
     GetConnectionCall                            -> GetConnectionReturn;
     GetChannelCall                               -> GetChannelReturn;
-    GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
-    GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
-    HasPacketReceiptCall                         -> bool;
-    NextConnectionSequenceCall                   -> u64;
-    NextClientSequenceCall                       -> u64;
+    // GetHashedPacketCommitmentCall                -> GetHashedPacketCommitmentReturn;
+    // GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
+    // HasPacketReceiptCall                         -> bool;
+    // NextConnectionSequencePathCall                   -> u64;
+    // NextClientSequencePathCall                       -> u64;
 }
 
 pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
@@ -755,11 +687,7 @@ where
     Hc: EthereumChain,
     Tr: Chain,
 {
-    type EthCall: EthCallExt + 'static;
-
-    fn into_eth_call(self) -> Self::EthCall;
-
-    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Value;
+    fn read<M: Middleware>(self, ibc_handler: &IBCHandler<M>) -> impl Future<Output = Self::Value>;
 }
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientStatePath<ClientIdOf<Hc>>
@@ -768,6 +696,13 @@ where
     Tr: Chain,
     Self::Value: Decode<Hc::IbcStateEncoding>,
 {
+    fn read<M: Middleware>(self, ibc_handler: &IBCHandler<M>) -> impl Future<Output = Self::Value> {
+        let client_address = ibc_handler
+            .get_client(self.client_id.to_string())
+            .call()
+            .await
+            .unwrap();
+    }
     type EthCall = GetClientStateCall;
 
     fn into_eth_call(self) -> Self::EthCall {

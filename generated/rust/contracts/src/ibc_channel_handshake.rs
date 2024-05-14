@@ -1176,7 +1176,8 @@ pub mod ibc_channel_handshake {
         pub fn get_connection(
             &self,
             connection_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, Data> {
+        ) -> ::ethers::contract::builders::ContractCall<M, IbcCoreConnectionV1ConnectionEndData>
+        {
             self.0
                 .method_hash([39, 113, 26, 105], connection_id)
                 .expect("method not found (this should never happen)")
@@ -2634,7 +2635,7 @@ pub mod ibc_channel_handshake {
         Eq,
         Hash,
     )]
-    pub struct GetConnectionReturn(pub Data);
+    pub struct GetConnectionReturn(pub IbcCoreConnectionV1ConnectionEndData);
     ///Container type for all return fields from the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
     #[derive(
         Clone,
