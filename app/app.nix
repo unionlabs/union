@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
-      pkgsDeps = with pkgs; [ pkg-config ];
+      pkgsDeps = with pkgs; [ pkg-config python3 ];
       nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
