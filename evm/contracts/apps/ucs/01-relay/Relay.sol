@@ -27,7 +27,7 @@ struct LocalToken {
 
 struct Token {
     string denom;
-    uint256 amount;
+    uint128 amount;
 }
 
 struct RelayPacket {
@@ -284,7 +284,7 @@ contract UCS01Relay is
         for (uint256 i = 0; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
             normalizedTokens[i].denom = sendToken(sourceChannel, localToken);
-            normalizedTokens[i].amount = uint256(localToken.amount);
+            normalizedTokens[i].amount = localToken.amount;
         }
         string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({

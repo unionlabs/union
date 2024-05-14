@@ -165,9 +165,6 @@ trait OnReceive {
         tokens
             .into_iter()
             .map(|TransferToken { denom, amount }| {
-                let amount = amount
-                    .try_into()
-                    .expect("CosmWasm require transferred amount to be Uint128...");
                 match DenomOrigin::from((denom.as_str(), counterparty_endpoint)) {
                     DenomOrigin::Local { denom } => {
                         self.local_unescrow(&endpoint.channel_id, denom, amount)?;
@@ -279,9 +276,6 @@ trait ForTokens {
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
         let mut messages = Vec::with_capacity(tokens.len());
         for TransferToken { denom, amount } in tokens {
-            let amount = amount
-                .try_into()
-                .expect("CosmWasm require transferred amount to be Uint128...");
             // This is the origin from the counterparty POV
             match DenomOrigin::from((denom.as_str(), endpoint)) {
                 DenomOrigin::Local { denom } => {
@@ -645,7 +639,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 mod tests {
     use cosmwasm_std::{
         testing::mock_dependencies, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint,
-        Uint128, Uint256,
+        Uint128,
     };
     use token_factory_api::TokenFactoryMsg;
     use ucs01_relay_api::types::TransferToken;
@@ -703,7 +697,7 @@ mod tests {
                 "receiver",
                 vec![TransferToken {
                     denom: "from-counterparty".into(),
-                    amount: Uint256::from(100u128)
+                    amount: Uint128::from(100u128)
                 },],
             ),
             Ok(vec![
@@ -760,7 +754,7 @@ mod tests {
                     "receiver",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
-                        amount: Uint256::from(100u128),
+                        amount: Uint128::from(100u128),
                     }],
                 )
                 .unwrap()[0]
@@ -777,7 +771,7 @@ mod tests {
                     "receiver",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
-                        amount: Uint256::from(100u128),
+                        amount: Uint128::from(100u128),
                     }],
                 )
                 .unwrap()[0]
@@ -804,7 +798,7 @@ mod tests {
                 "receiver",
                 vec![TransferToken {
                     denom: "from-counterparty".into(),
-                    amount: Uint256::from(100u128)
+                    amount: Uint128::from(100u128)
                 },],
             ),
             Ok(vec![TokenFactoryMsg::MintTokens {
@@ -835,7 +829,7 @@ mod tests {
                 "receiver",
                 vec![TransferToken {
                     denom: "transfer/channel-34/local-denom".into(),
-                    amount: Uint256::from(119u128)
+                    amount: Uint128::from(119u128)
                 }],
             ),
             Ok(vec![BankMsg::Send {
@@ -893,15 +887,15 @@ mod tests {
                 vec![
                     TransferToken {
                         denom: "transfer-source/blabla/remote-denom".into(),
-                        amount: Uint256::from(119u128)
+                        amount: Uint128::from(119u128)
                     },
                     TransferToken {
                         denom: "transfer-source/blabla-2/remote-denom".into(),
-                        amount: Uint256::from(10u128)
+                        amount: Uint128::from(10u128)
                     },
                     TransferToken {
                         denom: "transfer-source/blabla/remote-denom2".into(),
-                        amount: Uint256::from(129u128)
+                        amount: Uint128::from(129u128)
                     },
                 ],
             ),
@@ -970,11 +964,11 @@ mod tests {
                 vec![
                     TransferToken {
                         denom: "transfer/channel-2/remote-denom".into(),
-                        amount: Uint256::from(119u128)
+                        amount: Uint128::from(119u128)
                     },
                     TransferToken {
                         denom: "transfer/channel-2/remote-denom2".into(),
-                        amount: Uint256::from(129u128)
+                        amount: Uint128::from(129u128)
                     }
                 ],
             ),
@@ -995,12 +989,12 @@ mod tests {
                 },
                 TransferToken {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                    amount: Uint256::MAX
+                    amount: Uint128::MAX
                 }
             ),
             Ok(TransferToken {
                 denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                amount: Uint256::MAX
+                amount: Uint128::MAX
             })
         );
         assert_eq!(
@@ -1013,12 +1007,12 @@ mod tests {
                 },
                 TransferToken {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                    amount: Uint256::MAX
+                    amount: Uint128::MAX
                 }
             ),
             Ok(TransferToken {
                 denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                amount: Uint256::MAX
+                amount: Uint128::MAX
             })
         );
     }
@@ -1035,12 +1029,12 @@ mod tests {
                 },
                 TransferToken {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                    amount: Uint256::MAX
+                    amount: Uint128::MAX
                 }
             ),
             Ok(TransferToken {
                 denom: "transfer/channel-332/blabla-1".into(),
-                amount: Uint256::MAX
+                amount: Uint128::MAX
             })
         );
     }
