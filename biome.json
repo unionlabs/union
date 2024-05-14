@@ -159,7 +159,8 @@
         "noConsole": "off",
         "noNodejsModules": "off",
         "useImportRestrictions": "off",
-        "noUndeclaredDependencies": "off"
+        "noUndeclaredDependencies": "off",
+        "noUselessUndefinedInitialization": "off"
       },
       "performance": {
         "all": true,

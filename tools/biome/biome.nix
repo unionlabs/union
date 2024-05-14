@@ -44,8 +44,7 @@
     in
     {
       _module.args.biome = biome;
-      # (system == "x86_64-linux")
-      checks.biome-lint = mkCi false (pkgs.stdenv.mkDerivation {
+      checks.biome-lint = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
         name = "biome-lint";
         description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue files";
         src = with unstablePkgs.lib.fileset; toSource {
