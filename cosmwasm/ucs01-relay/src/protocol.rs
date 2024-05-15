@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcBasicResponse,
-    IbcEndpoint, IbcOrder, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary,
+    IbcBasicResponse, IbcEndpoint, IbcOrder, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
@@ -664,6 +664,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         &mut self,
         ack: GenericAck,
         original_forward_packet: PacketForward,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        tokens: Vec<TransferToken>,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
         todo!()
     }
@@ -990,6 +992,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         &mut self,
         ack: GenericAck,
         original_forward_packet: PacketForward,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        tokens: Vec<TransferToken>,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
         let packet_sequence =
             original_forward_packet
@@ -1010,8 +1014,33 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             })?;
 
         let (ack_msgs, ack_attr) = match ack {
-            Ok(_) => todo!(),
-            Err(_) => todo!(),
+            Ok(value) => {
+                let value_string = value.to_string();
+                (
+                    self.send_tokens_success(
+                        sender,
+                        &original_forward_packet.receiver.value().as_bytes().into(),
+                        tokens,
+                    )?,
+                    (!value_string.is_empty()).then_some(("success", value_string)),
+                )
+            }
+            Err(error) => {
+                let error_string = error.to_string();
+                (
+                    self.send_tokens_failure(
+                        sender,
+                        &original_forward_packet.receiver.as_bytes().into(),
+                        tokens,
+                    )?,
+                    (!error_string.is_empty()).then_some(("error", error_string)),
+                )
+            }
+        };
+
+        let diferred_ack_msg = AnyMsg {
+            type_url: "/diferredack.v1beta1.tx.MsgWriteDiferredAck".to_owned(),
+            value: todo!(),
         };
 
         todo!()

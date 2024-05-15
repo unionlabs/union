@@ -190,7 +190,7 @@ pub trait TransferProtocol {
         let memo: String = packet.extension().clone().into();
 
         if let Ok(Memo::Forward { forward }) = serde_json_wasm::from_str::<Memo>(&memo) {
-            return self.pfm_ack(ack, forward);
+            return self.pfm_ack(ack, forward, packet.sender(), packet.tokens());
         }
 
         let (ack_msgs, ack_attr) = match ack {
@@ -242,7 +242,7 @@ pub trait TransferProtocol {
         let memo = Into::<String>::into(packet.extension().clone());
         if let Ok(Memo::Forward { forward }) = serde_json_wasm::from_str::<Memo>(&memo) {
             let ack = GenericAck::Err("giving up on forwarded packet after timeout".to_owned());
-            return self.pfm_ack(ack, forward);
+            return self.pfm_ack(ack, forward, packet.sender(), packet.tokens());
         }
 
         let timeout_event = if memo.is_empty() {
@@ -358,6 +358,8 @@ pub trait TransferProtocol {
         &mut self,
         ack: GenericAck,
         original_forward_packet: PacketForward,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        tokens: Vec<TransferToken>,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error>;
 }
 
