@@ -53,6 +53,8 @@ impl KeyDeserialize for PfmRefundPacketKey {
     fn from_vec(value: Vec<u8>) -> cosmwasm_std::StdResult<Self::Output> {
         <(String, String, u64) as KeyDeserialize>::from_vec(value)
     }
+
+    const KEY_ELEMS: u16 = 4;
 }
 
 impl<'a> PrimaryKey<'a> for PfmRefundPacketKey {
