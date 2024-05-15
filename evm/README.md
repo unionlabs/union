@@ -47,10 +47,17 @@ This links are working if you run a local devnet on a x86 machine only (Blocksco
 
 ## Testnet 8
 
+### V1 (deprecated)
 - IBCHandler: [0x6b6b60a68b8dcbb170f25045974d10098917f816](https://sepolia.etherscan.io/address/0x6b6b60a68b8dcbb170f25045974d10098917f816)
 - CometblsClient: [0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3](https://sepolia.etherscan.io/address/0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3)
 - UCS01: [0x3d0eb16ad2619666dbde1921282cd885b58eeefe](https://sepolia.etherscan.io/address/0x3d0eb16ad2619666dbde1921282cd885b58eeefe)
 - UCS02: [0xb455b205106c9b72e967399e15efd8a025fd4a90](https://sepolia.etherscan.io/address/0xb455b205106c9b72e967399e15efd8a025fd4a90)
+
+### V2 (live)
+- IBCHandler: [0x2881e1c5863e358c9f56b64ec4583ab79e450116](https://sepolia.etherscan.io/address/0x2881e1c5863e358c9f56b64ec4583ab79e450116)
+- CometblsClient: [0x2d5c9af388059658595f5c761d14a5b0300cb6e9](https://sepolia.etherscan.io/address/0x2d5c9af388059658595f5c761d14a5b0300cb6e9)
+- UCS01: [0xddd103e667e10fa4037d0eaea1531a0211d3a67c](https://sepolia.etherscan.io/address/0xddd103e667e10fa4037d0eaea1531a0211d3a67c)
+- UCS02: [0xcf43211ebb12fe3e25cde58f34d83f2ebf6e5690](https://sepolia.etherscan.io/address/0xcf43211ebb12fe3e25cde58f34d83f2ebf6e5690)
 
 ## Other networks
 
