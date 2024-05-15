@@ -754,7 +754,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1IdentifiedChannel.Data[] memory tmp = new IbcCoreChannelV1IdentifiedChannel
             .Data[](self.channels.length + 1);
-        for (uint256 i = 0; i < self.channels.length; i++) {
+        for (uint256 i; i < self.channels.length; i++) {
             tmp[i] = self.channels[i];
         }
         tmp[self.channels.length] = value;
@@ -776,7 +776,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1PacketState.Data[] memory tmp = new IbcCoreChannelV1PacketState
             .Data[](self.acknowledgements.length + 1);
-        for (uint256 i = 0; i < self.acknowledgements.length; i++) {
+        for (uint256 i; i < self.acknowledgements.length; i++) {
             tmp[i] = self.acknowledgements[i];
         }
         tmp[self.acknowledgements.length] = value;
@@ -798,7 +798,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1PacketState.Data[] memory tmp =
             new IbcCoreChannelV1PacketState.Data[](self.commitments.length + 1);
-        for (uint256 i = 0; i < self.commitments.length; i++) {
+        for (uint256 i; i < self.commitments.length; i++) {
             tmp[i] = self.commitments[i];
         }
         tmp[self.commitments.length] = value;
@@ -820,7 +820,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1PacketState.Data[] memory tmp =
             new IbcCoreChannelV1PacketState.Data[](self.receipts.length + 1);
-        for (uint256 i = 0; i < self.receipts.length; i++) {
+        for (uint256 i; i < self.receipts.length; i++) {
             tmp[i] = self.receipts[i];
         }
         tmp[self.receipts.length] = value;
@@ -842,7 +842,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1PacketSequence.Data[] memory tmp = new IbcCoreChannelV1PacketSequence
             .Data[](self.send_sequences.length + 1);
-        for (uint256 i = 0; i < self.send_sequences.length; i++) {
+        for (uint256 i; i < self.send_sequences.length; i++) {
             tmp[i] = self.send_sequences[i];
         }
         tmp[self.send_sequences.length] = value;
@@ -864,7 +864,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1PacketSequence.Data[] memory tmp = new IbcCoreChannelV1PacketSequence
             .Data[](self.recv_sequences.length + 1);
-        for (uint256 i = 0; i < self.recv_sequences.length; i++) {
+        for (uint256 i; i < self.recv_sequences.length; i++) {
             tmp[i] = self.recv_sequences[i];
         }
         tmp[self.recv_sequences.length] = value;
@@ -886,7 +886,7 @@ library IbcCoreChannelV1GenesisState {
          */
         IbcCoreChannelV1PacketSequence.Data[] memory tmp = new IbcCoreChannelV1PacketSequence
             .Data[](self.ack_sequences.length + 1);
-        for (uint256 i = 0; i < self.ack_sequences.length; i++) {
+        for (uint256 i; i < self.ack_sequences.length; i++) {
             tmp[i] = self.ack_sequences[i];
         }
         tmp[self.ack_sequences.length] = value;

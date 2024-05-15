@@ -439,7 +439,7 @@ library IbcCoreConnectionV1ConnectionEnd {
          */
         IbcCoreConnectionV1Version.Data[] memory tmp =
             new IbcCoreConnectionV1Version.Data[](self.versions.length + 1);
-        for (uint256 i = 0; i < self.versions.length; i++) {
+        for (uint256 i; i < self.versions.length; i++) {
             tmp[i] = self.versions[i];
         }
         tmp[self.versions.length] = value;
@@ -937,7 +937,7 @@ library IbcCoreConnectionV1IdentifiedConnection {
          */
         IbcCoreConnectionV1Version.Data[] memory tmp =
             new IbcCoreConnectionV1Version.Data[](self.versions.length + 1);
-        for (uint256 i = 0; i < self.versions.length; i++) {
+        for (uint256 i; i < self.versions.length; i++) {
             tmp[i] = self.versions[i];
         }
         tmp[self.versions.length] = value;
@@ -1509,7 +1509,7 @@ library IbcCoreConnectionV1ClientPaths {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.paths.length + 1);
-        for (uint256 i = 0; i < self.paths.length; i++) {
+        for (uint256 i; i < self.paths.length; i++) {
             tmp[i] = self.paths[i];
         }
         tmp[self.paths.length] = value;
@@ -1808,7 +1808,7 @@ library IbcCoreConnectionV1ConnectionPaths {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.paths.length + 1);
-        for (uint256 i = 0; i < self.paths.length; i++) {
+        for (uint256 i; i < self.paths.length; i++) {
             tmp[i] = self.paths[i];
         }
         tmp[self.paths.length] = value;
@@ -2108,7 +2108,7 @@ library IbcCoreConnectionV1Version {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.features.length + 1);
-        for (uint256 i = 0; i < self.features.length; i++) {
+        for (uint256 i; i < self.features.length; i++) {
             tmp[i] = self.features[i];
         }
         tmp[self.features.length] = value;
@@ -2415,7 +2415,7 @@ library IbcCoreConnectionV1GlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_State(a[i]));
         }
         return e;

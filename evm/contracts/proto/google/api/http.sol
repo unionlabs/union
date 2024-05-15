@@ -305,7 +305,7 @@ library GoogleApiHttp {
          */
         GoogleApiHttpRule.Data[] memory tmp =
             new GoogleApiHttpRule.Data[](self.rules.length + 1);
-        for (uint256 i = 0; i < self.rules.length; i++) {
+        for (uint256 i; i < self.rules.length; i++) {
             tmp[i] = self.rules[i];
         }
         tmp[self.rules.length] = value;
@@ -918,7 +918,7 @@ library GoogleApiHttpRule {
          */
         GoogleApiHttpRule.Data[] memory tmp =
             new GoogleApiHttpRule.Data[](self.additional_bindings.length + 1);
-        for (uint256 i = 0; i < self.additional_bindings.length; i++) {
+        for (uint256 i; i < self.additional_bindings.length; i++) {
             tmp[i] = self.additional_bindings[i];
         }
         tmp[self.additional_bindings.length] = value;

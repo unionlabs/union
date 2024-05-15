@@ -418,7 +418,7 @@ library IbcCoreChannelV1Channel {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.connection_hops.length + 1);
-        for (uint256 i = 0; i < self.connection_hops.length; i++) {
+        for (uint256 i; i < self.connection_hops.length; i++) {
             tmp[i] = self.connection_hops[i];
         }
         tmp[self.connection_hops.length] = value;
@@ -927,7 +927,7 @@ library IbcCoreChannelV1IdentifiedChannel {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.connection_hops.length + 1);
-        for (uint256 i = 0; i < self.connection_hops.length; i++) {
+        for (uint256 i; i < self.connection_hops.length; i++) {
             tmp[i] = self.connection_hops[i];
         }
         tmp[self.connection_hops.length] = value;
@@ -2570,7 +2570,7 @@ library IbcCoreChannelV1GlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_State(a[i]));
         }
         return e;
@@ -2625,7 +2625,7 @@ library IbcCoreChannelV1GlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_Order(a[i]));
         }
         return e;

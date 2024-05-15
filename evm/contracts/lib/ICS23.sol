@@ -1,7 +1,7 @@
 pragma solidity ^0.8.23;
 
-import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
-import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
+// import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
+// import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
 import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/utils/math/Math.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
@@ -272,7 +272,7 @@ library Ops {
         bytes calldata b
     ) internal pure returns (int256) {
         uint256 minLen = Math.min(a.length, b.length);
-        for (uint256 i = 0; i < minLen; i++) {
+        for (uint256 i; i < minLen; i++) {
             bytes1 ai = a[i];
             bytes1 bi = b[i];
             if (ai < bi) {
@@ -379,7 +379,8 @@ library Proof {
         if (lCode != Ops.ApplyLeafOpError.None) {
             return ("", CalculateRootError.LeafOp);
         }
-        for (uint256 i = 0; i < proof.path.length; i++) {
+        uint256 proofPathLength = proof.path.length;
+        for (uint256 i; i < proofPathLength; i++) {
             Ops.ApplyInnerOpError iCode;
             (root, iCode) = Ops.applyOp(proof.path[i], root);
             if (iCode != Ops.ApplyInnerOpError.None) {
@@ -417,7 +418,8 @@ library Proof {
         // we don't do any checks regarding min_depth, max_depth since they both are 0 in both specs
 
         uint256 max = spec.maxPrefixLength + spec.childSize;
-        for (uint256 i = 0; i < proof.path.length; i++) {
+        uint256 proofPathLength = proof.path.length;
+        for (uint256 i; i < proofPathLength; i++) {
             UnionIcs23.InnerOp calldata innerOp = proof.path[i];
 
             // innerOp.prefix is hardcoded to be 0 in both specs
@@ -453,7 +455,7 @@ library Proof {
         bytes calldata leftKey = proof.left.key;
         bytes calldata rightKey = proof.right.key;
         // CosmosIcs23V1ExistenceProof.isNil does not work
-        if (UnionIcs23.empty(proof.left) == false) {
+        if (!UnionIcs23.empty(proof.left)) {
             VerifyExistenceError eCode = verify(
                 proof.left,
                 spec,
@@ -465,7 +467,7 @@ library Proof {
                 return VerifyNonExistenceError.VerifyLeft;
             }
         }
-        if (UnionIcs23.empty(proof.right) == false) {
+        if (!UnionIcs23.empty(proof.right)) {
             VerifyExistenceError eCode = verify(
                 proof.right,
                 spec,
@@ -494,16 +496,14 @@ library Proof {
         if (leftKey.length == 0) {
             //require(isLeftMost(spec, proof.right.path, proof.right.path.length)); // dev: left proof missing, right proof must be left-most
             if (
-                isLeftMost(spec, proof.right.path, proof.right.path.length)
-                    == false
+                !isLeftMost(spec, proof.right.path, proof.right.path.length)
             ) {
                 return VerifyNonExistenceError.RightProofLeftMost;
             }
         } else if (rightKey.length == 0) {
             //require(isRightMost(spec, proof.left.path, proof.left.path.length)); // dev: isRightMost: right proof missing, left proof must be right-most
             if (
-                isRightMost(spec, proof.left.path, proof.left.path.length)
-                    == false
+                !isRightMost(spec, proof.left.path, proof.left.path.length)
             ) {
                 return VerifyNonExistenceError.LeftProofRightMost;
             }
@@ -511,7 +511,7 @@ library Proof {
             //require(isLeftNeighbor(spec, proof.left.path, proof.right.path)); // dev: isLeftNeighbor: right proof missing, left proof must be right-most
             bool isLeftNeigh =
                 isLeftNeighbor(spec, proof.left.path, proof.right.path);
-            if (isLeftNeigh == false) {
+            if (!isLeftNeigh) {
                 return VerifyNonExistenceError.IsLeftNeighbor;
             }
         }
@@ -543,8 +543,8 @@ library Proof {
     ) private pure returns (bool) {
         (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
             getPadding(spec, 0);
-        for (uint256 i = 0; i < length; i++) {
-            if (hasPadding(path[i], minPrefix, maxPrefix, suffix) == false) {
+        for (uint256 i; i < length; i++) {
+            if (!hasPadding(path[i], minPrefix, maxPrefix, suffix)) {
                 return false;
             }
         }
@@ -559,8 +559,8 @@ library Proof {
     ) private pure returns (bool) {
         (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
             getPadding(spec, 1);
-        for (uint256 i = 0; i < length; i++) {
-            if (hasPadding(path[i], minPrefix, maxPrefix, suffix) == false) {
+        for (uint256 i; i < length; i++) {
+            if (!hasPadding(path[i], minPrefix, maxPrefix, suffix)) {
                 return false;
             }
         }
@@ -605,14 +605,14 @@ library Proof {
             break;
         }
 
-        if (isLeftStep(spec, left[leftIdx], right[rightIdx]) == false) {
+        if (!isLeftStep(spec, left[leftIdx], right[rightIdx])) {
             return false;
         }
         // slicing does not work for ``memory`` types
-        if (isRightMost(spec, left, leftIdx) == false) {
+        if (!isRightMost(spec, left, leftIdx)) {
             return false;
         }
-        if (isLeftMost(spec, right, rightIdx) == false) {
+        if (!isLeftMost(spec, right, rightIdx)) {
             return false;
         }
         return true;
@@ -627,7 +627,7 @@ library Proof {
         UnionIcs23.ProofSpec memory spec,
         UnionIcs23.InnerOp calldata op
     ) private pure returns (uint256, OrderFromPaddingError) {
-        for (uint256 branch = 0; branch < 2; branch++) {
+        for (uint256 branch; branch < 2; branch++) {
             (uint256 minp, uint256 maxp, uint256 suffix) =
                 getPadding(spec, branch);
             if (hasPadding(op, minp, maxp, suffix) == true) {

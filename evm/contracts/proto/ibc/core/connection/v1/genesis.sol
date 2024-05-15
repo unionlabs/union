@@ -463,7 +463,7 @@ library IbcCoreConnectionV1GenesisState {
          */
         IbcCoreConnectionV1IdentifiedConnection.Data[] memory tmp = new IbcCoreConnectionV1IdentifiedConnection
             .Data[](self.connections.length + 1);
-        for (uint256 i = 0; i < self.connections.length; i++) {
+        for (uint256 i; i < self.connections.length; i++) {
             tmp[i] = self.connections[i];
         }
         tmp[self.connections.length] = value;
@@ -485,7 +485,7 @@ library IbcCoreConnectionV1GenesisState {
          */
         IbcCoreConnectionV1ConnectionPaths.Data[] memory tmp = new IbcCoreConnectionV1ConnectionPaths
             .Data[](self.client_connection_paths.length + 1);
-        for (uint256 i = 0; i < self.client_connection_paths.length; i++) {
+        for (uint256 i; i < self.client_connection_paths.length; i++) {
             tmp[i] = self.client_connection_paths[i];
         }
         tmp[self.client_connection_paths.length] = value;

@@ -399,7 +399,7 @@ library IbcApplicationsTransferV1Allocation {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.spend_limit.length + 1);
-        for (uint256 i = 0; i < self.spend_limit.length; i++) {
+        for (uint256 i; i < self.spend_limit.length; i++) {
             tmp[i] = self.spend_limit[i];
         }
         tmp[self.spend_limit.length] = value;
@@ -420,7 +420,7 @@ library IbcApplicationsTransferV1Allocation {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.allow_list.length + 1);
-        for (uint256 i = 0; i < self.allow_list.length; i++) {
+        for (uint256 i; i < self.allow_list.length; i++) {
             tmp[i] = self.allow_list[i];
         }
         tmp[self.allow_list.length] = value;
@@ -726,7 +726,7 @@ library IbcApplicationsTransferV1TransferAuthorization {
          */
         IbcApplicationsTransferV1Allocation.Data[] memory tmp = new IbcApplicationsTransferV1Allocation
             .Data[](self.allocations.length + 1);
-        for (uint256 i = 0; i < self.allocations.length; i++) {
+        for (uint256 i; i < self.allocations.length; i++) {
             tmp[i] = self.allocations[i];
         }
         tmp[self.allocations.length] = value;

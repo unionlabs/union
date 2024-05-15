@@ -542,7 +542,7 @@ library IbcLightclientsWasmV1QueryCodeIdsResponse {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.code_ids.length + 1);
-        for (uint256 i = 0; i < self.code_ids.length; i++) {
+        for (uint256 i; i < self.code_ids.length; i++) {
             tmp[i] = self.code_ids[i];
         }
         tmp[self.code_ids.length] = value;

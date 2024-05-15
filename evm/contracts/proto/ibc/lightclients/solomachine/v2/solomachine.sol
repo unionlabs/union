@@ -4685,7 +4685,7 @@ library IbcLightClientsSolomachineV2SolomachineGlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_DataType(a[i]));
         }
         return e;

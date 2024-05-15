@@ -385,7 +385,7 @@ library CosmosIcs23V1ExistenceProof {
          */
         CosmosIcs23V1InnerOp.Data[] memory tmp =
             new CosmosIcs23V1InnerOp.Data[](self.path.length + 1);
-        for (uint256 i = 0; i < self.path.length; i++) {
+        for (uint256 i; i < self.path.length; i++) {
             tmp[i] = self.path[i];
         }
         tmp[self.path.length] = value;
@@ -2279,7 +2279,7 @@ library CosmosIcs23V1InnerSpec {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.child_order = new int32[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (int32 x, uint256 sz) = ProtoBufRuntime._decode_int32(p, bs);
             p += sz;
             r.child_order[i] = x;
@@ -2568,7 +2568,7 @@ library CosmosIcs23V1InnerSpec {
          * First resize the array. Then add the new element to the end.
          */
         int32[] memory tmp = new int32[](self.child_order.length + 1);
-        for (uint256 i = 0; i < self.child_order.length; i++) {
+        for (uint256 i; i < self.child_order.length; i++) {
             tmp[i] = self.child_order[i];
         }
         tmp[self.child_order.length] = value;
@@ -2868,7 +2868,7 @@ library CosmosIcs23V1BatchProof {
          */
         CosmosIcs23V1BatchEntry.Data[] memory tmp =
             new CosmosIcs23V1BatchEntry.Data[](self.entries.length + 1);
-        for (uint256 i = 0; i < self.entries.length; i++) {
+        for (uint256 i; i < self.entries.length; i++) {
             tmp[i] = self.entries[i];
         }
         tmp[self.entries.length] = value;
@@ -3553,7 +3553,7 @@ library CosmosIcs23V1CompressedBatchProof {
          */
         CosmosIcs23V1CompressedBatchEntry.Data[] memory tmp = new CosmosIcs23V1CompressedBatchEntry
             .Data[](self.entries.length + 1);
-        for (uint256 i = 0; i < self.entries.length; i++) {
+        for (uint256 i; i < self.entries.length; i++) {
             tmp[i] = self.entries[i];
         }
         tmp[self.entries.length] = value;
@@ -3575,7 +3575,7 @@ library CosmosIcs23V1CompressedBatchProof {
          */
         CosmosIcs23V1InnerOp.Data[] memory tmp =
             new CosmosIcs23V1InnerOp.Data[](self.lookup_inners.length + 1);
-        for (uint256 i = 0; i < self.lookup_inners.length; i++) {
+        for (uint256 i; i < self.lookup_inners.length; i++) {
             tmp[i] = self.lookup_inners[i];
         }
         tmp[self.lookup_inners.length] = value;
@@ -4102,7 +4102,7 @@ library CosmosIcs23V1CompressedExistenceProof {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.path = new int32[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (int32 x, uint256 sz) = ProtoBufRuntime._decode_int32(p, bs);
             p += sz;
             r.path[i] = x;
@@ -4291,7 +4291,7 @@ library CosmosIcs23V1CompressedExistenceProof {
          * First resize the array. Then add the new element to the end.
          */
         int32[] memory tmp = new int32[](self.path.length + 1);
-        for (uint256 i = 0; i < self.path.length; i++) {
+        for (uint256 i; i < self.path.length; i++) {
             tmp[i] = self.path[i];
         }
         tmp[self.path.length] = value;
@@ -4715,7 +4715,7 @@ library CosmosIcs23V1GlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_HashOp(a[i]));
         }
         return e;
@@ -4824,7 +4824,7 @@ library CosmosIcs23V1GlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_LengthOp(a[i]));
         }
         return e;
