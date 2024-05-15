@@ -3,6 +3,7 @@ use std::num::NonZeroU64;
 use serde::{Deserialize, Serialize};
 use states::{
     channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
+    client_state::UpdateClient,
     connection_handshake::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         Counterparty as ConnectionCounterparty,
@@ -74,6 +75,17 @@ pub enum IbcResponse {
     VerifyMembership {
         valid: bool,
     },
+    VerifyClientMessage {
+        valid: bool,
+    },
+    CheckForMisbehaviour {
+        misbehaviour_found: bool,
+    },
+    UpdateStateOnMisbehaviour,
+    UpdateState {
+        consensus_states: Vec<(Height, Vec<u8>)>,
+        client_state: Vec<u8>,
+    },
     OnChannelOpenInit {
         // TODO(aeryz): what's gonna be the error type?
         err: bool,
@@ -99,6 +111,7 @@ pub enum IbcResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum IbcState {
     CreateClient(CreateClient),
+    UpdateClient(UpdateClient),
     ConnectionOpenInit(ConnectionOpenInit),
     ConnectionOpenTry(ConnectionOpenTry),
     ConnectionOpenAck(ConnectionOpenAck),
@@ -132,6 +145,7 @@ impl<T: IbcHost> Runnable<T> for IbcState {
             resp,
             [
                 CreateClient,
+                UpdateClient,
                 ConnectionOpenInit,
                 ConnectionOpenTry,
                 ConnectionOpenAck,
@@ -170,6 +184,26 @@ pub enum IbcMsg {
         proof: Vec<u8>,
         path: MerklePath,
         value: Vec<u8>,
+    },
+
+    VerifyClientMessage {
+        client_id: ClientId,
+        client_msg: Vec<u8>,
+    },
+
+    UpdateStateOnMisbehaviour {
+        client_id: ClientId,
+        client_msg: Vec<u8>,
+    },
+
+    UpdateState {
+        client_id: ClientId,
+        client_msg: Vec<u8>,
+    },
+
+    CheckForMisbehaviour {
+        client_id: ClientId,
+        client_msg: Vec<u8>,
     },
 
     OnChannelOpenInit {
@@ -288,6 +322,20 @@ pub enum IbcEvent {
         packet_channel_ordering: Order,
         connection_id: ConnectionId,
     },
+
+    ClientMisbehaviour {
+        client_id: ClientId,
+        // TODO(aeryz): ibc-go also includes `client_type` but why?
+        // client_type: String,
+    },
+
+    UpdateClient {
+        client_id: ClientId,
+        // TODO(aeryz): ibc-go also includes `client_type` but why?
+        // client_type: String,
+        // TODO(aeryz): throw this event as comma seperated heights
+        consensus_heights: Vec<Height>,
+    },
 }
 
 pub trait Runnable<T: IbcHost>: Serialize + Sized {
@@ -404,5 +452,12 @@ pub fn channel_open_ack(
         counterparty_version,
         proof_try,
         proof_height,
+    })
+}
+
+pub fn update_client(client_id: ClientId, client_msg: Vec<u8>) -> IbcState {
+    IbcState::UpdateClient(UpdateClient::Init {
+        client_id,
+        client_msg,
     })
 }

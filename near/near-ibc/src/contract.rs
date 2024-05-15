@@ -246,6 +246,11 @@ impl Contract {
         fold(self, runnable, IbcResponse::Empty).unwrap()
     }
 
+    pub fn update_client(&mut self, client_id: ClientId, client_msg: Vec<u8>) -> Promise {
+        let runnable = ibc_vm_rs::update_client(client_id, client_msg);
+        fold(self, runnable, IbcResponse::Empty).unwrap()
+    }
+
     // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
     // when I try to fetch the contract state
     pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
@@ -303,6 +308,57 @@ impl Contract {
     ) -> Option<Promise> {
         let current_state: IbcState = serde_json::from_slice(&current_state).unwrap();
         fold(self, current_state, IbcResponse::VerifyMembership { valid })
+    }
+
+    #[private]
+    pub fn callback_verify_client_message(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] valid: bool,
+    ) -> Option<Promise> {
+        fold(
+            self,
+            current_state,
+            IbcResponse::VerifyClientMessage { valid },
+        )
+    }
+
+    #[private]
+    pub fn callback_check_for_misbehaviour(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] misbehaviour_found: bool,
+    ) -> Option<Promise> {
+        fold(
+            self,
+            current_state,
+            IbcResponse::CheckForMisbehaviour { misbehaviour_found },
+        )
+    }
+
+    #[private]
+    pub fn callback_update_client_on_misbehaviour(
+        &mut self,
+        current_state: IbcState,
+    ) -> Option<Promise> {
+        fold(self, current_state, IbcResponse::UpdateStateOnMisbehaviour)
+    }
+
+    #[private]
+    pub fn callback_update_client(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] client_updated: (Vec<u8>, Vec<(Height, Vec<u8>)>),
+    ) -> Option<Promise> {
+        let (client_state, consensus_states) = client_updated;
+        fold(
+            self,
+            current_state,
+            IbcResponse::UpdateState {
+                consensus_states,
+                client_state,
+            },
+        )
     }
 
     #[private]
@@ -399,6 +455,61 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
                     ),
             );
         }
+        ibc_vm_rs::IbcMsg::VerifyClientMessage {
+            client_id,
+            client_msg,
+        } => {
+            let account_id = host.clients.get(&client_id.to_string()).unwrap();
+            return Some(
+                light_client::ext(account_id.clone())
+                    .verify_client_message(client_msg)
+                    .then(
+                        Contract::ext(env::current_account_id())
+                            .callback_verify_client_message(runnable),
+                    ),
+            );
+        }
+        ibc_vm_rs::IbcMsg::UpdateStateOnMisbehaviour {
+            client_id,
+            client_msg,
+        } => {
+            let account_id = host.clients.get(&client_id.to_string()).unwrap();
+            return Some(
+                light_client::ext(account_id.clone())
+                    .update_client_on_misbehaviour(client_msg)
+                    .then(
+                        Contract::ext(env::current_account_id())
+                            .callback_update_client_on_misbehaviour(runnable),
+                    ),
+            );
+        }
+        ibc_vm_rs::IbcMsg::UpdateState {
+            client_id,
+            client_msg,
+        } => {
+            let account_id = host.clients.get(&client_id.to_string()).unwrap();
+            return Some(
+                light_client::ext(account_id.clone())
+                    .update_client(client_msg)
+                    .then(
+                        Contract::ext(env::current_account_id()).callback_update_client(runnable),
+                    ),
+            );
+        }
+        ibc_vm_rs::IbcMsg::CheckForMisbehaviour {
+            client_id,
+            client_msg,
+        } => {
+            let account_id = host.clients.get(&client_id.to_string()).unwrap();
+            return Some(
+                light_client::ext(account_id.clone())
+                    .check_for_misbehaviour(client_msg)
+                    .then(
+                        Contract::ext(env::current_account_id())
+                            .callback_check_for_misbehaviour(runnable),
+                    ),
+            );
+        }
         ibc_vm_rs::IbcMsg::OnChannelOpenInit {
             order,
             connection_hops,
@@ -471,6 +582,14 @@ pub trait LightClient {
         path: MerklePath,
         value: Vec<u8>,
     ) -> bool;
+
+    fn verify_client_message(&self, client_msg: Vec<u8>) -> bool;
+
+    fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool;
+
+    fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
+
+    fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>);
 }
 
 #[ext_contract(ibc_app)]

@@ -208,6 +208,7 @@
         ./site/site.nix
         ./site/openapi.nix
         ./near/near-ibc/near-ibc.nix
+        ./near/near-light-client/near-light-client.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix

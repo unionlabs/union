@@ -70,7 +70,7 @@ members = [
   "zerg",
   "lib/linea-zktrie",
   "near/near-ibc",
-  "near/dummy-light-client",
+  "near/near-light-client",
   "near/dummy-ibc-app",
   "near/near-ibc-tests"
 ]
