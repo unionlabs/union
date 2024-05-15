@@ -7,10 +7,6 @@ config  = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "e
 args    = ["lsp-proxy"]
 command = "biome"
 
-[language-server."nomic-lsp"]
-args    = ["vscode-solidity-server", "--stdio"]
-command = "npx"
-
 [[language]]
 file-types       = ["astro"]
 injection-regex  = "astro"
@@ -57,8 +53,3 @@ source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "dfa089
 # [[grammar]]
 # name   = "sql"
 # source = { git = "https://github.com/DerekStride/tree-sitter-sql", rev = "b6b1f7f7e70e869c655705c591cbdf3e8a807ad6" }
-
-
-[[language]]
-language-servers = ["nomic-lsp"]
-name             = "solidity"
