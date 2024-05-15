@@ -78,7 +78,7 @@ contract IBCHeightTests is Test {
     function test_toUint128_fromUint128_iso(
         uint64 revisionNumber,
         uint64 revisionHeight
-    ) public {
+    ) view public {
         IbcCoreClientV1Height.Data memory height = IbcCoreClientV1Height.Data({
             revision_number: revisionNumber,
             revision_height: revisionHeight
@@ -86,7 +86,7 @@ contract IBCHeightTests is Test {
         assertTrue(proxy.eq(height, proxy.fromUint128(proxy.toUint128(height))));
     }
 
-    function test_isZero() public {
+    function test_isZero() public view {
         assertTrue(
             proxy.isZero(
                 IbcCoreClientV1Height.Data({
@@ -97,7 +97,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_eq(uint64 revisionNumber, uint64 revisionHeight) public {
+    function test_eq(uint64 revisionNumber, uint64 revisionHeight) public view {
         assertTrue(
             proxy.eq(
                 IbcCoreClientV1Height.Data({
@@ -117,7 +117,7 @@ contract IBCHeightTests is Test {
         uint64 revisionHeightA,
         uint64 revisionNumberB,
         uint64 revisionHeightB
-    ) public {
+    ) public view {
         vm.assume(revisionNumberB <= revisionNumberA);
         vm.assume(revisionHeightB < revisionHeightA);
         assertTrue(
@@ -139,7 +139,7 @@ contract IBCHeightTests is Test {
         uint64 revisionHeightA,
         uint64 revisionNumberB,
         uint64 revisionHeightB
-    ) public {
+    ) public view {
         vm.assume(revisionNumberB <= revisionNumberA);
         vm.assume(revisionHeightB <= revisionHeightA);
         assertTrue(
@@ -161,7 +161,7 @@ contract IBCHeightTests is Test {
         uint64 revisionHeightA,
         uint64 revisionNumberB,
         uint64 revisionHeightB
-    ) public {
+    ) public view {
         vm.assume(revisionNumberB >= revisionNumberA);
         vm.assume(revisionHeightB > revisionHeightA);
         assertTrue(
@@ -183,7 +183,7 @@ contract IBCHeightTests is Test {
         uint64 revisionHeightA,
         uint64 revisionNumberB,
         uint64 revisionHeightB
-    ) public {
+    ) public view {
         vm.assume(revisionNumberB >= revisionNumberA);
         vm.assume(revisionHeightB >= revisionHeightA);
         assertTrue(

@@ -114,7 +114,7 @@ contract MerkleTreeTests is Test {
         bytes memory l,
         bytes memory m,
         bytes memory n
-    ) public {
+    ) public view {
         bytes32 optimizedRoot =
             getOptimizedRoot(a, b, c, d, e, f, g, h, i, j, k, l, m, n);
         bytes32 root =

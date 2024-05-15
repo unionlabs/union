@@ -13,8 +13,8 @@ abstract contract IBCClientHandler is IIBCClient {
      * @dev registerClient registers a new client type into the client registry
      */
     function registerClient(
-        string calldata clientType,
-        ILightClient client
+        string calldata,
+        ILightClient
     ) public virtual {
         passthrough(ibcClient);
     }
@@ -22,7 +22,7 @@ abstract contract IBCClientHandler is IIBCClient {
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state
      */
-    function createClient(IBCMsgs.MsgCreateClient calldata msg_)
+    function createClient(IBCMsgs.MsgCreateClient calldata)
         external
         override
         returns (string memory)
@@ -33,7 +33,7 @@ abstract contract IBCClientHandler is IIBCClient {
     /**
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
-    function updateClient(IBCMsgs.MsgUpdateClient calldata msg_)
+    function updateClient(IBCMsgs.MsgUpdateClient calldata)
         external
         override
     {

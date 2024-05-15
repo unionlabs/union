@@ -545,7 +545,6 @@ library Cosmos_protoScalarDescriptor {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.description).length);
         e += 1

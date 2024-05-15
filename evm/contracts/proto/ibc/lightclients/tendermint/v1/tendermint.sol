@@ -1730,7 +1730,7 @@ library IbcLightclientsTendermintV1Header {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

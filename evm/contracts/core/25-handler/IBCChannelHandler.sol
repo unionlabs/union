@@ -12,7 +12,7 @@ import "../05-port/ModuleManager.sol";
 abstract contract IBCChannelHandler is IIBCChannelHandshake {
     address ibcChannel;
 
-    function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
+    function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata)
         external
         override
         returns (string memory)
@@ -20,7 +20,7 @@ abstract contract IBCChannelHandler is IIBCChannelHandshake {
         passthrough(ibcChannel);
     }
 
-    function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
+    function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata)
         external
         override
         returns (string memory)
@@ -28,28 +28,28 @@ abstract contract IBCChannelHandler is IIBCChannelHandshake {
         passthrough(ibcChannel);
     }
 
-    function channelOpenAck(IBCMsgs.MsgChannelOpenAck calldata msg_)
+    function channelOpenAck(IBCMsgs.MsgChannelOpenAck calldata)
         external
         override
     {
         passthrough(ibcChannel);
     }
 
-    function channelOpenConfirm(IBCMsgs.MsgChannelOpenConfirm calldata msg_)
+    function channelOpenConfirm(IBCMsgs.MsgChannelOpenConfirm calldata)
         external
         override
     {
         passthrough(ibcChannel);
     }
 
-    function channelCloseInit(IBCMsgs.MsgChannelCloseInit calldata msg_)
+    function channelCloseInit(IBCMsgs.MsgChannelCloseInit calldata)
         external
         override
     {
         passthrough(ibcChannel);
     }
 
-    function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata msg_)
+    function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata)
         external
         override
     {

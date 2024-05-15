@@ -1081,7 +1081,7 @@ library CosmosIcs23V1CommitmentProof {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -2497,7 +2497,6 @@ library CosmosIcs23V1InnerSpec {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1
             + ProtoBufRuntime._sz_lendelim(
                 ProtoBufRuntime._estimate_packed_repeated_int32(r.child_order)
@@ -3156,7 +3155,7 @@ library CosmosIcs23V1BatchEntry {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -3864,7 +3863,7 @@ library CosmosIcs23V1CompressedBatchEntry {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -4239,7 +4238,6 @@ library CosmosIcs23V1CompressedExistenceProof {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.key.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.value.length);
         e += 1

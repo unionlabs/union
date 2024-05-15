@@ -72,7 +72,7 @@ library Cometbls {
     function createClientState(
         string memory chainId,
         uint64 latestHeight
-    ) internal view returns (CometblsClientState.Data memory) {
+    ) internal pure returns (CometblsClientState.Data memory) {
         return CometblsClientState.Data({
             chain_id: chainId,
             // TODO: all this could be fuzzed
@@ -94,7 +94,7 @@ library Cometbls {
         bytes32 appHash,
         bytes32 nextValidatorsHash,
         uint64 timestamp
-    ) internal view returns (CometblsConsensusState memory) {
+    ) internal pure returns (CometblsConsensusState memory) {
         return CometblsConsensusState({
             appHash: appHash,
             nextValidatorsHash: nextValidatorsHash,
@@ -109,7 +109,7 @@ library Cometbls {
         bytes32 appHash,
         bytes32 nextValidatorsHash,
         uint64 timestamp
-    ) internal view returns (IBCMsgs.MsgCreateClient memory m) {
+    ) internal pure returns (IBCMsgs.MsgCreateClient memory m) {
         m.clientType = clientType;
         m.clientStateBytes =
             createClientState(chainId, latestHeight).marshalEthABI();
@@ -123,7 +123,7 @@ library Cometbls {
         CometblsLightHeader.Data memory signedHeader,
         uint64 trustedHeight,
         bytes memory zkp
-    ) internal view returns (IBCMsgs.MsgUpdateClient memory m) {
+    ) internal pure returns (IBCMsgs.MsgUpdateClient memory m) {
         m.clientId = clientId;
         m.clientMessage = CometblsHeader.Data({
             signed_header: signedHeader,

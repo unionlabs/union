@@ -770,7 +770,7 @@ library IbcCoreChannelV1QueryChannelsRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -5954,7 +5954,6 @@ library IbcCoreChannelV1QueryPacketAcknowledgementsRequest {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);
         e += 1
@@ -6762,7 +6761,6 @@ library IbcCoreChannelV1QueryUnreceivedPacketsRequest {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);
         e += 1
@@ -7133,7 +7131,6 @@ library IbcCoreChannelV1QueryUnreceivedPacketsResponse {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1
             + ProtoBufRuntime._sz_lendelim(
                 ProtoBufRuntime._estimate_packed_repeated_uint64(r.sequences)
@@ -7502,7 +7499,6 @@ library IbcCoreChannelV1QueryUnreceivedAcksRequest {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);
         e += 1
@@ -7872,7 +7868,6 @@ library IbcCoreChannelV1QueryUnreceivedAcksResponse {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1
             + ProtoBufRuntime._sz_lendelim(
                 ProtoBufRuntime._estimate_packed_repeated_uint64(r.sequences)

@@ -1060,7 +1060,7 @@ library IbcApplicationsFeeV1QueryIncentivizedPacketResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1942,7 +1942,7 @@ library IbcApplicationsFeeV1QueryTotalRecvFeesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -2476,7 +2476,7 @@ library IbcApplicationsFeeV1QueryTotalAckFeesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -3010,7 +3010,7 @@ library IbcApplicationsFeeV1QueryTotalTimeoutFeesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

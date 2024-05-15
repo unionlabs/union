@@ -54,10 +54,10 @@ contract TestCometblsClient is CometblsClient {
     }
 
     function verifyZKP(
-        bytes calldata zkpBytes,
-        string memory chainId,
-        bytes32 trustedValidatorsHash,
-        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
+        bytes calldata,
+        string memory,
+        bytes32,
+        UnionIbcLightclientsCometblsV1LightHeader.Data memory
     ) public override returns (bool) {
         bool ok = validProof > 0;
         if (validProof > 0) {
@@ -71,12 +71,12 @@ contract TestCometblsClient is CometblsClient {
         IbcCoreClientV1Height.Data calldata height,
         uint64 delayPeriodTime,
         uint64 delayPeriodBlocks,
-        bytes calldata proof,
-        bytes memory prefix,
-        bytes calldata path,
-        bytes calldata value
+        bytes calldata,
+        bytes memory,
+        bytes calldata,
+        bytes calldata
     ) external override returns (bool) {
-        bytes32 appHash = validateDelayPeriod(
+        validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
 
@@ -92,11 +92,11 @@ contract TestCometblsClient is CometblsClient {
         IbcCoreClientV1Height.Data calldata height,
         uint64 delayPeriodTime,
         uint64 delayPeriodBlocks,
-        bytes calldata proof,
-        bytes calldata prefix,
-        bytes calldata path
+        bytes calldata,
+        bytes calldata,
+        bytes calldata
     ) external override returns (bool) {
-        bytes32 appHash = validateDelayPeriod(
+        validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
 
@@ -300,7 +300,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_createClient_onlyIBC(uint64 trustedHeight) public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -662,7 +662,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_getClientState() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -686,16 +686,12 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getClientState_noClientState() public {
-        (
-            bytes memory zkp,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        getValidTransition();
 
-        uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        bytes memory clientStateBytes = client.getClientState("blabla");
+        // bytes memory clientStateBytes = client.getClientState("blabla");
         // REVIEW: Not sure how best to check if the bytes is the zero of the type
         // assertEq(clientStateBytes, "");
     }
@@ -750,7 +746,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_getConsensusState() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -788,22 +784,23 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getConsensusState_noConsensus() public {
-        (
-            bytes memory zkp,
+        /*(
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        ) = */
+        getValidTransition();
 
-        uint64 trustedHeight = uint64(signedHeader.height) - 1;
+        // uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        bytes memory consensusStateBytes = client.getConsensusState(
-            "blabla",
-            IbcCoreClientV1Height.Data({
-                revision_number: 0,
-                revision_height: trustedHeight
-            })
-        );
+        // bytes memory consensusStateBytes = client.getConsensusState(
+        //     "blabla",
+        //     IbcCoreClientV1Height.Data({
+        //         revision_number: 0,
+        //         revision_height: trustedHeight
+        //     })
+        // );
         // REVIEW: Not sure how best to check if the bytes is the zero of the type
         // assertEq(consensusStateBytes, "");
     }
@@ -876,7 +873,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_verifyMembership_noConsensus() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -915,7 +912,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_verifyMembership_ok() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -953,7 +950,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_verifyMembership_ko() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -996,7 +993,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayTime && delayTime < delayPeriodTime);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1042,7 +1039,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayBlocks && delayBlocks < delayPeriodBlocks);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1085,7 +1082,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1129,7 +1126,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1169,7 +1166,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_verifyNonMembership_ok() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1206,7 +1203,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_verifyNonMembership_ko() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1248,7 +1245,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayTime && delayTime < delayPeriodTime);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1293,7 +1290,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayBlocks && delayBlocks < delayPeriodBlocks);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1335,7 +1332,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1378,7 +1375,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
 
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
@@ -1416,10 +1413,7 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getLatestHeight_noClientState() public {
-        (
-            bytes memory zkp,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        getValidTransition();
 
         handler.registerClient(CLIENT_TYPE, client);
 
@@ -1432,7 +1426,7 @@ contract IBCClientHandlerTests is TestPlus {
 
     function test_getLatestHeight_ok() public {
         (
-            bytes memory zkp,
+            ,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
 
