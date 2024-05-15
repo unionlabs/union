@@ -74,6 +74,7 @@ members = [
   "near/near-ibc",
   "near/dummy-light-client",
   "near/dummy-ibc-app",
+  "near/near-ibc-tests"
 ]
 
 [workspace.package]

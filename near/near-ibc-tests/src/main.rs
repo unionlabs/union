@@ -1,8 +1,29 @@
+use std::collections::HashMap;
+
+use borsh::BorshDeserialize;
 use ibc_vm_rs::{
     states::connection_handshake, IbcEvent, Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
 };
+use near_jsonrpc_client::methods::{self, RpcMethod};
+use near_primitives::{
+    hash::CryptoHash,
+    merkle::{MerklePath, MerklePathItem},
+    types::BlockReference,
+    views::{QueryRequest, StateItem},
+};
 use near_units::parse_near;
+use near_workspaces::{
+    error::RpcErrorCode,
+    network::Sandbox,
+    prelude::*,
+    result::ValueOrReceiptId,
+    rpc::query::ProcessQuery,
+    sandbox,
+    types::{Gas, KeyType, NearToken, SecretKey},
+    Account, AccountId, Contract, Worker,
+};
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     ibc::core::{
@@ -13,14 +34,6 @@ use unionlabs::{
     },
     id::{ChannelId, ConnectionId, PortId},
     validated::ValidateT,
-};
-use workspaces::{
-    network::Sandbox,
-    prelude::*,
-    result::ValueOrReceiptId,
-    sandbox,
-    types::{KeyType, SecretKey},
-    Account, AccountId, Contract, Worker,
 };
 
 const WASM_FILEPATH: &str =
@@ -37,27 +50,27 @@ const INITIAL_HEIGHT: Height = Height {
 };
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    println!("herererere0??");
-    let sandbox = sandbox().await?;
-    println!("herererere1??");
-    let wasm = std::fs::read(WASM_FILEPATH)?;
-    let lc_wasm = std::fs::read(LC_WASM_FILEPATH)?;
-    let ibc_app_wasm = std::fs::read(IBC_APP_WASM_FILEPATH)?;
+async fn main() {
+    let sandbox = sandbox().await.unwrap();
+    let wasm = std::fs::read(WASM_FILEPATH).unwrap();
+    let lc_wasm = std::fs::read(LC_WASM_FILEPATH).unwrap();
+    let ibc_app_wasm = std::fs::read(IBC_APP_WASM_FILEPATH).unwrap();
 
-    let ibc_account_id: AccountId = String::from("ibc.test.near").try_into()?;
+    let ibc_account_id: AccountId = String::from("ibc.test.near").try_into().unwrap();
     let ibc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
     let contract = sandbox
         .create_tla_and_deploy(ibc_account_id.clone(), ibc_sk.clone(), &wasm)
-        .await?
+        .await
+        .unwrap()
         .unwrap();
-    let lc_account_id: AccountId = String::from("light-client.test.near").try_into()?;
+    let lc_account_id: AccountId = String::from("light-client.test.near").try_into().unwrap();
     let lc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
     let lc = sandbox
         .create_tla_and_deploy(lc_account_id.clone(), lc_sk.clone(), &lc_wasm)
-        .await?
+        .await
+        .unwrap()
         .unwrap();
-    let ibc_app_account_id: AccountId = String::from("ibc-app.test.near").try_into()?;
+    let ibc_app_account_id: AccountId = String::from("ibc-app.test.near").try_into().unwrap();
     let ibc_app_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
     let ibc_app = sandbox
         .create_tla_and_deploy(
@@ -65,7 +78,8 @@ async fn main() -> anyhow::Result<()> {
             ibc_app_sk.clone(),
             &ibc_app_wasm,
         )
-        .await?
+        .await
+        .unwrap()
         .unwrap();
 
     println!("contract id ({:?}), lc id ({:?})", contract.id(), lc.id());
@@ -74,19 +88,50 @@ async fn main() -> anyhow::Result<()> {
     let owner = sandbox.root_account().unwrap();
     let user = owner
         .create_subaccount("user")
-        .initial_balance(parse_near!("30 N"))
+        .initial_balance(NearToken::from_near(30))
         .transact()
-        .await?
-        .into_result()?;
+        .await
+        .unwrap()
+        .into_result()
+        .unwrap();
 
     println!("calling register");
 
-    test_register_client(&user, &contract, &lc).await;
-    test_create_client(&user, &contract).await;
-    test_open_connection_starting_from_init(&user, &contract).await;
-    test_open_channel_starting_from_init(&user, &contract, &ibc_app).await;
+    let out: Vec<u8> = Sha256::new()
+        .chain(b"account_idsm")
+        .chain(borsh::to_vec("cometbls").unwrap())
+        .finalize()
+        .to_vec();
 
-    Ok(())
+    println!("{:?}", out);
+
+    test_register_client(&user, &contract, &lc).await;
+
+    let block = sandbox.view_block().await.unwrap();
+    let height = block.height();
+
+    let proof = contract
+        .view_state()
+        .block_height(height)
+        .prefix(b"asfensdnfesdnfensd".as_slice())
+        .await
+        .unwrap()
+        .proof;
+
+    let nodes = proof
+        .into_iter()
+        .map(|bytes| {
+            let hash = CryptoHash::hash_bytes(&bytes);
+            let node = near_store::RawTrieNodeWithSize::try_from_slice(&bytes).unwrap();
+            (hash, node)
+        })
+        .collect::<HashMap<_, _>>();
+
+    println!("Nodes: {:?}", nodes);
+
+    // test_create_client(&user, &contract).await;
+    // test_open_connection_starting_from_init(&user, &contract).await;
+    // test_open_channel_starting_from_init(&user, &contract, &ibc_app).await;
 }
 
 #[derive(serde::Serialize)]
@@ -155,7 +200,7 @@ async fn test_register_client(user: &Account, contract: &Contract, lc: &Contract
         account: lc.id().to_string(),
     };
 
-    let _ = user
+    let res = user
         .call(contract.id(), "register_client")
         .args_json(register)
         .transact()
@@ -187,7 +232,7 @@ async fn test_create_client(user: &Account, contract: &Contract) {
     let res = user
         .call(contract.id(), "create_client")
         .args_json(create)
-        .gas(300000000000000)
+        .gas(Gas::from_gas(300000000000000))
         .transact()
         .await
         .unwrap();
@@ -369,7 +414,7 @@ async fn test_open_channel_starting_from_init(
     println!("calling channel open init");
     let res = user
         .call(contract.id(), "channel_open_init")
-        .gas(300000000000000)
+        .gas(Gas::from_gas(300000000000000))
         .args_json(channel_init)
         .transact()
         .await
@@ -422,7 +467,7 @@ async fn test_open_channel_starting_from_init(
     println!("calling channel open ack");
     let res = user
         .call(contract.id(), "channel_open_ack")
-        .gas(300000000000000)
+        .gas(Gas::from_gas(300000000000000))
         .args_json(channel_ack)
         .transact()
         .await

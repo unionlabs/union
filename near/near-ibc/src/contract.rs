@@ -4,6 +4,7 @@ use ibc_vm_rs::{
 };
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
+    collections::LookupMap,
     env, ext_contract, near_bindgen,
     store::{unordered_map, UnorderedMap},
     AccountId, BorshStorageKey, PanicOnDefault, Promise,
@@ -103,6 +104,7 @@ pub struct Contract {
     client_index: u64,
     connection_index: u64,
     channel_index: u64,
+    thisisfortest: LookupMap<String, AccountId>,
     account_ids: UnorderedMap<String, AccountId>,
     // client id -> account id
     clients: UnorderedMap<String, AccountId>,
@@ -117,6 +119,7 @@ impl Default for Contract {
             account_ids: UnorderedMap::new(b"account_ids".as_slice()),
             clients: UnorderedMap::new(b"clients".as_slice()),
             connection_index: 0,
+            thisisfortest: LookupMap::new(b"lookup".as_slice()),
         }
     }
 }
@@ -128,9 +131,17 @@ impl Contract {
         match self.account_ids.entry(client_type) {
             unordered_map::Entry::Occupied(_) => panic!("already registered"),
             unordered_map::Entry::Vacant(entry) => {
-                entry.insert(account_id);
+                entry.insert(account_id.clone());
             }
         }
+        match self.account_ids.entry("AAAAAAAAAAAAAAAAAAAAA".to_string()) {
+            unordered_map::Entry::Occupied(_) => panic!("already registered"),
+            unordered_map::Entry::Vacant(entry) => {
+                entry.insert(account_id.clone());
+            }
+        }
+        self.thisisfortest
+            .insert(&"BBBBBBBBBB".to_string(), &account_id);
     }
 
     pub fn create_client(
@@ -278,10 +289,9 @@ impl Contract {
     #[private]
     pub fn callback_height(
         &mut self,
-        current_state: Vec<u8>,
+        current_state: IbcState,
         #[callback_unwrap] height: Height,
     ) -> Option<Promise> {
-        let current_state: IbcState = serde_json::from_slice(&current_state).unwrap();
         fold(self, current_state, IbcResponse::LatestHeight { height })
     }
 
@@ -321,7 +331,6 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
     let (runnable, ibc_msg) = match either {
         ibc_vm_rs::Either::Left(cont) => cont,
         ibc_vm_rs::Either::Right(event) => {
-            // TODO(aeryz): emit event
             env::log_str(&serde_json::to_string(&event).unwrap());
             return None;
         }
@@ -358,10 +367,9 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: IbcResponse) -> O
             let client_id = client_id.to_string();
             let account_id = host.clients.get(&client_id).unwrap();
             return Some(
-                light_client::ext(account_id.clone()).latest_height().then(
-                    Contract::ext(env::current_account_id())
-                        .callback_height(serde_json::to_vec(&runnable).unwrap()),
-                ),
+                light_client::ext(account_id.clone())
+                    .latest_height()
+                    .then(Contract::ext(env::current_account_id()).callback_height(runnable)),
             );
         }
         ibc_vm_rs::IbcMsg::VerifyMembership {

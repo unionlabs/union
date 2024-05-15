@@ -115,6 +115,8 @@
         , extraEnv ? { }
           # if true, build without -j1 nd --release.
         , dev ? false
+        , extraBuildInputs ? [ ]
+        , extraNativeBuildInputs ? [ ]
         }:
           assert builtins.isAttrs extraEnv;
           assert builtins.isBool dev;
@@ -233,7 +235,9 @@
 
               buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
                 lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-              );
+              ) ++ extraBuildInputs;
+
+              nativeBuildInputs = extraNativeBuildInputs;
 
               cargoVendorDir = craneLib.vendorMultipleCargoDeps {
                 inherit (craneLib.findCargoFiles crateSrc) cargoConfigs;

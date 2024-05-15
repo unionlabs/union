@@ -14,12 +14,6 @@ serde.workspace = true
 borsh = { version = "1.5.0", features = ["borsh-derive"] }
 unionlabs.workspace = true
 
-[dev-dependencies]
-tokio = { version = "1.18.1", features = ["full"] }
-anyhow = "1.0"
-near-units = "0.2.0"
-workspaces = "0.7.0"
-
 [lib]
 crate-type = ["cdylib"]
 
@@ -30,15 +24,3 @@ module-name-repetitions = "allow"
 must-use-candidate = "allow"
 needless-pass-by-value = "allow"
 wildcard-imports = "allow"
-
-[profile.release]
-codegen-units = 1
-debug = false
-lto = true
-opt-level = "z"
-overflow-checks = true
-panic = "abort"
-
-[[example]]
-name = "integration-tests"
-path = "tests/integration-tests.rs"
