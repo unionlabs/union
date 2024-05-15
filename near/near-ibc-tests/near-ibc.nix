@@ -1,29 +1,18 @@
 { ... }: {
   perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, ... }:
     let
-
-      near-ibc-tests = pkgs.stdenv.mkDerivation {
-        name = "near-ibc-tests";
-        buildInputs = [ pkgs.makeWrapper ];
-        src =
-          (crane.buildWorkspaceMember {
-            crateDirFromRoot = "near/near-ibc-tests";
-            extraEnv = {
-              PROTOC = "${pkgs.protobuf}/bin/protoc";
-              LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
-            };
-            extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
-            extraNativeBuildInputs = [ pkgs.clang ];
-          }).packages.near-ibc-tests;
-        installPhase = ''
-          mkdir -p $out/bin
-          cp -r $src/bin/near-ibc-tests $out/bin/near-ibc-tests
-          wrapProgram $out/bin/near-ibc-tests \
-            --set NEAR_SANDBOX_BIN_PATH "${near-sandbox}/bin/neard";
-        '';
-        meta.mainProgram = "near-ibc-tests";
-      };   
-
+      near-integration-tests = crane.buildWorkspaceMember {
+        crateNameOverride = "integration-tests";
+        crateDirFromRoot = "near/near-ibc";
+        cargoBuildExtraArgs = "--example integration-tests";
+        extraEnv = {
+          NEAR_SANDBOX_BIN_PATH = "${near-sandbox}/bin/neard";
+          PROTOC = "${pkgs.protobuf}/bin/protoc";
+          LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        };
+        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraNativeBuildInputs = [ pkgs.clang ];
+      };
 
       rustToolchain = rust.mkNightly {
         channel = "1.78.0";
@@ -61,7 +50,8 @@
     in
     {
       packages = { 
-        inherit near-ibc-tests near-sandbox;
-      };
+        near-sandbox = near-sandbox;
+      } // near-integration-tests.packages;
+
     };
 }

@@ -111,6 +111,8 @@
           pnameSuffix ? ""
           # extra environment variables to pass to the derivation.
         , extraEnv ? { }
+        , extraBuildInputs ? [ ]
+        , extraNativeBuildInputs ? [ ]
         }:
           assert lib.assertMsg
             (
@@ -226,7 +228,9 @@
 
               buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
                 lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-              );
+              ) ++ extraBuildInputs;
+
+              nativeBuildInputs = extraNativeBuildInputs;
 
               cargoVendorDir = craneLib.vendorMultipleCargoDeps {
                 inherit (craneLib.findCargoFiles crateSrc) cargoConfigs;
@@ -272,7 +276,7 @@
             packages.${cratePname} = cargoBuild.buildPackage (
               crateAttrs // {
                 inherit pnameSuffix;
-                cargoExtraArgs = "-j1 ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
+                cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!
                   " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
