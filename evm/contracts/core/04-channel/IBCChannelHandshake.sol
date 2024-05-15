@@ -256,7 +256,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             msg_.portId,
             msg_.channelId,
             channel.counterparty.port_id,
-            channel.counterparty.channel_id,
+            // haven't been saved yet, but we have to yield the even early to avoid overflowing the stack
+            msg_.counterpartyChannelId,
             channel.connection_hops[0]
         );
 
