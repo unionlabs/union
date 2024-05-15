@@ -321,7 +321,7 @@
             mkdir -p $out
             cd $out
 
-            jq --compact-output --slurp 'map(.abi)' \
+            jq --compact-output --slurp 'map(.abi) | add' \
               ${contracts}/out/IBCClient.sol/IBCClient.json \
               ${contracts}/out/IBCPacket.sol/IBCPacket.json \
               ${contracts}/out/IBCConnection.sol/IBCConnection.json \
