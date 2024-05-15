@@ -310,6 +310,29 @@
         #   '';
         # };
 
+        hubble-abis =
+          let
+            contracts = self'.packages.evm-contracts;
+          in
+          pkgs.runCommand "hubble-abis"
+            {
+              buildInputs = [ pkgs.jq ];
+            } ''
+            mkdir -p $out
+            cd $out
+
+            jq --compact-output --slurp 'map(.abi)' \
+              ${contracts}/out/IBCClient.sol/IBCClient.json \
+              ${contracts}/out/IBCPacket.sol/IBCPacket.json \
+              ${contracts}/out/IBCConnection.sol/IBCConnection.json \
+              ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
+              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json 
+
+            cat ${contracts}/out/Relay.sol/UCS01Relay.json | jq --compact-output  '.abi' > ucs-01.json
+            cat ${contracts}/out/NFT.sol/UCS02NFT.json | jq --compact-output '.abi' > ucs-02.json
+          '';
+
+
         solidity-build-tests = pkgs.writeShellApplication {
           name = "run-solidity-build-tests";
           runtimeInputs = [ self'.packages.forge ];
