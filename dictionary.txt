@@ -813,6 +813,7 @@ qself
 qxpx
 qxrx
 qypy
+rabby
 randao
 rawfile
 rclone
@@ -1130,6 +1131,7 @@ ypyp
 yqyp
 zellij
 zerg
+zerion
 zerolog
 zetachain
 zkps

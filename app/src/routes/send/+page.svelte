@@ -7,16 +7,18 @@ import Timer from "virtual:icons/lucide/timer"
 import Settings from "virtual:icons/lucide/settings"
 import { debounce, dollarize } from "$lib/utilities"
 import type { OfflineSigner } from "@leapwallet/types"
-import * as Card from "$lib/components/ui/card/index.js"
+import LockLockedIcon from "virtual:icons/lucide/lock"
+import * as Card from "$lib/components/ui/card/index.ts"
+import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 import { queryParameters } from "sveltekit-search-params"
+import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.js"
 import ChevronDown from "virtual:icons/lucide/chevron-down"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { Button } from "$lib/components/ui/button/index.js"
+import { Button } from "$lib/components/ui/button/index.ts"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { ChainDialog, SettingsDialog, AssetsDialog } from "$lib/components/send/dialogs/index.ts"
-import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 
 /**
  * TODO:
@@ -51,7 +53,12 @@ const queryParams = queryParameters(
   {
     fromChain: { encode: v => v?.toString(), decode: v => v, defaultValue: "union" },
     toChain: { encode: v => v?.toString(), decode: v => v, defaultValue: "sepolia" },
-    token: { encode: v => v?.toString(), decode: v => v, defaultValue: "uno" }
+    token: { encode: v => v?.toString(), decode: v => v, defaultValue: "uno" },
+    recipient: {
+      encode: v => v?.toString(),
+      decode: v => v,
+      defaultValue: $sepoliaStore.address || ""
+    }
   },
   { debounceHistory: 1_000, showDefaults: true }
 )
@@ -125,12 +132,10 @@ function handleAssetSelect(symbol: string) {
 }
 
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
-let inputValue = { from: "", to: "", recipient: "" }
-console.log(selectedToChain, $cosmosStore)
-$: {
-  inputValue.from = inputValue.from.replaceAll(amountRegex, "")
-  inputValue.to = inputValue.to.replaceAll(amountRegex, "")
-  inputValue.recipient =
+let inputValue = {
+  from: "",
+  to: "",
+  recipient:
     selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
       ? $sepoliaStore?.address
       : selectedToChain?.ecosystem === "cosmos" &&
@@ -138,6 +143,11 @@ $: {
           $cosmosStore.address.startsWith(selectedToChain.name)
         ? $cosmosStore?.address
         : ""
+}
+
+$: {
+  inputValue.from = inputValue.from.replaceAll(amountRegex, "")
+  inputValue.to = inputValue.to.replaceAll(amountRegex, "")
 }
 
 function swapChainsClick(_event: MouseEvent) {
@@ -153,6 +163,39 @@ function swapChainsClick(_event: MouseEvent) {
   )
 }
 
+let recipientInputState: "locked" | "unlocked" | "invalid" = "locked"
+
+const onUnlockClick = (event: MouseEvent) =>
+  (recipientInputState = recipientInputState === "locked" ? "unlocked" : "locked")
+
+$: {
+  // if to chain changes, update recipient address
+  inputValue.recipient =
+    selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
+      ? $sepoliaStore?.address
+      : selectedToChain?.ecosystem === "cosmos" &&
+          $cosmosStore?.address &&
+          $cosmosStore.address.startsWith(selectedToChain.name)
+        ? $cosmosStore?.address
+        : ""
+
+  // if recipient address is locked, update it
+  if (recipientInputState === "locked") {
+    inputValue.recipient =
+      selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
+        ? $sepoliaStore?.address
+        : selectedToChain?.ecosystem === "cosmos" &&
+            $cosmosStore?.address &&
+            $cosmosStore.address.startsWith(selectedToChain.name)
+          ? $cosmosStore?.address
+          : ""
+  }
+
+  if (recipientInputState === "unlocked") {
+    inputValue.recipient = ""
+  }
+}
+
 let buttonText = "Send it" satisfies
   | "Send"
   | "Invalid amount"
@@ -166,9 +209,9 @@ let buttonText = "Send it" satisfies
   <title>Union | Send</title>
 </svelte:head>
 
-<main class="flex justify-center size-full items-start px-0 sm:px-3 min-h-full">
+<main class="flex justify-center size-full items-start px-0 sm:px-3 max-h-full">
   <Card.Root
-    class="size-full max-w-[475px] sm:mt-16 mt-6 p-2 bg-transparent border-none outline-none"
+    class="size-full max-w-[475px] sm:mt-8 mt-6 p-2 bg-transparent border-none outline-none"
   >
     <Card.Header
       class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-4"
@@ -230,7 +273,7 @@ let buttonText = "Send it" satisfies
         <Button
           size="icon"
           variant="outline"
-          class="size-full max-w-8 max-h-8 rounded-xl dark:text-white my-auto mx-3"
+          class="h-8 w-16 rounded-xl dark:text-white my-auto mx-3"
           on:click={swapChainsClick}
         >
           <ArrowLeftRight class="size-5 dark:text-white" />
@@ -327,21 +370,47 @@ let buttonText = "Send it" satisfies
       <!-- recipient -->
       <div class={cn('my-2')}>
         <p class="text-left text-md font-extrabold ml-2">Recipient</p>
-        <Input
-          minlength={1}
-          maxlength={64}
-          autocorrect="off"
-          autocomplete="off"
-          spellcheck="false"
-          autocapitalize="none"
-          data-transfer-recipient-address
-          placeholder="Destination address"
-          bind:value={inputValue.recipient}
-          class={cn(
-            'text-sm mt-2 mb-0 px-3 tabular-nums border-none',
-            'outline-1 outline-accent/80 outline',
-          )}
-        />
+        <div class="relative flex-1 mr-auto">
+          <Input
+            minlength={1}
+            maxlength={64}
+            autocorrect="off"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="none"
+            data-transfer-recipient-address
+            placeholder="Destination address"
+            bind:value={inputValue.recipient}
+            disabled={recipientInputState === 'locked' && inputValue.recipient.length > 0}
+            class={cn(
+              'text-[0.9rem] mt-2 mb-0 px-3 tabular-nums border-none text-balance ',
+              'outline-1 outline-accent/80 outline',
+            )}
+          />
+          <Button
+            size="icon"
+            type="button"
+            variant="ghost"
+            name="recipient-lock"
+            on:click={onUnlockClick}
+            class="absolute top-0 right-0 rounded-l-none"
+          >
+            <LockLockedIcon
+              class={cn(
+                recipientInputState === 'locked' && inputValue.recipient.length > 0
+                  ? 'size-5'
+                  : 'hidden',
+              )}
+            />
+            <LockOpenIcon
+              class={cn(
+                recipientInputState === 'unlocked' || !inputValue.recipient.length
+                  ? 'size-5'
+                  : 'hidden',
+              )}
+            />
+          </Button>
+        </div>
       </div>
     </Card.Content>
     <Card.Footer class="py-0 px-0 mt-4">

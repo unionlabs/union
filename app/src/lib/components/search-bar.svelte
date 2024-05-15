@@ -36,6 +36,7 @@ onMount(() => {
   <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
   <Input
     type="search"
+    name="search"
     pattern="[a-z]"
     autocorrect="off"
     autocomplete="off"

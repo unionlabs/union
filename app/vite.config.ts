@@ -41,7 +41,6 @@ export default defineConfig(config => {
     server: {
       port: Number(PORT)
     },
-    test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
     define: {
       // Node polyfills
       "process.env": {},
@@ -55,6 +54,7 @@ export default defineConfig(config => {
         "node:process": "process",
         stream: "rollup-plugin-node-polyfills/polyfills/stream"
       }
-    }
+    },
+    test: { include: ["src/**/*.{test,spec}.{js,ts}"] }
   }
 })

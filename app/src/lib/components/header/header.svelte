@@ -21,7 +21,7 @@ import { routes } from "$lib/components/navigation/index.ts"
   <div class="w-full">
     <SearchBar />
   </div>
-  <div class="flex flex-row space-x-0 sm:space-x-2 my-auto">
+  <div class="flex flex-row space-x-0 sm:space-x-4 my-auto">
     <nav class="my-auto hidden lg:flex space-x-0 sm:space-x-2">
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button

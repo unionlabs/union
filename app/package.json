@@ -25,6 +25,7 @@
     "@urql/svelte": "^4.2.0",
     "@wagmi/connectors": "^4.3.9",
     "@wagmi/core": "^2.9.7",
+    "@web3modal/wagmi": "^4.2.0",
     "bits-ui": "^0.21.7",
     "cmdk-sv": "^0.0.17",
     "formsnap": "^1.0.0",

@@ -9,6 +9,7 @@ import {
   notifyManager,
   QueryClientProvider
 } from "@tanstack/svelte-query"
+import { cn } from "$lib/utilities/shadcn"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { setContext, onMount } from "svelte"
@@ -25,7 +26,6 @@ import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
-import { cn } from "$lib/utilities/shadcn"
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
@@ -118,6 +118,7 @@ onMount(() => {
     partytown = { forward: ['dataLayer.push'] }
   </script>
   <script bind:this={partytownScriptElement}></script>
+  <!-- {@html `<script>${partytownSnippet()}</script>`} -->
 </svelte:head>
 
 {#if $navigating}

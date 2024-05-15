@@ -25,22 +25,6 @@ export default {
     alias: {
       $: "./src/",
       $styles: "./src/styles"
-    },
-    csp: {
-      directives:
-        process.env.NODE_ENV === "development"
-          ? {
-              "frame-ancestors": [
-                "self",
-                "0.0.0.0:*",
-                "localhost:*",
-                "127.0.0.1:*",
-                "union.build",
-                "app.union.build",
-                "https://verify.walletconnect.com/"
-              ]
-            }
-          : undefined
     }
   }
 }

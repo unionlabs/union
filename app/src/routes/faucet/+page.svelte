@@ -110,6 +110,7 @@ const handleMouseLeave = () => {
         <div class="relative">
           <Input
             {...attrs}
+            name="address"
             autocorrect="off"
             autocomplete="off"
             spellcheck="false"
@@ -124,7 +125,7 @@ const handleMouseLeave = () => {
             placeholder="union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
             class={cn(
               'h-12 w-full cursor-default rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors duration-500 placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9]',
-              'focus:outline-none ring-0 focus:ring-0 focus-visible:ring-0',
+              'focus:outline-none outline-transparent focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0',
             )}
             title="Must be a valid Union address (bech32, starts with `union`)"
           />
@@ -132,6 +133,7 @@ const handleMouseLeave = () => {
             disabled
             bind:this={input}
             aria-hidden="true"
+            name="style-input-mask"
             style={`
               opacity: ${opacity};
               -webkit-mask-image: radial-gradient(30% 30px at ${position.x}px ${position.y}px, black 80%, transparent);

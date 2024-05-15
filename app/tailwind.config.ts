@@ -134,13 +134,13 @@ export default {
     }
   },
   plugins: [
-    formsPlugin,
     tailwindAnimate,
     aspectRatioPlugin,
     typographyPlugin(),
     containerQueriesPlugin,
     tailwindScrollbarPlugin,
     tailwindAnimationDelay(),
+    formsPlugin({ strategy: "class" }),
     plugin(({ addVariant, addUtilities, matchUtilities, theme }) => {
       matchUtilities(
         { "animation-delay": value => ({ "animation-delay": value }) },

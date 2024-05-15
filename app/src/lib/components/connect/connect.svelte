@@ -90,7 +90,7 @@ let collapsibleOpen = true
           chainWalletsInformation={evmWalletsInformation}
           connectedWalletId={$sepoliaStore.connectedWallet}
         />
-        <Separator class={cn(['px-0 bg-[#303033] my-1.5'])} />
+        <Separator class={cn('px-0 bg-[#303033] my-1.5')} />
         <Connection
           chain="cosmos"
           address={$cosmosStore.address}
