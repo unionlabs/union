@@ -5,15 +5,9 @@ use chain_utils::ethereum::{
     Ethereum, EthereumChain, IBCHandlerEvents, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
 };
 use contracts::{
-    ibc_channel_handshake::{
-        ChannelOpenAckFilter, ChannelOpenConfirmFilter, ChannelOpenInitFilter,
-        ChannelOpenTryFilter, IBCChannelHandshakeEvents,
-    },
+    ibc_channel_handshake::IBCChannelHandshakeEvents,
     ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientEvents},
-    ibc_connection::{
-        ConnectionOpenAckFilter, ConnectionOpenConfirmFilter, ConnectionOpenInitFilter,
-        ConnectionOpenTryFilter, IBCConnectionEvents,
-    },
+    ibc_connection::IBCConnectionEvents,
     ibc_packet::{AcknowledgePacketFilter, IBCPacketEvents, RecvPacketFilter, SendPacketFilter},
 };
 use enumorph::Enumorph;
@@ -42,7 +36,7 @@ use unionlabs::{
         },
         lightclients::cometbls,
     },
-    ics24::{ChannelEndPath, ConnectionPath},
+    ics24::ChannelEndPath,
     id::ClientIdValidator,
     traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
     validated::ValidateT,
@@ -106,7 +100,6 @@ where
                 fetch_beacon_block_range(c, beacon_block_range, &c.beacon_api_client).await
             }
             EthereumFetch::FetchChannel(channel) => fetch_channel(c, channel).await,
-            EthereumFetch::FetchConnection(connection) => fetch_connection(c, connection).await,
         }
     }
 }
@@ -119,8 +112,8 @@ pub(crate) async fn fetch_get_logs<Hc>(
 where
     Hc: EthereumChainExt<
         Height = Height,
-        Aggregate: From<AggregateWithChannel<Hc>> + From<AggregateWithConnection<Hc>>,
-        Fetch: From<FetchChannel<Hc>> + From<FetchConnection<Hc>>,
+        Aggregate: From<AggregateWithChannel<Hc>>,
+        Fetch: From<FetchChannel<Hc>>,
     >,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
@@ -280,33 +273,6 @@ where
     ))
 }
 
-pub(crate) async fn fetch_connection<Hc>(
-    c: &Hc,
-    FetchConnection { height, path }: FetchConnection<Hc>,
-) -> QueueMsg<BlockMessageTypes>
-where
-    Hc: EthereumChainExt<Data: From<ConnectionData<Hc>>>,
-    AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
-{
-    tracing::debug!(%height, %path, "fetching connection");
-
-    data(id(
-        c.chain_id(),
-        Data::<Hc>::specific(ConnectionData(
-            c.ibc_handler()
-                .get_connection(path.connection_id.to_string())
-                .block(
-                    c.execution_height_of_beacon_slot(height.revision_height())
-                        .await,
-                )
-                .await
-                .unwrap()
-                .try_into()
-                .unwrap(),
-        )),
-    ))
-}
-
 pub async fn mk_aggregate_event<Hc>(
     c: &Hc,
     event: IBCHandlerEvents,
@@ -314,10 +280,7 @@ pub async fn mk_aggregate_event<Hc>(
     tx_hash: H256,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: ChainExt<
-            Aggregate: From<AggregateWithChannel<Hc>> + From<AggregateWithConnection<Hc>>,
-            Fetch: From<FetchChannel<Hc>> + From<FetchConnection<Hc>>,
-        > + EthereumChain,
+    Hc: EthereumChainExt<Aggregate: From<AggregateWithChannel<Hc>>, Fetch: From<FetchChannel<Hc>>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
@@ -340,80 +303,145 @@ where
         }
         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenAckFilter(
             raw_event,
-        )) => with_channel(
+        )) => data(id(
             c.chain_id(),
-            raw_event.port_id.clone(),
-            raw_event.channel_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ChannelOpenAck(ChannelOpenAck {
+                    port_id: raw_event.port_id.parse().unwrap(),
+                    channel_id: raw_event.channel_id.parse().unwrap(),
+                    counterparty_port_id: raw_event.counterparty_port_id.parse().unwrap(),
+                    counterparty_channel_id: raw_event.counterparty_channel_id.parse().unwrap(),
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                }),
+            },
+        )),
         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(
             raw_event,
-        )) => with_channel(
+        )) => data(id(
             c.chain_id(),
-            raw_event.port_id.clone(),
-            raw_event.channel_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
+                    port_id: raw_event.port_id.parse().unwrap(),
+                    channel_id: raw_event.channel_id.parse().unwrap(),
+                    counterparty_port_id: raw_event.counterparty_port_id.parse().unwrap(),
+                    counterparty_channel_id: raw_event.counterparty_channel_id.parse().unwrap(),
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                }),
+            },
+        )),
         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenInitFilter(
             raw_event,
-        )) => with_channel(
+        )) => data(id(
             c.chain_id(),
-            raw_event.port_id.clone(),
-            raw_event.channel_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ChannelOpenInit(ChannelOpenInit {
+                    port_id: raw_event.port_id.parse().unwrap(),
+                    channel_id: raw_event.channel_id.parse().unwrap(),
+                    counterparty_port_id: raw_event.counterparty_port_id.parse().unwrap(),
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                    version: raw_event.version,
+                }),
+            },
+        )),
         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenTryFilter(
             raw_event,
-        )) => with_channel(
+        )) => data(id(
             c.chain_id(),
-            raw_event.port_id.clone(),
-            raw_event.channel_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ChannelOpenTry(ChannelOpenTry {
+                    port_id: raw_event.port_id.parse().unwrap(),
+                    channel_id: raw_event.channel_id.parse().unwrap(),
+                    counterparty_port_id: raw_event.counterparty_port_id.parse().unwrap(),
+                    counterparty_channel_id: raw_event.counterparty_channel_id.parse().unwrap(),
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                    version: raw_event.version,
+                }),
+            },
+        )),
         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenAckFilter(
             raw_event,
-        )) => with_connection(
+        )) => data(id(
             c.chain_id(),
-            raw_event.connection_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                    client_id: raw_event.client_id.parse().unwrap(),
+                    counterparty_client_id: raw_event.counterparty_client_id.parse().unwrap(),
+                    counterparty_connection_id: raw_event
+                        .counterparty_connection_id
+                        .parse()
+                        .unwrap(),
+                }),
+            },
+        )),
         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenConfirmFilter(
             raw_event,
-        )) => with_connection(
+        )) => data(id(
             c.chain_id(),
-            raw_event.connection_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                    client_id: raw_event.client_id.parse().unwrap(),
+                    counterparty_client_id: raw_event.counterparty_client_id.parse().unwrap(),
+                    counterparty_connection_id: raw_event
+                        .counterparty_connection_id
+                        .parse()
+                        .unwrap(),
+                }),
+            },
+        )),
         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenInitFilter(
             raw_event,
-        )) => with_connection(
+        )) => data(id(
             c.chain_id(),
-            raw_event.connection_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                    client_id: raw_event.client_id.parse().unwrap(),
+                    counterparty_client_id: raw_event.counterparty_client_id.parse().unwrap(),
+                }),
+            },
+        )),
         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenTryFilter(
             raw_event,
-        )) => with_connection(
+        )) => data(id(
             c.chain_id(),
-            raw_event.connection_id.clone(),
-            event_height,
-            tx_hash,
-            raw_event,
-        ),
+            ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height: event_height,
+                event: IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
+                    connection_id: raw_event.connection_id.parse().unwrap(),
+                    client_id: raw_event.client_id.parse().unwrap(),
+                    counterparty_client_id: raw_event.counterparty_client_id.parse().unwrap(),
+                    counterparty_connection_id: raw_event
+                        .counterparty_connection_id
+                        .parse()
+                        .unwrap(),
+                }),
+            },
+        )),
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(
             ClientCreatedFilter { client_id },
         )) => {
@@ -548,44 +576,6 @@ where
     )
 }
 
-pub fn with_connection<Hc, T>(
-    chain_id: ChainIdOf<Hc>,
-    connection_id: String,
-    event_height: HeightOf<Hc>,
-    tx_hash: H256,
-    raw_event: T,
-) -> QueueMsg<BlockMessageTypes>
-where
-    Hc: ChainExt<Aggregate: From<AggregateWithConnection<Hc>>, Fetch: From<FetchConnection<Hc>>>
-        + EthereumChain,
-
-    AggregateWithConnection<Hc>: From<EventInfo<Hc, T>>,
-
-    AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
-{
-    aggregate(
-        [fetch(id(
-            chain_id.clone(),
-            Fetch::<Hc>::specific(FetchConnection {
-                height: event_height,
-                path: ConnectionPath {
-                    connection_id: connection_id.parse().unwrap(),
-                },
-            }),
-        ))],
-        [],
-        id(
-            chain_id,
-            Aggregate::<Hc>::specific(AggregateWithConnection::from(EventInfo {
-                height: event_height,
-                tx_hash,
-                raw_event,
-            })),
-        ),
-    )
-}
-
 #[queue_msg]
 #[derive(Enumorph)]
 pub enum EthereumFetch<C: ChainSpec> {
@@ -594,7 +584,6 @@ pub enum EthereumFetch<C: ChainSpec> {
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 
     FetchChannel(FetchChannel<Ethereum<C>>),
-    FetchConnection(FetchConnection<Ethereum<C>>),
 }
 
 #[queue_msg]
@@ -624,16 +613,9 @@ pub struct FetchChannel<Hc: EthereumChainExt> {
 }
 
 #[queue_msg]
-pub struct FetchConnection<Hc: EthereumChainExt> {
-    pub height: Hc::Height,
-    pub path: ConnectionPath,
-}
-
-#[queue_msg]
 #[derive(Enumorph)]
 pub enum EthereumAggregate<C: ChainSpec> {
     AggregateWithChannel(AggregateWithChannel<Ethereum<C>>),
-    AggregateWithConnection(AggregateWithConnection<Ethereum<C>>),
 }
 
 impl<C: ChainSpec> DoAggregate for Identified<Ethereum<C>, EthereumAggregate<C>>
@@ -651,9 +633,6 @@ where
             EthereumAggregate::AggregateWithChannel(msg) => {
                 do_aggregate(id::<Ethereum<C>, _>(chain_id, msg), data)
             }
-            EthereumAggregate::AggregateWithConnection(msg) => {
-                do_aggregate(id::<Ethereum<C>, _>(chain_id, msg), data)
-            }
         }
     }
 }
@@ -664,19 +643,6 @@ pub enum AggregateWithChannel<Hc: ChainExt + EthereumChain> {
     PacketAcknowledgement(EventInfo<Hc, AcknowledgePacketFilter>),
     SendPacket(EventInfo<Hc, SendPacketFilter>),
     RecvPacket(EventInfo<Hc, RecvPacketFilter>),
-    ChannelOpenInit(EventInfo<Hc, ChannelOpenInitFilter>),
-    ChannelOpenTry(EventInfo<Hc, ChannelOpenTryFilter>),
-    ChannelOpenAck(EventInfo<Hc, ChannelOpenAckFilter>),
-    ChannelOpenConfirm(EventInfo<Hc, ChannelOpenConfirmFilter>),
-}
-
-#[queue_msg]
-#[derive(Enumorph)]
-pub enum AggregateWithConnection<Hc: ChainExt + EthereumChain> {
-    ConnectionOpenInit(EventInfo<Hc, ConnectionOpenInitFilter>),
-    ConnectionOpenTry(EventInfo<Hc, ConnectionOpenTryFilter>),
-    ConnectionOpenAck(EventInfo<Hc, ConnectionOpenAckFilter>),
-    ConnectionOpenConfirm(EventInfo<Hc, ConnectionOpenConfirmFilter>),
 }
 
 #[derive(macros::Debug, Serialize, Deserialize)]
@@ -801,167 +767,6 @@ where
                     packet_dst_channel: raw_event.packet.destination_channel.parse().unwrap(),
                     packet_channel_ordering: channel.ordering,
                     connection_id: channel.connection_hops[0].clone(),
-                }),
-            },
-            AggregateWithChannel::ChannelOpenAck(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ChannelOpenAck(ChannelOpenAck {
-                    port_id: raw_event.port_id.parse().unwrap(),
-                    channel_id: raw_event.channel_id.parse().unwrap(),
-                    counterparty_port_id: channel.counterparty.port_id,
-                    counterparty_channel_id: channel.counterparty.channel_id.parse().unwrap(),
-                    connection_id: channel.connection_hops[0].clone(),
-                }),
-            },
-            AggregateWithChannel::ChannelOpenConfirm(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-                    port_id: raw_event.port_id.parse().unwrap(),
-                    channel_id: raw_event.channel_id.parse().unwrap(),
-                    counterparty_port_id: channel.counterparty.port_id,
-                    counterparty_channel_id: channel.counterparty.channel_id.parse().unwrap(),
-                    connection_id: channel.connection_hops[0].clone(),
-                }),
-            },
-            AggregateWithChannel::ChannelOpenInit(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ChannelOpenInit(ChannelOpenInit {
-                    port_id: raw_event.port_id.parse().unwrap(),
-                    channel_id: raw_event.channel_id.parse().unwrap(),
-                    counterparty_port_id: raw_event.counterparty_port_id.parse().unwrap(),
-                    connection_id: raw_event.connection_id.parse().unwrap(),
-                    version: channel.version,
-                }),
-            },
-            AggregateWithChannel::ChannelOpenTry(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ChannelOpenTry(ChannelOpenTry {
-                    port_id: raw_event.port_id.parse().unwrap(),
-                    channel_id: raw_event.channel_id.parse().unwrap(),
-                    counterparty_port_id: raw_event.counterparty_port_id.parse().unwrap(),
-                    counterparty_channel_id: channel.counterparty.channel_id.parse().unwrap(),
-                    connection_id: raw_event.connection_id.parse().unwrap(),
-                    version: raw_event.version,
-                }),
-            },
-        };
-
-        data(id::<Hc, _>(chain_id, event))
-    }
-}
-
-impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockMessageTypes>
-    for Identified<Hc, AggregateWithConnection<Hc>>
-where
-    Identified<Hc, ConnectionData<Hc>>: IsAggregateData,
-
-    AnyChainIdentified<AnyData>: From<Identified<Hc, ChainEvent<Hc>>>,
-{
-    type AggregatedData = HList![Identified<Hc, ConnectionData<Hc>>];
-
-    fn aggregate(
-        Identified { t: msg, chain_id }: Self,
-        hlist_pat![Identified {
-            chain_id: connection_data_chain_id,
-            t: ConnectionData(connection)
-        }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockMessageTypes> {
-        assert_eq!(chain_id, connection_data_chain_id);
-
-        let event = match msg {
-            AggregateWithConnection::ConnectionOpenInit(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
-                    connection_id: raw_event.connection_id.parse().unwrap(),
-                    client_id: connection.client_id,
-                    counterparty_client_id: connection.counterparty.client_id.parse().unwrap(),
-                }),
-            },
-            AggregateWithConnection::ConnectionOpenTry(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                    connection_id: raw_event.connection_id.parse().unwrap(),
-                    client_id: connection.client_id,
-                    counterparty_client_id: connection.counterparty.client_id,
-                    counterparty_connection_id: connection
-                        .counterparty
-                        .connection_id
-                        .parse()
-                        .unwrap(),
-                }),
-            },
-            AggregateWithConnection::ConnectionOpenAck(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-                    connection_id: raw_event.connection_id.parse().unwrap(),
-                    client_id: connection.client_id,
-                    counterparty_client_id: connection.counterparty.client_id,
-                    counterparty_connection_id: connection
-                        .counterparty
-                        .connection_id
-                        .parse()
-                        .unwrap(),
-                }),
-            },
-            AggregateWithConnection::ConnectionOpenConfirm(EventInfo {
-                height,
-                tx_hash,
-                raw_event,
-            }) => ChainEvent {
-                client_type: unionlabs::ClientType::Cometbls,
-                tx_hash,
-                height,
-                event: IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
-                    connection_id: raw_event.connection_id.parse().unwrap(),
-                    client_id: connection.client_id,
-                    counterparty_client_id: connection.counterparty.client_id,
-                    counterparty_connection_id: connection
-                        .counterparty
-                        .connection_id
-                        .parse()
-                        .unwrap(),
                 }),
             },
         };

@@ -14,13 +14,22 @@ library IBCConnectionLib {
         string connectionId, string clientId, string counterpartyClientId
     );
     event ConnectionOpenTry(
-        string connectionId, string clientId, string counterpartyClientId
+        string connectionId,
+        string clientId,
+        string counterpartyClientId,
+        string counterpartyConnectionId
     );
     event ConnectionOpenAck(
-        string connectionId, string clientId, string counterpartyClientId
+        string connectionId,
+        string clientId,
+        string counterpartyClientId,
+        string counterpartyConnectionId
     );
     event ConnectionOpenConfirm(
-        string connectionId, string clientId, string counterpartyClientId
+        string connectionId,
+        string clientId,
+        string counterpartyClientId,
+        string counterpartyConnectionId
     );
 
     error ErrConnectionAlreadyExists();
@@ -443,7 +452,10 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         updateConnectionCommitment(connectionId);
 
         emit IBCConnectionLib.ConnectionOpenTry(
-            connectionId, msg_.clientId, msg_.counterparty.client_id
+            connectionId,
+            msg_.clientId,
+            msg_.counterparty.client_id,
+            msg_.counterparty.connection_id
         );
 
         return connectionId;
@@ -525,6 +537,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         emit IBCConnectionLib.ConnectionOpenAck(
             msg_.connectionId,
             connection.client_id,
+            connection.counterparty.client_id,
             connection.counterparty.connection_id
         );
     }
@@ -581,6 +594,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         emit IBCConnectionLib.ConnectionOpenConfirm(
             msg_.connectionId,
             connection.client_id,
+            connection.counterparty.client_id,
             connection.counterparty.connection_id
         );
     }

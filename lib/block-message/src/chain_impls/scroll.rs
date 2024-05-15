@@ -8,9 +8,8 @@ use unionlabs::{ethereum::config::Mainnet, traits::Chain};
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
     chain_impls::ethereum::{
-        fetch_beacon_block_range, fetch_channel, fetch_connection, fetch_get_logs,
-        AggregateWithChannel, AggregateWithConnection, ChannelData, ConnectionData,
-        FetchBeaconBlockRange, FetchChannel, FetchConnection, FetchEvents, FetchGetLogs,
+        fetch_beacon_block_range, fetch_channel, fetch_get_logs, AggregateWithChannel, ChannelData,
+        ConnectionData, FetchBeaconBlockRange, FetchChannel, FetchEvents, FetchGetLogs,
     },
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
@@ -66,7 +65,6 @@ where
                 fetch_beacon_block_range(c, beacon_block_range, &c.l1.beacon_api_client).await
             }
             ScrollFetch::FetchChannel(channel) => fetch_channel(c, channel).await,
-            ScrollFetch::FetchConnection(connection) => fetch_connection(c, connection).await,
         }
     }
 }
@@ -79,7 +77,6 @@ pub enum ScrollFetch {
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 
     FetchChannel(FetchChannel<Scroll>),
-    FetchConnection(FetchConnection<Scroll>),
 }
 
 #[queue_msg]
@@ -92,7 +89,6 @@ pub struct FetchBatchIndex {
 #[derive(Enumorph)]
 pub enum ScrollAggregate {
     AggregateWithChannel(AggregateWithChannel<Scroll>),
-    AggregateWithConnection(AggregateWithConnection<Scroll>),
 }
 
 impl DoAggregate for Identified<Scroll, ScrollAggregate>
@@ -108,7 +104,6 @@ where
     ) -> QueueMsg<BlockMessageTypes> {
         match t {
             ScrollAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
-            ScrollAggregate::AggregateWithConnection(msg) => do_aggregate(id(chain_id, msg), data),
         }
     }
 }
