@@ -80,7 +80,7 @@ library Protocols {
 }
 
 abstract contract UnionBase is Script {
-    function deployDeployer(VmSafe.Wallet memory wallet)
+    function deployDeployer(VmSafe.Wallet memory)
         internal
         returns (Deployer)
     {
@@ -197,7 +197,7 @@ contract DeployIBC is UnionScript {
         deployer = Deployer(vm.envAddress("DEPLOYER"));
     }
 
-    function getDeployer() internal override returns (Deployer) {
+    function getDeployer() internal view override returns (Deployer) {
         return deployer;
     }
 
@@ -216,7 +216,7 @@ contract DeployIBC is UnionScript {
 contract DeployDeployerAndIBC is UnionScript {
     Deployer deployer;
 
-    function getDeployer() internal override returns (Deployer) {
+    function getDeployer() internal view override returns (Deployer) {
         return deployer;
     }
 
@@ -245,14 +245,14 @@ contract GetDeployed is Script {
         sender = vm.envAddress("SENDER");
     }
 
-    function getDeployed(string memory salt) internal returns (address) {
+    function getDeployed(string memory salt) internal view returns (address) {
         return CREATE3.getDeployed(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
         );
     }
 
-    function run() public {
+    function run() public view {
         address handler = getDeployed(IBC.BASED);
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));

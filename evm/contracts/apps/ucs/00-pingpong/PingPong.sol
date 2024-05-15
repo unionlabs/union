@@ -85,7 +85,7 @@ contract PingPong is IBCAppBase {
 
     function onRecvPacket(
         IbcCoreChannelV1Packet.Data calldata packet,
-        address relayer
+        address
     )
         external
         virtual
@@ -110,9 +110,9 @@ contract PingPong is IBCAppBase {
     }
 
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata packet,
+        IbcCoreChannelV1Packet.Data calldata,
         bytes calldata acknowledgement,
-        address relayer
+        address
     ) external virtual override onlyIBC {
         /*
             In practice, a more sophisticated protocol would check
@@ -129,8 +129,8 @@ contract PingPong is IBCAppBase {
     }
 
     function onTimeoutPacket(
-        IbcCoreChannelV1Packet.Data calldata packet,
-        address relayer
+        IbcCoreChannelV1Packet.Data calldata,
+        address
     ) external virtual override onlyIBC {
         /*
             Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
@@ -169,17 +169,17 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanOpenAck(
-        string calldata _portId,
+        string calldata,
         string calldata _channelId,
-        string calldata _counterpartyChannelId,
-        string calldata _counterpartyVersion
+        string calldata,
+        string calldata
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.
         channelId = _channelId;
     }
 
     function onChanOpenConfirm(
-        string calldata _portId,
+        string calldata,
         string calldata _channelId
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenAck
@@ -187,16 +187,16 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanCloseInit(
-        string calldata _portId,
-        string calldata _channelId
+        string calldata,
+        string calldata
     ) external virtual override onlyIBC {
         // The ping-pong is infinite, closing the channel is disallowed.
         revert PingPongLib.ErrInfiniteGame();
     }
 
     function onChanCloseConfirm(
-        string calldata _portId,
-        string calldata _channelId
+        string calldata,
+        string calldata
     ) external virtual override onlyIBC {
         // Symmetric to onChanCloseInit
         revert PingPongLib.ErrInfiniteGame();

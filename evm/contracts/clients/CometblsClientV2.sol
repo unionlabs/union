@@ -151,14 +151,14 @@ contract CometblsClient is
 
         // Check that the headers would have been accepted in an update
         (
-            uint64 untrustedHeightNumberA,
+            ,
             uint64 untrustedTimestampA,
-            bytes32 untrustedValidatorsHashA
+            
         ) = verifyHeader(headerA, consensusStateA, clientState);
         (
-            uint64 untrustedHeightNumberB,
+            ,
             uint64 untrustedTimestampB,
-            bytes32 untrustedValidatorsHashB
+            
         ) = verifyHeader(headerB, consensusStateB, clientState);
 
         if (headerA.trusted_height.eq(headerB.trusted_height)) {
@@ -272,7 +272,7 @@ contract CometblsClient is
         (
             uint64 untrustedHeightNumber,
             uint64 untrustedTimestamp,
-            bytes32 untrustedValidatorsHash
+            
         ) = verifyHeader(header, consensusState, clientState);
 
         // Update states

@@ -289,7 +289,6 @@ contract UCS01Relay is
             normalizedTokens[i].denom = sendToken(sourceChannel, localToken);
             normalizedTokens[i].amount = localToken.amount;
         }
-        string memory sender = msg.sender.toHexString();
         RelayPacket memory packet = RelayPacket({
             sender: abi.encodePacked(msg.sender),
             receiver: receiver,
@@ -351,7 +350,7 @@ contract UCS01Relay is
 
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address relayer
+        address
     ) public {
         if (msg.sender != address(this)) {
             revert RelayLib.ErrUnauthorized();
@@ -428,7 +427,7 @@ contract UCS01Relay is
         returns (bytes memory)
     {
         // TODO: maybe consider threading _res in the failure ack
-        (bool success, bytes memory _res) = address(this).call(
+        (bool success, ) = address(this).call(
             abi.encodeWithSelector(
                 this.onRecvPacketProcessing.selector, ibcPacket, relayer
             )
@@ -445,7 +444,7 @@ contract UCS01Relay is
     function onAcknowledgementPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         bytes calldata acknowledgement,
-        address _relayer
+        address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (
             acknowledgement.length != RelayLib.ACK_LENGTH
@@ -468,7 +467,7 @@ contract UCS01Relay is
 
     function onTimeoutPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address _relayer
+        address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         refundTokens(
             ibcPacket.sequence,
@@ -479,12 +478,12 @@ contract UCS01Relay is
 
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata _connectionHops,
-        string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version
-    ) external override(IBCAppBase, IIBCModule) onlyIBC {
+    ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
         }
@@ -495,13 +494,13 @@ contract UCS01Relay is
 
     function onChanOpenTry(
         IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata _connectionHops,
-        string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version,
         string calldata counterpartyVersion
-    ) external override(IBCAppBase, IIBCModule) onlyIBC {
+    ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
         }
@@ -514,32 +513,32 @@ contract UCS01Relay is
     }
 
     function onChanOpenAck(
-        string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        string calldata,
+        string calldata,
+        string calldata,
         string calldata counterpartyVersion
-    ) external override(IBCAppBase, IIBCModule) onlyIBC {
+    ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
         }
     }
 
     function onChanOpenConfirm(
-        string calldata _portId,
-        string calldata _channelId
+        string calldata,
+        string calldata
     ) external override(IBCAppBase, IIBCModule) onlyIBC {}
 
     function onChanCloseInit(
-        string calldata _portId,
-        string calldata _channelId
-    ) external override(IBCAppBase, IIBCModule) onlyIBC {
+        string calldata,
+        string calldata
+    ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
-        string calldata _portId,
-        string calldata _channelId
-    ) external override(IBCAppBase, IIBCModule) onlyIBC {
+        string calldata,
+        string calldata
+    ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 

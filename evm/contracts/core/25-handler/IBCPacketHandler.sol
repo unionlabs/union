@@ -13,15 +13,15 @@ abstract contract IBCPacketHandler is IIBCPacket, ModuleManager {
     address ibcPacket;
 
     function sendPacket(
-        string calldata sourceChannel,
-        IbcCoreClientV1Height.Data calldata timeoutHeight,
-        uint64 timeoutTimestamp,
-        bytes calldata data
+        string calldata,
+        IbcCoreClientV1Height.Data calldata,
+        uint64,
+        bytes calldata
     ) external virtual override returns (uint64) {
         passthrough(ibcPacket);
     }
 
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_)
+    function recvPacket(IBCMsgs.MsgPacketRecv calldata)
         external
         override
     {
@@ -29,21 +29,21 @@ abstract contract IBCPacketHandler is IIBCPacket, ModuleManager {
     }
 
     function writeAcknowledgement(
-        string calldata destinationChannel,
-        uint64 sequence,
-        bytes calldata acknowledgement
+        string calldata,
+        uint64,
+        bytes calldata
     ) external override {
         passthrough(ibcPacket);
     }
 
-    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_)
+    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata)
         external
         override
     {
         passthrough(ibcPacket);
     }
 
-    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_)
+    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata)
         external
         override
     {

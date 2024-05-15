@@ -10,7 +10,7 @@ import "../03-connection/IIBCConnection.sol";
 abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
     address ibcConnection;
 
-    function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata msg_)
+    function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata)
         external
         override
         returns (string memory)
@@ -18,7 +18,7 @@ abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
         passthrough(ibcConnection);
     }
 
-    function connectionOpenTry(IBCMsgs.MsgConnectionOpenTry calldata msg_)
+    function connectionOpenTry(IBCMsgs.MsgConnectionOpenTry calldata)
         external
         override
         returns (string memory)
@@ -26,7 +26,7 @@ abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
         passthrough(ibcConnection);
     }
 
-    function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata msg_)
+    function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata)
         external
         override
     {
@@ -34,7 +34,7 @@ abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
     }
 
     function connectionOpenConfirm(
-        IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+        IBCMsgs.MsgConnectionOpenConfirm calldata
     ) external override {
         passthrough(ibcConnection);
     }

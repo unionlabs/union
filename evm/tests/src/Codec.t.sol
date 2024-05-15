@@ -10,7 +10,7 @@ contract CodecTest is Test {
         uint64 timestamp,
         bytes32 appHash,
         bytes32 nextValidatorsHash
-    ) public {
+    ) public pure {
         OptimizedConsensusState memory consensusState = OptimizedConsensusState({
             timestamp: timestamp,
             appHash: appHash,

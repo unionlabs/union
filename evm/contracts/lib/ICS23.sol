@@ -112,8 +112,6 @@ library Ics23 {
 
         if (root != subroot2) {
             return VerifyChainedNonMembershipError.RootMismatch;
-        } else {
-            return VerifyChainedNonMembershipError.None;
         }
 
         return VerifyChainedNonMembershipError.None;

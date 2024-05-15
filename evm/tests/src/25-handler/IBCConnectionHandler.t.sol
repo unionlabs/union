@@ -57,23 +57,23 @@ contract TestCometblsClient is CometblsClient {
     }
 
     function verifyZKP(
-        bytes calldata zkpBytes,
-        string memory chainId,
-        bytes32 trustedValidatorsHash,
-        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
-    ) public override returns (bool) {
+        bytes calldata,
+        string memory,
+        bytes32,
+        UnionIbcLightclientsCometblsV1LightHeader.Data memory
+    ) public pure override returns (bool) {
         return true;
     }
 
     function verifyMembership(
-        string calldata clientId,
-        IbcCoreClientV1Height.Data calldata height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks,
-        bytes calldata proof,
-        bytes memory prefix,
-        bytes calldata path,
-        bytes calldata value
+        string calldata,
+        IbcCoreClientV1Height.Data calldata,
+        uint64,
+        uint64,
+        bytes calldata,
+        bytes memory,
+        bytes calldata,
+        bytes calldata
     ) external override returns (bool) {
         bool validMembership = validMembershipProof[calls];
         validMembershipProof[calls] = false;
@@ -82,13 +82,13 @@ contract TestCometblsClient is CometblsClient {
     }
 
     function verifyNonMembership(
-        string calldata clientId,
-        IbcCoreClientV1Height.Data calldata height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks,
-        bytes calldata proof,
-        bytes calldata prefix,
-        bytes calldata path
+        string calldata,
+        IbcCoreClientV1Height.Data calldata,
+        uint64,
+        uint64,
+        bytes calldata,
+        bytes calldata,
+        bytes calldata
     ) external override returns (bool) {
         bool validMembership = validMembershipProof[calls];
         validMembershipProof[calls] = false;
@@ -190,7 +190,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         });
     }
 
-    function assumeValidProofHeight(uint64 proofHeight) internal {
+    function assumeValidProofHeight(uint64 proofHeight) internal pure {
         vm.assume(
             0 < proofHeight
                 && proofHeight < uint64(getValidHeader().header.height)
