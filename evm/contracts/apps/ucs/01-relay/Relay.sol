@@ -75,33 +75,36 @@ library RelayLib {
     uint256 public constant ACK_LENGTH = 1;
 
     event DenomCreated(
-        uint64 packetSequence, string channelId, string denom, address token
+        uint64 indexed packetSequence,
+        string channelId,
+        string denom,
+        address token
     );
     event Received(
         uint64 packetSequence,
         string channelId,
         string sender,
-        address receiver,
+        address indexed receiver,
         string denom,
-        address token,
+        address indexed token,
         uint256 amount
     );
     event Sent(
         uint64 packetSequence,
         string channelId,
-        address sender,
+        address indexed sender,
         string receiver,
         string denom,
-        address token,
+        address indexed token,
         uint256 amount
     );
     event Refunded(
         uint64 packetSequence,
         string channelId,
-        address sender,
+        address indexed sender,
         string receiver,
         string denom,
-        address token,
+        address indexed token,
         uint256 amount
     );
 

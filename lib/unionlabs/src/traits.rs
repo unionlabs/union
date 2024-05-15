@@ -109,7 +109,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
     // this is just Height
     type Height: Member + IsHeight + MaybeArbitrary + PartialOrd;
 
-    type ClientId: Member + Id + TryFrom<ClientId> + Into<ClientId> + MaybeArbitrary;
+    type ClientId: Member + Id + TryFrom<ClientId, Error: Debug> + Into<ClientId> + MaybeArbitrary;
 
     /// The encoding this chain uses in it's IBC store.
     type IbcStateEncoding: Encoding;

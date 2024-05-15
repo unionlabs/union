@@ -10,6 +10,7 @@ use contracts::{
 use ethers::{middleware::SignerMiddleware, signers::Signer, types::Address};
 use unionlabs::{
     ethereum::config::{ChainSpec, Mainnet, Minimal},
+    ibc::core::client::height::Height,
     uint::U256,
 };
 
@@ -53,7 +54,6 @@ async fn main() {
                     match ethereum_tx {
                         cli::EthereumTx::Transfer {
                             relay_address,
-                            port_id,
                             channel_id,
                             receiver,
                             amount,
@@ -63,7 +63,6 @@ async fn main() {
                                 handle_transfer::<Mainnet>(
                                     Ethereum::new(config).await.unwrap(),
                                     relay_address.into(),
-                                    port_id,
                                     channel_id,
                                     receiver,
                                     amount,
@@ -75,7 +74,6 @@ async fn main() {
                                 handle_transfer::<Minimal>(
                                     Ethereum::new(config).await.unwrap(),
                                     relay_address.into(),
-                                    port_id,
                                     channel_id,
                                     receiver,
                                     amount,
@@ -97,7 +95,6 @@ async fn main() {
                         denom,
                         address,
                         channel_id,
-                        port_id,
                     } => match config.ethereum {
                         cli::EthereumChainConfig::Mainnet(config) => {
                             handle_ucs_balance::<Mainnet>(
@@ -106,7 +103,6 @@ async fn main() {
                                 denom,
                                 address.into(),
                                 channel_id,
-                                port_id,
                             )
                             .await
                         }
@@ -117,7 +113,6 @@ async fn main() {
                                 denom,
                                 address.into(),
                                 channel_id,
-                                port_id,
                             )
                             .await
                         }
@@ -171,7 +166,6 @@ async fn handle_ucs_balance<C: ChainSpec>(
     denom: String,
     address: Address,
     channel_id: String,
-    port_id: String,
 ) {
     let signer_middleware = Arc::new(SignerMiddleware::new(
         ethereum.provider.clone(),
@@ -179,10 +173,7 @@ async fn handle_ucs_balance<C: ChainSpec>(
     ));
     let relay = UCS01Relay::new(contract_address, signer_middleware.clone());
 
-    let denom = relay
-        .get_denom_address(port_id, channel_id, denom)
-        .await
-        .unwrap();
+    let denom = relay.get_denom_address(channel_id, denom).await.unwrap();
     println!("Corresponding ERC20 address: {}", denom);
 
     let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
@@ -209,7 +200,6 @@ async fn handle_erc_balance<C: ChainSpec>(
 async fn handle_transfer<C: ChainSpec>(
     ethereum: Ethereum<C>,
     relay_address: Address,
-    port_id: String,
     channel_id: String,
     receiver: String,
     amount: u64,
@@ -222,7 +212,7 @@ async fn handle_transfer<C: ChainSpec>(
     let relay = UCS01Relay::new(relay_address, signer_middleware.clone());
 
     let denom = relay
-        .get_denom_address(port_id.clone(), channel_id.clone(), denom)
+        .get_denom_address(channel_id.clone(), denom)
         .await
         .unwrap();
     println!("Address is: {}", denom);
@@ -246,7 +236,6 @@ async fn handle_transfer<C: ChainSpec>(
 
     let tx_rcp = relay
         .send(
-            port_id,
             channel_id,
             hex::decode(receiver).unwrap().into(),
             [LocalToken {
@@ -254,7 +243,11 @@ async fn handle_transfer<C: ChainSpec>(
                 amount: amount.into(),
             }]
             .into(),
-            u64::MAX,
+            Height {
+                revision_number: 0,
+                revision_height: u64::MAX,
+            }
+            .into(),
             u64::MAX,
         )
         .send()

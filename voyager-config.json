@@ -1,27 +1,5 @@
 {
   "chain": {
-    "arbitrum-testnet": {
-      "enabled": true,
-      "chain_type": "arbitrum",
-      "ibc_handler_address": "0x61ba1780ecce6513872beb7ce698b49168010416",
-      "signers": [
-        {
-          "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
-        }
-      ],
-      "l1_client_id": "08-wasm-0",
-      "l2_eth_rpc_api": "wss://arb-sepolia.g.alchemy.com/v2/6PCr1n8dJeYbE2Z9LrXScs05hLTYiVFl",
-      "l1_contract_address": "0xd80810638dbDF9081b72C1B33c65375e807281C8",
-      "l1_latest_confirmed_slot": "117",
-      "l1": {
-        "chain_type": "ethereum",
-        "preset_base": "mainnet",
-        "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
-        "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/6PCr1n8dJeYbE2Z9LrXScs05hLTYiVFl",
-        "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
-      },
-      "union_grpc_url": "https://grpc.testnet.bonlulu.uno:443"
-    },
     "scroll-testnet": {
       "enabled": false,
       "chain_type": "scroll",
@@ -46,12 +24,14 @@
         "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
       },
       "scroll_api": "https://sepolia-api-re.scroll.io/",
-      "union_grpc_url": "https://grpc.testnet.bonlulu.uno:443"
+      "union_grpc_url": "https://grpc.testnet.bonlulu.uno:443",
+      "ibc_commitment_slot": "0"
     },
     "ethereum-devnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "ethereum",
       "preset_base": "minimal",
+      "ibc_commitment_slot": "0",
       "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
       "signers": [
         {
@@ -75,7 +55,7 @@
     },
     "union-devnet": {
       "chain_type": "union",
-      "enabled": false,
+      "enabled": true,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -184,7 +164,7 @@
     }
   },
   "voyager": {
-    "num_workers": 1,
+    "num_workers": 20,
     "queue": {
       "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",

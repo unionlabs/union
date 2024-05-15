@@ -48,9 +48,7 @@ use unionlabs::{
             trusted_sync_committee::{ActiveSyncCommittee, TrustedSyncCommittee},
         },
     },
-    ics24::{
-        ClientStatePath, NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, Path,
-    },
+    ics24::{ClientStatePath, NextSequenceAckPath, NextSequenceSendPath, Path},
     traits::{Chain, ClientIdOf, ClientState, ClientStateOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
     MaybeRecoverableError,
@@ -760,36 +758,15 @@ where
                 path,
             })
         }
-        Path::NextSequenceRecv(path) => {
-            let path_str = path.to_string();
-
-            let location = keccak256(
-                keccak256(path_str.as_bytes())
-                    .into_iter()
-                    .chain(AbiEncode::encode(IBC_HANDLER_COMMITMENTS_SLOT))
-                    .collect::<Vec<_>>(),
-            );
-
-            let execution_height = c
-                .execution_height_of_beacon_slot(height.revision_height())
-                .await;
-
-            let state = c
-                .provider()
-                .get_storage_at(
-                    ethers::types::H160::from(c.ibc_handler_address()),
-                    location.into(),
-                    Some(execution_height.into()),
-                )
+        Path::NextSequenceRecv(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
                 .await
-                .unwrap();
-
-            Data::from(IbcState::<NextSequenceRecvPath, _, _> {
-                state: AbiDecode::decode(state.0).unwrap(),
-                height,
-                path,
-            })
-        }
+                .unwrap(),
+            height,
+            path,
+        }),
         Path::NextSequenceAck(path) => {
             let path_str = path.to_string();
 

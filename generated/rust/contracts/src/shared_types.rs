@@ -1,3 +1,18 @@
+///`ConsensusStateUpdate(bytes32,(uint64,uint64))`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct ConsensusStateUpdate {
+    pub consensus_state_commitment: [u8; 32],
+    pub height: IbcCoreClientV1HeightData,
+}
 ///`GoogleProtobufTimestampData(int64,int64)`
 #[derive(
     Clone,
@@ -316,8 +331,8 @@ pub struct IbcCoreChannelV1CounterpartyData {
     PartialEq,
     Eq,
     Hash,
-    serde::Serialize,
-    serde::Deserialize,
+    ::serde::Serialize,
+    ::serde::Deserialize,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct IbcCoreChannelV1PacketData {
@@ -341,8 +356,8 @@ pub struct IbcCoreChannelV1PacketData {
     PartialEq,
     Eq,
     Hash,
-    serde::Serialize,
-    serde::Deserialize,
+    ::serde::Serialize,
+    ::serde::Deserialize,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct IbcCoreClientV1HeightData {
@@ -362,6 +377,24 @@ pub struct IbcCoreClientV1HeightData {
 )]
 pub struct IbcCoreCommitmentV1MerklePrefixData {
     pub key_prefix: ::ethers::core::types::Bytes,
+}
+///`IbcCoreConnectionV1ConnectionEndData(string,(string,string[])[],uint8,(string,string,(bytes)),uint64)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct IbcCoreConnectionV1ConnectionEndData {
+    pub client_id: ::std::string::String,
+    pub versions: ::std::vec::Vec<IbcCoreConnectionV1VersionData>,
+    pub state: u8,
+    pub counterparty: IbcCoreConnectionV1CounterpartyData,
+    pub delay_period: u64,
 }
 ///`IbcCoreConnectionV1CounterpartyData(string,string,(bytes))`
 #[derive(
@@ -393,6 +426,22 @@ pub struct IbcCoreConnectionV1CounterpartyData {
 pub struct IbcCoreConnectionV1VersionData {
     pub identifier: ::std::string::String,
     pub features: ::std::vec::Vec<::std::string::String>,
+}
+///`UnionIbcLightclientsCometblsV1HeaderData((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes)`
+#[derive(
+    Clone,
+    ::ethers::contract::EthAbiType,
+    ::ethers::contract::EthAbiCodec,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub struct UnionIbcLightclientsCometblsV1HeaderData {
+    pub signed_header: UnionIbcLightclientsCometblsV1LightHeaderData,
+    pub trusted_height: IbcCoreClientV1HeightData,
+    pub zero_knowledge_proof: ::ethers::core::types::Bytes,
 }
 ///`UnionIbcLightclientsCometblsV1LightHeaderData(int64,(int64,int64),bytes,bytes,bytes)`
 #[derive(

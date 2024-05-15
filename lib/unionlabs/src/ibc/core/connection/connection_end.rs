@@ -18,11 +18,7 @@ use crate::{
 
 #[model(
     proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from),
-    ethabi(
-        raw(contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData),
-        into,
-        from
-    )
+    ethabi(raw(contracts::glue::IbcCoreConnectionV1ConnectionEndData), into, from)
 )]
 #[serde(bound(
     serialize = "
@@ -127,14 +123,14 @@ pub enum TryFromEthAbiConnectionEndError<
 
 #[cfg(feature = "ethabi")]
 impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
-    TryFrom<contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData>
+    TryFrom<contracts::glue::IbcCoreConnectionV1ConnectionEndData>
     for ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>
 {
     type Error =
         TryFromEthAbiConnectionEndError<ClientId, CounterpartyClientId, CounterpartyConnectionId>;
 
     fn try_from(
-        val: contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData,
+        val: contracts::glue::IbcCoreConnectionV1ConnectionEndData,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: val
@@ -165,7 +161,7 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
 #[cfg(feature = "ethabi")]
 impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
     From<ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>>
-    for contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData
+    for contracts::glue::IbcCoreConnectionV1ConnectionEndData
 {
     fn from(val: ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>) -> Self {
         Self {

@@ -9,9 +9,9 @@ import "../02-client/IIBCClient.sol";
 import "../../proto/ibc/core/client/v1/client.sol";
 
 library IBCClientLib {
-    event ClientRegistered(string, address);
-    event ClientCreated(string);
-    event ClientUpdated(string, IbcCoreClientV1Height.Data);
+    event ClientRegistered(string clientType, address clientAddress);
+    event ClientCreated(string clientId);
+    event ClientUpdated(string clientId, IbcCoreClientV1Height.Data height);
 
     error ErrClientTypeAlreadyExists();
     error ErrClientMustNotBeSelf();
@@ -95,14 +95,9 @@ contract IBCClient is IBCStore, IIBCClient {
         ) {
             revert IBCStoreLib.ErrClientNotFound();
         }
-        (
-            bytes32 clientStateCommitment,
-            ConsensusStateUpdate[] memory updates,
-            bool ok
-        ) = getClient(msg_.clientId).updateClient(
-            msg_.clientId, msg_.clientMessage
-        );
-        if (!ok) {
+        (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates) =
+        getClient(msg_.clientId).updateClient(msg_.clientId, msg_.clientMessage);
+        if (updates.length == 0) {
             revert IBCClientLib.ErrFailedToUpdateClient();
         }
 
@@ -123,12 +118,17 @@ contract IBCClient is IBCStore, IIBCClient {
         private
         returns (string memory)
     {
+        uint256 nextClientSequence =
+            uint256(commitments[nextClientSequencePath]);
+
         string memory identifier = string(
             abi.encodePacked(
                 clientType, "-", Strings.toString(nextClientSequence)
             )
         );
-        nextClientSequence++;
+
+        commitments[nextClientSequencePath] = bytes32(nextClientSequence + 1);
+
         return identifier;
     }
 }

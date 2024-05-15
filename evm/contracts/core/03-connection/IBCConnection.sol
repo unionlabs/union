@@ -10,10 +10,27 @@ import "../24-host/IBCCommitment.sol";
 import "../03-connection/IIBCConnection.sol";
 
 library IBCConnectionLib {
-    event ConnectionOpenInit(string connectionId);
-    event ConnectionOpenTry(string connectionId);
-    event ConnectionOpenAck(string connectionId);
-    event ConnectionOpenConfirm(string connectionId);
+    event ConnectionOpenInit(
+        string connectionId, string clientId, string counterpartyClientId
+    );
+    event ConnectionOpenTry(
+        string connectionId,
+        string clientId,
+        string counterpartyClientId,
+        string counterpartyConnectionId
+    );
+    event ConnectionOpenAck(
+        string connectionId,
+        string clientId,
+        string counterpartyClientId,
+        string counterpartyConnectionId
+    );
+    event ConnectionOpenConfirm(
+        string connectionId,
+        string clientId,
+        string counterpartyClientId,
+        string counterpartyConnectionId
+    );
 
     error ErrConnectionAlreadyExists();
     error ErrValidateSelfClient();
@@ -23,6 +40,7 @@ library IBCConnectionLib {
     error ErrInvalidProof();
     error ErrInvalidConnectionState();
 
+    // yes, these are all defined as strings in the ibc spec
     string internal constant IBC_VERSION_IDENTIFIER = "1";
     string internal constant ORDER_ORDERED = "ORDER_ORDERED";
     string internal constant ORDER_UNORDERED = "ORDER_UNORDERED";
@@ -347,7 +365,9 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.counterparty = msg_.counterparty;
         updateConnectionCommitment(connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenInit(connectionId);
+        emit IBCConnectionLib.ConnectionOpenInit(
+            connectionId, msg_.clientId, msg_.counterparty.client_id
+        );
 
         return connectionId;
     }
@@ -431,7 +451,12 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
 
         updateConnectionCommitment(connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenTry(connectionId);
+        emit IBCConnectionLib.ConnectionOpenTry(
+            connectionId,
+            msg_.clientId,
+            msg_.counterparty.client_id,
+            msg_.counterparty.connection_id
+        );
 
         return connectionId;
     }
@@ -509,7 +534,12 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.counterparty.connection_id = msg_.counterpartyConnectionID;
         updateConnectionCommitment(msg_.connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenAck(msg_.connectionId);
+        emit IBCConnectionLib.ConnectionOpenAck(
+            msg_.connectionId,
+            connection.client_id,
+            connection.counterparty.client_id,
+            connection.counterparty.connection_id
+        );
     }
 
     /**
@@ -561,7 +591,12 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;
         updateConnectionCommitment(msg_.connectionId);
 
-        emit IBCConnectionLib.ConnectionOpenConfirm(msg_.connectionId);
+        emit IBCConnectionLib.ConnectionOpenConfirm(
+            msg_.connectionId,
+            connection.client_id,
+            connection.counterparty.client_id,
+            connection.counterparty.connection_id
+        );
     }
 
     function updateConnectionCommitment(string memory connectionId) private {
@@ -614,12 +649,16 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     /* Internal functions */
 
     function generateConnectionIdentifier() private returns (string memory) {
+        uint256 nextConnectionSequence =
+            uint256(commitments[nextConnectionSequencePath]);
+
         string memory identifier = string(
             abi.encodePacked(
                 "connection-", Strings.toString(nextConnectionSequence)
             )
         );
-        nextConnectionSequence++;
+        commitments[nextConnectionSequencePath] =
+            bytes32(nextConnectionSequence + 1);
         return identifier;
     }
 
