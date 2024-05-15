@@ -7547,6 +7547,7 @@ dependencies = [
  "ethabi",
  "go-parse-duration",
  "hex",
+ "protos",
  "schemars",
  "semver",
  "serde",

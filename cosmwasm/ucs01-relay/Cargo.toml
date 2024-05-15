@@ -34,3 +34,4 @@ sha2              = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
 ucs01-relay-api   = { workspace = true }
+protos            = { workspace = true }
