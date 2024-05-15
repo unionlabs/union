@@ -13,12 +13,14 @@ import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 import { queryParameters } from "sveltekit-search-params"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.js"
+import ChainDialog from "./components/chain-dialog.svelte"
 import ChevronDown from "virtual:icons/lucide/chevron-down"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
+import AssetsDialog from "./components/assets-dialog.svelte"
+import SettingsDialog from "./components/settings-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
-import { ChainDialog, SettingsDialog, AssetsDialog } from "$lib/components/send/dialogs/index.ts"
 
 /**
  * TODO:
