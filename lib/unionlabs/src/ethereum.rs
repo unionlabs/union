@@ -27,6 +27,7 @@ use crate::{
 
 pub mod beacon;
 pub mod config;
+pub mod slot;
 
 // REVIEW: Is this needed? Currently unused
 pub const BLOCK_BODY_EXECUTION_PAYLOAD_INDEX: usize = 9;

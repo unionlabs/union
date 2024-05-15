@@ -4,6 +4,7 @@ use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use sha3::Digest;
 use unionlabs::{
+    ethereum::slot::{MappingKey, Slot},
     hash::H256,
     ibc::lightclients::linea::{client_state::ClientState, header::Header},
     linea::account::ZkAccount,
@@ -92,13 +93,7 @@ pub fn verify_header(
 }
 
 pub fn state_root_hashes_mapping_key(slot: &U256, l2_block_number: &U256) -> U256 {
-    U256::from_be_bytes(
-        sha3::Keccak256::new()
-            .chain_update(l2_block_number.to_be_bytes())
-            .chain_update(slot.to_be_bytes())
-            .finalize()
-            .into(),
-    )
+    Slot::Mapping(MappingKey::Uint256(*l2_block_number), &Slot::Offset(*slot)).slot()
 }
 
 #[cfg(test)]
