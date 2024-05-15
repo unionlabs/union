@@ -1,3 +1,8 @@
+import fluidPlugin, {
+  extract as fluidExtract,
+  screens as fluidScreens,
+  fontSize as fluidFontSize
+} from "fluid-tailwind"
 import plugin from "tailwindcss/plugin"
 import type { Config } from "tailwindcss"
 import formsPlugin from "@tailwindcss/forms"
@@ -8,23 +13,20 @@ import tailwindScrollbarPlugin from "tailwind-scrollbar"
 import aspectRatioPlugin from "@tailwindcss/aspect-ratio"
 import containerQueriesPlugin from "@tailwindcss/container-queries"
 
-export default {
+export default (<Config>{
   darkMode: ["class"],
-  content: ["./src/**/*.{html,js,svelte,ts}"],
+  content: {
+    extract: fluidExtract,
+    files: ["./src/**/*.{html,js,svelte,ts}"]
+  },
   safelist: ["dark"],
   theme: {
-    screens: _units => ({
-      xs: "475px",
-      ...defaultTheme.screens,
-      "2xl": "1400px",
-      tall: { raw: "(min-height: 800px)" }
-    }),
+    fontSize: fluidFontSize,
+    screens: fluidScreens,
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px"
-      }
+      screens: { "2xl": "1400px" }
     },
     extend: {
       fontSize: {
@@ -34,21 +36,11 @@ export default {
         fancy: "url(hand.cur), pointer"
       },
       colors: {
-        // accent: {
-        //   DEFAULT: "#A0ECFD",
-        //   50: "#FAFEFF",
-        //   100: "#F0FCFF",
-        //   200: "#DCF8FE",
-        //   300: "#C8F4FE",
-        //   400: "#B4F0FD",
-        //   500: "#A0ECFD",
-        //   600: "#5FDFFC",
-        //   700: "#1ED2FA",
-        //   800: "#04ACD2",
-        //   900: "#037791",
-        //   950: "#025C70",
-        //   foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
-        // },
+        // accent: unionAccents(),
+        accent: {
+          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
+        },
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
         ring: "hsl(var(--ring))",
@@ -70,10 +62,7 @@ export default {
           DEFAULT: "hsl(var(--muted) / <alpha-value>)",
           foreground: "hsl(var(--muted-foreground) / <alpha-value>)"
         },
-        accent: {
-          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
-          foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
-        },
+
         popover: {
           DEFAULT: "hsl(var(--popover) / <alpha-value>)",
           foreground: "hsl(var(--popover-foreground) / <alpha-value>)"
@@ -140,6 +129,7 @@ export default {
     containerQueriesPlugin,
     tailwindScrollbarPlugin,
     tailwindAnimationDelay(),
+    fluidPlugin({ checkSC144: false }),
     formsPlugin({ strategy: "class" }),
     plugin(({ addVariant, addUtilities, matchUtilities, theme }) => {
       matchUtilities(
@@ -156,7 +146,25 @@ export default {
       addVariant("inverted-colors", "@media (inverted-colors: inverted)")
     })
   ]
-} satisfies Config
+})
+
+function unionAccents() {
+  return {
+    DEFAULT: "#A0ECFD",
+    50: "#FAFEFF",
+    100: "#F0FCFF",
+    200: "#DCF8FE",
+    300: "#C8F4FE",
+    400: "#B4F0FD",
+    500: "#A0ECFD",
+    600: "#5FDFFC",
+    700: "#1ED2FA",
+    800: "#04ACD2",
+    900: "#037791",
+    950: "#025C70",
+    foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
+  }
+}
 
 function tailwindAnimationDelay() {
   return plugin(({ addUtilities, theme, e }) => {

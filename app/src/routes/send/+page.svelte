@@ -1,210 +1,232 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { UnionClient } from "@union/client"
-import type { PageData } from "./$types.ts"
-import { cn } from "$lib/utilities/shadcn.ts"
-import Timer from "virtual:icons/lucide/timer"
-import Settings from "virtual:icons/lucide/settings"
-import { debounce, dollarize } from "$lib/utilities"
-import type { OfflineSigner } from "@leapwallet/types"
-import LockLockedIcon from "virtual:icons/lucide/lock"
-import * as Card from "$lib/components/ui/card/index.ts"
-import { sepoliaStore } from "$lib/wallet/evm/config.ts"
-import { queryParameters } from "sveltekit-search-params"
-import LockOpenIcon from "virtual:icons/lucide/lock-open"
-import { Input } from "$lib/components/ui/input/index.js"
-import ChainDialog from "./components/chain-dialog.svelte"
-import ChevronDown from "virtual:icons/lucide/chevron-down"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { Button } from "$lib/components/ui/button/index.ts"
-import AssetsDialog from "./components/assets-dialog.svelte"
-import SettingsDialog from "./components/settings-dialog.svelte"
-import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+  import { onMount } from 'svelte'
+  import { UnionClient } from '@union/client'
+  import type { PageData } from './$types.ts'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import Timer from 'virtual:icons/lucide/timer'
+  import Settings from 'virtual:icons/lucide/settings'
+  import { debounce, dollarize } from '$lib/utilities'
+  import type { OfflineSigner } from '@leapwallet/types'
+  import LockLockedIcon from 'virtual:icons/lucide/lock'
+  import * as Card from '$lib/components/ui/card/index.ts'
+  import { sepoliaStore } from '$lib/wallet/evm/config.ts'
+  import { queryParameters } from 'sveltekit-search-params'
+  import LockOpenIcon from 'virtual:icons/lucide/lock-open'
+  import { Input } from '$lib/components/ui/input/index.js'
+  import ChainDialog from './components/chain-dialog.svelte'
+  import ChevronDown from 'virtual:icons/lucide/chevron-down'
+  import { cosmosStore } from '$/lib/wallet/cosmos/config.ts'
+  import { Button } from '$lib/components/ui/button/index.ts'
+  import AssetsDialog from './components/assets-dialog.svelte'
+  import SettingsDialog from './components/settings-dialog.svelte'
+  import ArrowLeftRight from 'virtual:icons/lucide/arrow-left-right'
+  import DraftPageNotice from '$lib/components/draft-page-notice.svelte'
+  import toast from 'svelte-french-toast'
 
-/**
- * TODO:
- * - [ ]
- */
+  /**
+   * TODO:
+   * - [ ]
+   */
 
-let unionClient: UnionClient
-onMount(() => {
-  const cosmosOfflineSigner = (
-    $cosmosStore.connectedWallet === "keplr"
-      ? window?.keplr?.getOfflineSigner("union-testnet-8", {})
-      : window.leap
-        ? window.leap.getOfflineSigner("union-testnet-8", {})
-        : undefined
-  ) as OfflineSigner
+  let unionClient: UnionClient
+  onMount(() => {
+    const cosmosOfflineSigner = (
+      $cosmosStore.connectedWallet === 'keplr'
+        ? window?.keplr?.getOfflineSigner('union-testnet-8', {
+            disableBalanceCheck: false,
+          })
+        : window.leap
+          ? window.leap.getOfflineSigner('union-testnet-8', {
+              disableBalanceCheck: false,
+            })
+          : undefined
+    ) as OfflineSigner
 
-  unionClient = new UnionClient({
-    cosmosOfflineSigner,
-    bech32Prefix: "union",
-    chainId: "union-testnet-8",
-    gas: { denom: "muno", amount: "0.0025" },
-    rpcUrl: "https://rpc.testnet.bonlulu.uno"
+    unionClient = new UnionClient({
+      cosmosOfflineSigner,
+      bech32Prefix: 'union',
+      chainId: 'union-testnet-8',
+      gas: { denom: 'muno', amount: '0.0025' },
+      rpcUrl: 'https://rpc.testnet.bonlulu.uno',
+    })
   })
-})
 
-export let data: PageData
-const { chains, assets } = data
+  export let data: PageData
+  const { chains, assets } = data
 
-const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
+  const devBorder = 0 && 'outline outline-[1px] outline-pink-200/40'
 
-const queryParams = queryParameters(
-  {
-    fromChain: { encode: v => v?.toString(), decode: v => v, defaultValue: "union" },
-    toChain: { encode: v => v?.toString(), decode: v => v, defaultValue: "sepolia" },
-    token: { encode: v => v?.toString(), decode: v => v, defaultValue: "uno" },
-    recipient: {
-      encode: v => v?.toString(),
-      decode: v => v,
-      defaultValue: $sepoliaStore.address || ""
-    }
-  },
-  { debounceHistory: 1_000, showDefaults: true }
-)
-
-let dialogOpenFromChain = false
-let dialogOpenToChain = false
-let dialogOpenToken = false
-let dialogOpenSettings = false
-let dialogOpenPast = false
-
-let [chainSearch, chainSearchResults] = ["", chains]
-
-function handleChainSearch(event: InputEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  chainSearch = target.value
-  chainSearchResults = chains.filter(chain =>
-    chain.name.toLowerCase().includes(chainSearch.toLowerCase())
+  const queryParams = queryParameters(
+    {
+      fromChain: { encode: v => v?.toString(), decode: v => v, defaultValue: 'union-testnet-8' },
+      toChain: { encode: v => v?.toString(), decode: v => v, defaultValue: '11155111' },
+      token: { encode: v => v?.toString(), decode: v => v, defaultValue: 'union-sepolia-uno' },
+      recipient: {
+        encode: v => v?.toString(),
+        decode: v => v,
+        defaultValue: $sepoliaStore.address || '',
+      },
+    },
+    { debounceHistory: 1_000, showDefaults: true },
   )
-}
 
-const handleChainSelect = (name: string, target: "fromChain" | "toChain") =>
-  debounce(
-    () => [
-      ($queryParams[target] = name),
-      ([dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
-        false,
-        false,
-        false,
-        false
-      ])
-    ],
-    200
-  )()
+  let dialogOpenFromChain = false
+  let dialogOpenToChain = false
+  let dialogOpenToken = false
+  let dialogOpenSettings = false
+  let dialogOpenPast = false
 
-let selectedFromChain = chains.find(
-  chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
-)
-$: selectedFromChain = chains.find(
-  chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
-)
+  let [chainSearch, chainSearchResults] = ['', chains]
 
-let selectedToChain = chains.find(
-  chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
-)
-$: selectedToChain = chains.find(
-  chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
-)
+  function handleChainSearch(event: InputEvent) {
+    const target = event.target
+    if (!(target instanceof HTMLInputElement)) return
+    chainSearch = target.value
+    chainSearchResults = chains.filter(chain =>
+      chain.name.toLowerCase().includes(chainSearch.toLowerCase()),
+    )
+  }
 
-let [tokenSearch, assetSearchResults] = ["", assets]
+  const handleChainSelect = (name: string, target: 'fromChain' | 'toChain') =>
+    debounce(
+      () => [
+        ($queryParams[target] = name),
+        ([dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
+          false,
+          false,
+          false,
+          false,
+        ]),
+      ],
+      200,
+    )()
 
-function handleAssetSearch(event: InputEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  tokenSearch = target.value
-  assetSearchResults = assets.filter(asset =>
-    asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase())
+  let selectedFromChain = chains.find(chain => chain.id === $queryParams.fromChain)
+  $: selectedFromChain = chains.find(
+    // chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase(),
+    chain => chain.id === $queryParams.fromChain,
   )
-}
 
-let selectedAsset = assets.find(
-  token => token.symbol.toLowerCase() === $queryParams.token.toLowerCase()
-)
-$: selectedAsset = assets.find(
-  token => token?.symbol?.toLowerCase() === $queryParams?.token?.toLowerCase()
-)
-
-function handleAssetSelect(symbol: string) {
-  $queryParams.token = symbol
-  dialogOpenToken = false
-}
-
-const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
-let inputValue = {
-  from: "",
-  to: "",
-  recipient:
-    selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
-      ? $sepoliaStore?.address
-      : selectedToChain?.ecosystem === "cosmos" &&
-          $cosmosStore?.address &&
-          $cosmosStore.address.startsWith(selectedToChain.name)
-        ? $cosmosStore?.address
-        : ""
-}
-
-$: {
-  inputValue.from = inputValue.from.replaceAll(amountRegex, "")
-  inputValue.to = inputValue.to.replaceAll(amountRegex, "")
-}
-
-function swapChainsClick(_event: MouseEvent) {
-  const [fromChain, toChain] = [$queryParams.fromChain, $queryParams.toChain]
-  $queryParams.fromChain = toChain
-  $queryParams.toChain = fromChain
-
-  selectedFromChain = data.chains.find(
-    chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
+  let selectedToChain = chains.find(
+    // chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
+    chain => chain.id === $queryParams.toChain,
   )
-  selectedToChain = data.chains.find(
-    chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
+  $: selectedToChain = chains.find(
+    // chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
+    chain => chain.id === $queryParams.toChain,
   )
-}
 
-let recipientInputState: "locked" | "unlocked" | "invalid" = "locked"
+  // console.log(JSON.stringify({ selectedFromChain, selectedToChain }, undefined, 2))
 
-const onUnlockClick = (event: MouseEvent) =>
-  (recipientInputState = recipientInputState === "locked" ? "unlocked" : "locked")
+  let [tokenSearch, assetSearchResults] = ['', assets]
+  // console.log(JSON.stringify(assets, undefined, 2))
 
-$: {
-  // if to chain changes, update recipient address
-  inputValue.recipient =
-    selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
-      ? $sepoliaStore?.address
-      : selectedToChain?.ecosystem === "cosmos" &&
-          $cosmosStore?.address &&
-          $cosmosStore.address.startsWith(selectedToChain.name)
-        ? $cosmosStore?.address
-        : ""
+  function handleAssetSearch(event: InputEvent) {
+    const target = event.target
+    if (!(target instanceof HTMLInputElement)) return
+    tokenSearch = target.value
+    assetSearchResults = assets.filter(asset =>
+      asset.id.toLowerCase().includes(tokenSearch.toLowerCase()),
+    )
+    // console.log(JSON.stringify(assetSearchResults, undefined, 2))
+  }
 
-  // if recipient address is locked, update it
-  if (recipientInputState === "locked") {
-    inputValue.recipient =
-      selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
+  let availableAssets = assets.filter(
+    // token => token.symbol.toLowerCase() === $queryParams.token.toLowerCase(),
+    asset =>
+      asset.source.chain === selectedFromChain?.id &&
+      asset.destination.chain === selectedToChain?.id,
+  )
+  $: availableAssets = assets.filter(
+    // token => token?.symbol?.toLowerCase() === $queryParams?.token?.toLowerCase(),
+    asset =>
+      asset.source.chain === selectedFromChain?.id &&
+      asset.destination.chain === selectedToChain?.id,
+  )
+
+  let selectedAsset = assets[0]
+  // $: console.log(JSON.stringify({ selectedAsset }, undefined, 2))
+
+  function handleAssetSelect(id: string) {
+    console.log({ id },availableAssets.find(asset => asset.id === id)?.id)
+    $queryParams.token = availableAssets.find(asset => asset.id === id)?.id ?? toast('oof')
+    dialogOpenToken = false
+  }
+
+  $: assetId = selectedAsset?.id.split('-')
+
+  const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
+  let inputValue = {
+    from: '',
+    to: '',
+    recipient:
+      selectedToChain?.ecosystem === 'evm' && $sepoliaStore?.address
         ? $sepoliaStore?.address
-        : selectedToChain?.ecosystem === "cosmos" &&
+        : selectedToChain?.ecosystem === 'cosmos' &&
             $cosmosStore?.address &&
             $cosmosStore.address.startsWith(selectedToChain.name)
           ? $cosmosStore?.address
-          : ""
+          : '',
   }
 
-  if (recipientInputState === "unlocked") {
-    inputValue.recipient = ""
+  $: {
+    inputValue.from = inputValue.from.replaceAll(amountRegex, '')
+    inputValue.to = inputValue.to.replaceAll(amountRegex, '')
   }
-}
 
-let buttonText = "Send it" satisfies
-  | "Send"
-  | "Invalid amount"
-  | "Connect Wallet"
-  | "Enter an amount"
-  | "Insufficient balance"
-  | String
+  function swapChainsClick(_event: MouseEvent) {
+    const [fromChain, toChain] = [$queryParams.fromChain, $queryParams.toChain]
+    $queryParams.fromChain = toChain
+    $queryParams.toChain = fromChain
+
+    selectedFromChain = data.chains.find(
+      chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase(),
+    )
+    selectedToChain = data.chains.find(
+      chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
+    )
+  }
+
+  let recipientInputState: 'locked' | 'unlocked' | 'invalid' = 'locked'
+
+  const onUnlockClick = (event: MouseEvent) =>
+    (recipientInputState = recipientInputState === 'locked' ? 'unlocked' : 'locked')
+
+  $: {
+    // if to chain changes, update recipient address
+    inputValue.recipient =
+      selectedToChain?.ecosystem === 'evm' && $sepoliaStore?.address
+        ? $sepoliaStore?.address
+        : selectedToChain?.ecosystem === 'cosmos' &&
+            $cosmosStore?.address &&
+            $cosmosStore.address.startsWith(selectedToChain.name)
+          ? $cosmosStore?.address
+          : ''
+
+    // if recipient address is locked, update it
+    if (recipientInputState === 'locked') {
+      inputValue.recipient =
+        selectedToChain?.ecosystem === 'evm' && $sepoliaStore?.address
+          ? $sepoliaStore?.address
+          : selectedToChain?.ecosystem === 'cosmos' &&
+              $cosmosStore?.address &&
+              $cosmosStore.address.startsWith(selectedToChain.name)
+            ? $cosmosStore?.address
+            : ''
+    }
+
+    if (recipientInputState === 'unlocked') {
+      inputValue.recipient = ''
+    }
+  }
+
+  let buttonText = 'Send it' satisfies
+    | 'Send'
+    | 'Invalid amount'
+    | 'Connect Wallet'
+    | 'Enter an amount'
+    | 'Insufficient balance'
+    | String
 </script>
 
 <svelte:head>
@@ -323,26 +345,32 @@ let buttonText = "Send it" satisfies
           >
             <img
               alt="asset"
-              src="/images/icons/union.svg"
+              src={`/images/icons/${selectedFromChain?.name}.svg`}
               class={cn(
                 'size-14 outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
                 'p-1 z-10',
               )}
             />
             <img
-              src="/images/icons/osmosis.svg"
+              src={`/images/icons/${selectedAsset?.symbol.toLowerCase()}.svg`}
               alt="asset"
               class={cn('size-12 z-50 my-auto mt-4 -ml-8')}
             />
           </div>
 
-          <div class={cn(devBorder, 'size-full max-w-[250px] flex flex-col')}>
-            <p class="text-2xl font-black m-auto">OSMO</p>
-            <p class="text-xl m-auto">Osmosis</p>
+          <div
+            class={cn(devBorder, 'size-full max-w-[250px] flex flex-col justify-between space-y-3')}
+          >
+            <p class="text-2xl font-black m-auto">{selectedAsset?.symbol}</p>
+            <p class="text-xs m-auto">
+              {selectedAsset?.source.chain}
+              {'->'}
+              {selectedAsset?.destination.chain}
+            </p>
           </div>
           <div class="h-full space-y-2">
             <p class="">balance</p>
-            <p class={cn(devBorder, 'font-sans text-2xl font-black m-auto tabular-nums')}>420.69</p>
+            <p class={cn(devBorder, 'font-sans text-2xl font-black m-auto tabular-nums')}>--</p>
           </div>
 
           <ChevronDown class={cn(devBorder, 'size-6 mb-auto mt-0.5 ml-auto')} />
@@ -371,7 +399,7 @@ let buttonText = "Send it" satisfies
       </div>
       <!-- recipient -->
       <div class={cn('my-2')}>
-        <p class="text-left text-md font-extrabold ml-2">Recipient</p>
+        <p class="text-left text-xl font-extrabold ml-2 mb-2">Recipient</p>
         <div class="relative flex-1 mr-auto">
           <Input
             minlength={1}
@@ -385,7 +413,8 @@ let buttonText = "Send it" satisfies
             bind:value={inputValue.recipient}
             disabled={recipientInputState === 'locked' && inputValue.recipient.length > 0}
             class={cn(
-              'text-[0.9rem] mt-2 mb-0 px-3 tabular-nums border-none text-balance ',
+              inputValue.recipient.startsWith('0x') ? 'text-[0.94rem]' : 'text-[0.9rem]',
+              'text-justify mt-2 mb-0 px-3 tabular-nums border-none text-balance my-auto',
               'outline-1 outline-accent/80 outline',
             )}
           />
@@ -395,7 +424,7 @@ let buttonText = "Send it" satisfies
             variant="ghost"
             name="recipient-lock"
             on:click={onUnlockClick}
-            class="absolute top-0 right-0 rounded-l-none"
+            class="absolute bottom-[1px] right-0 rounded-l-none"
           >
             <LockLockedIcon
               class={cn(
@@ -418,34 +447,11 @@ let buttonText = "Send it" satisfies
     <Card.Footer class="py-0 px-0 mt-4">
       <Button
         type="button"
-        class="w-full bg-secondary-foreground/90 text-xl font-bold"
         disabled={false}
-        data-transfer-button
+        data-transfer-button=""
+        class="w-full bg-secondary-foreground/90 text-xl font-bold"
         on:click={async event => {
-          const amount = parseFloat(inputValue.from)
-          const contractAddress = 'union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7'
-          const transfers = await unionClient.transferAssets({
-            kind: 'cosmwasm',
-            instructions: [
-              {
-                contractAddress,
-                msg: {
-                  transfer: {
-                    channel: 'channel-6',
-                    receiver: 'osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0',
-                    memo: 'sending wrapped OSMO from Union to Osmosis through the App',
-                  },
-                },
-                funds: [
-                  {
-                    amount: amount.toString(),
-                    denom: `factory/${contractAddress}/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`,
-                  },
-                ],
-              },
-            ],
-          })
-          console.log(transfers.transactionHash)
+          throw new Error('Not implemented')
         }}
       >
         {buttonText}
@@ -482,10 +488,10 @@ let buttonText = "Send it" satisfies
 
 <!-- token dialog -->
 <AssetsDialog
-  dialogOpen={dialogOpenToken}
   {handleAssetSearch}
   {handleAssetSelect}
   {assetSearchResults}
+  dialogOpen={dialogOpenToken}
 />
 
 <DraftPageNotice className="hidden sm:inline" />

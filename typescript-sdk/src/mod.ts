@@ -253,9 +253,9 @@ export class UnionClient implements IUnionClient {
     const writeContractParameters = {
       account,
       abi: ucs01relayAbi,
+      chain: signer.chain,
       functionName: "send",
       address: contractAddress,
-      chain: signer.chain,
       args: [
         sourcePort,
         sourceChannel,

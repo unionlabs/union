@@ -16,7 +16,7 @@ $: blockHeight = $blockHeightStore.data
 </script>
 
 <Tooltip.Root>
-  <Tooltip.Trigger let:builder class="ml-2 mb-16 md:mb-0.5 my-a fixed bottom-0 z-50 w-18">
+  <Tooltip.Trigger let:builder class="ml-2 mb-16 lg:mb-0.5 my-a fixed bottom-0 z-50 w-18">
     <Button
       variant="outline"
       builders={[builder]}

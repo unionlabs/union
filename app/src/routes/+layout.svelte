@@ -26,7 +26,13 @@ import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
+// import { snaps } from '$lib/wallet/snaps/config';
+import { provider } from '$lib/wallet/evm/config.ts';
 
+onMount(async() => {
+  console.info()
+  // await snaps.installed(window.ethereum)
+})
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })

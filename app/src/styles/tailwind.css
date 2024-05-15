@@ -3,9 +3,9 @@
  * You probably want to edit `index.css` instead
  */
 @tailwind base;
-@tailwind components;
 @tailwind utilities;
-@tailwind variants;
+@tailwind components;
+/* @tailwind variants; */
  
 @font-face {
   font-family: 'Inter var';
