@@ -72,7 +72,7 @@ members = [
   "voyager",
   "zerg",
   "near/near-ibc",
-  "near/dummy-light-client",
+  "near/near-light-client",
   "near/dummy-ibc-app",
   "near/near-ibc-tests"
 ]

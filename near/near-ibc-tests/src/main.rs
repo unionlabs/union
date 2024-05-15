@@ -1,16 +1,19 @@
 use std::collections::HashMap;
 
-use borsh::BorshDeserialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 use ibc_vm_rs::{
     states::connection_handshake, IbcEvent, Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
 };
 use near_jsonrpc_client::methods::{self, RpcMethod};
 use near_primitives::{
     hash::CryptoHash,
-    merkle::{MerklePath, MerklePathItem},
-    types::BlockReference,
+    merkle::{merklize, verify_path, MerklePath, MerklePathItem},
+    sharding::{ChunkHash, ChunkHashHeight},
+    trie_key::trie_key_parsers,
+    types::{BlockReference, StateRoot},
     views::{QueryRequest, StateItem},
 };
+use near_store::{NibbleSlice, RawTrieNode};
 use near_units::parse_near;
 use near_workspaces::{
     error::RpcErrorCode,
@@ -19,7 +22,7 @@ use near_workspaces::{
     result::ValueOrReceiptId,
     rpc::query::ProcessQuery,
     sandbox,
-    types::{Gas, KeyType, NearToken, SecretKey},
+    types::{ChunkHeader, Gas, KeyType, NearToken, SecretKey},
     Account, AccountId, Contract, Worker,
 };
 use serde_json::json;
@@ -38,8 +41,7 @@ use unionlabs::{
 
 const WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/near_ibc.wasm";
-const LC_WASM_FILEPATH: &str =
-    "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/dummy_light_client.wasm";
+const LC_WASM_FILEPATH: &str = "/home/aeryz/dev/union/union/near_light_client.wasm";
 const IBC_APP_WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/dummy_ibc_app.wasm";
 
@@ -70,6 +72,19 @@ async fn main() {
         .await
         .unwrap()
         .unwrap();
+    let counterparty_lc_account_id: AccountId = String::from("counterparty-light-client.test.near")
+        .try_into()
+        .unwrap();
+    let counterparty_lc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
+    let counterparty_lc = sandbox
+        .create_tla_and_deploy(
+            counterparty_lc_account_id.clone(),
+            counterparty_lc_sk.clone(),
+            &lc_wasm,
+        )
+        .await
+        .unwrap()
+        .unwrap();
     let ibc_app_account_id: AccountId = String::from("ibc-app.test.near").try_into().unwrap();
     let ibc_app_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
     let ibc_app = sandbox
@@ -97,47 +112,165 @@ async fn main() {
 
     println!("calling register");
 
-    let out: Vec<u8> = Sha256::new()
-        .chain(b"account_idsm")
-        .chain(borsh::to_vec("cometbls").unwrap())
-        .finalize()
-        .to_vec();
-
-    println!("{:?}", out);
+    // let out: Vec<u8> = Sha256::new()
+    //     .chain(b"account_idsm")
+    //     .chain(borsh::to_vec("cometbls").unwrap())
+    //     .finalize()
+    //     .to_vec();
+    // println!("{:?}", out);
 
     test_register_client(&user, &contract, &lc).await;
-
+    test_create_client(&sandbox, &user, &contract, counterparty_lc.id()).await;
     let block = sandbox.view_block().await.unwrap();
-    let height = block.height();
+    test_update_client(
+        &user,
+        &contract,
+        &lc,
+        &CryptoHash(block.chunks()[0].prev_state_root.0.clone()),
+    )
+    .await;
 
-    let proof = contract
-        .view_state()
-        .block_height(height)
-        .prefix(b"asfensdnfesdnfensd".as_slice())
-        .await
-        .unwrap()
-        .proof;
+    // let height = block.height();
 
-    let nodes = proof
-        .into_iter()
-        .map(|bytes| {
-            let hash = CryptoHash::hash_bytes(&bytes);
-            let node = near_store::RawTrieNodeWithSize::try_from_slice(&bytes).unwrap();
-            (hash, node)
-        })
-        .collect::<HashMap<_, _>>();
+    // let nodes = proof
+    //     .proof
+    //     .into_iter()
+    //     .map(|bytes| {
+    //         let hash = CryptoHash::hash_bytes(&bytes);
+    //         let node = near_store::RawTrieNodeWithSize::try_from_slice(&bytes).unwrap();
+    //         (hash, node)
+    //     })
+    //     .collect::<HashMap<_, _>>();
 
-    println!("Nodes: {:?}", nodes);
+    // println!("Nodes: {:?}", nodes);
+
+    // let next_block = sandbox
+    //     .view_block()
+    //     .block_height(block.height() + 1)
+    //     .await
+    //     .unwrap();
+
+    // let root = next_block.chunks()[0].prev_state_root.clone();
+
+    // let (hash, merkle_path) = merklize_chunks(next_block.chunks());
+
+    // println!(
+    //     "merklized hash: {:?}, chunk root: {:?}",
+    //     hash,
+    //     next_block.header().chunk_headers_root()
+    // );
+    // println!("merkle path: {:?}", merkle_path);
+
+    // println!(
+    //     "verify merkle: {}",
+    //     verify_path(
+    //         hash,
+    //         &merkle_path[0],
+    //         ChunkHashHeight(
+    //             ChunkHash(CryptoHash(next_block.chunks()[0].chunk_hash.0)),
+    //             next_block.chunks()[0].height_included
+    //         )
+    //     )
+    // );
+
+    // let res = verify(
+    //     nodes,
+    //     &CryptoHash(root.0.clone()),
+    //     contract.id(),
+    //     &out,
+    //     Some(&proof.data[&out]),
+    // );
+    // println!("Res: {}", res);
 
     // test_create_client(&user, &contract).await;
     // test_open_connection_starting_from_init(&user, &contract).await;
     // test_open_channel_starting_from_init(&user, &contract, &ibc_app).await;
 }
 
+fn merklize_chunks(chunks: &[ChunkHeader]) -> (CryptoHash, Vec<MerklePath>) {
+    merklize(
+        &chunks
+            .into_iter()
+            .map(|chunk| {
+                ChunkHashHeight(
+                    ChunkHash(CryptoHash(chunk.chunk_hash.0)),
+                    chunk.height_included,
+                )
+            })
+            .collect::<Vec<ChunkHashHeight>>(),
+    )
+}
+
+fn verify(
+    nodes: HashMap<CryptoHash, near_store::RawTrieNodeWithSize>,
+    state_root: &StateRoot,
+    account_id: &AccountId,
+    key: &[u8],
+    expected: Option<&[u8]>,
+) -> bool {
+    let query = trie_key_parsers::get_raw_prefix_for_contract_data(account_id, key);
+    let mut key = NibbleSlice::new(&query);
+
+    let mut expected_hash = state_root;
+    while let Some(node) = nodes.get(expected_hash) {
+        match &node.node {
+            RawTrieNode::Leaf(node_key, value) => {
+                let nib = &NibbleSlice::from_encoded(&node_key).0;
+                return if &key != nib {
+                    expected.is_none()
+                } else {
+                    expected.is_some_and(|expected| value == expected)
+                };
+            }
+            RawTrieNode::Extension(node_key, child_hash) => {
+                expected_hash = child_hash;
+
+                // To avoid unnecessary copy
+                let nib = NibbleSlice::from_encoded(&node_key).0;
+                if !key.starts_with(&nib) {
+                    return expected.is_none();
+                }
+                key = key.mid(nib.len());
+            }
+            RawTrieNode::BranchNoValue(children) => {
+                if key.is_empty() {
+                    return expected.is_none();
+                }
+                match children[key.at(0)] {
+                    Some(ref child_hash) => {
+                        key = key.mid(1);
+                        expected_hash = child_hash;
+                    }
+                    None => return expected.is_none(),
+                }
+            }
+            RawTrieNode::BranchWithValue(value, children) => {
+                if key.is_empty() {
+                    return expected.is_some_and(|exp| value == exp);
+                }
+                match children[key.at(0)] {
+                    Some(ref child_hash) => {
+                        key = key.mid(1);
+                        expected_hash = child_hash;
+                    }
+                    None => return expected.is_none(),
+                }
+            }
+        }
+    }
+    false
+}
+
 #[derive(serde::Serialize)]
 struct RegisterClient {
     client_type: String,
     account: String,
+}
+
+#[derive(serde::Serialize)]
+struct UpdateClient {
+    client_id: String,
+    client_msg: Vec<u8>,
 }
 
 #[derive(serde::Serialize)]
@@ -223,11 +356,30 @@ async fn test_register_client(user: &Account, contract: &Contract, lc: &Contract
     println!("[ + ] `test_register_client`: Client successfully registered");
 }
 
-async fn test_create_client(user: &Account, contract: &Contract) {
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct ClientState {
+    latest_height: u64,
+    ibc_account_id: AccountId,
+}
+
+async fn test_create_client(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    contract: &Contract,
+    counterparty_client_id: &AccountId,
+) {
+    let block = sandbox.view_block().await.unwrap();
     let create = CreateClient {
         client_type: CLIENT_TYPE.into(),
-        client_state: vec![1, 2, 3],
-        consensus_state: vec![4, 5, 6],
+        client_state: borsh::to_vec(&ClientState {
+            latest_height: block.height() - 1,
+            ibc_account_id: counterparty_client_id.clone(),
+        })
+        .unwrap(),
+        consensus_state: borsh::to_vec(&ConsensusState {
+            state_root: CryptoHash(block.chunks()[0].prev_state_root.0.clone()),
+        })
+        .unwrap(),
     };
     let res = user
         .call(contract.id(), "create_client")
@@ -270,7 +422,12 @@ async fn test_create_client(user: &Account, contract: &Contract) {
     ));
     // result of `client.latest_height`
     match outcomes[7].clone().into_result().unwrap() {
-        ValueOrReceiptId::Value(val) => assert_eq!(val.json::<Height>().unwrap(), INITIAL_HEIGHT),
+        ValueOrReceiptId::Value(val) => {
+            assert_eq!(
+                val.json::<Height>().unwrap().revision_height,
+                block.height() - 1
+            )
+        }
         ValueOrReceiptId::ReceiptId(_) => panic!("expected to get value"),
     }
 
@@ -279,12 +436,42 @@ async fn test_create_client(user: &Account, contract: &Contract) {
         IbcEvent::ClientCreated {
             client_id: format!("{CLIENT_TYPE}-1").validate().unwrap(),
             client_type: CLIENT_TYPE.into(),
-            initial_height: INITIAL_HEIGHT.revision_height
+            initial_height: block.height() - 1,
         },
         serde_json::from_str(&outcomes[9].logs[0]).unwrap()
     );
 
     println!("[ + ] `test_create_client`: Client {CLIENT_TYPE}-1 created successfully");
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct ConsensusState {
+    pub state_root: CryptoHash,
+}
+
+async fn test_update_client(
+    user: &Account,
+    contract: &Contract,
+    lc: &Contract,
+    state_root: &StateRoot,
+) {
+    let update = UpdateClient {
+        client_id: "cometbls-1".into(),
+        client_msg: borsh::to_vec(&ConsensusState {
+            state_root: CryptoHash(state_root.0.clone()),
+        })
+        .unwrap(),
+    };
+
+    let res = user
+        .call(contract.id(), "update_client")
+        .args_json(update)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap();
+
+    println!("Update res: {:?}", res);
 }
 
 async fn test_open_connection_starting_from_init(user: &Account, contract: &Contract) {

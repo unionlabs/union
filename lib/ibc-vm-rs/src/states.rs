@@ -1,4 +1,5 @@
 pub mod channel_handshake;
+pub mod client_state;
 pub mod connection_handshake;
 pub mod packet;
 
