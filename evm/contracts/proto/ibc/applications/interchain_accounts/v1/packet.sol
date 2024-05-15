@@ -558,7 +558,7 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
          */
         GoogleProtobufAny.Data[] memory tmp =
             new GoogleProtobufAny.Data[](self.messages.length + 1);
-        for (uint256 i = 0; i < self.messages.length; i++) {
+        for (uint256 i; i < self.messages.length; i++) {
             tmp[i] = self.messages[i];
         }
         tmp[self.messages.length] = value;
@@ -632,7 +632,7 @@ library IbcApplicationsInterchainAccountsV1PacketGlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_Type(a[i]));
         }
         return e;

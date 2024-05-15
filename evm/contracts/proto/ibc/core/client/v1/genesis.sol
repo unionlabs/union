@@ -580,7 +580,7 @@ library IbcCoreClientV1GenesisState {
          */
         IbcCoreClientV1IdentifiedClientState.Data[] memory tmp = new IbcCoreClientV1IdentifiedClientState
             .Data[](self.clients.length + 1);
-        for (uint256 i = 0; i < self.clients.length; i++) {
+        for (uint256 i; i < self.clients.length; i++) {
             tmp[i] = self.clients[i];
         }
         tmp[self.clients.length] = value;
@@ -602,7 +602,7 @@ library IbcCoreClientV1GenesisState {
          */
         IbcCoreClientV1ClientConsensusStates.Data[] memory tmp = new IbcCoreClientV1ClientConsensusStates
             .Data[](self.clients_consensus.length + 1);
-        for (uint256 i = 0; i < self.clients_consensus.length; i++) {
+        for (uint256 i; i < self.clients_consensus.length; i++) {
             tmp[i] = self.clients_consensus[i];
         }
         tmp[self.clients_consensus.length] = value;
@@ -624,7 +624,7 @@ library IbcCoreClientV1GenesisState {
          */
         IbcCoreClientV1IdentifiedGenesisMetadata.Data[] memory tmp = new IbcCoreClientV1IdentifiedGenesisMetadata
             .Data[](self.clients_metadata.length + 1);
-        for (uint256 i = 0; i < self.clients_metadata.length; i++) {
+        for (uint256 i; i < self.clients_metadata.length; i++) {
             tmp[i] = self.clients_metadata[i];
         }
         tmp[self.clients_metadata.length] = value;
@@ -1208,7 +1208,7 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
          */
         IbcCoreClientV1GenesisMetadata.Data[] memory tmp = new IbcCoreClientV1GenesisMetadata
             .Data[](self.client_metadata.length + 1);
-        for (uint256 i = 0; i < self.client_metadata.length; i++) {
+        for (uint256 i; i < self.client_metadata.length; i++) {
             tmp[i] = self.client_metadata[i];
         }
         tmp[self.client_metadata.length] = value;

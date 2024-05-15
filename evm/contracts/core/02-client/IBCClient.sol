@@ -99,14 +99,15 @@ contract IBCClient is IBCStore, IIBCClient {
         }
         (bytes32 clientStateCommitment, ConsensusStateUpdate[] memory updates) =
         getClient(msg_.clientId).updateClient(msg_.clientId, msg_.clientMessage);
-        if (updates.length == 0) {
+        uint256 updatesLength = updates.length;
+        if (updatesLength == 0) {
             revert IBCClientLib.ErrFailedToUpdateClient();
         }
 
         // update commitments
         commitments[keccak256(IBCCommitment.clientStatePath(msg_.clientId))] =
             clientStateCommitment;
-        for (uint256 i = 0; i < updates.length; i++) {
+        for (uint256 i; i < updatesLength; i++) {
             commitments[IBCCommitment.consensusStateCommitmentKey(
                 msg_.clientId,
                 updates[i].height.revision_number,

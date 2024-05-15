@@ -284,7 +284,7 @@ contract UCS01Relay is
     ) external override {
         Token[] memory normalizedTokens = new Token[](tokens.length);
         uint256 tokensLength = tokens.length;
-        for (uint256 i = 0; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
             normalizedTokens[i].denom = sendToken(sourceChannel, localToken);
             normalizedTokens[i].amount = localToken.amount;
@@ -297,7 +297,7 @@ contract UCS01Relay is
         uint64 packetSequence = ibcHandler.sendPacket(
             sourceChannel, timeoutHeight, timeoutTimestamp, packet.encode()
         );
-        for (uint256 i = 0; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
             Token memory normalizedToken = normalizedTokens[i];
             emit RelayLib.Sent(
@@ -320,7 +320,8 @@ contract UCS01Relay is
         string memory receiver = packet.receiver.toHexString();
         // We're going to refund, the receiver will be the sender.
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
-        for (uint256 i = 0; i < packet.tokens.length; i++) {
+        uint256 packetTokensLength = packet.tokens.length;
+        for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
             address denomAddress = denomToAddress[channelId][token.denom];
             if (denomAddress != address(0)) {
@@ -359,7 +360,8 @@ contract UCS01Relay is
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.source_port, ibcPacket.source_channel
         );
-        for (uint256 i = 0; i < packet.tokens.length; i++) {
+        uint256 packetTokensLength = packet.tokens.length;
+        for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
             strings.slice memory denomSlice = token.denom.toSlice();
             // This will trim the denom in-place IFF it is prefixed

@@ -1175,7 +1175,7 @@ library IbcCoreConnectionV1QueryConnectionsResponse {
          */
         IbcCoreConnectionV1IdentifiedConnection.Data[] memory tmp = new IbcCoreConnectionV1IdentifiedConnection
             .Data[](self.connections.length + 1);
-        for (uint256 i = 0; i < self.connections.length; i++) {
+        for (uint256 i; i < self.connections.length; i++) {
             tmp[i] = self.connections[i];
         }
         tmp[self.connections.length] = value;
@@ -1748,7 +1748,7 @@ library IbcCoreConnectionV1QueryClientConnectionsResponse {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.connection_paths.length + 1);
-        for (uint256 i = 0; i < self.connection_paths.length; i++) {
+        for (uint256 i; i < self.connection_paths.length; i++) {
             tmp[i] = self.connection_paths[i];
         }
         tmp[self.connection_paths.length] = value;

@@ -623,7 +623,7 @@ library ProtoBufRuntime {
 
         if (length > REMAINING_LENGTH) {
             length -= REMAINING_LENGTH;
-            for (uint256 i = 0; i < ceil(length, WORD_LENGTH); i++) {
+            for (uint256 i; i < ceil(length, WORD_LENGTH); i++) {
                 assembly {
                     let offset := add(mul(i, wordLength), remainingLength)
                     let slotIndex := add(i, 1)
@@ -667,7 +667,7 @@ library ProtoBufRuntime {
 
         if (length > REMAINING_LENGTH) {
             length -= REMAINING_LENGTH;
-            for (uint256 i = 0; i < ceil(length, WORD_LENGTH); i++) {
+            for (uint256 i; i < ceil(length, WORD_LENGTH); i++) {
                 assembly {
                     let offset := add(mul(i, wordLength), remainingLength)
                     let slotIndex := add(i, 1)
@@ -1517,7 +1517,7 @@ library ProtoBufRuntime {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += _sz_uint32(a[i]);
         }
         return e;
@@ -1529,7 +1529,7 @@ library ProtoBufRuntime {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += _sz_uint64(a[i]);
         }
         return e;
@@ -1541,7 +1541,7 @@ library ProtoBufRuntime {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += _sz_int32(a[i]);
         }
         return e;
@@ -1553,7 +1553,7 @@ library ProtoBufRuntime {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += _sz_int64(a[i]);
         }
         return e;
@@ -1565,7 +1565,7 @@ library ProtoBufRuntime {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += _sz_sint32(a[i]);
         }
         return e;
@@ -1577,7 +1577,7 @@ library ProtoBufRuntime {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += _sz_sint64(a[i]);
         }
         return e;
@@ -3464,7 +3464,7 @@ library ProtoBufRuntime {
          * The idea is to not encode the leading bytes of zero.
          */
         uint256 actualSize = sz;
-        for (uint256 i = 0; i < sz; i++) {
+        for (uint256 i; i < sz; i++) {
             uint8 current = uint8(x[sz - 1 - i]);
             if (current == 0 && actualSize > 1) {
                 actualSize--;

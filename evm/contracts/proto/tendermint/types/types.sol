@@ -1753,7 +1753,7 @@ library TendermintTypesData {
          * First resize the array. Then add the new element to the end.
          */
         bytes[] memory tmp = new bytes[](self.txs.length + 1);
-        for (uint256 i = 0; i < self.txs.length; i++) {
+        for (uint256 i; i < self.txs.length; i++) {
             tmp[i] = self.txs[i];
         }
         tmp[self.txs.length] = value;
@@ -2659,7 +2659,7 @@ library TendermintTypesCommit {
          */
         TendermintTypesCommitSig.Data[] memory tmp =
             new TendermintTypesCommitSig.Data[](self.signatures.length + 1);
-        for (uint256 i = 0; i < self.signatures.length; i++) {
+        for (uint256 i; i < self.signatures.length; i++) {
             tmp[i] = self.signatures[i];
         }
         tmp[self.signatures.length] = value;
@@ -4775,7 +4775,7 @@ library TendermintTypesTypesGlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_BlockIDFlag(a[i]));
         }
         return e;
@@ -4847,7 +4847,7 @@ library TendermintTypesTypesGlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_SignedMsgType(a[i]));
         }
         return e;

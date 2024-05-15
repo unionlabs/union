@@ -277,7 +277,7 @@ library IbcApplicationsInterchain_accountsHostV1Params {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.allow_messages.length + 1);
-        for (uint256 i = 0; i < self.allow_messages.length; i++) {
+        for (uint256 i; i < self.allow_messages.length; i++) {
             tmp[i] = self.allow_messages[i];
         }
         tmp[self.allow_messages.length] = value;

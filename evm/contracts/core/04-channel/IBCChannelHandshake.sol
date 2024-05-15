@@ -59,7 +59,7 @@ library IBCChannelLib {
         string memory feature
     ) internal pure returns (bool) {
         bytes32 h = keccak256(bytes(feature));
-        for (uint256 i = 0; i < version.features.length; i++) {
+        for (uint256 i; i < version.features.length; i++) {
             if (keccak256(bytes(version.features[i])) == h) {
                 return true;
             }

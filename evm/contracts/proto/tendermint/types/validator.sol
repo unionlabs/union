@@ -340,7 +340,7 @@ library TendermintTypesValidatorSet {
          */
         TendermintTypesValidator.Data[] memory tmp =
             new TendermintTypesValidator.Data[](self.validators.length + 1);
-        for (uint256 i = 0; i < self.validators.length; i++) {
+        for (uint256 i; i < self.validators.length; i++) {
             tmp[i] = self.validators[i];
         }
         tmp[self.validators.length] = value;

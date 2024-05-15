@@ -74,7 +74,8 @@ library IBCConnectionLib {
         if (dst.length != 0) {
             revert ErrVersionMustBeUnset();
         }
-        for (uint256 i = 0; i < supportedVersions.length; i++) {
+        uint256 supportedVersionsLength = supportedVersions.length;
+        for (uint256 i; i < supportedVersionsLength; i++) {
             dst.push(supportedVersions[i]);
         }
     }
@@ -100,7 +101,8 @@ library IBCConnectionLib {
         IbcCoreConnectionV1Version.Data[] storage supportedVersions,
         string memory feature
     ) internal view returns (bool) {
-        for (uint256 i = 0; i < supportedVersions.length; i++) {
+        uint256 supportedVersionsLength = supportedVersions.length;
+        for (uint256 i; i < supportedVersionsLength; i++) {
             if (verifySupportedFeature(supportedVersions[i], feature)) {
                 return true;
             }
@@ -124,10 +126,11 @@ library IBCConnectionLib {
         ) {
             return false;
         }
-        if (proposedVersion.features.length == 0) {
+        uint256 proposedVersionFeaturesLength = proposedVersion.features.length;
+        if (proposedVersionFeaturesLength == 0) {
             return false;
         }
-        for (uint256 i = 0; i < proposedVersion.features.length; i++) {
+        for (uint256 i; i < proposedVersionFeaturesLength; i++) {
             if (
                 !contains(proposedVersion.features[i], supportedVersion.features)
             ) {
@@ -153,7 +156,8 @@ library IBCConnectionLib {
             bool found
         )
     {
-        for (uint256 i = 0; i < supportedVersions.length; i++) {
+        uint256 supportedVersionsLength = supportedVersions.length;
+        for (uint256 i; i < supportedVersionsLength; i++) {
             supportedVersion = supportedVersions[i];
             if (
                 keccak256(abi.encodePacked(supportedVersion.identifier))
@@ -169,7 +173,8 @@ library IBCConnectionLib {
         IbcCoreConnectionV1Version.Data[] memory supportedVersions,
         IbcCoreConnectionV1Version.Data[] memory counterpartyVersions
     ) internal pure returns (IbcCoreConnectionV1Version.Data memory) {
-        for (uint256 i = 0; i < supportedVersions.length; i++) {
+        uint256 supportedVersionsLength = supportedVersions.length;
+        for (uint256 i; i < supportedVersionsLength; i++) {
             IbcCoreConnectionV1Version.Data memory supportedVersion =
                 supportedVersions[i];
             (
@@ -202,18 +207,18 @@ library IBCConnectionLib {
         uint256 srcLength = src.length;
         uint256 dstLength = dst.length;
         if (srcLength == dstLength) {
-            for (uint256 i = 0; i < srcLength; i++) {
+            for (uint256 i; i < srcLength; i++) {
                 copyVersion(src[i], dst[i]);
             }
         } else if (srcLength > dstLength) {
-            for (uint256 i = 0; i < dstLength; i++) {
+            for (uint256 i; i < dstLength; i++) {
                 copyVersion(src[i], dst[i]);
             }
             for (uint256 i = dstLength; i < srcLength; i++) {
                 dst.push(src[i]);
             }
         } else {
-            for (uint256 i = 0; i < srcLength; i++) {
+            for (uint256 i; i < srcLength; i++) {
                 copyVersion(src[i], dst[i]);
             }
             for (uint256 i = srcLength; i < dstLength; i++) {
@@ -243,7 +248,8 @@ library IBCConnectionLib {
         string memory feature
     ) internal pure returns (bool) {
         bytes32 hashedFeature = keccak256(bytes(feature));
-        for (uint256 i = 0; i < version.features.length; i++) {
+        uint256 versionFeaturesLength = version.features.length;
+        for (uint256 i; i < versionFeaturesLength; i++) {
             if (keccak256(bytes(version.features[i])) == hashedFeature) {
                 return true;
             }
@@ -255,16 +261,17 @@ library IBCConnectionLib {
         string[] memory sourceFeatureSet,
         string[] memory counterpartyFeatureSet
     ) private pure returns (string[] memory) {
-        string[] memory featureSet = new string[](sourceFeatureSet.length);
-        uint256 featureSetLength = 0;
-        for (uint256 i = 0; i < sourceFeatureSet.length; i++) {
+        uint256 sourceFeatureSetLength = sourceFeatureSet.length;
+        string[] memory featureSet = new string[](sourceFeatureSetLength);
+        uint256 featureSetLength;
+        for (uint256 i; i < sourceFeatureSetLength; i++) {
             if (contains(sourceFeatureSet[i], counterpartyFeatureSet)) {
                 featureSet[featureSetLength] = sourceFeatureSet[i];
                 featureSetLength++;
             }
         }
         string[] memory ret = new string[](featureSetLength);
-        for (uint256 i = 0; i < featureSetLength; i++) {
+        for (uint256 i; i < featureSetLength; i++) {
             ret[i] = featureSet[i];
         }
         return ret;
@@ -279,18 +286,18 @@ library IBCConnectionLib {
         uint256 dstLength = dst.features.length;
 
         if (srcLength == dstLength) {
-            for (uint256 i = 0; i < srcLength; i++) {
+            for (uint256 i; i < srcLength; i++) {
                 dst.features[i] = src.features[i];
             }
         } else if (srcLength > dstLength) {
-            for (uint256 i = 0; i < dstLength; i++) {
+            for (uint256 i; i < dstLength; i++) {
                 dst.features[i] = src.features[i];
             }
             for (uint256 i = dstLength; i < srcLength; i++) {
                 dst.features.push(src.features[i]);
             }
         } else {
-            for (uint256 i = 0; i < srcLength; i++) {
+            for (uint256 i; i < srcLength; i++) {
                 dst.features[i] = src.features[i];
             }
             for (uint256 i = srcLength; i < dstLength; i++) {
@@ -304,7 +311,8 @@ library IBCConnectionLib {
         string[] memory set
     ) private pure returns (bool) {
         bytes32 hashedElem = keccak256(bytes(elem));
-        for (uint256 i = 0; i < set.length; i++) {
+        uint256 setLength = set.length;
+        for (uint256 i; i < setLength; i++) {
             if (keccak256(bytes(set[i])) == hashedElem) {
                 return true;
             }

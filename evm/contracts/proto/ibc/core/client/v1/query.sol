@@ -1114,7 +1114,7 @@ library IbcCoreClientV1QueryClientStatesResponse {
          */
         IbcCoreClientV1IdentifiedClientState.Data[] memory tmp = new IbcCoreClientV1IdentifiedClientState
             .Data[](self.client_states.length + 1);
-        for (uint256 i = 0; i < self.client_states.length; i++) {
+        for (uint256 i; i < self.client_states.length; i++) {
             tmp[i] = self.client_states[i];
         }
         tmp[self.client_states.length] = value;
@@ -2387,7 +2387,7 @@ library IbcCoreClientV1QueryConsensusStatesResponse {
          */
         IbcCoreClientV1ConsensusStateWithHeight.Data[] memory tmp = new IbcCoreClientV1ConsensusStateWithHeight
             .Data[](self.consensus_states.length + 1);
-        for (uint256 i = 0; i < self.consensus_states.length; i++) {
+        for (uint256 i; i < self.consensus_states.length; i++) {
             tmp[i] = self.consensus_states[i];
         }
         tmp[self.consensus_states.length] = value;
@@ -3028,7 +3028,7 @@ library IbcCoreClientV1QueryConsensusStateHeightsResponse {
         IbcCoreClientV1Height.Data[] memory tmp = new IbcCoreClientV1Height.Data[](
             self.consensus_state_heights.length + 1
         );
-        for (uint256 i = 0; i < self.consensus_state_heights.length; i++) {
+        for (uint256 i; i < self.consensus_state_heights.length; i++) {
             tmp[i] = self.consensus_state_heights[i];
         }
         tmp[self.consensus_state_heights.length] = value;

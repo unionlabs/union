@@ -1360,7 +1360,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.relayers.length + 1);
-        for (uint256 i = 0; i < self.relayers.length; i++) {
+        for (uint256 i; i < self.relayers.length; i++) {
             tmp[i] = self.relayers[i];
         }
         tmp[self.relayers.length] = value;

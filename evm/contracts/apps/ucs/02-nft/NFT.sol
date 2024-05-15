@@ -237,7 +237,7 @@ contract UCS02NFT is
         uint256[] calldata tokens
     ) internal {
         uint256 tokensLength = tokens.length;
-        for (uint256 i = 0; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; i++) {
             uint256 tokenId = tokens[i];
             IERC721Denom(nftClass).burn(tokenId);
         }
@@ -250,7 +250,7 @@ contract UCS02NFT is
     ) internal {
         uint256 tokensLength = tokens.length;
         increaseOutstanding(sourceChannel, nftClass, tokensLength);
-        for (uint256 i = 0; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; i++) {
             uint256 tokenId = tokens[i];
             IERC721Denom(nftClass).safeTransferFrom(
                 msg.sender, address(this), tokenId
@@ -276,7 +276,7 @@ contract UCS02NFT is
             name = IERC721Metadata(nftClass).name();
             symbol = IERC721Metadata(nftClass).symbol();
             tokenUris = new string[](tokensLength);
-            for (uint256 i = 0; i < tokensLength; i++) {
+            for (uint256 i; i < tokensLength; i++) {
                 uint256 tokenId = tokens[i];
                 tokenUris[i] = IERC721Metadata(nftClass).tokenURI(tokenId);
             }
@@ -377,7 +377,7 @@ contract UCS02NFT is
             );
         }
         uint256 tokenIdsLength = packet.tokenIds.length;
-        for (uint256 i = 0; i < tokenIdsLength; i++) {
+        for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
             string memory tokenUri = "";
             if (packet.tokenUris.length == tokenIdsLength) {
@@ -399,7 +399,7 @@ contract UCS02NFT is
         decreaseOutstanding(
             ibcPacket.destination_channel, nftClass, tokenIdsLength
         );
-        for (uint256 i = 0; i < tokenIdsLength; i++) {
+        for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
             IERC721Denom(nftClass).safeTransferFrom(
                 address(this), receiver, tokenId
@@ -489,7 +489,7 @@ contract UCS02NFT is
         if (isLocal) {
             decreaseOutstanding(channelId, nftClass, tokenIdsLength);
         }
-        for (uint256 i = 0; i < tokenIdsLength; i++) {
+        for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
             if (isLocal) {
                 // The token was originating from the local chain, we escrowed

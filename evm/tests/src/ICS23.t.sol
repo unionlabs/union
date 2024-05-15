@@ -53,7 +53,7 @@ contract ICS23Test is Test {
 
         existProof.path =
             new UnionIcs23.InnerOp[](decoded.proofs[0].exist.path.length);
-        for (uint256 i = 0; i < existProof.path.length; i++) {
+        for (uint256 i; i < existProof.path.length; i++) {
             existProof.path[i].prefix = decoded.proofs[0].exist.path[i].prefix;
             existProof.path[i].suffix = decoded.proofs[0].exist.path[i].suffix;
         }
@@ -65,7 +65,7 @@ contract ICS23Test is Test {
 
         existProof2.path =
             new UnionIcs23.InnerOp[](decoded.proofs[1].exist.path.length);
-        for (uint256 i = 0; i < existProof2.path.length; i++) {
+        for (uint256 i; i < existProof2.path.length; i++) {
             existProof2.path[i].prefix = decoded.proofs[1].exist.path[i].prefix;
             existProof2.path[i].suffix = decoded.proofs[1].exist.path[i].suffix;
         }
@@ -260,7 +260,7 @@ contract ICS23Test is Test {
         leftExistProof.path = new UnionIcs23.InnerOp[](
             decoded.proofs[0].nonexist.left.path.length
         );
-        for (uint256 i = 0; i < leftExistProof.path.length; i++) {
+        for (uint256 i; i < leftExistProof.path.length; i++) {
             leftExistProof.path[i].prefix =
                 decoded.proofs[0].nonexist.left.path[i].prefix;
             leftExistProof.path[i].suffix =
@@ -276,7 +276,7 @@ contract ICS23Test is Test {
         rightExistProof.path = new UnionIcs23.InnerOp[](
             decoded.proofs[0].nonexist.right.path.length
         );
-        for (uint256 i = 0; i < rightExistProof.path.length; i++) {
+        for (uint256 i; i < rightExistProof.path.length; i++) {
             rightExistProof.path[i].prefix =
                 decoded.proofs[0].nonexist.right.path[i].prefix;
             rightExistProof.path[i].suffix =
@@ -293,7 +293,7 @@ contract ICS23Test is Test {
 
         existProof2.path =
             new UnionIcs23.InnerOp[](decoded.proofs[1].exist.path.length);
-        for (uint256 i = 0; i < existProof2.path.length; i++) {
+        for (uint256 i; i < existProof2.path.length; i++) {
             existProof2.path[i].prefix = decoded.proofs[1].exist.path[i].prefix;
             existProof2.path[i].suffix = decoded.proofs[1].exist.path[i].suffix;
         }

@@ -1196,7 +1196,7 @@ library IbcCoreChannelV1QueryChannelsResponse {
          */
         IbcCoreChannelV1IdentifiedChannel.Data[] memory tmp = new IbcCoreChannelV1IdentifiedChannel
             .Data[](self.channels.length + 1);
-        for (uint256 i = 0; i < self.channels.length; i++) {
+        for (uint256 i; i < self.channels.length; i++) {
             tmp[i] = self.channels[i];
         }
         tmp[self.channels.length] = value;
@@ -1887,7 +1887,7 @@ library IbcCoreChannelV1QueryConnectionChannelsResponse {
          */
         IbcCoreChannelV1IdentifiedChannel.Data[] memory tmp = new IbcCoreChannelV1IdentifiedChannel
             .Data[](self.channels.length + 1);
-        for (uint256 i = 0; i < self.channels.length; i++) {
+        for (uint256 i; i < self.channels.length; i++) {
             tmp[i] = self.channels[i];
         }
         tmp[self.channels.length] = value;
@@ -4421,7 +4421,7 @@ library IbcCoreChannelV1QueryPacketCommitmentsResponse {
          */
         IbcCoreChannelV1PacketState.Data[] memory tmp =
             new IbcCoreChannelV1PacketState.Data[](self.commitments.length + 1);
-        for (uint256 i = 0; i < self.commitments.length; i++) {
+        for (uint256 i; i < self.commitments.length; i++) {
             tmp[i] = self.commitments[i];
         }
         tmp[self.commitments.length] = value;
@@ -5808,7 +5808,7 @@ library IbcCoreChannelV1QueryPacketAcknowledgementsRequest {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.packet_commitment_sequences = new uint64[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
             p += sz;
             r.packet_commitment_sequences[i] = x;
@@ -6017,7 +6017,7 @@ library IbcCoreChannelV1QueryPacketAcknowledgementsRequest {
          */
         uint64[] memory tmp =
             new uint64[](self.packet_commitment_sequences.length + 1);
-        for (uint256 i = 0; i < self.packet_commitment_sequences.length; i++) {
+        for (uint256 i; i < self.packet_commitment_sequences.length; i++) {
             tmp[i] = self.packet_commitment_sequences[i];
         }
         tmp[self.packet_commitment_sequences.length] = value;
@@ -6435,7 +6435,7 @@ library IbcCoreChannelV1QueryPacketAcknowledgementsResponse {
          */
         IbcCoreChannelV1PacketState.Data[] memory tmp = new IbcCoreChannelV1PacketState
             .Data[](self.acknowledgements.length + 1);
-        for (uint256 i = 0; i < self.acknowledgements.length; i++) {
+        for (uint256 i; i < self.acknowledgements.length; i++) {
             tmp[i] = self.acknowledgements[i];
         }
         tmp[self.acknowledgements.length] = value;
@@ -6648,7 +6648,7 @@ library IbcCoreChannelV1QueryUnreceivedPacketsRequest {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.packet_commitment_sequences = new uint64[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
             p += sz;
             r.packet_commitment_sequences[i] = x;
@@ -6817,7 +6817,7 @@ library IbcCoreChannelV1QueryUnreceivedPacketsRequest {
          */
         uint64[] memory tmp =
             new uint64[](self.packet_commitment_sequences.length + 1);
-        for (uint256 i = 0; i < self.packet_commitment_sequences.length; i++) {
+        for (uint256 i; i < self.packet_commitment_sequences.length; i++) {
             tmp[i] = self.packet_commitment_sequences[i];
         }
         tmp[self.packet_commitment_sequences.length] = value;
@@ -6988,7 +6988,7 @@ library IbcCoreChannelV1QueryUnreceivedPacketsResponse {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.sequences = new uint64[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
             p += sz;
             r.sequences[i] = x;
@@ -7174,7 +7174,7 @@ library IbcCoreChannelV1QueryUnreceivedPacketsResponse {
          * First resize the array. Then add the new element to the end.
          */
         uint64[] memory tmp = new uint64[](self.sequences.length + 1);
-        for (uint256 i = 0; i < self.sequences.length; i++) {
+        for (uint256 i; i < self.sequences.length; i++) {
             tmp[i] = self.sequences[i];
         }
         tmp[self.sequences.length] = value;
@@ -7386,7 +7386,7 @@ library IbcCoreChannelV1QueryUnreceivedAcksRequest {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.packet_ack_sequences = new uint64[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
             p += sz;
             r.packet_ack_sequences[i] = x;
@@ -7554,7 +7554,7 @@ library IbcCoreChannelV1QueryUnreceivedAcksRequest {
          * First resize the array. Then add the new element to the end.
          */
         uint64[] memory tmp = new uint64[](self.packet_ack_sequences.length + 1);
-        for (uint256 i = 0; i < self.packet_ack_sequences.length; i++) {
+        for (uint256 i; i < self.packet_ack_sequences.length; i++) {
             tmp[i] = self.packet_ack_sequences[i];
         }
         tmp[self.packet_ack_sequences.length] = value;
@@ -7725,7 +7725,7 @@ library IbcCoreChannelV1QueryUnreceivedAcksResponse {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.sequences = new uint64[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
             p += sz;
             r.sequences[i] = x;
@@ -7911,7 +7911,7 @@ library IbcCoreChannelV1QueryUnreceivedAcksResponse {
          * First resize the array. Then add the new element to the end.
          */
         uint64[] memory tmp = new uint64[](self.sequences.length + 1);
-        for (uint256 i = 0; i < self.sequences.length; i++) {
+        for (uint256 i; i < self.sequences.length; i++) {
             tmp[i] = self.sequences[i];
         }
         tmp[self.sequences.length] = value;

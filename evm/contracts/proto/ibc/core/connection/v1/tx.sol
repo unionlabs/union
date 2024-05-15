@@ -1309,7 +1309,7 @@ library IbcCoreConnectionV1MsgConnectionOpenTry {
          */
         IbcCoreConnectionV1Version.Data[] memory tmp = new IbcCoreConnectionV1Version
             .Data[](self.counterparty_versions.length + 1);
-        for (uint256 i = 0; i < self.counterparty_versions.length; i++) {
+        for (uint256 i; i < self.counterparty_versions.length; i++) {
             tmp[i] = self.counterparty_versions[i];
         }
         tmp[self.counterparty_versions.length] = value;

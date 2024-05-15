@@ -335,7 +335,7 @@ library TendermintCryptoProof {
          * First resize the array. Then add the new element to the end.
          */
         bytes[] memory tmp = new bytes[](self.aunts.length + 1);
-        for (uint256 i = 0; i < self.aunts.length; i++) {
+        for (uint256 i; i < self.aunts.length; i++) {
             tmp[i] = self.aunts[i];
         }
         tmp[self.aunts.length] = value;
@@ -1451,7 +1451,7 @@ library TendermintCryptoProofOps {
          */
         TendermintCryptoProofOp.Data[] memory tmp =
             new TendermintCryptoProofOp.Data[](self.ops.length + 1);
-        for (uint256 i = 0; i < self.ops.length; i++) {
+        for (uint256 i; i < self.ops.length; i++) {
             tmp[i] = self.ops[i];
         }
         tmp[self.ops.length] = value;

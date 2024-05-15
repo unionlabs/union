@@ -370,7 +370,7 @@ library IbcApplicationsTransferV1GenesisState {
          */
         IbcApplicationsTransferV1DenomTrace.Data[] memory tmp = new IbcApplicationsTransferV1DenomTrace
             .Data[](self.denom_traces.length + 1);
-        for (uint256 i = 0; i < self.denom_traces.length; i++) {
+        for (uint256 i; i < self.denom_traces.length; i++) {
             tmp[i] = self.denom_traces[i];
         }
         tmp[self.denom_traces.length] = value;

@@ -276,7 +276,7 @@ library IbcLightclientsWasmV1GenesisState {
          */
         IbcLightclientsWasmV1GenesisContract.Data[] memory tmp = new IbcLightclientsWasmV1GenesisContract
             .Data[](self.contracts.length + 1);
-        for (uint256 i = 0; i < self.contracts.length; i++) {
+        for (uint256 i; i < self.contracts.length; i++) {
             tmp[i] = self.contracts[i];
         }
         tmp[self.contracts.length] = value;

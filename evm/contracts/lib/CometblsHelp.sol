@@ -12,7 +12,7 @@ import "./Encoder.sol";
 import "./MerkleTree.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
-import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
+// import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
 struct OptimizedConsensusState {
     uint64 timestamp;
