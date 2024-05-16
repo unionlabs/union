@@ -34,7 +34,6 @@ Counterparty
 Cryptopunks
 Cypherpunk
 DATADIR
-datas
 DYLD
 Datasource
 Denoms
@@ -382,6 +381,7 @@ dashoffset
 dataconnector
 datadir
 datagram
+datas
 datetime
 debouncer
 delegators
