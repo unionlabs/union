@@ -60,14 +60,8 @@ pub struct MsgWriteDiferredAck {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub packet: ::core::option::Option<super::super::ibc::core::channel::v1::Packet>,
-    #[prost(message, optional, tag = "3")]
-    pub data: ::core::option::Option<
-        super::super::ibc::applications::transfer::v2::FungibleTokenPacketData,
-    >,
-    #[prost(message, optional, tag = "4")]
     pub diferred_packet_info: ::core::option::Option<DiferredPacketInfo>,
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "3")]
     pub ack: ::core::option::Option<super::super::ibc::core::channel::v1::Acknowledgement>,
 }
 impl ::prost::Name for MsgWriteDiferredAck {
@@ -107,7 +101,7 @@ pub struct DiferredPacketInfo {
     #[prost(bytes = "vec", tag = "8")]
     pub packet_data: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "9")]
-    pub refund_sequence: u64,
+    pub sequence: u64,
     #[prost(uint64, tag = "10")]
     pub timeout: u64,
     #[prost(bool, tag = "11")]
