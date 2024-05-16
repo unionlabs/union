@@ -126,6 +126,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
                                     cs.chain_id().to_string()
                                 }
+                                WasmClientType::Linea => todo!("We still need to add linea"),
                             };
 
                             datas.push(Data {
@@ -157,11 +158,12 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                 let provider = Provider::<Http>::try_from(eth_config.url.clone().as_str()).unwrap();
 
                 let chain_id = provider.get_chainid().await.unwrap().as_u64().to_string();
+                dbg!("hi");
 
                 let eth_clients = sqlx::query!(
                     r#"
                     SELECT
-                        cl.transaction_hash, cl.client, ch.id
+                        cl.transaction_hash, cl.client_id, ch.id
                     FROM
                         v0.evm_client_created cl
                     JOIN
@@ -178,6 +180,15 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                 .unwrap();
 
                 for record in eth_clients {
+                    let Some(client_id) = record.client_id else {
+                        tracing::info!(
+                            internal_db_chain_id = record.id,
+                            %chain_id,
+                            "skipping record"
+                        );
+                        continue;
+                    };
+
                     let tx = provider
                         .get_transaction(
                             ethers::types::H256::from_str(&record.transaction_hash.unwrap())
@@ -198,7 +209,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
                             datas.push(Data {
                                 chain_id: record.id,
-                                client_id: record.client.unwrap().clone(),
+                                client_id,
                                 counterparty_chain_id: cs.chain_id.to_string(),
                             })
                         }

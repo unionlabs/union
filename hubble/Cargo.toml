@@ -20,7 +20,7 @@ path = "src/main.rs"
 [dependencies]
 axum                = { workspace = true, features = ["macros", "tokio"] }
 base64              = { workspace = true }
-clap                = { workspace = true, features = ["derive", "env"] }
+clap                = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre          = { workspace = true, features = ["default"] }
 contracts.workspace = true
 ethers              = { workspace = true, features = ["default", "std"] }
