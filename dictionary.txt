@@ -11,6 +11,7 @@ BLOCKSCOUT
 Berachain
 Berachain's
 Beriker
+rdns
 Bitfield
 Bitvector
 Boiron

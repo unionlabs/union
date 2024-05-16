@@ -16,7 +16,7 @@ export type Address = EvmAddress | CosmosAddress
 
 // shared types between wallets configs
 export type ChainWalletStore<TChainSource extends "cosmos" | "evm"> = {
-  chain: TChainSource extends "evm" ? "sepolia" : "cosmos"
+  chain: (TChainSource extends "evm" ? "sepolia" : "cosmos") | String
   hoverState: "hover" | "none"
   address: TChainSource extends "evm" ? EvmAddress | undefined : string | undefined
   connectionStatus: State["status"]

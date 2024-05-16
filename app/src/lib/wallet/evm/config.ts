@@ -4,24 +4,24 @@ import {
   webSocket,
   reconnect,
   serialize,
+  getClient,
+  getAccount,
+  getChainId,
+  watchClient,
   deserialize,
   createConfig,
+  watchAccount,
+  watchChainId,
+  getConnectors,
+  getConnections,
+  watchConnectors,
+  watchConnections,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage,
-  getAccount,
-  watchAccount,
-  getClient,
-  watchClient,
-  getConnectors,
-  watchConnectors,
-  getConnections,
-  watchConnections,
-  getChainId,
-  watchChainId
+  createStorage as createWagmiStorage
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
 import { sepolia } from "@wagmi/core/chains"
@@ -53,6 +53,7 @@ export const config = createConfig({
   },
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,
+
   storage: createWagmiStorage({
     serialize,
     deserialize,
@@ -137,13 +138,25 @@ export const connectors = readable(getConnectors(config), set =>
 export const connections = readable(getConnections(config), set =>
   watchConnections(config, { onChange: set })
 )
-export const provider = readable<unknown | undefined>(undefined, set =>
-  watchAccount(config, {
-    onChange: async account => {
-      if (!account.connector) return set(undefined)
-      set(await account.connector?.getProvider({ chainId: account.chainId }))
-    }
-  })
+export const provider = readable<() => Promise<undefined | unknown>>(
+  async () =>
+    await getConnectors(config)
+      .find(async connector => await connector.isAuthorized())
+      ?.getProvider(),
+  set => {
+    watchConnectors(config, {
+      onChange: (connections, previousConnectors) => {
+        const connector = connections.find(connector => connector.isAuthorized())
+        if (connector) set(() => connector.getProvider({ chainId: getChainId(config) }))
+      }
+    })
+    watchAccount(config, {
+      onChange: account => {
+        if (!account.connector) return set(async () => undefined)
+        set(async () => await account.connector?.getProvider({ chainId: getChainId(config) }))
+      }
+    })
+  }
 )
 
 export {
@@ -184,7 +197,7 @@ export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 watchAccount(config, {
   onChange: account =>
     sepoliaStore.set({
-      chain: "sepolia",
+      chain: account.chain?.name ?? "sepolia",
       hoverState: "none",
       address: account.address,
       connectionStatus: account.status,

@@ -3,7 +3,15 @@ import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { UnionClient } from "#/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, erc20Abi, publicActions, createWalletClient, createPublicClient, walletActions } from "viem"
+import { walletActionsEip5792 } from "viem/experimental"
+import {
+  http,
+  erc20Abi,
+  publicActions,
+  createWalletClient,
+  createPublicClient,
+  walletActions
+} from "viem"
 
 /* `bun scripts/sepolia-to-union.ts --private-key "..."` */
 
@@ -17,10 +25,13 @@ if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
-const evmSigner = createPublicClient({
+const evmSigner = createWalletClient({
   chain: sepolia,
+  account: evmAccount,
   transport: http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
-}).extend(walletActions)
+})
+  .extend(publicActions)
+  .extend(walletActionsEip5792())
 
 const unionClient = await UnionClient.connectWithSecret({
   rpcUrl: "https://rpc.testnet.bonlulu.uno",
@@ -55,7 +66,7 @@ const linkFromSepoliaToUnion = await unionClient.transferEvmAsset({
   account: evmAccount,
   receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
-  amount: 2n,
+  amount: 1n,
   sourceChannel: "channel-0",
   sourcePort: "0x3d0eb16ad2619666dbde1921282cd885b58eeefe",
   contractAddress: "0x3d0eb16ad2619666dbde1921282cd885b58eeefe", // SEPOLIA_UCS01_ADDRESS
