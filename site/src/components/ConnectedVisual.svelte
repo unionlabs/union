@@ -282,6 +282,7 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
         href={url}
         aria-label={id}
         target="_blank"
+        rel="noopener noreferrer"
         class={id === "union" ? "pointer-events-none" : ""}
       >
         <circle

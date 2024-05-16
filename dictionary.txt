@@ -7,6 +7,7 @@ Accs
 Acknowledgemets
 Acks
 Axelar
+BAYC
 BLOCKSCOUT
 Beriker
 Bitfield
@@ -18,6 +19,7 @@ CFLAGS
 CHAINSTACK
 CMOV
 Celestia
+Celestine
 Certus
 Chainer
 Cleper
@@ -29,6 +31,7 @@ Connor
 Cosmoverse
 Counterparties
 Counterparty
+Cryptopunks
 Cypherpunk
 DATADIR
 DYLD
@@ -62,6 +65,7 @@ HMAC
 Halfnode
 Hashable
 Hasher
+Hedgies
 Hhvf
 Hyperlane
 IAVL
@@ -119,6 +123,7 @@ Polkadot
 Prefixer
 Protobuf
 Proxiable
+Pruijs
 RUSTFLAGS
 Recvs
 Redelegate
@@ -171,6 +176,7 @@ VYPER
 Vals
 Verkle
 Viridis
+Vitarana
 Wagmi
 Wrapf
 XMSB
@@ -275,6 +281,7 @@ boneh
 bonlulu
 bools
 bootnode
+brainer
 builtins
 bumpp
 bunx
@@ -1096,6 +1103,7 @@ wasmtypes
 wasmvm
 wasmvmstatic
 wasmvmtypes
+webp
 webpki
 wght
 whistleblower
