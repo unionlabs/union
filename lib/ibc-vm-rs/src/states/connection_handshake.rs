@@ -208,7 +208,10 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         delay_block_period: 0,
                         proof: connection_end_proof,
                         path: MerklePath {
-                            key_path: vec![format!("connections/{}", counterparty_connection_id)],
+                            key_path: vec![
+                                "ibc".to_string(),
+                                format!("connections/{}", counterparty_connection_id),
+                            ],
                         },
                         // TODO(aeryz): generic over the encoding
                         value: expected_counterparty.encode_as::<Proto>(),
@@ -293,7 +296,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 let client_id = connection.client_id.clone();
 
                 let expected_counterparty = ConnectionEnd {
-                    client_id: connection.client_id.clone(),
+                    client_id: connection.counterparty.client_id.clone(),
                     versions: DEFAULT_IBC_VERSION.clone(),
                     state: connection::state::State::Tryopen,
                     counterparty: Counterparty {
@@ -310,8 +313,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 Either::Left((
                     ConnectionOpenAck::ConnectionStateVerified {
                         client_id: connection.client_id.clone(),
-                        counterparty_connection_id,
-                        connection_id: connection_id.clone(),
+                        counterparty_connection_id: counterparty_connection_id.clone(),
+                        connection_id,
                         connection,
                     },
                     IbcMsg::VerifyMembership {
@@ -321,7 +324,10 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         delay_block_period: 0,
                         proof: connection_end_proof,
                         path: MerklePath {
-                            key_path: vec![format!("connections/{connection_id}")],
+                            key_path: vec![
+                                "ibc".to_string(),
+                                format!("connections/{counterparty_connection_id}"),
+                            ],
                         },
                         // TODO(aeryz): generic encoding
                         value: expected_counterparty.encode_as::<Proto>(),
@@ -424,7 +430,10 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         delay_block_period: 0,
                         proof: connection_end_proof,
                         path: MerklePath {
-                            key_path: vec![format!("connections/{}", counterparty_connection_id)],
+                            key_path: vec![
+                                "ibc".to_string(),
+                                format!("connections/{counterparty_connection_id}"),
+                            ],
                         },
                         // TODO(aeryz): generic encoding
                         value: expected_counterparty.encode_as::<Proto>(),
