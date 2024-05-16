@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -43,7 +44,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.30.0",
     "vaul-svelte": "^0.3.0",
-    "viem": "^2.10.5"
+    "viem": "^2.10.8"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.3",
@@ -73,7 +74,7 @@
     "autoprefixer": "^10.4.19",
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
-    "fluid-tailwind": "^0.2.2",
+    "fluid-tailwind": "^0.3.0",
     "graphql": "^16.8.1",
     "jsr": "^0.12.4",
     "patch-package": "^8.0.0",
@@ -93,7 +94,7 @@
     "tailwindcss": "^3.4.3",
     "tailwindcss-animate": "^1.0.7",
     "tslib": "^2.6.2",
-    "tsx": "^4.10.2",
+    "tsx": "^4.10.3",
     "typed-query-selector": "^2.11.2",
     "typescript": "^5.4.5",
     "unplugin-icons": "^0.19.0",

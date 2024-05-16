@@ -14,12 +14,18 @@ import aspectRatioPlugin from "@tailwindcss/aspect-ratio"
 import containerQueriesPlugin from "@tailwindcss/container-queries"
 
 export default (<Config>{
-  darkMode: ["class"],
   content: {
     extract: fluidExtract,
     files: ["./src/**/*.{html,js,svelte,ts}"]
   },
+  experimental: {
+    matchVariant: true,
+    optimizeUniversalDefaults: true
+  },
+  dark: "class",
+
   safelist: ["dark"],
+  darkMode: ["class"],
   theme: {
     fontSize: fluidFontSize,
     screens: fluidScreens,
