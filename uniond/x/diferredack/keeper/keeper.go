@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -41,7 +40,7 @@ func NewKeeper(
 	}
 }
 
-func (k *Keeper) WriteDiferredAck(ctx sdk.Context, packet channeltypes.Packet, data transfertypes.FungibleTokenPacketData, diferredPacketInfo *types.DiferredPacketInfo, ack channeltypes.Acknowledgement) error {
+func (k *Keeper) WriteDiferredAck(ctx sdk.Context, diferredPacketInfo *types.DiferredPacketInfo, ack channeltypes.Acknowledgement) error {
 	_, chanCap, err := k.channelKeeper.LookupModuleByChannel(ctx, diferredPacketInfo.RefundPortId, diferredPacketInfo.RefundChannelId)
 
 	if err != nil {
@@ -49,7 +48,7 @@ func (k *Keeper) WriteDiferredAck(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	return k.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, channeltypes.Packet{
-		Sequence:           diferredPacketInfo.RefundSequence,
+		Sequence:           diferredPacketInfo.Sequence,
 		SourcePort:         diferredPacketInfo.PacketSrcPortId,
 		SourceChannel:      diferredPacketInfo.PacketSrcChannelId,
 		DestinationPort:    diferredPacketInfo.RefundPortId,

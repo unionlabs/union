@@ -71,7 +71,7 @@ func PerformWriteDiferredAck(diferredAckKeeper *diferredackkeeper.Keeper, ctx sd
 
 	msgServer := diferredackkeeper.NewMsgServerImpl(*diferredAckKeeper)
 
-	msgWriteDiferredAck := diferredacktypes.NewMsgWriteDiferredAck(writeDiferredAck.Packet, writeDiferredAck.Data, writeDiferredAck.DiferredPacketInfo, writeDiferredAck.Ack)
+	msgWriteDiferredAck := diferredacktypes.NewMsgWriteDiferredAck(writeDiferredAck.DiferredPacketInfo, writeDiferredAck.Ack)
 
 	if err := msgWriteDiferredAck.Ack.ValidateBasic(); err != nil {
 		return nil, errorsmod.Wrap(err, "content of write msg diferred ack is invalid")

@@ -19,10 +19,8 @@ message MsgWriteDiferredAck {
   option (cosmos.msg.v1.signer) = "sender";
 
   string                                               sender             = 1 [ (gogoproto.moretags) = "yaml:\"sender\"" ];
-  ibc.core.channel.v1.Packet                           packet             = 2;
-  ibc.applications.transfer.v2.FungibleTokenPacketData data               = 3;
-  DiferredPacketInfo                                   diferredPacketInfo = 4;
-  ibc.core.channel.v1.Acknowledgement                  ack                = 5;
+  DiferredPacketInfo                                   diferredPacketInfo = 2;
+  ibc.core.channel.v1.Acknowledgement                  ack                = 3;
 }
 
 message MsgWriteDiferredAckResponse {
@@ -38,7 +36,7 @@ message DiferredPacketInfo {
   uint64 packet_timeout_timestamp = 6;
   string packet_timeout_height    = 7;
   bytes  packet_data              = 8;
-  uint64 refund_sequence          = 9;
+  uint64 sequence                 = 9;
   uint64 timeout                  = 10;
   bool   nonrefundable            = 11;
 }
