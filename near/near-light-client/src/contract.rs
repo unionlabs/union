@@ -73,19 +73,19 @@ impl Contract {
             &consensus_state.state_root,
             &self.client_state.ibc_account_id,
             &key,
-            Some(&value),
+            Some(&borsh::to_vec(&value).unwrap()),
         )
     }
 
-    fn verify_client_message(&self, client_msg: Vec<u8>) -> bool {
+    pub fn verify_client_message(&self, client_msg: Vec<u8>) -> bool {
         true
     }
 
-    fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
+    pub fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
         false
     }
 
-    fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {
+    pub fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {
         let consensus_state: (u64, ConsensusState) = borsh::from_slice(&client_msg).unwrap();
         self.consensus_states
             .insert(consensus_state.0, consensus_state.1.clone());
@@ -103,12 +103,12 @@ impl Contract {
         )
     }
 
-    fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>) {}
+    pub fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>) {}
 }
 
 fn key_from_path(path: &str) -> Vec<u8> {
     let mut commitments: Vec<u8> = Vec::new();
-    commitments.extend(b"commtmentsm");
-    commitments.extend(borsh::to_vec(path.as_bytes()).unwrap());
-    env::sha256(&commitments)
+    commitments.extend(b"commitments");
+    commitments.extend(borsh::to_vec(path).unwrap());
+    commitments
 }

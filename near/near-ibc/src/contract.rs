@@ -43,7 +43,7 @@ impl IbcHost for Contract {
     }
 
     fn commit_raw(&mut self, key: String, value: Vec<u8>) {
-        self.commitments.insert(key, value);
+        self.commitments.insert(&key, &value);
     }
 
     fn next_connection_identifier(&mut self) -> Result<ConnectionId, ()> {
@@ -61,12 +61,12 @@ impl IbcHost for Contract {
 
     fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T> {
         self.commitments
-            .get(key)
-            .map(|item| T::decode(item).unwrap())
+            .get(&key.to_string())
+            .map(|item| T::decode(&item).unwrap())
     }
 
     fn commit<T: Encode<Proto>>(&mut self, key: String, value: T) {
-        self.commitments.insert(key, value.encode());
+        self.commitments.insert(&key, &value.encode());
     }
 
     fn next_channel_identifier(&mut self) -> Result<ChannelId, ()> {
@@ -77,7 +77,9 @@ impl IbcHost for Contract {
     }
 
     fn read_raw(&self, key: &str) -> Option<Vec<u8>> {
-        self.commitments.get(key).map(|item| item.clone())
+        self.commitments
+            .get(&key.to_string())
+            .map(|item| item.clone())
     }
 
     fn current_height(&self) -> Height {
@@ -100,7 +102,7 @@ impl IbcHost for Contract {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Owner)]
 pub struct Contract {
-    commitments: UnorderedMap<String, Vec<u8>>,
+    commitments: LookupMap<String, Vec<u8>>,
     client_index: u64,
     connection_index: u64,
     channel_index: u64,
@@ -113,7 +115,7 @@ pub struct Contract {
 impl Default for Contract {
     fn default() -> Self {
         Contract {
-            commitments: UnorderedMap::new(b"commitments".as_slice()),
+            commitments: LookupMap::new(b"commitments".as_slice()),
             client_index: 0,
             channel_index: 0,
             account_ids: UnorderedMap::new(b"account_ids".as_slice()),
@@ -134,14 +136,14 @@ impl Contract {
                 entry.insert(account_id.clone());
             }
         }
-        match self.account_ids.entry("AAAAAAAAAAAAAAAAAAAAA".to_string()) {
-            unordered_map::Entry::Occupied(_) => panic!("already registered"),
-            unordered_map::Entry::Vacant(entry) => {
-                entry.insert(account_id.clone());
-            }
-        }
-        self.thisisfortest
-            .insert(&"BBBBBBBBBB".to_string(), &account_id);
+        // match self.account_ids.entry("AAAAAAAAAAAAAAAAAAAAA".to_string()) {
+        //     unordered_map::Entry::Occupied(_) => panic!("already registered"),
+        //     unordered_map::Entry::Vacant(entry) => {
+        //         entry.insert(account_id.clone());
+        //     }
+        // }
+        // self.thisisfortest
+        //     .insert(&"BBBBBBBBBB".to_string(), &account_id);
     }
 
     pub fn create_client(
