@@ -61,15 +61,22 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum TryFromClientStateError {
-    MissingField(MissingField),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid chain id: {0:?}")]
     ChainId(FromDecStrErr),
-    ForkParameters(TryFromForkParametersError),
-    GenesisValidatorsRoot(InvalidLength),
-    IbcCommitmentSlot(InvalidLength),
-    TrustLevel(TryFromFractionError),
-    IbcContractAddress(InvalidLength),
+    #[error("invalid fork parameters")]
+    ForkParameters(#[source] TryFromForkParametersError),
+    #[error("invalid genesis validators root")]
+    GenesisValidatorsRoot(#[source] InvalidLength),
+    #[error("invalid ibc commitment slot")]
+    IbcCommitmentSlot(#[source] InvalidLength),
+    #[error("invalid trust level")]
+    TrustLevel(#[source] TryFromFractionError),
+    #[error("invalid ibc contract address")]
+    IbcContractAddress(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for ClientState {

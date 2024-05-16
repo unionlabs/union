@@ -1,37 +1,20 @@
 // @generated
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StorageProof {
-    #[prost(message, repeated, tag = "1")]
-    pub proofs: ::prost::alloc::vec::Vec<Proof>,
-}
-impl ::prost::Name for StorageProof {
-    const NAME: &'static str = "StorageProof";
-    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
-    }
-}
 /// Value returned by eth_getProof
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Proof {
+pub struct StorageProof {
     /// NOTE: U256
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
     /// NOTE: U256
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", repeated, tag = "3")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-impl ::prost::Name for Proof {
-    const NAME: &'static str = "Proof";
+impl ::prost::Name for StorageProof {
+    const NAME: &'static str = "StorageProof";
     const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)

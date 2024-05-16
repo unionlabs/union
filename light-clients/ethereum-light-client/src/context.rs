@@ -1,4 +1,4 @@
-use ethereum_verifier::LightClientContext as TLightClientContext;
+use ethereum_verifier::context::LightClientContext as TLightClientContext;
 use unionlabs::{
     ethereum::config::ChainSpec,
     ibc::lightclients::ethereum::{

@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
+use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     hash::H256,
@@ -11,13 +11,13 @@ use unionlabs::{
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
     #[error("invalid contract address proof: {0}")]
-    InvalidContractAddressProof(#[source] ethereum_verifier::Error),
+    InvalidContractAddressProof(#[source] ethereum_verifier::error::Error),
     #[error("invalid _latestConfirmed proof: {0}")]
-    InvalidLatestConfirmedProof(#[source] ethereum_verifier::Error),
+    InvalidLatestConfirmedProof(#[source] ethereum_verifier::error::Error),
     #[error("invalid _nodes[_latestConfirmed].confirmData proof: {0}")]
-    InvalidNodeConfirmDataProof(#[source] ethereum_verifier::Error),
+    InvalidNodeConfirmDataProof(#[source] ethereum_verifier::error::Error),
     #[error("invalid l2 proof: {0}")]
-    InvalidL2Proof(#[source] ethereum_verifier::Error),
+    InvalidL2Proof(#[source] ethereum_verifier::error::Error),
 }
 
 pub fn verify_header(
@@ -38,18 +38,16 @@ pub fn verify_header(
     verify_storage_proof(
         header.l1_account_proof.storage_root,
         client_state.l1_latest_confirmed_slot,
-        &rlp::encode(&header.l1_latest_confirmed_slot_proof.proofs[0].value),
-        &header.l1_latest_confirmed_slot_proof.proofs[0].proof,
+        &rlp::encode(&header.l1_latest_confirmed_slot_proof.value),
+        &header.l1_latest_confirmed_slot_proof.proof,
     )
     .map_err(Error::InvalidLatestConfirmedProof)?;
 
     // Verify that the node's confirmData is correct
-    let expected_confirm_data = H256::from(
-        Keccak256::new()
-            .chain_update(header.l2_header.hash())
-            .chain_update(header.l2_header.extra_data)
-            .finalize(),
-    );
+    let expected_confirm_data = Keccak256::new()
+        .chain_update(header.l2_header.hash())
+        .chain_update(header.l2_header.extra_data)
+        .finalize();
 
     // Verify that the l1 _nodes[_latestConfirmed].confirmData is part of the l1 account root
     let key = nodes_confirm_data_mapping_key(
@@ -61,8 +59,8 @@ pub fn verify_header(
     verify_storage_proof(
         header.l1_account_proof.storage_root,
         key,
-        &rlp::encode(&U256::from_be_bytes(expected_confirm_data.0)),
-        &header.l1_nodes_slot_proof.proofs[0].proof,
+        &rlp::encode(&U256::from_be_bytes(expected_confirm_data.into())),
+        &header.l1_nodes_slot_proof.proof,
     )
     .map_err(Error::InvalidNodeConfirmDataProof)?;
 

@@ -9,7 +9,7 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ibc::{core::client::height::Height, lightclients::scroll::client_state::ClientState},
+    ibc::lightclients::linea::client_state::ClientState,
 };
 
 use crate::{client::LineaLightClient, errors::Error};
@@ -29,23 +29,14 @@ pub fn instantiate(
         ProtoConsensusState {
             data: msg.consensus_state.into(),
         },
-        &Height {
-            revision_number: 0,
-            revision_height: client_state.latest_slot,
-        },
+        &client_state.l1_latest_height,
     );
     save_proto_client_state::<LineaLightClient>(
         deps,
         ProtoClientState {
             data: msg.client_state.into(),
             checksum: msg.checksum.into(),
-            latest_height: Some(
-                Height {
-                    revision_number: 0,
-                    revision_height: client_state.latest_slot,
-                }
-                .into(),
-            ),
+            latest_height: Some(client_state.l1_latest_height.into()),
         },
     );
     Ok(Response::default())

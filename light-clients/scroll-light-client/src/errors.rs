@@ -1,3 +1,4 @@
+use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
 use scroll_codec::{
     batch_header::BatchHeaderDecodeError,
@@ -61,14 +62,14 @@ pub enum Error {
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error("invalid commitment key, expected ({expected}) but found ({found})")]
-    InvalidCommitmentKey { expected: H256, found: H256 },
+    #[error(transparent)]
+    InvalidCommitmentKey(#[from] InvalidCommitmentKey),
+
+    #[error(transparent)]
+    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
 
     #[error("proof is empty")]
     EmptyProof,
-
-    #[error("batching proofs are not supported")]
-    BatchingProofsNotSupported,
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },

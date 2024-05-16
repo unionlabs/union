@@ -1,6 +1,6 @@
 use unionlabs::bls::{BlsPublicKey, BlsSignature};
 
-use crate::Error;
+use crate::error::Error;
 
 pub fn fast_aggregate_verify(
     public_keys: &[&BlsPublicKey],

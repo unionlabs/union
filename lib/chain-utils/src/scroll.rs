@@ -117,16 +117,13 @@ impl EthereumChain for Scroll {
         };
 
         unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
-            proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                key: proof.key,
-                value: proof.value,
-                proof: proof
-                    .proof
-                    .into_iter()
-                    .map(|bytes| bytes.to_vec())
-                    .collect(),
-            }]
-            .to_vec(),
+            key: proof.key,
+            value: proof.value,
+            proof: proof
+                .proof
+                .into_iter()
+                .map(|bytes| bytes.to_vec())
+                .collect(),
         }
     }
 }

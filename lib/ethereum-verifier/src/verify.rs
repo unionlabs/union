@@ -25,13 +25,14 @@ use unionlabs::{
 };
 
 use crate::{
+    context::LightClientContext,
+    error::Error,
     primitives::{Account, GENESIS_SLOT},
     rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
     utils::{
         compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
         compute_sync_committee_period_at_slot, validate_merkle_branch,
     },
-    Error, LightClientContext,
 };
 
 type MinSyncCommitteeParticipants<Ctx> =
@@ -372,7 +373,7 @@ mod tests {
     use serde::Deserialize;
     use unionlabs::{
         ethereum::config::{Mainnet, SEPOLIA},
-        ibc::lightclients::ethereum::{proof::Proof, sync_committee::SyncCommittee},
+        ibc::lightclients::ethereum::{storage_proof::StorageProof, sync_committee::SyncCommittee},
     };
 
     use super::*;
@@ -394,7 +395,7 @@ mod tests {
     #[derive(Deserialize)]
     struct TestProof {
         pub storage_root: H256,
-        pub storage_proof: Proof,
+        pub storage_proof: StorageProof,
     }
 
     lazy_static::lazy_static! {

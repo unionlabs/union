@@ -270,16 +270,13 @@ where
                     // REVIEW: is latest_batch_index a u64 or U256?
                     latest_batch_index: proof.value.try_into().unwrap(),
                     proof: StorageProof {
-                        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-                            value: proof.value.into(),
-                            proof: proof
-                                .proof
-                                .into_iter()
-                                .map(|bytes| bytes.to_vec())
-                                .collect(),
-                        }]
-                        .to_vec(),
+                        key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+                        value: proof.value.into(),
+                        proof: proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
                     },
                     __marker: PhantomData,
                 })
@@ -299,7 +296,7 @@ where
                     .get_proof(
                         ethers::types::H160::from(rollup_contract_address),
                         vec![H256(
-                            scroll_verifier::verify::batch_index_mapping_key(
+                            scroll_verifier::batch_index_mapping_key(
                                 finalized_root_slot,
                                 batch_index.into(),
                             )
@@ -329,16 +326,13 @@ where
                     batch_index,
                     finalized_state_root: proof.value.into(),
                     proof: StorageProof {
-                        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-                            value: proof.value.into(),
-                            proof: proof
-                                .proof
-                                .into_iter()
-                                .map(|bytes| bytes.to_vec())
-                                .collect(),
-                        }]
-                        .to_vec(),
+                        key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+                        value: proof.value.into(),
+                        proof: proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
                     },
                     __marker: PhantomData,
                 })
@@ -391,7 +385,7 @@ where
                     .get_proof(
                         ethers::types::H160::from(rollup_contract_address),
                         vec![H256(
-                            scroll_verifier::verify::batch_index_mapping_key(
+                            scroll_verifier::batch_index_mapping_key(
                                 committed_batches_slot,
                                 batch_index.into(),
                             )
@@ -420,16 +414,13 @@ where
                     height,
                     batch_index,
                     proof: StorageProof {
-                        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-                            value: proof.value.into(),
-                            proof: proof
-                                .proof
-                                .into_iter()
-                                .map(|bytes| bytes.to_vec())
-                                .collect(),
-                        }]
-                        .to_vec(),
+                        key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+                        value: proof.value.into(),
+                        proof: proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
                     },
                     __marker: PhantomData,
                 })

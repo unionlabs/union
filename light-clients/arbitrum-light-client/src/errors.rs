@@ -1,3 +1,4 @@
+use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
@@ -57,14 +58,14 @@ pub enum Error {
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error("invalid commitment key, expected ({expected}) but found ({found})")]
-    InvalidCommitmentKey { expected: H256, found: H256 },
+    #[error(transparent)]
+    InvalidCommitmentKey(#[from] InvalidCommitmentKey),
+
+    #[error(transparent)]
+    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
 
     #[error("proof is empty")]
     EmptyProof,
-
-    #[error("batching proofs are not supported")]
-    BatchingProofsNotSupported,
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
@@ -76,7 +77,7 @@ pub enum Error {
     HeaderVerify(#[from] arbitrum_verifier::Error),
 
     #[error("failed to verify storage: {0}")]
-    StorageVerify(#[from] ethereum_verifier::Error),
+    StorageVerify(#[from] ethereum_verifier::error::Error),
 
     #[error("the operation has not been implemented yet")]
     Unimplemented,

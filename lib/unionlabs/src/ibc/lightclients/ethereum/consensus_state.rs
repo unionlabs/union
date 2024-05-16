@@ -35,12 +35,16 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::ethereum::v1::Co
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromConsensusStateError {
-    CurrentSyncCommittee(InvalidLength),
-    NextSyncCommittee(InvalidLength),
-    StorageRoot(InvalidLength),
-    StateRoot(InvalidLength),
+    #[error("invalid current sync committee")]
+    CurrentSyncCommittee(#[source] InvalidLength),
+    #[error("invalid next sync committee")]
+    NextSyncCommittee(#[source] InvalidLength),
+    #[error("invalid storage root")]
+    StorageRoot(#[source] InvalidLength),
+    #[error("invalid state root")]
+    StateRoot(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ConsensusState> for ConsensusState {

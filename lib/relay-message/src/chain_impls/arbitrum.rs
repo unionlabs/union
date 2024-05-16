@@ -288,28 +288,22 @@ where
                     latest_confirmed,
                     // TODO: Extract this logic into a fn, we do it all over the place
                     latest_confirmed_slot_proof: StorageProof {
-                        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_be_bytes(latest_confirmed_slot_proof.key.0),
-                            value: latest_confirmed_slot_proof.value.into(),
-                            proof: latest_confirmed_slot_proof
-                                .proof
-                                .into_iter()
-                                .map(|bytes| bytes.to_vec())
-                                .collect(),
-                        }]
-                        .to_vec(),
+                        key: U256::from_be_bytes(latest_confirmed_slot_proof.key.0),
+                        value: latest_confirmed_slot_proof.value.into(),
+                        proof: latest_confirmed_slot_proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
                     },
                     nodes_slot_proof: StorageProof {
-                        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                            key: U256::from_be_bytes(nodes_slot_proof.key.0),
-                            value: nodes_slot_proof.value.into(),
-                            proof: nodes_slot_proof
-                                .proof
-                                .into_iter()
-                                .map(|bytes| bytes.to_vec())
-                                .collect(),
-                        }]
-                        .to_vec(),
+                        key: U256::from_be_bytes(nodes_slot_proof.key.0),
+                        value: nodes_slot_proof.value.into(),
+                        proof: nodes_slot_proof
+                            .proof
+                            .into_iter()
+                            .map(|bytes| bytes.to_vec())
+                            .collect(),
                     },
                     __marker: PhantomData,
                 })

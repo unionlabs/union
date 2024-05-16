@@ -12,6 +12,7 @@ use crate::{
 pub struct ClientState<Data> {
     pub data: Data,
     pub checksum: H256,
+    // #[deprecated = "use data.height()"]
     pub latest_height: Height,
 }
 
@@ -23,6 +24,7 @@ where
         Self {
             data: val.data.encode(),
             checksum: val.checksum.into(),
+            // #[allow(deprecated)]
             latest_height: Some(val.latest_height.into()),
         }
     }
@@ -53,6 +55,7 @@ where
     fn try_from(
         value: protos::ibc::lightclients::wasm::v1::ClientState,
     ) -> Result<Self, Self::Error> {
+        // #[allow(deprecated)]
         Ok(Self {
             data: Data::decode(&value.data).map_err(TryFromWasmClientStateError::Data)?,
             checksum: value

@@ -1,8 +1,13 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_verifier::{
-    compute_slot_at_timestamp, compute_sync_committee_period_at_slot, compute_timestamp_at_slot,
-    validate_light_client_update, validate_signature_supermajority, verify_account_storage_root,
-    verify_storage_absence, verify_storage_proof,
+    utils::{
+        compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
+        compute_timestamp_at_slot, validate_signature_supermajority,
+    },
+    verify::{
+        validate_light_client_update, verify_account_storage_root, verify_storage_absence,
+        verify_storage_proof,
+    },
 };
 use ics008_wasm_client::{
     storage_utils::{
@@ -13,11 +18,11 @@ use ics008_wasm_client::{
     },
     IbcClient, IbcClientError, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
 };
-use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{Decode, DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
+    ethereum::{ibc_commitment_key, keccak256},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -29,18 +34,21 @@ use unionlabs::{
             cometbls,
             ethereum::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
-                misbehaviour::Misbehaviour, proof::Proof, storage_proof::StorageProof,
+                misbehaviour::Misbehaviour, storage_proof::StorageProof,
             },
             wasm,
         },
     },
     ics24::Path,
+    id::ClientId,
     uint::U256,
 };
 
 use crate::{
-    consensus_state::TrustedConsensusState, context::LightClientContext,
-    custom_query::VerificationContext, errors::Error, eth_encoding::generate_commitment_key,
+    consensus_state::TrustedConsensusState,
+    context::LightClientContext,
+    custom_query::VerificationContext,
+    errors::{CanonicalizeStoredValueError, Error, InvalidCommitmentKey, StoredValueMismatch},
     Config,
 };
 
@@ -83,15 +91,8 @@ impl IbcClient for EthereumLightClient {
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.storage_root;
 
-        let storage_proof = {
-            let mut proofs = StorageProof::decode_as::<Proto>(&proof)
-                .map_err(|e| Error::DecodeFromProto {
-                    reason: format!("when decoding storage proof: {e:#?}"),
-                })?
-                .proofs;
-            ensure(proofs.len() == 1, Error::BatchingProofsNotSupported)?;
-            proofs.pop().ok_or(Error::EmptyProof)?
-        };
+        let storage_proof =
+            StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
         match value {
             StorageState::Occupied(value) => do_verify_membership(
@@ -484,54 +485,22 @@ fn do_verify_membership(
     path: String,
     storage_root: H256,
     ibc_commitment_slot: U256,
-    storage_proof: Proof,
+    storage_proof: StorageProof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
-    check_commitment_key(
-        &path,
-        ibc_commitment_slot,
-        H256(storage_proof.key.to_be_bytes()),
-    )?;
+    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
 
-    let path = path
-        .parse::<Path<String, Height>>()
-        .map_err(|_| Error::UnknownIbcPath(path))?;
-
-    let canonical_value = match path {
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(raw_value.as_ref())
-                .map_err(|e| Error::DecodeFromProto {
-                    reason: format!("{e:?}"),
-                })?
-                .0
-                .encode_as::<EthAbi>()
-        }
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode_as::<Proto>(raw_value.as_ref())
-        .map_err(|e| Error::DecodeFromProto {
-            reason: format!("{e:?}"),
-        })?
-        .0
-        .data
-        .encode_as::<EthAbi>(),
-        _ => raw_value,
-    };
-
-    // We store the hash of the data, not the data itself to the commitments map.
-    let expected_value_hash = H256::from(
-        sha3::Keccak256::new()
-            .chain_update(canonical_value)
-            .finalize(),
-    );
+    // we store the hash of the data, not the data itself to the commitments map
+    let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
     if expected_value_hash != proof_value {
-        return Err(Error::StoredValueMismatch {
+        return Err(StoredValueMismatch {
             expected: expected_value_hash,
             stored: proof_value,
-        });
+        }
+        .into());
     }
 
     verify_storage_proof(
@@ -543,18 +512,44 @@ fn do_verify_membership(
     .map_err(Error::VerifyStorageProof)
 }
 
+pub fn canonicalize_stored_value(
+    path: String,
+    raw_value: Vec<u8>,
+) -> Result<Vec<u8>, CanonicalizeStoredValueError> {
+    let path = path
+        .parse::<Path<ClientId, Height>>()
+        .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
+
+    let canonical_value = match path {
+        // proto(any<cometbls>) -> ethabi(cometbls)
+        Path::ClientState(_) => {
+            Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
+                .map_err(CanonicalizeStoredValueError::CometblsClientStateDecode)?
+                .0
+                .encode_as::<EthAbi>()
+        }
+        // proto(any<wasm<cometbls>>) -> ethabi(cometbls)
+        Path::ClientConsensusState(_) => Any::<
+            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+        >::decode(raw_value.as_ref())
+        .map_err(CanonicalizeStoredValueError::CometblsConsensusStateDecode)?
+        .0
+        .data
+        .encode_as::<EthAbi>(),
+        _ => raw_value,
+    };
+
+    Ok(canonical_value)
+}
+
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
 fn do_verify_non_membership(
     path: String,
     storage_root: H256,
     ibc_commitment_slot: U256,
-    storage_proof: Proof,
+    storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    check_commitment_key(
-        &path,
-        ibc_commitment_slot,
-        H256(storage_proof.key.to_be_bytes()),
-    )?;
+    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
 
     if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)
         .map_err(Error::VerifyStorageAbsence)?
@@ -565,12 +560,16 @@ fn do_verify_non_membership(
     }
 }
 
-fn check_commitment_key(path: &str, ibc_commitment_slot: U256, key: H256) -> Result<(), Error> {
-    let expected_commitment_key = generate_commitment_key(path, ibc_commitment_slot);
+pub fn check_commitment_key(
+    path: &str,
+    ibc_commitment_slot: U256,
+    key: U256,
+) -> Result<(), InvalidCommitmentKey> {
+    let expected_commitment_key = ibc_commitment_key(path, ibc_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
-        Err(Error::InvalidCommitmentKey {
+        Err(InvalidCommitmentKey {
             expected: expected_commitment_key,
             found: key,
         })
@@ -1009,11 +1008,11 @@ mod test {
 
     fn membership_data<T: serde::de::DeserializeOwned>(
         path: &str,
-    ) -> (Proof, String, U256, H256, T) {
+    ) -> (StorageProof, String, U256, H256, T) {
         let data: MembershipTest<T> =
             serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
 
-        let proof = Proof {
+        let proof = StorageProof {
             key: data.key,
             value: data.value,
             proof: data.proof.into_iter().map(Into::into).collect(),

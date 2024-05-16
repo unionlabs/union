@@ -1,7 +1,7 @@
 #![allow(clippy::disallowed_types)] // need to access the inner type to wrap it
 
 use core::{
-    fmt::Display,
+    fmt::{self, Display},
     iter::Sum,
     num::NonZeroUsize,
     ops::{Add, AddAssign, Div, Rem},
@@ -35,6 +35,16 @@ use crate::{
 #[repr(transparent)]
 #[debug("U256({})", self)]
 pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
+
+impl fmt::LowerHex for U256 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            f.write_str(&self.to_be_hex())
+        } else {
+            f.write_str(&self.to_be_hex()[2..])
+        }
+    }
+}
 
 #[cfg(feature = "ethabi")]
 mod ethabi {

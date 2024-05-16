@@ -1,65 +1,71 @@
-use alloc::borrow::Cow;
-
-use ethers::utils::keccak256;
 use sha2::Digest;
 use sha3::Keccak256;
 
-use crate::{hash::H256, uint::U256};
+use crate::{ethereum::keccak256, hash::H256, uint::U256};
 
-pub enum Slot<'data, 'slot> {
-    Array(U256),
-    Mapping(MappingKey<'data>, &'slot Slot<'data, 'slot>),
+/// Solidity storage slot calculations. Note that this currently does not handle dynamic arrays with packed values; the index passed to [`Slot::Array`] will need to be calculated manually in this case.
+pub enum Slot<'a> {
+    /// (base slot, index)
+    Array(&'a Slot<'a>, U256),
+    /// (base slot, mapping key)
+    Mapping(&'a Slot<'a>, MappingKey<'a>),
     Offset(U256),
 }
 
-impl<'data, 'slot> Slot<'data, 'slot> {
+impl<'a> Slot<'a> {
     // https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#mappings-and-dynamic-arrays
-    #[must_use]
+    #[inline]
+    #[must_use = "calculating the slot has no effect"]
+    // REVIEW: Make const? <https://crates.io/crates/keccak-const/0.2.0>
     pub fn slot(&self) -> U256 {
         match self {
             // keccak256(p)
-            Slot::Array(p) => U256::from_be_bytes(keccak256(p.to_be_bytes())),
+            Slot::Array(p, idx) => U256::from_be_bytes(keccak256(p.slot().to_be_bytes()).0) + *idx,
             // keccak256(h(k) . p)
-            Slot::Mapping(k, p) => U256::from_be_bytes(
-                Keccak256::new()
-                    .chain_update(k.encode().to_be_bytes())
-                    .chain_update(p.slot().to_be_bytes())
-                    .finalize()
-                    .into(),
-            ),
+            Slot::Mapping(p, k) => {
+                let mut hasher = Keccak256::new();
+                match &k {
+                    MappingKey::String(string) => hasher.update(string.as_bytes()),
+                    MappingKey::Uint256(k) => hasher.update(k.to_be_bytes()),
+                    MappingKey::Bytes32(k) => hasher.update(k.0),
+                };
+
+                U256::from_be_bytes(
+                    hasher
+                        .chain_update(p.slot().to_be_bytes())
+                        .finalize()
+                        .into(),
+                )
+            }
             Slot::Offset(p) => *p,
         }
     }
-
-    #[must_use]
-    pub fn slot_with_offset(&self, offset: U256) -> U256 {
-        self.slot() + offset
-    }
 }
 
-pub enum MappingKey<'data> {
-    String(&'data str),
+pub enum MappingKey<'a> {
+    String(&'a str),
     Uint256(U256),
     Bytes32(H256),
 }
 
-impl<'data> MappingKey<'data> {
-    #[must_use]
-    fn encode(&self) -> U256 {
-        match self {
-            Self::String(string) => U256::from_be_bytes(keccak256(string)),
-            Self::Uint256(k) => *k,
-            Self::Bytes32(k) => U256::from_be_bytes(k.0),
-        }
-    }
-}
+#[test]
+fn test() {
+    // Test contract uploaded here: https://sepolia.etherscan.io/address/0x6845dbaa9513d3d07737ea9f6e350011dcfeb9bd
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    // mapping(uint256 => mapping(uint256 => uint256)[])
+    let slot = Slot::Mapping(
+        &Slot::Array(
+            &Slot::Mapping(&Slot::Offset(0.into()), MappingKey::Uint256(123.into())),
+            1.into(),
+        ),
+        MappingKey::Uint256(100.into()),
+    )
+    .slot();
 
-    #[test]
-    fn slot_calculation() {
-        let slot = Slot::Mapping(MappingKey::Uint256(1.into()), &Slot::Offset(0.into()));
-    }
+    assert_eq!(
+        H256(slot.to_be_bytes()),
+        H256(hex_literal::hex!(
+            "00a9b48fe93e5d10ebc2d9021d1477088c6292bf047876944343f57fdf3f0467"
+        ))
+    );
 }

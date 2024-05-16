@@ -151,6 +151,7 @@ dependencies = [
  "arbitrum-verifier",
  "base64 0.21.7",
  "cosmwasm-std 1.5.2",
+ "ethereum-light-client",
  "ethereum-verifier",
  "ethers-core",
  "hex",
@@ -4025,6 +4026,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
  "cosmwasm-std 1.5.2",
+ "ethereum-light-client",
  "ethereum-verifier",
  "ethers-core",
  "gnark-mimc",
@@ -5710,6 +5712,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
  "cosmwasm-std 1.5.2",
+ "ethereum-light-client",
  "ethereum-verifier",
  "ethers-core",
  "hex",
