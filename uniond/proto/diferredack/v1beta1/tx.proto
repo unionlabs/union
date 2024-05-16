@@ -33,10 +33,10 @@ message DiferredPacketInfo {
   string refund_port_id           = 3;
   string packet_src_channel_id    = 4;
   string packet_src_port_id       = 5;
-  uint64 packet_timeout_timestamp = 6;
-  string packet_timeout_height    = 7;
+  uint64 packet_timeout_timestamp = 6 [ (gogoproto.nullable) = true];
+  string packet_timeout_height    = 7 [ (gogoproto.nullable) = true];
   bytes  packet_data              = 8;
   uint64 sequence                 = 9;
-  uint64 timeout                  = 10;
+  uint64 timeout                  = 10 [ (gogoproto.nullable) = true];
   bool   nonrefundable            = 11;
 }
