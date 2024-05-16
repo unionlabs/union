@@ -5,6 +5,8 @@ exclude = [
   '^https://grpc',
   '^https://x.com',
   '^https://discord.',
+  '^https://linkedin.',
+  '^https://*.linkedin.',
   '^https://twitter.com',
   '^http://myserver.com',
   '^https://nodeist.net/union',
