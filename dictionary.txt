@@ -34,6 +34,7 @@ Counterparty
 Cryptopunks
 Cypherpunk
 DATADIR
+datas
 DYLD
 Datasource
 Denoms
