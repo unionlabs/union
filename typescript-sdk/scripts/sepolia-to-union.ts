@@ -9,8 +9,6 @@ import {
   erc20Abi,
   publicActions,
   createWalletClient,
-  createPublicClient,
-  walletActions
 } from "viem"
 
 /* `bun scripts/sepolia-to-union.ts --private-key "..."` */

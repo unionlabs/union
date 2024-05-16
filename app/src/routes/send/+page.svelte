@@ -1,232 +1,230 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { UnionClient } from '@union/client'
-  import type { PageData } from './$types.ts'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import Timer from 'virtual:icons/lucide/timer'
-  import Settings from 'virtual:icons/lucide/settings'
-  import { debounce, dollarize } from '$lib/utilities'
-  import type { OfflineSigner } from '@leapwallet/types'
-  import LockLockedIcon from 'virtual:icons/lucide/lock'
-  import * as Card from '$lib/components/ui/card/index.ts'
-  import { sepoliaStore } from '$lib/wallet/evm/config.ts'
-  import { queryParameters } from 'sveltekit-search-params'
-  import LockOpenIcon from 'virtual:icons/lucide/lock-open'
-  import { Input } from '$lib/components/ui/input/index.js'
-  import ChainDialog from './components/chain-dialog.svelte'
-  import ChevronDown from 'virtual:icons/lucide/chevron-down'
-  import { cosmosStore } from '$/lib/wallet/cosmos/config.ts'
-  import { Button } from '$lib/components/ui/button/index.ts'
-  import AssetsDialog from './components/assets-dialog.svelte'
-  import SettingsDialog from './components/settings-dialog.svelte'
-  import ArrowLeftRight from 'virtual:icons/lucide/arrow-left-right'
-  import DraftPageNotice from '$lib/components/draft-page-notice.svelte'
-  import toast from 'svelte-french-toast'
+import { onMount } from "svelte"
+import { UnionClient } from "@union/client"
+import type { PageData } from "./$types.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
+import Timer from "virtual:icons/lucide/timer"
+import Settings from "virtual:icons/lucide/settings"
+import { debounce, dollarize } from "$lib/utilities"
+import type { OfflineSigner } from "@leapwallet/types"
+import LockLockedIcon from "virtual:icons/lucide/lock"
+import * as Card from "$lib/components/ui/card/index.ts"
+import { sepoliaStore } from "$lib/wallet/evm/config.ts"
+import { queryParameters } from "sveltekit-search-params"
+import LockOpenIcon from "virtual:icons/lucide/lock-open"
+import { Input } from "$lib/components/ui/input/index.js"
+import ChainDialog from "./components/chain-dialog.svelte"
+import ChevronDown from "virtual:icons/lucide/chevron-down"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
+import { Button } from "$lib/components/ui/button/index.ts"
+import AssetsDialog from "./components/assets-dialog.svelte"
+import SettingsDialog from "./components/settings-dialog.svelte"
+import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
+import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+import toast from "svelte-french-toast"
 
-  /**
-   * TODO:
-   * - [ ]
-   */
+/**
+ * TODO:
+ * - [ ]
+ */
 
-  let unionClient: UnionClient
-  onMount(() => {
-    const cosmosOfflineSigner = (
-      $cosmosStore.connectedWallet === 'keplr'
-        ? window?.keplr?.getOfflineSigner('union-testnet-8', {
-            disableBalanceCheck: false,
+let unionClient: UnionClient
+onMount(() => {
+  const cosmosOfflineSigner = (
+    $cosmosStore.connectedWallet === "keplr"
+      ? window?.keplr?.getOfflineSigner("union-testnet-8", {
+          disableBalanceCheck: false
+        })
+      : window.leap
+        ? window.leap.getOfflineSigner("union-testnet-8", {
+            disableBalanceCheck: false
           })
-        : window.leap
-          ? window.leap.getOfflineSigner('union-testnet-8', {
-              disableBalanceCheck: false,
-            })
-          : undefined
-    ) as OfflineSigner
+        : undefined
+  ) as OfflineSigner
 
-    unionClient = new UnionClient({
-      cosmosOfflineSigner,
-      bech32Prefix: 'union',
-      chainId: 'union-testnet-8',
-      gas: { denom: 'muno', amount: '0.0025' },
-      rpcUrl: 'https://rpc.testnet.bonlulu.uno',
-    })
+  unionClient = new UnionClient({
+    cosmosOfflineSigner,
+    bech32Prefix: "union",
+    chainId: "union-testnet-8",
+    gas: { denom: "muno", amount: "0.0025" },
+    rpcUrl: "https://rpc.testnet.bonlulu.uno"
   })
+})
 
-  export let data: PageData
-  const { chains, assets } = data
+export let data: PageData
+const { chains, assets } = data
 
-  const devBorder = 0 && 'outline outline-[1px] outline-pink-200/40'
+const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
 
-  const queryParams = queryParameters(
-    {
-      fromChain: { encode: v => v?.toString(), decode: v => v, defaultValue: 'union-testnet-8' },
-      toChain: { encode: v => v?.toString(), decode: v => v, defaultValue: '11155111' },
-      token: { encode: v => v?.toString(), decode: v => v, defaultValue: 'union-sepolia-uno' },
-      recipient: {
-        encode: v => v?.toString(),
-        decode: v => v,
-        defaultValue: $sepoliaStore.address || '',
-      },
-    },
-    { debounceHistory: 1_000, showDefaults: true },
+const queryParams = queryParameters(
+  {
+    fromChain: { encode: v => v?.toString(), decode: v => v, defaultValue: "union-testnet-8" },
+    toChain: { encode: v => v?.toString(), decode: v => v, defaultValue: "11155111" },
+    token: { encode: v => v?.toString(), decode: v => v, defaultValue: "union-sepolia-uno" },
+    recipient: {
+      encode: v => v?.toString(),
+      decode: v => v,
+      defaultValue: $sepoliaStore.address || ""
+    }
+  },
+  { debounceHistory: 1_000, showDefaults: true }
+)
+
+let dialogOpenFromChain = false
+let dialogOpenToChain = false
+let dialogOpenToken = false
+let dialogOpenSettings = false
+let dialogOpenPast = false
+
+let [chainSearch, chainSearchResults] = ["", chains]
+
+function handleChainSearch(event: InputEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  chainSearch = target.value
+  chainSearchResults = chains.filter(chain =>
+    chain.name.toLowerCase().includes(chainSearch.toLowerCase())
   )
+}
 
-  let dialogOpenFromChain = false
-  let dialogOpenToChain = false
-  let dialogOpenToken = false
-  let dialogOpenSettings = false
-  let dialogOpenPast = false
+const handleChainSelect = (name: string, target: "fromChain" | "toChain") =>
+  debounce(
+    () => [
+      ($queryParams[target] = name),
+      ([dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
+        false,
+        false,
+        false,
+        false
+      ])
+    ],
+    200
+  )()
 
-  let [chainSearch, chainSearchResults] = ['', chains]
+let selectedFromChain = chains.find(chain => chain.id === $queryParams.fromChain)
+$: selectedFromChain = chains.find(
+  // chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase(),
+  chain => chain.id === $queryParams.fromChain
+)
 
-  function handleChainSearch(event: InputEvent) {
-    const target = event.target
-    if (!(target instanceof HTMLInputElement)) return
-    chainSearch = target.value
-    chainSearchResults = chains.filter(chain =>
-      chain.name.toLowerCase().includes(chainSearch.toLowerCase()),
-    )
-  }
+let selectedToChain = chains.find(
+  // chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
+  chain => chain.id === $queryParams.toChain
+)
+$: selectedToChain = chains.find(
+  // chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
+  chain => chain.id === $queryParams.toChain
+)
 
-  const handleChainSelect = (name: string, target: 'fromChain' | 'toChain') =>
-    debounce(
-      () => [
-        ($queryParams[target] = name),
-        ([dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
-          false,
-          false,
-          false,
-          false,
-        ]),
-      ],
-      200,
-    )()
+// console.log(JSON.stringify({ selectedFromChain, selectedToChain }, undefined, 2))
 
-  let selectedFromChain = chains.find(chain => chain.id === $queryParams.fromChain)
-  $: selectedFromChain = chains.find(
-    // chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase(),
-    chain => chain.id === $queryParams.fromChain,
+let [tokenSearch, assetSearchResults] = ["", assets]
+// console.log(JSON.stringify(assets, undefined, 2))
+
+function handleAssetSearch(event: InputEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  tokenSearch = target.value
+  assetSearchResults = assets.filter(asset =>
+    asset.id.toLowerCase().includes(tokenSearch.toLowerCase())
   )
+  // console.log(JSON.stringify(assetSearchResults, undefined, 2))
+}
 
-  let selectedToChain = chains.find(
-    // chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
-    chain => chain.id === $queryParams.toChain,
+let availableAssets = assets.filter(
+  // token => token.symbol.toLowerCase() === $queryParams.token.toLowerCase(),
+  asset =>
+    asset.source.chain === selectedFromChain?.id && asset.destination.chain === selectedToChain?.id
+)
+$: availableAssets = assets.filter(
+  // token => token?.symbol?.toLowerCase() === $queryParams?.token?.toLowerCase(),
+  asset =>
+    asset.source.chain === selectedFromChain?.id && asset.destination.chain === selectedToChain?.id
+)
+
+let selectedAsset = assets[0]
+// $: console.log(JSON.stringify({ selectedAsset }, undefined, 2))
+
+function handleAssetSelect(id: string) {
+  console.log({ id }, availableAssets.find(asset => asset.id === id)?.id)
+  $queryParams.token = availableAssets.find(asset => asset.id === id)?.id ?? toast("oof")
+  dialogOpenToken = false
+}
+
+$: assetId = selectedAsset?.id.split("-")
+
+const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
+let inputValue = {
+  from: "",
+  to: "",
+  recipient:
+    selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
+      ? $sepoliaStore?.address
+      : selectedToChain?.ecosystem === "cosmos" &&
+          $cosmosStore?.address &&
+          $cosmosStore.address.startsWith(selectedToChain.name)
+        ? $cosmosStore?.address
+        : ""
+}
+
+$: {
+  inputValue.from = inputValue.from.replaceAll(amountRegex, "")
+  inputValue.to = inputValue.to.replaceAll(amountRegex, "")
+}
+
+function swapChainsClick(_event: MouseEvent) {
+  const [fromChain, toChain] = [$queryParams.fromChain, $queryParams.toChain]
+  $queryParams.fromChain = toChain
+  $queryParams.toChain = fromChain
+
+  selectedFromChain = data.chains.find(
+    chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase()
   )
-  $: selectedToChain = chains.find(
-    // chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
-    chain => chain.id === $queryParams.toChain,
+  selectedToChain = data.chains.find(
+    chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase()
   )
+}
 
-  // console.log(JSON.stringify({ selectedFromChain, selectedToChain }, undefined, 2))
+let recipientInputState: "locked" | "unlocked" | "invalid" = "locked"
 
-  let [tokenSearch, assetSearchResults] = ['', assets]
-  // console.log(JSON.stringify(assets, undefined, 2))
+const onUnlockClick = (event: MouseEvent) =>
+  (recipientInputState = recipientInputState === "locked" ? "unlocked" : "locked")
 
-  function handleAssetSearch(event: InputEvent) {
-    const target = event.target
-    if (!(target instanceof HTMLInputElement)) return
-    tokenSearch = target.value
-    assetSearchResults = assets.filter(asset =>
-      asset.id.toLowerCase().includes(tokenSearch.toLowerCase()),
-    )
-    // console.log(JSON.stringify(assetSearchResults, undefined, 2))
-  }
+$: {
+  // if to chain changes, update recipient address
+  inputValue.recipient =
+    selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
+      ? $sepoliaStore?.address
+      : selectedToChain?.ecosystem === "cosmos" &&
+          $cosmosStore?.address &&
+          $cosmosStore.address.startsWith(selectedToChain.name)
+        ? $cosmosStore?.address
+        : ""
 
-  let availableAssets = assets.filter(
-    // token => token.symbol.toLowerCase() === $queryParams.token.toLowerCase(),
-    asset =>
-      asset.source.chain === selectedFromChain?.id &&
-      asset.destination.chain === selectedToChain?.id,
-  )
-  $: availableAssets = assets.filter(
-    // token => token?.symbol?.toLowerCase() === $queryParams?.token?.toLowerCase(),
-    asset =>
-      asset.source.chain === selectedFromChain?.id &&
-      asset.destination.chain === selectedToChain?.id,
-  )
-
-  let selectedAsset = assets[0]
-  // $: console.log(JSON.stringify({ selectedAsset }, undefined, 2))
-
-  function handleAssetSelect(id: string) {
-    console.log({ id },availableAssets.find(asset => asset.id === id)?.id)
-    $queryParams.token = availableAssets.find(asset => asset.id === id)?.id ?? toast('oof')
-    dialogOpenToken = false
-  }
-
-  $: assetId = selectedAsset?.id.split('-')
-
-  const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
-  let inputValue = {
-    from: '',
-    to: '',
-    recipient:
-      selectedToChain?.ecosystem === 'evm' && $sepoliaStore?.address
-        ? $sepoliaStore?.address
-        : selectedToChain?.ecosystem === 'cosmos' &&
-            $cosmosStore?.address &&
-            $cosmosStore.address.startsWith(selectedToChain.name)
-          ? $cosmosStore?.address
-          : '',
-  }
-
-  $: {
-    inputValue.from = inputValue.from.replaceAll(amountRegex, '')
-    inputValue.to = inputValue.to.replaceAll(amountRegex, '')
-  }
-
-  function swapChainsClick(_event: MouseEvent) {
-    const [fromChain, toChain] = [$queryParams.fromChain, $queryParams.toChain]
-    $queryParams.fromChain = toChain
-    $queryParams.toChain = fromChain
-
-    selectedFromChain = data.chains.find(
-      chain => chain.name.toLowerCase() === $queryParams.fromChain.toLowerCase(),
-    )
-    selectedToChain = data.chains.find(
-      chain => chain.name.toLowerCase() === $queryParams.toChain.toLowerCase(),
-    )
-  }
-
-  let recipientInputState: 'locked' | 'unlocked' | 'invalid' = 'locked'
-
-  const onUnlockClick = (event: MouseEvent) =>
-    (recipientInputState = recipientInputState === 'locked' ? 'unlocked' : 'locked')
-
-  $: {
-    // if to chain changes, update recipient address
+  // if recipient address is locked, update it
+  if (recipientInputState === "locked") {
     inputValue.recipient =
-      selectedToChain?.ecosystem === 'evm' && $sepoliaStore?.address
+      selectedToChain?.ecosystem === "evm" && $sepoliaStore?.address
         ? $sepoliaStore?.address
-        : selectedToChain?.ecosystem === 'cosmos' &&
+        : selectedToChain?.ecosystem === "cosmos" &&
             $cosmosStore?.address &&
             $cosmosStore.address.startsWith(selectedToChain.name)
           ? $cosmosStore?.address
-          : ''
-
-    // if recipient address is locked, update it
-    if (recipientInputState === 'locked') {
-      inputValue.recipient =
-        selectedToChain?.ecosystem === 'evm' && $sepoliaStore?.address
-          ? $sepoliaStore?.address
-          : selectedToChain?.ecosystem === 'cosmos' &&
-              $cosmosStore?.address &&
-              $cosmosStore.address.startsWith(selectedToChain.name)
-            ? $cosmosStore?.address
-            : ''
-    }
-
-    if (recipientInputState === 'unlocked') {
-      inputValue.recipient = ''
-    }
+          : ""
   }
 
-  let buttonText = 'Send it' satisfies
-    | 'Send'
-    | 'Invalid amount'
-    | 'Connect Wallet'
-    | 'Enter an amount'
-    | 'Insufficient balance'
-    | String
+  if (recipientInputState === "unlocked") {
+    inputValue.recipient = ""
+  }
+}
+
+let buttonText = "Send it" satisfies
+  | "Send"
+  | "Invalid amount"
+  | "Connect Wallet"
+  | "Enter an amount"
+  | "Insufficient balance"
+  | String
 </script>
 
 <svelte:head>

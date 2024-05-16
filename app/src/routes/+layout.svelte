@@ -1,14 +1,6 @@
 <script lang="ts">
 import "$lib/polyfill.ts"
 import "$styles/index.css"
-import {
-  hydrate,
-  dehydrate,
-  QueryClient,
-  MutationCache,
-  notifyManager,
-  QueryClientProvider
-} from "@tanstack/svelte-query"
 import { cn } from "$lib/utilities/shadcn"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
@@ -26,13 +18,10 @@ import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
-// import { snaps } from '$lib/wallet/snaps/config';
-import { provider } from '$lib/wallet/evm/config.ts';
+import { QueryClient, MutationCache, notifyManager } from "@tanstack/svelte-query"
+import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 
-onMount(async() => {
-  console.info()
-  // await snaps.installed(window.ethereum)
-})
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
@@ -67,6 +56,7 @@ const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
     queries: {
       enabled: browser,
+      gcTime: 1_000 * 60 * 60 * 24, // 24 hours
       refetchOnReconnect: () => !queryClient.isMutating()
     }
   },
@@ -78,53 +68,23 @@ const queryClient: QueryClient = new QueryClient({
     }
   })
 })
-setContext("$$_queryClient", queryClient)
 
-function hydrateClient() {
-  try {
-    const storeValue = localStorage.getItem("QUERY_CLIENT")
-    if (!storeValue) return
-    const persistedValue = JSON.parse(storeValue) as Record<string, any>
-    if ("timestamp" in persistedValue && persistedValue?.["timestamp"]) {
-      const MAX_AGE = 1000 * 60 * 60 * 24
-      const expired = Date.now() - persistedValue["timestamp"] > MAX_AGE
-      if (!expired) hydrate(queryClient, persistedValue.clientState)
-    } else localStorage.removeItem("QUERY_CLIENT")
-  } catch (error) {
-    localStorage.removeItem("QUERY_CLIENT")
-  }
-}
-const saveClient = () =>
-  localStorage.setItem(
-    "QUERY_CLIENT",
-    JSON.stringify({ timestamp: Date.now(), clientState: dehydrate(queryClient, {}) })
-  )
-
-const unload = () => saveClient()
-onMount(() => {
-  hydrateClient()
-  queryClient.mount()
-  return () => queryClient.unmount()
+const localStoragePersister = createSyncStoragePersister({
+  key: "SVELTE_QUERY",
+  storage: browser ? window.localStorage : undefined // or window.sessionStorage
 })
 
 $: if ($navigating) console.log("Navigating to", $page.url.pathname)
-
-/** @docs https://monogram.io/blog/add-partytown-to-svelte */
-let partytownScriptElement: HTMLScriptElement
-onMount(() => {
-  if (!partytownScriptElement) return
-  partytownScriptElement.textContent = partytownSnippet()
-})
 </script>
 
 <svelte:head>
   <title>Union App Beta</title>
   <meta name="description" content="Union Web App" />
+  <!-- @docs https://monogram.io/blog/add-partytown-to-svelte -->
   <script>
     partytown = { forward: ['dataLayer.push'] }
   </script>
-  <script bind:this={partytownScriptElement}></script>
-  <!-- {@html `<script>${partytownSnippet()}</script>`} -->
+  {@html '<script>' + partytownSnippet() + '</script>'}
 </svelte:head>
 
 {#if $navigating}
@@ -134,7 +94,10 @@ onMount(() => {
 <ModeWatcher />
 <Toaster />
 
-<QueryClientProvider client={queryClient}>
+<PersistQueryClientProvider
+  client={queryClient}
+  persistOptions={{ persister: localStoragePersister }}
+>
   <Header />
   <div
     id="page"
@@ -150,8 +113,8 @@ onMount(() => {
     initialIsOpen={false}
     buttonPosition="bottom-right"
   />
-</QueryClientProvider>
-<OnlineStatus />
+  <OnlineStatus />
+</PersistQueryClientProvider>
 
 <div
   id="background-dotted-grid"
@@ -164,7 +127,6 @@ onMount(() => {
 ></div>
 
 <svelte:window
-  on:beforeunload={unload}
   use:shortcut={{
     trigger: [
       // easily hide tanstack devtools with ctrl + h

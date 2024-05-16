@@ -19,6 +19,8 @@
     "@cosmjs/stargate": "0.32.3",
     "@leapwallet/cosmos-snap-provider": "^0.1.26",
     "@tanstack/svelte-query": "^5.36.1",
+    "@tanstack/query-sync-storage-persister": "^5.36.1",
+    "@tanstack/svelte-query-persist-client": "^5.36.1",
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.8",
     "@urql/exchange-persisted": "^4.3.0",
     "@urql/exchange-retry": "^1.3.0",
