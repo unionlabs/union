@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT\n                        cl.transaction_hash, cl.client_id, ch.id\n                    FROM\n                        v0.evm_client_created cl\n                    JOIN\n                        v0.chains ch\n                    ON\n                        cl.chain_id = ch.id\n                    WHERE\n                        ch.chain_id = $1\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "transaction_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "client_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "defd9a6dd4dc92d7f3bd862946e3a8dfa1a6cc39b88776080d3a082e33955fe2"
+}

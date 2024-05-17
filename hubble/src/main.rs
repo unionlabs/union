@@ -16,6 +16,8 @@ mod metrics;
 mod postgres;
 mod tm;
 
+mod chain_id_query;
+
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
 
@@ -37,6 +39,12 @@ async fn main() -> color_eyre::eyre::Result<()> {
         .max_connections(40)
         .connect(&args.database_url.unwrap())
         .await?;
+
+    if args.fetch_client_chain_ids {
+        chain_id_query::tx(db, args.indexers).await;
+        return Ok(());
+    }
+
     let mut set = JoinSet::new();
 
     if let Some(addr) = args.metrics_addr {

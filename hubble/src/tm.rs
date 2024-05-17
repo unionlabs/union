@@ -24,6 +24,8 @@ use crate::postgres::{self, ChainId};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub url: Url,
+    /// The GRPC endpoint of this chain. required for `--fetch-client-chain-ids`.
+    pub grpc_url: Option<String>,
     #[allow(dead_code)]
     pub start: Option<u64>,
     #[allow(dead_code)]

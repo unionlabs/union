@@ -39,6 +39,10 @@ pub struct Args {
     /// Indexer configurations to start.
     #[arg(short, long, env = "HUBBLE_METRICS_PORT")]
     pub metrics_addr: Option<SocketAddr>,
+
+    /// Fetch the counterparty chain ids for all clients known to hubble.
+    #[arg(long)]
+    pub fetch_client_chain_ids: bool,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]

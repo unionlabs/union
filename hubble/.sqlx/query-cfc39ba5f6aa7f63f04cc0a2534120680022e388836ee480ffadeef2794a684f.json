@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO\n            v0.clients (chain_id, client_id, counterparty_chain_id)\n        SELECT\n            *\n        FROM\n            UNNEST($1::integer[], $2::text[], $3::text[])\n        ON CONFLICT DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4Array",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cfc39ba5f6aa7f63f04cc0a2534120680022e388836ee480ffadeef2794a684f"
+}
