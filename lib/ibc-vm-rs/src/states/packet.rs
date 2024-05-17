@@ -1,9 +1,12 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::ibc::core::{
-    channel::{self, channel::Channel, packet::Packet},
-    client::height::Height,
-    commitment::merkle_path::MerklePath,
-    connection,
+use unionlabs::{
+    ibc::core::{
+        channel::{self, channel::Channel, packet::Packet},
+        client::height::Height,
+        commitment::merkle_path::MerklePath,
+        connection,
+    },
+    ics24::{ChannelEndPath, ConnectionPath, ReceiptPath},
 };
 
 use super::connection_handshake::ConnectionEnd;
@@ -41,10 +44,13 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                 proof_height,
             } => {
                 let channel: Channel = host
-                    .read(&format!(
-                        "channelEnds/ports/{}/channels/{}",
-                        packet.destination_port, packet.destination_channel
-                    ))
+                    .read(
+                        &ChannelEndPath {
+                            port_id: packet.destination_port.clone(),
+                            channel_id: packet.destination_channel.clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
                 if channel.state != channel::state::State::Open {
@@ -60,7 +66,12 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                 }
 
                 let connection: ConnectionEnd = host
-                    .read(&format!("connections/{}", channel.connection_hops[0]))
+                    .read(
+                        &ConnectionPath {
+                            connection_id: channel.connection_hops[0].clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
                 if connection.state != connection::state::State::Open {
@@ -164,10 +175,12 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                 };
 
                 host.commit_raw(
-                    format!(
-                        "receipts/ports/{}/channels/{}/sequences/{}",
-                        packet.destination_port, packet.destination_channel, packet.sequence
-                    ),
+                    ReceiptPath {
+                        port_id: packet.destination_port.clone(),
+                        channel_id: packet.destination_channel.clone(),
+                        sequence: packet.sequence,
+                    }
+                    .into(),
                     vec![1],
                 );
 

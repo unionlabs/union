@@ -4,7 +4,10 @@ pub mod connection_handshake;
 pub mod packet;
 
 use serde::{Deserialize, Serialize};
-use unionlabs::id::ClientId;
+use unionlabs::{
+    ics24::{ClientConsensusStatePath, ClientStatePath},
+    id::ClientId,
+};
 
 use crate::{Either, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status};
 
@@ -119,11 +122,18 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
             } => match resp {
                 IbcResponse::LatestHeight { height } => {
                     host.commit_raw(
-                        format!("clients/{client_id}/clientState"),
+                        ClientStatePath {
+                            client_id: client_id.clone(),
+                        }
+                        .into(),
                         client_state.clone(),
                     );
                     host.commit_raw(
-                        format!("clients/{client_id}/consensusStates/{height}"),
+                        ClientConsensusStatePath {
+                            client_id: client_id.clone(),
+                            height,
+                        }
+                        .into(),
                         consensus_state.clone(),
                     );
                     Either::Right(IbcEvent::ClientCreated {

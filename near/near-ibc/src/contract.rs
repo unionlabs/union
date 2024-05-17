@@ -7,14 +7,14 @@ use near_sdk::{
     collections::LookupMap,
     env, ext_contract, near_bindgen,
     store::{unordered_map, UnorderedMap},
-    AccountId, BorshStorageKey, PanicOnDefault, Promise,
+    AccountId, BorshStorageKey, Promise,
 };
-use near_sdk_contract_tools::owner::OwnerExternal;
 #[allow(clippy::wildcard_imports)]
 use near_sdk_contract_tools::Owner;
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     ibc::core::{channel, client::height::Height, commitment::merkle_path::MerklePath, connection},
+    ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
     validated::ValidateT,
 };
@@ -42,8 +42,8 @@ impl IbcHost for Contract {
             .unwrap())
     }
 
-    fn commit_raw(&mut self, key: String, value: Vec<u8>) {
-        self.commitments.insert(&key, &value);
+    fn commit_raw(&mut self, key: Path<ClientId, Height>, value: Vec<u8>) {
+        self.commitments.insert(&key.to_string(), &value);
     }
 
     fn next_connection_identifier(&mut self) -> Result<ConnectionId, ()> {
@@ -59,14 +59,14 @@ impl IbcHost for Contract {
             .map(|item| item.clone())
     }
 
-    fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T> {
+    fn read<T: Decode<Proto>>(&self, key: &Path<ClientId, Height>) -> Option<T> {
         self.commitments
             .get(&key.to_string())
             .map(|item| T::decode(&item).unwrap())
     }
 
-    fn commit<T: Encode<Proto>>(&mut self, key: String, value: T) {
-        self.commitments.insert(&key, &value.encode());
+    fn commit<T: Encode<Proto>>(&mut self, key: Path<ClientId, Height>, value: T) {
+        self.commitments.insert(&key.to_string(), &value.encode());
     }
 
     fn next_channel_identifier(&mut self) -> Result<ChannelId, ()> {
