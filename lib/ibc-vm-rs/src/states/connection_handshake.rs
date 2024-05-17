@@ -12,7 +12,7 @@ use unionlabs::{
 };
 
 use crate::{
-    Either, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status, DEFAULT_IBC_VERSION,
+    Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status, DEFAULT_IBC_VERSION,
 };
 
 pub type Counterparty = connection::counterparty::Counterparty<ClientId, String>;
@@ -40,14 +40,17 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
-        let res = match self {
-            ConnectionOpenInit::Init {
-                client_id,
-                counterparty,
-                version,
-                delay_period,
-            } => {
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, resp) {
+            (
+                ConnectionOpenInit::Init {
+                    client_id,
+                    counterparty,
+                    version,
+                    delay_period,
+                },
+                IbcResponse::Empty,
+            ) => {
                 // supported version
                 verify_version_supported(&DEFAULT_IBC_VERSION, &version)?;
                 Either::Left((
@@ -60,24 +63,25 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     IbcMsg::Status { client_id },
                 ))
             }
-            ConnectionOpenInit::CheckStatus {
-                client_id,
-                counterparty,
-                versions,
-                delay_period,
-            } => {
-                let IbcResponse::Status { status } = resp else {
-                    return Err(());
-                };
-
+            (
+                ConnectionOpenInit::CheckStatus {
+                    client_id,
+                    counterparty,
+                    versions,
+                    delay_period,
+                },
+                IbcResponse::Status { status },
+            ) => {
                 if status != Status::Active {
-                    return Err(());
+                    return Err(IbcError::NotActive(client_id, status).into());
                 }
 
                 let connection_id = host.next_connection_identifier()?;
 
                 // TODO(aeryz): maybe add `client_exists` here?
-                let _ = host.client_state(&client_id).ok_or(())?;
+                let _ = host
+                    .client_state(&client_id)
+                    .ok_or(IbcError::ClientStateNotFound(client_id.clone()))?;
 
                 // TODO(aeryz): We commit all connections here. Check if this is needed
                 // k.SetClientConnectionPaths(ctx, clientID, conns)
@@ -98,7 +102,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     }
                     .into(),
                     end,
-                );
+                )?;
 
                 Either::Right(IbcEvent::ConnectionOpenInit {
                     connection_id: connection_id.to_string(),
@@ -106,6 +110,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     counterparty_client_id,
                 })
             }
+            _ => return Err(IbcError::UnexpectedAction.into()),
         };
 
         Ok(res)
@@ -115,10 +120,10 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
 fn verify_version_supported(
     supported_versions: &[Version],
     proposed_version: &Version,
-) -> Result<(), ()> {
+) -> Result<(), IbcError> {
     let Some(supported_version) = find_supported_version(proposed_version, supported_versions)
     else {
-        return Err(());
+        return Err(IbcError::NoSupportedVersionFound);
     };
 
     verify_proposed_version(supported_version, proposed_version)
@@ -133,19 +138,22 @@ fn find_supported_version<'a>(
         .find(|v| v.identifier == version.identifier)
 }
 
-fn verify_proposed_version(version: &Version, proposed_version: &Version) -> Result<(), ()> {
+fn verify_proposed_version(version: &Version, proposed_version: &Version) -> Result<(), IbcError> {
     if version.identifier != proposed_version.identifier {
-        return Err(());
+        return Err(IbcError::VersionIdentifiedMismatch(
+            version.identifier.clone(),
+            proposed_version.identifier.clone(),
+        ));
     }
 
     // we don't allow nil feature
     if proposed_version.features.is_empty() {
-        return Err(());
+        return Err(IbcError::EmptyVersionFeatures);
     }
 
     for feat in &proposed_version.features {
         if !version.features.contains(feat) {
-            return Err(());
+            return Err(IbcError::UnsupportedFeatureInVersion(*feat));
         }
     }
 
@@ -175,16 +183,19 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
-        let res = match self {
-            ConnectionOpenTry::Init {
-                client_id,
-                counterparty,
-                counterparty_versions,
-                connection_end_proof,
-                proof_height,
-                delay_period,
-            } => {
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, resp) {
+            (
+                ConnectionOpenTry::Init {
+                    client_id,
+                    counterparty,
+                    counterparty_versions,
+                    connection_end_proof,
+                    proof_height,
+                    delay_period,
+                },
+                IbcResponse::Empty,
+            ) => {
                 // TODO(aeryz): do we want to do `validateSelfClient`?
                 let expected_counterparty = ConnectionEnd {
                     client_id: counterparty.client_id.clone(),
@@ -226,14 +237,17 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     },
                 ))
             }
-            ConnectionOpenTry::ConnectionStateVerified {
-                client_id,
-                counterparty,
-                delay_period,
-            } => {
-                let IbcResponse::VerifyMembership { valid: true } = resp else {
-                    return Err(());
-                };
+            (
+                ConnectionOpenTry::ConnectionStateVerified {
+                    client_id,
+                    counterparty,
+                    delay_period,
+                },
+                IbcResponse::VerifyMembership { valid },
+            ) => {
+                if !valid {
+                    return Err(IbcError::MembershipVerificationFailure.into());
+                }
                 let connection_id = host.next_connection_identifier()?;
                 let end = ConnectionEnd {
                     client_id: client_id.clone(),
@@ -251,7 +265,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     }
                     .into(),
                     end,
-                );
+                )?;
                 Either::Right(IbcEvent::ConnectionOpenTry {
                     connection_id: connection_id.to_string(),
                     client_id,
@@ -259,6 +273,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     counterparty_connection_id: counterparty.connection_id,
                 })
             }
+            _ => return Err(IbcError::UnexpectedAction.into()),
         };
 
         Ok(res)
@@ -288,15 +303,18 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
-        let res = match self {
-            ConnectionOpenAck::Init {
-                connection_id,
-                version,
-                counterparty_connection_id,
-                connection_end_proof,
-                proof_height,
-            } => {
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, resp) {
+            (
+                ConnectionOpenAck::Init {
+                    connection_id,
+                    version,
+                    counterparty_connection_id,
+                    connection_end_proof,
+                    proof_height,
+                },
+                IbcResponse::Empty,
+            ) => {
                 let connection: ConnectionEnd = host
                     .read(
                         &ConnectionPath {
@@ -304,10 +322,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         }
                         .into(),
                     )
-                    .ok_or(())?;
+                    .ok_or(IbcError::ConnectionNotFound(connection_id.clone()))?;
 
                 if connection.state != connection::state::State::Init {
-                    return Err(());
+                    return Err(IbcError::IncorrectConnectionState(
+                        connection.state,
+                        connection::state::State::Init,
+                    )
+                    .into());
                 }
 
                 verify_version_supported(&connection.versions, &version)?;
@@ -353,15 +375,18 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     },
                 ))
             }
-            ConnectionOpenAck::ConnectionStateVerified {
-                client_id,
-                mut connection,
-                connection_id,
-                counterparty_connection_id,
-            } => {
-                let IbcResponse::VerifyMembership { valid: true } = resp else {
-                    return Err(());
-                };
+            (
+                ConnectionOpenAck::ConnectionStateVerified {
+                    client_id,
+                    mut connection,
+                    connection_id,
+                    counterparty_connection_id,
+                },
+                IbcResponse::VerifyMembership { valid },
+            ) => {
+                if !valid {
+                    return Err(IbcError::MembershipVerificationFailure.into());
+                }
                 connection.state = connection::state::State::Open;
                 connection.counterparty.connection_id = counterparty_connection_id.clone();
 
@@ -373,7 +398,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     }
                     .into(),
                     connection,
-                );
+                )?;
 
                 Either::Right(IbcEvent::ConnectionOpenAck {
                     connection_id,
@@ -382,6 +407,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     counterparty_connection_id,
                 })
             }
+            _ => return Err(IbcError::UnexpectedAction.into()),
         };
 
         Ok(res)
@@ -408,13 +434,16 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
-        let res = match self {
-            ConnectionOpenConfirm::Init {
-                connection_id,
-                connection_end_proof,
-                proof_height,
-            } => {
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, resp) {
+            (
+                ConnectionOpenConfirm::Init {
+                    connection_id,
+                    connection_end_proof,
+                    proof_height,
+                },
+                IbcResponse::Empty,
+            ) => {
                 let connection: ConnectionEnd = host
                     .read(
                         &ConnectionPath {
@@ -422,10 +451,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         }
                         .into(),
                     )
-                    .ok_or(())?;
+                    .ok_or(IbcError::ConnectionNotFound(connection_id.clone()))?;
 
                 if connection.state != connection::state::State::Tryopen {
-                    return Err(());
+                    return Err(IbcError::IncorrectConnectionState(
+                        connection.state,
+                        connection::state::State::Tryopen,
+                    )
+                    .into());
                 }
 
                 let client_id = connection.client_id.clone();
@@ -470,14 +503,17 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     },
                 ))
             }
-            ConnectionOpenConfirm::ConnectionStateVerified {
-                client_id,
-                connection_id,
-                mut connection,
-            } => {
-                let IbcResponse::VerifyMembership { valid: true } = resp else {
-                    return Err(());
-                };
+            (
+                ConnectionOpenConfirm::ConnectionStateVerified {
+                    client_id,
+                    connection_id,
+                    mut connection,
+                },
+                IbcResponse::VerifyMembership { valid },
+            ) => {
+                if !valid {
+                    return Err(IbcError::MembershipVerificationFailure.into());
+                }
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
                 let counterparty_connection_id = connection.counterparty.connection_id.clone();
@@ -489,7 +525,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     }
                     .into(),
                     connection,
-                );
+                )?;
 
                 Either::Right(IbcEvent::ConnectionOpenConfirm {
                     connection_id,
@@ -498,6 +534,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     counterparty_connection_id,
                 })
             }
+            _ => return Err(IbcError::UnexpectedAction.into()),
         };
 
         Ok(res)

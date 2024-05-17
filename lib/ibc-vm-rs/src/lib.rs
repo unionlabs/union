@@ -1,5 +1,8 @@
+#![feature(error_in_core)]
+
 use std::num::NonZeroU64;
 
+use frame_support_procedural::PartialEqNoBound;
 use serde::{Deserialize, Serialize};
 use states::{
     channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
@@ -16,7 +19,7 @@ use unionlabs::{
         channel::{self, order::Order, packet::Packet},
         client::height::Height,
         commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
-        connection::version::Version,
+        connection::{self, version::Version},
     },
     ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
@@ -31,12 +34,74 @@ lazy_static::lazy_static! {
     pub static ref DEFAULT_MERKLE_PREFIX: MerklePrefix = MerklePrefix { key_prefix: b"ibc".into() };
 }
 
-pub trait IbcHost {
-    fn next_client_identifier(&mut self, client_type: &String) -> Result<ClientId, ()>;
+#[derive(thiserror::Error, PartialEqNoBound, Debug)]
+pub enum IbcError {
+    #[error("client {0} is not active ({1})")]
+    NotActive(ClientId, Status),
 
-    fn next_connection_identifier(&mut self) -> Result<ConnectionId, ()>;
+    // TODO(aeryz): this needs context
+    #[error("unexpected action is provided to the state machine")]
+    UnexpectedAction,
 
-    fn next_channel_identifier(&mut self) -> Result<ChannelId, ()>;
+    // TODO(aeryz): this needs context
+    #[error("client message verification failed")]
+    ClientMessageVerificationFailed,
+
+    #[error("connection ({0}) not found")]
+    ConnectionNotFound(String),
+
+    #[error("connection state is {0} while {1} is expected")]
+    IncorrectConnectionState(connection::state::State, connection::state::State),
+
+    // TODO(aeryz): this should have the error
+    #[error("ibc app callback failed")]
+    IbcAppCallbackFailed,
+
+    // TODO(aeryz): this should have the error
+    #[error("membership verification failed")]
+    MembershipVerificationFailure,
+
+    #[error("no supported version is found")]
+    NoSupportedVersionFound,
+
+    #[error("empty version features")]
+    EmptyVersionFeatures,
+
+    #[error("version identifier ({0}) does not match the proposed version ({1})")]
+    VersionIdentifiedMismatch(String, String),
+
+    #[error("the proposed version contains an unsupported feature ({0})")]
+    UnsupportedFeatureInVersion(Order),
+
+    #[error("the client state is not found for client {0}")]
+    ClientStateNotFound(ClientId),
+
+    #[error("channel ({1}) with port {0} is not found")]
+    ChannelNotFound(PortId, ChannelId),
+
+    #[error("channel state is {0} while {1} is expected")]
+    IncorrectChannelState(channel::state::State, channel::state::State),
+
+    #[error("source port ({0}) does not match the received packet's counterparty port ({1})")]
+    PortMismatch(PortId, PortId),
+
+    #[error(
+        "source channel ({0}) does not match the received packet's counterparty channel ({1})"
+    )]
+    ChannelMismatch(ChannelId, ChannelId),
+
+    #[error("packet is already timed out")]
+    TimedOutPacket,
+}
+
+pub trait IbcHost: Sized {
+    type Error: core::fmt::Display + core::fmt::Debug + PartialEq + From<IbcError>;
+
+    fn next_client_identifier(&mut self, client_type: &String) -> Result<ClientId, Self::Error>;
+
+    fn next_connection_identifier(&mut self) -> Result<ConnectionId, Self::Error>;
+
+    fn next_channel_identifier(&mut self) -> Result<ChannelId, Self::Error>;
 
     fn client_state(&self, client_id: &str) -> Option<Vec<u8>>;
 
@@ -44,10 +109,18 @@ pub trait IbcHost {
 
     fn read_raw(&self, key: &str) -> Option<Vec<u8>>;
 
-    fn commit_raw(&mut self, key: Path<ClientId, Height>, value: Vec<u8>);
+    fn commit_raw(
+        &mut self,
+        key: Path<ClientId, Height>,
+        value: Vec<u8>,
+    ) -> Result<(), Self::Error>;
 
     // TODO(aeryz): generic over encoding
-    fn commit<T: Encode<Proto>>(&mut self, key: Path<ClientId, Height>, value: T);
+    fn commit<T: Encode<Proto>>(
+        &mut self,
+        key: Path<ClientId, Height>,
+        value: T,
+    ) -> Result<(), Self::Error>;
 
     fn current_height(&self) -> Height;
 
@@ -61,6 +134,12 @@ pub enum Status {
     Active,
     Frozen,
     Expired,
+}
+
+impl core::fmt::Display for Status {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 #[derive(PartialEq)]
@@ -139,7 +218,7 @@ impl<T: IbcHost> Runnable<T> for IbcState {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
         let res = cast_either!(
             self,
             host,
@@ -344,7 +423,7 @@ pub trait Runnable<T: IbcHost>: Serialize + Sized {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()>;
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error>;
 }
 
 pub enum Either<L, R> {

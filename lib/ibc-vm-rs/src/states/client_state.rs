@@ -4,7 +4,7 @@ use unionlabs::{
     id::ClientId,
 };
 
-use crate::{Either, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status};
+use crate::{Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum UpdateClient {
@@ -42,28 +42,31 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
         self,
         host: &mut T,
         resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, ()> {
-        let res = match self {
-            UpdateClient::Init {
-                client_id,
-                client_msg,
-            } => Either::Left((
+    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, resp) {
+            (
+                UpdateClient::Init {
+                    client_id,
+                    client_msg,
+                },
+                IbcResponse::Empty,
+            ) => Either::Left((
                 Self::StatusFetched {
                     client_id: client_id.clone(),
                     client_msg,
                 },
                 IbcMsg::Status { client_id },
             )),
-            UpdateClient::StatusFetched {
-                client_id,
-                client_msg,
-            } => {
-                let IbcResponse::Status {
-                    status: Status::Active,
-                } = resp
-                else {
-                    return Err(());
-                };
+            (
+                UpdateClient::StatusFetched {
+                    client_id,
+                    client_msg,
+                },
+                IbcResponse::Status { status },
+            ) => {
+                if status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, status).into());
+                }
                 Either::Left((
                     Self::ClientMessageVerified {
                         client_id: client_id.clone(),
@@ -75,13 +78,17 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     },
                 ))
             }
-            UpdateClient::ClientMessageVerified {
-                client_id,
-                client_msg,
-            } => {
-                let IbcResponse::VerifyClientMessage { valid: true } = resp else {
-                    return Err(());
-                };
+            (
+                UpdateClient::ClientMessageVerified {
+                    client_id,
+                    client_msg,
+                },
+                IbcResponse::VerifyClientMessage { valid },
+            ) => {
+                if !valid {
+                    return Err(IbcError::ClientMessageVerificationFailed.into());
+                }
+
                 Either::Left((
                     Self::MisbehaviourChecked {
                         client_id: client_id.clone(),
@@ -93,14 +100,13 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     },
                 ))
             }
-            UpdateClient::MisbehaviourChecked {
-                client_id,
-                client_msg,
-            } => {
-                let IbcResponse::CheckForMisbehaviour { misbehaviour_found } = resp else {
-                    return Err(());
-                };
-
+            (
+                UpdateClient::MisbehaviourChecked {
+                    client_id,
+                    client_msg,
+                },
+                IbcResponse::CheckForMisbehaviour { misbehaviour_found },
+            ) => {
                 if misbehaviour_found {
                     Either::Left((
                         Self::UpdatedStateOnMisbehaviour {
@@ -123,28 +129,24 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     ))
                 }
             }
-            UpdateClient::UpdatedStateOnMisbehaviour { client_id } => {
-                if resp != IbcResponse::UpdateStateOnMisbehaviour {
-                    return Err(());
-                }
-                Either::Right(IbcEvent::ClientMisbehaviour { client_id })
-            }
-            UpdateClient::UpdatedState { client_id } => {
-                let IbcResponse::UpdateState {
+            (
+                UpdateClient::UpdatedStateOnMisbehaviour { client_id },
+                IbcResponse::UpdateStateOnMisbehaviour,
+            ) => Either::Right(IbcEvent::ClientMisbehaviour { client_id }),
+            (
+                UpdateClient::UpdatedState { client_id },
+                IbcResponse::UpdateState {
                     consensus_states,
                     client_state,
-                } = resp
-                else {
-                    return Err(());
-                };
-
+                },
+            ) => {
                 host.commit_raw(
                     ClientStatePath {
                         client_id: client_id.clone(),
                     }
                     .into(),
                     client_state,
-                );
+                )?;
 
                 let consensus_heights = consensus_states
                     .into_iter()
@@ -156,16 +158,17 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                             }
                             .into(),
                             state,
-                        );
-                        height
+                        )?;
+                        Ok(height)
                     })
-                    .collect();
+                    .collect::<Result<Vec<_>, <T as IbcHost>::Error>>()?;
 
                 Either::Right(IbcEvent::UpdateClient {
                     client_id,
                     consensus_heights,
                 })
             }
+            (_, _) => return Err(IbcError::UnexpectedAction.into()),
         };
         Ok(res)
     }
