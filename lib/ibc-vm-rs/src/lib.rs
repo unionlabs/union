@@ -18,6 +18,7 @@ use unionlabs::{
         commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
         connection::version::Version,
     },
+    ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
@@ -39,14 +40,14 @@ pub trait IbcHost {
 
     fn client_state(&self, client_id: &str) -> Option<Vec<u8>>;
 
-    fn read<T: Decode<Proto>>(&self, key: &str) -> Option<T>;
+    fn read<T: Decode<Proto>>(&self, path: &Path<ClientId, Height>) -> Option<T>;
 
     fn read_raw(&self, key: &str) -> Option<Vec<u8>>;
 
-    fn commit_raw(&mut self, key: String, value: Vec<u8>);
+    fn commit_raw(&mut self, key: Path<ClientId, Height>, value: Vec<u8>);
 
     // TODO(aeryz): generic over encoding
-    fn commit<T: Encode<Proto>>(&mut self, key: String, value: T);
+    fn commit<T: Encode<Proto>>(&mut self, key: Path<ClientId, Height>, value: T);
 
     fn current_height(&self) -> Height;
 

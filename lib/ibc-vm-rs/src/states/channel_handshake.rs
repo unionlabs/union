@@ -7,6 +7,10 @@ use unionlabs::{
         commitment::merkle_path::MerklePath,
         connection,
     },
+    ics24::{
+        ChannelEndPath, ConnectionPath, NextSequenceAckPath, NextSequenceRecvPath,
+        NextSequenceSendPath,
+    },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     validated::ValidateT,
 };
@@ -54,11 +58,16 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                 counterparty,
                 version,
             } => {
-                let conn: ConnectionEnd = host
-                    .read(&format!("connections/{}", connection_hops[0]))
+                let connection: ConnectionEnd = host
+                    .read(
+                        &ConnectionPath {
+                            connection_id: connection_hops[0].clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
-                if conn.state != connection::state::State::Open {
+                if connection.state != connection::state::State::Open {
                     return Err(());
                 }
 
@@ -72,7 +81,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         version,
                     },
                     IbcMsg::Status {
-                        client_id: conn.client_id,
+                        client_id: connection.client_id,
                     },
                 ))
             }
@@ -130,22 +139,38 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     version: version.clone(),
                 };
 
-                host.commit_raw(
-                    format!("channelEnds/ports/{port_id}/channels/{channel_id}"),
-                    channel.encode_as::<Proto>(),
+                host.commit(
+                    ChannelEndPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
+                    channel,
                 );
 
                 host.commit_raw(
-                    format!("nextSequenceSend/ports/{port_id}/channels/{channel_id}"),
+                    NextSequenceSendPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
                     one.clone(),
                 );
                 host.commit_raw(
-                    format!("nextSequenceRecv/ports/{port_id}/channels/{channel_id}"),
+                    NextSequenceRecvPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
                     one.clone(),
                 );
                 host.commit_raw(
-                    format!("nextSequenceAck/ports/{port_id}/channels/{channel_id}"),
-                    one.clone(),
+                    NextSequenceAckPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
+                    one,
                 );
 
                 Either::Right(IbcEvent::ChannelOpenInit {
@@ -218,11 +243,16 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                 proof_init,
                 proof_height,
             } => {
-                let conn: ConnectionEnd = host
-                    .read(&format!("connections/{}", connection_hops[0]))
+                let connection: ConnectionEnd = host
+                    .read(
+                        &ConnectionPath {
+                            connection_id: connection_hops[0].clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
-                if conn.state != connection::state::State::Open {
+                if connection.state != connection::state::State::Open {
                     return Err(());
                 }
 
@@ -230,8 +260,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
 
                 Either::Left((
                     ChannelOpenTry::StatusFetched {
-                        client_id: conn.client_id.clone(),
-                        counterparty_connection_id: conn.counterparty.connection_id,
+                        client_id: connection.client_id.clone(),
+                        counterparty_connection_id: connection.counterparty.connection_id,
                         connection_hops,
                         port_id,
                         counterparty,
@@ -241,7 +271,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         proof_height,
                     },
                     IbcMsg::Status {
-                        client_id: conn.client_id,
+                        client_id: connection.client_id,
                     },
                 ))
             }
@@ -353,22 +383,38 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     version: version.clone(),
                 };
 
-                host.commit_raw(
-                    format!("channelEnds/ports/{port_id}/channels/{channel_id}"),
-                    channel.encode_as::<Proto>(),
+                host.commit(
+                    ChannelEndPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
+                    channel,
                 );
 
                 host.commit_raw(
-                    format!("nextSequenceSend/ports/{port_id}/channels/{channel_id}"),
+                    NextSequenceSendPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
                     one.clone(),
                 );
                 host.commit_raw(
-                    format!("nextSequenceRecv/ports/{port_id}/channels/{channel_id}"),
+                    NextSequenceRecvPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
                     one.clone(),
                 );
                 host.commit_raw(
-                    format!("nextSequenceAck/ports/{port_id}/channels/{channel_id}"),
-                    one.clone(),
+                    NextSequenceAckPath {
+                        port_id: port_id.clone(),
+                        channel_id: channel_id.clone(),
+                    }
+                    .into(),
+                    one,
                 );
 
                 Either::Right(IbcEvent::ChannelOpenTry {
@@ -439,21 +485,30 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 proof_try,
                 proof_height,
             } => {
-                let chan: Channel = host
-                    .read(&format!(
-                        "channelEnds/ports/{port_id}/channels/{channel_id}"
-                    ))
+                let channel: Channel = host
+                    .read(
+                        &ChannelEndPath {
+                            port_id: port_id.clone(),
+                            channel_id: channel_id.clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
-                if chan.state != channel::state::State::Init {
+                if channel.state != channel::state::State::Init {
                     return Err(());
                 }
 
-                let conn: ConnectionEnd = host
-                    .read(&format!("connections/{}", chan.connection_hops[0]))
+                let connection: ConnectionEnd = host
+                    .read(
+                        &ConnectionPath {
+                            connection_id: channel.connection_hops[0].clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
-                if conn.state != connection::state::State::Open {
+                if connection.state != connection::state::State::Open {
                     return Err(());
                 }
 
@@ -465,14 +520,14 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         port_id,
                         counterparty_channel_id,
                         counterparty_version,
-                        client_id: conn.client_id.clone(),
-                        counterparty_connection_id: conn.counterparty.connection_id,
+                        client_id: connection.client_id.clone(),
+                        counterparty_connection_id: connection.counterparty.connection_id,
                         proof_try,
                         proof_height,
-                        counterparty_port_id: chan.counterparty.port_id,
+                        counterparty_port_id: channel.counterparty.port_id,
                     },
                     IbcMsg::Status {
-                        client_id: conn.client_id,
+                        client_id: connection.client_id,
                     },
                 ))
             }
@@ -566,9 +621,13 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     return Err(());
                 };
 
-                let channel_key = format!("channelEnds/ports/{port_id}/channels/{channel_id}");
+                let channel_path = ChannelEndPath {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                }
+                .into();
 
-                let mut channel: Channel = host.read(&channel_key).ok_or(())?;
+                let mut channel: Channel = host.read(&channel_path).ok_or(())?;
 
                 channel.state = channel::state::State::Open;
                 channel.version = counterparty_version;
@@ -577,7 +636,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 let counterparty_port_id = channel.counterparty.port_id.clone();
                 let connection_id = channel.connection_hops[0].clone();
 
-                host.commit(channel_key, channel);
+                host.commit(channel_path, channel);
 
                 Either::Right(IbcEvent::ChannelOpenAck {
                     port_id,
@@ -639,21 +698,30 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                 proof_ack,
                 proof_height,
             } => {
-                let chan: Channel = host
-                    .read(&format!(
-                        "channelEnds/ports/{port_id}/channels/{channel_id}"
-                    ))
+                let channel: Channel = host
+                    .read(
+                        &ChannelEndPath {
+                            port_id: port_id.clone(),
+                            channel_id: channel_id.clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
-                if chan.state != channel::state::State::Tryopen {
+                if channel.state != channel::state::State::Tryopen {
                     return Err(());
                 }
 
-                let conn: ConnectionEnd = host
-                    .read(&format!("connections/{}", chan.connection_hops[0]))
+                let connection: ConnectionEnd = host
+                    .read(
+                        &ConnectionPath {
+                            connection_id: channel.connection_hops[0].clone(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
-                if conn.state != connection::state::State::Open {
+                if connection.state != connection::state::State::Open {
                     return Err(());
                 }
 
@@ -663,15 +731,15 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     ChannelOpenConfirm::StatusFetched {
                         channel_id,
                         port_id,
-                        client_id: conn.client_id.clone(),
-                        counterparty_connection_id: conn.counterparty.connection_id,
+                        client_id: connection.client_id.clone(),
+                        counterparty_connection_id: connection.counterparty.connection_id,
                         proof_ack,
                         proof_height,
-                        version: chan.version,
-                        counterparty: chan.counterparty,
+                        version: channel.version,
+                        counterparty: channel.counterparty,
                     },
                     IbcMsg::Status {
-                        client_id: conn.client_id,
+                        client_id: connection.client_id,
                     },
                 ))
             }
@@ -759,15 +827,19 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     return Err(());
                 };
 
-                let channel_key = format!("channelEnds/ports/{port_id}/channels/{channel_id}");
+                let channel_path = ChannelEndPath {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                }
+                .into();
 
-                let mut channel: Channel = host.read(&channel_key).ok_or(())?;
+                let mut channel: Channel = host.read(&channel_path).ok_or(())?;
 
                 channel.state = channel::state::State::Open;
 
                 let connection_id = channel.connection_hops[0].clone();
 
-                host.commit(channel_key, channel);
+                host.commit(channel_path, channel);
 
                 Either::Right(IbcEvent::ChannelOpenConfirm {
                     port_id,

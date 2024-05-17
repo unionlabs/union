@@ -6,7 +6,9 @@ use unionlabs::{
         commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
         connection::{self, version::Version},
     },
+    ics24::ConnectionPath,
     id::ClientId,
+    validated::ValidateT,
 };
 
 use crate::{
@@ -90,7 +92,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     delay_period,
                 };
 
-                host.commit(format!("connections/{connection_id}"), end);
+                host.commit(
+                    ConnectionPath {
+                        connection_id: connection_id.clone(),
+                    }
+                    .into(),
+                    end,
+                );
 
                 Either::Right(IbcEvent::ConnectionOpenInit {
                     connection_id: connection_id.to_string(),
@@ -237,7 +245,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                 };
                 // TODO(aeryz): we don't do `addConnectionToClient` but idk why would we do it because if we want to check if connection exists for a client,
                 // we can just read the connection and check the client id
-                host.commit(format!("connections/{connection_id}"), end);
+                host.commit(
+                    ConnectionPath {
+                        connection_id: connection_id.clone(),
+                    }
+                    .into(),
+                    end,
+                );
                 Either::Right(IbcEvent::ConnectionOpenTry {
                     connection_id: connection_id.to_string(),
                     client_id,
@@ -284,7 +298,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 proof_height,
             } => {
                 let connection: ConnectionEnd = host
-                    .read(&format!("connections/{connection_id}"))
+                    .read(
+                        &ConnectionPath {
+                            connection_id: connection_id.clone().validate().unwrap(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
                 if connection.state != connection::state::State::Init {
@@ -348,7 +367,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
 
-                host.commit(format!("connections/{connection_id}"), connection);
+                host.commit(
+                    ConnectionPath {
+                        connection_id: connection_id.clone().validate().unwrap(),
+                    }
+                    .into(),
+                    connection,
+                );
 
                 Either::Right(IbcEvent::ConnectionOpenAck {
                     connection_id,
@@ -391,7 +416,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 proof_height,
             } => {
                 let connection: ConnectionEnd = host
-                    .read(&format!("connections/{connection_id}"))
+                    .read(
+                        &ConnectionPath {
+                            connection_id: connection_id.clone().validate().unwrap(),
+                        }
+                        .into(),
+                    )
                     .ok_or(())?;
 
                 if connection.state != connection::state::State::Tryopen {
@@ -453,7 +483,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 let counterparty_connection_id = connection.counterparty.connection_id.clone();
 
                 connection.state = connection::state::State::Open;
-                host.commit(format!("connections/{connection_id}"), connection);
+                host.commit(
+                    ConnectionPath {
+                        connection_id: connection_id.clone().validate().unwrap(),
+                    }
+                    .into(),
+                    connection,
+                );
 
                 Either::Right(IbcEvent::ConnectionOpenConfirm {
                     connection_id,

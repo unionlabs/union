@@ -1,17 +1,10 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    encoding::{EncodeAs, Proto},
-    ibc::core::{
-        client::height::Height,
-        commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
-        connection::{self, version::Version},
-    },
+    ics24::{ClientConsensusStatePath, ClientStatePath},
     id::ClientId,
 };
 
-use crate::{
-    Either, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status, DEFAULT_IBC_VERSION,
-};
+use crate::{Either, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum UpdateClient {
@@ -145,13 +138,23 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     return Err(());
                 };
 
-                host.commit_raw(format!("clients/{client_id}/clientState"), client_state);
+                host.commit_raw(
+                    ClientStatePath {
+                        client_id: client_id.clone(),
+                    }
+                    .into(),
+                    client_state,
+                );
 
                 let consensus_heights = consensus_states
                     .into_iter()
                     .map(|(height, state)| {
                         host.commit_raw(
-                            format!("clients/{client_id}/consensusStates/{height}"),
+                            ClientConsensusStatePath {
+                                client_id: client_id.clone(),
+                                height,
+                            }
+                            .into(),
                             state,
                         );
                         height
