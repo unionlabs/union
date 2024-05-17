@@ -78,6 +78,11 @@
           description = "RUST_LOG passed to hubble";
           example = "hubble=debug";
         };
+        log-format = mkOption {
+          type = types.str;
+          default = "json";
+          example = "plain";
+        };
       };
 
       config = mkIf cfg.enable {
@@ -94,6 +99,7 @@
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
                     ${datastore} \
+                    --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
                     --indexers '${indexersJson}'
                 '';

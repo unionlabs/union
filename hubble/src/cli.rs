@@ -3,6 +3,8 @@ use std::{net::SocketAddr, str::FromStr};
 use clap::Parser;
 use url::Url;
 
+use crate::logging::LogFormat;
+
 /// Hubble is state machine observer.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -10,17 +12,6 @@ pub struct Args {
     /// The url to the hasura graphql endpoint.
     #[arg(short, long, env = "HUBBLE_HASURA_URL")]
     pub url: Option<Url>,
-
-    /// The admin secret used to authenticate with hasura.
-    #[arg(
-        requires("url"),
-        group = "datastore",
-        required = true,
-        short = 's',
-        long,
-        env = "HUBBLE_HASURA_ADMIN_SECRET"
-    )]
-    pub hasura_admin_secret: Option<String>,
 
     /// The database url used to connect with timescaledb.
     #[arg(
@@ -43,6 +34,16 @@ pub struct Args {
     /// Fetch the counterparty chain ids for all clients known to hubble.
     #[arg(long)]
     pub fetch_client_chain_ids: bool,
+
+    /// The log format for Hubble.
+    #[arg(
+        global = true,
+        short = 'f',
+        long,
+        env = "HUBBLE_LOG_FORMAT",
+        default_value = "json"
+    )]
+    pub log_format: LogFormat,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
