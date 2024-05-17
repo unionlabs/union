@@ -7,10 +7,11 @@ use unionlabs::{
         connection,
     },
     ics24::{ChannelEndPath, ConnectionPath, ReceiptPath},
+    validated::ValidateT,
 };
 
 use super::connection_handshake::ConnectionEnd;
-use crate::{Either, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable};
+use crate::{Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum RecvPacket {
@@ -36,13 +37,16 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
         self,
         host: &mut T,
         resp: crate::IbcResponse,
-    ) -> Result<crate::Either<(Self, crate::IbcMsg), crate::IbcEvent>, ()> {
-        let res = match self {
-            RecvPacket::Init {
-                packet,
-                proof_commitment,
-                proof_height,
-            } => {
+    ) -> Result<crate::Either<(Self, crate::IbcMsg), crate::IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, resp) {
+            (
+                RecvPacket::Init {
+                    packet,
+                    proof_commitment,
+                    proof_height,
+                },
+                IbcResponse::Empty,
+            ) => {
                 let channel: Channel = host
                     .read(
                         &ChannelEndPath {
@@ -51,18 +55,33 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                         }
                         .into(),
                     )
-                    .ok_or(())?;
+                    .ok_or(IbcError::ChannelNotFound(
+                        packet.destination_port.clone(),
+                        packet.destination_channel.clone(),
+                    ))?;
 
                 if channel.state != channel::state::State::Open {
-                    return Err(());
+                    return Err(IbcError::IncorrectChannelState(
+                        channel.state,
+                        channel::state::State::Open,
+                    )
+                    .into());
                 }
 
                 if packet.source_port != channel.counterparty.port_id {
-                    return Err(());
+                    return Err(IbcError::PortMismatch(
+                        packet.source_port,
+                        channel.counterparty.port_id,
+                    )
+                    .into());
                 }
 
                 if packet.source_channel.to_string() != channel.counterparty.channel_id {
-                    return Err(());
+                    return Err(IbcError::ChannelMismatch(
+                        packet.source_channel,
+                        channel.counterparty.channel_id.validate().unwrap(),
+                    )
+                    .into());
                 }
 
                 let connection: ConnectionEnd = host
@@ -72,18 +91,24 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                         }
                         .into(),
                     )
-                    .ok_or(())?;
+                    .ok_or(IbcError::ConnectionNotFound(
+                        channel.connection_hops[0].to_string(),
+                    ))?;
 
                 if connection.state != connection::state::State::Open {
-                    return Err(());
+                    return Err(IbcError::IncorrectConnectionState(
+                        connection.state,
+                        connection::state::State::Open,
+                    )
+                    .into());
                 }
 
                 if packet.timeout_height > host.current_height() {
-                    return Err(());
+                    return Err(IbcError::TimedOutPacket.into());
                 }
 
                 if packet.timeout_timestamp > host.current_timestamp() {
-                    return Err(());
+                    return Err(IbcError::TimedOutPacket.into());
                 }
 
                 // TODO(aeryz): recv start sequence check for replay protection
@@ -154,10 +179,13 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     }
                 }
             }
-            RecvPacket::MembershipVerified { packet, channel } => {
-                let IbcResponse::VerifyMembership { valid: true } = resp else {
-                    return Err(());
-                };
+            (
+                RecvPacket::MembershipVerified { packet, channel },
+                IbcResponse::VerifyMembership { valid },
+            ) => {
+                if !valid {
+                    return Err(IbcError::MembershipVerificationFailure.into());
+                }
 
                 Either::Left((
                     RecvPacket::CallbackCalled {
@@ -169,10 +197,10 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     },
                 ))
             }
-            RecvPacket::CallbackCalled { packet, channel } => {
-                let IbcResponse::OnRecvPacket { err: false } = resp else {
-                    return Err(());
-                };
+            (RecvPacket::CallbackCalled { packet, channel }, IbcResponse::OnRecvPacket { err }) => {
+                if err {
+                    return Err(IbcError::IbcAppCallbackFailed.into());
+                }
 
                 host.commit_raw(
                     ReceiptPath {
@@ -182,7 +210,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     }
                     .into(),
                     vec![1],
-                );
+                )?;
 
                 Either::Right(IbcEvent::RecvPacket {
                     packet_data_hex: packet.data,
@@ -197,6 +225,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     connection_id: channel.connection_hops[0].clone(),
                 })
             }
+            _ => return Err(IbcError::UnexpectedAction.into()),
         };
 
         Ok(res)
