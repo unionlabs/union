@@ -23,26 +23,56 @@ export default (<Config>{
     optimizeUniversalDefaults: true
   },
   dark: "class",
-
   safelist: ["dark"],
   darkMode: ["class"],
   theme: {
-    fontSize: fluidFontSize,
-    screens: fluidScreens,
-    container: {
+    screens: _ => fluidScreens,
+    fontSize: _ => fluidFontSize,
+    container: _ => ({
       center: true,
       padding: "2rem",
       screens: { "2xl": "1400px" }
-    },
+    }),
     extend: {
-      fontSize: {
-        md: ["1rem", { lineHeight: "1.5rem" }]
-      },
-      cursor: {
+      brightness: _ => ({
+        5: ".05",
+        10: ".1",
+        40: ".4",
+        60: ".6",
+        65: ".65",
+        70: ".7",
+        80: ".8",
+        90: ".9",
+        175: "1.75"
+      }),
+      fontSize: _ => ({
+        md: ["1rem", { lineHeight: "1.5rem" }],
+        "10xl": ["10rem", { lineHeight: "10rem" }],
+        "11xl": ["11rem", { lineHeight: "11rem" }],
+        "12xl": ["12rem", { lineHeight: "12rem" }],
+        "13xl": ["13rem", { lineHeight: "13rem" }],
+        "14xl": ["14rem", { lineHeight: "14rem" }],
+        "15xl": ["15rem", { lineHeight: "15rem" }]
+      }),
+      cursor: _ => ({
         fancy: "url(hand.cur), pointer"
-      },
-      colors: {
-        // accent: unionAccents(),
+      }),
+      colors: _ => ({
+        "union-accent": {
+          DEFAULT: "#A0ECFD",
+          50: "#FAFEFF",
+          100: "#F0FCFF",
+          200: "#DCF8FE",
+          300: "#C8F4FE",
+          400: "#B4F0FD",
+          500: "#A0ECFD",
+          600: "#5FDFFC",
+          700: "#1ED2FA",
+          800: "#04ACD2",
+          900: "#037791",
+          950: "#025C70",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
+        },
         accent: {
           DEFAULT: "hsl(var(--accent) / <alpha-value>)",
           foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
@@ -77,13 +107,13 @@ export default (<Config>{
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)"
         }
-      },
-      borderRadius: {
+      }),
+      borderRadius: _ => ({
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)"
-      },
-      fontFamily: {
+      }),
+      fontFamily: _ => ({
         sans: ["Inter var", ...defaultTheme.fontFamily.sans],
         display: [
           "Inter var",
@@ -94,16 +124,16 @@ export default (<Config>{
         ],
         mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
         jetbrains: ["JetBrains Mono", ...defaultTheme.fontFamily.mono]
-      },
-      animation: {
+      }),
+      animation: _ => ({
         wiggle: "wiggle 1s ease-in-out infinite",
         "text-gradient": "text-gradient 1.5s linear infinite",
         "background-shine": "background-shine 2s linear infinite",
         "pulse-slow": "pulse 6s infinite cubic-bezier(0.4, 0, 0.6, 1)",
         "border-width": "border-width 3s infinite alternate"
-      },
+      }),
       animationDuration: { "2s": "2s" },
-      keyframes: {
+      keyframes: _ => ({
         "text-gradient": {
           to: { backgroundPosition: "200% center" }
         },
@@ -119,13 +149,13 @@ export default (<Config>{
           "0%, 100%": { transform: "rotate(-3deg)" },
           "50%": { transform: "rotate(3deg)" }
         }
-      },
-      transitionDelay: { "2000": "2000ms" },
-      transitionProperty: { height: "height", spacing: "margin, padding" },
-      transitionTimingFunction: {
+      }),
+      transitionDelay: _ => ({ "2000": "2000ms" }),
+      transitionProperty: _ => ({ height: "height", spacing: "margin, padding" }),
+      transitionTimingFunction: _ => ({
         "in-expo": "cubic-bezier(0.95, 0.05, 0.795, 0.035)",
         "out-expo": "cubic-bezier(0.19, 1, 0.22, 1)"
-      }
+      })
     }
   },
   plugins: [
@@ -133,80 +163,26 @@ export default (<Config>{
     aspectRatioPlugin,
     typographyPlugin(),
     containerQueriesPlugin,
+    customVariantsPlugin(),
     tailwindScrollbarPlugin,
-    tailwindAnimationDelay(),
     fluidPlugin({ checkSC144: false }),
-    formsPlugin({ strategy: "class" }),
-    plugin(({ addVariant, addUtilities, matchUtilities, theme }) => {
-      matchUtilities(
-        { "animation-delay": value => ({ "animation-delay": value }) },
-        { values: theme("transitionDelay") }
-      )
-      addVariant("optional", "&:optional")
-      addVariant("hocus", ["&:hover", "&:focus"])
-      addUtilities({
-        ".content-auto": { "content-visibility": "auto" },
-        ".content-hidden": { "content-visibility": "hidden" },
-        ".content-visible": { "content-visibility": "visible" }
-      })
-      addVariant("inverted-colors", "@media (inverted-colors: inverted)")
-    })
+    formsPlugin({ strategy: "class" })
   ]
 })
 
-function unionAccents() {
-  return {
-    DEFAULT: "#A0ECFD",
-    50: "#FAFEFF",
-    100: "#F0FCFF",
-    200: "#DCF8FE",
-    300: "#C8F4FE",
-    400: "#B4F0FD",
-    500: "#A0ECFD",
-    600: "#5FDFFC",
-    700: "#1ED2FA",
-    800: "#04ACD2",
-    900: "#037791",
-    950: "#025C70",
-    foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
-  }
-}
-
-function tailwindAnimationDelay() {
-  return plugin(({ addUtilities, theme, e }) => {
-    const defaultValues = {
-      none: "0s",
-      75: "75ms",
-      100: "100ms",
-      150: "150ms",
-      200: "200ms",
-      300: "300ms",
-      400: "400ms",
-      500: "500ms",
-      600: "600ms",
-      700: "700ms",
-      800: "800ms",
-      900: "900ms",
-      1000: "1000ms",
-      1100: "1100ms",
-      1200: "1200ms",
-      1300: "1300ms",
-      1400: "1400ms",
-      1500: "1500ms",
-      2000: "2000ms",
-      3000: "3000ms",
-      4000: "4000ms",
-      5000: "5000ms",
-      6000: "6000ms",
-      7000: "7000ms",
-      8000: "8000ms",
-      9000: "9000ms"
-    }
-    const userValues = theme("animationDelay")
-    const values = { ...defaultValues, ...userValues }
-    const utilities = Object.entries(values).map(([key, value]) => ({
-      [`.${e(`animation-delay-${key}`)}`]: { animationDelay: `${value}` }
-    }))
-    addUtilities(utilities)
+function customVariantsPlugin() {
+  return plugin(({ addVariant, addUtilities, matchUtilities, theme }) => {
+    matchUtilities(
+      { "animation-delay": value => ({ "animation-delay": value }) },
+      { values: theme("transitionDelay") }
+    )
+    addVariant("optional", "&:optional")
+    addVariant("hocus", ["&:hover", "&:focus"])
+    addUtilities({
+      ".content-auto": { "content-visibility": "auto" },
+      ".content-hidden": { "content-visibility": "hidden" },
+      ".content-visible": { "content-visibility": "visible" }
+    })
+    addVariant("inverted-colors", "@media (inverted-colors: inverted)")
   })
 }

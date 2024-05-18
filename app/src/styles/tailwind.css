@@ -6,38 +6,18 @@
 @tailwind utilities;
 @tailwind components;
 /* @tailwind variants; */
- 
-@font-face {
-  font-family: 'Inter var';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/inter/InterVariable.woff2') format('woff2');
+
+@layer components {
+  .min-size-full {
+    min-width: 100%;
+    min-height: 100%;
+  }
+  .min-size-min {
+    min-width: min-content;
+    min-height: min-content;
+  }
 }
 
-@font-face {
-  font-family: 'Inter var';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/inter/InterVariable-Italic.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono/JetBrainsMono.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono/JetBrainsMono-Italic.woff2') format('woff2');
-}
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -152,6 +132,17 @@
 }
 
 @layer utilities {
+  .content-auto {
+    content-visibility: auto;
+  }
+
+  .filter-none {
+    filter: none;
+  }
+  .filter-grayscale {
+    filter: grayscale(100%);
+  }
+
   .step {
     counter-increment: step;
   }

@@ -11,7 +11,7 @@ import { Shine } from "svelte-ux"
 <header
   class="bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30 py-4 pr-4 px-2 lg:px-4 min-w-full w-screen"
 >
-  <Shine depth={3} lightColor="#a0ecfd">
+  <Shine depth={10} lightColor="#a0ecfd">
     <Button
       href="/"
       variant="link"

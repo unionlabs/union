@@ -1,16 +1,20 @@
 <script lang="ts">
 import { Shine } from "svelte-ux"
-import { cn } from "$lib/utilities/shadcn.ts"
 </script>
 
-<svelte:head></svelte:head>
-
-<main
-  class={cn(
-    'mt-12 flex size-full min-w-full min-h-full flex-col items-center justify-center space-y-6 dark:text-white',
-  )}
->
-  <Shine depth={3} lightColor="#a0ecfd">
-    <h1 class="~sm/md:~text-8xl/9xl font-black text-[9rem] leading-[9rem] grayscale-[50] brightness-50 cursor-default">zkGM</h1>
+<main class="mt-16 flex size-full min-size-full flex-col items-center justify-center">
+  <Shine
+    depth={1}
+    surfaceScale={4}
+    lightRadius={300}
+    lightColor="#a0ecfd"
+    specularExponent={120}
+    specularConstant={0.75}
+  >
+    <h1
+      class="~sm/md:~text-9xl/12xl font-black text-[9rem] leading-[9rem] brightness-60 cursor-default select-none"
+    >
+      zkGM
+    </h1>
   </Shine>
 </main>

@@ -9,6 +9,7 @@ import { Input } from "$lib/components/ui/input/index.ts"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { superForm, defaults } from "sveltekit-superforms"
 import { Button } from "$lib/components/ui/button/index.ts"
+import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import LoadingIcon from "virtual:icons/lucide/loader-circle"
 import * as flashModule from "sveltekit-flash-message/client"
@@ -18,7 +19,6 @@ import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import { Separator } from "$lib/components/ui/separator/index.ts"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 
 /**
  * TODO:
@@ -37,8 +37,11 @@ $: {
   }
 }
 
+let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
+const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+
 const superFormResults = superForm(
-  defaults({ address: $cosmosStore.address }, valibot(faucetFormSchema)),
+  defaults({ address: $cosmosStore.address ?? "" }, valibot(faucetFormSchema)),
   {
     SPA: true,
     validators: valibot(faucetFormSchema),
@@ -83,16 +86,9 @@ const superFormResults = superForm(
 
 const { enhance, message, delayed, errors, submitting, form } = superFormResults
 
-$: unionTransfers = unionTransfersQuery({
-  address: $form.address,
-  include: ["RECEIVED"],
-  refetchInterval: 5_000,
-  enabled: !!$form.address && isValidCosmosAddress($form.address)
-})
-
-$: newTransfers =
-  $unionTransfers?.data.filter(transfer => Date.parse(transfer.timestamp) > Date.now() - 60_000) ??
-  []
+$: {
+  console.log(JSON.stringify(superFormResults, undefined, 2))
+}
 
 let opacity = 0
 let focused = false
@@ -110,8 +106,16 @@ const handleBlur = () => ([focused, opacity] = [false, 0])
 const handleMouseEnter = () => (opacity = 1)
 const handleMouseLeave = () => (opacity = 0)
 
-let inputState: "locked" | "unlocked" = "locked"
-const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+$: unionTransfers = unionTransfersQuery({
+  address: $form.address,
+  include: ["RECEIVED"],
+  refetchInterval: 5_000,
+  enabled: !!$form.address && isValidCosmosAddress($form.address)
+})
+
+$: newTransfers =
+  $unionTransfers?.data.filter(transfer => Date.parse(transfer.timestamp) > Date.now() - 60_000) ??
+  []
 </script>
 
 <svelte:head>
@@ -135,7 +139,8 @@ const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "
     use:enhance
     method="POST"
     class={cn(
-      'sm:w-[480px] w-[425px] max-w-[580px] space-y-8',
+      'space-y-8 max-w-[580px]',
+      $cosmosStore.address ? 'sm:w-[480px] w-[425px]' : 'sm:w-[460px] w-[400px]',
       ($delayed || $submitting || $message?.status === 'success') && 'invisible',
     )}
   >
@@ -147,12 +152,16 @@ const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "
             {...attrs}
             type="text"
             name="address"
+            required={true}
             autocorrect="off"
             autocomplete="off"
             spellcheck="false"
             autocapitalize="none"
             on:blur={handleBlur}
             on:focus={handleFocus}
+            on:input={event => {
+              console.log('Input event', event)
+            }}
             bind:value={$form.address}
             on:mousemove={handleMouseMove}
             on:mouseleave={handleMouseLeave}
@@ -162,6 +171,7 @@ const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "
             disabled={$submitting || inputState === 'locked'}
             placeholder="union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
             class={cn(
+              'peer',
               submissionStatus === 'submitting' && 'animate-pulse',
               'sm:text-md text-sm w-full h-10 sm:h-11 disabled:opacity-90 disabled:bg-stone-900',
               'rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9]',
@@ -179,27 +189,33 @@ const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "
             `}
             class="pointer-events-none absolute left-0 top-0 z-10 h-10 sm:h-11 w-full cursor-default rounded-md border border-[#8678F9] bg-[transparent] p-3.5 opacity-0 transition-opacity duration-500 placeholder:select-none"
           />
-          <Button
-            size="icon"
-            type="button"
-            variant="ghost"
-            name="recipient-lock"
-            on:click={onLockClick}
-            class="absolute bottom-0 sm:bottom-[2px] right-0 rounded-l-none"
-          >
-            <LockLockedIcon
-              class={cn(inputState === 'locked' && $form.address.length > 0 ? 'size-5' : 'hidden')}
-            />
-            <LockOpenIcon
-              class={cn(inputState === 'unlocked' || !$form.address.length ? 'size-5' : 'hidden')}
-            />
-          </Button>
+          {#if $cosmosStore.address}
+            <Button
+              size="icon"
+              type="button"
+              variant="ghost"
+              name="recipient-lock"
+              on:click={onLockClick}
+              class="absolute bottom-0 sm:bottom-[2px] right-0 rounded-l-none"
+            >
+              <LockLockedIcon
+                class={cn(
+                  inputState === 'locked' && $form.address.length > 0 ? 'size-5' : 'hidden',
+                )}
+              />
+              <LockOpenIcon
+                class={cn(inputState === 'unlocked' || !$form.address.length ? 'size-5' : 'hidden')}
+              />
+            </Button>
+          {/if}
         </div>
       </Form.Control>
-      <Form.Description class="text-sm">A valid Union wallet address</Form.Description>
-      <Form.FieldErrors />
+      <Form.FieldErrors class="field-errors peer" />
+      <Form.Description class="block peer-[&:not(:empty)]:hidden text-sm">
+        A valid Union wallet address
+      </Form.Description>
     </Form.Field>
-    <div class="flex gap-x-5 w-full">
+    <div class="flex gap-x-3 w-full">
       <Form.Button
         disabled={$submitting || $form.address.length === 0}
         class={cn(
@@ -234,3 +250,6 @@ const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "
 
   <section class="mt-6 hidden sm:block w-full max-w-[520px] text-sm"></section>
 </main>
+
+<style lang="postcss">
+</style>
