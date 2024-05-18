@@ -218,7 +218,7 @@ impl<T: IbcHost> Runnable<T> for IbcState {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = cast_either!(
             self,
             host,
@@ -240,14 +240,26 @@ impl<T: IbcHost> Runnable<T> for IbcState {
     }
 }
 
+impl From<Vec<IbcQuery>> for IbcAction {
+    fn from(value: Vec<IbcQuery>) -> Self {
+        IbcAction::Query(value)
+    }
+}
+
+impl From<IbcMsg> for IbcAction {
+    fn from(value: IbcMsg) -> Self {
+        IbcAction::Write(value)
+    }
+}
+
 #[derive(Deserialize)]
-pub enum IbcMsg {
-    Initialize {
-        client_id: ClientId,
-        client_type: String,
-        client_state: Vec<u8>,
-        consensus_state: Vec<u8>,
-    },
+pub enum IbcAction {
+    Query(Vec<IbcQuery>),
+    Write(IbcMsg),
+}
+
+#[derive(Deserialize)]
+pub enum IbcQuery {
     Status {
         client_id: ClientId,
     },
@@ -271,17 +283,26 @@ pub enum IbcMsg {
         client_msg: Vec<u8>,
     },
 
+    CheckForMisbehaviour {
+        client_id: ClientId,
+        client_msg: Vec<u8>,
+    },
+}
+
+#[derive(Deserialize)]
+pub enum IbcMsg {
+    Initialize {
+        client_id: ClientId,
+        client_type: String,
+        client_state: Vec<u8>,
+        consensus_state: Vec<u8>,
+    },
     UpdateStateOnMisbehaviour {
         client_id: ClientId,
         client_msg: Vec<u8>,
     },
 
     UpdateState {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
-
-    CheckForMisbehaviour {
         client_id: ClientId,
         client_msg: Vec<u8>,
     },
@@ -425,7 +446,7 @@ pub trait Runnable<T: IbcHost>: Serialize + Sized {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error>;
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error>;
 }
 
 pub enum Either<L, R> {

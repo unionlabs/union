@@ -16,8 +16,8 @@ use unionlabs::{
 };
 
 use crate::{
-    states::connection_handshake::ConnectionEnd, Either, IbcError, IbcEvent, IbcHost, IbcMsg,
-    IbcResponse, Runnable, Status,
+    states::connection_handshake::ConnectionEnd, Either, IbcAction, IbcError, IbcEvent, IbcHost,
+    IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -51,7 +51,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenInit::Init {
@@ -89,9 +89,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         counterparty,
                         version,
                     },
-                    vec![IbcMsg::Status {
+                    vec![IbcQuery::Status {
                         client_id: connection.client_id,
-                    }],
+                    }]
+                    .into(),
                 ))
             }
             (
@@ -118,14 +119,15 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         counterparty: counterparty.clone(),
                         version: version.clone(),
                     },
-                    vec![IbcMsg::OnChannelOpenInit {
+                    IbcMsg::OnChannelOpenInit {
                         order: Order::Unordered,
                         connection_hops,
                         port_id,
                         channel_id,
                         counterparty,
                         version,
-                    }],
+                    }
+                    .into(),
                 ))
             }
             (
@@ -235,7 +237,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenTry::Init {
@@ -293,10 +295,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         counterparty_version,
                     },
                     vec![
-                        IbcMsg::Status {
+                        IbcQuery::Status {
                             client_id: connection.client_id.clone(),
                         },
-                        IbcMsg::VerifyMembership {
+                        IbcQuery::VerifyMembership {
                             client_id: connection.client_id,
                             height: proof_height,
                             delay_time_period: 0,
@@ -313,7 +315,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                             },
                             value: expected_channel.encode_as::<Proto>(),
                         },
-                    ],
+                    ]
+                    .into(),
                 ))
             }
             (
@@ -344,14 +347,15 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         counterparty: counterparty.clone(),
                         version: version.clone(),
                     },
-                    vec![IbcMsg::OnChannelOpenTry {
+                    IbcMsg::OnChannelOpenTry {
                         order: Order::Unordered,
                         connection_hops,
                         port_id,
                         channel_id,
                         counterparty,
                         counterparty_version,
-                    }],
+                    }
+                    .into(),
                 ))
             }
             (
@@ -460,7 +464,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenAck::Init {
@@ -537,10 +541,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         client_id: connection.client_id.clone(),
                     },
                     vec![
-                        IbcMsg::Status {
+                        IbcQuery::Status {
                             client_id: connection.client_id.clone(),
                         },
-                        IbcMsg::VerifyMembership {
+                        IbcQuery::VerifyMembership {
                             client_id: connection.client_id,
                             height: proof_height,
                             delay_time_period: 0,
@@ -557,7 +561,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                             },
                             value: expected_channel.encode_as::<Proto>(),
                         },
-                    ],
+                    ]
+                    .into(),
                 ))
             }
             (
@@ -585,12 +590,13 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         counterparty_channel_id: counterparty_channel_id.clone(),
                         counterparty_version: counterparty_version.clone(),
                     },
-                    vec![IbcMsg::OnChannelOpenAck {
+                    IbcMsg::OnChannelOpenAck {
                         port_id,
                         channel_id,
                         counterparty_channel_id,
                         counterparty_version,
-                    }],
+                    }
+                    .into(),
                 ))
             }
             (
@@ -668,7 +674,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenConfirm::Init {
@@ -745,10 +751,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         counterparty: channel.counterparty.clone(),
                     },
                     vec![
-                        IbcMsg::Status {
+                        IbcQuery::Status {
                             client_id: connection.client_id.clone(),
                         },
-                        IbcMsg::VerifyMembership {
+                        IbcQuery::VerifyMembership {
                             client_id: connection.client_id.clone(),
                             height: proof_height,
                             delay_time_period: 0,
@@ -766,7 +772,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                             },
                             value: expected_channel.encode_as::<Proto>(),
                         },
-                    ],
+                    ]
+                    .into(),
                 ))
             }
             (
@@ -792,10 +799,11 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         port_id: port_id.clone(),
                         counterparty,
                     },
-                    vec![IbcMsg::OnChannelOpenConfirm {
+                    IbcMsg::OnChannelOpenConfirm {
                         port_id,
                         channel_id,
-                    }],
+                    }
+                    .into(),
                 ))
             }
             (
