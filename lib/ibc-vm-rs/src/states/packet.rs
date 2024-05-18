@@ -36,8 +36,8 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
     fn process(
         self,
         host: &mut T,
-        resp: crate::IbcResponse,
-    ) -> Result<crate::Either<(Self, crate::IbcMsg), crate::IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 RecvPacket::Init {
@@ -45,7 +45,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     proof_commitment,
                     proof_height,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let channel: Channel = host
                     .read(
@@ -156,7 +156,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                 packet: packet.clone(),
                                 channel: channel.clone(),
                             },
-                            IbcMsg::VerifyMembership {
+                            vec![IbcMsg::VerifyMembership {
                                 client_id: connection.client_id,
                                 height: proof_height,
                                 delay_time_period: 0,
@@ -174,14 +174,14 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                     ],
                                 },
                                 value: host.sha256(packet_commitment),
-                            },
+                            }],
                         ))
                     }
                 }
             }
             (
                 RecvPacket::MembershipVerified { packet, channel },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::VerifyMembership { valid }],
             ) => {
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
@@ -192,12 +192,15 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                         packet: packet.clone(),
                         channel,
                     },
-                    IbcMsg::OnRecvPacket {
+                    vec![IbcMsg::OnRecvPacket {
                         packet: packet.clone(),
-                    },
+                    }],
                 ))
             }
-            (RecvPacket::CallbackCalled { packet, channel }, IbcResponse::OnRecvPacket { err }) => {
+            (
+                RecvPacket::CallbackCalled { packet, channel },
+                &[IbcResponse::OnRecvPacket { err }],
+            ) => {
                 if err {
                     return Err(IbcError::IbcAppCallbackFailed.into());
                 }

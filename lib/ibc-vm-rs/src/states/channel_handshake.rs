@@ -50,8 +50,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenInit::Init {
@@ -60,7 +60,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     counterparty,
                     version,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let connection: ConnectionEnd = host
                     .read(
@@ -89,9 +89,9 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         counterparty,
                         version,
                     },
-                    IbcMsg::Status {
+                    vec![IbcMsg::Status {
                         client_id: connection.client_id,
-                    },
+                    }],
                 ))
             }
             (
@@ -102,7 +102,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     counterparty,
                     version,
                 },
-                IbcResponse::Status { status },
+                &[IbcResponse::Status { status }],
             ) => {
                 if status != Status::Active {
                     return Err(IbcError::NotActive(client_id, status).into());
@@ -118,14 +118,14 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         counterparty: counterparty.clone(),
                         version: version.clone(),
                     },
-                    IbcMsg::OnChannelOpenInit {
+                    vec![IbcMsg::OnChannelOpenInit {
                         order: Order::Unordered,
                         connection_hops,
                         port_id,
                         channel_id,
                         counterparty,
                         version,
-                    },
+                    }],
                 ))
             }
             (
@@ -136,7 +136,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     counterparty,
                     version,
                 },
-                IbcResponse::OnChannelOpenAck { err },
+                &[IbcResponse::OnChannelOpenAck { err }],
             ) => {
                 if err {
                     return Err(IbcError::IbcAppCallbackFailed.into());
@@ -212,24 +212,13 @@ pub enum ChannelOpenTry {
         proof_height: Height,
     },
 
-    StatusFetched {
+    LcQueriesMade {
         client_id: ClientId,
         connection_hops: Vec<ConnectionId>,
         port_id: PortId,
-        counterparty_connection_id: String,
         counterparty: channel::counterparty::Counterparty,
         counterparty_version: String,
         version: String,
-        proof_init: Vec<u8>,
-        proof_height: Height,
-    },
-
-    MembershipVerified {
-        connection_hops: Vec<ConnectionId>,
-        port_id: PortId,
-        counterparty: channel::counterparty::Counterparty,
-        version: String,
-        counterparty_version: String,
     },
 
     CallbackCalled {
@@ -245,8 +234,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenTry::Init {
@@ -258,7 +247,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     proof_init,
                     proof_height,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let connection: ConnectionEnd = host
                     .read(
@@ -277,43 +266,6 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     .into());
                 }
 
-                // TODO(aeryz): check if port_id is a valid addr here?
-
-                Either::Left((
-                    ChannelOpenTry::StatusFetched {
-                        client_id: connection.client_id.clone(),
-                        counterparty_connection_id: connection.counterparty.connection_id,
-                        connection_hops,
-                        port_id,
-                        counterparty,
-                        version,
-                        counterparty_version,
-                        proof_init,
-                        proof_height,
-                    },
-                    IbcMsg::Status {
-                        client_id: connection.client_id,
-                    },
-                ))
-            }
-            (
-                ChannelOpenTry::StatusFetched {
-                    connection_hops,
-                    port_id,
-                    counterparty,
-                    version,
-                    counterparty_version,
-                    proof_init,
-                    proof_height,
-                    client_id,
-                    counterparty_connection_id,
-                },
-                IbcResponse::Status { status },
-            ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
-                }
-
                 let expected_channel = Channel {
                     state: channel::state::State::Init,
                     ordering: Order::Unordered,
@@ -321,51 +273,67 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         port_id: port_id.clone(),
                         channel_id: "".to_string(),
                     },
-                    connection_hops: vec![counterparty_connection_id.validate().unwrap()],
+                    connection_hops: vec![connection
+                        .counterparty
+                        .connection_id
+                        .validate()
+                        .unwrap()],
                     version: counterparty_version.clone(),
                 };
 
+                // TODO(aeryz): check if port_id is a valid addr here?
+
                 Either::Left((
-                    ChannelOpenTry::MembershipVerified {
+                    ChannelOpenTry::LcQueriesMade {
+                        client_id: connection.client_id.clone(),
                         connection_hops,
                         port_id,
                         counterparty: counterparty.clone(),
-                        counterparty_version,
                         version,
+                        counterparty_version,
                     },
-                    IbcMsg::VerifyMembership {
-                        client_id,
-                        height: proof_height,
-                        delay_time_period: 0,
-                        delay_block_period: 0,
-                        proof: proof_init,
-                        path: MerklePath {
-                            key_path: vec![
-                                "ibc".to_string(),
-                                format!(
-                                    "channelEnds/ports/{}/channels/{}",
-                                    counterparty.port_id, counterparty.channel_id
-                                ),
-                            ],
+                    vec![
+                        IbcMsg::Status {
+                            client_id: connection.client_id.clone(),
                         },
-                        value: expected_channel.encode_as::<Proto>(),
-                    },
+                        IbcMsg::VerifyMembership {
+                            client_id: connection.client_id,
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: proof_init,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".to_string(),
+                                    format!(
+                                        "channelEnds/ports/{}/channels/{}",
+                                        counterparty.port_id, counterparty.channel_id
+                                    ),
+                                ],
+                            },
+                            value: expected_channel.encode_as::<Proto>(),
+                        },
+                    ],
                 ))
             }
             (
-                ChannelOpenTry::MembershipVerified {
+                ChannelOpenTry::LcQueriesMade {
                     connection_hops,
                     port_id,
                     counterparty,
                     version,
                     counterparty_version,
+                    client_id,
                 },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
             ) => {
+                if status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, status).into());
+                }
+
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
                 }
-
                 let channel_id = host.next_channel_identifier()?;
 
                 Either::Left((
@@ -376,14 +344,14 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         counterparty: counterparty.clone(),
                         version: version.clone(),
                     },
-                    IbcMsg::OnChannelOpenTry {
+                    vec![IbcMsg::OnChannelOpenTry {
                         order: Order::Unordered,
                         connection_hops,
                         port_id,
                         channel_id,
                         counterparty,
                         counterparty_version,
-                    },
+                    }],
                 ))
             }
             (
@@ -394,7 +362,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     counterparty,
                     version,
                 },
-                IbcResponse::OnChannelOpenTry { err },
+                &[IbcResponse::OnChannelOpenTry { err }],
             ) => {
                 if err {
                     return Err(IbcError::IbcAppCallbackFailed.into());
@@ -471,19 +439,8 @@ pub enum ChannelOpenAck {
         proof_height: Height,
     },
 
-    StatusFetched {
+    LcQueriesMade {
         client_id: ClientId,
-        counterparty_connection_id: String,
-        channel_id: ChannelId,
-        port_id: PortId,
-        counterparty_channel_id: String,
-        counterparty_port_id: PortId,
-        counterparty_version: String,
-        proof_try: Vec<u8>,
-        proof_height: Height,
-    },
-
-    MembershipVerified {
         channel_id: ChannelId,
         port_id: PortId,
         counterparty_channel_id: String,
@@ -502,8 +459,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenAck::Init {
@@ -514,7 +471,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     proof_try,
                     proof_height,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let channel: Channel = host
                     .read(
@@ -553,43 +510,6 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     .into());
                 }
 
-                // TODO(aeryz): check if port_id is a valid addr here?
-
-                Either::Left((
-                    ChannelOpenAck::StatusFetched {
-                        channel_id,
-                        port_id,
-                        counterparty_channel_id,
-                        counterparty_version,
-                        client_id: connection.client_id.clone(),
-                        counterparty_connection_id: connection.counterparty.connection_id,
-                        proof_try,
-                        proof_height,
-                        counterparty_port_id: channel.counterparty.port_id,
-                    },
-                    IbcMsg::Status {
-                        client_id: connection.client_id,
-                    },
-                ))
-            }
-            (
-                ChannelOpenAck::StatusFetched {
-                    channel_id,
-                    port_id,
-                    counterparty_channel_id,
-                    counterparty_version,
-                    client_id,
-                    counterparty_connection_id,
-                    proof_try,
-                    proof_height,
-                    counterparty_port_id,
-                },
-                IbcResponse::Status { status },
-            ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
-                }
-
                 let expected_channel = Channel {
                     state: channel::state::State::Tryopen,
                     ordering: Order::Unordered,
@@ -598,44 +518,62 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         port_id: port_id.clone(),
                         channel_id: channel_id.clone().to_string(),
                     },
-                    connection_hops: vec![counterparty_connection_id.validate().unwrap()],
+                    connection_hops: vec![connection
+                        .counterparty
+                        .connection_id
+                        .validate()
+                        .unwrap()],
                     version: counterparty_version.clone(),
                 };
 
+                // TODO(aeryz): check if port_id is a valid addr here?
+
                 Either::Left((
-                    ChannelOpenAck::MembershipVerified {
+                    ChannelOpenAck::LcQueriesMade {
                         channel_id,
                         port_id,
                         counterparty_channel_id: counterparty_channel_id.clone(),
                         counterparty_version,
+                        client_id: connection.client_id.clone(),
                     },
-                    IbcMsg::VerifyMembership {
-                        client_id,
-                        height: proof_height,
-                        delay_time_period: 0,
-                        delay_block_period: 0,
-                        proof: proof_try,
-                        path: MerklePath {
-                            key_path: vec![
-                                "ibc".to_string(),
-                                format!(
-                                    "channelEnds/ports/{counterparty_port_id}/channels/{counterparty_channel_id}",
-                                ),
-                            ],
+                    vec![
+                        IbcMsg::Status {
+                            client_id: connection.client_id.clone(),
                         },
-                        value: expected_channel.encode_as::<Proto>(),
-                    },
+                        IbcMsg::VerifyMembership {
+                            client_id: connection.client_id,
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: proof_try,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".to_string(),
+                                    format!(
+                                        "channelEnds/ports/{}/channels/{counterparty_channel_id}",
+                                        channel.counterparty.port_id,
+                                    ),
+                                ],
+                            },
+                            value: expected_channel.encode_as::<Proto>(),
+                        },
+                    ],
                 ))
             }
             (
-                ChannelOpenAck::MembershipVerified {
+                ChannelOpenAck::LcQueriesMade {
                     channel_id,
                     port_id,
                     counterparty_channel_id,
                     counterparty_version,
+                    client_id,
                 },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
             ) => {
+                if status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, status).into());
+                }
+
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
                 }
@@ -647,12 +585,12 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         counterparty_channel_id: counterparty_channel_id.clone(),
                         counterparty_version: counterparty_version.clone(),
                     },
-                    IbcMsg::OnChannelOpenAck {
+                    vec![IbcMsg::OnChannelOpenAck {
                         port_id,
                         channel_id,
                         counterparty_channel_id,
                         counterparty_version,
-                    },
+                    }],
                 ))
             }
             (
@@ -662,7 +600,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     counterparty_channel_id,
                     counterparty_version,
                 },
-                IbcResponse::OnChannelOpenAck { err },
+                &[IbcResponse::OnChannelOpenAck { err }],
             ) => {
                 if err {
                     return Err(IbcError::IbcAppCallbackFailed.into());
@@ -711,21 +649,11 @@ pub enum ChannelOpenConfirm {
         proof_height: Height,
     },
 
-    StatusFetched {
+    LcQueriesMade {
         client_id: ClientId,
         counterparty: channel::counterparty::Counterparty,
-        counterparty_connection_id: String,
         channel_id: ChannelId,
         port_id: PortId,
-        proof_ack: Vec<u8>,
-        proof_height: Height,
-        version: String,
-    },
-
-    MembershipVerified {
-        channel_id: ChannelId,
-        port_id: PortId,
-        counterparty: channel::counterparty::Counterparty,
     },
 
     CallbackCalled {
@@ -739,8 +667,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenConfirm::Init {
@@ -749,7 +677,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     proof_ack,
                     proof_height,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let channel: Channel = host
                     .read(
@@ -791,41 +719,6 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     .into());
                 }
 
-                // TODO(aeryz): check if port_id is a valid addr here?
-
-                Either::Left((
-                    ChannelOpenConfirm::StatusFetched {
-                        channel_id,
-                        port_id,
-                        client_id: connection.client_id.clone(),
-                        counterparty_connection_id: connection.counterparty.connection_id,
-                        proof_ack,
-                        proof_height,
-                        version: channel.version,
-                        counterparty: channel.counterparty,
-                    },
-                    IbcMsg::Status {
-                        client_id: connection.client_id,
-                    },
-                ))
-            }
-            (
-                ChannelOpenConfirm::StatusFetched {
-                    client_id,
-                    counterparty_connection_id,
-                    channel_id,
-                    port_id,
-                    proof_ack,
-                    proof_height,
-                    version,
-                    counterparty,
-                },
-                IbcResponse::Status { status },
-            ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
-                }
-
                 let expected_channel = Channel {
                     state: channel::state::State::Open,
                     ordering: Order::Unordered,
@@ -834,43 +727,61 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         port_id: port_id.clone(),
                         channel_id: channel_id.clone().to_string(),
                     },
-                    connection_hops: vec![counterparty_connection_id.validate().unwrap()],
-                    version,
+                    connection_hops: vec![connection
+                        .counterparty
+                        .connection_id
+                        .validate()
+                        .unwrap()],
+                    version: channel.version,
                 };
 
+                // TODO(aeryz): check if port_id is a valid addr here?
+
                 Either::Left((
-                    ChannelOpenConfirm::MembershipVerified {
+                    ChannelOpenConfirm::LcQueriesMade {
                         channel_id,
                         port_id,
-                        counterparty: counterparty.clone(),
+                        client_id: connection.client_id.clone(),
+                        counterparty: channel.counterparty.clone(),
                     },
-                    IbcMsg::VerifyMembership {
-                        client_id,
-                        height: proof_height,
-                        delay_time_period: 0,
-                        delay_block_period: 0,
-                        proof: proof_ack,
-                        path: MerklePath {
-                            key_path: vec![
-                                "ibc".to_string(),
-                                format!(
-                                    "channelEnds/ports/{}/channels/{}",
-                                    counterparty.port_id, counterparty.channel_id,
-                                ),
-                            ],
+                    vec![
+                        IbcMsg::Status {
+                            client_id: connection.client_id.clone(),
                         },
-                        value: expected_channel.encode_as::<Proto>(),
-                    },
+                        IbcMsg::VerifyMembership {
+                            client_id: connection.client_id.clone(),
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: proof_ack,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".to_string(),
+                                    format!(
+                                        "channelEnds/ports/{}/channels/{}",
+                                        channel.counterparty.port_id,
+                                        channel.counterparty.channel_id,
+                                    ),
+                                ],
+                            },
+                            value: expected_channel.encode_as::<Proto>(),
+                        },
+                    ],
                 ))
             }
             (
-                ChannelOpenConfirm::MembershipVerified {
+                ChannelOpenConfirm::LcQueriesMade {
+                    client_id,
                     channel_id,
                     port_id,
                     counterparty,
                 },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
             ) => {
+                if status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, status).into());
+                }
+
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
                 }
@@ -881,10 +792,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         port_id: port_id.clone(),
                         counterparty,
                     },
-                    IbcMsg::OnChannelOpenConfirm {
+                    vec![IbcMsg::OnChannelOpenConfirm {
                         port_id,
                         channel_id,
-                    },
+                    }],
                 ))
             }
             (
@@ -893,7 +804,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     port_id,
                     counterparty,
                 },
-                IbcResponse::OnChannelOpenConfirm { err },
+                &[IbcResponse::OnChannelOpenConfirm { err }],
             ) => {
                 if err {
                     return Err(IbcError::IbcAppCallbackFailed.into());

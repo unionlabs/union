@@ -39,8 +39,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenInit::Init {
@@ -49,7 +49,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     version,
                     delay_period,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 // supported version
                 verify_version_supported(&DEFAULT_IBC_VERSION, &version)?;
@@ -60,7 +60,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                         versions: DEFAULT_IBC_VERSION.clone(),
                         delay_period,
                     },
-                    IbcMsg::Status { client_id },
+                    vec![IbcMsg::Status { client_id }],
                 ))
             }
             (
@@ -70,7 +70,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     versions,
                     delay_period,
                 },
-                IbcResponse::Status { status },
+                &[IbcResponse::Status { status }],
             ) => {
                 if status != Status::Active {
                     return Err(IbcError::NotActive(client_id, status).into());
@@ -182,8 +182,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenTry::Init {
@@ -194,7 +194,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     proof_height,
                     delay_period,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 // TODO(aeryz): do we want to do `validateSelfClient`?
                 let expected_counterparty = ConnectionEnd {
@@ -220,7 +220,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         counterparty,
                         delay_period,
                     },
-                    IbcMsg::VerifyMembership {
+                    vec![IbcMsg::VerifyMembership {
                         client_id,
                         height: proof_height,
                         delay_time_period: 0,
@@ -234,7 +234,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         },
                         // TODO(aeryz): generic over the encoding
                         value: expected_counterparty.encode_as::<Proto>(),
-                    },
+                    }],
                 ))
             }
             (
@@ -243,7 +243,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     counterparty,
                     delay_period,
                 },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::VerifyMembership { valid }],
             ) => {
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
@@ -302,8 +302,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenAck::Init {
@@ -313,7 +313,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     connection_end_proof,
                     proof_height,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let connection: ConnectionEnd = host
                     .read(
@@ -358,7 +358,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         connection_id,
                         connection,
                     },
-                    IbcMsg::VerifyMembership {
+                    vec![IbcMsg::VerifyMembership {
                         client_id,
                         height: proof_height,
                         delay_time_period: 0,
@@ -372,7 +372,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         },
                         // TODO(aeryz): generic encoding
                         value: expected_counterparty.encode_as::<Proto>(),
-                    },
+                    }],
                 ))
             }
             (
@@ -382,7 +382,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     connection_id,
                     counterparty_connection_id,
                 },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::VerifyMembership { valid }],
             ) => {
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
@@ -433,8 +433,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenConfirm::Init {
@@ -442,7 +442,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     connection_end_proof,
                     proof_height,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let connection: ConnectionEnd = host
                     .read(
@@ -486,7 +486,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         connection_id,
                         connection,
                     },
-                    IbcMsg::VerifyMembership {
+                    vec![IbcMsg::VerifyMembership {
                         client_id,
                         height: proof_height,
                         delay_time_period: 0,
@@ -500,7 +500,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         },
                         // TODO(aeryz): generic encoding
                         value: expected_counterparty.encode_as::<Proto>(),
-                    },
+                    }],
                 ))
             }
             (
@@ -509,7 +509,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     connection_id,
                     mut connection,
                 },
-                IbcResponse::VerifyMembership { valid },
+                &[IbcResponse::VerifyMembership { valid }],
             ) => {
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());

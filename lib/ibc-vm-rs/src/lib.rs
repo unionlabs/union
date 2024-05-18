@@ -129,7 +129,7 @@ pub trait IbcHost: Sized {
     fn sha256(&self, data: Vec<u8>) -> Vec<u8>;
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Copy, Clone)]
 pub enum Status {
     Active,
     Frozen,
@@ -217,8 +217,8 @@ impl<T: IbcHost> Runnable<T> for IbcState {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = cast_either!(
             self,
             host,
@@ -419,11 +419,13 @@ pub enum IbcEvent {
 }
 
 pub trait Runnable<T: IbcHost>: Serialize + Sized {
+    // TODO(aeryz): in most of the cases, we will return a single ibcmsg and it will be known at the compile time,
+    // which means heap allocation can totally be emitted. We should make a struct for this.
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error>;
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error>;
 }
 
 pub enum Either<L, R> {

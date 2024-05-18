@@ -13,17 +13,7 @@ pub enum UpdateClient {
         client_msg: Vec<u8>,
     },
 
-    StatusFetched {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
-
-    ClientMessageVerified {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
-
-    MisbehaviourChecked {
+    LcQueriesMade {
         client_id: ClientId,
         client_msg: Vec<u8>,
     },
@@ -41,56 +31,25 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
-        let res = match (self, resp) {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+        let res = match (self, &resp) {
             (
                 UpdateClient::Init {
                     client_id,
                     client_msg,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => Either::Left((
-                Self::StatusFetched {
+                Self::LcQueriesMade {
                     client_id: client_id.clone(),
-                    client_msg,
+                    client_msg: client_msg.clone(),
                 },
-                IbcMsg::Status { client_id },
-            )),
-            (
-                UpdateClient::StatusFetched {
-                    client_id,
-                    client_msg,
-                },
-                IbcResponse::Status { status },
-            ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
-                }
-                Either::Left((
-                    Self::ClientMessageVerified {
+                vec![
+                    IbcMsg::Status {
                         client_id: client_id.clone(),
-                        client_msg: client_msg.clone(),
                     },
                     IbcMsg::VerifyClientMessage {
-                        client_id,
-                        client_msg,
-                    },
-                ))
-            }
-            (
-                UpdateClient::ClientMessageVerified {
-                    client_id,
-                    client_msg,
-                },
-                IbcResponse::VerifyClientMessage { valid },
-            ) => {
-                if !valid {
-                    return Err(IbcError::ClientMessageVerificationFailed.into());
-                }
-
-                Either::Left((
-                    Self::MisbehaviourChecked {
                         client_id: client_id.clone(),
                         client_msg: client_msg.clone(),
                     },
@@ -98,54 +57,60 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                         client_id,
                         client_msg,
                     },
-                ))
-            }
+                ],
+            )),
             (
-                UpdateClient::MisbehaviourChecked {
+                UpdateClient::LcQueriesMade {
                     client_id,
                     client_msg,
                 },
-                IbcResponse::CheckForMisbehaviour { misbehaviour_found },
+                &[IbcResponse::Status { status }, IbcResponse::VerifyClientMessage { valid }, IbcResponse::CheckForMisbehaviour { misbehaviour_found }],
             ) => {
-                if misbehaviour_found {
+                if *status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, *status).into());
+                }
+                if !valid {
+                    return Err(IbcError::ClientMessageVerificationFailed.into());
+                }
+                if *misbehaviour_found {
                     Either::Left((
                         Self::UpdatedStateOnMisbehaviour {
                             client_id: client_id.clone(),
                         },
-                        IbcMsg::UpdateStateOnMisbehaviour {
+                        vec![IbcMsg::UpdateStateOnMisbehaviour {
                             client_id,
                             client_msg,
-                        },
+                        }],
                     ))
                 } else {
                     Either::Left((
                         Self::UpdatedState {
                             client_id: client_id.clone(),
                         },
-                        IbcMsg::UpdateState {
+                        vec![IbcMsg::UpdateState {
                             client_id,
                             client_msg,
-                        },
+                        }],
                     ))
                 }
             }
             (
                 UpdateClient::UpdatedStateOnMisbehaviour { client_id },
-                IbcResponse::UpdateStateOnMisbehaviour,
+                &[IbcResponse::UpdateStateOnMisbehaviour],
             ) => Either::Right(IbcEvent::ClientMisbehaviour { client_id }),
             (
                 UpdateClient::UpdatedState { client_id },
-                IbcResponse::UpdateState {
+                &[IbcResponse::UpdateState {
                     consensus_states,
                     client_state,
-                },
+                }],
             ) => {
                 host.commit_raw(
                     ClientStatePath {
                         client_id: client_id.clone(),
                     }
                     .into(),
-                    client_state,
+                    client_state.clone(),
                 )?;
 
                 let consensus_heights = consensus_states
@@ -154,12 +119,12 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                         host.commit_raw(
                             ClientConsensusStatePath {
                                 client_id: client_id.clone(),
-                                height,
+                                height: *height,
                             }
                             .into(),
-                            state,
+                            state.clone(),
                         )?;
-                        Ok(height)
+                        Ok(*height)
                     })
                     .collect::<Result<Vec<_>, <T as IbcHost>::Error>>()?;
 
