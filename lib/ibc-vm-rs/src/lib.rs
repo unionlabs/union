@@ -100,6 +100,9 @@ pub enum IbcError {
 
     #[error("packet is already timed out")]
     TimedOutPacket,
+
+    #[error("committed packet ({comm}) does not match the calculated one ({exp_comm})", comm = serde_utils::to_hex(.0), exp_comm= serde_utils::to_hex(.1))]
+    PacketCommitmentMismatch(Vec<u8>, Vec<u8>),
 }
 
 pub trait IbcHost: Sized {
@@ -129,6 +132,8 @@ pub trait IbcHost: Sized {
         key: Path<ClientId, Height>,
         value: T,
     ) -> Result<(), Self::Error>;
+
+    fn delete(&mut self, key: &Path<ClientId, Height>) -> Result<(), Self::Error>;
 
     fn current_height(&self) -> Height;
 
@@ -194,6 +199,10 @@ pub enum IbcResponse {
         err: bool,
     },
     OnRecvPacket {
+        // TODO(aeryz): what's gonna be the error type?
+        err: bool,
+    },
+    OnAcknowledgePacket {
         // TODO(aeryz): what's gonna be the error type?
         err: bool,
     },
@@ -341,6 +350,11 @@ pub enum IbcMsg {
     OnRecvPacket {
         packet: Packet,
         // TODO(aeryz): relayer address
+    },
+
+    OnAcknowledgePacket {
+        packet: Packet,
+        ack: Vec<u8>,
     },
 }
 
