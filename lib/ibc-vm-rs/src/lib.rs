@@ -1,7 +1,5 @@
 #![feature(error_in_core)]
 
-use std::num::NonZeroU64;
-
 use frame_support_procedural::PartialEqNoBound;
 use serde::{Deserialize, Serialize};
 use states::{
@@ -24,6 +22,8 @@ use unionlabs::{
     ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
+
+pub type IbcEvent = unionlabs::events::IbcEvent<ClientId, String, ClientId>;
 
 pub mod states;
 
@@ -83,12 +83,20 @@ pub enum IbcError {
     IncorrectChannelState(channel::state::State, channel::state::State),
 
     #[error("source port ({0}) does not match the received packet's counterparty port ({1})")]
-    PortMismatch(PortId, PortId),
+    SourcePortMismatch(PortId, PortId),
+
+    #[error("destination port ({0}) does not match the received packet's counterparty port ({1})")]
+    DestinationPortMismatch(PortId, PortId),
 
     #[error(
         "source channel ({0}) does not match the received packet's counterparty channel ({1})"
     )]
-    ChannelMismatch(ChannelId, ChannelId),
+    SourceChannelMismatch(ChannelId, ChannelId),
+
+    #[error(
+        "source channel ({0}) does not match the received packet's counterparty channel ({1})"
+    )]
+    DestinationChannelMismatch(ChannelId, ChannelId),
 
     #[error("packet is already timed out")]
     TimedOutPacket,
@@ -107,7 +115,7 @@ pub trait IbcHost: Sized {
 
     fn read<T: Decode<Proto>>(&self, path: &Path<ClientId, Height>) -> Option<T>;
 
-    fn read_raw(&self, key: &str) -> Option<Vec<u8>>;
+    fn read_raw(&self, key: &Path<ClientId, Height>) -> Option<Vec<u8>>;
 
     fn commit_raw(
         &mut self,
@@ -151,6 +159,9 @@ pub enum IbcResponse {
     },
     LatestHeight {
         height: Height,
+    },
+    TimestampAtHeight {
+        timestamp: u64,
     },
     VerifyMembership {
         valid: bool,
@@ -275,6 +286,8 @@ pub enum IbcQuery {
     VerifyClientMessage(Vec<u8>),
 
     CheckForMisbehaviour(Vec<u8>),
+
+    TimestampAtHeight(Height),
 }
 
 #[derive(Deserialize)]
@@ -328,102 +341,6 @@ pub enum IbcMsg {
     OnRecvPacket {
         packet: Packet,
         // TODO(aeryz): relayer address
-    },
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub enum IbcEvent {
-    ClientCreated {
-        client_id: ClientId,
-        client_type: String,
-        initial_height: u64,
-    },
-
-    ConnectionOpenInit {
-        connection_id: String,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-    },
-
-    ConnectionOpenTry {
-        connection_id: String,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-        counterparty_connection_id: String,
-    },
-
-    ConnectionOpenAck {
-        connection_id: String,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-        counterparty_connection_id: String,
-    },
-
-    ConnectionOpenConfirm {
-        connection_id: String,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-        counterparty_connection_id: String,
-    },
-
-    ChannelOpenInit {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        connection_id: String,
-        version: String,
-    },
-
-    ChannelOpenTry {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        counterparty_channel_id: String,
-        connection_id: String,
-        version: String,
-    },
-
-    ChannelOpenAck {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        counterparty_channel_id: String,
-        connection_id: String,
-    },
-
-    ChannelOpenConfirm {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        counterparty_channel_id: String,
-        connection_id: String,
-    },
-
-    RecvPacket {
-        packet_data_hex: Vec<u8>,
-        packet_timeout_height: Height,
-        packet_timeout_timestamp: u64,
-        packet_sequence: NonZeroU64,
-        packet_src_port: PortId,
-        packet_src_channel: ChannelId,
-        packet_dst_port: PortId,
-        packet_dst_channel: ChannelId,
-        packet_channel_ordering: Order,
-        connection_id: ConnectionId,
-    },
-
-    ClientMisbehaviour {
-        client_id: ClientId,
-        // TODO(aeryz): ibc-go also includes `client_type` but why?
-        // client_type: String,
-    },
-
-    UpdateClient {
-        client_id: ClientId,
-        // TODO(aeryz): ibc-go also includes `client_type` but why?
-        // client_type: String,
-        // TODO(aeryz): throw this event as comma seperated heights
-        consensus_heights: Vec<Height>,
     },
 }
 

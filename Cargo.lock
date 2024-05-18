@@ -4227,6 +4227,7 @@ name = "ibc-vm-rs"
 version = "0.1.0"
 dependencies = [
  "frame-support-procedural",
+ "hex 0.4.3",
  "lazy_static",
  "serde",
  "thiserror-core",

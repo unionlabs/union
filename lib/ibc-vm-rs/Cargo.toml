@@ -11,6 +11,7 @@ unionlabs.workspace = true
 lazy_static.workspace = true
 frame-support-procedural.workspace = true
 thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
+hex.workspace = true
 
 [lints]
 workspace = true
