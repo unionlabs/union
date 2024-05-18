@@ -158,26 +158,28 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                 packet: packet.clone(),
                                 channel: channel.clone(),
                             },
-                            vec![IbcQuery::VerifyMembership {
-                                client_id: connection.client_id,
-                                height: proof_height,
-                                delay_time_period: 0,
-                                delay_block_period: 0,
-                                proof: proof_commitment,
-                                path: MerklePath {
-                                    key_path: vec![
-                                        "ibc".into(),
-                                        format!(
-                                            "commitmens/ports/{}/channels/{}/sequences/{}",
-                                            packet.source_port,
-                                            packet.source_channel,
-                                            packet.sequence
-                                        ),
-                                    ],
-                                },
-                                value: host.sha256(packet_commitment),
-                            }]
-                            .into(),
+                            (
+                                connection.client_id,
+                                vec![IbcQuery::VerifyMembership {
+                                    height: proof_height,
+                                    delay_time_period: 0,
+                                    delay_block_period: 0,
+                                    proof: proof_commitment,
+                                    path: MerklePath {
+                                        key_path: vec![
+                                            "ibc".into(),
+                                            format!(
+                                                "commitmens/ports/{}/channels/{}/sequences/{}",
+                                                packet.source_port,
+                                                packet.source_channel,
+                                                packet.sequence
+                                            ),
+                                        ],
+                                    },
+                                    value: host.sha256(packet_commitment),
+                                }],
+                            )
+                                .into(),
                         ))
                     }
                 }

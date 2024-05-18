@@ -89,10 +89,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         counterparty,
                         version,
                     },
-                    vec![IbcQuery::Status {
-                        client_id: connection.client_id,
-                    }]
-                    .into(),
+                    (connection.client_id, vec![IbcQuery::Status]).into(),
                 ))
             }
             (
@@ -294,29 +291,29 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         version,
                         counterparty_version,
                     },
-                    vec![
-                        IbcQuery::Status {
-                            client_id: connection.client_id.clone(),
-                        },
-                        IbcQuery::VerifyMembership {
-                            client_id: connection.client_id,
-                            height: proof_height,
-                            delay_time_period: 0,
-                            delay_block_period: 0,
-                            proof: proof_init,
-                            path: MerklePath {
-                                key_path: vec![
-                                    "ibc".to_string(),
-                                    format!(
-                                        "channelEnds/ports/{}/channels/{}",
-                                        counterparty.port_id, counterparty.channel_id
-                                    ),
-                                ],
+                    (
+                        connection.client_id,
+                        vec![
+                            IbcQuery::Status,
+                            IbcQuery::VerifyMembership {
+                                height: proof_height,
+                                delay_time_period: 0,
+                                delay_block_period: 0,
+                                proof: proof_init,
+                                path: MerklePath {
+                                    key_path: vec![
+                                        "ibc".to_string(),
+                                        format!(
+                                            "channelEnds/ports/{}/channels/{}",
+                                            counterparty.port_id, counterparty.channel_id
+                                        ),
+                                    ],
+                                },
+                                value: expected_channel.encode_as::<Proto>(),
                             },
-                            value: expected_channel.encode_as::<Proto>(),
-                        },
-                    ]
-                    .into(),
+                        ],
+                    )
+                        .into(),
                 ))
             }
             (
@@ -540,29 +537,29 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         counterparty_version,
                         client_id: connection.client_id.clone(),
                     },
-                    vec![
-                        IbcQuery::Status {
-                            client_id: connection.client_id.clone(),
-                        },
-                        IbcQuery::VerifyMembership {
-                            client_id: connection.client_id,
-                            height: proof_height,
-                            delay_time_period: 0,
-                            delay_block_period: 0,
-                            proof: proof_try,
-                            path: MerklePath {
-                                key_path: vec![
-                                    "ibc".to_string(),
-                                    format!(
+                    (
+                        connection.client_id,
+                        vec![
+                            IbcQuery::Status,
+                            IbcQuery::VerifyMembership {
+                                height: proof_height,
+                                delay_time_period: 0,
+                                delay_block_period: 0,
+                                proof: proof_try,
+                                path: MerklePath {
+                                    key_path: vec![
+                                        "ibc".to_string(),
+                                        format!(
                                         "channelEnds/ports/{}/channels/{counterparty_channel_id}",
                                         channel.counterparty.port_id,
                                     ),
-                                ],
+                                    ],
+                                },
+                                value: expected_channel.encode_as::<Proto>(),
                             },
-                            value: expected_channel.encode_as::<Proto>(),
-                        },
-                    ]
-                    .into(),
+                        ],
+                    )
+                        .into(),
                 ))
             }
             (
@@ -750,30 +747,30 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         client_id: connection.client_id.clone(),
                         counterparty: channel.counterparty.clone(),
                     },
-                    vec![
-                        IbcQuery::Status {
-                            client_id: connection.client_id.clone(),
-                        },
-                        IbcQuery::VerifyMembership {
-                            client_id: connection.client_id.clone(),
-                            height: proof_height,
-                            delay_time_period: 0,
-                            delay_block_period: 0,
-                            proof: proof_ack,
-                            path: MerklePath {
-                                key_path: vec![
-                                    "ibc".to_string(),
-                                    format!(
-                                        "channelEnds/ports/{}/channels/{}",
-                                        channel.counterparty.port_id,
-                                        channel.counterparty.channel_id,
-                                    ),
-                                ],
+                    (
+                        connection.client_id,
+                        vec![
+                            IbcQuery::Status,
+                            IbcQuery::VerifyMembership {
+                                height: proof_height,
+                                delay_time_period: 0,
+                                delay_block_period: 0,
+                                proof: proof_ack,
+                                path: MerklePath {
+                                    key_path: vec![
+                                        "ibc".to_string(),
+                                        format!(
+                                            "channelEnds/ports/{}/channels/{}",
+                                            channel.counterparty.port_id,
+                                            channel.counterparty.channel_id,
+                                        ),
+                                    ],
+                                },
+                                value: expected_channel.encode_as::<Proto>(),
                             },
-                            value: expected_channel.encode_as::<Proto>(),
-                        },
-                    ]
-                    .into(),
+                        ],
+                    )
+                        .into(),
                 ))
             }
             (

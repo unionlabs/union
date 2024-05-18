@@ -83,13 +83,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     client_state,
                     consensus_state,
                 },
-                vec![
-                    IbcQuery::Status {
-                        client_id: client_id.clone(),
-                    },
-                    IbcQuery::LatestHeight { client_id },
-                ]
-                .into(),
+                (client_id, vec![IbcQuery::Status, IbcQuery::LatestHeight]).into(),
             )),
             (
                 CreateClient::FetchLcData {

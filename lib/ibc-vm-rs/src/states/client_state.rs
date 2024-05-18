@@ -47,20 +47,15 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     client_id: client_id.clone(),
                     client_msg: client_msg.clone(),
                 },
-                vec![
-                    IbcQuery::Status {
-                        client_id: client_id.clone(),
-                    },
-                    IbcQuery::VerifyClientMessage {
-                        client_id: client_id.clone(),
-                        client_msg: client_msg.clone(),
-                    },
-                    IbcQuery::CheckForMisbehaviour {
-                        client_id,
-                        client_msg,
-                    },
-                ]
-                .into(),
+                (
+                    client_id,
+                    vec![
+                        IbcQuery::Status,
+                        IbcQuery::VerifyClientMessage(client_msg.clone()),
+                        IbcQuery::CheckForMisbehaviour(client_msg),
+                    ],
+                )
+                    .into(),
             )),
             (
                 UpdateClient::LcQueriesMade {
