@@ -7,7 +7,7 @@ use futures::{
     try_join,
 };
 use sqlx::{Acquire, Postgres};
-use tendermint::{block::Height, genesis::Genesis};
+use tendermint::block::Height;
 use tendermint_rpc::{
     endpoint::block_results::Response as BlockResponse,
     error::ErrorDetail,
@@ -121,8 +121,7 @@ where
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
 {
     info!("fetching chain-id from node");
-    let genesis: Genesis<serde_json::Value> = client.genesis().await?;
-    let chain_id = genesis.chain_id.to_string();
+    let chain_id = client.status().await?.node_info.network.as_str().to_owned();
     info!("chain-id is {}", &chain_id);
 
     let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
