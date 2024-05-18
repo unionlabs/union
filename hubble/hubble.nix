@@ -69,6 +69,7 @@
               options.type = mkOption { type = types.enum [ "tendermint" "ethereum" ]; };
               options.start = mkOption { type = types.int; example = 1; default = 0; };
               options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
+              options.harden = mkOption { type = types.bool; example = true; default = true; };
             }
           );
         };

@@ -19,6 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 axum                = { workspace = true, features = ["macros", "tokio"] }
+backon              = "0.4.4"
 base64              = { workspace = true }
 clap                = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre          = { workspace = true, features = ["default"] }
@@ -31,6 +32,7 @@ prometheus          = { version = "0.13.3", features = ["process"] }
 prost.workspace     = true
 protos              = { workspace = true, features = ["client"] }
 reqwest             = { workspace = true, features = ["json", "blocking"] }
+retry               = "2.0.0"
 serde               = { workspace = true, features = ["derive"] }
 serde_json          = { workspace = true }
 sqlx                = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }

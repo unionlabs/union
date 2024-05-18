@@ -1,3 +1,4 @@
+use backon::{ExponentialBuilder, Retryable};
 use color_eyre::eyre::{bail, Report};
 use futures::{
     future::{ready, TryFutureExt},
@@ -30,6 +31,10 @@ pub struct Config {
     pub start: Option<u64>,
     #[allow(dead_code)]
     pub until: Option<u64>,
+
+    /// Attempt to retry and fix bad states. This makes the process less responsive, as any call may take longer
+    /// since retries are happening. Best for systemd services and long-running jobs.
+    pub harden: bool,
 }
 
 /// Unit struct describing parametrization of associated types for CosmosSDK based chains.
@@ -56,17 +61,14 @@ impl Config {
     {
         let client = HttpClient::new(self.url.as_str()).unwrap();
 
-        // If there is no chain_id override, we query it from the node. This
-        // is the expected default.
-        info!("fetching chain-id from node");
-        let genesis: Genesis<serde_json::Value> = client.genesis().await?;
-        let chain_id = genesis.chain_id.to_string();
-        info!("chain-id is {}", &chain_id);
+        let (chain_id, mut height) = if self.harden {
+            (|| fetch_meta(&client, &pool))
+                .retry(&ExponentialBuilder::default())
+                .await?
+        } else {
+            fetch_meta(&client, &pool).await?
+        };
 
-        let chain_id = postgres::fetch_or_insert_chain_id(&pool, chain_id)
-            .await?
-            .get_inner_logged();
-        let mut height = Height::from(sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(&pool).await?.map(|block| block.height + 1).unwrap_or_default() as u32);
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
             info!(?chain_id.canonical, "starting fast sync protocol up to: {}", up_to);
@@ -111,6 +113,23 @@ impl Config {
             }
         }
     }
+}
+
+async fn fetch_meta<DB>(client: &HttpClient, pool: &DB) -> Result<(ChainId, Height), Report>
+where
+    for<'a> &'a DB:
+        sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
+{
+    info!("fetching chain-id from node");
+    let genesis: Genesis<serde_json::Value> = client.genesis().await?;
+    let chain_id = genesis.chain_id.to_string();
+    info!("chain-id is {}", &chain_id);
+
+    let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
+        .await?
+        .get_inner_logged();
+    let height = Height::from(sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(pool).await?.map(|block| block.height + 1).unwrap_or_default() as u32);
+    Ok((chain_id, height))
 }
 
 /// The RPC will return an internal error on queries for blocks exceeding the current height.
