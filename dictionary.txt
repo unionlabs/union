@@ -11,7 +11,6 @@ BLOCKSCOUT
 Berachain
 Berachain's
 Beriker
-rdns
 Bitfield
 Bitvector
 Boiron
@@ -818,6 +817,7 @@ rabby
 randao
 rawfile
 rclone
+rdns
 readarray
 receiveds
 recursiving

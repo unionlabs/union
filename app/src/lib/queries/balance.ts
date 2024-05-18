@@ -73,7 +73,7 @@ export function evmBalancesQuery({
             ? restParams.tokenSpecification // if tokenSpecification is a string, use it
             : "DEFAULT_TOKENS"
       console.log(address, assetsToCheck)
-      const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.ALCHEMY}`, {
+      const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`, {
         method: "POST",
         body: JSON.stringify({
           id: 1,

@@ -4,12 +4,7 @@ import { parseArgs } from "node:util"
 import { UnionClient } from "#/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { walletActionsEip5792 } from "viem/experimental"
-import {
-  http,
-  erc20Abi,
-  publicActions,
-  createWalletClient,
-} from "viem"
+import { http, erc20Abi, publicActions, createWalletClient } from "viem"
 
 /* `bun scripts/sepolia-to-union.ts --private-key "..."` */
 

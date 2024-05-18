@@ -1,10 +1,10 @@
 <script lang="ts">
 import "$lib/polyfill.ts"
 import "$styles/index.css"
+import { onMount } from "svelte"
 import { cn } from "$lib/utilities/shadcn"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
-import { setContext, onMount } from "svelte"
 import { Toaster } from "svelte-french-toast"
 import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"

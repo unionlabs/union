@@ -1,5 +1,3 @@
-
-
 interface SnapMethodParams {
   snapId: string
 }
