@@ -13,6 +13,7 @@ serde_json.workspace = true
 serde.workspace = true
 borsh = { version = "1.5.0", features = ["borsh-derive"] }
 unionlabs.workspace = true
+thiserror.workspace = true
 
 [lib]
 crate-type = ["cdylib"]

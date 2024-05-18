@@ -4,7 +4,7 @@ use cosmwasm_std::{
     to_json_binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, SubMsg, SubMsgResult,
     WasmMsg,
 };
-use ibc_vm_rs::{IbcEvent, IbcMsg, IbcResponse, Status};
+use ibc_vm_rs::{IbcAction, IbcEvent, IbcResponse, Status};
 
 use crate::{
     msg::{ExecuteMsg, IbcInitMsg, InitMsg},
@@ -142,7 +142,7 @@ pub fn fold<'a, T: ibc_vm_rs::Runnable<CwIbcHost<'a>>>(
         };
 
         match ibc_msg {
-            IbcMsg::Initialize {
+            IbcAction::Initialize {
                 client_id,
                 client_type,
                 client_state,
@@ -171,11 +171,11 @@ pub fn fold<'a, T: ibc_vm_rs::Runnable<CwIbcHost<'a>>>(
                 .with_payload(cosmwasm_std::to_json_vec(&runnable).unwrap());
                 return Ok(Response::new().add_submessage(submsg));
             }
-            IbcMsg::Status { client_id } => {
+            IbcAction::Status { client_id } => {
                 let status = query_status(host.deps.as_ref(), client_id)?;
                 response = IbcResponse::Status { status };
             }
-            IbcMsg::LatestHeight { client_id } => {
+            IbcAction::LatestHeight { client_id } => {
                 let height = query_latest_height(host.deps.as_ref(), client_id)?;
                 response = IbcResponse::LatestHeight { height };
             }
