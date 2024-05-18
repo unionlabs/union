@@ -1,80 +1,80 @@
 <script lang="ts">
-import "$lib/polyfill.ts"
-import "$styles/index.css"
-import { onMount } from "svelte"
-import { cn } from "$lib/utilities/shadcn"
-import { ModeWatcher } from "mode-watcher"
-import { browser } from "$app/environment"
-import { Toaster } from "svelte-french-toast"
-import { page, navigating } from "$app/stores"
-import { shortcut } from "@svelte-put/shortcut"
-import { setContextClient } from "@urql/svelte"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import Footer from "$lib/components/footer.svelte"
-import { graphqlClient } from "$lib/graphql/client"
-import Header from "$lib/components/header/header.svelte"
-import { updateTheme } from "$lib/utilities/update-theme.ts"
-import OnlineStatus from "$lib/components/online-status.svelte"
-import { partytownSnippet } from "@builder.io/partytown/integration"
-import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
-import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
-import { QueryClient, MutationCache, notifyManager } from "@tanstack/svelte-query"
-import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
+  import '$lib/polyfill.ts'
+  import '$styles/index.css'
+  import { onMount } from 'svelte'
+  import { cn } from '$lib/utilities/shadcn'
+  import { ModeWatcher } from 'mode-watcher'
+  import { browser } from '$app/environment'
+  import { Toaster } from 'svelte-french-toast'
+  import { page, navigating } from '$app/stores'
+  import { shortcut } from '@svelte-put/shortcut'
+  import { setContextClient } from '@urql/svelte'
+  import { cosmosStore } from '$lib/wallet/cosmos'
+  import Footer from '$lib/components/footer.svelte'
+  import { graphqlClient } from '$lib/graphql/client'
+  import Header from '$lib/components/header/header.svelte'
+  import { updateTheme } from '$lib/utilities/update-theme.ts'
+  import OnlineStatus from '$lib/components/online-status.svelte'
+  import { partytownSnippet } from '@builder.io/partytown/integration'
+  import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools'
+  import PreloadingIndicator from '$lib/components/preloading-indicator.svelte'
+  import { QueryClient, MutationCache, notifyManager } from '@tanstack/svelte-query'
+  import { PersistQueryClientProvider } from '@tanstack/svelte-query-persist-client'
+  import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 
-if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
+  if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
-$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
+  $: updateTheme({ path: $page.url.pathname, activeTheme: 'dark' })
 
-onMount(() => {
-  /* fix for iOS Safari viewport zooming on input focus */
-  if (navigator.userAgent.indexOf("iPhone") === -1) return
-  const metaElement = document.querySelector("meta[name=viewport]")
-  if (!metaElement) return
-  metaElement.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1")
-})
-
-onMount(() => {
-  const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
-  if (
-    lastConnectedWallet &&
-    window[lastConnectedWallet] &&
-    ["leap", "keplr"].includes(lastConnectedWallet)
-  )
-    return cosmosStore.connect(lastConnectedWallet)
-
-  if (window?.keplr) cosmosStore.connect("keplr")
-  else if (window?.leap) cosmosStore.connect("leap")
-})
-
-/**
- * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
- */
-setContextClient(graphqlClient)
-
-const queryClient: QueryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      enabled: browser,
-      gcTime: 1_000 * 60 * 60 * 24, // 24 hours
-      refetchOnReconnect: () => !queryClient.isMutating()
-    }
-  },
-  mutationCache: new MutationCache({
-    onSettled: () => {
-      if (queryClient.isMutating() === 1) {
-        return queryClient.invalidateQueries()
-      }
-    }
+  onMount(() => {
+    /* fix for iOS Safari viewport zooming on input focus */
+    if (navigator.userAgent.indexOf('iPhone') === -1) return
+    const metaElement = document.querySelector('meta[name=viewport]')
+    if (!metaElement) return
+    metaElement.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1')
   })
-})
 
-const localStoragePersister = createSyncStoragePersister({
-  key: "SVELTE_QUERY",
-  storage: browser ? window.localStorage : undefined // or window.sessionStorage
-})
+  onMount(() => {
+    const lastConnectedWallet = $cosmosStore['connectedWallet'] as 'leap' | 'keplr'
+    if (
+      lastConnectedWallet &&
+      window[lastConnectedWallet] &&
+      ['leap', 'keplr'].includes(lastConnectedWallet)
+    )
+      return cosmosStore.connect(lastConnectedWallet)
 
-$: if ($navigating) console.log("Navigating to", $page.url.pathname)
+    if (window?.keplr) cosmosStore.connect('keplr')
+    else if (window?.leap) cosmosStore.connect('leap')
+  })
+
+  /**
+   * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
+   */
+  setContextClient(graphqlClient)
+
+  const queryClient: QueryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        enabled: browser,
+        gcTime: 1_000 * 60 * 60 * 24, // 24 hours
+        refetchOnReconnect: () => !queryClient.isMutating(),
+      },
+    },
+    mutationCache: new MutationCache({
+      onSettled: () => {
+        if (queryClient.isMutating() === 1) {
+          return queryClient.invalidateQueries()
+        }
+      },
+    }),
+  })
+
+  const localStoragePersister = createSyncStoragePersister({
+    key: 'SVELTE_QUERY',
+    storage: browser ? window.localStorage : undefined, // or window.sessionStorage
+  })
+
+  $: if ($navigating) console.log('Navigating to', $page.url.pathname)
 </script>
 
 <svelte:head>
@@ -92,7 +92,7 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 {/if}
 
 <ModeWatcher />
-<Toaster />
+<Toaster position="bottom-right" />
 
 <PersistQueryClientProvider
   client={queryClient}

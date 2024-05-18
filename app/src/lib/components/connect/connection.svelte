@@ -54,7 +54,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
       'w-full text-left',
       connectText === 'Sepolia' || connectText === 'Union'
         ? 'text-lg sm:text-sm'
-        : 'text-[12.5px] sm:text-sm',
+        : 'text-sm sm:text-[15.5px]',
     )}
   >
     {connectText}

@@ -1,5 +1,6 @@
 <script lang="ts">
-import { onMount } from "svelte"
+  import { onMount } from "svelte"
+  import toast from "svelte-french-toast"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -21,7 +22,6 @@ import AssetsDialog from "./components/assets-dialog.svelte"
 import SettingsDialog from "./components/settings-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
-import toast from "svelte-french-toast"
 
 /**
  * TODO:
