@@ -240,8 +240,8 @@ impl<T: IbcHost> Runnable<T> for IbcState {
     }
 }
 
-impl From<Vec<IbcQuery>> for IbcAction {
-    fn from(value: Vec<IbcQuery>) -> Self {
+impl From<(ClientId, Vec<IbcQuery>)> for IbcAction {
+    fn from(value: (ClientId, Vec<IbcQuery>)) -> Self {
         IbcAction::Query(value)
     }
 }
@@ -254,21 +254,15 @@ impl From<IbcMsg> for IbcAction {
 
 #[derive(Deserialize)]
 pub enum IbcAction {
-    Query(Vec<IbcQuery>),
+    Query((ClientId, Vec<IbcQuery>)),
     Write(IbcMsg),
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub enum IbcQuery {
-    Status {
-        client_id: ClientId,
-    },
-    LatestHeight {
-        client_id: ClientId,
-    },
-
+    Status,
+    LatestHeight,
     VerifyMembership {
-        client_id: ClientId,
         height: Height,
         // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,
@@ -278,15 +272,9 @@ pub enum IbcQuery {
         value: Vec<u8>,
     },
 
-    VerifyClientMessage {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
+    VerifyClientMessage(Vec<u8>),
 
-    CheckForMisbehaviour {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
+    CheckForMisbehaviour(Vec<u8>),
 }
 
 #[derive(Deserialize)]

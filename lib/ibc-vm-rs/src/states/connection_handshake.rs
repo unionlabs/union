@@ -61,7 +61,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                         versions: DEFAULT_IBC_VERSION.clone(),
                         delay_period,
                     },
-                    vec![IbcQuery::Status { client_id }].into(),
+                    (client_id, vec![IbcQuery::Status]).into(),
                 ))
             }
             (
@@ -221,22 +221,24 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         counterparty,
                         delay_period,
                     },
-                    vec![IbcQuery::VerifyMembership {
+                    (
                         client_id,
-                        height: proof_height,
-                        delay_time_period: 0,
-                        delay_block_period: 0,
-                        proof: connection_end_proof,
-                        path: MerklePath {
-                            key_path: vec![
-                                "ibc".to_string(),
-                                format!("connections/{}", counterparty_connection_id),
-                            ],
-                        },
-                        // TODO(aeryz): generic over the encoding
-                        value: expected_counterparty.encode_as::<Proto>(),
-                    }]
-                    .into(),
+                        vec![IbcQuery::VerifyMembership {
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: connection_end_proof,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".to_string(),
+                                    format!("connections/{}", counterparty_connection_id),
+                                ],
+                            },
+                            // TODO(aeryz): generic over the encoding
+                            value: expected_counterparty.encode_as::<Proto>(),
+                        }],
+                    )
+                        .into(),
                 ))
             }
             (
@@ -360,22 +362,24 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         connection_id,
                         connection,
                     },
-                    vec![IbcQuery::VerifyMembership {
+                    (
                         client_id,
-                        height: proof_height,
-                        delay_time_period: 0,
-                        delay_block_period: 0,
-                        proof: connection_end_proof,
-                        path: MerklePath {
-                            key_path: vec![
-                                "ibc".to_string(),
-                                format!("connections/{counterparty_connection_id}"),
-                            ],
-                        },
-                        // TODO(aeryz): generic encoding
-                        value: expected_counterparty.encode_as::<Proto>(),
-                    }]
-                    .into(),
+                        vec![IbcQuery::VerifyMembership {
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: connection_end_proof,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".to_string(),
+                                    format!("connections/{counterparty_connection_id}"),
+                                ],
+                            },
+                            // TODO(aeryz): generic encoding
+                            value: expected_counterparty.encode_as::<Proto>(),
+                        }],
+                    )
+                        .into(),
                 ))
             }
             (
@@ -489,22 +493,24 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         connection_id,
                         connection,
                     },
-                    vec![IbcQuery::VerifyMembership {
+                    (
                         client_id,
-                        height: proof_height,
-                        delay_time_period: 0,
-                        delay_block_period: 0,
-                        proof: connection_end_proof,
-                        path: MerklePath {
-                            key_path: vec![
-                                "ibc".to_string(),
-                                format!("connections/{counterparty_connection_id}"),
-                            ],
-                        },
-                        // TODO(aeryz): generic encoding
-                        value: expected_counterparty.encode_as::<Proto>(),
-                    }]
-                    .into(),
+                        vec![IbcQuery::VerifyMembership {
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: connection_end_proof,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".to_string(),
+                                    format!("connections/{counterparty_connection_id}"),
+                                ],
+                            },
+                            // TODO(aeryz): generic encoding
+                            value: expected_counterparty.encode_as::<Proto>(),
+                        }],
+                    )
+                        .into(),
                 ))
             }
             (
