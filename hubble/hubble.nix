@@ -79,7 +79,7 @@
           example = "hubble=debug";
         };
         log-format = mkOption {
-          type = types.str;
+          type = types.enum [ "json" "plain" ];
           default = "json";
           example = "plain";
         };
