@@ -1,118 +1,117 @@
 <script lang="ts">
-  import toast from 'svelte-french-toast'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import { debounce } from '$lib/utilities/index.ts'
-  import LockLockedIcon from 'virtual:icons/lucide/lock'
-  import { valibot } from 'sveltekit-superforms/adapters'
-  import * as Form from '$lib/components/ui/form/index.ts'
-  import { Input } from '$lib/components/ui/input/index.ts'
-  import LockOpenIcon from 'virtual:icons/lucide/lock-open'
-  import { superForm, defaults } from 'sveltekit-superforms'
-  import { Button } from '$lib/components/ui/button/index.ts'
-  import { cosmosStore } from '$/lib/wallet/cosmos/config.ts'
-  import LoadingIcon from 'virtual:icons/lucide/loader-circle'
-  import * as flashModule from 'sveltekit-flash-message/client'
-  import { unionTransfersQuery } from '$lib/queries/transfers.ts'
-  import ExternalLinkIcon from 'virtual:icons/lucide/external-link'
-  import { faucetFormSchema, unionAddressRegex } from './schema.ts'
-  import { Separator } from '$lib/components/ui/separator/index.ts'
-  import DraftPageNotice from '$lib/components/draft-page-notice.svelte'
-  import { isValidCosmosAddress } from '$/lib/wallet/utilities/validate.ts'
-  import { getUnoFromFaucet } from '$lib/mutations/faucet.ts'
+import toast from "svelte-french-toast"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { debounce } from "$lib/utilities/index.ts"
+import LockLockedIcon from "virtual:icons/lucide/lock"
+import { valibot } from "sveltekit-superforms/adapters"
+import * as Form from "$lib/components/ui/form/index.ts"
+import { Input } from "$lib/components/ui/input/index.ts"
+import LockOpenIcon from "virtual:icons/lucide/lock-open"
+import { superForm, defaults } from "sveltekit-superforms"
+import { Button } from "$lib/components/ui/button/index.ts"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
+import LoadingIcon from "virtual:icons/lucide/loader-circle"
+import * as flashModule from "sveltekit-flash-message/client"
+import { unionTransfersQuery } from "$lib/queries/transfers.ts"
+import ExternalLinkIcon from "virtual:icons/lucide/external-link"
+import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
+import { Separator } from "$lib/components/ui/separator/index.ts"
+import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 
-  /**
-   * TODO:
-   * [ ] - Display user received transactions & show spinner while loading
-   */
+/**
+ * TODO:
+ * [ ] - Display user received transactions & show spinner while loading
+ */
 
-  const debounceDelay = 3_500
-  let submissionStatus: 'idle' | 'submitting' | 'submitted' | 'error' = 'idle'
+const debounceDelay = 3_500
+let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
 
-  $: {
-    if (submissionStatus === 'submitting') {
-      toast.loading('Submitting faucet request 🚰', {
-        duration: debounceDelay - 300,
-        className: 'text-sm p-2.5',
-      })
-    }
+$: {
+  if (submissionStatus === "submitting") {
+    toast.loading("Submitting faucet request 🚰", {
+      duration: debounceDelay - 300,
+      className: "text-sm p-2.5"
+    })
   }
+}
 
-  const superFormResults = superForm(
-    defaults({ address: $cosmosStore.address }, valibot(faucetFormSchema)),
-    {
-      SPA: true,
-      validators: valibot(faucetFormSchema),
-      flashMessage: {
-        module: flashModule,
-        onError: event => event.flashMessage.set(event.result.error.message),
-      },
-      onSubmit: input => {
-        submissionStatus = 'submitting'
-        debounce(async () => {
-          if (!$form.address) input.cancel()
-          try {
-            console.log('Submitting faucet request')
-            const result = await getUnoFromFaucet($form.address)
-            console.log('Faucet request submitted', result)
-            submissionStatus = 'submitted'
-          } catch (error) {
-            submissionStatus = 'error'
-          }
-        }, debounceDelay)()
-      },
-      onUpdate: event =>
-        debounce(() => {
-          if (!event.form.valid) {
-            $errors.address = event.form.errors.address
-            return toast.error('No good', { className: 'font-mono text-lg' })
-          }
-
-          toast.success('Faucet request submitted 🤌 Check wallet for $UNO in a few moments', {
-            duration: 5_000,
-            className: 'text-sm p-2.5',
-          })
-        }, debounceDelay)(event),
-      delayMs: 7_500,
-      timeoutMs: 10_000,
-      resetForm: false,
-      multipleSubmits: 'prevent',
-      autoFocusOnError: 'detect',
-      clearOnSubmit: 'errors-and-message',
+const superFormResults = superForm(
+  defaults({ address: $cosmosStore.address }, valibot(faucetFormSchema)),
+  {
+    SPA: true,
+    validators: valibot(faucetFormSchema),
+    flashMessage: {
+      module: flashModule,
+      onError: event => event.flashMessage.set(event.result.error.message)
     },
-  )
+    onSubmit: input => {
+      submissionStatus = "submitting"
+      debounce(async () => {
+        if (!$form.address) input.cancel()
+        try {
+          console.log("Submitting faucet request")
+          const result = await getUnoFromFaucet($form.address)
+          console.log("Faucet request submitted", result)
+          submissionStatus = "submitted"
+        } catch (error) {
+          submissionStatus = "error"
+        }
+      }, debounceDelay)()
+    },
+    onUpdate: event =>
+      debounce(() => {
+        if (!event.form.valid) {
+          $errors.address = event.form.errors.address
+          return toast.error("No good", { className: "font-mono text-lg" })
+        }
 
-  const { enhance, message, delayed, errors, submitting, form } = superFormResults
-
-  $: unionTransfers = unionTransfersQuery({
-    address: $form.address,
-    include: ['RECEIVED'],
-    refetchInterval: 5_000,
-    enabled: !!$form.address && isValidCosmosAddress($form.address),
-  })
-
-  $: newTransfers =
-    $unionTransfers?.data.filter(
-      transfer => Date.parse(transfer.timestamp) > Date.now() - 60_000,
-    ) ?? []
-
-  let opacity = 0
-  let focused = false
-  let input: HTMLInputElement
-  let position = { x: 0, y: 0 }
-
-  function handleMouseMove(event: MouseEvent) {
-    if (!input || focused) return
-    const rect = input.getBoundingClientRect()
-    position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+        toast.success("Faucet request submitted 🤌 Check wallet for $UNO in a few moments", {
+          duration: 5_000,
+          className: "text-sm p-2.5"
+        })
+      }, debounceDelay)(event),
+    delayMs: 7_500,
+    timeoutMs: 10_000,
+    resetForm: false,
+    multipleSubmits: "prevent",
+    autoFocusOnError: "detect",
+    clearOnSubmit: "errors-and-message"
   }
+)
 
-  const handleFocus = () => ([focused, opacity] = [true, 1])
-  const handleBlur = () => ([focused, opacity] = [false, 0])
-  const handleMouseEnter = () => (opacity = 1)
-  const handleMouseLeave = () => (opacity = 0)
+const { enhance, message, delayed, errors, submitting, form } = superFormResults
 
-  let inputState: 'locked' | 'unlocked' = 'locked'
-  const onLockClick = () => (inputState = inputState === 'locked' ? 'unlocked' : 'locked')
+$: unionTransfers = unionTransfersQuery({
+  address: $form.address,
+  include: ["RECEIVED"],
+  refetchInterval: 5_000,
+  enabled: !!$form.address && isValidCosmosAddress($form.address)
+})
+
+$: newTransfers =
+  $unionTransfers?.data.filter(transfer => Date.parse(transfer.timestamp) > Date.now() - 60_000) ??
+  []
+
+let opacity = 0
+let focused = false
+let input: HTMLInputElement
+let position = { x: 0, y: 0 }
+
+function handleMouseMove(event: MouseEvent) {
+  if (!input || focused) return
+  const rect = input.getBoundingClientRect()
+  position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+}
+
+const handleFocus = () => ([focused, opacity] = [true, 1])
+const handleBlur = () => ([focused, opacity] = [false, 0])
+const handleMouseEnter = () => (opacity = 1)
+const handleMouseLeave = () => (opacity = 0)
+
+let inputState: "locked" | "unlocked" = "locked"
+const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
 </script>
 
 <svelte:head>

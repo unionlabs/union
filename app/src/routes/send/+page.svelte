@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte"
-  import toast from "svelte-french-toast"
+import { onMount } from "svelte"
+import toast from "svelte-french-toast"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"

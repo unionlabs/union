@@ -1,23 +1,25 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
-import ThemeSwitch from "./theme-switch.svelte"
 import SearchBar from "$lib/components/search-bar.svelte"
 import Connect from "$lib/components/connect/connect.svelte"
 import Button from "$lib/components/ui/button/button.svelte"
 import { routes } from "$lib/components/navigation/index.ts"
+import { Shine } from "svelte-ux"
 </script>
 
 <header
   class="bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30 py-4 pr-4 px-2 lg:px-4 min-w-full w-screen"
 >
-  <Button
-    href="/"
-    variant="link"
-    class="px-1 sm:pl-3 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
-  >
-    union
-  </Button>
+  <Shine depth={3} lightColor="#a0ecfd">
+    <Button
+      href="/"
+      variant="link"
+      class="grayscale-[900] brightness-75 px-1 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
+    >
+      union
+    </Button>
+  </Shine>
   <div class="w-full">
     <SearchBar />
   </div>

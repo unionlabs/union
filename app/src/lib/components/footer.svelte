@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { navigating } from '$app/stores'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import HomeIcon from 'virtual:icons/lucide/home'
-  import MenuIcon from 'virtual:icons/lucide/menu'
-  import WalletMinimalIcon from 'virtual:icons/lucide/wallet'
-  import Button from '$lib/components/ui/button/button.svelte'
-  import ArrowDownUpIcon from 'virtual:icons/lucide/arrow-up-down'
-  import { Navigation } from '$lib/components/navigation/index.ts'
+import { navigating } from "$app/stores"
+import { cn } from "$lib/utilities/shadcn.ts"
+import HomeIcon from "virtual:icons/lucide/home"
+import MenuIcon from "virtual:icons/lucide/menu"
+import WalletMinimalIcon from "virtual:icons/lucide/wallet"
+import Button from "$lib/components/ui/button/button.svelte"
+import ArrowDownUpIcon from "virtual:icons/lucide/arrow-up-down"
+import { Navigation } from "$lib/components/navigation/index.ts"
 
-  const onWalletClick = () => document.querySelector('button[data-dialog-trigger]')?.click()
+const onWalletClick = () => document.querySelector("button[data-dialog-trigger]")?.click()
 
-  let navigationDrawerOpen = false
-  $: if ($navigating) navigationDrawerOpen = false
+let navigationDrawerOpen = false
+$: if ($navigating) navigationDrawerOpen = false
 
-  const navigationIconStyle = 'size-9 min-w-6 dark:hover:text-white text-zinc-accent'
+const navigationIconStyle = "size-9 min-w-6 dark:hover:text-white text-zinc-accent"
 </script>
 
 <footer
