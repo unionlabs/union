@@ -11,7 +11,9 @@ use unionlabs::{
 };
 
 use super::connection_handshake::ConnectionEnd;
-use crate::{Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable};
+use crate::{
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, Runnable,
+};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum RecvPacket {
@@ -37,7 +39,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 RecvPacket::Init {
@@ -156,7 +158,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                 packet: packet.clone(),
                                 channel: channel.clone(),
                             },
-                            vec![IbcMsg::VerifyMembership {
+                            vec![IbcQuery::VerifyMembership {
                                 client_id: connection.client_id,
                                 height: proof_height,
                                 delay_time_period: 0,
@@ -174,7 +176,8 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                     ],
                                 },
                                 value: host.sha256(packet_commitment),
-                            }],
+                            }]
+                            .into(),
                         ))
                     }
                 }
@@ -192,9 +195,10 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                         packet: packet.clone(),
                         channel,
                     },
-                    vec![IbcMsg::OnRecvPacket {
+                    IbcMsg::OnRecvPacket {
                         packet: packet.clone(),
-                    }],
+                    }
+                    .into(),
                 ))
             }
             (

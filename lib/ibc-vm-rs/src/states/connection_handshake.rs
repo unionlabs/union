@@ -12,7 +12,8 @@ use unionlabs::{
 };
 
 use crate::{
-    Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status, DEFAULT_IBC_VERSION,
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcQuery, IbcResponse, Runnable, Status,
+    DEFAULT_IBC_VERSION,
 };
 
 pub type Counterparty = connection::counterparty::Counterparty<ClientId, String>;
@@ -40,7 +41,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenInit::Init {
@@ -60,7 +61,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                         versions: DEFAULT_IBC_VERSION.clone(),
                         delay_period,
                     },
-                    vec![IbcMsg::Status { client_id }],
+                    vec![IbcQuery::Status { client_id }].into(),
                 ))
             }
             (
@@ -183,7 +184,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenTry::Init {
@@ -220,7 +221,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         counterparty,
                         delay_period,
                     },
-                    vec![IbcMsg::VerifyMembership {
+                    vec![IbcQuery::VerifyMembership {
                         client_id,
                         height: proof_height,
                         delay_time_period: 0,
@@ -234,7 +235,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         },
                         // TODO(aeryz): generic over the encoding
                         value: expected_counterparty.encode_as::<Proto>(),
-                    }],
+                    }]
+                    .into(),
                 ))
             }
             (
@@ -303,7 +305,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenAck::Init {
@@ -358,7 +360,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         connection_id,
                         connection,
                     },
-                    vec![IbcMsg::VerifyMembership {
+                    vec![IbcQuery::VerifyMembership {
                         client_id,
                         height: proof_height,
                         delay_time_period: 0,
@@ -372,7 +374,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                         },
                         // TODO(aeryz): generic encoding
                         value: expected_counterparty.encode_as::<Proto>(),
-                    }],
+                    }]
+                    .into(),
                 ))
             }
             (
@@ -434,7 +437,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenConfirm::Init {
@@ -486,7 +489,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         connection_id,
                         connection,
                     },
-                    vec![IbcMsg::VerifyMembership {
+                    vec![IbcQuery::VerifyMembership {
                         client_id,
                         height: proof_height,
                         delay_time_period: 0,
@@ -500,7 +503,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                         },
                         // TODO(aeryz): generic encoding
                         value: expected_counterparty.encode_as::<Proto>(),
-                    }],
+                    }]
+                    .into(),
                 ))
             }
             (

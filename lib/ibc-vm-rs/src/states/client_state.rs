@@ -4,7 +4,9 @@ use unionlabs::{
     id::ClientId,
 };
 
-use crate::{Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status};
+use crate::{
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
+};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum UpdateClient {
@@ -32,7 +34,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, &resp) {
             (
                 UpdateClient::Init {
@@ -46,18 +48,19 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     client_msg: client_msg.clone(),
                 },
                 vec![
-                    IbcMsg::Status {
+                    IbcQuery::Status {
                         client_id: client_id.clone(),
                     },
-                    IbcMsg::VerifyClientMessage {
+                    IbcQuery::VerifyClientMessage {
                         client_id: client_id.clone(),
                         client_msg: client_msg.clone(),
                     },
-                    IbcMsg::CheckForMisbehaviour {
+                    IbcQuery::CheckForMisbehaviour {
                         client_id,
                         client_msg,
                     },
-                ],
+                ]
+                .into(),
             )),
             (
                 UpdateClient::LcQueriesMade {
@@ -77,20 +80,22 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                         Self::UpdatedStateOnMisbehaviour {
                             client_id: client_id.clone(),
                         },
-                        vec![IbcMsg::UpdateStateOnMisbehaviour {
+                        IbcMsg::UpdateStateOnMisbehaviour {
                             client_id,
                             client_msg,
-                        }],
+                        }
+                        .into(),
                     ))
                 } else {
                     Either::Left((
                         Self::UpdatedState {
                             client_id: client_id.clone(),
                         },
-                        vec![IbcMsg::UpdateState {
+                        IbcMsg::UpdateState {
                             client_id,
                             client_msg,
-                        }],
+                        }
+                        .into(),
                     ))
                 }
             }

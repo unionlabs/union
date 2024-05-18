@@ -9,7 +9,9 @@ use unionlabs::{
     id::ClientId,
 };
 
-use crate::{Either, IbcError, IbcEvent, IbcHost, IbcMsg, IbcResponse, Runnable, Status};
+use crate::{
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
+};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum CreateClient {
@@ -39,7 +41,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 CreateClient::Init {
@@ -57,12 +59,13 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                         client_state: client_state.clone(),
                         consensus_state: consensus_state.clone(),
                     },
-                    vec![IbcMsg::Initialize {
+                    IbcMsg::Initialize {
                         client_id,
                         client_state,
                         consensus_state,
                         client_type,
-                    }],
+                    }
+                    .into(),
                 ))
             }
             (
@@ -81,11 +84,12 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     consensus_state,
                 },
                 vec![
-                    IbcMsg::Status {
+                    IbcQuery::Status {
                         client_id: client_id.clone(),
                     },
-                    IbcMsg::LatestHeight { client_id },
-                ],
+                    IbcQuery::LatestHeight { client_id },
+                ]
+                .into(),
             )),
             (
                 CreateClient::FetchLcData {
