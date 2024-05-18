@@ -3786,6 +3786,7 @@ dependencies = [
  "hex 0.4.3",
  "lazy_static",
  "serde",
+ "serde-utils",
  "thiserror-core",
  "unionlabs",
 ]
