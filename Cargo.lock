@@ -519,6 +519,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "backon"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d67782c3f868daa71d3533538e98a8e13713231969def7536e8039606fc46bf0"
+dependencies = [
+ "fastrand",
+ "futures-core",
+ "pin-project",
+ "tokio",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3443,6 +3455,7 @@ name = "hubble"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "backon",
  "base64 0.21.7",
  "clap 4.5.4",
  "color-eyre",
@@ -3455,6 +3468,7 @@ dependencies = [
  "prost",
  "protos",
  "reqwest",
+ "retry",
  "serde",
  "serde_json",
  "sqlx",
@@ -5301,6 +5315,15 @@ dependencies = [
  "web-sys",
  "webpki-roots",
  "winreg",
+]
+
+[[package]]
+name = "retry"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9166d72162de3575f950507683fac47e30f6f2c3836b71b7fbc61aa517c9c5f4"
+dependencies = [
+ "rand 0.8.5",
 ]
 
 [[package]]

@@ -244,6 +244,7 @@ autotests
 awkroot
 axelar
 backoff
+backon
 backported
 bankkeeper
 banktypes
