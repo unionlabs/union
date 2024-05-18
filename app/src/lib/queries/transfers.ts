@@ -48,17 +48,17 @@ export function unionTransfersQuery({
   enabled?: boolean
 }) {
   const query = graphql(/* GraphQL */ `
-    query CosmosSDKUnionTransfers($address: String!, $limit: Int!) {
-      v0_transfers(limit:  $limit, where: {_or: [{sender: {_eq: $address}}, {recipient: {_eq: $address}}]}) {
-        sender
-        recipient
-        amount
-        denom
-        height
-        chain_id
-        transaction_hash
-      }
-    }
+query CosmosSDKUnionTransfers($address: String!, $limit: Int!) {
+v0_cosmos_transfer(limit:  $limit, where: {_or: [{sender: {_eq: $address}}, {recipient: {_eq: $address}}]}) {
+  sender
+  recipient
+  amount
+  denom
+  height
+  chain_id
+  transaction_hash
+}
+}
   `)
   const baseUrl = `${URLS.UNION.REST}/cosmos/tx/v1beta1/txs`
   if (!isValidCosmosAddress(address)) return null

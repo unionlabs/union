@@ -18,6 +18,7 @@
   import { Separator } from '$lib/components/ui/separator/index.ts'
   import DraftPageNotice from '$lib/components/draft-page-notice.svelte'
   import { isValidCosmosAddress } from '$/lib/wallet/utilities/validate.ts'
+  import { getUnoFromFaucet } from '$lib/mutations/faucet.ts'
 
   /**
    * TODO:
@@ -25,7 +26,7 @@
    */
 
   const debounceDelay = 3_500
-  let submissionStatus: 'idle' | 'submitting' | 'submitted' = 'idle'
+  let submissionStatus: 'idle' | 'submitting' | 'submitted' | 'error' = 'idle'
 
   $: {
     if (submissionStatus === 'submitting') {
@@ -47,9 +48,16 @@
       },
       onSubmit: input => {
         submissionStatus = 'submitting'
-        debounce(() => {
+        debounce(async () => {
           if (!$form.address) input.cancel()
-          submissionStatus = 'submitted'
+          try {
+            console.log('Submitting faucet request')
+            const result = await getUnoFromFaucet($form.address)
+            console.log('Faucet request submitted', result)
+            submissionStatus = 'submitted'
+          } catch (error) {
+            submissionStatus = 'error'
+          }
         }, debounceDelay)()
       },
       onUpdate: event =>

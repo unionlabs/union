@@ -21,7 +21,7 @@
     "@tanstack/query-sync-storage-persister": "^5.37.1",
     "@tanstack/svelte-query": "^5.37.1",
     "@tanstack/svelte-query-persist-client": "^5.37.1",
-    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.8",
+    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.9",
     "@urql/exchange-persisted": "^4.3.0",
     "@urql/exchange-retry": "^1.3.0",
     "@urql/svelte": "^4.2.0",

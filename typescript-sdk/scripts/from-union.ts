@@ -47,4 +47,4 @@ const unoFromOsmosisToUnion = await unionClient.ibcMessageTransfers([
   }
 ])
 
-console.log(unoFromUnionToOsmosis.transactionHash)
+console.log(unoFromOsmosisToUnion.transactionHash)

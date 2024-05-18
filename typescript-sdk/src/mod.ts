@@ -165,7 +165,7 @@ export class UnionClient implements IUnionClient {
   protected getEvmAccount = (): Account =>
     this.#evmSigner?.account ?? raise("EVM account not found")
 
-  #signingCosmWasmClient = async () =>
+  public signingCosmWasmClient = async () =>
     await SigningCosmWasmClient.connectWithSigner(this.#rpcUrl, this.#cosmosOfflineSigner, {
       gasPrice: this.#gasPrice()
     })
@@ -174,7 +174,7 @@ export class UnionClient implements IUnionClient {
     messageTransfers: Array<MessageTransfer>
   ): Promise<number> {
     const { address: signerAddress } = await this.getAccount()
-    const cosmwasmClient = await this.#signingCosmWasmClient()
+    const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.simulate(
       signerAddress,
       messageTransfers.map(
@@ -195,7 +195,7 @@ export class UnionClient implements IUnionClient {
     messageTransfers: Array<MessageTransfer>
   ): Promise<DeliverTxResponse> {
     const { address: signerAddress } = await this.getAccount()
-    const cosmwasmClient = await this.#signingCosmWasmClient()
+    const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.signAndBroadcast(
       signerAddress,
       messageTransfers.map(
@@ -216,7 +216,7 @@ export class UnionClient implements IUnionClient {
     instructions: Array<ExecuteInstruction>
   ): Promise<ExecuteResult> {
     const { address: signerAddress } = await this.getAccount()
-    const cosmwasmClient = await this.#signingCosmWasmClient()
+    const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.executeMultiple(signerAddress, instructions, "auto")
     return response
   }
