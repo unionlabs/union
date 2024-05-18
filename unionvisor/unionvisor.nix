@@ -126,7 +126,7 @@
           default = self.packages.${pkgs.system}.bundle-testnet-8;
         };
         logFormat = mkOption {
-          type = types.str;
+          type = types.enum [ "json" "plain" ];
           default = "json";
           example = "plain";
         };

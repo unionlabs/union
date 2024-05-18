@@ -7,16 +7,15 @@ use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
+mod chain_id_query;
 mod cli;
 mod eth;
 mod healthz;
+mod logging;
 mod metrics;
 mod postgres;
 mod tm;
-
-mod chain_id_query;
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
@@ -29,10 +28,8 @@ static GLOBAL: Jemalloc = Jemalloc;
 async fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install().unwrap();
     let args = crate::cli::Args::parse();
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .with(EnvFilter::from_default_env())
-        .init();
+
+    crate::logging::init(args.log_format);
     metrics::register_custom_metrics();
 
     let db = PgPoolOptions::new()

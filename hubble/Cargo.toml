@@ -41,7 +41,7 @@ time                = { version = "0.3.30", features = ["serde"] }
 tokio               = { workspace = true, features = ["full"] }
 tonic               = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing             = { workspace = true }
-tracing-subscriber  = { workspace = true, features = ["env-filter"] }
+tracing-subscriber  = { workspace = true, features = ["env-filter", "json", "tracing-log"] }
 unionlabs           = { workspace = true, features = ["ethabi"] }
 url                 = { version = "2.4.1", features = ["serde"] }
 valuable            = { version = "0.1.0", features = ["derive"] }
