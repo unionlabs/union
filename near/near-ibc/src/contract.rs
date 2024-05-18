@@ -283,8 +283,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn callback_initialize(&mut self, current_state: Vec<u8>) -> Promise {
-        let current_state: IbcState = serde_json::from_slice(&current_state).unwrap();
+    pub fn callback_initialize(&mut self, current_state: IbcState) -> Promise {
         match &current_state {
             IbcState::CreateClient(CreateClient::Initialize {
                 client_id,
@@ -391,8 +390,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                     light_client::ext(account_id.clone())
                         .initialize(client_id, client_state, consensus_state)
                         .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_initialize(serde_json::to_vec(&runnable).unwrap()),
+                            Contract::ext(env::current_account_id()).callback_initialize(runnable),
                         ),
                 );
             }

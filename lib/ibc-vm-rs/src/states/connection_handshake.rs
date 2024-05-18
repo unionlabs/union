@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{EncodeAs, Proto},
+    events,
     ibc::core::{
         client::height::Height,
         commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
@@ -105,11 +106,11 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     end,
                 )?;
 
-                Either::Right(IbcEvent::ConnectionOpenInit {
-                    connection_id: connection_id.to_string(),
+                Either::Right(IbcEvent::ConnectionOpenInit(events::ConnectionOpenInit {
+                    connection_id,
                     client_id,
                     counterparty_client_id,
-                })
+                }))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -270,12 +271,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     .into(),
                     end,
                 )?;
-                Either::Right(IbcEvent::ConnectionOpenTry {
-                    connection_id: connection_id.to_string(),
+                Either::Right(IbcEvent::ConnectionOpenTry(events::ConnectionOpenTry {
+                    connection_id,
                     client_id,
                     counterparty_client_id: counterparty.client_id,
-                    counterparty_connection_id: counterparty.connection_id,
-                })
+                    counterparty_connection_id: counterparty.connection_id.validate().unwrap(),
+                }))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -407,12 +408,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     connection,
                 )?;
 
-                Either::Right(IbcEvent::ConnectionOpenAck {
-                    connection_id,
+                Either::Right(IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
+                    connection_id: connection_id.validate().unwrap(),
                     client_id,
                     counterparty_client_id,
-                    counterparty_connection_id,
-                })
+                    counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
+                }))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -537,12 +538,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     connection,
                 )?;
 
-                Either::Right(IbcEvent::ConnectionOpenConfirm {
-                    connection_id,
-                    client_id,
-                    counterparty_client_id,
-                    counterparty_connection_id,
-                })
+                Either::Right(IbcEvent::ConnectionOpenConfirm(
+                    events::ConnectionOpenConfirm {
+                        connection_id: connection_id.validate().unwrap(),
+                        client_id,
+                        counterparty_client_id,
+                        counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
+                    },
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
