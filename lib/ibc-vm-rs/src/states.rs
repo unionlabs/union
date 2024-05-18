@@ -26,14 +26,7 @@ pub enum CreateClient {
         consensus_state: Vec<u8>,
     },
 
-    FetchStatus {
-        client_id: ClientId,
-        client_type: String,
-        client_state: Vec<u8>,
-        consensus_state: Vec<u8>,
-    },
-
-    FetchLatestHeight {
+    FetchLcData {
         client_id: ClientId,
         client_type: String,
         client_state: Vec<u8>,
@@ -45,8 +38,8 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
     fn process(
         self,
         host: &mut T,
-        resp: IbcResponse,
-    ) -> Result<Either<(Self, IbcMsg), IbcEvent>, <T as IbcHost>::Error> {
+        resp: &[IbcResponse],
+    ) -> Result<Either<(Self, Vec<IbcMsg>), IbcEvent>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 CreateClient::Init {
@@ -54,7 +47,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     client_state,
                     consensus_state,
                 },
-                IbcResponse::Empty,
+                &[IbcResponse::Empty],
             ) => {
                 let client_id = host.next_client_identifier(&client_type)?;
                 Either::Left((
@@ -64,12 +57,12 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                         client_state: client_state.clone(),
                         consensus_state: consensus_state.clone(),
                     },
-                    IbcMsg::Initialize {
+                    vec![IbcMsg::Initialize {
                         client_id,
                         client_state,
                         consensus_state,
                         client_type,
-                    },
+                    }],
                 ))
             }
             (
@@ -79,50 +72,34 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     client_state,
                     consensus_state,
                 },
-                IbcResponse::Initialize,
+                &[IbcResponse::Initialize],
             ) => Either::Left((
-                CreateClient::FetchStatus {
+                CreateClient::FetchLcData {
                     client_id: client_id.clone(),
                     client_type: client_type.clone(),
                     client_state,
                     consensus_state,
                 },
-                IbcMsg::Status { client_id },
+                vec![
+                    IbcMsg::Status {
+                        client_id: client_id.clone(),
+                    },
+                    IbcMsg::LatestHeight { client_id },
+                ],
             )),
             (
-                CreateClient::FetchStatus {
+                CreateClient::FetchLcData {
                     client_id,
                     client_type,
                     client_state,
                     consensus_state,
                 },
-                IbcResponse::Status { status },
+                &[IbcResponse::Status { status }, IbcResponse::LatestHeight { height }],
             ) => {
                 if status != Status::Active {
                     return Err(IbcError::NotActive(client_id, status).into());
                 }
                 let client_id = client_id.clone();
-                Either::Left((
-                    CreateClient::FetchLatestHeight {
-                        client_id: client_id.clone(),
-                        client_type: client_type.clone(),
-                        client_state,
-                        consensus_state,
-                    },
-                    IbcMsg::LatestHeight {
-                        client_id: client_id.clone(),
-                    },
-                ))
-            }
-            (
-                CreateClient::FetchLatestHeight {
-                    client_id,
-                    client_type,
-                    client_state,
-                    consensus_state,
-                },
-                IbcResponse::LatestHeight { height },
-            ) => {
                 host.commit_raw(
                     ClientStatePath {
                         client_id: client_id.clone(),
