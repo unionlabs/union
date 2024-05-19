@@ -1,10 +1,12 @@
 mod contract;
 mod nibble_slice;
+mod types;
 use std::collections::HashMap;
 
 pub use contract::*;
 use near_primitives_core::{hash::CryptoHash, types::AccountId};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
+use types::BlockHeaderInnerLiteView;
 
 use crate::nibble_slice::NibbleSlice;
 
@@ -17,6 +19,7 @@ pub struct ClientState {
 #[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
 pub struct ConsensusState {
     pub state_root: CryptoHash,
+    pub state: BlockHeaderInnerLiteView,
 }
 
 pub struct StateProof {
