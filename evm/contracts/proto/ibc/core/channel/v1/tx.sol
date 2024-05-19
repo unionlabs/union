@@ -3316,7 +3316,6 @@ library IbcCoreChannelV1MsgChannelCloseConfirmResponse {
         return true;
     }
 
-
     //store function
     /**
      * @dev Store in-memory struct to storage

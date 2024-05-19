@@ -150,16 +150,10 @@ contract CometblsClient is
             consensusStates[clientId][headerB.trusted_height.toUint128()];
 
         // Check that the headers would have been accepted in an update
-        (
-            ,
-            uint64 untrustedTimestampA,
-            
-        ) = verifyHeader(headerA, consensusStateA, clientState);
-        (
-            ,
-            uint64 untrustedTimestampB,
-            
-        ) = verifyHeader(headerB, consensusStateB, clientState);
+        (, uint64 untrustedTimestampA,) =
+            verifyHeader(headerA, consensusStateA, clientState);
+        (, uint64 untrustedTimestampB,) =
+            verifyHeader(headerB, consensusStateB, clientState);
 
         if (headerA.trusted_height.eq(headerB.trusted_height)) {
             bytes32 hashA = keccak256(abi.encode(headerA.signed_header));
@@ -269,11 +263,8 @@ contract CometblsClient is
         OptimizedConsensusState storage consensusState =
             consensusStates[clientId][header.trusted_height.toUint128()];
 
-        (
-            uint64 untrustedHeightNumber,
-            uint64 untrustedTimestamp,
-            
-        ) = verifyHeader(header, consensusState, clientState);
+        (uint64 untrustedHeightNumber, uint64 untrustedTimestamp,) =
+            verifyHeader(header, consensusState, clientState);
 
         // Update states
         if (untrustedHeightNumber > clientState.latest_height.revision_height) {

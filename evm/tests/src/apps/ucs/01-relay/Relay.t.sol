@@ -599,8 +599,7 @@ contract RelayTests is Test {
         );
 
         assertEq(acknowledgement, abi.encodePacked(RelayLib.ACK_FAILURE));
-        (, bytes32[] memory writes) =
-            vm.accesses(address(relay));
+        (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
     }
 
@@ -1356,8 +1355,7 @@ contract RelayTests is Test {
             packet, abi.encodePacked(RelayLib.ACK_SUCCESS), relayer
         );
 
-        (, bytes32[] memory writes) =
-            vm.accesses(address(relay));
+        (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
     }
 
@@ -1425,8 +1423,7 @@ contract RelayTests is Test {
             packet, abi.encodePacked(RelayLib.ACK_SUCCESS), relayer
         );
 
-        (, bytes32[] memory writes) =
-            vm.accesses(address(relay));
+        (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
     }
 }

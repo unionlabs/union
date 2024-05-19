@@ -78,7 +78,7 @@ contract IBCHeightTests is Test {
     function test_toUint128_fromUint128_iso(
         uint64 revisionNumber,
         uint64 revisionHeight
-    ) view public {
+    ) public view {
         IbcCoreClientV1Height.Data memory height = IbcCoreClientV1Height.Data({
             revision_number: revisionNumber,
             revision_height: revisionHeight
@@ -97,7 +97,10 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_eq(uint64 revisionNumber, uint64 revisionHeight) public view {
+    function test_eq(
+        uint64 revisionNumber,
+        uint64 revisionHeight
+    ) public view {
         assertTrue(
             proxy.eq(
                 IbcCoreClientV1Height.Data({

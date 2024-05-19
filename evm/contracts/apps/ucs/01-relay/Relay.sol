@@ -429,7 +429,7 @@ contract UCS01Relay is
         returns (bytes memory)
     {
         // TODO: maybe consider threading _res in the failure ack
-        (bool success, ) = address(this).call(
+        (bool success,) = address(this).call(
             abi.encodeWithSelector(
                 this.onRecvPacketProcessing.selector, ibcPacket, relayer
             )

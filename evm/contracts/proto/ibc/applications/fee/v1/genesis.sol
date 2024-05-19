@@ -732,8 +732,7 @@ library IbcApplicationsFeeV1GenesisState {
          */
         IbcApplicationsFeeV1RegisteredCounterpartyPayee.Data[] memory tmp = new IbcApplicationsFeeV1RegisteredCounterpartyPayee
             .Data[](self.registered_counterparty_payees.length + 1);
-        for (uint256 i; i < self.registered_counterparty_payees.length; i++)
-        {
+        for (uint256 i; i < self.registered_counterparty_payees.length; i++) {
             tmp[i] = self.registered_counterparty_payees[i];
         }
         tmp[self.registered_counterparty_payees.length] = value;

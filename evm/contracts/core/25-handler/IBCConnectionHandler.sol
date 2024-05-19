@@ -33,9 +33,10 @@ abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
         passthrough(ibcConnection);
     }
 
-    function connectionOpenConfirm(
-        IBCMsgs.MsgConnectionOpenConfirm calldata
-    ) external override {
+    function connectionOpenConfirm(IBCMsgs.MsgConnectionOpenConfirm calldata)
+        external
+        override
+    {
         passthrough(ibcConnection);
     }
 }

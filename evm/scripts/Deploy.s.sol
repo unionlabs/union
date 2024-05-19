@@ -80,10 +80,7 @@ library Protocols {
 }
 
 abstract contract UnionBase is Script {
-    function deployDeployer(VmSafe.Wallet memory)
-        internal
-        returns (Deployer)
-    {
+    function deployDeployer(VmSafe.Wallet memory) internal returns (Deployer) {
         bytes memory bytecode = DEPLOYER_BYTECODE_SOLIDITY_8_23_f704f362;
         Deployer deployer;
         assembly {

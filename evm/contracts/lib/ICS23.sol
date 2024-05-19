@@ -1,7 +1,5 @@
 pragma solidity ^0.8.23;
 
-// import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
-// import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
 import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/utils/math/Math.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
@@ -495,16 +493,12 @@ library Proof {
         }
         if (leftKey.length == 0) {
             //require(isLeftMost(spec, proof.right.path, proof.right.path.length)); // dev: left proof missing, right proof must be left-most
-            if (
-                !isLeftMost(spec, proof.right.path, proof.right.path.length)
-            ) {
+            if (!isLeftMost(spec, proof.right.path, proof.right.path.length)) {
                 return VerifyNonExistenceError.RightProofLeftMost;
             }
         } else if (rightKey.length == 0) {
             //require(isRightMost(spec, proof.left.path, proof.left.path.length)); // dev: isRightMost: right proof missing, left proof must be right-most
-            if (
-                !isRightMost(spec, proof.left.path, proof.left.path.length)
-            ) {
+            if (!isRightMost(spec, proof.left.path, proof.left.path.length)) {
                 return VerifyNonExistenceError.LeftProofRightMost;
             }
         } else {

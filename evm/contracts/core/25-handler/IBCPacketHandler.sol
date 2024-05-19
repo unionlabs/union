@@ -21,10 +21,7 @@ abstract contract IBCPacketHandler is IIBCPacket, ModuleManager {
         passthrough(ibcPacket);
     }
 
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata)
-        external
-        override
-    {
+    function recvPacket(IBCMsgs.MsgPacketRecv calldata) external override {
         passthrough(ibcPacket);
     }
 

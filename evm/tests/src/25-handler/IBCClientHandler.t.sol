@@ -299,10 +299,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_createClient_onlyIBC(uint64 trustedHeight) public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         vm.assume(
             0 < trustedHeight && trustedHeight < uint64(signedHeader.height)
@@ -661,10 +659,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getClientState() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -688,10 +684,9 @@ contract IBCClientHandlerTests is TestPlus {
     function test_getClientState_noClientState() public {
         getValidTransition();
 
-
         handler.registerClient(CLIENT_TYPE, client);
 
-        // bytes memory clientStateBytes = client.getClientState("blabla");
+        client.getClientState("blabla");
         // REVIEW: Not sure how best to check if the bytes is the zero of the type
         // assertEq(clientStateBytes, "");
     }
@@ -745,10 +740,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getConsensusState() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -784,23 +777,20 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getConsensusState_noConsensus() public {
-        /*(
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = */
-        getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
-        // uint64 trustedHeight = uint64(signedHeader.height) - 1;
+        uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        // bytes memory consensusStateBytes = client.getConsensusState(
-        //     "blabla",
-        //     IbcCoreClientV1Height.Data({
-        //         revision_number: 0,
-        //         revision_height: trustedHeight
-        //     })
-        // );
+        client.getConsensusState(
+            "blabla",
+            IbcCoreClientV1Height.Data({
+                revision_number: 0,
+                revision_height: trustedHeight
+            })
+        );
         // REVIEW: Not sure how best to check if the bytes is the zero of the type
         // assertEq(consensusStateBytes, "");
     }
@@ -872,10 +862,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyMembership_noConsensus() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -911,10 +899,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyMembership_ok() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -949,10 +935,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyMembership_ko() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -992,10 +976,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
         vm.assume(0 < delayTime && delayTime < delayPeriodTime);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1038,10 +1020,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
         vm.assume(0 < delayBlocks && delayBlocks < delayPeriodBlocks);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1081,10 +1061,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1125,10 +1103,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1165,10 +1141,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyNonMembership_ok() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1202,10 +1176,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyNonMembership_ko() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1244,10 +1216,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
         vm.assume(0 < delayTime && delayTime < delayPeriodTime);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1289,10 +1259,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
         vm.assume(0 < delayBlocks && delayBlocks < delayPeriodBlocks);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1331,10 +1299,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1374,10 +1340,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
 
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -1425,10 +1389,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getLatestHeight_ok() public {
-        (
-            ,
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (, UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader) =
+            getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 

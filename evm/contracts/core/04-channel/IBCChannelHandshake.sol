@@ -496,7 +496,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
     }
 
     function ensureConnectionState(string memory connectionId)
-        internal view
+        internal
+        view
         returns (IbcCoreConnectionV1ConnectionEnd.Data memory)
     {
         IbcCoreConnectionV1ConnectionEnd.Data memory connection =
@@ -512,7 +513,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         string[] calldata connectionHops,
         IbcCoreChannelV1GlobalEnums.Order ordering
     )
-        internal view
+        internal
+        view
         returns (string memory, IbcCoreConnectionV1ConnectionEnd.Data memory)
     {
         if (connectionHops.length != 1) {

@@ -262,7 +262,7 @@ contract UCS02NFT is
         address nftClass,
         string memory nftDenom,
         uint256[] calldata tokens
-    ) view internal returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         uint256 tokensLength = tokens.length;
         bool supportsMetadata = IERC165(nftClass).supportsInterface(
             type(IERC721Metadata).interfaceId
@@ -344,7 +344,7 @@ contract UCS02NFT is
         address relayer
     ) external override onlyIBC returns (bytes memory) {
         // TODO: maybe consider threading _res in the failure ack
-        (bool success, ) = address(this).call(
+        (bool success,) = address(this).call(
             abi.encodeWithSelector(
                 this.onRecvPacketProcessing.selector, ibcPacket, relayer
             )
