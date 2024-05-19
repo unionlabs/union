@@ -80,7 +80,6 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
 <svelte:head>
   <title>Union App Beta</title>
   <meta name="description" content="Union Web App" />
-  <!-- @docs https://monogram.io/blog/add-partytown-to-svelte -->
   <script>
     partytown = { forward: ['dataLayer.push'] }
   </script>

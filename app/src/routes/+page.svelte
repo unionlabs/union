@@ -1,6 +1,5 @@
 <script lang="ts">
 import { Shine } from "svelte-ux"
-import CardAnimatedBorder from "$lib/components/card-animated-border.svelte"
 </script>
 
 <main class="mt-16 flex size-full min-size-full flex-col items-center justify-center">
@@ -11,5 +10,4 @@ import CardAnimatedBorder from "$lib/components/card-animated-border.svelte"
       zkGM
     </h1>
   </Shine>
-  <CardAnimatedBorder></CardAnimatedBorder>
 </main>
