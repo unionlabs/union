@@ -155,7 +155,7 @@ impl core::fmt::Display for Status {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum IbcResponse {
     Empty,
     Initialize,
