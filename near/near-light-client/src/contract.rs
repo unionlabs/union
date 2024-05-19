@@ -1,4 +1,5 @@
 use ibc_vm_rs::{IbcQuery, IbcResponse, Status};
+use near_primitives_core::hash::CryptoHash;
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen,
@@ -14,7 +15,10 @@ use unionlabs::{
     id::ClientId,
 };
 
-use crate::{ClientState, ConsensusState, StateProof};
+use crate::{
+    types::{ApprovalInner, LightClientBlockView, Signature, ValidatorStakeView},
+    ClientState, ConsensusState, StateProof,
+};
 
 #[near_bindgen]
 #[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
@@ -27,7 +31,7 @@ pub struct Contract {
 impl Contract {
     #[init]
     pub fn initialize(
-        client_id: ClientId,
+        #[allow(unused)] client_id: ClientId,
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
     ) -> Self {
@@ -148,4 +152,130 @@ fn key_from_path(path: &str) -> Vec<u8> {
     commitments.extend(b"commitments");
     commitments.extend(borsh::to_vec(path).unwrap());
     commitments
+}
+
+// def reconstruct_light_client_block_view_fields(block_view):
+//     current_block_hash = sha256(concat(
+//         sha256(concat(
+//             sha256(borsh(block_view.inner_lite)),
+//             block_view.inner_rest_hash,
+//         )),
+//         block_view.prev_block_hash
+//     ))
+
+//     next_block_hash = sha256(concat(
+//         block_view.next_block_inner_hash,
+//         current_block_hash
+//     ))
+
+//     approval_message = concat(
+//         borsh(ApprovalInner::Endorsement(next_block_hash)),
+//         little_endian(block_view.inner_lite.height + 2)
+//     )
+
+//     return (current_block_hash, next_block_hash, approval_message)
+
+fn reconstruct_light_client_block_view_fields(
+    block_view: LightClientBlockView,
+) -> (CryptoHash, CryptoHash, Vec<u8>) {
+    let concat = |first: &[u8], second: &[u8]| [first, second].concat();
+
+    let current_block_hash = CryptoHash(
+        env::sha256(&concat(
+            &env::sha256(&concat(
+                &env::sha256(&borsh::to_vec(&block_view.inner_lite).unwrap()),
+                block_view.inner_rest_hash.as_bytes(),
+            )),
+            block_view.prev_block_hash.as_bytes(),
+        ))
+        .try_into()
+        .unwrap(),
+    );
+
+    let next_block_hash = CryptoHash(
+        env::sha256(&concat(
+            block_view.next_block_inner_hash.as_bytes(),
+            current_block_hash.as_bytes(),
+        ))
+        .try_into()
+        .unwrap(),
+    );
+
+    let approval_message = concat(
+        &borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash.clone())).unwrap(),
+        &(block_view.inner_lite.height + 2).to_le_bytes(),
+    );
+
+    (current_block_hash, next_block_hash, approval_message)
+}
+
+fn validate_head(
+    head: LightClientBlockView,
+    block_view: LightClientBlockView,
+    epoch_block_producers_map: &mut LookupMap<CryptoHash, Vec<ValidatorStakeView>>,
+) {
+    let (_current_block_hash, _next_block_hash, approval_message) =
+        reconstruct_light_client_block_view_fields(block_view.clone());
+
+    if block_view.inner_lite.height <= head.inner_lite.height {
+        panic!("false");
+    }
+
+    if ![&head.inner_lite.epoch_id, &head.inner_lite.next_epoch_id]
+        .contains(&&block_view.inner_lite.epoch_id)
+    {
+        panic!("false");
+    }
+
+    if block_view.inner_lite.epoch_id == head.inner_lite.next_epoch_id
+        && block_view.next_bps.is_none()
+    {
+        panic!("false");
+    }
+
+    let mut total_stake = 0;
+    let mut approved_stake = 0;
+
+    let epoch_block_producers = epoch_block_producers_map
+        .get(&block_view.inner_lite.epoch_id)
+        .expect("noo");
+    for (maybe_signature, block_producer) in block_view
+        .approvals_after_next
+        .iter()
+        .zip(epoch_block_producers.iter())
+    {
+        let ValidatorStakeView::V1(block_producer) = block_producer.clone();
+        total_stake += block_producer.stake;
+
+        if maybe_signature.is_none() {
+            continue;
+        }
+
+        match maybe_signature {
+            Some(signature) => {
+                approved_stake += block_producer.stake;
+
+                if !verify_signature(&block_producer.public_key, signature, &approval_message) {
+                    panic!("no bro no");
+                }
+            }
+            None => continue,
+        }
+    }
+
+    let threshold = total_stake.checked_mul(2).unwrap().checked_div(3).unwrap();
+    if approved_stake <= threshold {
+        panic!("not cool bro");
+    }
+
+    if let Some(next_bps) = &block_view.next_bps {
+        if env::sha256(&borsh::to_vec(next_bps).unwrap()) != block_view.inner_lite.next_bp_hash.0 {
+            panic!("no bro no");
+        }
+        epoch_block_producers_map.insert(block_view.inner_lite.next_epoch_id, next_bps.clone());
+    }
+}
+
+fn verify_signature(_public_key: &Vec<u8>, _signature: &Signature, _message: &Vec<u8>) -> bool {
+    true
 }
