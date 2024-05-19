@@ -1,4 +1,4 @@
-use ibc_vm_rs::Status;
+use ibc_vm_rs::{IbcQuery, IbcResponse, Status};
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen,
@@ -41,6 +41,44 @@ impl Contract {
         }
     }
 
+    pub fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse> {
+        query
+            .into_iter()
+            .map(|q| match q {
+                IbcQuery::Status => IbcResponse::Status {
+                    status: self.status(),
+                },
+                IbcQuery::LatestHeight => IbcResponse::LatestHeight {
+                    height: self.latest_height(),
+                },
+                IbcQuery::VerifyMembership {
+                    height,
+                    delay_time_period,
+                    delay_block_period,
+                    proof,
+                    path,
+                    value,
+                } => IbcResponse::VerifyMembership {
+                    valid: self.verify_membership(
+                        height,
+                        delay_time_period,
+                        delay_block_period,
+                        proof,
+                        path,
+                        value,
+                    ),
+                },
+                IbcQuery::VerifyClientMessage(msg) => IbcResponse::VerifyClientMessage {
+                    valid: self.verify_client_message(msg),
+                },
+                IbcQuery::CheckForMisbehaviour(msg) => IbcResponse::CheckForMisbehaviour {
+                    misbehaviour_found: self.check_for_misbehaviour(msg),
+                },
+                IbcQuery::TimestampAtHeight(_) => IbcResponse::TimestampAtHeight { timestamp: 100 },
+            })
+            .collect()
+    }
+
     pub fn status(&self) -> Status {
         Status::Active
     }
@@ -54,7 +92,6 @@ impl Contract {
 
     pub fn verify_membership(
         &self,
-        client_id: ClientId,
         height: Height,
         // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,

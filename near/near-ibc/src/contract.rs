@@ -9,6 +9,8 @@ use near_sdk::{
     store::{unordered_map, UnorderedMap},
     AccountId, BorshStorageKey, Promise,
 };
+#[allow(unused)]
+use near_sdk_contract_tools::owner::OwnerExternal;
 #[allow(clippy::wildcard_imports)]
 use near_sdk_contract_tools::Owner;
 use unionlabs::{
@@ -86,7 +88,7 @@ impl IbcHost for Contract {
             .unwrap())
     }
 
-    fn read_raw(&self, key: &str) -> Option<Vec<u8>> {
+    fn read_raw(&self, key: &Path<ClientId, Height>) -> Option<Vec<u8>> {
         self.commitments
             .get(&key.to_string())
             .map(|item| item.clone())
@@ -106,6 +108,11 @@ impl IbcHost for Contract {
 
     fn sha256(&self, data: Vec<u8>) -> Vec<u8> {
         env::sha256(&data)
+    }
+
+    fn delete(&mut self, key: &Path<ClientId, Height>) -> Result<(), Self::Error> {
+        let _ = self.commitments.remove(&key.to_string());
+        Ok(())
     }
 }
 
@@ -471,6 +478,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
             }
             ibc_vm_rs::IbcMsg::OnChannelOpenConfirm { .. } => todo!(),
             ibc_vm_rs::IbcMsg::OnRecvPacket { .. } => todo!(),
+            ibc_vm_rs::IbcMsg::OnAcknowledgePacket { .. } => todo!(),
         },
     }
 }
@@ -505,7 +513,6 @@ pub trait LightClient {
 
     fn verify_membership(
         &self,
-        client_id: ClientId,
         height: Height,
         // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,
