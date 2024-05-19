@@ -20,7 +20,7 @@
     "@cosmjs/encoding": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
     "@cosmjs/tendermint-rpc": "0.32.3",
-    "viem": "^2.10.5"
+    "viem": "^2.10.9"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
@@ -32,7 +32,7 @@
     "@types/node": "^20.12.12",
     "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",
-    "tsx": "^4.10.4",
+    "tsx": "^4.10.5",
     "typescript": "^5.4.5",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^1.6.0"

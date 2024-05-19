@@ -46,9 +46,9 @@ export const config = createConfig({
   transports: {
     [sepolia.id]: fallback([
       unstable_connector(injected),
-      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.ALCHEMY}`),
-      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.CHAINSTACK}`),
-      webSocket(`wss://ethereum-sepolia.core.chainstack.com/ws/${KEY.CHAINSTACK}`)
+      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`),
+      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`),
+      webSocket(`wss://ethereum-sepolia.core.chainstack.com/ws/${KEY.RPC.CHAINSTACK}`)
     ])
   },
   syncConnectedChain: true,
@@ -91,7 +91,7 @@ export const config = createConfig({
       darkMode: true,
       appName: "Union",
       appLogoUrl: "/images/logo.png",
-      jsonRpcUrl: `https://ethereum-sepolia.core.chainstack.com/${KEY.CHAINSTACK}`
+      jsonRpcUrl: `https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`
     })
   ]
 })
