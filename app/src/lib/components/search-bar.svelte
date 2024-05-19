@@ -5,8 +5,8 @@ import Smile from "virtual:icons/lucide/smile"
 import Table from "virtual:icons/lucide/table"
 import Brain from "virtual:icons/lucide/brain"
 import Search from "virtual:icons/lucide/search"
-import { Input } from "$lib/components/ui/input"
 import { debounce } from "$lib/utilities/index.ts"
+import { Input } from "$lib/components/ui/input/index.ts"
 import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSign from "virtual:icons/lucide/badge-dollar-sign"
 
@@ -30,6 +30,12 @@ onMount(() => {
     document.removeEventListener("keydown", handleKeyDown)
   }
 })
+
+const onInputClick = (event: MouseEvent) => (commandDialogOpen = windowSize.width < 720)
+const onInputChange = (event: InputEvent) =>
+  debounce((event: InputEvent) => {
+    console.log("Searching...", searchInput)
+  }, 1_000)(event)
 </script>
 
 <div class="relative mr-auto flex-1 w-full max-w-[475px]">
@@ -43,13 +49,9 @@ onMount(() => {
     spellcheck="false"
     autocapitalize="none"
     placeholder="Search..."
+    on:click={onInputClick}
     bind:value={searchInput}
-    on:input={debounce(() => {
-      console.log('Searching...', searchInput)
-    }, 1_000)}
-    on:click={() => {
-      if (windowSize.width < 720) commandDialogOpen = true
-    }}
+    on:input={onInputChange}
     class="w-full rounded-lg bg-background pl-8 self-stretch lowercase border-[1px] bprder-[#fafafa25]/10"
   />
   <kbd

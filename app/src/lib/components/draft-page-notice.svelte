@@ -1,5 +1,5 @@
 <script lang="ts">
-import { cn } from "$/lib/utilities/shadcn"
+import { cn } from "$/lib/utilities/shadcn.ts"
 import { Badge } from "$lib/components/ui/badge"
 
 export let className = ""

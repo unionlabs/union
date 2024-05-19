@@ -15,6 +15,7 @@ Bitfield
 Bitvector
 Boiron
 Boneh
+CBFF
 CCTP
 CFLAGS
 CHAINSTACK

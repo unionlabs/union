@@ -25,7 +25,7 @@ onMount(() => {
 
 {#if progress >= 0.4}
   <div
-    class="fixed w-full h-full bg-[rgba(234,248,255,0.04)] pointer-events-none z-[998] animate-[fade_0.4s]"
+    class="fixed size-full bg-[rgba(234,248,255,0.04)] pointer-events-none z-[998] animate-[fade_0.4s]"
   />
 {/if}
 

@@ -57,7 +57,6 @@
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.79.1",
-    "@svelte-put/copy": "^3.0.1",
     "@svelte-put/shortcut": "^3.1.1",
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.5.9",

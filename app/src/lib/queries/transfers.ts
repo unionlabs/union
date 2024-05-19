@@ -15,15 +15,18 @@ import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 export function ibcTransfersQuery({ address, limit = 100 }: { address: string; limit?: number }) {
   const query = graphql(/* GraphQL */ `
     query userTransfers($address: String!, $limit: Int!) {
-      v0_wasm_ibc_transfers(limit: $limit, where: {
-        _or: [{sender: {_eq: $address}}, {receiver: {_eq: $address}}]
+      v0_cosmos_wasm_ibc_transfer(
+        order_by: { height: desc },
+        limit: $limit,
+        where: {
+        _or: [{ sender: { _eq: $address } }, { receiver: { _eq: $address }}]
       }) {
-        sender
-        receiver
-        amount
-        denom
+        height
+        time
+        json
+        memo
+        chain_id
         transaction_hash
-        _contract_address
       }
     }
   `)

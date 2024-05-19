@@ -16,6 +16,9 @@ export function urlSearchParams(
   )
 }
 
+export const elementHasFocus = (element: Element | null): element is HTMLElement =>
+  element === document.activeElement
+
 export async function fetcher<T>(url: string, options?: RequestInit) {
   const response = await fetch(url, {
     ...options,
@@ -46,12 +49,12 @@ export const generateRandomInteger = (min: number, max: number) =>
 export const repeatArray = <T>(array: Array<T>, times: number): Array<T> =>
   Array.from({ length: times }).flatMap(() => array)
 
-export function debounce(
-  handler: (...args: Array<any>) => void,
+export function debounce<T extends (...args: Array<any>) => void>(
+  handler: T,
   delay = 500
-): (...args: Array<any>) => void {
+): (...args: Parameters<T>) => void {
   let id: number
-  return (...args: Array<any>) => {
+  return (...args: Parameters<T>) => {
     window.clearTimeout(id)
     id = window.setTimeout(handler, delay, ...args)
   }

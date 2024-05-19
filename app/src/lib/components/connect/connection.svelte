@@ -1,11 +1,11 @@
 <script lang="ts">
 import type { Props } from "./index.ts"
-import { copy } from "@svelte-put/copy"
 import XIcon from "virtual:icons/lucide/x"
 import { cn } from "$lib/utilities/shadcn.ts"
 import CopyIcon from "virtual:icons/lucide/copy"
 import CheckIcon from "virtual:icons/lucide/check"
 import { Button } from "$lib/components/ui/button"
+import { copyTextAction } from "$lib/actions/copy.ts"
 import LoaderCircleIcon from "virtual:icons/lucide/loader-circle"
 import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
@@ -42,7 +42,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   id={`${chain}-connect`}
   on:click={_event => onCopyClick()}
   variant={connectStatus === 'connected' ? 'default' : 'ghost'}
-  builders={[{ action: node => copy(node, { text: address }) }]}
+  builders={[{ action: node => copyTextAction(node, { text: address }) }]}
   class={cn(
     'px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start',
     connectStatus === 'disconnected' &&

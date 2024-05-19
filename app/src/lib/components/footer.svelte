@@ -4,7 +4,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import HomeIcon from "virtual:icons/lucide/home"
 import MenuIcon from "virtual:icons/lucide/menu"
 import WalletMinimalIcon from "virtual:icons/lucide/wallet"
-import Button from "$lib/components/ui/button/button.svelte"
+import { Button } from "$lib/components/ui/button/index.ts"
 import ArrowDownUpIcon from "virtual:icons/lucide/arrow-up-down"
 import { Navigation } from "$lib/components/navigation/index.ts"
 

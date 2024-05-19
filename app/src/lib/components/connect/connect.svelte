@@ -49,7 +49,7 @@ let collapsibleOpen = true
       <Sheet.Title>
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn('size-8', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
+          class={cn('size-10', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
         >
           <Avatar.Image
             alt="ethereum avatar"
