@@ -44,7 +44,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.30.0",
     "vaul-svelte": "^0.3.1",
-    "viem": "^2.10.9"
+    "viem": "^2.11.0"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.3",
@@ -53,7 +53,7 @@
     "@iconify-json/lucide": "^1.1.187",
     "@iconify-json/mdi": "^1.1.66",
     "@iconify-json/tabler": "^1.1.112",
-    "@keplr-wallet/types": "^0.12.89",
+    "@keplr-wallet/types": "^0.12.90",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.79.1",

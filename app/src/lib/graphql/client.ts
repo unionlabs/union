@@ -16,13 +16,18 @@ import { createClient as createWSClient, type SubscribePayload } from "graphql-w
  * @see https://commerce.nearform.com/open-source/urql/docs/
  */
 
+const headers = {
+  "X-Hasura-Role": "app"
+} satisfies HeadersInit
+
 const wsClient = createWSClient({
   url: URLS.GRAPHQL_WSS,
-  shouldRetry: () => true
+  shouldRetry: () => true,
+  connectionParams: async () => ({ headers })
 })
 
 export const graphqlClient = new Client({
-  url: URLS.GRAPHQL,
+  url: URLS.GRAPHQL_WSS,
   requestPolicy: "cache-and-network",
   exchanges: [
     devtoolsExchange,
@@ -51,8 +56,5 @@ export const graphqlClient = new Client({
     }),
     debugExchange
   ],
-  fetchSubscriptions: true,
-  fetchOptions: () => ({
-    headers: { "X-Hasura-Role": "app" }
-  })
+  fetchOptions: () => ({ headers })
 })
