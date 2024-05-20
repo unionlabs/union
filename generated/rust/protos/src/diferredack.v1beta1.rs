@@ -85,27 +85,21 @@ impl ::prost::Name for MsgWriteDiferredAckResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DiferredPacketInfo {
     #[prost(string, tag = "1")]
-    pub original_sender_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
     pub refund_channel_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag = "2")]
     pub refund_port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "4")]
+    #[prost(string, tag = "3")]
     pub packet_src_channel_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "5")]
+    #[prost(string, tag = "4")]
     pub packet_src_port_id: ::prost::alloc::string::String,
-    #[prost(uint64, tag = "6")]
+    #[prost(uint64, tag = "5")]
     pub packet_timeout_timestamp: u64,
-    #[prost(string, tag = "7")]
+    #[prost(string, tag = "6")]
     pub packet_timeout_height: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "8")]
+    #[prost(bytes = "vec", tag = "7")]
     pub packet_data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag = "9")]
+    #[prost(uint64, tag = "8")]
     pub sequence: u64,
-    #[prost(uint64, tag = "10")]
-    pub timeout: u64,
-    #[prost(bool, tag = "11")]
-    pub nonrefundable: bool,
 }
 impl ::prost::Name for DiferredPacketInfo {
     const NAME: &'static str = "DiferredPacketInfo";
