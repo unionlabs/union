@@ -4,8 +4,11 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use ibc_vm_rs::{
     states::connection_handshake, IbcEvent, Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
 };
-use near_jsonrpc_client::methods::{self, RpcMethod};
+use near_jsonrpc_client::methods::{
+    self, next_light_client_block::LightClientBlockView, RpcMethod,
+};
 use near_primitives::{
+    block::{ApprovalInner, Block},
     hash::CryptoHash,
     merkle::{merklize, verify_path, MerklePath, MerklePathItem},
     sharding::{ChunkHash, ChunkHashHeight},
@@ -644,6 +647,7 @@ async fn test_create_client(
         .await
         .unwrap();
 
+    println!("failures: {:?}", res.receipt_failures());
     assert!(res.receipt_failures().is_empty());
 
     // let outcomes = res.receipt_outcomes();

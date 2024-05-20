@@ -16,8 +16,12 @@ use unionlabs::{
 };
 
 use crate::{
-    types::{ApprovalInner, LightClientBlockView, Signature, ValidatorStakeView},
-    ClientState, ConsensusState, StateProof,
+    merkle,
+    types::{
+        ApprovalInner, BlockHeaderInnerLiteView, LightClientBlockView, Signature,
+        ValidatorStakeView,
+    },
+    ClientState, ConsensusState, HeaderUpdate, RawStateProof, StateProof,
 };
 
 #[near_bindgen]
@@ -104,21 +108,50 @@ impl Contract {
         path: MerklePath,
         value: Vec<u8>,
     ) -> bool {
-        let data: Vec<Vec<u8>> = serde_json::from_slice(&proof).unwrap();
-        let state_proof = StateProof::parse(data);
-        let consensus_state = self.consensus_states.get(&height.revision_height).unwrap();
+        let raw_state_proof: RawStateProof = serde_json::from_slice(&proof).unwrap();
+        let state_proof = raw_state_proof.parse();
+        let consensus_state = self
+            .consensus_states
+            .get(&(height.revision_height + 1))
+            .unwrap();
 
         let key = key_from_path(&path.key_path[1]);
 
-        state_proof.verify(
-            &consensus_state.state_root,
+        if !state_proof.verify(
+            // TODO(aeryz): chained
+            &state_proof.chunk_hash,
             &self.client_state.ibc_account_id,
             &key,
             Some(&borsh::to_vec(&value).unwrap()),
-        )
+        ) {
+            panic!("commitment verification failed");
+        }
+
+        if merkle::verify_path(
+            consensus_state.state.prev_state_root,
+            &state_proof.chunk_state_proof,
+            state_proof.chunk_hash,
+        ) {
+            panic!("chunk prev state root verification failed");
+        }
+
+        true
     }
 
+    // TODO(aeryz): client_msg can be Misbehaviour or Header
     pub fn verify_client_message(&self, client_msg: Vec<u8>) -> bool {
+        let header_update: HeaderUpdate = borsh::from_slice(&client_msg).unwrap();
+
+        let consensus_state = self
+            .consensus_states
+            .get(&header_update.trusted_height)
+            .unwrap();
+
+        validate_head(
+            consensus_state.state.clone(),
+            header_update.new_state,
+            &self.client_state.epoch_block_producers_map,
+        );
         true
     }
 
@@ -127,19 +160,30 @@ impl Contract {
     }
 
     pub fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {
-        let consensus_state: (u64, ConsensusState) = borsh::from_slice(&client_msg).unwrap();
-        self.consensus_states
-            .insert(consensus_state.0, consensus_state.1.clone());
-        self.client_state.latest_height = consensus_state.0;
+        let header_update: HeaderUpdate = borsh::from_slice(&client_msg).unwrap();
+        let new_consensus_state = ConsensusState {
+            state: header_update.new_state.inner_lite.clone(),
+        };
+        self.consensus_states.insert(
+            header_update.new_state.inner_lite.height,
+            new_consensus_state.clone(),
+        );
+        self.client_state.latest_height = header_update.new_state.inner_lite.height;
+        if let Some(next_bps) = &header_update.new_state.next_bps {
+            self.client_state.epoch_block_producers_map.insert(
+                header_update.new_state.inner_lite.next_epoch_id,
+                next_bps.clone(),
+            );
+        }
 
         (
             borsh::to_vec(&self.client_state).unwrap(),
             vec![(
                 Height {
                     revision_number: 0,
-                    revision_height: consensus_state.0,
+                    revision_height: header_update.new_state.inner_lite.height,
                 },
-                borsh::to_vec(&consensus_state.1).unwrap(),
+                borsh::to_vec(&new_consensus_state).unwrap(),
             )],
         )
     }
@@ -210,26 +254,22 @@ fn reconstruct_light_client_block_view_fields(
 }
 
 fn validate_head(
-    head: LightClientBlockView,
+    head: BlockHeaderInnerLiteView,
     block_view: LightClientBlockView,
-    epoch_block_producers_map: &mut LookupMap<CryptoHash, Vec<ValidatorStakeView>>,
+    epoch_block_producers_map: &LookupMap<CryptoHash, Vec<ValidatorStakeView>>,
 ) {
     let (_current_block_hash, _next_block_hash, approval_message) =
         reconstruct_light_client_block_view_fields(block_view.clone());
 
-    if block_view.inner_lite.height <= head.inner_lite.height {
+    if block_view.inner_lite.height <= head.height {
         panic!("false");
     }
 
-    if ![&head.inner_lite.epoch_id, &head.inner_lite.next_epoch_id]
-        .contains(&&block_view.inner_lite.epoch_id)
-    {
+    if ![&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id) {
         panic!("false");
     }
 
-    if block_view.inner_lite.epoch_id == head.inner_lite.next_epoch_id
-        && block_view.next_bps.is_none()
-    {
+    if block_view.inner_lite.epoch_id == head.next_epoch_id && block_view.next_bps.is_none() {
         panic!("false");
     }
 
@@ -272,7 +312,6 @@ fn validate_head(
         if env::sha256(&borsh::to_vec(next_bps).unwrap()) != block_view.inner_lite.next_bp_hash.0 {
             panic!("no bro no");
         }
-        epoch_block_producers_map.insert(block_view.inner_lite.next_epoch_id, next_bps.clone());
     }
 }
 
