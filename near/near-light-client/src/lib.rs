@@ -1,12 +1,20 @@
 mod contract;
+mod merkle;
 mod nibble_slice;
 mod types;
 use std::collections::HashMap;
 
 pub use contract::*;
-use near_primitives_core::{hash::CryptoHash, types::AccountId};
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use types::BlockHeaderInnerLiteView;
+use merkle::MerklePath;
+use near_primitives_core::{
+    hash::CryptoHash,
+    types::{AccountId, BlockHeight},
+};
+use near_sdk::{
+    borsh::{BorshDeserialize, BorshSerialize},
+    store::LookupMap,
+};
+use types::{BlockHeaderInnerLiteView, LightClientBlockView, ValidatorStakeView};
 
 use crate::nibble_slice::NibbleSlice;
 
@@ -14,21 +22,31 @@ use crate::nibble_slice::NibbleSlice;
 pub struct ClientState {
     latest_height: u64,
     ibc_account_id: AccountId,
+    epoch_block_producers_map: LookupMap<CryptoHash, Vec<ValidatorStakeView>>,
 }
 
 #[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
 pub struct ConsensusState {
-    pub state_root: CryptoHash,
     pub state: BlockHeaderInnerLiteView,
 }
 
-pub struct StateProof {
-    pub nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
+#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+pub struct HeaderUpdate {
+    pub new_state: LightClientBlockView,
+    pub trusted_height: BlockHeight,
 }
 
-impl StateProof {
-    pub fn parse(data: Vec<Vec<u8>>) -> StateProof {
-        let nodes = data
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RawStateProof {
+    pub chunk_hash: CryptoHash,
+    pub chunk_state_proof: MerklePath,
+    pub state_proof: Vec<Vec<u8>>,
+}
+
+impl RawStateProof {
+    pub fn parse(self) -> StateProof {
+        let state_proof_nodes = self
+            .state_proof
             .into_iter()
             .map(|bytes| {
                 let hash = CryptoHash::hash_bytes(&bytes);
@@ -37,9 +55,21 @@ impl StateProof {
             })
             .collect();
 
-        StateProof { nodes }
+        StateProof {
+            state_proof_nodes,
+            chunk_state_proof: self.chunk_state_proof,
+            chunk_hash: self.chunk_hash,
+        }
     }
+}
 
+pub struct StateProof {
+    pub chunk_hash: CryptoHash,
+    pub state_proof_nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
+    pub chunk_state_proof: MerklePath,
+}
+
+impl StateProof {
     pub fn verify(
         &self,
         state_root: &CryptoHash,
@@ -55,7 +85,7 @@ impl StateProof {
         let mut key = NibbleSlice::new(&query);
 
         let mut expected_hash = state_root;
-        while let Some(node) = self.nodes.get(expected_hash) {
+        while let Some(node) = self.state_proof_nodes.get(expected_hash) {
             match &node.node {
                 RawTrieNode::Leaf(node_key, value) => {
                     let nib = &NibbleSlice::from_encoded(&node_key).0;
