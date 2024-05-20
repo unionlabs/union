@@ -215,7 +215,7 @@ async fn handle_transfer<C: ChainSpec>(
         .get_denom_address(channel_id.clone(), denom)
         .await
         .unwrap();
-    println!("Address is: {}", denom);
+    println!("Address is: {:?}", denom);
 
     let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
 
@@ -245,7 +245,7 @@ async fn handle_transfer<C: ChainSpec>(
             .into(),
             Height {
                 revision_number: 0,
-                revision_height: u64::MAX,
+                revision_height: 0,
             }
             .into(),
             u64::MAX,

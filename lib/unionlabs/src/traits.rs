@@ -83,7 +83,7 @@ pub trait Member = Debug
 
 /// Represents a chain.
 pub trait Chain: Sized + Send + Sync + 'static {
-    /// Expected to be unique across all implementations. Note that Wasm<_> implements this by passing through to the host chain, as `Wasm<A> <-> Wasm<B>` and `A <-> B` simultaneously is not currently supported.
+    /// Expected to be unique across all implementations.
     type ChainType: FromStrExact;
 
     /// The client state of this chain.

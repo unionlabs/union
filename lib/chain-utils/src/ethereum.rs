@@ -40,7 +40,7 @@ use unionlabs::{
         NextConnectionSequencePath, NextSequenceRecvPath, ReceiptPath,
     },
     id::{ChannelId, ClientId, PortId},
-    option_unwrap,
+    iter, option_unwrap,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
     uint::U256,
 };
@@ -204,27 +204,29 @@ pub const ETHEREUM_REVISION_NUMBER: u64 = 0;
 
 impl<C: ChainSpec> FromStrExact for EthereumChainType<C> {
     const EXPECTING: &'static str = {
-        const PREFIX: [u8; 4] = *b"eth-";
+        match core::str::from_utf8(
+            const {
+                let mut buf = [0_u8; 32];
 
-        const fn concat(cs: &[u8]) -> [u8; 11] {
-            [
-                PREFIX[0], PREFIX[1], PREFIX[2], PREFIX[3], cs[0], cs[1], cs[2], cs[3], cs[4],
-                cs[5], cs[6],
-            ]
-        }
+                iter! {
+                    for (i, b) in enumerate(b"eth-") {
+                        buf[i] = b;
+                    }
+                }
 
-        // generic_const_exprs is still incomplete :(
-        const CHAIN_SPEC_LEN: usize = 7;
-        assert!(
-            C::EXPECTING.len() == CHAIN_SPEC_LEN,
-            "ChainSpec string value is expected to be 7 bytes"
-        );
+                iter! {
+                    for (i, b) in enumerate(C::EXPECTING.as_bytes()) {
+                        buf[4 + i] = b;
+                    }
+                }
 
-        match core::str::from_utf8(const { &concat(C::EXPECTING.as_bytes()) }) {
-            Ok(ok) => ok,
-            Err(_) => {
-                panic!()
+                buf
             }
+            .split_at(4 + C::EXPECTING.len())
+            .0,
+        ) {
+            Ok(ok) => ok,
+            Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
         }
     };
 }
