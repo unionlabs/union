@@ -1,7 +1,14 @@
-use std::num::NonZeroU64;
+use std::{marker::PhantomData, num::NonZeroU64};
 
+use frame_support_procedural::DefaultNoBound;
 use futures::Future;
-use unionlabs::{encoding::Proto, google::protobuf::any::Any, hash::H256, traits::Chain};
+use unionlabs::{
+    encoding::Proto,
+    google::protobuf::any::Any,
+    hash::H256,
+    iter,
+    traits::{Chain, FromStrExact},
+};
 
 use crate::cosmos_sdk::CosmosSdkChain;
 
@@ -49,8 +56,40 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, DefaultNoBound)]
+pub struct WasmChainType<Hc: Chain>(PhantomData<fn() -> Hc>);
+
+impl<Hc: Chain> FromStrExact for WasmChainType<Hc> {
+    const EXPECTING: &'static str = {
+        match core::str::from_utf8(
+            const {
+                let mut buf = [0_u8; 32];
+
+                iter! {
+                    for (i, b) in enumerate(b"wasm-") {
+                        buf[i] = b;
+                    }
+                }
+
+                iter! {
+                    for (i, b) in enumerate(Hc::ChainType::EXPECTING.as_bytes()) {
+                        buf[5 + i] = b;
+                    }
+                }
+
+                buf
+            }
+            .split_at(5 + Hc::ChainType::EXPECTING.len())
+            .0,
+        ) {
+            Ok(ok) => ok,
+            Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
+        }
+    };
+}
+
 impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
-    type ChainType = Hc::ChainType;
+    type ChainType = WasmChainType<Hc>;
 
     type SelfClientState = Hc::SelfClientState;
     type SelfConsensusState = Hc::SelfConsensusState;

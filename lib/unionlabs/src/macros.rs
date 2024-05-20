@@ -403,3 +403,21 @@ macro_rules! option_unwrap {
         }
     }};
 }
+
+/// Minimal version of <https://github.com/benluelo/advent-of-code/blob/18684af90a06eb594b07dee9b99593ce3f872641/rust/src/const_helpers.rs#L299-L369>. Check there if any other features are required.
+#[macro_export]
+macro_rules! iter {
+    ($($label:lifetime:)? for ($i:ident, $item:pat) in enumerate($slice:expr)
+        $body:block
+    ) => {{
+        let __slice = $slice;
+        let mut __i = 0;
+        $($label:)? while __i < __slice.len() {
+            #[allow(clippy::toplevel_ref_arg)]
+            let $item = __slice[__i];
+            __i += 1;
+            let $i = __i - 1;
+            $body;
+        }
+    }};
+}
