@@ -28,15 +28,12 @@ message MsgWriteDiferredAckResponse {
 }
 
 message DiferredPacketInfo {
-  string original_sender_address  = 1;
-  string refund_channel_id        = 2;
-  string refund_port_id           = 3;
-  string packet_src_channel_id    = 4;
-  string packet_src_port_id       = 5;
-  uint64 packet_timeout_timestamp = 6 [ (gogoproto.nullable) = true];
-  string packet_timeout_height    = 7 [ (gogoproto.nullable) = true];
-  bytes  packet_data              = 8;
-  uint64 sequence                 = 9;
-  uint64 timeout                  = 10 [ (gogoproto.nullable) = true];
-  bool   nonrefundable            = 11;
+  string refund_channel_id                 = 1;
+  string refund_port_id                    = 2;
+  string packet_src_channel_id             = 3;
+  string packet_src_port_id                = 4;
+  uint64 packet_timeout_timestamp          = 5;
+  string packet_timeout_height             = 6;
+  bytes  packet_data                       = 7;
+  uint64 sequence                          = 8;
 }
