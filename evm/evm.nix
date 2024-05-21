@@ -328,8 +328,16 @@
               ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
               ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json 
 
-            cat ${contracts}/out/Relay.sol/UCS01Relay.json | jq --compact-output  '.abi' > ucs-01.json
-            cat ${contracts}/out/NFT.sol/UCS02NFT.json | jq --compact-output '.abi' > ucs-02.json
+            jq --compact-output --slurp 'map(.abi) | add' \
+              ${contracts}/out/Relay.sol/IRelay.json \
+              ${contracts}/out/Relay.sol/UCS01Relay.json \
+              ${contracts}/out/Relay.sol/RelayLib.json \
+              ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json 
+
+            jq --compact-output --slurp 'map(.abi) | add' \
+              ${contracts}/out/NFT.sol/NFTLib.json \
+              ${contracts}/out/NFT.sol/NFTPacketLib.json \
+              ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json 
           '';
 
 
