@@ -9,3 +9,4 @@ workspace = true
 [dependencies]
 cosmwasm-schema = { version = "2.0.0" }
 cosmwasm-std    = { version = "2.0.0" }
+thiserror         = { workspace = true }

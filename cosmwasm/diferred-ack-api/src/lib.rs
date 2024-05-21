@@ -1,42 +1,34 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{
-    Binary, CosmosMsg, CustomMsg, CustomQuery, IbcAcknowledgement, IbcTimeoutBlock, Uint64,
-};
+use cosmwasm_std::{Binary, CosmosMsg, CustomMsg, CustomQuery, Uint64};
+
+#[derive(thiserror::Error, Clone, PartialEq, Eq, Debug)]
+pub enum EncodingError {
+    #[error("Unable to encode or decode the data")]
+    InvalidEncoding,
+}
 
 /// Special messages to be supported by any chain that supports diferred_ack
 #[cw_serde]
 pub enum DiferredAckMsg {
     WriteDiferredAck {
-        packet: Packet,
-        data: FungibleTokenPacketData,
+        sender: String,
         diferred_packet_info: DiferredPacketInfo,
-        ack: IbcAcknowledgement,
+        ack: Acknowledgement,
     },
 }
 
-#[cw_serde]
-pub struct Packet {
-    pub sequence: Uint64,
-    pub source_port: String,
-    pub source_channel: String,
-    pub destination_port: String,
-    pub destination_channel: String,
-    pub timeout_height: IbcTimeoutBlock,
-    pub timeout_timestamp: Uint64,
-}
+impl TryFrom<DiferredAckMsg> for Binary {
+    type Error = EncodingError;
 
-#[cw_serde]
-pub struct FungibleTokenPacketData {
-    pub denom: String,
-    pub amount: String,
-    pub sender: String,
-    pub receiver: String,
-    pub memo: String,
+    fn try_from(value: DiferredAckMsg) -> Result<Self, Self::Error> {
+        Ok(cosmwasm_std::to_json_vec(&value)
+            .map_err(|_| EncodingError::InvalidEncoding)?
+            .into())
+    }
 }
 
 #[cw_serde]
 pub struct DiferredPacketInfo {
-    pub original_sender_address: String,
     pub refund_channel_id: String,
     pub refund_port_id: String,
     pub packet_src_channel_id: String,
@@ -44,9 +36,22 @@ pub struct DiferredPacketInfo {
     pub packet_timeout_timestamp: Uint64,
     pub packet_timeout_height: String,
     pub packet_data: Binary,
-    pub refund_sequence: Uint64,
-    pub timeout: Uint64,
-    pub nonrefundable: bool,
+    pub sequence: Uint64,
+}
+
+/// Acknowledgement is the recommended acknowledgement format to be used by
+/// app-specific protocols.
+#[cw_serde]
+pub struct Acknowledgement {
+    /// response contains either a result or an error and must be non-empty
+    pub response: Option<Response>,
+}
+
+/// response contains either a result or an error and must be non-empty
+#[cw_serde]
+pub enum Response {
+    Result(Binary),
+    Error(String),
 }
 
 /// This maps to diferredack.v1beta1.Params protobuf struct
