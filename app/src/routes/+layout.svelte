@@ -2,7 +2,6 @@
 import "$lib/polyfill.ts"
 import "$styles/index.css"
 import { onMount } from "svelte"
-import { cn } from "$lib/utilities/shadcn"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { Toaster } from "svelte-french-toast"
@@ -11,7 +10,7 @@ import { shortcut } from "@svelte-put/shortcut"
 import { setContextClient } from "@urql/svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
-import { graphqlClient } from "$lib/graphql/client"
+import { graphqlClient } from "$lib/graphql/client.ts"
 import Header from "$lib/components/header/header.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import OnlineStatus from "$lib/components/online-status.svelte"
@@ -23,6 +22,11 @@ import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-clien
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
+
+/**
+ * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
+ */
+setContextClient(graphqlClient)
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
@@ -46,11 +50,6 @@ onMount(() => {
   if (window?.keplr) cosmosStore.connect("keplr")
   else if (window?.leap) cosmosStore.connect("leap")
 })
-
-/**
- * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
- */
-setContextClient(graphqlClient)
 
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
@@ -90,41 +89,6 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
   <PreloadingIndicator />
 {/if}
 
-<ModeWatcher />
-<Toaster position="bottom-right" />
-
-<PersistQueryClientProvider
-  client={queryClient}
-  persistOptions={{ persister: localStoragePersister }}
->
-  <Header />
-  <div
-    id="page"
-    data-vaul-drawer-wrapper
-    class="relative flex flex-col bg-background bg-opacity-10 mb-20"
-  >
-    <slot />
-  </div>
-  <Footer />
-  <SvelteQueryDevtools
-    position="bottom"
-    client={queryClient}
-    initialIsOpen={false}
-    buttonPosition="bottom-right"
-  />
-  <OnlineStatus />
-</PersistQueryClientProvider>
-
-<div
-  id="background-dotted-grid"
-  data-background-dotted-grid="true"
-  class={cn(
-    'absolute top-0 z-[-2] size-full min-h-screen bg-[size:20px_20px]',
-    'bg-[#b9e9ff78] bg-[radial-gradient(#638c91_0.3px,#b9e9ff78_1px)]',
-    'dark:bg-[#99e6ff20] dark:bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)]',
-  )}
-></div>
-
 <svelte:window
   use:shortcut={{
     trigger: [
@@ -142,3 +106,23 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
     ],
   }}
 />
+
+<PersistQueryClientProvider
+  client={queryClient}
+  persistOptions={{ persister: localStoragePersister }}
+>
+  <ModeWatcher />
+  <Toaster position="bottom-right" />
+
+  <Header />
+  <slot />
+  <Footer />
+
+  <SvelteQueryDevtools
+    position="bottom"
+    client={queryClient}
+    initialIsOpen={false}
+    buttonPosition="bottom-right"
+  />
+  <OnlineStatus />
+</PersistQueryClientProvider>

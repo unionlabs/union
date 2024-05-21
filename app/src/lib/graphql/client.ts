@@ -1,5 +1,6 @@
 import {
   Client,
+  type Exchange,
   cacheExchange,
   fetchExchange,
   debugExchange,
@@ -11,6 +12,8 @@ import { retryExchange } from "@urql/exchange-retry"
 import type { TadaPersistedDocumentNode } from "gql.tada"
 import { persistedExchange } from "@urql/exchange-persisted"
 import { createClient as createWSClient, type SubscribePayload } from "graphql-ws"
+
+const isDevelopment = import.meta.env.DEV
 
 /**
  * @see https://commerce.nearform.com/open-source/urql/docs/
@@ -26,19 +29,28 @@ const wsClient = createWSClient({
   connectionParams: async () => ({ headers })
 })
 
+const productionOnlyExchanges = (
+  isDevelopment
+    ? []
+    : [
+        cacheExchange,
+        persistedExchange({
+          generateHash: async (_, document) => (document as TadaPersistedDocumentNode).documentId,
+          preferGetForPersistedQueries: true,
+          enforcePersistedQueries: true,
+          enableForMutation: true,
+          enableForSubscriptions: true
+        })
+      ]
+) satisfies Array<Exchange>
+
 export const graphqlClient = new Client({
   url: URLS.GRAPHQL_WSS,
-  requestPolicy: "cache-and-network",
+  // don't cache at all in development
+  requestPolicy: import.meta.env.DEV ? "network-only" : "cache-and-network",
   exchanges: [
     devtoolsExchange,
-    cacheExchange,
-    persistedExchange({
-      generateHash: async (_, document) => (document as TadaPersistedDocumentNode).documentId,
-      preferGetForPersistedQueries: true,
-      enforcePersistedQueries: true,
-      enableForMutation: true,
-      enableForSubscriptions: true
-    }),
+    ...productionOnlyExchanges,
     fetchExchange,
     subscriptionExchange({
       forwardSubscription: operation => ({

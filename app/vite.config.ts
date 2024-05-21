@@ -12,7 +12,6 @@ export default defineConfig(config => {
     INSPECT,
     NODE_ENV,
     VISUALIZE,
-    VITE_APP_VERSION,
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
@@ -43,8 +42,7 @@ export default defineConfig(config => {
     },
     define: {
       // Node polyfills
-      "process.env": {},
-      __APP_VERSION__: JSON.stringify(VITE_APP_VERSION)
+      "process.env": {}
     },
     // Node polyfills
     resolve: {

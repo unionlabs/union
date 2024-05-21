@@ -18,9 +18,9 @@ const navigationIconStyle = "size-9 min-w-6 dark:hover:text-white text-zinc-acce
 
 <footer
   class={cn(
-    'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 py-2 ',
+    'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 py-2',
+    'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-lg',
     'grid lg:hidden grid-cols-4 gap-y-2 place-content-center divide-x-[1px] divide-[#fafafa25]',
-    'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-md',
     // styling children
     '*:my-auto *:self-center *:h-16 *:w-full *:rounded-none *:border-solid *:border-t-0',
   )}

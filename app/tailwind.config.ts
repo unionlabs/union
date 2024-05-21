@@ -113,6 +113,11 @@ export default (<Config>{
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)"
       }),
+      margin: _ => ({
+        18: "4.5rem",
+        22: "5.5rem",
+        28: "7rem"
+      }),
       fontFamily: _ => ({
         sans: ["Inter var", ...defaultTheme.fontFamily.sans],
         display: [

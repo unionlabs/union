@@ -1,8 +1,8 @@
 import { graphql } from "gql.tada"
 
 export const cosmosBlocksQuery = graphql(/* GraphQL */ `
-  query CosmosBlocksQuery {
-    v0_blocks(order_by: {time: desc}, limit: 10) {
+  query CosmosBlocksQuery($limit: Int = 20) {
+    v0_blocks(order_by: {time: desc}, limit: $limit) {
       chain_id
       hash
       height
