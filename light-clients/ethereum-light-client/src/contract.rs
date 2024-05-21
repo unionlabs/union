@@ -53,7 +53,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[cfg(all(feature = "mainnet", not(feature = "library")))]
+#[cfg(feature = "mainnet")]
 ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMainnet);
-#[cfg(all(feature = "minimal", not(feature = "library")))]
+#[cfg(feature = "minimal")]
 ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMinimal);

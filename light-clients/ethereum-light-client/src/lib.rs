@@ -1,6 +1,7 @@
 pub mod client;
 pub mod consensus_state;
 pub mod context;
+#[cfg(any(test, not(feature = "library")))]
 pub mod contract;
 pub mod custom_query;
 pub mod errors;
