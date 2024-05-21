@@ -138,6 +138,7 @@ macro_rules! export_wasm_client_type {
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(rename_all = "snake_case")]
 pub enum WasmClientType {
     EthereumMinimal,
     EthereumMainnet,
@@ -150,10 +151,24 @@ pub enum WasmClientType {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(rename_all = "snake_case")]
 pub enum ClientType {
     Wasm(WasmClientType),
     Tendermint,
     Cometbls,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wasm_client_type_serde() {
+        assert_eq!(
+            r#"{"wasm":"ethereum_minimal"}"#,
+            serde_json::to_string(&ClientType::Wasm(WasmClientType::EthereumMinimal)).unwrap()
+        );
+    }
 }
 
 impl ClientType {

@@ -42,6 +42,8 @@ pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
 
     CreateClient(MsgCreateClientData<Hc, Tr>),
     UpdateClient(MsgUpdateClientData<Hc, Tr>),
+
+    Batch(BatchMsg<Hc, Tr>),
 }
 
 impl HandleEffect<RelayMessageTypes> for AnyLightClientIdentified<AnyEffect> {
@@ -158,3 +160,7 @@ pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
 pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
 );
+
+#[queue_msg]
+#[debug(bound())] // break cyclic debug bounds
+pub struct BatchMsg<Hc: ChainExt, Tr: ChainExt>(pub Vec<Effect<Hc, Tr>>);

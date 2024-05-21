@@ -8,6 +8,7 @@ use unionlabs::{
     google::protobuf::any::{mk_any, IntoAny},
     ibc::core::client::height::IsHeight,
     ics24::{ClientStatePath, Path},
+    signer::CosmosSigner,
     traits::{ClientStateOf, ConsensusStateOf, HeightOf},
     TypeUrl,
 };
@@ -16,7 +17,7 @@ use crate::{
     chain_impls::cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
     data::{AnyData, Data, IbcProof, IbcState},
     effect::{
-        Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
+        BatchMsg, Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
         MsgChannelOpenInitData, MsgChannelOpenTryData, MsgConnectionOpenAckData,
         MsgConnectionOpenConfirmData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgCreateClientData, MsgRecvPacketData, MsgTimeoutData, MsgUpdateClientData,
@@ -59,154 +60,207 @@ where
 {
     hc.signers()
         .with(|signer| async {
-            let msg_any = match msg.clone() {
-                Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
-                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
-                        client_id: data.client_id.to_string(),
-                        counterparty: Some(data.counterparty.into()),
-                        version: Some(data.version.into()),
-                        signer: signer.to_string(),
-                        delay_period: data.delay_period,
-                    })
-                }
-                Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => {
-                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
-                        client_id: data.client_id.to_string(),
-                        client_state: Some(data.client_state.into_any().into()),
-                        counterparty: Some(data.counterparty.into()),
-                        delay_period: data.delay_period,
-                        counterparty_versions: data
-                            .counterparty_versions
-                            .into_iter()
-                            .map(Into::into)
-                            .collect(),
-                        proof_height: Some(data.proof_height.into_height().into()),
-                        proof_init: data.proof_init.encode(),
-                        proof_client: data.proof_client.encode(),
-                        proof_consensus: data.proof_consensus.encode(),
-                        consensus_height: Some(data.consensus_height.into_height().into()),
-                        signer: signer.to_string(),
-                        host_consensus_state_proof: vec![],
-                        ..Default::default()
-                    })
-                }
-                Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
-                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                        client_state: Some(data.client_state.into_any().into()),
-                        proof_height: Some(data.proof_height.into_height().into()),
-                        proof_client: data.proof_client.encode(),
-                        proof_consensus: data.proof_consensus.encode(),
-                        consensus_height: Some(data.consensus_height.into_height().into()),
-                        signer: signer.to_string(),
-                        host_consensus_state_proof: vec![],
-                        connection_id: data.connection_id.to_string(),
-                        counterparty_connection_id: data.counterparty_connection_id.to_string(),
-                        version: Some(data.version.into()),
-                        proof_try: data.proof_try.encode(),
-                    })
-                }
-                Effect::ConnectionOpenConfirm(MsgConnectionOpenConfirmData { msg, __marker }) => {
-                    mk_any(
-                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
-                            connection_id: msg.connection_id.to_string(),
-                            proof_ack: msg.proof_ack.encode(),
-                            proof_height: Some(msg.proof_height.into_height().into()),
-                            signer: signer.to_string(),
-                        },
-                    )
-                }
-                Effect::ChannelOpenInit(MsgChannelOpenInitData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
-                        port_id: msg.port_id.to_string(),
-                        channel: Some(msg.channel.into()),
-                        signer: signer.to_string(),
-                    })
-                }
-                Effect::ChannelOpenTry(MsgChannelOpenTryData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
-                        port_id: msg.port_id.to_string(),
-                        channel: Some(msg.channel.into()),
-                        counterparty_version: msg.counterparty_version,
-                        proof_init: msg.proof_init.encode(),
-                        proof_height: Some(msg.proof_height.into()),
-                        signer: signer.to_string(),
-                        ..Default::default()
-                    })
-                }
-                Effect::ChannelOpenAck(MsgChannelOpenAckData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
-                        port_id: msg.port_id.to_string(),
-                        channel_id: msg.channel_id.to_string(),
-                        counterparty_version: msg.counterparty_version,
-                        counterparty_channel_id: msg.counterparty_channel_id.to_string(),
-                        proof_try: msg.proof_try.encode(),
-                        proof_height: Some(msg.proof_height.into_height().into()),
-                        signer: signer.to_string(),
-                    })
-                }
-                Effect::ChannelOpenConfirm(MsgChannelOpenConfirmData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
-                        port_id: msg.port_id.to_string(),
-                        channel_id: msg.channel_id.to_string(),
-                        proof_height: Some(msg.proof_height.into_height().into()),
-                        signer: signer.to_string(),
-                        proof_ack: msg.proof_ack.encode(),
-                    })
-                }
-                Effect::RecvPacket(MsgRecvPacketData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
-                        packet: Some(msg.packet.into()),
-                        proof_height: Some(msg.proof_height.into_height().into()),
-                        signer: signer.to_string(),
-                        proof_commitment: msg.proof_commitment.encode(),
-                    })
-                }
-                Effect::AckPacket(MsgAckPacketData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
-                        packet: Some(msg.packet.into()),
-                        acknowledgement: msg.acknowledgement,
-                        proof_acked: msg.proof_acked.encode(),
-                        proof_height: Some(msg.proof_height.into_height().into()),
-                        signer: signer.to_string(),
-                    })
-                }
-                Effect::TimeoutPacket(MsgTimeoutData { msg, __marker }) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
-                        packet: Some(msg.packet.into()),
-                        proof_unreceived: msg.proof_unreceived.encode(),
-                        proof_height: Some(msg.proof_height.into_height().into()),
-                        next_sequence_recv: msg.next_sequence_recv.get(),
-                        signer: signer.to_string(),
-                    })
-                }
-                Effect::CreateClient(MsgCreateClientData { msg, config }) => {
-                    let (client_state, consensus_state) =
-                        mk_create_client_states(config, msg.client_state, msg.consensus_state);
+            let msgs = process_msgs(
+                msg.clone(),
+                &signer,
+                mk_create_client_states,
+                mk_client_message,
+            );
 
-                    mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
-                        client_state: Some(client_state),
-                        consensus_state: Some(consensus_state),
-                        signer: signer.to_string(),
-                    })
-                }
-                Effect::UpdateClient(MsgUpdateClientData(msg)) => {
-                    mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
-                        signer: signer.to_string(),
-                        client_id: msg.client_id.to_string(),
-                        client_message: Some(mk_client_message(msg.client_message)),
-                    })
-                }
-            };
+            let msg_names = msgs
+                .iter()
+                .map(|x| &*x.type_url)
+                .collect::<Vec<_>>()
+                .join(" ");
 
-            let msg_name = msg_any.type_url.clone();
+            let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
 
-            let tx_hash = hc.broadcast_tx_commit(signer, [msg_any]).await?;
-
-            tracing::info!(%tx_hash, msg = %msg_name, "cosmos tx");
+            tracing::info!(%tx_hash, msgs = %msg_names, "cosmos tx");
 
             Ok(())
         })
         .await
+}
+
+fn process_msgs<Hc, Tr>(
+    msg: Effect<Hc, Tr>,
+    signer: &CosmosSigner,
+    mk_create_client_states: fn(
+        Hc::Config,
+        ClientStateOf<Tr>,
+        ConsensusStateOf<Tr>,
+    )
+        -> (protos::google::protobuf::Any, protos::google::protobuf::Any),
+    mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
+) -> Vec<protos::google::protobuf::Any>
+where
+    Hc: CosmosSdkChainSealed<
+        MsgError = BroadcastTxCommitError,
+        SelfConsensusState: Encode<Proto> + TypeUrl,
+        SelfClientState: Encode<Proto> + TypeUrl,
+    >,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<Proto> + TypeUrl,
+        SelfClientState: Encode<Proto> + TypeUrl,
+        Header: Encode<Proto> + TypeUrl,
+        StoredClientState<Hc>: IntoAny,
+        StateProof: Encode<Proto>,
+    >,
+{
+    match msg {
+        Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+            vec![mk_any(
+                &protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+                    client_id: data.client_id.to_string(),
+                    counterparty: Some(data.counterparty.into()),
+                    version: Some(data.version.into()),
+                    signer: signer.to_string(),
+                    delay_period: data.delay_period,
+                },
+            )]
+        }
+        Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => {
+            vec![mk_any(
+                &protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+                    client_id: data.client_id.to_string(),
+                    client_state: Some(data.client_state.into_any().into()),
+                    counterparty: Some(data.counterparty.into()),
+                    delay_period: data.delay_period,
+                    counterparty_versions: data
+                        .counterparty_versions
+                        .into_iter()
+                        .map(Into::into)
+                        .collect(),
+                    proof_height: Some(data.proof_height.into_height().into()),
+                    proof_init: data.proof_init.encode(),
+                    proof_client: data.proof_client.encode(),
+                    proof_consensus: data.proof_consensus.encode(),
+                    consensus_height: Some(data.consensus_height.into_height().into()),
+                    signer: signer.to_string(),
+                    host_consensus_state_proof: vec![],
+                    ..Default::default()
+                },
+            )]
+        }
+        Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
+            vec![mk_any(
+                &protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+                    client_state: Some(data.client_state.into_any().into()),
+                    proof_height: Some(data.proof_height.into_height().into()),
+                    proof_client: data.proof_client.encode(),
+                    proof_consensus: data.proof_consensus.encode(),
+                    consensus_height: Some(data.consensus_height.into_height().into()),
+                    signer: signer.to_string(),
+                    host_consensus_state_proof: vec![],
+                    connection_id: data.connection_id.to_string(),
+                    counterparty_connection_id: data.counterparty_connection_id.to_string(),
+                    version: Some(data.version.into()),
+                    proof_try: data.proof_try.encode(),
+                },
+            )]
+        }
+        Effect::ConnectionOpenConfirm(MsgConnectionOpenConfirmData { msg, __marker }) => {
+            vec![mk_any(
+                &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+                    connection_id: msg.connection_id.to_string(),
+                    proof_ack: msg.proof_ack.encode(),
+                    proof_height: Some(msg.proof_height.into_height().into()),
+                    signer: signer.to_string(),
+                },
+            )]
+        }
+        Effect::ChannelOpenInit(MsgChannelOpenInitData { msg, __marker }) => {
+            vec![mk_any(
+                &protos::ibc::core::channel::v1::MsgChannelOpenInit {
+                    port_id: msg.port_id.to_string(),
+                    channel: Some(msg.channel.into()),
+                    signer: signer.to_string(),
+                },
+            )]
+        }
+        Effect::ChannelOpenTry(MsgChannelOpenTryData { msg, __marker }) => {
+            vec![mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
+                port_id: msg.port_id.to_string(),
+                channel: Some(msg.channel.into()),
+                counterparty_version: msg.counterparty_version,
+                proof_init: msg.proof_init.encode(),
+                proof_height: Some(msg.proof_height.into()),
+                signer: signer.to_string(),
+                ..Default::default()
+            })]
+        }
+        Effect::ChannelOpenAck(MsgChannelOpenAckData { msg, __marker }) => {
+            vec![mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
+                port_id: msg.port_id.to_string(),
+                channel_id: msg.channel_id.to_string(),
+                counterparty_version: msg.counterparty_version,
+                counterparty_channel_id: msg.counterparty_channel_id.to_string(),
+                proof_try: msg.proof_try.encode(),
+                proof_height: Some(msg.proof_height.into_height().into()),
+                signer: signer.to_string(),
+            })]
+        }
+        Effect::ChannelOpenConfirm(MsgChannelOpenConfirmData { msg, __marker }) => {
+            vec![mk_any(
+                &protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+                    port_id: msg.port_id.to_string(),
+                    channel_id: msg.channel_id.to_string(),
+                    proof_height: Some(msg.proof_height.into_height().into()),
+                    signer: signer.to_string(),
+                    proof_ack: msg.proof_ack.encode(),
+                },
+            )]
+        }
+        Effect::RecvPacket(MsgRecvPacketData { msg, __marker }) => {
+            vec![mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
+                packet: Some(msg.packet.into()),
+                proof_height: Some(msg.proof_height.into_height().into()),
+                signer: signer.to_string(),
+                proof_commitment: msg.proof_commitment.encode(),
+            })]
+        }
+        Effect::AckPacket(MsgAckPacketData { msg, __marker }) => {
+            vec![mk_any(
+                &protos::ibc::core::channel::v1::MsgAcknowledgement {
+                    packet: Some(msg.packet.into()),
+                    acknowledgement: msg.acknowledgement,
+                    proof_acked: msg.proof_acked.encode(),
+                    proof_height: Some(msg.proof_height.into_height().into()),
+                    signer: signer.to_string(),
+                },
+            )]
+        }
+        Effect::TimeoutPacket(MsgTimeoutData { msg, __marker }) => {
+            vec![mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
+                packet: Some(msg.packet.into()),
+                proof_unreceived: msg.proof_unreceived.encode(),
+                proof_height: Some(msg.proof_height.into_height().into()),
+                next_sequence_recv: msg.next_sequence_recv.get(),
+                signer: signer.to_string(),
+            })]
+        }
+        Effect::CreateClient(MsgCreateClientData { msg, config }) => {
+            let (client_state, consensus_state) =
+                mk_create_client_states(config, msg.client_state, msg.consensus_state);
+
+            vec![mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
+                client_state: Some(client_state),
+                consensus_state: Some(consensus_state),
+                signer: signer.to_string(),
+            })]
+        }
+        Effect::UpdateClient(MsgUpdateClientData(msg)) => {
+            vec![mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
+                signer: signer.to_string(),
+                client_id: msg.client_id.to_string(),
+                client_message: Some(mk_client_message(msg.client_message)),
+            })]
+        }
+        Effect::Batch(BatchMsg(msgs)) => msgs
+            .into_iter()
+            .flat_map(|msg| process_msgs(msg, signer, mk_create_client_states, mk_client_message))
+            .collect(),
+    }
 }
 
 impl<Hc, Tr> DoFetchState<Hc, Tr> for Hc

@@ -58,7 +58,7 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, Data, IbcProof, IbcState},
     effect::{
-        AnyEffect, Effect, MsgConnectionOpenAckData, MsgConnectionOpenInitData,
+        AnyEffect, BatchMsg, Effect, MsgConnectionOpenAckData, MsgConnectionOpenInitData,
         MsgConnectionOpenTryData, MsgUpdateClientData,
     },
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
@@ -278,6 +278,13 @@ where
                     client_message: data.client_message.clone().encode_as::<EthAbi>().into(),
                 }),
             ),
+            Effect::Batch(BatchMsg(msgs)) => {
+                for msg in msgs {
+                    Box::pin(do_msg(ibc_handlers, msg, legacy)).await.unwrap();
+                }
+
+                return Ok(());
+            }
         };
 
         let msg = if legacy { msg.legacy() } else { msg };
