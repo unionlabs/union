@@ -22,8 +22,10 @@ pub struct Config {
     pub url: Url,
     /// The GRPC endpoint of this chain. required for `--fetch-client-chain-ids`.
     pub grpc_url: Option<String>,
-    #[allow(dead_code)]
-    pub start: Option<u64>,
+
+    /// The height from which we start indexing
+    pub start_height: Option<u32>,
+
     #[allow(dead_code)]
     pub until: Option<u64>,
 
@@ -56,12 +58,22 @@ impl Config {
     {
         let client = HttpClient::new(self.url.as_str()).unwrap();
 
-        let (chain_id, mut height) = if self.harden {
+        let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool))
                 .retry(&ExponentialBuilder::default())
                 .await?
         } else {
             fetch_meta(&client, &pool).await?
+        };
+
+        // Determine from which height we should start indexing if we haven't
+        // indexed any blocks yet.
+        let mut height = match height {
+            None => match self.start_height {
+                None => Height::from(0u32),
+                Some(h) => Height::from(h),
+            },
+            Some(h) => h,
         };
 
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
@@ -112,7 +124,9 @@ impl Config {
     }
 }
 
-async fn fetch_meta<DB>(client: &HttpClient, pool: &DB) -> Result<(ChainId, Height), Report>
+/// fetches the ChainId for a given `HttpClient`, among with the `Height` up until we have indexed that chain in the DB.
+/// If we have not yet indexed any block for that chain, then Height = None.
+async fn fetch_meta<DB>(client: &HttpClient, pool: &DB) -> Result<(ChainId, Option<Height>), Report>
 where
     for<'a> &'a DB:
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
@@ -124,7 +138,7 @@ where
     let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
         .await?
         .get_inner_logged();
-    let height = Height::from(sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(pool).await?.map(|block| block.height + 1).unwrap_or_default() as u32);
+    let height = sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(pool).await?.map(|block| block.height + 1).map(|h| Height::from(h as u32));
     Ok((chain_id, height))
 }
 

@@ -67,7 +67,7 @@
             types.submodule {
               options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
               options.type = mkOption { type = types.enum [ "tendermint" "ethereum" ]; };
-              options.start = mkOption { type = types.int; example = 1; default = 0; };
+              options.start_height = mkOption { type = types.int; example = 1; default = 0; };
               options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
               options.harden = mkOption { type = types.bool; example = true; default = true; };
             }
