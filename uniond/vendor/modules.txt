@@ -218,12 +218,6 @@ github.com/CosmWasm/wasmd/x/wasm/migrations/v2
 github.com/CosmWasm/wasmd/x/wasm/migrations/v3
 github.com/CosmWasm/wasmd/x/wasm/simulation
 github.com/CosmWasm/wasmd/x/wasm/types
-# github.com/CosmWasm/wasmvm v1.5.0
-## explicit; go 1.18
-github.com/CosmWasm/wasmvm
-github.com/CosmWasm/wasmvm/internal/api
-github.com/CosmWasm/wasmvm/internal/api/testdb
-github.com/CosmWasm/wasmvm/types
 # github.com/CosmWasm/wasmvm/v2 v2.0.1
 ## explicit; go 1.21
 github.com/CosmWasm/wasmvm/v2

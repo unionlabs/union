@@ -1154,5 +1154,6 @@ func AllCapabilities() []string {
 		"cosmwasm_1_2",
 		"cosmwasm_1_3",
 		"cosmwasm_1_4",
+		"cosmwasm_2_0",
 	}
 }
