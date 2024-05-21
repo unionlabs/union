@@ -17,4 +17,6 @@ serde             = { workspace = true }
 sha2              = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
+diferred-ack-api  = { workspace = true }
 unionlabs         = { workspace = true }
+protos            = { workspace = true }

@@ -2047,6 +2047,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
+ "thiserror",
 ]
 
 [[package]]
@@ -7543,6 +7544,7 @@ dependencies = [
  "cw-controllers",
  "cw-storage-plus 2.0.0",
  "cw2 2.0.0",
+ "diferred-ack-api",
  "dlmalloc",
  "ethabi",
  "go-parse-duration",
@@ -7564,9 +7566,11 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.3",
+ "diferred-ack-api",
  "ethabi",
  "serde-utils",
  "go-parse-duration",
+ "protos",
  "serde",
  "serde-json-wasm 1.0.1",
  "sha2 0.10.8",

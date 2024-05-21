@@ -1,13 +1,14 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary,
-    IbcBasicResponse, IbcEndpoint, IbcOrder, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcEndpoint,
+    IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
+use diferred_ack_api::{Acknowledgement, DiferredAckMsg, DiferredPacketInfo, Response};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     middleware::{
-        InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError,
-        PacketReturnInfo, PacketSequence,
+        InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError, PacketId,
+        PacketReturnInfo,
     },
     protocol::TransferProtocol,
     types::{
@@ -504,6 +505,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     fn packet_forward(
         &mut self,
         packet: Self::Packet,
+        original_packet: IbcPacket,
         forward: PacketForward,
         processed: bool,
     ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
@@ -543,13 +545,13 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .collect();
 
         // Forward the packet
-        // TODO: deteamine how to process/store `nonrefundable`
         let forward_response = self.forward_transfer_packet(
             tokens,
+            original_packet,
             forward,
             override_addr,
             false,
-            PacketReturnInfo::NewPacket(PacketSequence {
+            PacketReturnInfo::NewPacket(PacketId {
                 height: self.common.env.block.height,
                 index: self
                     .common
@@ -574,11 +576,12 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     fn forward_transfer_packet(
         &mut self,
         tokens: Vec<Coin>,
+        original_packet: IbcPacket,
         forward: PacketForward,
         receiver: Addr,
         nonrefundable: bool,
         return_info: PacketReturnInfo,
-    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+    ) -> IbcReceiveResponse<Self::CustomMsg> {
         // Prepare forward message
         let msg_info = MessageInfo {
             sender: receiver,
@@ -611,15 +614,14 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         let (refund_sequence, in_flight_packet) = match return_info {
             PacketReturnInfo::InFlight(in_flight_packet) => {
-                (in_flight_packet.refund_sequence.clone(), in_flight_packet)
+                (in_flight_packet.refund_id.clone(), in_flight_packet)
             }
             PacketReturnInfo::NewPacket(refund_sequence) => (
                 refund_sequence.clone(),
-                InFlightPfmPacket {
+                Box::new(InFlightPfmPacket {
                     nonrefundable,
                     original_sender_addr: self.common.info.sender.clone(),
-                    // TODO: use real value
-                    packet_data: "TODO".to_owned(),
+                    packet_data: original_packet.data,
                     packet_src_channel_id: self
                         .common
                         .channel
@@ -629,9 +631,11 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                     packet_src_port_id: self.common.channel.counterparty_endpoint.port_id.clone(),
                     refund_channel_id: forward.channel.value(),
                     refund_port_id: forward.port.value(),
-                    refund_sequence,
+                    refund_id: refund_sequence,
                     timeout,
-                },
+                    src_packet_timeout: original_packet.timeout,
+                    packet_sequence: original_packet.sequence,
+                }),
             ),
         };
 
@@ -646,7 +650,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .update(
                 self.common.deps.storage,
                 refund_packet_key,
-                |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
+                |_| -> Result<_, ContractError> { Ok(*in_flight_packet) },
             )
             .expect("infallible update");
 
@@ -666,8 +670,94 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         original_forward_packet: PacketForward,
         sender: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
-    ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        todo!()
+    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>), Self::Error> {
+        let packet_id =
+            original_forward_packet
+                .return_info
+                .ok_or(MiddlewareError::PacketForward(
+                    PacketForwardError::NoPacketRefundInformation,
+                ))?;
+        let refund_key = PfmRefundPacketKey {
+            channel_id: original_forward_packet.channel.value(),
+            port_id: original_forward_packet.port.value(),
+            height: packet_id.height,
+            index: packet_id.index,
+        };
+        let refund_info = IN_FLIGHT_PFM_PACKETS
+            .load(self.common.deps.storage, refund_key)
+            .map_err(|_| {
+                MiddlewareError::PacketForward(PacketForwardError::PacketNotInRefundStore)
+            })?;
+
+        let (mut ack_msgs, ack_attr, ack_dif) = match ack {
+            Ok(value) => {
+                let value_string = value.to_string();
+                (
+                    self.send_tokens_success(
+                        sender,
+                        &original_forward_packet.receiver.value(),
+                        tokens,
+                    )?,
+                    (!value_string.is_empty()).then_some(("success", value_string)),
+                    Acknowledgement {
+                        response: Some(Response::Result(value.to_vec().into())),
+                    },
+                )
+            }
+            Err(error) => {
+                let error_string = error.to_string();
+                (
+                    self.send_tokens_failure(
+                        sender,
+                        &original_forward_packet.receiver.value(),
+                        tokens,
+                    )?,
+                    (!error_string.is_empty()).then_some(("error", error_string)),
+                    Acknowledgement {
+                        response: Some(Response::Error(error)),
+                    },
+                )
+            }
+        };
+
+        let packet_timeout_timestamp = refund_info
+            .src_packet_timeout
+            .timestamp()
+            .unwrap_or_default()
+            .nanos()
+            .into();
+        let packet_timeout_height = match refund_info.src_packet_timeout.block() {
+            Some(timeout_block) => timeout_block.height.to_string(),
+            None => 0_u64.to_string(),
+        };
+
+        let diferred_packet_info = DiferredPacketInfo {
+            refund_channel_id: refund_info.refund_channel_id,
+            refund_port_id: refund_info.refund_port_id,
+            packet_src_channel_id: refund_info.packet_src_channel_id,
+            packet_src_port_id: refund_info.packet_src_port_id,
+            packet_timeout_timestamp,
+            packet_timeout_height,
+            packet_data: refund_info.packet_data.to_vec().into(),
+            sequence: refund_info.packet_sequence.into(),
+        };
+
+        let dif_ack_msg = DiferredAckMsg::WriteDiferredAck {
+            sender: self.self_addr().to_string(),
+            diferred_packet_info,
+            ack: ack_dif,
+        };
+
+        let diferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+            type_url: "/diferredack.v1beta1.Msg/WriteDiferredAck".to_owned(),
+            value: dif_ack_msg
+                .try_into()
+                .map_err(|_| MiddlewareError::PacketForward(PacketForwardError::InvalidEncoding))?,
+        });
+
+        ack_msgs.append(vec![diferred_ack_msg].as_mut());
+
+        Ok((ack_msgs, ack_attr))
     }
 }
 
@@ -820,6 +910,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     fn packet_forward(
         &mut self,
         packet: Self::Packet,
+        original_packet: IbcPacket,
         forward: PacketForward,
         processed: bool,
     ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
@@ -869,13 +960,13 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .collect();
 
         // Forward the packet
-        // TODO: deteamine how to process/store `nonrefundable`
         let forward_response = self.forward_transfer_packet(
             tokens,
+            original_packet,
             forward,
             override_addr,
             false,
-            PacketReturnInfo::NewPacket(PacketSequence {
+            PacketReturnInfo::NewPacket(PacketId {
                 height: self.common.env.block.height,
                 index: self
                     .common
@@ -891,7 +982,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .iter()
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
-        // TODO: Once updated to cosmwasm 2.0, return nil ack
         IbcReceiveResponse::without_ack()
             .add_messages(msgs)
             .add_messages(forward_response_messages)
@@ -901,6 +991,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     fn forward_transfer_packet(
         &mut self,
         tokens: Vec<Coin>,
+        original_packet: IbcPacket,
         forward: PacketForward,
         receiver: Addr,
         nonrefundable: bool,
@@ -938,15 +1029,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         let (refund_sequence, in_flight_packet) = match return_info {
             PacketReturnInfo::InFlight(in_flight_packet) => {
-                (in_flight_packet.refund_sequence.clone(), in_flight_packet)
+                (in_flight_packet.refund_id.clone(), in_flight_packet)
             }
             PacketReturnInfo::NewPacket(refund_sequence) => (
                 refund_sequence.clone(),
-                InFlightPfmPacket {
+                Box::new(InFlightPfmPacket {
                     nonrefundable,
                     original_sender_addr: self.common.info.sender.clone(),
-                    // TODO: use real value
-                    packet_data: "TODO".to_owned(),
+                    packet_data: original_packet.data,
                     packet_src_channel_id: self
                         .common
                         .channel
@@ -956,9 +1046,11 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                     packet_src_port_id: self.common.channel.counterparty_endpoint.port_id.clone(),
                     refund_channel_id: forward.channel.value(),
                     refund_port_id: forward.port.value(),
-                    refund_sequence,
+                    refund_id: refund_sequence,
                     timeout,
-                },
+                    src_packet_timeout: original_packet.timeout,
+                    packet_sequence: original_packet.sequence,
+                }),
             ),
         };
 
@@ -973,7 +1065,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .update(
                 self.common.deps.storage,
                 refund_packet_key,
-                |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
+                |_| -> Result<_, ContractError> { Ok(*in_flight_packet) },
             )
             .expect("infallible update");
 
@@ -982,7 +1074,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .iter()
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
-        // TODO: Once updated to cosmwasm 2.1, defer to async ack
         IbcReceiveResponse::without_ack()
             .add_messages(transfer_messages)
             .add_events(transfer.events)
@@ -994,8 +1085,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         original_forward_packet: PacketForward,
         sender: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
-    ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet_sequence =
+    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>), Self::Error> {
+        let packet_id =
             original_forward_packet
                 .return_info
                 .ok_or(MiddlewareError::PacketForward(
@@ -1004,16 +1095,16 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         let refund_key = PfmRefundPacketKey {
             channel_id: original_forward_packet.channel.value(),
             port_id: original_forward_packet.port.value(),
-            height: packet_sequence.height,
-            index: packet_sequence.index,
+            height: packet_id.height,
+            index: packet_id.index,
         };
-        let return_info = IN_FLIGHT_PFM_PACKETS
+        let refund_info = IN_FLIGHT_PFM_PACKETS
             .load(self.common.deps.storage, refund_key)
             .map_err(|_| {
                 MiddlewareError::PacketForward(PacketForwardError::PacketNotInRefundStore)
             })?;
 
-        let (ack_msgs, ack_attr) = match ack {
+        let (mut ack_msgs, ack_attr, ack_dif) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
                 (
@@ -1023,6 +1114,9 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                         tokens,
                     )?,
                     (!value_string.is_empty()).then_some(("success", value_string)),
+                    Acknowledgement {
+                        response: Some(Response::Result(value.to_vec().into())),
+                    },
                 )
             }
             Err(error) => {
@@ -1034,16 +1128,51 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                         tokens,
                     )?,
                     (!error_string.is_empty()).then_some(("error", error_string)),
+                    Acknowledgement {
+                        response: Some(Response::Error(error)),
+                    },
                 )
             }
         };
 
-        let diferred_ack_msg = AnyMsg {
-            type_url: "/diferredack.v1beta1.tx.MsgWriteDiferredAck".to_owned(),
-            value: todo!(),
+        let packet_timeout_timestamp = refund_info
+            .src_packet_timeout
+            .timestamp()
+            .unwrap_or_default()
+            .nanos()
+            .into();
+        let packet_timeout_height = match refund_info.src_packet_timeout.block() {
+            Some(timeout_block) => timeout_block.height.to_string(),
+            None => 0_u64.to_string(),
         };
 
-        todo!()
+        let diferred_packet_info = DiferredPacketInfo {
+            refund_channel_id: refund_info.refund_channel_id,
+            refund_port_id: refund_info.refund_port_id,
+            packet_src_channel_id: refund_info.packet_src_channel_id,
+            packet_src_port_id: refund_info.packet_src_port_id,
+            packet_timeout_timestamp,
+            packet_timeout_height,
+            packet_data: refund_info.packet_data.to_vec().into(),
+            sequence: refund_info.packet_sequence.into(),
+        };
+
+        let dif_ack_msg = DiferredAckMsg::WriteDiferredAck {
+            sender: self.self_addr().to_string(),
+            diferred_packet_info,
+            ack: ack_dif,
+        };
+
+        let diferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+            type_url: "/diferredack.v1beta1.Msg/WriteDiferredAck".to_owned(),
+            value: dif_ack_msg
+                .try_into()
+                .map_err(|_| MiddlewareError::PacketForward(PacketForwardError::InvalidEncoding))?,
+        });
+
+        ack_msgs.append(vec![diferred_ack_msg].as_mut());
+
+        Ok((ack_msgs, ack_attr))
     }
 }
 

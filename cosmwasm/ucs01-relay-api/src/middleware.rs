@@ -1,12 +1,14 @@
-use core::ops::Mul;
+use std::ops::{Deref, DerefMut};
 
-use cosmwasm_std::{Addr, Coin, Decimal};
+use cosmwasm_std::{Addr, Binary, IbcTimeout};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use unionlabs::{
     id::{ChannelId, PortId},
     validated::{Validate, Validated},
 };
+
+use crate::types::EncodingError;
 
 pub const DEFAULT_PFM_TIMEOUT: &str = "1m";
 pub const DEFAULT_PFM_RETRIES: u8 = 0;
@@ -24,6 +26,8 @@ pub enum PacketForwardError {
     NoPacketRefundInformation,
     #[error("Unable to find a packet with the given refund index")]
     PacketNotInRefundStore,
+    #[error("Unable to encode/decode packet")]
+    InvalidEncoding,
 }
 
 pub fn default_pfm_timeout() -> String {
@@ -34,17 +38,15 @@ pub fn default_pfm_retries() -> u8 {
     DEFAULT_PFM_RETRIES
 }
 
-pub fn write_pfm_ack(in_flight_packet: InFlightPfmPacket) {}
-
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum PacketReturnInfo {
-    InFlight(InFlightPfmPacket),
-    NewPacket(PacketSequence),
+    InFlight(Box<InFlightPfmPacket>),
+    NewPacket(PacketId),
 }
 
 /// Given that we can't know the IBC packet sequence of a new packet before it's sent, we instead construct and store this information about a packet to index it.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct PacketSequence {
+pub struct PacketId {
     pub height: u64,
     pub index: u32,
 }
@@ -54,13 +56,15 @@ pub struct PacketSequence {
 pub struct InFlightPfmPacket {
     pub nonrefundable: bool,
     pub original_sender_addr: Addr,
-    pub packet_data: String,
+    pub packet_data: Binary,
     pub packet_src_channel_id: String,
     pub packet_src_port_id: String,
     pub refund_channel_id: String,
     pub refund_port_id: String,
-    pub refund_sequence: PacketSequence,
+    pub refund_id: PacketId,
+    pub packet_sequence: u64,
     pub timeout: u64,
+    pub src_packet_timeout: IbcTimeout,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -80,7 +84,7 @@ pub struct PacketForward {
     #[serde(default = "default_pfm_retries")]
     pub retries: u8,
     pub next: Option<Box<PacketForward>>,
-    pub return_info: Option<PacketSequence>,
+    pub return_info: Option<PacketId>,
 }
 
 impl PacketForward {

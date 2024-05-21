@@ -149,7 +149,7 @@ pub fn ibc_packet_receive(
                 channel: channel_info,
             },
         }
-        .receive(msg.packet.data)),
+        .receive(msg.packet)),
         Ucs01Protocol::VERSION => Ok(Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -158,7 +158,7 @@ pub fn ibc_packet_receive(
                 channel: channel_info,
             },
         }
-        .receive(msg.packet.data)),
+        .receive(msg.packet)),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
             protocol_version: v.into(),
@@ -176,7 +176,7 @@ pub fn ibc_packet_ack(
     let channel_info = CHANNEL_INFO.load(deps.storage, &msg.original_packet.src.channel_id)?;
 
     let info = MessageInfo {
-        sender: msg.relayer,
+        sender: msg.clone().relayer,
         funds: Default::default(),
     };
 
@@ -189,7 +189,7 @@ pub fn ibc_packet_ack(
                 channel: channel_info,
             },
         }
-        .send_ack(msg.acknowledgement.data, msg.original_packet.data),
+        .send_ack(msg),
         Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -198,7 +198,7 @@ pub fn ibc_packet_ack(
                 channel: channel_info,
             },
         }
-        .send_ack(msg.acknowledgement.data, msg.original_packet.data),
+        .send_ack(msg),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.original_packet.dest.channel_id,
             protocol_version: v.into(),
