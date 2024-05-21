@@ -11,12 +11,24 @@ use crate::types::{
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
-pub const MODULE_NAME: &str = "transfer";
+pub const TRANSFER_MODULE: &str = "transfer";
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/events.go#L4-L22
 pub const PACKET_EVENT: &str = "fungible_token_packet";
 pub const TRANSFER_EVENT: &str = "ibc_transfer";
 pub const TIMEOUT_EVENT: &str = "timeout";
+pub const MESSAGE_EVENT: &str = "message";
+
+pub const ATTR_MODULE: &str = "module";
+pub const ATTR_SENDER: &str = "sender";
+pub const ATTR_RECEIVER: &str = "receiver";
+pub const ATTR_REFUND_RECEIVER: &str = "refund_receiver";
+pub const ATTR_MEMO: &str = "memo";
+pub const ATTR_SUCCESS: &str = "success";
+pub const ATTR_ERROR: &str = "error";
+pub const ATTR_ACK: &str = "acknowledgement";
+pub const ATTR_VALUE_TRUE: &str = "true";
+pub const ATTR_VALUE_FALSE: &str = "false";
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ProtocolError {
@@ -136,7 +148,7 @@ pub trait TransferProtocol {
         let transfer_event = if memo.is_empty() {
             Event::new(TRANSFER_EVENT)
         } else {
-            Event::new(TRANSFER_EVENT).add_attribute("memo", &memo)
+            Event::new(TRANSFER_EVENT).add_attribute(ATTR_MEMO, &memo)
         };
 
         Ok(Response::new()
@@ -149,11 +161,11 @@ pub trait TransferProtocol {
             .add_events([
                 transfer_event
                     .add_attributes([
-                        ("sender", input.sender.as_str()),
-                        ("receiver", input.receiver.as_str()),
+                        (ATTR_SENDER, input.sender.as_str()),
+                        (ATTR_RECEIVER, input.receiver.as_str()),
                     ])
                     .add_attributes(input.tokens.into_iter().map(|token| token_to_attr(&token))),
-                Event::new("message").add_attribute("module", MODULE_NAME),
+                Event::new(MESSAGE_EVENT).add_attribute(ATTR_MODULE, TRANSFER_MODULE),
             ]))
     }
 
@@ -170,31 +182,32 @@ pub trait TransferProtocol {
                 let value_string = value.to_string();
                 (
                     self.send_tokens_success(packet.sender(), packet.receiver(), packet.tokens())?,
-                    (!value_string.is_empty()).then_some(("success", value_string)),
+                    (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
                 )
             }
             Err(error) => {
                 let error_string = error.to_string();
                 (
                     self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
-                    (!error_string.is_empty()).then_some(("error", error_string)),
+                    (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
                 )
             }
         };
 
         let packet_event = {
             let memo = Into::<String>::into(packet.extension().clone());
-            Event::new(PACKET_EVENT).add_attributes((!memo.is_empty()).then_some(("memo", &memo)))
+            Event::new(PACKET_EVENT)
+                .add_attributes((!memo.is_empty()).then_some((ATTR_MEMO, &memo)))
         };
 
         Ok(IbcBasicResponse::new()
             .add_event(
                 packet_event
                     .add_attributes([
-                        ("module", MODULE_NAME),
-                        ("sender", packet.sender().to_string().as_str()),
-                        ("receiver", packet.receiver().to_string().as_str()),
-                        ("acknowledgement", &raw_ack.into().to_string()),
+                        (ATTR_MODULE, TRANSFER_MODULE),
+                        (ATTR_SENDER, packet.sender().to_string().as_str()),
+                        (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
+                        (ATTR_ACK, &raw_ack.into().to_string()),
                     ])
                     .add_attributes(
                         packet
@@ -220,15 +233,15 @@ pub trait TransferProtocol {
         let timeout_event = if memo.is_empty() {
             Event::new(PACKET_EVENT)
         } else {
-            Event::new(PACKET_EVENT).add_attribute("memo", &memo)
+            Event::new(PACKET_EVENT).add_attribute(ATTR_MEMO, &memo)
         };
 
         Ok(IbcBasicResponse::new()
             .add_event(
                 timeout_event
                     .add_attributes([
-                        ("module", MODULE_NAME),
-                        ("refund_receiver", packet.sender().to_string().as_str()),
+                        (ATTR_MODULE, TRANSFER_MODULE),
+                        (ATTR_REFUND_RECEIVER, packet.sender().to_string().as_str()),
                     ])
                     .add_attributes(
                         packet
@@ -267,17 +280,17 @@ pub trait TransferProtocol {
             let packet_event = if memo.is_empty() {
                 Event::new(PACKET_EVENT)
             } else {
-                Event::new(PACKET_EVENT).add_attribute("memo", &memo)
+                Event::new(PACKET_EVENT).add_attribute(ATTR_MEMO, &memo)
             };
 
             Ok(IbcReceiveResponse::new(Self::ack_success().try_into()?)
                 .add_event(
                     packet_event
                         .add_attributes([
-                            ("module", MODULE_NAME),
-                            ("sender", packet.sender().to_string().as_str()),
-                            ("receiver", packet.receiver().to_string().as_str()),
-                            ("success", "true"),
+                            (ATTR_MODULE, TRANSFER_MODULE),
+                            (ATTR_SENDER, packet.sender().to_string().as_str()),
+                            (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
+                            (ATTR_SUCCESS, ATTR_VALUE_TRUE),
                         ])
                         .add_attributes(
                             packet
@@ -304,9 +317,9 @@ pub trait TransferProtocol {
                 .expect("impossible"),
         )
         .add_event(Event::new(PACKET_EVENT).add_attributes([
-            ("module", MODULE_NAME),
-            ("success", "false"),
-            ("error", &error),
+            (ATTR_MODULE, TRANSFER_MODULE),
+            (ATTR_SUCCESS, ATTR_VALUE_FALSE),
+            (ATTR_ERROR, &error),
         ]))
     }
 }
