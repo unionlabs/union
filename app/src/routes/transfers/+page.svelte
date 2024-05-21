@@ -1,13 +1,13 @@
 <script lang="ts">
 import { graphql } from "gql.tada"
 import type { PageData } from "./$types.ts"
-import * as Table from "$lib/components/ui/table"
 import { balanceQuery } from "$lib/queries/balance"
-import { dollarize, relativeTime } from "$lib/utilities"
-import * as Card from "$lib/components/ui/card/index.ts"
 import { getContextClient, queryStore } from "@urql/svelte"
 import { unionTransfersQuery } from "$lib/queries/transfers"
+import * as Table from "$lib/components/ui/table"
+import * as Card from "$lib/components/ui/card/index.ts"
 import Button from "$lib/components/ui/button/button.svelte"
+import { dollarize, relativeTime } from "$lib/utilities/format.ts"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 

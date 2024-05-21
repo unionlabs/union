@@ -19,7 +19,6 @@ CBFF
 CCTP
 CFLAGS
 CHAINSTACK
-elgafar
 CMOV
 Celestia
 Celestine
@@ -34,7 +33,9 @@ Connor
 Cosmoverse
 Counterparties
 Counterparty
+Cpath
 Cryptopunks
+Csvg
 Cypherpunk
 DATADIR
 DYLD
@@ -422,6 +423,7 @@ dymension
 echarts
 eitherway
 elems
+elgafar
 elit
 endianness
 entrypoints
@@ -497,6 +499,7 @@ govtypes
 govv1
 govv1beta1
 gowork
+graphcache
 graphqlsp
 graphqurl
 groomlake

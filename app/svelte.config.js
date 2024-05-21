@@ -23,7 +23,7 @@ export default {
       fallback: "index.html"
     }),
     version: {
-      // derterministic build version
+      // deterministic build version
       name: getVersion({ short: true })
     },
     /** @note `$` is a svelte path alias convention */

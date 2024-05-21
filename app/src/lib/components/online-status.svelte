@@ -15,12 +15,12 @@ $: blockHeight = $blockHeightStore.data
 </script>
 
 <Tooltip.Root>
-  <Tooltip.Trigger let:builder class="ml-2 mb-16 lg:mb-0.5 my-a fixed bottom-0 z-50 w-18">
+  <Tooltip.Trigger let:builder class="ml-0.75 mb-16 lg:mb-0.5 my-a fixed bottom-0 z-50 w-18">
     <Button
       variant="outline"
       builders={[builder]}
       class={cn(
-        'rounded-full size-3 p-0 animate-pulse -mb-0.5',
+        'rounded-full size-2.5 p-0 animate-pulse -mb-0.25',
         onlineStatus ? 'bg-green-500 hover:bg-green-500' : 'bg-red-500 hover:bg-red-500',
       )}
     ></Button>
@@ -29,7 +29,7 @@ $: blockHeight = $blockHeightStore.data
   <Tooltip.Content
     sideOffset={8}
     transition={flyAndScale}
-    class="top-0 fixed mt-7 -ml-0.5 p-3 z-40"
+    class="top-0 fixed mt-5 -ml-3 p-3 z-40"
     transitionConfig={{ y: 8, duration: 150 }}
   >
     <div

@@ -18,7 +18,7 @@ onMount(() => {
   <div class="absolute w-full h-1 z-[999] left-0 top-0">
     <div
       style="width: {progress * 100}%"
-      class={cn(['absolute h-full bg-cyan-300 transition-[width] duration-500 left-0 top-0'])}
+      class={cn(['absolute h-full bg-union-accent-600 transition-[width] duration-500 left-0 top-0'])}
     />
   </div>
 {/if}

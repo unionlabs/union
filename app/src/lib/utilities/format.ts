@@ -11,6 +11,7 @@ export function relativeTime({
   timestamp: Date | number | string
   lang?: string
 }): string {
+  if (!timestamp) return ""
   const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" })
   const timeMilliseconds =
     typeof timestamp === "number"

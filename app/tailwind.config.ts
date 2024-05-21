@@ -114,9 +114,20 @@ export default (<Config>{
         sm: "calc(var(--radius) - 4px)"
       }),
       margin: _ => ({
+        "0.25": "0.0625rem",
+        "0.75": "0.1875rem",
         18: "4.5rem",
         22: "5.5rem",
         28: "7rem"
+      }),
+      spacing: _ => ({
+        18: "4.5rem",
+        22: "5.5rem",
+        28: "7rem"
+      }),
+      maxWidth: _ => ({
+        "8xl": "88rem",
+        "9xl": "96rem"
       }),
       fontFamily: _ => ({
         sans: ["Inter var", ...defaultTheme.fontFamily.sans],
