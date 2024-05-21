@@ -50,6 +50,12 @@ pub type PgEvent = postgres::Event<CosmosSDK>;
 impl Config {
     /// The batch size for the fast sync protocol. This corresponds to the maximum number of headers returned over a node's RPC.
     pub const BATCH_SIZE: u32 = 20;
+    fn expo_backoff() -> ExponentialBuilder {
+        ExponentialBuilder::default()
+            .with_min_delay(Duration::from_secs(2))
+            .with_max_delay(Duration::from_secs(60))
+            .with_max_times(128)
+    }
 
     pub async fn index<DB>(self, pool: DB) -> Result<(), Report>
     where
@@ -60,7 +66,7 @@ impl Config {
 
         let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool))
-                .retry(&ExponentialBuilder::default())
+                .retry(&Config::expo_backoff())
                 .await?
         } else {
             fetch_meta(&client, &pool).await?
@@ -230,7 +236,7 @@ async fn fetch_and_insert_blocks(
         .and_then(|header| async {
             debug!("fetching block results for height {}", header.height);
             let block = (|| client.block_results(header.height))
-                .retry(&ExponentialBuilder::default())
+                .retry(&Config::expo_backoff())
                 .await?;
             let txs = fetch_transactions_for_block(client, header.height, None).await?;
             Ok((header, block, txs))
