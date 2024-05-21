@@ -132,7 +132,13 @@ where
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
 {
     info!("fetching chain-id from node");
-    let chain_id = client.status().await?.node_info.network.as_str().to_owned();
+    let chain_id = (|| client.status())
+        .retry(&Config::expo_backoff())
+        .await?
+        .node_info
+        .network
+        .as_str()
+        .to_owned();
     info!("chain-id is {}", &chain_id);
 
     let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
@@ -169,7 +175,12 @@ async fn should_fast_sync_up_to(
     batch_size: u32,
     current: Height,
 ) -> Result<Option<Height>, Report> {
-    let latest = client.latest_block().await?.block.header.height;
+    let latest = (|| client.latest_block())
+        .retry(&Config::expo_backoff())
+        .await?
+        .block
+        .header
+        .height;
     if latest.value() - current.value() >= batch_size.into() {
         Ok(Some(latest))
     } else {
@@ -196,8 +207,8 @@ async fn fetch_and_insert_blocks(
 
     let headers = if batch_size > 1 {
         Either::Left(
-            client
-                .blockchain(min, max)
+            (|| client.blockchain(min, max))
+                .retry(&Config::expo_backoff())
                 .await?
                 .block_metas
                 .into_iter()
@@ -238,7 +249,9 @@ async fn fetch_and_insert_blocks(
             let block = (|| client.block_results(header.height))
                 .retry(&Config::expo_backoff())
                 .await?;
-            let txs = fetch_transactions_for_block(client, header.height, None).await?;
+            let txs = (|| fetch_transactions_for_block(client, header.height, None))
+                .retry(&Config::expo_backoff())
+                .await?;
             Ok((header, block, txs))
         })
         .try_collect();
