@@ -408,7 +408,7 @@ contract UCS01Relay is
             }
             emit RelayLib.Received(
                 ibcPacket.sequence,
-                ibcPacket.source_channel,
+                ibcPacket.destination_channel,
                 packet.sender.toHexString(),
                 receiver,
                 denom,
