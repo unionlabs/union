@@ -1,3 +1,5 @@
+export type NonNullable<T> = T extends null | undefined ? never : T
+
 export type TODO = any
 
 export type Nullable<T> = T | null | undefined
