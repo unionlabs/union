@@ -30,6 +30,8 @@ pub const ATTR_ACK: &str = "acknowledgement";
 pub const ATTR_VALUE_TRUE: &str = "true";
 pub const ATTR_VALUE_FALSE: &str = "false";
 
+pub const ATTR_ASSETS: &str = "assets";
+
 #[derive(Error, Debug, PartialEq)]
 pub enum ProtocolError {
     #[error("Channel doesn't exist: {channel_id}")]
@@ -49,10 +51,16 @@ pub struct TransferInput {
     pub tokens: Vec<TransferToken>,
 }
 
-pub fn token_to_attr(TransferToken { denom, amount }: &TransferToken) -> Attribute {
+pub fn tokens_to_attr(tokens: impl IntoIterator<Item = TransferToken>) -> Attribute {
     (
-        "denom",
-        cosmwasm_std::to_json_string(&Coin::new(*amount, denom)).expect("impossible"),
+        ATTR_ASSETS,
+        cosmwasm_std::to_json_string(
+            &tokens
+                .into_iter()
+                .map(|token| Coin::new(token.amount.u128(), token.denom))
+                .collect::<Vec<_>>(),
+        )
+        .expect("impossible"),
     )
         .into()
 }
@@ -151,6 +159,7 @@ pub trait TransferProtocol {
             Event::new(TRANSFER_EVENT).add_attribute(ATTR_MEMO, &memo)
         };
 
+        let tokens = packet.tokens();
         Ok(Response::new()
             .add_messages(send_msgs)
             .add_message(IbcMsg::SendPacket {
@@ -164,7 +173,7 @@ pub trait TransferProtocol {
                         (ATTR_SENDER, input.sender.as_str()),
                         (ATTR_RECEIVER, input.receiver.as_str()),
                     ])
-                    .add_attributes(input.tokens.into_iter().map(|token| token_to_attr(&token))),
+                    .add_attributes([tokens_to_attr(tokens)]),
                 Event::new(MESSAGE_EVENT).add_attribute(ATTR_MODULE, TRANSFER_MODULE),
             ]))
     }
@@ -209,12 +218,7 @@ pub trait TransferProtocol {
                         (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
                         (ATTR_ACK, &raw_ack.into().to_string()),
                     ])
-                    .add_attributes(
-                        packet
-                            .tokens()
-                            .into_iter()
-                            .map(|token| token_to_attr(&token)),
-                    ),
+                    .add_attributes([tokens_to_attr(packet.tokens())]),
             )
             .add_event(Event::new(PACKET_EVENT).add_attributes(ack_attr))
             .add_messages(ack_msgs))
@@ -243,12 +247,7 @@ pub trait TransferProtocol {
                         (ATTR_MODULE, TRANSFER_MODULE),
                         (ATTR_REFUND_RECEIVER, packet.sender().to_string().as_str()),
                     ])
-                    .add_attributes(
-                        packet
-                            .tokens()
-                            .into_iter()
-                            .map(|token| token_to_attr(&token)),
-                    ),
+                    .add_attributes([tokens_to_attr(packet.tokens())]),
             )
             .add_messages(refund_msgs))
     }
@@ -292,12 +291,7 @@ pub trait TransferProtocol {
                             (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
                             (ATTR_SUCCESS, ATTR_VALUE_TRUE),
                         ])
-                        .add_attributes(
-                            packet
-                                .tokens()
-                                .into_iter()
-                                .map(|token| token_to_attr(&token)),
-                        ),
+                        .add_attributes([tokens_to_attr(packet.tokens())]),
                 )
                 .add_submessages(transfer_msgs))
         };
@@ -328,7 +322,10 @@ pub trait TransferProtocol {
 mod tests {
     use cosmwasm_std::{Coin, Uint128};
 
-    use crate::{protocol::token_to_attr, types::TransferToken};
+    use crate::{
+        protocol::{tokens_to_attr, ATTR_ASSETS},
+        types::TransferToken,
+    };
 
     #[test]
     fn test_token_attr() {
@@ -336,10 +333,16 @@ mod tests {
             denom: "factory/1/2/3".into(),
             amount: 0xDEAD_u64.into(),
         };
-        let attr = token_to_attr(&token);
-        let coin = cosmwasm_std::from_json::<Coin>(attr.value).unwrap();
-        assert_eq!(attr.key, "denom");
-        assert_eq!(coin.denom, "factory/1/2/3");
-        assert_eq!(coin.amount, Uint128::from(0xDEAD_u64));
+        let token2 = TransferToken {
+            denom: "factory/1/3/3".into(),
+            amount: 0xC0DE_u64.into(),
+        };
+        let attr = tokens_to_attr([token, token2]);
+        let coins = cosmwasm_std::from_json::<Vec<Coin>>(attr.value).unwrap();
+        assert_eq!(attr.key, ATTR_ASSETS);
+        assert_eq!(coins[0].denom, "factory/1/2/3");
+        assert_eq!(coins[0].amount, Uint128::from(0xDEAD_u64));
+        assert_eq!(coins[1].denom, "factory/1/3/3");
+        assert_eq!(coins[1].amount, Uint128::from(0xC0DE_u64));
     }
 }
