@@ -9,7 +9,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::{H160, H256},
-    ibc::lightclients::ethereum::proof::Proof,
+    ibc::lightclients::ethereum::storage_proof::StorageProof,
     uint::U256,
 };
 
@@ -29,7 +29,7 @@ pub struct ScrollEip1186ProofResponse {
     #[serde(with = "::serde_utils::u64_hex")]
     pub nonce: u64,
     pub storage_hash: H256,
-    pub storage_proof: Vec<Proof>,
+    pub storage_proof: Vec<StorageProof>,
 }
 
 #[derive(Debug, Clone)]

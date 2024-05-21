@@ -529,16 +529,13 @@ pub async fn get_proof<Hc: EthereumChain>(
     };
 
     StorageProof {
-        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-            value: proof.value.into(),
-            proof: proof
-                .proof
-                .into_iter()
-                .map(|bytes| bytes.to_vec())
-                .collect(),
-        }]
-        .to_vec(),
+        key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+        value: proof.value.into(),
+        proof: proof
+            .proof
+            .into_iter()
+            .map(|bytes| bytes.to_vec())
+            .collect(),
     }
 }
 

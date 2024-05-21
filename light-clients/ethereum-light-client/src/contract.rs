@@ -1,6 +1,5 @@
 use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
 use ics008_wasm_client::{
-    define_cosmwasm_light_client_contract,
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
     CustomQueryOf, InstantiateMsg,
 };
@@ -25,9 +24,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
     let client_state =
-        ClientState::decode_as::<Proto>(&msg.client_state).map_err(|e| Error::DecodeFromProto {
-            reason: format!("{:?}", e),
-        })?;
+        ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
 
     save_proto_consensus_state::<EthereumLightClient>(
         deps.branch(),
@@ -57,6 +54,6 @@ pub fn instantiate(
 }
 
 #[cfg(feature = "mainnet")]
-define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMainnet);
+ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMainnet);
 #[cfg(feature = "minimal")]
-define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMinimal);
+ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMinimal);

@@ -1,5 +1,5 @@
 use cosmwasm_std::{Binary, Deps};
-use ethereum_verifier::{BlsVerify, InvalidSignature};
+use ethereum_verifier::{error::InvalidSignature, verify::BlsVerify};
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
@@ -16,7 +16,7 @@ impl<'a> BlsVerify for VerificationContext<'a> {
         public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
         msg: Vec<u8>,
         signature: BlsSignature,
-    ) -> Result<(), ethereum_verifier::Error> {
+    ) -> Result<(), ethereum_verifier::error::Error> {
         let public_keys: Vec<_> = public_keys.into_iter().cloned().collect();
 
         let is_valid = query_fast_aggregate_verify(
@@ -29,11 +29,11 @@ impl<'a> BlsVerify for VerificationContext<'a> {
             msg.clone().into(),
             Binary(signature.into()),
         )
-        .map_err(ethereum_verifier::Error::CustomQuery)?;
+        .map_err(ethereum_verifier::error::Error::CustomQuery)?;
 
         ensure(
             is_valid,
-            ethereum_verifier::Error::InvalidSignature(Box::new(InvalidSignature {
+            ethereum_verifier::error::Error::InvalidSignature(Box::new(InvalidSignature {
                 public_keys,
                 msg,
                 signature,

@@ -13,7 +13,10 @@ use unionlabs::{
     ibc::lightclients::ethereum::fork_parameters::ForkParameters,
 };
 
-use crate::{primitives::GENESIS_SLOT, Error, InvalidMerkleBranch};
+use crate::{
+    error::{Error, InvalidMerkleBranch},
+    primitives::GENESIS_SLOT,
+};
 
 /// Returns the fork version based on the `epoch` and `fork_parameters`.
 /// NOTE: This implementation is based on capella.

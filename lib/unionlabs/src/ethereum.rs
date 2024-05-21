@@ -2,31 +2,49 @@ use core::fmt::Debug;
 
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
+use sha3::Keccak256;
 use ssz::{
     types::{BitList, List, Vector},
     Ssz,
 };
 
-use self::config::MAX_BLOB_COMMITMENTS_PER_BLOCK;
 use crate::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{
         beacon::BeaconBlock,
         config::{
             BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
-            MAX_ATTESTER_SLASHINGS, MAX_BLS_TO_EXECUTION_CHANGES, MAX_BYTES_PER_TRANSACTION,
-            MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
+            MAX_ATTESTER_SLASHINGS, MAX_BLOB_COMMITMENTS_PER_BLOCK, MAX_BLS_TO_EXECUTION_CHANGES,
+            MAX_BYTES_PER_TRANSACTION, MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
             MAX_TRANSACTIONS_PER_PAYLOAD, MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS,
             MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
         },
+        slot::{MappingKey, Slot},
     },
     hash::H256,
     ibc::lightclients::ethereum::beacon_block_header::BeaconBlockHeader,
     macros::hex_string_array_wrapper,
+    uint::U256,
 };
 
 pub mod beacon;
 pub mod config;
+pub mod slot;
+
+#[inline]
+#[must_use]
+pub fn keccak256(bytes: impl AsRef<[u8]>) -> H256 {
+    Keccak256::new().chain_update(bytes).finalize().into()
+}
+
+/// Calculates the slot for a `path` at saved in the commitment map in `slot`
+///
+/// key: `keccak256(keccak256(abi.encode_packed(path)) || slot)`
+#[must_use = "calculating the commitment key has no effect"]
+pub fn ibc_commitment_key(path: &str, slot: U256) -> U256 {
+    Slot::Mapping(&Slot::Offset(slot), MappingKey::Bytes32(keccak256(path))).slot()
+}
 
 // REVIEW: Is this needed? Currently unused
 pub const BLOCK_BODY_EXECUTION_PAYLOAD_INDEX: usize = 9;
@@ -211,4 +229,45 @@ pub struct VoluntaryExit {
 
 hex_string_array_wrapper! {
     pub struct KZGCommitment(pub [u8; 48]);
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use super::*;
+    use crate::{ics24::ConnectionPath, validated::ValidateT};
+
+    #[test]
+    fn commitment_key() {
+        let commitments = [
+            (
+                U256::from_be_bytes(hex!(
+                    "55c4893838cf8a468bfdb0c63e25a4c924d9b7ad283fc335d5f527d29b2fcfc7"
+                )),
+                "connection-100",
+                0,
+            ),
+            (
+                U256::from_be_bytes(hex!(
+                    "f39538e1f0ca1c5f5ecdf1bb05f67c173f2d0f75b41fbb5be884f6aab2ebae91"
+                )),
+                "connection-1",
+                5,
+            ),
+        ];
+
+        for (expected, connection_id, slot) in commitments {
+            assert_eq!(
+                ibc_commitment_key(
+                    &ConnectionPath {
+                        connection_id: connection_id.to_owned().validate().unwrap()
+                    }
+                    .to_string(),
+                    U256::from(slot),
+                ),
+                expected
+            );
+        }
+    }
 }

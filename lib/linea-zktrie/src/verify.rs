@@ -73,6 +73,33 @@ impl ZkValue for H256 {
     }
 }
 
+impl ZkKey for U256 {
+    fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
+        mimc_sum_bl12377(
+            constants,
+            MimcSafeBytes::from(self.to_be_bytes()).into_bytes(),
+        )
+    }
+}
+
+impl ZkValue for U256 {
+    type Key = U256;
+
+    fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
+        mimc_sum_bl12377(
+            constants,
+            MimcSafeBytes::from(self.to_be_bytes()).into_bytes(),
+        )
+    }
+
+    fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength>
+    where
+        Self: Sized,
+    {
+        Self::try_from_be_bytes(value.as_ref())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("invalid direction {0:?}")]

@@ -42,14 +42,20 @@ impl From<ForkParameters> for protos::union::ibc::lightclients::ethereum::v1::Fo
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum TryFromForkParametersError {
-    MissingField(MissingField),
-    InvalidLength(InvalidLength),
-    Altair(TryFromForkError),
-    Bellatrix(TryFromForkError),
-    Capella(TryFromForkError),
-    Deneb(TryFromForkError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid genesis fork version")]
+    GenesisForkVersion(#[source] InvalidLength),
+    #[error("invalid altair")]
+    Altair(#[source] TryFromForkError),
+    #[error("invalid bellatrix")]
+    Bellatrix(#[source] TryFromForkError),
+    #[error("invalid capella")]
+    Capella(#[source] TryFromForkError),
+    #[error("invalid deneb")]
+    Deneb(#[source] TryFromForkError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ForkParameters> for ForkParameters {
@@ -62,7 +68,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ForkParameters> for
             genesis_fork_version: proto
                 .genesis_fork_version
                 .try_into()
-                .map_err(TryFromForkParametersError::InvalidLength)?,
+                .map_err(TryFromForkParametersError::GenesisForkVersion)?,
             genesis_slot: proto.genesis_slot,
             altair: required!(proto.altair)?
                 .try_into()

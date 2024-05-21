@@ -1,4 +1,5 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
+use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use ics008_wasm_client::{
     storage_utils::{
@@ -7,11 +8,10 @@ use ics008_wasm_client::{
     },
     IbcClient, IbcClientError, Status, StorageState,
 };
-use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::{Decode, EncodeAs, EthAbi, Proto},
-    google::protobuf::any::Any,
+    encoding::{Decode, Proto},
+    ethereum::keccak256,
     hash::H256,
     ibc::{
         core::{
@@ -19,12 +19,11 @@ use unionlabs::{
             commitment::merkle_path::MerklePath,
         },
         lightclients::{
-            cometbls,
+            ethereum,
             linea::{client_state::ClientState, consensus_state::ConsensusState, header::Header},
             wasm,
         },
     },
-    ics24::Path,
     linea::{
         account::ZkAccount,
         proof::{InclusionProof, NonInclusionProof},
@@ -32,14 +31,12 @@ use unionlabs::{
     uint::U256,
 };
 
-use crate::{errors::Error, eth_encoding::generate_commitment_key};
+use crate::errors::Error;
 
-type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState =
-    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
-type WasmL1ConsensusState = unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<
-    unionlabs::ibc::lightclients::ethereum::consensus_state::ConsensusState,
->;
+type WasmClientState = wasm::client_state::ClientState<ClientState>;
+type WasmConsensusState = wasm::consensus_state::ConsensusState<ConsensusState>;
+type WasmL1ConsensusState =
+    wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>;
 
 pub struct LineaLightClient;
 
@@ -79,7 +76,7 @@ impl IbcClient for LineaLightClient {
         match value {
             StorageState::Occupied(value) => {
                 let inclusion_proof =
-                    InclusionProof::decode(&proof).map_err(Error::StorageProofDecode)?;
+                    InclusionProof::decode(&proof).map_err(Error::InclusionProofDecode)?;
                 do_verify_membership(
                     path,
                     storage_root,
@@ -90,7 +87,7 @@ impl IbcClient for LineaLightClient {
             }
             StorageState::Empty => {
                 let noninclusion_proof =
-                    NonInclusionProof::decode(&proof).map_err(Error::StorageProofDecode)?;
+                    NonInclusionProof::decode(&proof).map_err(Error::InclusionProofDecode)?;
                 do_verify_non_membership(
                     path,
                     storage_root,
@@ -163,7 +160,7 @@ impl IbcClient for LineaLightClient {
                 ibc_storage_root: zk_account.storage_root,
                 // must be nanos
                 timestamp: 1_000_000_000
-                    * u64::try_from(header.l2_timestamp_proof.proofs[0].value).expect("impossible"),
+                    * u64::try_from(header.l2_timestamp_proof.value).expect("impossible"),
             },
         };
         save_consensus_state::<Self>(deps, consensus_state, &updated_height);
@@ -252,37 +249,12 @@ fn do_verify_membership(
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
     // TODO: handle error
-    let key = storage_proof.key.try_into().unwrap();
+    let key = U256::try_from_be_bytes(&storage_proof.key).unwrap();
 
     check_commitment_key(&path, ibc_commitment_slot, key)?;
 
-    let path = path
-        .parse::<Path<String, Height>>()
-        .map_err(Error::PathParse)?;
-
-    let canonical_value = match path {
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
-                .map_err(Error::CometblsClientStateDecode)?
-                .0
-                .encode_as::<EthAbi>()
-        }
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode(raw_value.as_ref())
-        .map_err(Error::CometblsConsensusStateDecode)?
-        .0
-        .data
-        .encode_as::<EthAbi>(),
-        _ => raw_value,
-    };
-
-    // We store the hash of the data, not the data itself to the commitments map.
-    let expected_value_hash = H256::from(
-        sha3::Keccak256::new()
-            .chain_update(canonical_value)
-            .finalize(),
-    );
+    // we store the hash of the data, not the data itself to the commitments map
+    let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
 
     // TODO: handle error
     let proof_value = H256(storage_proof.proof.value.clone().try_into().unwrap());
@@ -294,7 +266,7 @@ fn do_verify_membership(
         });
     }
 
-    linea_zktrie::verify::verify_inclusion_and_key::<H256>(
+    linea_zktrie::verify::verify_inclusion_and_key::<U256>(
         &new_mimc_constants_bls12_377(),
         storage_proof.leaf_index,
         &storage_proof.proof,
@@ -313,11 +285,11 @@ fn do_verify_non_membership(
     noninclusion_proof: NonInclusionProof,
 ) -> Result<(), Error> {
     // TODO: handle error
-    let key = noninclusion_proof.key.clone().try_into().unwrap();
+    let key = U256::try_from_be_bytes(&noninclusion_proof.key).unwrap();
 
     check_commitment_key(&path, ibc_commitment_slot, key)?;
 
-    linea_zktrie::verify::verify_noninclusion::<H256>(
+    linea_zktrie::verify::verify_noninclusion::<U256>(
         &new_mimc_constants_bls12_377(),
         &noninclusion_proof,
         storage_root,
@@ -325,18 +297,4 @@ fn do_verify_non_membership(
     )?;
 
     Ok(())
-}
-
-fn check_commitment_key(path: &str, ibc_commitment_slot: U256, key: H256) -> Result<(), Error> {
-    let expected_commitment_key = generate_commitment_key(path, ibc_commitment_slot);
-
-    // Data MUST be stored to the commitment path that is defined in ICS23.
-    if expected_commitment_key != key {
-        Err(Error::InvalidCommitmentKey {
-            expected: expected_commitment_key,
-            found: key,
-        })
-    } else {
-        Ok(())
-    }
 }

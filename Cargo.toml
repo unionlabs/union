@@ -91,6 +91,7 @@ block-message             = { path = "lib/block-message", default-features = fal
 chain-utils               = { path = "lib/chain-utils", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 contracts                 = { path = "generated/rust/contracts", default-features = false }
+ethereum-light-client     = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
 gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                = { path = "lib/gnark-mimc", default-features = false }

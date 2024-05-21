@@ -45,5 +45,9 @@ unionlabs   = { workspace = true, features = ["std"] }
 
 [features]
 default = ["mainnet"]
+
 mainnet = []
 minimal = []
+
+# enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
+library = []

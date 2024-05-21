@@ -1,5 +1,19 @@
 use ics008_wasm_client::IbcClientError;
-use unionlabs::{bls::BlsPublicKey, hash::H256, ibc::core::client::height::Height};
+use unionlabs::{
+    bls::BlsPublicKey,
+    encoding::{DecodeErrorOf, Proto},
+    google::protobuf::any::Any,
+    hash::H256,
+    ibc::{
+        core::client::height::Height,
+        lightclients::{
+            cometbls,
+            ethereum::{self, storage_proof::StorageProof},
+            wasm,
+        },
+    },
+    uint::U256,
+};
 
 use crate::client::EthereumLightClient;
 
@@ -8,11 +22,19 @@ pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
 
-    #[error("error while decoding proto ({reason})")]
-    DecodeFromProto { reason: String },
+    #[error("unable to decode storage proof")]
+    StorageProofDecode(#[source] DecodeErrorOf<Proto, StorageProof>),
 
     #[error("client state not found")]
     ClientStateNotFound,
+
+    #[error("unable to decode client state")]
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ethereum::client_state::ClientState>),
+    #[error("unable to decode consensus state")]
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ethereum::consensus_state::ConsensusState>),
+
+    #[error(transparent)]
+    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
 
     #[error("custom query error")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
@@ -33,22 +55,22 @@ pub enum Error {
     ConsensusStateNotFound(Height),
 
     #[error("validate light client error")]
-    ValidateLightClient(#[source] ethereum_verifier::Error),
+    ValidateLightClient(#[source] ethereum_verifier::error::Error),
 
     #[error("verify account storage root error")]
-    VerifyAccountStorageRoot(#[source] ethereum_verifier::Error),
+    VerifyAccountStorageRoot(#[source] ethereum_verifier::error::Error),
 
     #[error("verify storage absence error")]
-    VerifyStorageAbsence(#[source] ethereum_verifier::Error),
+    VerifyStorageAbsence(#[source] ethereum_verifier::error::Error),
 
     #[error("verify storage proof error")]
-    VerifyStorageProof(#[source] ethereum_verifier::Error),
+    VerifyStorageProof(#[source] ethereum_verifier::error::Error),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error("invalid commitment key, expected ({expected}) but found ({found})")]
-    InvalidCommitmentKey { expected: H256, found: H256 },
+    #[error(transparent)]
+    InvalidCommitmentKey(#[from] InvalidCommitmentKey),
 
     #[error("client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
@@ -59,14 +81,8 @@ pub enum Error {
     #[error("counterparty storage not nil")]
     CounterpartyStorageNotNil,
 
-    #[error("batching proofs are not supported")]
-    BatchingProofsNotSupported,
-
-    #[error("expected value ({expected:?}) and stored value ({stored:?}) don't match")]
-    StoredValueMismatch { expected: H256, stored: H256 },
-
-    #[error("the proof path {0} is not unknown")]
-    UnknownIbcPath(String),
+    #[error(transparent)]
+    StoredValueMismatch(#[from] StoredValueMismatch),
 
     #[error("not enough signatures")]
     NotEnoughSignatures,
@@ -82,6 +98,38 @@ pub enum Error {
 
     #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})")]
     MisbehaviourCannotExist(u64, u64),
+}
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+pub enum CanonicalizeStoredValueError {
+    #[error("the proof path {0} is unknown")]
+    UnknownIbcPath(String),
+    #[error("unable to decode counterparty's stored cometbls client state")]
+    CometblsClientStateDecode(
+        #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
+    ),
+    #[error("unable to decode counterparty's stored cometbls consensus state")]
+    CometblsConsensusStateDecode(
+        #[source]
+        DecodeErrorOf<
+            Proto,
+            Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
+        >,
+    ),
+}
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+#[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
+pub struct InvalidCommitmentKey {
+    pub expected: U256,
+    pub found: U256,
+}
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+#[error("expected value ({expected}) and stored value ({stored}) don't match")]
+pub struct StoredValueMismatch {
+    pub expected: H256,
+    pub stored: H256,
 }
 
 impl From<Error> for IbcClientError<EthereumLightClient> {

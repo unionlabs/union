@@ -1,4 +1,5 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
+use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
@@ -6,11 +7,10 @@ use ics008_wasm_client::{
     },
     IbcClient, IbcClientError, Status, StorageState,
 };
-use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::{Decode, EncodeAs, EthAbi, Proto},
-    google::protobuf::any::Any,
+    encoding::{Decode, Proto},
+    ethereum::keccak256,
     hash::H256,
     ibc::{
         core::{
@@ -21,16 +21,13 @@ use unionlabs::{
             arbitrum::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
             },
-            cometbls,
-            ethereum::{proof::Proof, storage_proof::StorageProof},
-            wasm,
+            ethereum::storage_proof::StorageProof,
         },
     },
-    ics24::Path,
     uint::U256,
 };
 
-use crate::{errors::Error, eth_encoding::generate_commitment_key};
+use crate::errors::Error;
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
@@ -74,15 +71,7 @@ impl IbcClient for ArbitrumLightClient {
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.ibc_storage_root;
 
-        let storage_proof = {
-            let mut proofs = StorageProof::decode(&proof)
-                .map_err(Error::StorageProofDecode)?
-                .proofs;
-            if proofs.len() > 1 {
-                return Err(Error::BatchingProofsNotSupported.into());
-            }
-            proofs.pop().ok_or(Error::EmptyProof)?
-        };
+        let storage_proof = StorageProof::decode(&proof).map_err(Error::StorageProofDecode)?;
 
         match value {
             StorageState::Occupied(value) => do_verify_membership(
@@ -243,42 +232,13 @@ fn do_verify_membership(
     path: String,
     storage_root: H256,
     ibc_commitment_slot: U256,
-    storage_proof: Proof,
+    storage_proof: StorageProof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
-    check_commitment_key(
-        &path,
-        ibc_commitment_slot,
-        H256(storage_proof.key.to_be_bytes()),
-    )?;
+    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
 
-    let path = path
-        .parse::<Path<String, Height>>()
-        .map_err(Error::PathParse)?;
-
-    let canonical_value = match path {
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
-                .map_err(Error::CometblsClientStateDecode)?
-                .0
-                .encode_as::<EthAbi>()
-        }
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode(raw_value.as_ref())
-        .map_err(Error::CometblsConsensusStateDecode)?
-        .0
-        .data
-        .encode_as::<EthAbi>(),
-        _ => raw_value,
-    };
-
-    // We store the hash of the data, not the data itself to the commitments map.
-    let expected_value_hash = H256::from(
-        sha3::Keccak256::new()
-            .chain_update(canonical_value)
-            .finalize(),
-    );
+    // we store the hash of the data, not the data itself to the commitments map
+    let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
@@ -289,7 +249,7 @@ fn do_verify_membership(
         });
     }
 
-    ethereum_verifier::verify_storage_proof(
+    ethereum_verifier::verify::verify_storage_proof(
         storage_root,
         storage_proof.key,
         &rlp::encode(&storage_proof.value),
@@ -304,31 +264,13 @@ fn do_verify_non_membership(
     path: String,
     storage_root: H256,
     ibc_commitment_slot: U256,
-    storage_proof: Proof,
+    storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    check_commitment_key(
-        &path,
-        ibc_commitment_slot,
-        H256(storage_proof.key.to_be_bytes()),
-    )?;
-    ethereum_verifier::verify_storage_absence(
+    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
+    ethereum_verifier::verify::verify_storage_absence(
         storage_root,
         storage_proof.key,
         &storage_proof.proof,
     )?;
     Ok(())
-}
-
-fn check_commitment_key(path: &str, ibc_commitment_slot: U256, key: H256) -> Result<(), Error> {
-    let expected_commitment_key = generate_commitment_key(path, ibc_commitment_slot);
-
-    // Data MUST be stored to the commitment path that is defined in ICS23.
-    if expected_commitment_key != key {
-        Err(Error::InvalidCommitmentKey {
-            expected: expected_commitment_key,
-            found: key,
-        })
-    } else {
-        Ok(())
-    }
 }

@@ -5,12 +5,8 @@ option go_package = "union/ibc/lightclients/ethereum";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
-message StorageProof {
-  repeated Proof proofs = 1;
-}
-
 // Value returned by eth_getProof
-message Proof {
+message StorageProof {
   // NOTE: U256
   bytes key = 1;
   // NOTE: U256

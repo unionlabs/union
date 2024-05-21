@@ -1,10 +1,15 @@
+use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     google::protobuf::any::Any,
     hash::H256,
-    ibc::{core::client::height::Height, lightclients::wasm},
+    ibc::{
+        core::client::height::Height,
+        lightclients::{cometbls, linea, wasm},
+    },
     ics24::PathParseError,
+    linea::proof::InclusionProof,
 };
 
 use crate::client::LineaLightClient;
@@ -12,40 +17,27 @@ use crate::client::LineaLightClient;
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
     #[error("unable to decode storage proof")]
-    StorageProofDecode(#[source] DecodeErrorOf<Proto, unionlabs::linea::proof::InclusionProof>),
+    InclusionProofDecode(#[source] DecodeErrorOf<Proto, InclusionProof>),
+
     #[error("unable to decode counterparty's stored cometbls client state")]
     CometblsClientStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            Any<unionlabs::ibc::lightclients::cometbls::client_state::ClientState>,
-        >,
+        #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
     ),
     #[error("unable to decode counterparty's stored cometbls consensus state")]
     CometblsConsensusStateDecode(
         #[source]
         DecodeErrorOf<
             Proto,
-            Any<
-                wasm::consensus_state::ConsensusState<
-                    unionlabs::ibc::lightclients::cometbls::consensus_state::ConsensusState,
-                >,
-            >,
+            Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
         >,
     ),
     #[error("unable to decode client state")]
-    ClientStateDecode(
-        #[source]
-        DecodeErrorOf<Proto, unionlabs::ibc::lightclients::scroll::client_state::ClientState>,
-    ),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, linea::client_state::ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            unionlabs::ibc::lightclients::scroll::consensus_state::ConsensusState,
-        >,
-    ),
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, linea::consensus_state::ConsensusState>),
+
+    #[error(transparent)]
+    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
 
     // REVIEW: Move this variant to IbcClientError?
     #[error("consensus state not found at height {0}")]
@@ -54,8 +46,8 @@ pub enum Error {
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error("invalid commitment key, expected ({expected}) but found ({found})")]
-    InvalidCommitmentKey { expected: H256, found: H256 },
+    #[error(transparent)]
+    InvalidCommitmentKey(#[from] InvalidCommitmentKey),
 
     #[error("proof is empty")]
     EmptyProof,
