@@ -74,7 +74,8 @@ members = [
   "near/near-ibc",
   "near/near-light-client",
   "near/dummy-ibc-app",
-  "near/near-ibc-tests"
+  "near/near-ibc-tests",
+  "lib/near-workspaces-rs",
 ]
 
 [workspace.package]
@@ -131,6 +132,7 @@ unionlabs                 = { path = "lib/unionlabs", default-features = false }
 voyager-message           = { path = "lib/voyager-message", default-features = false }
 zktrie                    = { path = "lib/zktrie-rs", default-features = false }
 ibc-vm-rs                 = { path = "lib/ibc-vm-rs", default-features = false }
+near-workspaces           = { path = "lib/near-workspaces-rs", default-features = false }
 
 # external dependencies
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }

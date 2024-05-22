@@ -10,10 +10,7 @@ use near_primitives_core::{
     hash::CryptoHash,
     types::{AccountId, BlockHeight},
 };
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize},
-    store::LookupMap,
-};
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use types::{BlockHeaderInnerLiteView, LightClientBlockView, ValidatorStakeView};
 
 use crate::nibble_slice::NibbleSlice;
@@ -22,7 +19,6 @@ use crate::nibble_slice::NibbleSlice;
 pub struct ClientState {
     latest_height: u64,
     ibc_account_id: AccountId,
-    epoch_block_producers_map: LookupMap<CryptoHash, Vec<ValidatorStakeView>>,
 }
 
 #[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]

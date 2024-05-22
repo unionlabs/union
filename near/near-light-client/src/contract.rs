@@ -29,6 +29,7 @@ use crate::{
 pub struct Contract {
     consensus_states: LookupMap<u64, ConsensusState>,
     client_state: ClientState,
+    epoch_block_producers_map: LookupMap<CryptoHash, Vec<ValidatorStakeView>>,
 }
 
 #[near_bindgen]
@@ -46,6 +47,7 @@ impl Contract {
         Self {
             client_state,
             consensus_states,
+            epoch_block_producers_map: LookupMap::new(b"epoch_block_producers".as_slice()),
         }
     }
 
@@ -150,7 +152,7 @@ impl Contract {
         validate_head(
             consensus_state.state.clone(),
             header_update.new_state,
-            &self.client_state.epoch_block_producers_map,
+            &self.epoch_block_producers_map,
         );
         true
     }
@@ -170,7 +172,7 @@ impl Contract {
         );
         self.client_state.latest_height = header_update.new_state.inner_lite.height;
         if let Some(next_bps) = &header_update.new_state.next_bps {
-            self.client_state.epoch_block_producers_map.insert(
+            self.epoch_block_producers_map.insert(
                 header_update.new_state.inner_lite.next_epoch_id,
                 next_bps.clone(),
             );
