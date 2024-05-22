@@ -254,6 +254,7 @@ async fn index_blocks_by_chunk(
         }
         tx.commit().await?;
     }
+    panic!("end of index_blocks_by_chunk should not occur");
     Ok(())
 }
 
@@ -375,17 +376,9 @@ impl BlockInsert {
     ) -> Result<(usize, Self), FromProviderError> {
         let mut count = 0;
         loop {
-            match Self::from_provider(chain_id, height, provider).await {
-                Ok(block) => return Ok((count, block)),
-                Err(err) => {
-                    if !err.retryable() || count > max_retries {
-                        return Err(err);
-                    }
-                    count += 1;
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                    continue;
-                }
-            }
+            (|| {debug!("retrying fetching block from provider"; {Self::from_provider(chain_id, height, provider)}})
+                .retry(&crate::expo_backoff())
+                .await;
         }
     }
 
