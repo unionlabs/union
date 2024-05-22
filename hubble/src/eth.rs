@@ -24,6 +24,9 @@ use crate::{
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub url: Url,
+
+    /// The height from which we start indexing
+    pub start_height: Option<i32>,
 }
 
 /// Unit struct describing parametrization of associated types for Evm based chains.
@@ -75,11 +78,11 @@ impl Config {
         .await?
         .map(|block| {
             if block.height == 0 {
-                info!("no block found, starting at 0");
-                0
+                info!(?self.start_height, "no block found, starting at configured start height, or 0 if not defined");
+                self.start_height.unwrap_or_default()
             } else {
                 info!("block found, continuing at {}", block.height + 1);
-                block.height + 1
+                block.height
             }
         })
         .unwrap_or_default() as u64;
@@ -157,7 +160,10 @@ async fn index_blocks(
         };
 
     match err {
-        IndexBlockError::Retryable { height, err: FromProviderError::BlockNotFound } => {
+        IndexBlockError::Retryable {
+            height,
+            err: FromProviderError::BlockNotFound,
+        } => {
             // This most likely indicates we caught up indexing with the node. We now switch to
             // single block mode.
             index_blocks_by_chunk(pool, height..range.end, chain_id, provider, 1).await?;
@@ -374,9 +380,12 @@ impl BlockInsert {
     ) -> Result<(usize, Self), FromProviderError> {
         let mut count = 0;
         loop {
-            (|| {debug!("retrying fetching block from provider"; {Self::from_provider(chain_id, height, provider)}})
-                .retry(&crate::expo_backoff())
-                .await;
+            (|| {
+                debug!("retrying fetching block from provider");
+                Self::from_provider(chain_id, height, provider)
+            })
+            .retry(&crate::expo_backoff())
+            .await;
         }
     }
 
