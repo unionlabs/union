@@ -206,15 +206,13 @@ async fn index_blocks_by_chunk(
                 chain_id: ChainId,
                 height: u64,
                 provider: &Provider<Http>,
-                max_retries: usize,
             ) -> (u64, Result<(usize, BlockInsert), FromProviderError>) {
                 (
                     height,
-                    BlockInsert::from_provider_retried(chain_id, height, provider, max_retries)
-                        .await,
+                    BlockInsert::from_provider_retried(chain_id, height, provider).await,
                 )
             }
-            from_provider_retried(chain_id, height, &provider, 60)
+            from_provider_retried(chain_id, height, &provider)
         }));
 
         while let Some((height, block)) = inserts.next().await {
@@ -259,7 +257,6 @@ async fn index_blocks_by_chunk(
         tx.commit().await?;
     }
     panic!("end of index_blocks_by_chunk should not occur");
-    Ok(())
 }
 
 /// A worker routine which continuously re-indexes the last 20 blocks into `PgLogs`.
@@ -283,7 +280,7 @@ async fn reindex_blocks(
         let tx = pool.begin().await?;
         let chunk = (current - 20)..current;
         let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-            BlockInsert::from_provider_retried(chain_id, height as u64, &provider, 1000)
+            BlockInsert::from_provider_retried(chain_id, height as u64, &provider)
                 .map_err(Report::from)
         }));
         inserts
@@ -353,12 +350,6 @@ enum FromProviderError {
     Other(Report),
 }
 
-impl FromProviderError {
-    fn retryable(&self) -> bool {
-        matches!(self, FromProviderError::BlockNotFound)
-    }
-}
-
 impl From<ethers::providers::ProviderError> for FromProviderError {
     fn from(error: ethers::providers::ProviderError) -> Self {
         Self::Other(Report::from(error))
@@ -376,16 +367,15 @@ impl BlockInsert {
         chain_id: ChainId,
         height: u64,
         provider: &Provider<Http>,
-        max_retries: usize,
     ) -> Result<(usize, Self), FromProviderError> {
-        let mut count = 0;
         loop {
+            debug!(?chain_id, "fetching block from provider");
             (|| {
-                debug!("retrying fetching block from provider");
                 Self::from_provider(chain_id, height, provider)
+                    .inspect_err(|e| debug!(?e, "error fetching block from provider"))
             })
             .retry(&crate::expo_backoff())
-            .await;
+            .await?;
         }
     }
 

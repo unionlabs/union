@@ -1,4 +1,4 @@
-use backon::{ExponentialBuilder, Retryable};
+use backon::Retryable;
 use color_eyre::eyre::{bail, Report};
 use futures::{stream, stream::TryStreamExt};
 use sqlx::{Acquire, Postgres};
@@ -50,12 +50,6 @@ pub type PgEvent = postgres::Event<CosmosSDK>;
 impl Config {
     /// The batch size for the fast sync protocol. This corresponds to the maximum number of headers returned over a node's RPC.
     pub const BATCH_SIZE: u32 = 20;
-    fn expo_backoff() -> ExponentialBuilder {
-        ExponentialBuilder::default()
-            .with_min_delay(Duration::from_secs(2))
-            .with_max_delay(Duration::from_secs(60))
-            .with_max_times(60)
-    }
 
     pub async fn index<DB>(self, pool: DB) -> Result<(), Report>
     where
