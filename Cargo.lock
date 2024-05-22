@@ -5058,8 +5058,10 @@ dependencies = [
  "queue-msg-macro",
  "serde",
  "serde_json",
+ "static_assertions",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "unionlabs",
 ]
 

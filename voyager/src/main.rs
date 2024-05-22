@@ -29,8 +29,11 @@ use chain_utils::{
 };
 use clap::Parser;
 use queue_msg::{
-    aggregate, aggregation::TupleAggregator, conc, defer_relative, effect, event, fetch, repeat,
-    run_to_completion, seq, InMemoryQueue, QueueMsg,
+    aggregate,
+    aggregation::TupleAggregator,
+    conc, defer_relative, effect, event, fetch,
+    optimize::{passes::NormalizeFinal, Pure},
+    repeat, run_to_completion, seq, InMemoryQueue, QueueMsg,
 };
 use relay_message::{
     aggregate::{
@@ -157,7 +160,7 @@ pub enum MigrationsError {
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
 async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
-    let voyager_config = read_to_string(&args.config_file_path)
+    let mut voyager_config = read_to_string(&args.config_file_path)
         .map_err(|err| VoyagerError::ConfigFileNotFound {
             path: args.config_file_path.clone(),
             source: err,
@@ -197,19 +200,29 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             queue.run().await?;
         }
         Command::Query {
-            on,
+            on: on_name,
             at,
             cmd,
             tracking,
         } => {
-            let on = voyager_config.get_chain(&on).await?;
+            let on = voyager_config.get_chain(&on_name).await?;
             let tracking = voyager_config
                 .chain
                 .get(&tracking)
                 .expect("chain not found in config")
                 .clone();
 
-            let chains = Arc::new(chains_from_config(voyager_config.chain).await.unwrap());
+            let chains = Arc::new(
+                chains_from_config(
+                    [voyager_config.chain.remove_entry(&on_name).unwrap()]
+                        .into_iter()
+                        .collect(),
+                )
+                .await
+                .unwrap(),
+            );
+
+            dbg!(&chains);
 
             match cmd {
                 QueryCmd::IbcPath(path) => {
@@ -324,26 +337,22 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             type Item = sqlx::types::Json<QueueMsg<VoyagerMessageTypes>>;
 
             match cli_msg {
-                cli::QueueCmd::History { id, max_depth } => {
-                    #[derive(Debug, serde::Serialize)]
-                    struct Record {
-                        id: i64,
-                        parent: Option<i64>,
-                        item: Item,
-                    }
+                // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
+                // cli::QueueCmd::History { id, max_depth } => {
+                //     // let results = query_as!(
+                //     //     Record,
+                //     //     r#"SELECT id as "id!", parent, item as "item!: Item" FROM get_list($1, $2) ORDER BY id ASC"#,
+                //     //     id.inner(),
+                //     //     max_depth.inner()
+                //     // )
+                //     // .fetch_all(&db)
+                //     // .await
+                //     // .unwrap();
 
-                    let results = query_as!(
-                        Record,
-                        r#"SELECT id as "id!", parent, item as "item!: Item" FROM get_list($1, $2) ORDER BY id ASC"#,
-                        id.inner(),
-                        max_depth.inner()
-                    )
-                    .fetch_all(&db)
-                    .await
-                    .unwrap();
+                //     // println!("{}", serde_json::to_string_pretty(&results).unwrap());
 
-                    println!("{}", serde_json::to_string_pretty(&results).unwrap());
-                }
+                //     todo!();
+                // }
                 cli::QueueCmd::Failed { page, per_page } => {
                     #[derive(Debug, serde::Serialize)]
                     struct Record {
@@ -573,6 +582,8 @@ where
                 ),
             ),
             InMemoryQueue<RelayMessageTypes>,
+            _,
+            _,
         >(
             TupleAggregator,
             chains.clone(),
@@ -593,6 +604,8 @@ where
                     },
                 )),
             ],
+            NormalizeFinal::default(),
+            Pure(NormalizeFinal::default()),
         )
         .await
     };
@@ -609,6 +622,8 @@ where
                 ),
             ),
             InMemoryQueue<RelayMessageTypes>,
+            _,
+            _,
         >(
             TupleAggregator,
             chains.clone(),
@@ -629,6 +644,8 @@ where
                     },
                 )),
             ],
+            NormalizeFinal::default(),
+            Pure(NormalizeFinal::default()),
         )
         .await
     };

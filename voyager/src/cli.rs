@@ -6,14 +6,18 @@ use clap::{
     Args, FromArgMatches, Parser, Subcommand,
 };
 use frunk::{hlist_pat, HList};
-use queue_msg::{aggregation::UseAggregate, run_to_completion, InMemoryQueue};
+use queue_msg::{
+    aggregation::UseAggregate,
+    optimize::{passes::NormalizeFinal, Pure},
+    run_to_completion, InMemoryQueue,
+};
 use relay_message::{
     data::{IbcProof, IbcState},
     use_aggregate::IsAggregateData,
     ChainExt, DoFetchProof, DoFetchState, Identified, RelayMessageTypes,
 };
 use unionlabs::{
-    bounded::{BoundedI32, BoundedI64},
+    bounded::BoundedI64,
     ibc::core::{channel, client::height::Height},
     ics24::{
         self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -266,7 +270,7 @@ pub struct HandshakeRaw {
         long,
         value_parser(
             // don't ask questions you don't want the answer to
-            |s: &str| serde_json::from_value::<unionlabs::ibc::core::channel::order::Order>(<serde_json::Value as From<&str>>::from(s))
+            |s: &str| serde_json::from_value::<channel::order::Order>(<serde_json::Value as From<&str>>::from(s))
         ),
     )]
     pub channel_ordering: Option<channel::order::Order>,
@@ -274,7 +278,7 @@ pub struct HandshakeRaw {
         long,
         value_parser(
             // don't ask questions you don't want the answer to
-            |s: &str| serde_json::from_value::<unionlabs::ibc::core::channel::order::Order>(<serde_json::Value as From<&str>>::from(s))
+            |s: &str| serde_json::from_value::<channel::order::Order>(<serde_json::Value as From<&str>>::from(s))
         ),
     )]
     pub connection_ordering: Option<Vec<channel::order::Order>>,
@@ -412,7 +416,7 @@ where
 
     match path {
         ics24::Path::ClientState(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -421,11 +425,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::ClientConsensusState(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -434,11 +440,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::Connection(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -447,11 +455,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::ChannelEnd(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -460,11 +470,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::Commitment(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -473,11 +485,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::Acknowledgement(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -486,11 +500,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::Receipt(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -499,11 +515,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::NextSequenceSend(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -512,11 +530,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::NextSequenceRecv(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -525,11 +545,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::NextSequenceAck(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -538,11 +560,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::NextConnectionSequence(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -551,11 +575,13 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
         ics24::Path::NextClientSequence(path) => json(
-            &run_to_completion::<_, _, _, InMemoryQueue<_>>(
+            &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
                 FetchStateProof {
                     path,
                     height,
@@ -564,6 +590,8 @@ where
                 chains,
                 (),
                 msgs,
+                NormalizeFinal::default(),
+                Pure(NormalizeFinal::default()),
             )
             .await,
         ),
@@ -639,17 +667,17 @@ where
     }
 }
 
-type PgId = BoundedI64<1, { i64::MAX }>;
+// type PgId = BoundedI64<1, { i64::MAX }>;
 type Pg64 = BoundedI64<0, { i64::MAX }>;
-type Pg32 = BoundedI32<1, { i32::MAX }>;
+// type Pg32 = BoundedI32<1, { i32::MAX }>;
 
 #[derive(Debug, Subcommand)]
 pub enum QueueCmd {
-    History {
-        id: PgId,
-        #[arg(long, default_value_t = result_unwrap!(Pg32::new(10)))]
-        max_depth: Pg32,
-    },
+    // History {
+    //     id: PgId,
+    //     #[arg(long, default_value_t = result_unwrap!(Pg32::new(10)))]
+    //     max_depth: Pg32,
+    // },
     Failed {
         #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
         page: Pg64,

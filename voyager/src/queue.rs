@@ -15,13 +15,20 @@ use axum::{
 };
 use chain_utils::{AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStreamExt};
-use queue_msg::{Engine, InMemoryQueue, Queue, QueueMessageTypes, QueueMsg};
+use futures::{
+    channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryFutureExt, TryStreamExt,
+};
+use pg_queue::EnqueueStatus;
+use queue_msg::{
+    optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
+    Engine, InMemoryQueue, Queue, QueueMessageTypes, QueueMsg,
+};
 use relay_message::RelayMessageTypes;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
+use tracing::{debug, error, info};
 use unionlabs::traits::{Chain, ClientState, FromStrExact};
 use voyager_message::VoyagerMessageTypes;
 
@@ -76,18 +83,21 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
         }
     }
 
-    fn enqueue(
-        &mut self,
+    fn enqueue<'a, O: PurePass<T>>(
+        &'a self,
         item: QueueMsg<T>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
+        pre_enqueue_passes: &'a O,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
         async move {
             match self {
-                AnyQueue::InMemory(queue) => {
-                    queue.enqueue(item).await.map_err(AnyQueueError::InMemory)?
-                }
-                AnyQueue::PgQueue(queue) => {
-                    queue.enqueue(item).await.map_err(AnyQueueError::PgQueue)?
-                }
+                AnyQueue::InMemory(queue) => queue
+                    .enqueue(item, pre_enqueue_passes)
+                    .await
+                    .map_err(AnyQueueError::InMemory)?,
+                AnyQueue::PgQueue(queue) => queue
+                    .enqueue(item, pre_enqueue_passes)
+                    .await
+                    .map_err(AnyQueueError::PgQueue)?,
             };
 
             tracing::trace!("queued");
@@ -96,26 +106,48 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
         }
     }
 
-    fn process<F, Fut, R>(
-        &mut self,
+    fn process<'a, F, Fut, R, O>(
+        &'a self,
+        pre_reenqueue_passes: &'a O,
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
         Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
+        O: PurePass<T>,
     {
         async move {
             let res = match self {
-                AnyQueue::InMemory(queue) => {
-                    queue.process(f).await.map_err(AnyQueueError::InMemory)
-                }
-                AnyQueue::PgQueue(queue) => queue.process(f).await.map_err(AnyQueueError::PgQueue),
+                AnyQueue::InMemory(queue) => queue
+                    .process(pre_reenqueue_passes, f)
+                    .await
+                    .map_err(AnyQueueError::InMemory),
+                AnyQueue::PgQueue(queue) => queue
+                    .process(pre_reenqueue_passes, f)
+                    .await
+                    .map_err(AnyQueueError::PgQueue),
             };
 
             tracing::trace!("processed");
 
             res
+        }
+    }
+
+    async fn optimize<'a, O: Pass<T>>(
+        &'a self,
+        optimizer: &'a O,
+    ) -> Result<(), sqlx::Either<Self::Error, O::Error>> {
+        match self {
+            AnyQueue::InMemory(queue) => queue
+                .optimize(optimizer)
+                .await
+                .map_err(|e| e.map_left(AnyQueueError::InMemory)),
+            AnyQueue::PgQueue(queue) => queue
+                .optimize(optimizer)
+                .await
+                .map_err(|e| e.map_left(AnyQueueError::PgQueue)),
         }
     }
 }
@@ -153,23 +185,60 @@ impl<T: QueueMessageTypes> Queue<T> for PgQueue<T> {
         async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
     }
 
-    fn enqueue(
-        &mut self,
+    fn enqueue<'a, O: PurePass<T>>(
+        &'a self,
         item: QueueMsg<T>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
-        self.0.enqueue(&self.1, item)
+        pre_enqueue_passes: &'a O,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
+        async move {
+            let res = pre_enqueue_passes.run_pass_pure(vec![item]);
+
+            for (_, msg) in res.optimize_further {
+                self.0
+                    .enqueue(&self.1, msg, EnqueueStatus::Optimize)
+                    .await?
+            }
+
+            for (_, msg) in res.ready {
+                self.0.enqueue(&self.1, msg, EnqueueStatus::Ready).await?
+            }
+
+            Ok(())
+        }
     }
 
-    fn process<F, Fut, R>(
-        &mut self,
+    fn process<'a, F, Fut, R, O>(
+        &'a self,
+        pre_reenqueue_passes: &'a O,
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
         Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
+        O: PurePass<T>,
     {
-        self.0.process(&self.1, f)
+        async move {
+            self.0
+                .process(&self.1, f, |msgs| {
+                    let res = pre_reenqueue_passes.run_pass_pure(msgs);
+
+                    (res.optimize_further, res.ready)
+                })
+                .await
+        }
+    }
+
+    fn optimize<'a, O: Pass<T>>(
+        &'a self,
+        optimizer: &'a O,
+    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
+        self.0.optimize(&self.1, move |msgs| async move {
+            optimizer
+                .run_pass(msgs)
+                .map_ok(|x| (x.optimize_further, x.ready))
+                .await
+        })
     }
 }
 
@@ -218,7 +287,7 @@ impl Voyager {
             State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
             Json(msg): Json<QueueMsg<T>>,
         ) -> StatusCode {
-            tracing::info!(?msg, "received msg");
+            info!(?msg, "received msg");
             sender.send(msg).await.expect("receiver should not close");
 
             StatusCode::OK
@@ -229,7 +298,7 @@ impl Voyager {
             State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
             Json(msgs): Json<Vec<QueueMsg<T>>>,
         ) -> StatusCode {
-            tracing::info!(?msgs, "received msgs");
+            info!(?msgs, "received msgs");
             for msg in msgs {
                 sender.send(msg).await.expect("receiver should not close");
             }
@@ -245,20 +314,20 @@ impl Voyager {
 
         let mut join_set = JoinSet::<Result<(), BoxDynError>>::new();
 
-        let mut q = self.queue.clone();
+        let q = self.queue.clone();
         join_set.spawn({
             async move {
-                tracing::debug!("checking for new messages");
+                debug!("checking for new messages");
 
                 pin_utils::pin_mut!(queue_rx);
 
                 while let Some(msg) = queue_rx.next().await {
-                    tracing::info!(
+                    info!(
                         json = %serde_json::to_string(&msg).unwrap(),
                         "received new message",
                     );
 
-                    q.enqueue(msg).await?;
+                    q.enqueue(msg, &NormalizeFinal::default()).await?;
                 }
 
                 Ok(())
@@ -266,22 +335,42 @@ impl Voyager {
         });
 
         for i in 0..self.num_workers {
-            tracing::info!("spawning worker {i}");
+            info!("spawning worker {i}");
 
             let engine = Engine::new(self.chains.clone());
-            let mut q = self.queue.clone();
+            let q = self.queue.clone();
 
             join_set.spawn(Box::pin(async move {
                 engine
-                    .run(&mut q)
+                    .run(&q, &NormalizeFinal::default())
                     .try_for_each(|data| async move {
-                        tracing::info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
+                        info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
 
                         Ok(())
                     })
                     .await
             }));
         }
+
+        join_set.spawn(async move {
+            let q = self.queue.clone();
+
+            loop {
+                debug!("optimizing");
+
+                q.optimize(&Pure(NormalizeFinal::default()))
+                    .await
+                    .map_err(|e| {
+                        e.map_either::<_, _, BoxDynError, BoxDynError>(
+                            |x| Box::new(x),
+                            |x| Box::new(x),
+                        )
+                        .into_inner()
+                    })?;
+
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
+        });
 
         let errs = vec![];
 
@@ -290,11 +379,11 @@ impl Voyager {
             match res {
                 Ok(Ok(())) => {}
                 Ok(Err(err)) => {
-                    tracing::error!(%err, "error processing message");
+                    error!(%err, "error processing message");
                     panic!();
                 }
                 Err(err) => {
-                    tracing::error!(%err, "error processing message");
+                    error!(%err, "error processing message");
                     panic!();
                 }
             }
@@ -335,7 +424,7 @@ pub async fn chains_from_config(
         let chain_id = chain.chain_id();
         map.insert(chain_id.clone(), chain);
 
-        tracing::info!(
+        info!(
             %chain_id,
             chain_type = <C::ChainType as FromStrExact>::EXPECTING,
             "registered chain"
@@ -344,7 +433,7 @@ pub async fn chains_from_config(
 
     for (chain_name, chain_config) in config {
         if !chain_config.enabled {
-            tracing::info!(%chain_name, "chain not enabled, skipping");
+            info!(%chain_name, "chain not enabled, skipping");
             continue;
         }
 

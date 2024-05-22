@@ -18,13 +18,15 @@ macros.workspace         = true
 queue-msg-macro          = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
+static_assertions        = "1.1.0"
 tokio                    = { workspace = true, features = ["time", "rt"] }
 tracing                  = { workspace = true }
 unionlabs                = { workspace = true }
 
 [dev-dependencies]
-enumorph = "0.1.2"
-tokio    = { workspace = true, features = ["time", "rt", "macros"] }
+enumorph           = "0.1.2"
+tokio              = { workspace = true, features = ["time", "rt", "macros"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [features]
 default = []

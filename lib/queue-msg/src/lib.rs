@@ -2,16 +2,20 @@
 // #![warn(clippy::large_futures, clippy::large_stack_frames)]
 
 use std::{
-    collections::VecDeque,
+    collections::{BTreeMap, VecDeque},
     error::Error,
     fmt::Debug,
     future::Future,
     num::NonZeroU64,
     pin::Pin,
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc, Mutex,
+    },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use either::Either;
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{
     stream::{self, try_unfold},
@@ -20,40 +24,64 @@ use futures::{
 pub use queue_msg_macro::queue_msg;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
+use tracing::{debug, info, info_span, trace, Instrument};
 use unionlabs::{never::Never, MaybeArbitrary};
 
-use crate::aggregation::{HListTryFromIterator, UseAggregate};
+use crate::{
+    aggregation::{HListTryFromIterator, UseAggregate},
+    optimize::{OptimizationResult, Pass, PurePass},
+};
 
 pub mod aggregation;
+pub mod optimize;
 
-pub trait Queue<T: QueueMessageTypes>: Clone + Send + Sync + Sized + 'static {
-    /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
+pub trait Queue<T: QueueMessageTypes>: Debug + Clone + Send + Sync + Sized + 'static {
+    /// Error type returned by this queue, representing errors that are out of control of the
+    /// consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row,
+    /// etc)
     type Error: Error + Send + Sync + 'static;
     type Config: Debug + Clone + Serialize + DeserializeOwned;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
 
-    fn enqueue(
-        &mut self,
+    /// Enqueue an item into the queue, running a pure optimization pass on the item before enqueueing it.
+    ///
+    /// All items will be enqueued to be optimized, unless marked as ready by [`O`].
+    fn enqueue<'a, O: PurePass<T>>(
+        &'a self,
         item: QueueMsg<T>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_;
+        pre_enqueue_passes: &'a O,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
 
-    fn process<F, Fut, R>(
-        &mut self,
+    /// Process the item at the front of the queue, if there is one. New items will be pre-processed by [`O`] before being reenqueued.
+    ///
+    /// All items will be enqueued to be optimized, unless marked as ready by [`O`].
+    fn process<'a, F, Fut, R, O>(
+        &'a self,
+        pre_reenqueue_passes: &'a O,
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
         Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
-        R: Send + Sync + 'static;
+        R: Send + Sync + 'static,
+        O: PurePass<T>;
+
+    fn optimize<'a, O: Pass<T>>(
+        &'a self,
+        optimizer: &'a O,
+    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
 }
 
 #[queue_msg]
 #[debug(bound())]
 pub enum QueueMsg<T: QueueMessageTypes> {
-    /// An external event. This could be something like an IBC event, an external command, or anything else that occurs outside of the state machine. Can also be thought of as an "entry point".
+    /// An external event. This could be something like an IBC event, an external command, or
+    /// anything else that occurs outside of the state machine. Can also be thought of as an "entry
+    /// point".
     Event(T::Event),
-    /// Inert data that will either be used in an aggregation or bubbled up to the top and sent as an output.
+    /// Inert data that will either be used in an aggregation or bubbled up to the top and sent as
+    /// an output.
     Data(T::Data),
     /// Fetch some data from the outside world. This can also be thought of as a "read" operation.
     Fetch(T::Fetch),
@@ -74,7 +102,8 @@ pub enum QueueMsg<T: QueueMessageTypes> {
         timeout_timestamp: u64,
         msg: Box<Self>,
     },
-    /// A sequence of messages to be executed in order. Messages are handled from the front, with new messages requeued at the front:
+    /// A sequence of messages to be executed in order. Messages are handled from the front, with
+    /// new messages requeued at the front:
     //
     /// ```txt
     /// [A B C]
@@ -82,7 +111,9 @@ pub enum QueueMsg<T: QueueMessageTypes> {
     /// [D B C]
     /// ```
     Sequence(VecDeque<Self>),
-    /// A list of messages to be executed concurrently. If this is queued as a top-level message, each contained message will be requeued individually as a top-level message, however if it is nested within another message, it's semantics are as follows:
+    /// A list of messages to be executed concurrently. If this is queued as a top-level message,
+    /// each contained message will be requeued individually as a top-level message, however if it
+    /// is nested within another message, it's semantics are as follows:
     ///
     /// ```txt
     /// [A B C]
@@ -90,8 +121,10 @@ pub enum QueueMsg<T: QueueMessageTypes> {
     /// [B C D]
     /// ```
     ///
-    /// Note that this is similar to `Sequence`, but the new messages are queued at the *back* of the list, allowing for uniform progress across all nested messages.
+    /// Note that this is similar to `Sequence`, but the new messages are queued at the *back* of
+    /// the list, allowing for uniform progress across all nested messages.
     Concurrent(VecDeque<Self>),
+    // REVIEW: Remove? We don't use this
     Retry {
         remaining: u8,
         msg: Box<Self>,
@@ -104,6 +137,7 @@ pub enum QueueMsg<T: QueueMessageTypes> {
         /// The message that will utilize the aggregated data.
         receiver: T::Aggregate,
     },
+    /// Handle the contained message, voiding any returned `Data` messages that it returns.
     Void(Box<Self>),
     Noop,
 }
@@ -244,7 +278,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
         store: &'a T::Store,
         depth: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Option<QueueMsg<T>>, QueueError>> + Send + 'a>> {
-        tracing::debug!(depth, "handling message");
+        debug!(depth, "handling message");
 
         let fut = async move {
             match self {
@@ -277,7 +311,8 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
 
                         Ok(None)
                     } else {
-                        // REVIEW: Should we handle the message here or return it to be handled on the next time it's popped from the queue?
+                        // REVIEW: Should we handle the message here or return it to be handled on
+                        // the next time it's popped from the queue?
                         msg.handle(store, depth + 1).await
                     }
                 }
@@ -289,7 +324,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                             queue.push_front(msg)
                         }
 
-                        Ok(Some(flatten_seq(seq(queue))))
+                        Ok(Some(seq(queue)))
                     }
                     None => Ok(None),
                 },
@@ -301,7 +336,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                             queue.push_back(msg)
                         }
 
-                        Ok(Some(flatten_conc(conc(queue))))
+                        Ok(Some(conc(queue)))
                     }
                     None => Ok(None),
                 },
@@ -357,20 +392,20 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                     }
                 }
                 Self::Repeat { times: None, msg } => {
-                    Ok(Some(flatten_seq(seq([*msg.clone(), repeat(None, *msg)]))))
+                    Ok(Some(seq([*msg.clone(), repeat(None, *msg)])))
                 }
                 Self::Repeat {
                     times: Some(times),
                     msg,
-                } => Ok(Some(flatten_seq(seq([*msg.clone()].into_iter().chain(
+                } => Ok(Some(seq([*msg.clone()].into_iter().chain(
                     // if times - 1 > 0, queue repeat with times - 1
                     NonZeroU64::new(times.get() - 1_u64).map(|times| repeat(Some(times), *msg)),
-                ))))),
+                )))),
                 QueueMsg::Void(msg) => {
                     // TODO: distribute across seq/conc
                     Ok(msg.handle(store, depth + 1).await?.map(|msg| match msg {
                         QueueMsg::Data(data) => {
-                            tracing::debug!(data = %serde_json::to_string(&data).unwrap(), "voiding data");
+                            debug!(data = %serde_json::to_string(&data).unwrap(), "voiding data");
                             noop()
                         }
                         msg => void(msg),
@@ -384,60 +419,14 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
     }
 }
 
-fn flatten_seq<T: QueueMessageTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
-    fn flatten<T: QueueMessageTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
-        match msg {
-            QueueMsg::Sequence(new_seq) => new_seq
-                .into_iter()
-                .flat_map(flatten)
-                .filter(|x| !matches!(x, QueueMsg::Noop))
-                .collect(),
-            _ => [msg].into(),
-        }
-    }
-
-    let mut msgs = flatten(msg);
-
-    if msgs.len() == 1 {
-        msgs.pop().unwrap()
-    } else {
-        let mut data = vec![];
-        for d in msgs.extract_if(|msg| matches!(msg, QueueMsg::Data(_))) {
-            data.push(d);
-        }
-
-        if data.is_empty() {
-            seq(msgs)
-        } else {
-            conc(data.into_iter().chain([seq(msgs)]))
-        }
-    }
-}
-
-fn flatten_conc<T: QueueMessageTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
-    fn flatten<T: QueueMessageTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
-        match msg {
-            QueueMsg::Concurrent(new_conc) => new_conc
-                .into_iter()
-                .flat_map(flatten)
-                .filter(|x| !matches!(x, QueueMsg::Noop))
-                .collect(),
-            _ => [msg].into(),
-        }
-    }
-
-    let mut msgs = flatten(msg);
-
-    if msgs.len() == 1 {
-        msgs.pop().unwrap()
-    } else {
-        conc(msgs)
-    }
-}
-
 #[cfg(test)]
 mod tests {
+
     use super::*;
+    use crate::optimize::{
+        passes::{ExtractData, FlattenConc, FlattenSeq},
+        PurePass,
+    };
 
     struct UnitMessageTypes;
 
@@ -503,22 +492,22 @@ mod tests {
     #[queue_msg]
     pub struct SimpleAggregate {}
 
-    macro_rules! vec_deque {
-        ($($tt:tt)*) => {
-            ::std::collections::VecDeque::from(vec![$($tt)*])
-        };
-    }
+    // macro_rules! vec_deque {
+    //     ($($tt:tt)*) => {
+    //         ::std::collections::VecDeque::from(vec![$($tt)*])
+    //     };
+    // }
 
-    async fn assert_steps<T: QueueMessageTypes>(
-        engine: &Engine<T>,
-        q: &mut InMemoryQueue<T>,
-        steps: impl IntoIterator<Item = VecDeque<QueueMsg<T>>>,
-    ) {
-        for step in steps {
-            engine.step(q).await.unwrap();
-            assert_eq!(*q.0.lock().unwrap(), step);
-        }
-    }
+    // async fn assert_steps<T: QueueMessageTypes>(
+    //     engine: &Engine<T>,
+    //     q: &mut InMemoryQueue<T>,
+    //     steps: impl IntoIterator<Item = VecDeque<QueueMsg<T>>>,
+    // ) {
+    //     for (i, step) in steps.into_iter().enumerate() {
+    //         engine.step(q).await.unwrap();
+    //         assert_eq!(*q.queue.lock().unwrap(), step, "step {i} incorrect");
+    //     }
+    // }
 
     #[test]
     fn flatten() {
@@ -529,158 +518,312 @@ mod tests {
             defer_absolute(5),
         ]);
         assert_eq!(
-            flatten_seq(msg),
-            seq([
-                defer_absolute(1),
-                defer_absolute(2),
-                defer_absolute(3),
-                defer_absolute(4),
-                defer_absolute(5)
-            ])
+            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            vec![(
+                vec![0],
+                seq([
+                    defer_absolute(1),
+                    defer_absolute(2),
+                    defer_absolute(3),
+                    defer_absolute(4),
+                    defer_absolute(5)
+                ])
+            )]
         );
 
         let msg = seq::<UnitMessageTypes>([defer_absolute(1)]);
-        assert_eq!(flatten_seq(msg), defer_absolute(1));
+        assert_eq!(
+            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            vec![(vec![0], defer_absolute(1))]
+        );
 
         let msg = conc::<UnitMessageTypes>([defer_absolute(1)]);
-        assert_eq!(flatten_seq(msg), conc([defer_absolute(1)]));
+        assert_eq!(
+            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            vec![(vec![0], conc([defer_absolute(1)]))]
+        );
 
         let msg = conc::<UnitMessageTypes>([seq([defer_absolute(1)])]);
-        assert_eq!(flatten_seq(msg), conc([seq([defer_absolute(1)])]));
+        assert_eq!(
+            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            vec![(vec![0], conc([defer_absolute(1)]))]
+        );
 
-        let msg = seq::<UnitMessageTypes>([data(())]);
-        assert_eq!(flatten_seq(msg), data(()));
+        let msg = seq::<UnitMessageTypes>([noop()]);
+        assert_eq!(
+            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            vec![(vec![0], noop())]
+        );
 
-        let msg = conc::<UnitMessageTypes>([seq([data(())])]);
-        assert_eq!(flatten_seq(msg), conc([seq([data(())])]));
+        let msg = conc::<UnitMessageTypes>([seq([noop()])]);
+        assert_eq!(
+            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            vec![(vec![0], conc([noop()]))]
+        );
 
-        let msg = conc::<UnitMessageTypes>([conc([conc([data(())])])]);
-        assert_eq!(flatten_conc(msg), data(()));
+        let msg = conc::<UnitMessageTypes>([conc([conc([noop()])])]);
+        assert_eq!(
+            FlattenConc.run_pass_pure(vec![msg]).optimize_further,
+            vec![(vec![0], noop())]
+        );
     }
 
-    #[tokio::test]
-    async fn conc_seq_nested() {
-        let engine = Engine::new(Arc::new(()));
+    #[test]
+    fn nested_seq_conc_single() {
+        // any nesting level of seq and conc should be handled in a single pass of (seq, conc) or
+        // (conc, seq)
 
-        let mut q = InMemoryQueue::new(()).await.unwrap();
+        let msg = conc::<UnitMessageTypes>([seq([conc([noop()])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
 
-        let msgs = seq::<UnitMessageTypes>([
-            conc([fetch(()), fetch(())]),
-            conc([wait(()), wait(())]),
-            conc([
-                repeat(None, fetch(())),
-                repeat(None, fetch(())),
-                effect(()),
-                seq([fetch(()), fetch(()), effect(())]),
-            ]),
+        let msg = conc::<UnitMessageTypes>([seq([conc([seq([conc([seq([conc([noop()])])])])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+
+        let msg = conc::<UnitMessageTypes>([seq([conc([seq([conc([seq([conc([seq([
+            conc([noop()]),
+        ])])])])])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+
+        let msg = seq::<UnitMessageTypes>([conc([seq([conc([noop()])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+
+        let msg =
+            seq::<UnitMessageTypes>([conc([seq([conc([seq([conc([seq([conc([noop()])])])])])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+
+        let msg = seq::<UnitMessageTypes>([conc([seq([conc([seq([conc([seq([conc([
+            seq([conc([noop()])]),
+        ])])])])])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+    }
+
+    #[test]
+    fn flatten_seq_conc_fixed_point_is_noop() {
+        // this message can't be optimized any further, flattening operations should be a noop
+
+        let msg = seq::<UnitMessageTypes>([
+            conc([defer_absolute(1), defer_absolute(2)]),
+            defer_absolute(3),
         ]);
-
-        q.enqueue(msgs).await.unwrap();
-
-        assert_steps(
-            &engine,
-            &mut q,
-            [
-                vec_deque![seq::<UnitMessageTypes>([
-                    // conc(a, b), handles a, conc(b) == b
-                    fetch(()),
-                    conc([wait(()), wait(())]),
-                    conc([
-                        repeat(None, fetch(())),
-                        repeat(None, fetch(())),
-                        effect(()),
-                        seq([fetch(()), fetch(()), effect(())]),
-                    ]),
-                ])],
-                vec_deque![seq::<UnitMessageTypes>([
-                    conc([wait(()), wait(())]),
-                    conc([
-                        repeat(None, fetch(())),
-                        repeat(None, fetch(())),
-                        effect(()),
-                        seq([fetch(()), fetch(()), effect(())]),
-                    ]),
-                ])],
-                vec_deque![seq::<UnitMessageTypes>([
-                    // conc(a, b), handles a, conc(b) == b
-                    wait(()),
-                    conc([
-                        repeat(None, fetch(())),
-                        repeat(None, fetch(())),
-                        effect(()),
-                        seq([fetch(()), fetch(()), effect(())]),
-                    ]),
-                ])],
-                // seq(a, conc(m...)), handles a, seq(conc(m...)) == m...
-                vec_deque![
-                    repeat(None, fetch(())),
-                    repeat(None, fetch(())),
-                    effect(()),
-                    seq([fetch(()), fetch(()), effect(())]),
-                ],
-                vec_deque![
-                    repeat(None, fetch(())),
-                    effect(()),
-                    seq([fetch(()), fetch(()), effect(())]),
-                    // repeat(a) queues seq(a, repeat(a))
-                    seq([fetch(()), repeat(None, fetch(()))])
-                ],
-                vec_deque![
-                    effect(()),
-                    seq([fetch(()), fetch(()), effect(())]),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    // repeat(a) queues seq(a, repeat(a))
-                    seq([fetch(()), repeat(None, fetch(()))])
-                ],
-                vec_deque![
-                    seq([fetch(()), fetch(()), effect(())]),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    noop(),
-                ],
-                vec_deque![
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    noop(),
-                    seq([fetch(()), effect(())]),
-                ],
-                vec_deque![
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    noop(),
-                    seq([fetch(()), effect(())]),
-                    repeat(None, fetch(())),
-                ],
-                vec_deque![
-                    noop(),
-                    seq([fetch(()), effect(())]),
-                    repeat(None, fetch(())),
-                    repeat(None, fetch(())),
-                ],
-                vec_deque![
-                    seq([fetch(()), effect(())]),
-                    repeat(None, fetch(())),
-                    repeat(None, fetch(())),
-                ],
-                vec_deque![repeat(None, fetch(())), repeat(None, fetch(())), effect(()),],
-                vec_deque![
-                    repeat(None, fetch(())),
-                    effect(()),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                ],
-                vec_deque![
-                    effect(()),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                ],
-                vec_deque![
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    seq([fetch(()), repeat(None, fetch(()))]),
-                    noop(),
-                ],
-            ],
-        )
-        .await;
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg.clone()])
+                .optimize_further,
+            vec![(vec![0], msg.clone())]
+        );
+        assert_eq!(
+            (FlattenSeq, FlattenConc)
+                .run_pass_pure(vec![msg.clone()])
+                .optimize_further,
+            vec![(vec![0], msg)]
+        );
     }
+
+    #[test]
+    fn extract_data_simple() {
+        let msg = seq::<UnitMessageTypes>([
+            data(()),
+            seq([data(()), seq([data(())])]),
+            seq([data(())]),
+            data(()),
+        ]);
+        assert_eq!(
+            ExtractData.run_pass_pure(vec![msg]).optimize_further,
+            vec![
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], seq([seq([seq([])]), seq([])])),
+            ],
+        );
+    }
+
+    #[test]
+    fn extract_data_complex() {
+        let msg = seq::<UnitMessageTypes>([
+            data(()),
+            effect(()),
+            seq([fetch(()), data(()), seq([data(())])]),
+            effect(()),
+            seq([data(()), effect(())]),
+            data(()),
+        ]);
+        assert_eq!(
+            ExtractData.run_pass_pure(vec![msg]).optimize_further,
+            vec![
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (vec![0], data(())),
+                (
+                    vec![0],
+                    seq([
+                        effect(()),
+                        seq([fetch(()), seq([])]),
+                        effect(()),
+                        seq([effect(())])
+                    ])
+                ),
+            ],
+        );
+    }
+
+    // #[tokio::test]
+    // async fn conc_seq_nested() {
+    //     let engine = Engine::new(Arc::new(()));
+
+    //     let mut q = InMemoryQueue::new(()).now_or_never().unwrap().unwrap();
+
+    //     let msgs = seq::<UnitMessageTypes>([
+    //         conc([fetch(()), fetch(())]),
+    //         conc([wait(()), wait(())]),
+    //         conc([
+    //             repeat(None, fetch(())),
+    //             repeat(None, fetch(())),
+    //             effect(()),
+    //             seq([fetch(()), fetch(()), effect(())]),
+    //         ]),
+    //     ]);
+
+    //     q.enqueue(msgs).await.unwrap();
+
+    //     // assert_steps(
+    //     //     &engine,
+    //     //     &mut q,
+    //     //     [
+    //     //         vec_deque![seq::<UnitMessageTypes>([
+    //     //             // conc(a, b), handles a, conc(b) == b
+    //     //             fetch(()),
+    //     //             conc([wait(()), wait(())]),
+    //     //             conc([
+    //     //                 repeat(None, fetch(())),
+    //     //                 repeat(None, fetch(())),
+    //     //                 effect(()),
+    //     //                 seq([fetch(()), fetch(()), effect(())]),
+    //     //             ]),
+    //     //         ])],
+    //     //         vec_deque![seq::<UnitMessageTypes>([
+    //     //             conc([wait(()), wait(())]),
+    //     //             conc([
+    //     //                 repeat(None, fetch(())),
+    //     //                 repeat(None, fetch(())),
+    //     //                 effect(()),
+    //     //                 seq([fetch(()), fetch(()), effect(())]),
+    //     //             ]),
+    //     //         ])],
+    //     //         vec_deque![seq::<UnitMessageTypes>([
+    //     //             // conc(a, b), handles a, conc(b) == b
+    //     //             wait(()),
+    //     //             conc([
+    //     //                 repeat(None, fetch(())),
+    //     //                 repeat(None, fetch(())),
+    //     //                 effect(()),
+    //     //                 seq([fetch(()), fetch(()), effect(())]),
+    //     //             ]),
+    //     //         ])],
+    //     //         // seq(a, conc(m...)), handles a, seq(conc(m...)) == m...
+    //     //         vec_deque![
+    //     //             repeat(None, fetch(())),
+    //     //             repeat(None, fetch(())),
+    //     //             effect(()),
+    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             repeat(None, fetch(())),
+    //     //             effect(()),
+    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             // repeat(a) queues seq(a, repeat(a))
+    //     //             seq([fetch(()), repeat(None, fetch(()))])
+    //     //         ],
+    //     //         vec_deque![
+    //     //             effect(()),
+    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             // repeat(a) queues seq(a, repeat(a))
+    //     //             seq([fetch(()), repeat(None, fetch(()))])
+    //     //         ],
+    //     //         vec_deque![
+    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             noop(),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             noop(),
+    //     //             seq([fetch(()), effect(())]),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             noop(),
+    //     //             seq([fetch(()), effect(())]),
+    //     //             repeat(None, fetch(())),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             noop(),
+    //     //             seq([fetch(()), effect(())]),
+    //     //             repeat(None, fetch(())),
+    //     //             repeat(None, fetch(())),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             seq([fetch(()), effect(())]),
+    //     //             repeat(None, fetch(())),
+    //     //             repeat(None, fetch(())),
+    //     //         ],
+    //     //         vec_deque![repeat(None, fetch(())), repeat(None, fetch(())), effect(()),],
+    //     //         vec_deque![
+    //     //             repeat(None, fetch(())),
+    //     //             effect(()),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             effect(()),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //         ],
+    //     //         vec_deque![
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             seq([fetch(()), repeat(None, fetch(()))]),
+    //     //             noop(),
+    //     //         ],
+    //     //     ],
+    //     // )
+    //     // .await;
+    // }
 }
 
 #[derive(Debug)]
@@ -788,22 +931,33 @@ impl<T: QueueMessageTypes> Engine<T> {
         Self { store }
     }
 
-    pub fn run<'a, Q>(
+    pub fn run<'a, Q, O>(
         &'a self,
-        q: &'a mut Q,
+        q: &'a Q,
+        o: &'a O,
     ) -> impl Stream<Item = Result<T::Data, BoxDynError>> + Send + 'a
     where
         Q: Queue<T>,
+        O: PurePass<T>,
     {
-        try_unfold::<_, _, _, Option<T::Data>>(q, move |q| async move {
-            self.step(q).await.map(|x| x.map(|x| (x, q)))
+        try_unfold::<_, _, _, Option<T::Data>>((), move |()| async move {
+            debug!("stepping");
+
+            // dbg!(&q);
+
+            // sleep(Duration::from_secs(1)).await;
+
+            self.step(q, o)
+                .await
+                .map(|step_result| step_result.map(|maybe_data| (maybe_data, ())))
         })
         .flat_map(|x| stream::iter(x.transpose()))
     }
 
-    pub(crate) async fn step<'a, Q: Queue<T>>(
+    pub(crate) async fn step<'a, Q: Queue<T>, O: PurePass<T>>(
         &'a self,
-        q: &'a mut Q,
+        q: &'a Q,
+        o: &'a O,
     ) -> Result<Option<Option<T::Data>>, BoxDynError> {
         // yield back to the runtime
         futures::future::ready(()).await;
@@ -811,8 +965,9 @@ impl<T: QueueMessageTypes> Engine<T> {
         let s = self.store.clone();
 
         let data = q
-            .process::<_, _, Option<T::Data>>(move |msg| async move {
+            .process::<_, _, Option<T::Data>, O>(o, move |msg| async move {
                 match msg.handle(&*s, 0).await {
+                    // TODO: Make this an optimization pass
                     Ok(Some(QueueMsg::Data(d))) => {
                         let data_output = d.clone().handle(&s).unwrap();
 
@@ -823,7 +978,6 @@ impl<T: QueueMessageTypes> Engine<T> {
                             (Some(d), Ok(vec![]))
                         }
                     }
-                    Ok(Some(QueueMsg::Concurrent(msgs))) => (None, Ok(msgs.into())),
                     Ok(msg) => (None, Ok(msg.into_iter().collect())),
                     Err(QueueError::Fatal(fatal)) => {
                         tracing::error!(error = %fatal.to_string(), "unrecoverable error");
@@ -841,24 +995,61 @@ impl<T: QueueMessageTypes> Engine<T> {
     }
 }
 
-pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMessageTypes, R, Q: Queue<T>>(
+pub async fn run_to_completion<
+    A: UseAggregate<T, R>,
+    T: QueueMessageTypes,
+    R,
+    Q: Queue<T>,
+    PrePass: PurePass<T>,
+    PostPass: Pass<T>,
+>(
     a: A,
     store: Arc<T::Store>,
     queue_config: Q::Config,
     msgs: impl IntoIterator<Item = QueueMsg<T>>,
+    pre_pass_optimizer: PrePass,
+    post_pass_optimizer: PostPass,
 ) -> R {
-    let mut queue = Q::new(queue_config).await.unwrap();
+    let queue = Q::new(queue_config).await.unwrap();
 
     for msg in msgs {
-        queue.enqueue(msg).await.unwrap();
+        queue.enqueue(msg, &pre_pass_optimizer).await.unwrap();
     }
 
+    debug!("spawning optimizer");
+
+    let opt_fut = tokio::spawn({
+        let queue = queue.clone();
+
+        async move {
+            loop {
+                info!("optimizing");
+
+                let res = queue.optimize(&post_pass_optimizer).await.map_err(|e| {
+                    e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
+                        .into_inner()
+                });
+
+                sleep(Duration::from_millis(100)).await;
+
+                match res {
+                    Ok(()) => {}
+                    Err(err) => break Err::<(), _>(err),
+                }
+            }
+        }
+    });
+
+    debug!("running");
+
     let output = Engine::new(store)
-        .run(&mut queue)
+        .run(&queue, &pre_pass_optimizer)
         .take(A::AggregatedData::LEN)
         .try_collect()
         .await
         .unwrap();
+
+    opt_fut.abort();
 
     let data = match HListTryFromIterator::try_from_iter(output) {
         Ok(ok) => ok,
@@ -870,38 +1061,83 @@ pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMessageTypes, R, Q
         }
     };
 
+    // dbg!(queue);
+
     A::aggregate(a, data)
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct InMemoryQueue<T: QueueMessageTypes>(pub(crate) Arc<Mutex<VecDeque<QueueMsg<T>>>>);
+pub struct InMemoryQueue<T: QueueMessageTypes> {
+    idx: Arc<AtomicU32>,
+    ready: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
+    done: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
+    optimizer_queue: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
+}
+
+#[derive(DebugNoBound, CloneNoBound)]
+struct Item<T: QueueMessageTypes> {
+    #[allow(dead_code)] // used in debug
+    parents: Vec<u32>,
+    msg: QueueMsg<T>,
+}
 
 impl<T: QueueMessageTypes> Queue<T> for InMemoryQueue<T> {
     type Error = std::convert::Infallible;
     type Config = ();
 
     fn new(_cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-        futures::future::ok(Self(Arc::new(Mutex::new(VecDeque::default()))))
+        futures::future::ok(Self {
+            idx: Arc::new(AtomicU32::default()),
+            done: Arc::new(Mutex::new(BTreeMap::default())),
+            ready: Arc::new(Mutex::new(BTreeMap::default())),
+            optimizer_queue: Arc::new(Mutex::new(BTreeMap::default())),
+        })
     }
 
-    fn enqueue(
-        &mut self,
+    fn enqueue<'a, O: PurePass<T>>(
+        &'a self,
         item: QueueMsg<T>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
-        tracing::info!(?item, "enqueueing new item");
-        self.0.lock().expect("mutex is poisoned").push_back(item);
+        pre_enqueue_passes: &'a O,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
+        let this = &self;
+        let item = item;
+        debug!(?item, "enqueueing new item");
+
+        let res = pre_enqueue_passes.run_pass_pure(vec![item]);
+
+        let mut optimizer_queue = this.optimizer_queue.lock().expect("mutex is poisoned");
+        let mut ready = this.ready.lock().expect("mutex is poisoned");
+
+        self.requeue(
+            res,
+            &mut optimizer_queue,
+            &mut ready,
+            // no parents
+            |parent_idxs: Vec<usize>| {
+                assert_eq!(parent_idxs, [0]);
+                vec![]
+            },
+        );
+
+        debug!("enqueued new item");
+
         futures::future::ok(())
     }
 
-    async fn process<F, Fut, R>(&mut self, f: F) -> Result<Option<R>, Self::Error>
+    async fn process<'a, F, Fut, R, O>(
+        &'a self,
+        pre_reenqueue_passes: &'a O,
+        f: F,
+    ) -> Result<Option<R>, Self::Error>
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
         Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
+        O: PurePass<T>,
     {
         let msg = {
-            let mut queue = self.0.lock().expect("mutex is poisoned");
-            let msg = queue.pop_front();
+            let mut queue = self.ready.lock().expect("mutex is poisoned");
+            let msg = queue.pop_first();
 
             drop(queue);
 
@@ -909,25 +1145,272 @@ impl<T: QueueMessageTypes> Queue<T> for InMemoryQueue<T> {
         };
 
         match msg {
-            Some(msg) => {
-                tracing::info!(
-                    json = %serde_json::to_string(&msg).unwrap(),
-                );
+            Some((id, item)) => {
+                let span = info_span!("processing item", %id);
+                // tracing::info!(
+                //     json = %serde_json::to_string(&msg).unwrap(),
+                // );
 
-                let (r, res) = f(msg.clone()).await;
+                self.done
+                    .lock()
+                    .expect("mutex is poisoned")
+                    .insert(id, item.clone());
+
+                let (r, res) = f(item.msg.clone()).instrument(span).await;
                 match res {
                     Ok(new_msgs) => {
-                        for new_msg in new_msgs {
-                            let mut queue = self.0.lock().expect("mutex is poisoned");
-                            queue.push_back(new_msg);
-                        }
+                        let res = pre_reenqueue_passes.run_pass_pure(new_msgs);
+
+                        let mut optimizer_queue =
+                            self.optimizer_queue.lock().expect("mutex is poisoned");
+                        let mut ready = self.ready.lock().expect("mutex is poisoned");
+
+                        self.requeue(
+                            res,
+                            &mut optimizer_queue,
+                            &mut ready,
+                            // no parents
+                            |parent_idxs: Vec<usize>| {
+                                assert_eq!(parent_idxs, [0]);
+                                vec![]
+                            },
+                        );
 
                         Ok(Some(r))
                     }
                     Err(why) => panic!("{why}"),
                 }
             }
-            None => Ok(None),
+            None => {
+                trace!("queue is empty, sleeping for 1 second");
+
+                sleep(Duration::from_secs(1)).await;
+
+                Ok(None)
+            }
+        }
+    }
+
+    async fn optimize<'a, O: Pass<T>>(
+        &'a self,
+        optimizer: &'a O,
+    ) -> Result<(), Either<Self::Error, O::Error>> {
+        let msgs = {
+            let lock = self.optimizer_queue.lock().unwrap();
+            let msgs = lock.clone();
+            drop(lock);
+            msgs
+        };
+
+        let (ids, msgs): (Vec<_>, Vec<_>) = msgs.into_iter().unzip();
+
+        let res = optimizer
+            .run_pass(msgs.into_iter().map(|item| item.msg).collect())
+            .await
+            .map_err(Either::Right)?;
+
+        // dbg!(&res, std::any::type_name::<O>());
+
+        let mut ready = self.ready.lock().unwrap();
+        let mut optimizer_queue = self.optimizer_queue.lock().unwrap();
+        let mut done = self.done.lock().unwrap();
+
+        done.append(&mut optimizer_queue);
+
+        self.requeue(
+            res,
+            &mut optimizer_queue,
+            &mut ready,
+            |parent_idxs: Vec<usize>| {
+                ids.iter()
+                    .enumerate()
+                    .filter_map(|(idx, id)| parent_idxs.contains(&idx).then_some(*id))
+                    .collect::<Vec<_>>()
+            },
+        );
+
+        Ok(())
+    }
+}
+
+impl<T: QueueMessageTypes> InMemoryQueue<T> {
+    fn requeue(
+        &self,
+        res: OptimizationResult<T>,
+        optimizer_queue: &mut BTreeMap<u32, Item<T>>,
+        ready: &mut BTreeMap<u32, Item<T>>,
+        get_parent_ids: impl Fn(Vec<usize>) -> Vec<u32>,
+    ) {
+        for (parent_idxs, new_msg) in res.optimize_further {
+            optimizer_queue.insert(
+                self.idx.fetch_add(1, Ordering::SeqCst),
+                Item {
+                    parents: get_parent_ids(parent_idxs),
+                    msg: new_msg,
+                },
+            );
+        }
+
+        for (parent_idxs, new_msg) in res.ready {
+            ready.insert(
+                self.idx.fetch_add(1, Ordering::SeqCst),
+                Item {
+                    parents: get_parent_ids(parent_idxs),
+                    msg: new_msg,
+                },
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod test_utils {
+    use std::collections::VecDeque;
+
+    use enumorph::Enumorph;
+    use frunk::{hlist_pat, HList};
+    use queue_msg_macro::queue_msg;
+
+    use crate::{
+        aggregation::{do_aggregate, UseAggregate},
+        data, effect, noop, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
+        HandleWait, QueueError, QueueMessageTypes, QueueMsg,
+    };
+
+    pub enum SimpleMessage {}
+
+    impl QueueMessageTypes for SimpleMessage {
+        type Event = SimpleEvent;
+        type Data = SimpleData;
+        type Fetch = SimpleFetch;
+        type Effect = SimpleEffect;
+        type Wait = SimpleWait;
+
+        type Aggregate = SimpleAggregate;
+
+        type Store = ();
+    }
+
+    impl HandleEffect<SimpleMessage> for SimpleEffect {
+        async fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessage>, QueueError> {
+            Ok(noop())
+        }
+    }
+
+    impl HandleEvent<SimpleMessage> for SimpleEvent {
+        fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessage>, QueueError> {
+            Ok(noop())
+        }
+    }
+
+    impl HandleData<SimpleMessage> for SimpleData {
+        fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessage>, QueueError> {
+            Ok(data(self))
+        }
+    }
+
+    impl HandleFetch<SimpleMessage> for SimpleFetch {
+        async fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessage>, QueueError> {
+            Ok(match self {
+                SimpleFetch::A(FetchA {}) => data(DataA {}),
+                SimpleFetch::B(FetchB {}) => data(DataB {}),
+                SimpleFetch::C(FetchC {}) => data(DataC {}),
+                SimpleFetch::D(FetchD {}) => data(DataD {}),
+                SimpleFetch::E(FetchE {}) => data(DataE {}),
+            })
+        }
+    }
+
+    impl HandleWait<SimpleMessage> for SimpleWait {
+        async fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessage>, QueueError> {
+            Ok(noop())
+        }
+    }
+
+    impl HandleAggregate<SimpleMessage> for SimpleAggregate {
+        fn handle(self, data: VecDeque<SimpleData>) -> Result<QueueMsg<SimpleMessage>, QueueError> {
+            Ok(match self {
+                Self::AggregatePrintAbc(agg) => do_aggregate(agg, data),
+            })
+        }
+    }
+
+    #[queue_msg]
+    pub struct SimpleEvent {}
+
+    #[queue_msg]
+    #[derive(Enumorph)]
+    pub enum SimpleData {
+        A(DataA),
+        B(DataB),
+        C(DataC),
+        D(DataD),
+        E(DataE),
+    }
+    #[queue_msg]
+    pub struct DataA {}
+    #[queue_msg]
+    pub struct DataB {}
+    #[queue_msg]
+    pub struct DataC {}
+    #[queue_msg]
+    pub struct DataD {}
+    #[queue_msg]
+    pub struct DataE {}
+
+    #[queue_msg]
+    #[derive(Enumorph)]
+    pub enum SimpleFetch {
+        A(FetchA),
+        B(FetchB),
+        C(FetchC),
+        D(FetchD),
+        E(FetchE),
+    }
+    #[queue_msg]
+    pub struct FetchA {}
+    #[queue_msg]
+    pub struct FetchB {}
+    #[queue_msg]
+    pub struct FetchC {}
+    #[queue_msg]
+    pub struct FetchD {}
+    #[queue_msg]
+    pub struct FetchE {}
+
+    #[queue_msg]
+    #[derive(Enumorph)]
+    pub enum SimpleEffect {
+        PrintAbc(PrintAbc),
+    }
+
+    #[queue_msg]
+    pub struct PrintAbc {
+        pub a: DataA,
+        pub b: DataB,
+        pub c: DataC,
+    }
+
+    #[queue_msg]
+    pub struct SimpleWait {}
+
+    #[queue_msg]
+    #[derive(Enumorph)]
+    pub enum SimpleAggregate {
+        AggregatePrintAbc(AggregatePrintAbc),
+    }
+
+    #[queue_msg]
+    pub struct AggregatePrintAbc {}
+
+    impl UseAggregate<SimpleMessage> for AggregatePrintAbc {
+        type AggregatedData = HList![DataA, DataB, DataC];
+
+        fn aggregate(
+            AggregatePrintAbc {}: Self,
+            hlist_pat![a, b, c]: Self::AggregatedData,
+        ) -> QueueMsg<SimpleMessage> {
+            effect(PrintAbc { a, b, c })
         }
     }
 }

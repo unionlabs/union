@@ -24,7 +24,10 @@ use ethers::{
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
-use queue_msg::{Engine, InMemoryQueue, Queue};
+use queue_msg::{
+    optimize::{passes::NormalizeFinal, Pure},
+    Engine, InMemoryQueue, Queue,
+};
 use tendermint_rpc::Client;
 use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
@@ -352,10 +355,21 @@ impl Context {
             ..Default::default()
         }));
 
-        let mut queue = InMemoryQueue::<BlockMessageTypes>::new(()).await.unwrap();
+        // NOTE: InMemoryQueue no longer removes done messages, we should add a retention policy
+        let queue = InMemoryQueue::<BlockMessageTypes>::new(()).await.unwrap();
+
+        let q = queue.clone();
+
+        tokio::spawn(async move {
+            loop {
+                q.optimize(&Pure(NormalizeFinal::default())).await.unwrap();
+
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        });
 
         reactor
-            .run(&mut queue)
+            .run(&queue, &NormalizeFinal::default())
             .for_each(|event| async {
                 match event {
                     Ok(AnyChainIdentified::Union(Identified {
