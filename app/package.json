@@ -54,7 +54,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.30.0",
     "vaul-svelte": "^0.3.1",
-    "viem": "^2.11.1"
+    "viem": "^2.12.0"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.3",

@@ -13,6 +13,13 @@ import {
   getPaginationRowModel
 } from "@tanstack/svelte-table"
 import {
+  type Range,
+  Virtualizer,
+  createVirtualizer,
+  observeElementRect,
+  defaultKeyExtractor
+} from "@tanstack/svelte-virtual"
+import {
   cosmosBlocksQuery,
   cosmosBlocksSubscription
 } from "$lib/graphql/documents/cosmos-blocks.ts"
@@ -23,11 +30,11 @@ import { CHAIN_MAP } from "$lib/constants/chains"
 import * as Table from "$lib/components/ui/table"
 import { rankItem } from "@tanstack/match-sorter-utils"
 import type { Override } from "$lib/utilities/types.ts"
+import { afterUpdate, onDestroy, onMount } from "svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { cn, flyAndScale } from "$lib/utilities/shadcn.ts"
 import ChevronLeft from "virtual:icons/lucide/chevron-left"
 import * as Select from "$lib/components/ui/select/index.ts"
-import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
 import ChevronRight from "virtual:icons/lucide/chevron-right"
 import DoubleArrowLeft from "virtual:icons/lucide/chevrons-left"
@@ -35,18 +42,28 @@ import DoubleArrowRight from "virtual:icons/lucide/chevrons-right"
 import { dollarize, relativeTime } from "$lib/utilities/format.ts"
 import { getContextClient, queryStore, subscriptionStore } from "@urql/svelte"
 
-$: cosmosBlocks = subscriptionStore({
-  client: getContextClient(),
-  query: cosmosBlocksSubscription,
-  variables: { limit: 25 }
-})
-
-// $: cosmosBlocks = queryStore({
+// $: cosmosBlocks = subscriptionStore({
 //   client: getContextClient(),
-//   query: cosmosBlocksQuery,
+//   query: cosmosBlocksSubscription,
 //   variables: { limit: 25 },
-//   context: { url: URLS.GRAPHQL },
 // })
+
+$: queryBlocksCount = 10
+
+$: cosmosBlocks = queryStore({
+  query: cosmosBlocksQuery,
+  client: getContextClient(),
+  context: { url: URLS.GRAPHQL },
+  variables: { limit: 1 }
+})
+onMount(() => {
+  return () => (queryBlocksCount = 1)
+})
+// refetch every 6 seconds
+setInterval(() => {
+  cosmosBlocks.reexecute({ requestPolicy: "network-only" })
+}, 6_500)
+
 $: blocksData = $cosmosBlocks?.data?.data ?? []
 /**
  * we use this constructed type because importing the generated graphql types is too slow given the file size
@@ -54,13 +71,7 @@ $: blocksData = $cosmosBlocks?.data?.data ?? []
 type CosmosBlock = Override<(typeof blocksData)[number], { time: string }>
 
 $: blocks = writable<any>([])
-$: {
-  if ($cosmosBlocks?.data) blocks.update(() => [...$blocks, ...blocksData])
-}
-// refetch every 6 seconds
-// setInterval(() => {
-//   cosmosBlocks.reexecute({ requestPolicy: 'network-only' })
-// }, 6_000)
+$: if ($cosmosBlocks?.data) blocks.update(() => [...$blocks, ...blocksData])
 
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
@@ -89,14 +100,23 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   },
   {
     accessorKey: "hash",
-    cell: info => info.getValue(),
-    header: info => "hash"
+    header: info => "hash",
+    cell: info =>
+      flexRender(Button, {
+        variant: "link",
+        class: "p-0",
+        href: `https://rpc.testnet.bonlulu.uno/block_by_hash?hash=${info.getValue()}`,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        value: info.getValue()
+      })
   }
 ]
 
 const options = writable<TableOptions<CosmosBlock>>({
   data: $blocks as unknown as Array<CosmosBlock>,
   columns: defaultColumns,
+  // debugTable: true,
   enableHiding: true,
   enableFilters: true,
   autoResetPageIndex: true, // Automatically update pagination when data or page size changes
@@ -108,6 +128,8 @@ const options = writable<TableOptions<CosmosBlock>>({
   getPaginationRowModel: getPaginationRowModel()
 })
 
+let virtualListElement: HTMLDivElement
+
 const rerender = () =>
   options.update(options => ({ ...options, data: $blocks as unknown as Array<CosmosBlock> }))
 
@@ -118,24 +140,32 @@ $: blocks.subscribe(() => {
   $table.setPageSize($blocks.length)
   rerender()
 })
-// const blocks = [/** ... */]
-// const ws
+
+$: rows = $table.getRowModel().rows
+
+$: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+  count: rows.length,
+  overscan: 20,
+  estimateSize: () => 34,
+  getScrollElement: () => virtualListElement
+})
 </script>
 
 <main class="mb-12 mt-10 flex size-full min-size-full flex-col items-center justify-center">
-  <!-- <Shine depth={4} lightColor="#a0ecfd">
+  <Shine depth={4} lightColor="#a0ecfd">
     <h1
       class="~sm/md:~text-5xl/7xl font-black leading-[9rem] brightness-75 cursor-default select-none text-center mb-4"
     >
       Union Blocks
     </h1>
-  </Shine> -->
+  </Shine>
   <!-- {#each blocksData as block}
     <pre>{JSON.stringify(block, undefined, 2)}</pre>
   {/each} -->
   <div class="space-y-2">
     <!-- <div class="">Toolbar</div> -->
     <div
+      bind:this={virtualListElement}
       class={cn(
         'rounded-md border-[1px] border-solid border-union-accent-400/30 overflow-auto',
         `size-full max-h-[calc(100vh-200px)]`,
@@ -158,11 +188,11 @@ $: blocks.subscribe(() => {
           {/each}
         </Table.Header>
         <Table.Body>
-          {#each $table.getRowModel().rows as row}
+          {#each $virtualizer.getVirtualItems() as row, index (row.index)}
             <Table.Row
               class={cn('h-5', 'border-b-[1px] border-solid border-b-union-accent-400/10')}
             >
-              {#each row.getVisibleCells() as cell}
+              {#each rows[row.index].getVisibleCells() as cell (cell.id)}
                 <Table.Cell class="px-4 py-0">
                   <svelte:component
                     this={flexRender(cell.column.columnDef.cell, cell.getContext())}
