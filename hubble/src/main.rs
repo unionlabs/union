@@ -2,7 +2,10 @@
 #![feature(try_blocks)]
 #![allow(clippy::manual_async_fn, clippy::needless_lifetimes)]
 
+use std::time::Duration;
+
 use axum::{routing::get, Router};
+use backon::ExponentialBuilder;
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
@@ -85,4 +88,12 @@ async fn main() -> color_eyre::eyre::Result<()> {
         }
     }
     Ok(())
+}
+
+/// Our ExponentialBackoff that we use everywhere.
+pub fn expo_backoff() -> ExponentialBuilder {
+    ExponentialBuilder::default()
+        .with_min_delay(Duration::from_secs(2))
+        .with_max_delay(Duration::from_secs(60))
+        .with_max_times(60)
 }

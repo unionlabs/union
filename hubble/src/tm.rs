@@ -66,7 +66,7 @@ impl Config {
 
         let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool))
-                .retry(&Config::expo_backoff())
+                .retry(&crate::expo_backoff())
                 .await?
         } else {
             fetch_meta(&client, &pool).await?
@@ -144,7 +144,7 @@ where
         debug!(?client, "retrying fetching chain-id from node");
         client.status()
     })
-    .retry(&Config::expo_backoff())
+    .retry(&crate::expo_backoff())
     .await?
     .node_info
     .network
@@ -191,7 +191,7 @@ async fn should_fast_sync_up_to(
         debug!(?client, "retrying getting latest block to fast sync up to");
         client.latest_block()
     })
-    .retry(&Config::expo_backoff())
+    .retry(&crate::expo_backoff())
     .await?
     .block
     .header
@@ -223,7 +223,7 @@ async fn fetch_and_insert_blocks(
     let headers = if batch_size > 1 {
         Either::Left(
             (|| client.blockchain(min, max))
-                .retry(&Config::expo_backoff())
+                .retry(&crate::expo_backoff())
                 .await?
                 .block_metas
                 .into_iter()
@@ -265,7 +265,7 @@ async fn fetch_and_insert_blocks(
                 debug!("retrying fetching block for height {}", header.height);
                 client.block_results(header.height)
             })
-            .retry(&Config::expo_backoff())
+            .retry(&crate::expo_backoff())
             .await?;
             let txs = (|| {
                 debug!(
@@ -274,7 +274,7 @@ async fn fetch_and_insert_blocks(
                 );
                 fetch_transactions_for_block(client, header.height, None)
             })
-            .retry(&Config::expo_backoff())
+            .retry(&crate::expo_backoff())
             .await?;
             Ok((header, block, txs))
         })

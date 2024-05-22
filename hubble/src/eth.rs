@@ -1,5 +1,6 @@
 use std::{ops::Range, time::Duration};
 
+use backon::Retryable;
 use color_eyre::Report;
 use ethers::{
     providers::{Http, Middleware, Provider},
@@ -49,7 +50,13 @@ impl Config {
         let provider = Provider::<Http>::try_from(self.url.clone().as_str()).unwrap();
 
         info!("fetching chain-id from node");
-        let chain_id = provider.get_chainid().await?.as_u64();
+        let chain_id = (|| {
+            debug!(?provider, "retry fetching chain-id from node");
+            provider.get_chainid()
+        })
+        .retry(&crate::expo_backoff())
+        .await?
+        .as_u64();
 
         let chain_id = postgres::fetch_or_insert_chain_id(&pool, chain_id.to_string())
             .await?
