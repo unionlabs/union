@@ -131,15 +131,17 @@ where
     for<'a> &'a DB:
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
 {
-    info!("fetching chain-id from node");
-    let chain_id = (|| client.status())
-        .retry(&Config::expo_backoff())
-        .await?
-        .node_info
-        .network
-        .as_str()
-        .to_owned();
-    info!("chain-id is {}", &chain_id);
+    let chain_id = (|| {
+        info!(?client, "fetching chain-id from node");
+        client.status()
+    })
+    .retry(&Config::expo_backoff())
+    .await?
+    .node_info
+    .network
+    .as_str()
+    .to_owned();
+    info!(?client, "chain-id is {}", &chain_id);
 
     let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
         .await?
@@ -175,12 +177,15 @@ async fn should_fast_sync_up_to(
     batch_size: u32,
     current: Height,
 ) -> Result<Option<Height>, Report> {
-    let latest = (|| client.latest_block())
-        .retry(&Config::expo_backoff())
-        .await?
-        .block
-        .header
-        .height;
+    let latest = (|| {
+        info!(?client, "getting latest block");
+        client.latest_block()
+    })
+    .retry(&Config::expo_backoff())
+    .await?
+    .block
+    .header
+    .height;
     if latest.value() - current.value() >= batch_size.into() {
         Ok(Some(latest))
     } else {
@@ -246,9 +251,12 @@ async fn fetch_and_insert_blocks(
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
         .and_then(|header| async {
             debug!("fetching block results for height {}", header.height);
-            let block = (|| client.block_results(header.height))
-                .retry(&Config::expo_backoff())
-                .await?;
+            let block = (|| {
+                info!(?client, "fetching block_results");
+                client.block_results(header.height)
+            })
+            .retry(&Config::expo_backoff())
+            .await?;
             let txs = (|| fetch_transactions_for_block(client, header.height, None))
                 .retry(&Config::expo_backoff())
                 .await?;
@@ -326,6 +334,14 @@ async fn fetch_transactions_for_block(
     height: Height,
     expected: impl Into<Option<usize>>,
 ) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
+    let expected = expected.into();
+
+    info!(
+        ?client,
+        ?height,
+        ?expected,
+        "fetching transactions for block"
+    );
     let query = Query {
         event_type: None,
         conditions: vec![Condition {
@@ -335,7 +351,6 @@ async fn fetch_transactions_for_block(
             ),
         }],
     };
-    let expected = expected.into();
 
     let mut txs = if let Some(expected) = expected {
         Vec::with_capacity(expected)
