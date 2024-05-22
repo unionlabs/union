@@ -91,6 +91,7 @@ impl Config {
                 block.height.max(self.start_height.unwrap_or_default())
             }
         })
+        .and(self.start_height)
         .unwrap_or_default() as u64;
 
         let range = current..u64::MAX;
@@ -220,7 +221,7 @@ async fn index_blocks_by_chunk(
                 chain_id: ChainId,
                 height: u64,
                 provider: &Provider<Http>,
-            ) -> (u64, Result<(usize, BlockInsert), FromProviderError>) {
+            ) -> (u64, Result<BlockInsert, FromProviderError>) {
                 (
                     height,
                     BlockInsert::from_provider_retried(chain_id, height, provider).await,
@@ -230,7 +231,7 @@ async fn index_blocks_by_chunk(
         }));
 
         while let Some((height, block)) = inserts.next().await {
-            let (_tries, block) = match block {
+            let block = match block {
                 Err(FromProviderError::Other(err)) => {
                     tx.commit().await?;
                     return Err(IndexBlockError::Other(err));
@@ -298,7 +299,7 @@ async fn reindex_blocks(
                 .map_err(Report::from)
         }));
         inserts
-            .try_fold(tx, |mut tx, (_, block)| async move {
+            .try_fold(tx, |mut tx, block| async move {
                 let log = PgLog {
                     chain_id: block.chain_id,
                     block_hash: block.hash.clone(),
@@ -339,6 +340,7 @@ pub struct InsertInfo {
     num_events: i32,
 }
 
+#[must_use]
 pub struct BlockInsert {
     chain_id: ChainId,
     hash: String,
@@ -381,16 +383,24 @@ impl BlockInsert {
         chain_id: ChainId,
         height: u64,
         provider: &Provider<Http>,
-    ) -> Result<(usize, Self), FromProviderError> {
-        loop {
-            debug!(chain_id=chain_id.canonical, height, "fetching block from provider");
-            (|| {
-                Self::from_provider(chain_id, height, provider)
-                    .inspect_err(|e| debug!(?e, chain_id=chain_id.canonical, height, "error fetching block from provider"))
+    ) -> Result<Self, FromProviderError> {
+        debug!(
+            chain_id = chain_id.canonical,
+            height, "fetching block from provider"
+        );
+        (|| {
+            Self::from_provider(chain_id, height, provider).inspect_err(|e| {
+                debug!(
+                    ?e,
+                    chain_id = chain_id.canonical,
+                    height,
+                    "error fetching block from provider"
+                )
             })
-            .retry(&crate::expo_backoff())
-            .await?;
-        }
+        })
+        .retry(&crate::expo_backoff())
+        .await
+        .map_err(Into::into)
     }
 
     async fn from_provider(
