@@ -16,11 +16,12 @@ unionlabs.workspace = true
 tokio = { version = "1.18.1", features = ["full"] }
 anyhow = "1.0"
 near-units = "0.2.0"
-near-workspaces = { git = "https://github.com/unionlabs/near-workspace-rs", branch = "near-ibc", default-features = false }
-near-primitives = { git = "https://github.com/near/nearcore" }
+near-workspaces.workspace = true
+# near-primitives = { git = "https://github.com/near/nearcore" }
+near-primitives = "0.20"
 near-jsonrpc-client = "0.8"
 near-jsonrpc-primitives = "0.20"
 sha2 = "*"
 base64 = "*"
 near-store = { git = "https://github.com/near/nearcore" }
-
+env_logger = "0.9"
