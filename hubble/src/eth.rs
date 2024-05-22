@@ -16,6 +16,8 @@ use time::OffsetDateTime;
 use tracing::{debug, info};
 use url::Url;
 
+const DEFAULT_CHUNK_SIZE: usize = 200;
+
 use crate::{
     metrics,
     postgres::{self, ChainId},
@@ -27,6 +29,9 @@ pub struct Config {
 
     /// The height from which we start indexing
     pub start_height: Option<i32>,
+
+    /// How many blocks to fetch at the same time
+    pub chunk_size: Option<usize>,
 }
 
 /// Unit struct describing parametrization of associated types for Evm based chains.
@@ -46,6 +51,7 @@ pub struct Indexer {
     tasks: tokio::task::JoinSet<Result<(), Report>>,
     pool: PgPool,
     provider: Provider<Http>,
+    chunk_size: usize,
 }
 
 impl Config {
@@ -95,6 +101,7 @@ impl Config {
             chain_id,
             pool,
             provider,
+            chunk_size: self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
         })
     }
 }
@@ -114,6 +121,7 @@ impl Indexer {
             self.range,
             self.chain_id,
             self.provider.clone(),
+            self.chunk_size,
         ));
 
         debug!(self.chain_id.canonical, "spawning fork indexing routine");
@@ -150,14 +158,20 @@ async fn index_blocks(
     range: Range<u64>,
     chain_id: ChainId,
     provider: Provider<Http>,
+    chunk_size: usize,
 ) -> Result<(), Report> {
-    let err =
-        match index_blocks_by_chunk(pool.clone(), range.clone(), chain_id, provider.clone(), 200)
-            .await
-        {
-            Ok(()) => return Ok(()),
-            Err(err) => err,
-        };
+    let err = match index_blocks_by_chunk(
+        pool.clone(),
+        range.clone(),
+        chain_id,
+        provider.clone(),
+        chunk_size,
+    )
+    .await
+    {
+        Ok(()) => return Ok(()),
+        Err(err) => err,
+    };
 
     match err {
         IndexBlockError::Retryable {
