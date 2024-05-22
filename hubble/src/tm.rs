@@ -67,8 +67,10 @@ impl Config {
         };
 
         // Determine from which height we should start indexing if we haven't
-        // indexed any blocks yet.
-        let mut height = height.unwrap_or(self.start_height.unwrap_or_default().into());
+        // indexed any blocks yet. If start_height > current_height, we jump to the new start height
+        let mut height: Height = (height.unwrap_or_default().value() as u32)
+            .max(self.start_height.unwrap_or_default())
+            .into();
 
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
