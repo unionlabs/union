@@ -1,6 +1,6 @@
 use backon::Retryable;
 use color_eyre::eyre::{bail, Report};
-use futures::{stream, stream::TryStreamExt};
+use futures::{stream, stream::TryStreamExt, TryFutureExt};
 use sqlx::{Acquire, Postgres};
 use tendermint::block::Height;
 use tendermint_rpc::{
@@ -59,7 +59,7 @@ impl Config {
         let client = HttpClient::new(self.url.as_str()).unwrap();
 
         let (chain_id, height) = if self.harden {
-            (|| fetch_meta(&client, &pool))
+            (|| fetch_meta(&client, &pool).inspect_err(|e| debug!(?e, "error fetching meta")))
                 .retry(&crate::expo_backoff())
                 .await?
         } else {
@@ -137,8 +137,9 @@ where
 {
     info!(?client, "fetching chain-id from node");
     let chain_id = (|| {
-        debug!(?client, "retrying fetching chain-id from node");
-        client.status()
+        client
+            .status()
+            .inspect_err(|e| debug!(?e, "error fetching client-id"))
     })
     .retry(&crate::expo_backoff())
     .await?
@@ -182,10 +183,11 @@ async fn should_fast_sync_up_to(
     batch_size: u32,
     current: Height,
 ) -> Result<Option<Height>, Report> {
-    info!(?client, "getting latest block to fast sync up to");
+    debug!(?client, "getting latest block to fast sync up to");
     let latest = (|| {
-        debug!(?client, "retrying getting latest block to fast sync up to");
-        client.latest_block()
+        client
+            .latest_block()
+            .inspect_err(|e| debug!(?e, "error fetching latest block"))
     })
     .retry(&crate::expo_backoff())
     .await?
@@ -218,12 +220,16 @@ async fn fetch_and_insert_blocks(
 
     let headers = if batch_size > 1 {
         Either::Left(
-            (|| client.blockchain(min, max))
-                .retry(&crate::expo_backoff())
-                .await?
-                .block_metas
-                .into_iter()
-                .map(|meta| meta.header),
+            (|| {
+                client
+                    .blockchain(min, max)
+                    .inspect_err(|e| debug!(?e, min, max, "error fetching blocks"))
+            })
+            .retry(&crate::expo_backoff())
+            .await?
+            .block_metas
+            .into_iter()
+            .map(|meta| meta.header),
         )
     } else {
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
@@ -256,10 +262,11 @@ async fn fetch_and_insert_blocks(
 
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
         .and_then(|header| async {
-            info!("fetching block results for height {}", header.height);
+            debug!("fetching block results for height {}", header.height);
             let block = (|| {
-                debug!("retrying fetching block for height {}", header.height);
-                client.block_results(header.height)
+                client
+                    .block_results(header.height)
+                    .inspect_err(|e| debug!(?e, ?header.height, "error fetching block results"))
             })
             .retry(&crate::expo_backoff())
             .await?;
@@ -268,7 +275,9 @@ async fn fetch_and_insert_blocks(
                     "retrying fetching trancations for block for height {}",
                     header.height
                 );
-                fetch_transactions_for_block(client, header.height, None)
+                fetch_transactions_for_block(client, header.height, None).inspect_err(
+                    |e| debug!(?e, ?client, ?header.height, "error fetching transactions for block"),
+                )
             })
             .retry(&crate::expo_backoff())
             .await?;
