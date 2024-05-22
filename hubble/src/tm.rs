@@ -54,7 +54,7 @@ impl Config {
         ExponentialBuilder::default()
             .with_min_delay(Duration::from_secs(2))
             .with_max_delay(Duration::from_secs(60))
-            .with_max_times(128)
+            .with_max_times(60)
     }
 
     pub async fn index<DB>(self, pool: DB) -> Result<(), Report>
@@ -86,11 +86,19 @@ impl Config {
                     break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
                 }
 
-                debug!(?chain_id.canonical, "fast syncing for batch: {}..{}", height, batch_end);
+                debug!(
+                    chain_id.canonical,
+                    "fast syncing for batch: {}..{}", height, batch_end
+                );
                 let mut tx = pool.begin().await?;
                 let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
                 tx.commit().await?;
-                info!(?chain_id.canonical, "indexed blocks {}..{}", height.value(), next_height.value());
+                info!(
+                    chain_id.canonical,
+                    "indexed blocks {}..{}",
+                    height.value(),
+                    next_height.value()
+                );
                 height = next_height
             }
         }
@@ -131,8 +139,9 @@ where
     for<'a> &'a DB:
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
 {
+    info!(?client, "fetching chain-id from node");
     let chain_id = (|| {
-        info!(?client, "fetching chain-id from node");
+        debug!(?client, "retrying fetching chain-id from node");
         client.status()
     })
     .retry(&Config::expo_backoff())
@@ -177,8 +186,9 @@ async fn should_fast_sync_up_to(
     batch_size: u32,
     current: Height,
 ) -> Result<Option<Height>, Report> {
+    info!(?client, "getting latest block to fast sync up to");
     let latest = (|| {
-        info!(?client, "getting latest block");
+        debug!(?client, "retrying getting latest block to fast sync up to");
         client.latest_block()
     })
     .retry(&Config::expo_backoff())
@@ -250,16 +260,22 @@ async fn fetch_and_insert_blocks(
 
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
         .and_then(|header| async {
-            debug!("fetching block results for height {}", header.height);
+            info!("fetching block results for height {}", header.height);
             let block = (|| {
-                info!(?client, "fetching block_results");
+                debug!("retrying fetching block for height {}", header.height);
                 client.block_results(header.height)
             })
             .retry(&Config::expo_backoff())
             .await?;
-            let txs = (|| fetch_transactions_for_block(client, header.height, None))
-                .retry(&Config::expo_backoff())
-                .await?;
+            let txs = (|| {
+                debug!(
+                    "retrying fetching trancations for block for height {}",
+                    header.height
+                );
+                fetch_transactions_for_block(client, header.height, None)
+            })
+            .retry(&Config::expo_backoff())
+            .await?;
             Ok((header, block, txs))
         })
         .try_collect();
@@ -336,7 +352,7 @@ async fn fetch_transactions_for_block(
 ) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
     let expected = expected.into();
 
-    info!(
+    debug!(
         ?client,
         ?height,
         ?expected,
