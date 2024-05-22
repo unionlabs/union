@@ -737,6 +737,7 @@ outdir
 outfile
 outro
 overrrides
+overscan
 oxalica
 oxlint
 pagefind
