@@ -157,12 +157,10 @@ async fn index_blocks(
         };
 
     match err {
-        IndexBlockError::Retryable { height, err } => {
+        IndexBlockError::Retryable { height, err: FromProviderError::BlockNotFound } => {
             // This most likely indicates we caught up indexing with the node. We now switch to
             // single block mode.
-            if matches!(err, FromProviderError::BlockNotFound) {
-                index_blocks_by_chunk(pool, height..range.end, chain_id, provider, 1).await?;
-            }
+            index_blocks_by_chunk(pool, height..range.end, chain_id, provider, 1).await?;
         }
         err => return Err(err.into()),
     }
