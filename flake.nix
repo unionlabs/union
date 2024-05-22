@@ -251,6 +251,7 @@
         ./faucet/faucet.nix
         ./ucli/ucli.nix
         ./zerg/zerg.nix
+        ./transfer-test-service/transfer-test-service.nix
         treefmt-nix.flakeModule
       ];
 
