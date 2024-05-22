@@ -30,6 +30,7 @@
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.2",
     "@types/node": "^20.12.12",
+    "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",
     "tsx": "^4.10.5",

@@ -215,7 +215,7 @@ export class UnionClient implements IUnionClient {
   public async cosmwasmMessageExecuteContract(
     instructions: Array<ExecuteInstruction>
   ): Promise<ExecuteResult> {
-    const { address: signerAddress } = await this.getAccount()
+    const { address: signerAddress, algo, pubkey } = await this.getAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.executeMultiple(signerAddress, instructions, "auto")
     return response
