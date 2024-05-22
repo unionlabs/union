@@ -110,10 +110,14 @@
           {
             wantedBy = [ "multi-user.target" ];
             description = "Hubble";
+            unitConfig = {
+              StartLimitIntervalSec = mkForce 0;
+            };
             serviceConfig = {
               Type = "simple";
               ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
+              RestartSec = mkForce 3;
             };
             environment = {
               RUST_LOG = "${cfg.log-level}";
