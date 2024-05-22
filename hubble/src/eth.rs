@@ -84,15 +84,23 @@ impl Config {
         .await?
         .map(|block| {
             if block.height == 0 {
-                info!(?self.start_height, "no block found, starting at configured start height, or 0 if not defined");
+                info!(
+                    self.start_height,
+                    chain_id.canonical,
+                    "no block found, starting at configured start height, or 0 if not defined"
+                );
                 self.start_height.unwrap_or_default()
             } else {
-                info!("block {} found, starting max(start_height, {})", block.height, block.height);
-                block.height.max(self.start_height.unwrap_or_default())
+                info!(
+                    self.start_height,
+                    block.height,
+                    chain_id.canonical,
+                    "block found, starting max(start_height, block_height + 1)"
+                );
+                (block.height + 1).max(self.start_height.unwrap_or_default())
             }
         })
-        .and(self.start_height)
-        .unwrap_or_default() as u64;
+        .unwrap_or(self.start_height.unwrap_or_default()) as u64;
 
         let range = current..u64::MAX;
 
