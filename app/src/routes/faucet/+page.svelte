@@ -74,7 +74,7 @@ const superFormResults = superForm(
           duration: 5_000,
           className: "text-sm p-2.5"
         })
-      }, debounceDelay)(event),
+      }, debounceDelay)(),
     delayMs: 7_500,
     timeoutMs: 10_000,
     resetForm: false,
@@ -140,13 +140,14 @@ $: newTransfers =
     method="POST"
     class={cn(
       'space-y-8 max-w-[580px]',
-      $cosmosStore.address ? 'sm:w-[480px] w-[425px]' : 'sm:w-[460px] w-[400px]',
+      $cosmosStore.address ? 'sm:w-[480px] w-[380px]' : 'sm:w-[460px] w-[400px]',
+      'px-1',
       ($delayed || $submitting || $message?.status === 'success') && 'invisible',
     )}
   >
     <Form.Field form={superFormResults} name="address">
       <Form.Control let:attrs>
-        <Form.Label class="text-lg">Address</Form.Label>
+        <Form.Label class="sm:text-lg text-md">Address</Form.Label>
         <div class="relative">
           <Input
             {...attrs}
@@ -173,7 +174,7 @@ $: newTransfers =
             class={cn(
               'peer',
               submissionStatus === 'submitting' && 'animate-pulse',
-              'sm:text-md text-sm w-full h-10 sm:h-11 disabled:opacity-90 disabled:bg-stone-900',
+              'sm:text-md text-xs w-full h-10 sm:h-11 disabled:opacity-90 disabled:bg-stone-950',
               'rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9]',
               'focus:outline-none outline-transparent focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0',
             )}
@@ -211,7 +212,7 @@ $: newTransfers =
         </div>
       </Form.Control>
       <Form.FieldErrors class="field-errors peer" />
-      <Form.Description class="block peer-[&:not(:empty)]:hidden text-sm">
+      <Form.Description class="block peer-[&:not(:empty)]:hidden sm:text-sm text-xs ml-2">
         A valid Union wallet address
       </Form.Description>
     </Form.Field>
@@ -220,7 +221,7 @@ $: newTransfers =
         disabled={$submitting || $form.address.length === 0}
         class={cn(
           submissionStatus === 'submitting' && 'animate-pulse',
-          'text-md font-bold w-full max-w-32 tracking-wider',
+          'sm:text-md text-sm font-bold w-full sm:max-w-32 max-w-20 tracking-wider ml-1',
         )}
       >
         Submit
@@ -234,21 +235,13 @@ $: newTransfers =
         target="_blank"
         rel="noopener noreferrer"
         href="https://git-faucets.web.val.run"
-        class="text-sm font-bold px-0 my-auto !text-neutral-300"
+        class="sm:text-sm text-xs font-bold px-0 my-auto !text-neutral-300"
       >
         Faucets for other assets & chains
         <ExternalLinkIcon class="size-4 ml-2" />
       </Button>
     </div>
   </form>
-
-  {#if $unionTransfers?.status === 'success'}
-    {#each newTransfers as transfer}
-      <pre>{transfer?.timestamp}</pre>
-    {/each}
-  {/if}
-
-  <section class="mt-6 hidden sm:block w-full max-w-[520px] text-sm"></section>
 </main>
 
 <style lang="postcss">

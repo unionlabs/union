@@ -2,7 +2,7 @@
 @import url('./reset.css');
 @import url('./tailwind.css');
 
-@media not print {
+/* @media not print {
   @media(min-width: 500px) {
     html {
       zoom: 100%;
@@ -14,7 +14,7 @@
     }
   }
 
-}
+} */
 
 /* source: https://heropatterns.com */
 body {

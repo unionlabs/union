@@ -1,54 +1,39 @@
 <script lang="ts">
 import {
   flexRender,
-  type Updater,
-  type FilterFn,
   type ColumnDef,
   getCoreRowModel,
-  ColumnFiltering,
   type TableOptions,
-  type SortingState,
   createSvelteTable,
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
-import {
-  type Range,
-  Virtualizer,
-  createVirtualizer,
-  observeElementRect,
-  defaultKeyExtractor
-} from "@tanstack/svelte-virtual"
-import {
-  cosmosBlocksQuery,
-  cosmosBlocksSubscription
-} from "$lib/graphql/documents/cosmos-blocks.ts"
 import { Shine } from "svelte-ux"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
 import { CHAIN_MAP } from "$lib/constants/chains"
 import * as Table from "$lib/components/ui/table"
+import { removeArrayDuplicates } from "$lib/utilities"
 import { rankItem } from "@tanstack/match-sorter-utils"
 import type { Override } from "$lib/utilities/types.ts"
-import { afterUpdate, onDestroy, onMount } from "svelte"
-import * as Card from "$lib/components/ui/card/index.ts"
 import { cn, flyAndScale } from "$lib/utilities/shadcn.ts"
-import ChevronLeft from "virtual:icons/lucide/chevron-left"
-import * as Select from "$lib/components/ui/select/index.ts"
+import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
 import ChevronRight from "virtual:icons/lucide/chevron-right"
 import DoubleArrowLeft from "virtual:icons/lucide/chevrons-left"
 import DoubleArrowRight from "virtual:icons/lucide/chevrons-right"
 import { dollarize, relativeTime } from "$lib/utilities/format.ts"
+import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 import { getContextClient, queryStore, subscriptionStore } from "@urql/svelte"
 
-// $: cosmosBlocks = subscriptionStore({
-//   client: getContextClient(),
-//   query: cosmosBlocksSubscription,
-//   variables: { limit: 25 },
-// })
+$: initialCosmosBlocks = queryStore({
+  query: cosmosBlocksQuery,
+  variables: { limit: 10 },
+  client: getContextClient(),
+  context: { url: URLS.GRAPHQL }
+})
 
-$: queryBlocksCount = 10
+$: initialBlocksData = $initialCosmosBlocks?.data?.data ?? []
 
 $: cosmosBlocks = queryStore({
   query: cosmosBlocksQuery,
@@ -56,22 +41,23 @@ $: cosmosBlocks = queryStore({
   context: { url: URLS.GRAPHQL },
   variables: { limit: 1 }
 })
-onMount(() => {
-  return () => (queryBlocksCount = 1)
-})
-// refetch every 6 seconds
-setInterval(() => {
-  cosmosBlocks.reexecute({ requestPolicy: "network-only" })
-}, 6_500)
 
-$: blocksData = $cosmosBlocks?.data?.data ?? []
+$: [blockData] = $cosmosBlocks?.data?.data ?? []
 /**
  * we use this constructed type because importing the generated graphql types is too slow given the file size
  */
-type CosmosBlock = Override<(typeof blocksData)[number], { time: string }>
+type CosmosBlock = Override<typeof blockData, { time: string }>
 
-$: blocks = writable<any>([])
-$: if ($cosmosBlocks?.data) blocks.update(() => [...$blocks, ...blocksData])
+$: blocksStore = writable<Array<CosmosBlock>>(initialBlocksData as Array<CosmosBlock>)
+$: if ($cosmosBlocks?.data) {
+  blocksStore.update(currentBlocks =>
+    removeArrayDuplicates([blockData as CosmosBlock, ...currentBlocks], "height")
+  )
+}
+// refetch every 6 seconds
+setInterval(() => {
+  cosmosBlocks.reexecute({ requestPolicy: "network-only" })
+}, 6_000)
 
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
@@ -86,7 +72,7 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
     cell: info =>
       flexRender(Button, {
         variant: "link",
-        class: "",
+        class: "hover:cursor-pointer",
         href: `https://api.testnet.bonlulu.uno/cosmos/base/tendermint/v1beta1/blocks/${info.getValue()}`,
         target: "_blank",
         rel: "noopener noreferrer",
@@ -114,11 +100,11 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
 ]
 
 const options = writable<TableOptions<CosmosBlock>>({
-  data: $blocks as unknown as Array<CosmosBlock>,
-  columns: defaultColumns,
+  data: $blocksStore,
   // debugTable: true,
   enableHiding: true,
   enableFilters: true,
+  columns: defaultColumns,
   autoResetPageIndex: true, // Automatically update pagination when data or page size changes
   enableColumnFilters: true,
   enableColumnResizing: true,
@@ -131,21 +117,21 @@ const options = writable<TableOptions<CosmosBlock>>({
 let virtualListElement: HTMLDivElement
 
 const rerender = () =>
-  options.update(options => ({ ...options, data: $blocks as unknown as Array<CosmosBlock> }))
+  options.update(options => ({ ...options, data: $blocksStore as unknown as Array<CosmosBlock> }))
 
 const table = createSvelteTable(options)
 
-$: blocks.subscribe(() => {
-  if (!$blocks) return
-  $table.setPageSize($blocks.length)
+$: blocksStore.subscribe(() => {
+  if (!$blocksStore) return
+  $table.setPageSize($blocksStore.length)
   rerender()
 })
 
 $: rows = $table.getRowModel().rows
 
 $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
-  count: rows.length,
   overscan: 20,
+  count: rows.length,
   estimateSize: () => 34,
   getScrollElement: () => virtualListElement
 })
@@ -172,7 +158,7 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
       )}
     >
       <Table.Root class="overflow-auto size-full mx-auto bg-black/70 rounded-md max-w-[1000px]">
-        <Table.Header class="outline outline-1 outline-union-accent-400/20 sticky">
+        <Table.Header class="outline outline-1 outline-union-accent-400/50 sticky">
           {#each $table.getHeaderGroups() as headerGroup}
             <Table.Row class="font-bold text-md">
               {#each headerGroup.headers as header}
@@ -190,7 +176,11 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
         <Table.Body>
           {#each $virtualizer.getVirtualItems() as row, index (row.index)}
             <Table.Row
-              class={cn('h-5', 'border-b-[1px] border-solid border-b-union-accent-400/10')}
+              class={cn(
+                'h-5',
+                'border-b-[1px] border-solid border-b-union-accent-400/10',
+                index % 2 === 0 ? 'bg-background' : 'border-gray-950',
+              )}
             >
               {#each rows[row.index].getVisibleCells() as cell (cell.id)}
                 <Table.Cell class="px-4 py-0">

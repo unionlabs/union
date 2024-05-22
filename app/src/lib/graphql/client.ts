@@ -9,8 +9,10 @@ import {
 import { URLS } from "$lib/constants"
 import { devtoolsExchange } from "@urql/devtools"
 import { retryExchange } from "@urql/exchange-retry"
+import { refocusExchange } from "@urql/exchange-refocus"
 import type { TadaPersistedDocumentNode } from "gql.tada"
 import { persistedExchange } from "@urql/exchange-persisted"
+import { requestPolicyExchange } from "@urql/exchange-request-policy"
 import { createClient as createWSClient, type SubscribePayload } from "graphql-ws"
 
 const isDevelopment = import.meta.env.DEV
@@ -50,7 +52,19 @@ export const graphqlClient = new Client({
   requestPolicy: import.meta.env.DEV ? "network-only" : "cache-and-network",
   exchanges: [
     devtoolsExchange,
-    ...productionOnlyExchanges,
+    refocusExchange(),
+    requestPolicyExchange({
+      ttl: 60 * 1_000, // 1 minute
+      shouldUpgrade: operation => operation.context.requestPolicy !== "cache-first"
+    }),
+    cacheExchange,
+    persistedExchange({
+      enableForMutation: true,
+      enableForSubscriptions: true,
+      enforcePersistedQueries: true,
+      preferGetForPersistedQueries: true,
+      generateHash: async (_, document) => (document as TadaPersistedDocumentNode).documentId
+    }),
     fetchExchange,
     subscriptionExchange({
       forwardSubscription: operation => ({
@@ -64,7 +78,7 @@ export const graphqlClient = new Client({
       maxDelayMs: 15_000,
       maxNumberAttempts: 2,
       initialDelayMs: 1_000,
-      retryIf: error => !!error?.networkError?.message
+      retryIf: error => !!error?.networkError
     }),
     debugExchange
   ],

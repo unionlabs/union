@@ -351,6 +351,7 @@ consensuskeeper
 consensusparamkeeper
 consensusparamtypes
 consensys
+consola
 consts
 conv
 converstion

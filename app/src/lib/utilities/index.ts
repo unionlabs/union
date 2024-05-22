@@ -2,6 +2,18 @@ export function raise(error: unknown): never {
   throw typeof error === "string" ? new Error(error) : error
 }
 
+// remove duplicates from an array of objects by a key
+export const removeArrayDuplicates = <T>(array: Array<T>, key: keyof T): Array<T> =>
+  array.reduce(
+    (accumulator, current) => {
+      if (!accumulator.find(item => item[key] === current[key])) {
+        accumulator.push(current)
+      }
+      return accumulator
+    },
+    [] as Array<T>
+  )
+
 export const elementHasFocus = (element: Element | null): element is HTMLElement =>
   element === document.activeElement
 

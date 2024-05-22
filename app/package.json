@@ -33,6 +33,8 @@
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.9",
     "@urql/exchange-graphcache": "^7.1.0",
     "@urql/exchange-persisted": "^4.3.0",
+    "@urql/exchange-refocus": "^1.1.0",
+    "@urql/exchange-request-policy": "^1.2.0",
     "@urql/exchange-retry": "^1.3.0",
     "@urql/svelte": "^4.2.0",
     "@wagmi/connectors": "^5.0.3",
