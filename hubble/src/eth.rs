@@ -383,10 +383,10 @@ impl BlockInsert {
         provider: &Provider<Http>,
     ) -> Result<(usize, Self), FromProviderError> {
         loop {
-            debug!(?chain_id, "fetching block from provider");
+            debug!(chain_id=chain_id.canonical, height, "fetching block from provider");
             (|| {
                 Self::from_provider(chain_id, height, provider)
-                    .inspect_err(|e| debug!(?e, "error fetching block from provider"))
+                    .inspect_err(|e| debug!(?e, chain_id=chain_id.canonical, height, "error fetching block from provider"))
             })
             .retry(&crate::expo_backoff())
             .await?;
