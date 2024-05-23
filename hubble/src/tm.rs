@@ -74,7 +74,12 @@ impl Config {
 
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
-            debug!(?chain_id.canonical, "syncing with batch size {} up to height {}", Self::BATCH_SIZE, up_to);
+            debug!(
+                chain_id.canonical,
+                "syncing with batch size {} up to height {}",
+                Self::BATCH_SIZE,
+                up_to
+            );
             loop {
                 let batch_end =
                     std::cmp::min(up_to.value(), height.value() + Self::BATCH_SIZE as u64);
@@ -99,7 +104,7 @@ impl Config {
             }
         }
 
-        info!(?chain_id.canonical, "syncing block by block");
+        info!(chain_id.canonical, "syncing block by block");
         let mut retry_count = 0;
         loop {
             debug!("starting regular sync protocol");
@@ -108,7 +113,7 @@ impl Config {
             let mut tx = pool.begin().await?;
             match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height).await? {
                 Some(h) => {
-                    info!(?chain_id.canonical, "indexed block {}", &height);
+                    info!(chain_id.canonical, "indexed block {}", &height);
                     height = h;
                     retry_count = 0;
                     tx.commit().await?;
