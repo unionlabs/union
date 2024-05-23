@@ -2,6 +2,8 @@ export function raise(error: unknown): never {
   throw typeof error === "string" ? new Error(error) : error
 }
 
+export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> => x.catch(() => undefined)
+
 // remove duplicates from an array of objects by a key
 export const removeArrayDuplicates = <T>(array: Array<T>, key: keyof T): Array<T> =>
   array.reduce(
