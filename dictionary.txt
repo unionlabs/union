@@ -8,6 +8,8 @@ Acks
 Axelar
 BAYC
 BLOCKSCOUT
+Berachain
+Berachain's
 Beriker
 Bitfield
 Bitvector
@@ -253,6 +255,8 @@ beatae
 bech
 behaviour
 benluelo
+berachain
+berachain's
 bhapi
 bigtestnet
 binaryen
@@ -1008,6 +1012,7 @@ txes
 txmodule
 txpool
 typecheck
+typeform
 typemap
 typenum
 typeof
