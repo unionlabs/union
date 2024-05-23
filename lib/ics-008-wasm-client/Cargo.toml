@@ -18,7 +18,7 @@ protos                   = { workspace = true, features = ["proto_full", "std"] 
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 thiserror                = { workspace = true }
-unionlabs                = { workspace = true }
+unionlabs                = { workspace = true, features = ["cosmwasm"] }
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -216,6 +216,7 @@ pub enum TryFromCosmwasmTimestampError {
     IntCast(TryFromIntError),
 }
 
+#[cfg(feature = "cosmwasm")]
 impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
     type Error = TryFromCosmwasmTimestampError;
 

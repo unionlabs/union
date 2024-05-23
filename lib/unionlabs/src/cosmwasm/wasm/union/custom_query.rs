@@ -29,8 +29,10 @@ pub enum UnionCustomQuery {
     },
 }
 
+#[cfg(feature = "cosmwasm")]
 impl cosmwasm_std::CustomQuery for UnionCustomQuery {}
 
+#[cfg(feature = "cosmwasm")]
 pub fn query_fast_aggregate_verify(
     deps: Deps<UnionCustomQuery>,
     public_keys: Vec<Binary>,
@@ -48,6 +50,7 @@ pub fn query_fast_aggregate_verify(
         .map_err(|e| Error::FastAggregateVerify(e.to_string()))
 }
 
+#[cfg(feature = "cosmwasm")]
 pub fn query_aggregate_public_keys(
     deps: Deps<UnionCustomQuery>,
     public_keys: Vec<BlsPublicKey>,
@@ -82,6 +85,7 @@ use {
 
 #[allow(clippy::missing_panics_doc)]
 #[cfg(feature = "stargate")]
+#[cfg(feature = "cosmwasm")]
 pub fn query_consensus_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
