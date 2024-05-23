@@ -1,5 +1,6 @@
 use core::fmt::Debug;
 
+#[cfg(feature = "cosmwasm")]
 use cosmwasm_std::{Binary, Deps, QueryRequest};
 
 use crate::bls::BlsPublicKey;
@@ -71,6 +72,7 @@ pub fn query_aggregate_public_keys(
 }
 
 #[cfg(feature = "stargate")]
+#[cfg(feature = "cosmwasm")]
 use {
     crate::{
         encoding::{Decode, DecodeAs, Proto},

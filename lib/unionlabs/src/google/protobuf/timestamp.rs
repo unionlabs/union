@@ -234,6 +234,7 @@ impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
     }
 }
 
+#[cfg(feature = "cosmwasm")]
 impl From<Timestamp> for cosmwasm_std::Timestamp {
     fn from(value: Timestamp) -> Self {
         // REVIEW(aeryz): I always expect timestamp to be non-negative integer, that's
