@@ -1,15 +1,25 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, Uint128, Uint256};
+use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
 use ethabi::{ParamType, Token};
 
 pub type GenericAck = Result<Binary, String>;
 
-#[derive(thiserror::Error, Clone, PartialEq, Eq, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum EncodingError {
     #[error("ICS20 can handle a single coin only.")]
     Ics20OnlyOneCoin,
-    #[error("Unable to encode or decode the transfer packet.")]
-    InvalidEncoding,
+    #[error("Could not decode UCS01 packet: value: {data}, err: {err:?}", data = serde_utils::to_hex(.value))]
+    InvalidUCS01PacketEncoding { value: Vec<u8>, err: ethabi::Error },
+    #[error("Could not decode UCS01 ack, expected a boolean, got: {data}", data = serde_utils::to_hex(.got))]
+    InvalidUCS01AckEncoding { got: Vec<u8> },
+    #[error("Could not decode ICS20 packet: value: {data}, err: {err}", data = serde_utils::to_hex(.value))]
+    InvalidICS20PacketEncoding { value: Vec<u8>, err: StdError },
+    #[error("Could not decode ICS20 ack: value: {data}, err: {err}", data = serde_utils::to_hex(.value))]
+    InvalidICS20AckEncoding { value: Vec<u8>, err: StdError },
+    #[error("Invalid sender address: sender: {data}, err: {err}", data = serde_utils::to_hex(.value))]
+    InvalidSender { value: String, err: StdError },
+    #[error("Invalid receiver address: receiver: {data}, err: {err}", data = serde_utils::to_hex(.value))]
+    InvalidReceiver { value: String, err: StdError },
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -106,7 +116,10 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
             ],
             &value,
         )
-        .map_err(|_| EncodingError::InvalidEncoding)?;
+        .map_err(|err| EncodingError::InvalidUCS01PacketEncoding {
+            value: value.to_vec(),
+            err,
+        })?;
         // NOTE: at this point, it is technically impossible to have any other branch than the one we
         // match unless there is a bug in the underlying `ethabi` crate
         match &encoded_packet[..] {
@@ -152,16 +165,19 @@ pub struct Ics20Packet {
 impl TryFrom<Ics20Packet> for Binary {
     type Error = EncodingError;
     fn try_from(value: Ics20Packet) -> Result<Binary, Self::Error> {
-        cosmwasm_std::to_json_vec(&value)
-            .map_err(|_| EncodingError::InvalidEncoding)
-            .map(Into::into)
+        Ok(cosmwasm_std::to_json_vec(&value)
+            .expect("impossible")
+            .into())
     }
 }
 
 impl TryFrom<Binary> for Ics20Packet {
     type Error = EncodingError;
     fn try_from(value: Binary) -> Result<Self, Self::Error> {
-        cosmwasm_std::from_json(value).map_err(|_| EncodingError::InvalidEncoding)
+        cosmwasm_std::from_json(&value).map_err(|err| EncodingError::InvalidICS20PacketEncoding {
+            value: value.to_vec(),
+            err,
+        })
     }
 }
 
@@ -258,7 +274,9 @@ impl TryFrom<Binary> for Ucs01Ack {
         match value.as_slice() {
             [0] => Ok(Ucs01Ack::Failure),
             [1] => Ok(Ucs01Ack::Success),
-            _ => Err(EncodingError::InvalidEncoding),
+            _ => Err(EncodingError::InvalidUCS01AckEncoding {
+                got: value.to_vec(),
+            }),
         }
     }
 }
@@ -283,7 +301,7 @@ impl TryFrom<Ics20Ack> for Binary {
     type Error = EncodingError;
     fn try_from(value: Ics20Ack) -> Result<Self, Self::Error> {
         Ok(cosmwasm_std::to_json_vec(&value)
-            .map_err(|_| EncodingError::InvalidEncoding)?
+            .expect("impossible")
             .into())
     }
 }
@@ -292,7 +310,12 @@ impl TryFrom<Binary> for Ics20Ack {
     type Error = EncodingError;
     // Interesting, the Error variant of the enum clash with the AT in the return type, https://github.com/rust-lang/rust/issues/57644
     fn try_from(value: Binary) -> Result<Self, <Self as TryFrom<Binary>>::Error> {
-        cosmwasm_std::from_json::<Ics20Ack>(&value).map_err(|_| EncodingError::InvalidEncoding)
+        cosmwasm_std::from_json::<Ics20Ack>(&value).map_err(|err| {
+            EncodingError::InvalidICS20AckEncoding {
+                value: value.to_vec(),
+                err,
+            }
+        })
     }
 }
 
@@ -398,12 +421,18 @@ mod tests {
     #[test]
     fn ucs01_ack_encode_decode_iso() {
         assert_eq!(
-            Ok(Ucs01Ack::Success),
-            Binary::try_from(Ucs01Ack::Success).unwrap().try_into()
+            Ucs01Ack::Success,
+            Binary::try_from(Ucs01Ack::Success)
+                .unwrap()
+                .try_into()
+                .unwrap()
         );
         assert_eq!(
-            Ok(Ucs01Ack::Failure),
-            Binary::try_from(Ucs01Ack::Failure).unwrap().try_into()
+            Ucs01Ack::Failure,
+            Binary::try_from(Ucs01Ack::Failure)
+                .unwrap()
+                .try_into()
+                .unwrap()
         );
     }
 
@@ -428,16 +457,18 @@ mod tests {
     #[test]
     fn ics20_ack_encode_decode_iso() {
         assert_eq!(
-            Ok(Ics20Ack::Result(b"blabla".into())),
+            Ics20Ack::Result(b"blabla".into()),
             Binary::try_from(Ics20Ack::Result(b"blabla".into()))
                 .unwrap()
                 .try_into()
+                .unwrap()
         );
         assert_eq!(
-            Ok(Ics20Ack::Error("ok".into())),
+            Ics20Ack::Error("ok".into()),
             Binary::try_from(Ics20Ack::Error("ok".into()))
                 .unwrap()
                 .try_into()
+                .unwrap()
         );
     }
 

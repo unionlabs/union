@@ -9,7 +9,7 @@ use ucs01_relay_api::{protocol::ProtocolError, types::EncodingError};
 #[derive(Error, Debug)]
 pub enum Never {}
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),

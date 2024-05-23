@@ -10,5 +10,6 @@ workspace = true
 cosmwasm-schema   = { version = "2.0.0" }
 cosmwasm-std      = { version = "2.0.0", features = ["stargate"] }
 ethabi            = { workspace = true }
+serde-utils       = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
