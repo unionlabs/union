@@ -8,7 +8,7 @@ use ethers::{
 };
 use futures::{
     stream::{self, FuturesOrdered},
-    StreamExt, TryFutureExt, TryStreamExt,
+    FutureExt, StreamExt, TryFutureExt, TryStreamExt,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres};
@@ -189,28 +189,19 @@ async fn index_blocks(
         } => {
             // This most likely indicates we caught up indexing with the node. We now switch to
             // single block mode.
-            (|| {
-                index_blocks_by_chunk(
-                    pool.clone(),
-                    height..range.end,
-                    chain_id,
-                    provider.clone(),
-                    1,
-                )
-                .inspect_err(|e| {
-                    debug!(
-                        ?e,
-                        chain_id.canonical,
-                        height,
-                        "err indexing block, not problematic if not found"
-                    )
-                })
-            })
-            .retry(
-                &ConstantBuilder::default()
-                    .with_delay(Duration::from_secs(1))
-                    .with_max_times(30),
+            index_blocks_by_chunk(
+                pool.clone(),
+                height..range.end,
+                chain_id,
+                provider.clone(),
+                1,
             )
+            .inspect_err(|e| {
+                debug!(
+                    ?e,
+                    chain_id.canonical, height, "err indexing block, not problematic if not found"
+                )
+            })
             .await?
         }
         err => return Err(err.into()),
@@ -246,18 +237,15 @@ async fn index_blocks_by_chunk(
         let mut tx = pool.begin().await.map_err(Report::from)?;
 
         let mut inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-            // Hack workaround because partial move for async blocks isn't possible.
-            async fn from_provider_retried(
-                chain_id: ChainId,
-                height: u64,
-                provider: &Provider<Http>,
-            ) -> (u64, Result<BlockInsert, FromProviderError>) {
-                (
-                    height,
-                    BlockInsert::from_provider_retried(chain_id, height, provider).await,
+            let provider_clone = provider.clone();
+            (move || BlockInsert::from_provider_retried(chain_id, height, provider_clone.clone()))
+                .retry(
+                    &ConstantBuilder::default()
+                        .with_delay(Duration::from_secs(1))
+                        .with_max_times(30),
                 )
-            }
-            from_provider_retried(chain_id, height, &provider)
+                .when(|_| chunk_size == 1)
+                .map(move |res| (height, res))
         }));
 
         while let Some((height, block)) = inserts.next().await {
@@ -331,7 +319,7 @@ async fn reindex_blocks(
         let tx = pool.begin().await?;
         let chunk = (current - 20)..current;
         let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-            BlockInsert::from_provider_retried(chain_id, height as u64, &provider)
+            BlockInsert::from_provider_retried(chain_id, height as u64, provider.clone())
                 .map_err(Report::from)
         }));
         inserts
@@ -419,14 +407,14 @@ impl BlockInsert {
     async fn from_provider_retried(
         chain_id: ChainId,
         height: u64,
-        provider: &Provider<Http>,
+        provider: Provider<Http>,
     ) -> Result<Self, FromProviderError> {
         debug!(
             chain_id = chain_id.canonical,
             height, "fetching block from provider"
         );
-        (|| {
-            Self::from_provider(chain_id, height, provider).inspect_err(|e| {
+        (move || {
+            Self::from_provider(chain_id, height, provider.clone()).inspect_err(move |e| {
                 debug!(
                     ?e,
                     chain_id = chain_id.canonical,
@@ -444,7 +432,7 @@ impl BlockInsert {
     async fn from_provider(
         chain_id: ChainId,
         height: u64,
-        provider: &Provider<Http>,
+        provider: Provider<Http>,
     ) -> Result<Self, FromProviderError> {
         let block = provider
             .get_block(height)
