@@ -263,25 +263,23 @@ mod tests {
         let protocol_version = Ucs01Protocol::VERSION;
         let counterparty_port_id = "port-2";
         let counterparty_channel_id = "channel-2";
-        assert_eq!(
-            enforce_order_and_version(
-                &IbcChannel::new(
-                    IbcEndpoint {
-                        port_id: port_id.into(),
-                        channel_id: channel_id.into()
-                    },
-                    IbcEndpoint {
-                        port_id: counterparty_port_id.into(),
-                        channel_id: counterparty_channel_id.into()
-                    },
-                    cosmwasm_std::IbcOrder::Unordered,
-                    protocol_version,
-                    connection_id
-                ),
-                None
+        enforce_order_and_version(
+            &IbcChannel::new(
+                IbcEndpoint {
+                    port_id: port_id.into(),
+                    channel_id: channel_id.into(),
+                },
+                IbcEndpoint {
+                    port_id: counterparty_port_id.into(),
+                    channel_id: counterparty_channel_id.into(),
+                },
+                cosmwasm_std::IbcOrder::Unordered,
+                protocol_version,
+                connection_id,
             ),
-            Ok(())
-        );
+            None,
+        )
+        .unwrap();
     }
 
     #[test]
@@ -292,25 +290,23 @@ mod tests {
         let protocol_version = Ics20Protocol::VERSION;
         let counterparty_port_id = "port-2";
         let counterparty_channel_id = "channel-2";
-        assert_eq!(
-            enforce_order_and_version(
-                &IbcChannel::new(
-                    IbcEndpoint {
-                        port_id: port_id.into(),
-                        channel_id: channel_id.into()
-                    },
-                    IbcEndpoint {
-                        port_id: counterparty_port_id.into(),
-                        channel_id: counterparty_channel_id.into()
-                    },
-                    cosmwasm_std::IbcOrder::Unordered,
-                    protocol_version,
-                    connection_id
-                ),
-                None
+        enforce_order_and_version(
+            &IbcChannel::new(
+                IbcEndpoint {
+                    port_id: port_id.into(),
+                    channel_id: channel_id.into(),
+                },
+                IbcEndpoint {
+                    port_id: counterparty_port_id.into(),
+                    channel_id: counterparty_channel_id.into(),
+                },
+                cosmwasm_std::IbcOrder::Unordered,
+                protocol_version,
+                connection_id,
             ),
-            Ok(())
-        );
+            None,
+        )
+        .unwrap()
     }
 
     #[test]
@@ -321,28 +317,31 @@ mod tests {
         let protocol_version = "ucs01-0999";
         let counterparty_port_id = "port-2";
         let counterparty_channel_id = "channel-2";
-        assert_eq!(
-            enforce_order_and_version(
-                &IbcChannel::new(
-                    IbcEndpoint {
-                        port_id: port_id.into(),
-                        channel_id: channel_id.into()
-                    },
-                    IbcEndpoint {
-                        port_id: counterparty_port_id.into(),
-                        channel_id: counterparty_channel_id.into()
-                    },
-                    cosmwasm_std::IbcOrder::Unordered,
-                    protocol_version,
-                    connection_id
-                ),
-                None
+        match enforce_order_and_version(
+            &IbcChannel::new(
+                IbcEndpoint {
+                    port_id: port_id.into(),
+                    channel_id: channel_id.into(),
+                },
+                IbcEndpoint {
+                    port_id: counterparty_port_id.into(),
+                    channel_id: counterparty_channel_id.into(),
+                },
+                cosmwasm_std::IbcOrder::Unordered,
+                protocol_version,
+                connection_id,
             ),
+            None,
+        ) {
             Err(ContractError::UnknownProtocol {
-                channel_id: channel_id.into(),
-                protocol_version: protocol_version.into()
-            })
-        );
+                channel_id: unknown_channel_id,
+                protocol_version: unknown_protocol_version,
+            }) => {
+                assert_eq!(unknown_channel_id, channel_id);
+                assert_eq!(unknown_protocol_version, protocol_version);
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]
@@ -354,28 +353,31 @@ mod tests {
         let counterparty_port_id = "port-2";
         let counterparty_channel_id = "channel-2";
         let counterparty_protocol_version = "ucs01-0999";
-        assert_eq!(
-            enforce_order_and_version(
-                &IbcChannel::new(
-                    IbcEndpoint {
-                        port_id: port_id.into(),
-                        channel_id: channel_id.into()
-                    },
-                    IbcEndpoint {
-                        port_id: counterparty_port_id.into(),
-                        channel_id: counterparty_channel_id.into()
-                    },
-                    cosmwasm_std::IbcOrder::Unordered,
-                    protocol_version,
-                    connection_id
-                ),
-                Some(counterparty_protocol_version)
+        match enforce_order_and_version(
+            &IbcChannel::new(
+                IbcEndpoint {
+                    port_id: port_id.into(),
+                    channel_id: channel_id.into(),
+                },
+                IbcEndpoint {
+                    port_id: counterparty_port_id.into(),
+                    channel_id: counterparty_channel_id.into(),
+                },
+                cosmwasm_std::IbcOrder::Unordered,
+                protocol_version,
+                connection_id,
             ),
+            Some(counterparty_protocol_version),
+        ) {
             Err(ContractError::UnknownProtocol {
-                channel_id: channel_id.into(),
-                protocol_version: counterparty_protocol_version.into()
-            })
-        );
+                channel_id: unknown_channel_id,
+                protocol_version: unknown_protocol_version,
+            }) => {
+                assert_eq!(unknown_channel_id, channel_id);
+                assert_eq!(unknown_protocol_version, counterparty_protocol_version);
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]
@@ -387,28 +389,36 @@ mod tests {
         let counterparty_port_id = "port-2";
         let counterparty_channel_id = "channel-2";
         let counterparty_protocol_version = Ics20Protocol::VERSION;
-        assert_eq!(
-            enforce_order_and_version(
-                &IbcChannel::new(
-                    IbcEndpoint {
-                        port_id: port_id.into(),
-                        channel_id: channel_id.into()
-                    },
-                    IbcEndpoint {
-                        port_id: counterparty_port_id.into(),
-                        channel_id: counterparty_channel_id.into()
-                    },
-                    cosmwasm_std::IbcOrder::Unordered,
-                    protocol_version,
-                    connection_id
-                ),
-                Some(counterparty_protocol_version)
+        let mismatch = enforce_order_and_version(
+            &IbcChannel::new(
+                IbcEndpoint {
+                    port_id: port_id.into(),
+                    channel_id: channel_id.into(),
+                },
+                IbcEndpoint {
+                    port_id: counterparty_port_id.into(),
+                    channel_id: counterparty_channel_id.into(),
+                },
+                cosmwasm_std::IbcOrder::Unordered,
+                protocol_version,
+                connection_id,
             ),
-            Err(ContractError::ProtocolMismatch {
-                channel_id: channel_id.into(),
-                protocol_version: protocol_version.into(),
-                counterparty_protocol_version: counterparty_protocol_version.into()
-            })
+            Some(counterparty_protocol_version),
         );
+        match mismatch {
+            Err(ContractError::ProtocolMismatch {
+                channel_id: mismatch_channel_id,
+                protocol_version: mismatch_protocol_version,
+                counterparty_protocol_version: mismatch_counterparty_protocol_version,
+            }) => {
+                assert_eq!(mismatch_channel_id, channel_id);
+                assert_eq!(mismatch_protocol_version, protocol_version);
+                assert_eq!(
+                    mismatch_counterparty_protocol_version,
+                    counterparty_protocol_version
+                );
+            }
+            _ => panic!(),
+        }
     }
 }

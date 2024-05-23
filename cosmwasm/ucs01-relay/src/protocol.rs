@@ -692,23 +692,25 @@ mod tests {
     fn receive_transfer_create_foreign() {
         let denom_str = hash_denom_str("wasm.0xDEADC0DE/channel-1/from-counterparty");
         assert_eq!(
-            TestOnReceive { toggle: false }.receive_phase1_transfer(
-                &Addr::unchecked("0xDEADC0DE"),
-                &IbcEndpoint {
-                    port_id: "wasm.0xDEADC0DE".into(),
-                    channel_id: "channel-1".into(),
-                },
-                &IbcEndpoint {
-                    port_id: "transfer".into(),
-                    channel_id: "channel-34".into(),
-                },
-                "receiver",
-                vec![TransferToken {
-                    denom: "from-counterparty".into(),
-                    amount: Uint128::from(100u128)
-                },],
-            ),
-            Ok(vec![
+            TestOnReceive { toggle: false }
+                .receive_phase1_transfer(
+                    &Addr::unchecked("0xDEADC0DE"),
+                    &IbcEndpoint {
+                        port_id: "wasm.0xDEADC0DE".into(),
+                        channel_id: "channel-1".into(),
+                    },
+                    &IbcEndpoint {
+                        port_id: "transfer".into(),
+                        channel_id: "channel-34".into(),
+                    },
+                    "receiver",
+                    vec![TransferToken {
+                        denom: "from-counterparty".into(),
+                        amount: Uint128::from(100u128)
+                    },],
+                )
+                .unwrap(),
+            vec![
                 wasm_execute(
                     Addr::unchecked("0xDEADC0DE"),
                     &ExecuteMsg::RegisterDenom {
@@ -734,7 +736,7 @@ mod tests {
                     mint_to_address: "receiver".into()
                 }
                 .into(),
-            ])
+            ]
         );
     }
 
@@ -793,23 +795,25 @@ mod tests {
     #[test]
     fn receive_transfer_foreign() {
         assert_eq!(
-            TestOnReceive { toggle: true }.receive_phase1_transfer(
-                &Addr::unchecked("0xDEADC0DE"),
-                &IbcEndpoint {
-                    port_id: "wasm.0xDEADC0DE".into(),
-                    channel_id: "channel-1".into(),
-                },
-                &IbcEndpoint {
-                    port_id: "transfer".into(),
-                    channel_id: "channel-34".into(),
-                },
-                "receiver",
-                vec![TransferToken {
-                    denom: "from-counterparty".into(),
-                    amount: Uint128::from(100u128)
-                },],
-            ),
-            Ok(vec![TokenFactoryMsg::MintTokens {
+            TestOnReceive { toggle: true }
+                .receive_phase1_transfer(
+                    &Addr::unchecked("0xDEADC0DE"),
+                    &IbcEndpoint {
+                        port_id: "wasm.0xDEADC0DE".into(),
+                        channel_id: "channel-1".into(),
+                    },
+                    &IbcEndpoint {
+                        port_id: "transfer".into(),
+                        channel_id: "channel-34".into(),
+                    },
+                    "receiver",
+                    vec![TransferToken {
+                        denom: "from-counterparty".into(),
+                        amount: Uint128::from(100u128)
+                    },],
+                )
+                .unwrap(),
+            vec![TokenFactoryMsg::MintTokens {
                 denom: format!(
                     "factory/0xDEADC0DE/{}",
                     hash_denom_str("wasm.0xDEADC0DE/channel-1/from-counterparty")
@@ -817,37 +821,39 @@ mod tests {
                 amount: Uint128::from(100u128),
                 mint_to_address: "receiver".into()
             }
-            .into()])
+            .into()]
         );
     }
 
     #[test]
     fn receive_transfer_unwraps_local() {
         assert_eq!(
-            TestOnReceive { toggle: true }.receive_phase1_transfer(
-                &Addr::unchecked("0xDEADC0DE"),
-                &IbcEndpoint {
-                    port_id: "wasm.0xDEADC0DE".into(),
-                    channel_id: "channel-1".into(),
-                },
-                &IbcEndpoint {
-                    port_id: "transfer".into(),
-                    channel_id: "channel-34".into(),
-                },
-                "receiver",
-                vec![TransferToken {
-                    denom: "transfer/channel-34/local-denom".into(),
-                    amount: Uint128::from(119u128)
-                }],
-            ),
-            Ok(vec![BankMsg::Send {
+            TestOnReceive { toggle: true }
+                .receive_phase1_transfer(
+                    &Addr::unchecked("0xDEADC0DE"),
+                    &IbcEndpoint {
+                        port_id: "wasm.0xDEADC0DE".into(),
+                        channel_id: "channel-1".into(),
+                    },
+                    &IbcEndpoint {
+                        port_id: "transfer".into(),
+                        channel_id: "channel-34".into(),
+                    },
+                    "receiver",
+                    vec![TransferToken {
+                        denom: "transfer/channel-34/local-denom".into(),
+                        amount: Uint128::from(119u128)
+                    }],
+                )
+                .unwrap(),
+            vec![BankMsg::Send {
                 to_address: "receiver".into(),
                 amount: vec![Coin {
                     denom: "local-denom".into(),
                     amount: Uint128::from(119u128)
                 }]
             }
-            .into()])
+            .into()]
         );
     }
 
@@ -886,28 +892,30 @@ mod tests {
         }
 
         assert_eq!(
-            OnRemoteOnly.execute(
-                &Addr::unchecked("0xCAFEBABE"),
-                &IbcEndpoint {
-                    port_id: "transfer-source".into(),
-                    channel_id: "blabla".into()
-                },
-                vec![
-                    TransferToken {
-                        denom: "transfer-source/blabla/remote-denom".into(),
-                        amount: Uint128::from(119u128)
+            OnRemoteOnly
+                .execute(
+                    &Addr::unchecked("0xCAFEBABE"),
+                    &IbcEndpoint {
+                        port_id: "transfer-source".into(),
+                        channel_id: "blabla".into()
                     },
-                    TransferToken {
-                        denom: "transfer-source/blabla-2/remote-denom".into(),
-                        amount: Uint128::from(10u128)
-                    },
-                    TransferToken {
-                        denom: "transfer-source/blabla/remote-denom2".into(),
-                        amount: Uint128::from(129u128)
-                    },
-                ],
-            ),
-            Ok(vec![
+                    vec![
+                        TransferToken {
+                            denom: "transfer-source/blabla/remote-denom".into(),
+                            amount: Uint128::from(119u128)
+                        },
+                        TransferToken {
+                            denom: "transfer-source/blabla-2/remote-denom".into(),
+                            amount: Uint128::from(10u128)
+                        },
+                        TransferToken {
+                            denom: "transfer-source/blabla/remote-denom2".into(),
+                            amount: Uint128::from(129u128)
+                        },
+                    ],
+                )
+                .unwrap(),
+            vec![
                 TokenFactoryMsg::BurnTokens {
                     denom: format!(
                         "factory/0xCAFEBABE/{}",
@@ -926,7 +934,7 @@ mod tests {
                     burn_from_address: "0xCAFEBABE".into()
                 }
                 .into()
-            ])
+            ]
         );
     }
 
@@ -963,24 +971,26 @@ mod tests {
         }
         let mut state = OnLocalOnly { total: 0u8.into() };
         assert_eq!(
-            state.execute(
-                &Addr::unchecked("0xCAFEBABE"),
-                &IbcEndpoint {
-                    port_id: "transfer-source".into(),
-                    channel_id: "blabla".into()
-                },
-                vec![
-                    TransferToken {
-                        denom: "transfer/channel-2/remote-denom".into(),
-                        amount: Uint128::from(119u128)
+            state
+                .execute(
+                    &Addr::unchecked("0xCAFEBABE"),
+                    &IbcEndpoint {
+                        port_id: "transfer-source".into(),
+                        channel_id: "blabla".into()
                     },
-                    TransferToken {
-                        denom: "transfer/channel-2/remote-denom2".into(),
-                        amount: Uint128::from(129u128)
-                    }
-                ],
-            ),
-            Ok(vec![])
+                    vec![
+                        TransferToken {
+                            denom: "transfer/channel-2/remote-denom".into(),
+                            amount: Uint128::from(119u128)
+                        },
+                        TransferToken {
+                            denom: "transfer/channel-2/remote-denom2".into(),
+                            amount: Uint128::from(129u128)
+                        }
+                    ],
+                )
+                .unwrap(),
+            vec![]
         );
         assert_eq!(state.total, Uint128::from(119u128 + 129u128));
     }
@@ -999,11 +1009,12 @@ mod tests {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
                     amount: Uint128::MAX
                 }
-            ),
-            Ok(TransferToken {
+            )
+            .unwrap(),
+            TransferToken {
                 denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
                 amount: Uint128::MAX
-            })
+            }
         );
         assert_eq!(
             normalize_for_ibc_transfer(
@@ -1017,11 +1028,12 @@ mod tests {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
                     amount: Uint128::MAX
                 }
-            ),
-            Ok(TransferToken {
+            )
+            .unwrap(),
+            TransferToken {
                 denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
                 amount: Uint128::MAX
-            })
+            }
         );
     }
 
@@ -1039,11 +1051,12 @@ mod tests {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
                     amount: Uint128::MAX
                 }
-            ),
-            Ok(TransferToken {
+            )
+            .unwrap(),
+            TransferToken {
                 denom: "transfer/channel-332/blabla-1".into(),
                 amount: Uint128::MAX
-            })
+            }
         );
     }
 }
