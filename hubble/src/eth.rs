@@ -1,6 +1,6 @@
 use std::{ops::Range, time::Duration};
 
-use backon::{BackoffBuilder, ConstantBuilder, Retryable};
+use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
 use ethers::{
     providers::{Http, Middleware, Provider},
@@ -197,7 +197,14 @@ async fn index_blocks(
                     provider.clone(),
                     1,
                 )
-                .inspect_err(|e| debug!(?e, "err indexing block, not problematic if not found"))
+                .inspect_err(|e| {
+                    debug!(
+                        ?e,
+                        chain_id.canonical,
+                        height,
+                        "err indexing block, not problematic if not found"
+                    )
+                })
             })
             .retry(
                 &ConstantBuilder::default()
@@ -254,20 +261,26 @@ async fn index_blocks_by_chunk(
         }));
 
         while let Some((height, block)) = inserts.next().await {
+            debug!(?chain_id, ?block, ?height, "attempting to insert");
             let block = match block {
                 Err(FromProviderError::Other(err)) => {
+                    debug!(?chain_id, ?height, "provider error found on insert");
                     tx.commit().await?;
                     return Err(IndexBlockError::Other(err));
                 }
                 Err(err) => {
+                    debug!(?chain_id, ?height, "provider error found on insert");
                     tx.commit().await?;
                     return Err(IndexBlockError::Retryable { height, err });
                 }
                 Ok(block) => block,
             };
 
+            let log_block = block.clone();
+
             match block.execute(&mut tx).await {
                 Err(err) => {
+                    debug!(?err, ?chain_id, ?log_block, "error executing block insert");
                     tx.rollback().await?;
                     return Err(err.into());
                 }
@@ -364,6 +377,7 @@ pub struct InsertInfo {
 }
 
 #[must_use]
+#[derive(Debug, Clone)]
 pub struct BlockInsert {
     chain_id: ChainId,
     hash: String,
@@ -407,7 +421,6 @@ impl BlockInsert {
         height: u64,
         provider: &Provider<Http>,
     ) -> Result<Self, FromProviderError> {
-        let mut tries = 0;
         debug!(
             chain_id = chain_id.canonical,
             height, "fetching block from provider"
@@ -521,7 +534,7 @@ impl BlockInsert {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionInsert {
     hash: String,
     data: ethers::types::TransactionReceipt,
@@ -529,7 +542,7 @@ pub struct TransactionInsert {
     events: Vec<EventInsert>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EventInsert {
     data: serde_json::Value,
     log_index: usize,

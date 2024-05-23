@@ -47,7 +47,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                     SELECT
                         cl.client_id, ch.id
                     FROM
-                        v0.create_clients cl
+                        v0_cosmos.create_client cl
                     JOIN
                         v0.chains ch
                     ON
@@ -165,7 +165,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                     SELECT
                         cl.transaction_hash, cl.client_id, ch.id
                     FROM
-                        v0.evm_client_created cl
+                        v0_evm.client_created cl
                     JOIN
                         v0.chains ch
                     ON
