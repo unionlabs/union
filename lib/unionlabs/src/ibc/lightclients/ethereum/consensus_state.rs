@@ -10,8 +10,10 @@ use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256};
 pub struct ConsensusState {
     // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,
+    /// The state root for this chain, used for L2s to verify against this contract.
     pub state_root: H256,
     pub storage_root: H256,
+    /// Timestamp of the block, *normalized to nanoseconds* in order to be compatible with ibc-go.
     pub timestamp: u64,
     /// aggregate public key of current sync committee
     pub current_sync_committee: BlsPublicKey,

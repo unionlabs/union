@@ -419,7 +419,7 @@ impl ::prost::Name for QueryConnectionConsensusStateRequest {
 pub struct QueryConnectionConsensusStateResponse {
     /// consensus state associated with the channel
     #[prost(message, optional, tag = "1")]
-    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
     /// client ID associated with the consensus state
     #[prost(string, tag = "2")]
     pub client_id: ::prost::alloc::string::String,
@@ -515,7 +515,7 @@ pub struct MsgConnectionOpenTry {
     #[prost(string, tag = "2")]
     pub previous_connection_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
-    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
     #[prost(message, optional, tag = "4")]
     pub counterparty: ::core::option::Option<Counterparty>,
     #[prost(uint64, tag = "5")]
@@ -574,7 +574,7 @@ pub struct MsgConnectionOpenAck {
     #[prost(message, optional, tag = "3")]
     pub version: ::core::option::Option<Version>,
     #[prost(message, optional, tag = "4")]
-    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
     #[prost(message, optional, tag = "5")]
     pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
     /// proof of the initialization the connection on Chain B: `UNITIALIZED ->

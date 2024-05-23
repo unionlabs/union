@@ -31,7 +31,7 @@ pub struct GetResponse {
     /// result is the result of the get query. If no value is found, the gRPC
     /// status code NOT_FOUND will be returned.
     #[prost(message, optional, tag = "1")]
-    pub result: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    pub result: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for GetResponse {
     const NAME: &'static str = "GetResponse";
@@ -128,7 +128,7 @@ impl ::prost::Name for ListRequest {
 pub struct ListResponse {
     /// results are the results of the query.
     #[prost(message, repeated, tag = "1")]
-    pub results: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
+    pub results: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// pagination is the pagination response.
     #[prost(message, optional, tag = "5")]
     pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageResponse>,
@@ -176,10 +176,10 @@ pub mod index_value {
         Bool(bool),
         /// timestamp specifies a value for a timestamp index field.
         #[prost(message, tag = "7")]
-        Timestamp(super::super::super::super::super::google::protobuf::Timestamp),
+        Timestamp(::pbjson_types::Timestamp),
         /// duration specifies a value for a duration index field.
         #[prost(message, tag = "8")]
-        Duration(super::super::super::super::super::google::protobuf::Duration),
+        Duration(::pbjson_types::Duration),
     }
 }
 impl ::prost::Name for IndexValue {

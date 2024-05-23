@@ -3,7 +3,8 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use chain_utils::{
-    arbitrum::Arbitrum, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, Chains,
+    arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll,
+    union::Union, Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
@@ -64,6 +65,7 @@ pub enum AnyChainIdentified<T: AnyChain> {
     EthMinimal(Identified<Ethereum<Minimal>, InnerOf<T, Ethereum<Minimal>>>),
     Scroll(Identified<Scroll, InnerOf<T, Scroll>>),
     Arbitrum(Identified<Arbitrum, InnerOf<T, Arbitrum>>),
+    Berachain(Identified<Berachain, InnerOf<T, Berachain>>),
 }
 
 impl<T: AnyChain> AnyChainIdentified<T> {
@@ -230,6 +232,7 @@ macro_rules! any_chain {
             AnyChainIdentified::Cosmos($msg) => $expr,
             AnyChainIdentified::Scroll($msg) => $expr,
             AnyChainIdentified::Arbitrum($msg) => $expr,
+            AnyChainIdentified::Berachain($msg) => $expr,
         }
     };
 }

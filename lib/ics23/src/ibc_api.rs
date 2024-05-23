@@ -1,8 +1,6 @@
 use unionlabs::{
     cosmos::ics23::{commitment_proof::CommitmentProof, proof_spec::ProofSpec},
-    ibc::core::commitment::{
-        merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
-    },
+    ibc::core::commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
 };
 
 pub use crate::proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC};
@@ -39,7 +37,7 @@ pub fn verify_membership(
     proof: &MerkleProof,
     specs: &[ProofSpec],
     consensus_root: &MerkleRoot,
-    path: &MerklePath,
+    path: &[Vec<u8>],
     value: Vec<u8>,
 ) -> Result<(), VerifyMembershipError> {
     if proof.proofs.len() != specs.len() {
@@ -49,10 +47,10 @@ pub fn verify_membership(
         });
     }
 
-    if path.key_path.len() != specs.len() {
+    if path.len() != specs.len() {
         return Err(VerifyMembershipError::InvalidKeyPathLength {
             expected: specs.len(),
-            found: path.key_path.len(),
+            found: path.len(),
         });
     }
 
@@ -70,9 +68,9 @@ pub fn verify_non_membership(
     proof: &MerkleProof,
     specs: &[ProofSpec],
     consensus_root: &MerkleRoot,
-    path: &MerklePath,
+    key_path: &[Vec<u8>],
 ) -> Result<(), VerifyMembershipError> {
-    // this will also assert `specs` and `path.key_path` is not empty, since they are all asserted
+    // this will also assert `specs` and `key_path` is not empty, since they are all asserted
     // to be the same length
     if proof.proofs.is_empty() {
         return Err(VerifyMembershipError::EmptyProof);
@@ -85,10 +83,10 @@ pub fn verify_non_membership(
         });
     }
 
-    if path.key_path.len() != specs.len() {
+    if key_path.len() != specs.len() {
         return Err(VerifyMembershipError::InvalidKeyPathLength {
             expected: specs.len(),
-            found: path.key_path.len(),
+            found: key_path.len(),
         });
     }
 
@@ -104,7 +102,7 @@ pub fn verify_non_membership(
         _ => return Err(VerifyMembershipError::EmptyNonExistenceProof),
     };
 
-    let key = path.key_path.last().expect("len is >= 1").as_bytes();
+    let key = key_path.last().expect("len is >= 1");
     verify::verify_non_membership(&specs[0], &subroot, nonexist, key)
         .map_err(VerifyMembershipError::InnerVerification)?;
 
@@ -112,7 +110,7 @@ pub fn verify_non_membership(
         consensus_root.hash.as_ref(),
         specs,
         &proof.proofs,
-        path,
+        key_path,
         subroot,
         1,
     )
@@ -122,7 +120,7 @@ fn verify_chained_membership_proof(
     root: &[u8],
     specs: &[ProofSpec],
     proofs: &[CommitmentProof],
-    keys: &MerklePath,
+    keys: &[Vec<u8>],
     value: Vec<u8>,
     index: usize,
 ) -> Result<(), VerifyMembershipError> {
@@ -139,13 +137,12 @@ fn verify_chained_membership_proof(
                 .map_err(VerifyMembershipError::RootCalculation)?;
 
             let key = keys
-                .key_path
                 .len()
                 .checked_sub(1 + i)
-                .and_then(|i| keys.key_path.get(i))
+                .and_then(|i| keys.get(i))
                 .ok_or(VerifyMembershipError::InvalidIndexing)?;
 
-            verify::verify_membership(&specs[i], &subroot, existence_proof, key.as_bytes(), &value)
+            verify::verify_membership(&specs[i], &subroot, existence_proof, key, &value)
                 .map_err(VerifyMembershipError::InnerVerification)?;
 
             Ok(subroot)
@@ -192,7 +189,11 @@ mod tests {
             &MerkleRoot {
                 hash: H256::try_from(root).unwrap(),
             },
-            &path,
+            &path
+                .key_path
+                .into_iter()
+                .map(|x| x.into_bytes())
+                .collect::<Vec<_>>(),
             value.into(),
         )
     }
@@ -316,22 +317,20 @@ mod tests {
 
     #[test]
     fn account_non_existence() {
-        let root = hex!("C9A25B954FEF48EC601359591A28C9A2FD32A411421AEF2DC16DC8A68B3CFA98");
+        let root = H256(hex!(
+            "C9A25B954FEF48EC601359591A28C9A2FD32A411421AEF2DC16DC8A68B3CFA98"
+        ));
         let proof = hex!("0a96061293060a15014152090b0c95c948edc407995560feed4a9df88812fa020a15014152090b0c95c948edc407995560feed4a9df81e129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c122180420031a0b0801180120012a0300027822290801122502047820170c890f01b9fa9ab803511bbc7be7c25359309f04d021a72e0a9b93b8ff72c020222c0801120504089601201a21205f282a80f1d186fa1f7b237f81e8bc9a4bb40d5a03cbbdffdd421b1ad4cb16f4222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef81afc020a150143e46d91544517a037a8029b6c7f86f62bab389b129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e3167306a786d79323567357436716461677132646b636c7578376334366b77796d38646563667712460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034611ea6606f6241fdeb0db1854a785eaa2fef5770694237daaf46057cadb3903180320031a0c0801180120012a0400029601222c0801120502049601201a2120532543090d1564b206e953fd6f97000d9b78bd5a8a424f551d483a58b3f54c57222a0801122604089601207e55a1ee8006e9c29c895a8de8ea8cdc6aaddc10e05ea3d3ee8fac786a73c02d20222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef80a80020afd010a0361636312205281c416bf4f80b9d99428a09f91ff311968a3b2adb199342d63c9db20a417e91a090801180120012a010022250801122101ba30cf8122e71a87fea08d0da9499e0373495a64e1648de8f08ca1a73e1fc1a8222708011201011a203489cd05a389a1d165f19003cea0994df9e55a5cb53b3d659417040be528b86d222708011201011a20e5c60ddccacb1c6b0be7957e8d7a86dc0f8bcec91c91d666d39eb1ebedd1bdf1222708011201011a2047a4c9a64496594e8b255443aa979293b2c7120150cf31e0eeeb8a2a987fd7e8222708011201011a2053bca15bed4becbdfd1b4cd0e63bd3845646022a99a2289a6678d8608f092207");
 
         let proof = MerkleProof::decode(&proof).unwrap();
-        let root = MerkleRoot {
-            hash: H256::try_from(root.as_slice()).unwrap(),
-        };
+        let root = MerkleRoot { hash: root };
 
         assert_eq!(
             verify_non_membership(
                 &proof,
                 &SDK_SPECS,
                 &root,
-                &MerklePath {
-                    key_path: vec!["acc".to_string(), "muh".to_string()]
-                }
+                &[b"acc".to_vec(), b"muh".to_vec()]
             ),
             Ok(())
         );

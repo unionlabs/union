@@ -445,7 +445,7 @@ where
                             validators_map.get(&validator_address.0.to_vec().try_into().unwrap())
                         {
                             bitmap.set_bit(*validator_index as u64, true);
-                            signatures.push((*signature).into());
+                            signatures.push(signature.clone());
                             tracing::debug!(
                                 "Validator {:?} at index {} signed",
                                 validator_address,
@@ -496,10 +496,15 @@ where
                             round: BoundedI64::new(signed_header.commit.round.inner().into())
                                 .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
                             block_id: CanonicalBlockId {
-                                hash: signed_header.commit.block_id.hash,
+                                hash: signed_header.commit.block_id.hash.unwrap_or_default(),
                                 part_set_header: CanonicalPartSetHeader {
                                     total: signed_header.commit.block_id.part_set_header.total,
-                                    hash: signed_header.commit.block_id.part_set_header.hash,
+                                    hash: signed_header
+                                        .commit
+                                        .block_id
+                                        .part_set_header
+                                        .hash
+                                        .unwrap_or_default(),
                                 },
                             },
                             chain_id: signed_header.header.chain_id.clone(),

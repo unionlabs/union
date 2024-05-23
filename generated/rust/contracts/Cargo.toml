@@ -7,7 +7,7 @@ version = "0.0.0"
 
 [dependencies]
 arbitrary = { workspace = true, optional = true, features = ["derive"] }
-ethers    = { workspace = true, default-features = false, features = ["abigen"] }
+ethers    = { workspace = true, features = ["abigen"] }
 serde     = { workspace = true, features = ["derive"] }
 [features]
 arbitrary = ["dep:arbitrary"]

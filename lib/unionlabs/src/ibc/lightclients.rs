@@ -1,4 +1,5 @@
 pub mod arbitrum;
+pub mod berachain;
 pub mod cometbls;
 pub mod ethereum;
 pub mod linea;

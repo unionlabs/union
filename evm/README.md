@@ -57,10 +57,10 @@ Production contracts will get solely upgraded through the proxy.
 - UCS02: [0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9](https://sepolia.etherscan.io/address/0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9)
 
 ### Berachain
-- IBCHandler: [0x6b6b60a68b8dcbb170f25045974d10098917f816](https://artio.beratrail.io/address/0x6b6b60a68b8dcbb170f25045974d10098917f816)
-- CometblsClient: [0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3](https://artio.beratrail.io/address/0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3)
-- UCS01: [0x3d0eb16ad2619666dbde1921282cd885b58eeefe](https://artio.beratrail.io//address/0x3d0eb16ad2619666dbde1921282cd885b58eeefe)
-- UCS02: [0xb455b205106c9b72e967399e15efd8a025fd4a90](https://artio.beratrail.io/address/0xb455b205106c9b72e967399e15efd8a025fd4a90)
+- IBCHandler: [0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc](https://bartio.beratrail.io/address/0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc)
+- CometblsClient: [0x3b089e62ed1f9257f7c66e79dde1463f063d6a35](https://bartio.beratrail.io/address/0x3b089e62ed1f9257f7c66e79dde1463f063d6a35)
+- UCS01: [0x0e7aee8a4109b1c1916281d25f43b937f103a409](https://bartio.beratrail.io//address/0x0e7aee8a4109b1c1916281d25f43b937f103a409)
+- UCS02: [0x275ff682294a96b88de06d5ced0bfaf4724ff2d8](https://bartio.beratrail.io/address/0x275ff682294a96b88de06d5ced0bfaf4724ff2d8)
 
 ## Other networks
 

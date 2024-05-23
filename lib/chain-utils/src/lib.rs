@@ -17,6 +17,7 @@ use unionlabs::{
 
 use crate::{
     arbitrum::{Arbitrum, ArbitrumInitError},
+    berachain::{Berachain, BerachainInitError},
     cosmos::{Cosmos, CosmosInitError},
     ethereum::{Ethereum, EthereumInitError},
     private_key::PrivateKey,
@@ -26,6 +27,7 @@ use crate::{
 };
 
 pub mod arbitrum;
+pub mod berachain;
 pub mod cosmos;
 pub mod ethereum;
 pub mod scroll;
@@ -129,6 +131,7 @@ pub struct Chains {
     pub cosmos: ChainMap<Cosmos>,
     pub scroll: ChainMap<Scroll>,
     pub arbitrum: ChainMap<Arbitrum>,
+    pub berachain: ChainMap<Berachain>,
 }
 
 impl GetChain<Union> for Chains {
@@ -152,6 +155,12 @@ impl GetChain<Scroll> for Chains {
 impl GetChain<Arbitrum> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Arbitrum>) -> Option<Arbitrum> {
         self.arbitrum.get(chain_id).cloned()
+    }
+}
+
+impl GetChain<Berachain> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Berachain>) -> Option<Berachain> {
+        self.berachain.get(chain_id).cloned()
     }
 }
 
@@ -187,6 +196,7 @@ pub enum ChainConfigType {
     Ethereum(EthereumChainConfig),
     Scroll(scroll::Config),
     Arbitrum(arbitrum::Config),
+    Berachain(berachain::Config),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,6 +224,22 @@ pub enum AnyChain {
     EthereumMinimal(Ethereum<Minimal>),
     Scroll(Scroll),
     Arbitrum(Arbitrum),
+    Berachain(Berachain),
+}
+
+#[macro_export]
+macro_rules! any_chain {
+    (|$c:ident| $expr:expr) => {
+        match $c {
+            AnyChain::Union($c) => $expr,
+            AnyChain::Cosmos($c) => $expr,
+            AnyChain::EthereumMainnet($c) => $expr,
+            AnyChain::EthereumMinimal($c) => $expr,
+            AnyChain::Scroll($c) => $expr,
+            AnyChain::Arbitrum($c) => $expr,
+            AnyChain::Berachain($c) => $expr,
+        }
+    };
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -228,6 +254,8 @@ pub enum AnyChainTryFromConfigError {
     Scroll(#[from] ScrollInitError),
     #[error("error initializing an arbitrum chain")]
     Arbitrum(#[from] ArbitrumInitError),
+    #[error("error initializing a berachain chain")]
+    Berachain(#[from] BerachainInitError),
 }
 
 impl AnyChain {
@@ -255,6 +283,9 @@ impl AnyChain {
             }
             ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),
             ChainConfigType::Arbitrum(arbitrum) => Self::Arbitrum(Arbitrum::new(arbitrum).await?),
+            ChainConfigType::Berachain(berachain) => {
+                Self::Berachain(Berachain::new(berachain).await?)
+            }
         })
     }
 }
@@ -284,8 +315,16 @@ impl LightClientType<Wasm<Union>> for Scroll {
     const TYPE: ClientType = ClientType::Cometbls;
 }
 
+impl LightClientType<Wasm<Union>> for Berachain {
+    const TYPE: ClientType = ClientType::Cometbls;
+}
+
 impl LightClientType<Scroll> for Wasm<Union> {
     const TYPE: ClientType = ClientType::Wasm(WasmClientType::Scroll);
+}
+
+impl LightClientType<Berachain> for Wasm<Union> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::Berachain);
 }
 
 impl LightClientType<Wasm<Union>> for Arbitrum {

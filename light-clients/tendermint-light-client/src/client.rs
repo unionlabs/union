@@ -5,7 +5,8 @@ use ics008_wasm_client::{
         read_substitute_client_state, read_substitute_consensus_state, save_client_state,
         save_consensus_state, save_subject_client_state, save_subject_consensus_state,
     },
-    IbcClient, IbcClientError, Status, StorageState, ZERO_HEIGHT,
+    IbcClient, IbcClientError, Status, StorageState, WasmClientStateOf, WasmConsensusStateOf,
+    ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_verifier::types::SignatureVerifier;
@@ -30,17 +31,17 @@ use unionlabs::{
 };
 
 use crate::{
-    errors::{Error, InvalidHeaderError},
+    errors::{
+        Error, IbcHeightTooLargeForTendermintHeight, InvalidChainId, InvalidHeaderError,
+        InvalidHostTimestamp, MathOverflow, MerkleProofDecode, MigrateClientStoreError,
+        NegativeTimestamp, RevisionNumberMismatch, TrustedValidatorsMismatch,
+    },
     storage::{
         get_current_or_next_consensus_state_meta, get_current_or_prev_consensus_state_meta,
         save_consensus_state_metadata,
     },
     verifier::Ed25519Verifier,
 };
-
-type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState =
-    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
 
 pub struct TendermintLightClient;
 
@@ -69,11 +70,11 @@ impl IbcClient for TendermintLightClient {
         path: MerklePath,
         value: StorageState,
     ) -> Result<(), IbcClientError<Self>> {
-        let consensus_state: WasmConsensusState =
-            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
+        let consensus_state = read_consensus_state::<Self>(deps, &height)?
+            .ok_or(IbcClientError::ConsensusStateNotFound(height))?;
 
-        let merkle_proof =
-            MerkleProof::decode_as::<Proto>(proof.as_ref()).map_err(Error::MerkleProofDecode)?;
+        let merkle_proof = MerkleProof::decode_as::<Proto>(proof.as_ref())
+            .map_err(|e| Error::from(MerkleProofDecode(e)))?;
 
         // TODO(aeryz): delay period check
 
@@ -82,14 +83,22 @@ impl IbcClient for TendermintLightClient {
                 &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.root,
-                &path,
+                &path
+                    .key_path
+                    .into_iter()
+                    .map(|s| s.into_bytes())
+                    .collect::<Vec<_>>(),
                 value,
             ),
             StorageState::Empty => ics23::ibc_api::verify_non_membership(
                 &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.root,
-                &path,
+                &path
+                    .key_path
+                    .into_iter()
+                    .map(|s| s.into_bytes())
+                    .collect::<Vec<_>>(),
             ),
         }
         .map_err(Error::VerifyMembership)
@@ -101,25 +110,26 @@ impl IbcClient for TendermintLightClient {
         env: Env,
         mut header: Self::Header,
     ) -> Result<(), IbcClientError<Self>> {
-        set_total_voting_power(&mut header.validator_set)?;
-        set_total_voting_power(&mut header.trusted_validators)?;
+        set_total_voting_power(&mut header.validator_set).map_err(Error::from)?;
+        set_total_voting_power(&mut header.trusted_validators).map_err(Error::from)?;
 
-        let client_state: WasmClientState = read_client_state(deps)?;
-        let consensus_state: WasmConsensusState =
-            read_consensus_state(deps, &header.trusted_height)?
-                .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
+        let client_state = read_client_state::<Self>(deps)?;
+        let consensus_state = read_consensus_state::<Self>(deps, &header.trusted_height)?.ok_or(
+            IbcClientError::ConsensusStateNotFound(header.trusted_height),
+        )?;
 
-        check_trusted_header(&header, &consensus_state.data.next_validators_hash)?;
+        check_trusted_header(&header, &consensus_state.data.next_validators_hash)
+            .map_err(Error::from)?;
 
         let revision_number = parse_revision_number(&header.signed_header.header.chain_id).ok_or(
-            Error::InvalidChainId(header.signed_header.header.chain_id.clone()),
+            Error::from(InvalidChainId(header.signed_header.header.chain_id.clone())),
         )?;
 
         if revision_number != header.trusted_height.revision_number {
-            return Err(Error::RevisionNumberMismatch {
+            return Err(Error::from(RevisionNumberMismatch {
                 trusted_revision_number: revision_number,
                 header_revision_number: header.trusted_height.revision_number,
-            }
+            })
             .into());
         }
 
@@ -144,9 +154,9 @@ impl IbcClient for TendermintLightClient {
                 client_state.data.chain_id,
                 i64::try_from(header.trusted_height.revision_height)
                     .map_err(|_| {
-                        Error::IbcHeightTooLargeForTendermintHeight(
+                        Error::from(IbcHeightTooLargeForTendermintHeight(
                             header.trusted_height.revision_height,
-                        )
+                        ))
                     })?
                     .try_into()
                     .expect(
@@ -163,9 +173,9 @@ impl IbcClient for TendermintLightClient {
             env.block
                 .time
                 .try_into()
-                .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?,
+                .map_err(|_| Error::from(InvalidHostTimestamp(env.block.time)))?,
             client_state.data.max_clock_drift,
-            client_state.data.trust_level,
+            &client_state.data.trust_level,
             &SignatureVerifier::new(Ed25519Verifier::new(deps)),
         )
         .map_err(Error::TendermintVerify)?;
@@ -193,7 +203,7 @@ impl IbcClient for TendermintLightClient {
 
         // TODO(aeryz): prune oldest expired consensus state
 
-        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+        let mut client_state = read_client_state::<Self>(deps.as_ref())?;
 
         if update_height > client_state.latest_height {
             client_state.latest_height = update_height;
@@ -208,7 +218,7 @@ impl IbcClient for TendermintLightClient {
         );
         save_consensus_state::<Self>(
             deps,
-            WasmConsensusState {
+            WasmConsensusStateOf::<Self> {
                 data: ConsensusState {
                     timestamp: header.signed_header.header.time,
                     root: MerkleRoot {
@@ -240,7 +250,7 @@ impl IbcClient for TendermintLightClient {
         // If there is already a header at this height, it should be exactly the same as the header that
         // we saved previously. If this is not the case, either the client is broken or the chain is
         // broken. Because it should not be possible to have two distinct valid headers at a height.
-        if let Some(WasmConsensusState {
+        if let Some(WasmConsensusStateOf::<Self> {
             data:
                 ConsensusState {
                     timestamp,
@@ -302,8 +312,8 @@ impl IbcClient for TendermintLightClient {
     fn migrate_client_store(
         mut deps: DepsMut<Self::CustomQuery>,
     ) -> Result<(), IbcClientError<Self>> {
-        let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
-        let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
+        let subject_client_state = read_subject_client_state::<Self>(deps.as_ref())?;
+        let substitute_client_state = read_substitute_client_state::<Self>(deps.as_ref())?;
 
         ensure(
             substitute_client_state
@@ -311,17 +321,17 @@ impl IbcClient for TendermintLightClient {
                 .frozen_height
                 .unwrap_or(ZERO_HEIGHT)
                 == ZERO_HEIGHT,
-            Error::SubstituteClientFrozen,
+            MigrateClientStoreError::SubstituteClientFrozen,
         )?;
 
         ensure(
             migrate_check_allowed_fields(&subject_client_state.data, &substitute_client_state.data),
-            Error::MigrateFieldsChanged,
+            MigrateClientStoreError::MigrateFieldsChanged,
         )?;
 
-        let substitute_consensus_state: WasmConsensusState =
+        let substitute_consensus_state: WasmConsensusStateOf<Self> =
             read_substitute_consensus_state(deps.as_ref(), &substitute_client_state.latest_height)?
-                .ok_or(Error::ConsensusStateNotFound(
+                .ok_or(IbcClientError::ConsensusStateNotFound(
                     substitute_client_state.latest_height,
                 ))?;
 
@@ -331,16 +341,16 @@ impl IbcClient for TendermintLightClient {
             substitute_client_state.latest_height,
         );
 
-        save_subject_consensus_state::<TendermintLightClient>(
+        save_subject_consensus_state::<Self>(
             deps.branch(),
             substitute_consensus_state,
             &substitute_client_state.latest_height,
         );
 
         let scs = substitute_client_state.data;
-        save_subject_client_state::<TendermintLightClient>(
+        save_subject_client_state::<Self>(
             deps,
-            WasmClientState {
+            WasmClientStateOf::<Self> {
                 data: ClientState {
                     chain_id: scs.chain_id,
                     trusting_period: scs.trusting_period,
@@ -360,7 +370,7 @@ impl IbcClient for TendermintLightClient {
         deps: Deps<Self::CustomQuery>,
         env: &cosmwasm_std::Env,
     ) -> Result<Status, IbcClientError<Self>> {
-        let client_state: WasmClientState = read_client_state(deps)?;
+        let client_state = read_client_state::<Self>(deps)?;
 
         // TODO(aeryz): when refactoring the tm client, we should consider making this non-optional
         // because otherwise we always have to check if the inner height is zero.
@@ -380,7 +390,7 @@ impl IbcClient for TendermintLightClient {
             env.block
                 .time
                 .try_into()
-                .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?,
+                .map_err(|_| Error::from(InvalidHostTimestamp(env.block.time)))?,
         ) {
             return Ok(Status::Expired);
         }
@@ -400,7 +410,7 @@ impl IbcClient for TendermintLightClient {
         height: Height,
     ) -> Result<u64, IbcClientError<Self>> {
         let timestamp = read_consensus_state::<Self>(deps, &height)?
-            .ok_or(Error::ConsensusStateNotFound(height))?
+            .ok_or(IbcClientError::ConsensusStateNotFound(height))?
             .data
             .timestamp
             .seconds
@@ -408,21 +418,21 @@ impl IbcClient for TendermintLightClient {
 
         timestamp
             .try_into()
-            .map_err(|_| Error::NegativeTimestamp(timestamp))
+            .map_err(|_| Error::from(NegativeTimestamp(timestamp)))
             .map_err(Into::into)
     }
 }
 
-fn set_total_voting_power(
+pub fn set_total_voting_power(
     validator_set: &mut unionlabs::tendermint::types::validator_set::ValidatorSet,
-) -> Result<(), Error> {
+) -> Result<(), MathOverflow> {
     validator_set.total_voting_power =
         validator_set
             .validators
             .iter()
             .try_fold(0_i64, |acc, val| {
                 acc.checked_add(val.voting_power.inner())
-                    .ok_or(Error::MathOverflow)
+                    .ok_or(MathOverflow)
             })?;
     Ok(())
 }
@@ -438,7 +448,7 @@ fn migrate_check_allowed_fields(
         && subject_client_state.upgrade_path == substitute_client_state.upgrade_path
 }
 
-fn construct_partial_header(
+pub fn construct_partial_header(
     chain_id: String,
     height: BoundedI64<0, { i64::MAX }>,
     time: Timestamp,
@@ -470,7 +480,7 @@ fn construct_partial_header(
     }
 }
 
-fn is_client_expired(
+pub fn is_client_expired(
     consensus_state_timestamp: &Timestamp,
     trusting_period: Duration,
     current_block_time: Timestamp,
@@ -487,7 +497,7 @@ fn is_client_expired(
 /// `header.signed_header.header.height` is `u64` and it does not contain the
 /// revision height. This function is a utility to generate a `Height` type out
 /// of the update data.
-fn height_from_header(header: &Header) -> Height {
+pub fn height_from_header(header: &Header) -> Height {
     Height {
         revision_number: header.trusted_height.revision_number,
         // SAFETY: height's bounds are [0..i64::MAX]
@@ -495,20 +505,20 @@ fn height_from_header(header: &Header) -> Height {
     }
 }
 
-fn check_trusted_header(header: &Header, next_validators_hash: &H256) -> Result<(), Error> {
+pub fn check_trusted_header(
+    header: &Header,
+    next_validators_hash: &H256,
+) -> Result<(), TrustedValidatorsMismatch> {
     let val_hash = tendermint_verifier::utils::validators_hash(&header.trusted_validators);
 
     if &val_hash != next_validators_hash {
-        Err(Error::TrustedValidatorsMismatch(
-            val_hash,
-            *next_validators_hash,
-        ))
+        Err(TrustedValidatorsMismatch(val_hash, *next_validators_hash))
     } else {
         Ok(())
     }
 }
 
-fn parse_revision_number(chain_id: &str) -> Option<u64> {
+pub fn parse_revision_number(chain_id: &str) -> Option<u64> {
     chain_id
         .rsplit('-')
         .next()
@@ -546,10 +556,10 @@ mod tests {
 
     fn save_states_to_migrate_store(
         deps: DepsMut,
-        subject_client_state: &WasmClientState,
-        substitute_client_state: &WasmClientState,
-        subject_consensus_state: &WasmConsensusState,
-        substitute_consensus_state: &WasmConsensusState,
+        subject_client_state: &WasmClientStateOf<TendermintLightClient>,
+        substitute_client_state: &WasmClientStateOf<TendermintLightClient>,
+        subject_consensus_state: &WasmConsensusStateOf<TendermintLightClient>,
+        substitute_consensus_state: &WasmConsensusStateOf<TendermintLightClient>,
     ) {
         deps.storage.set(
             format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
@@ -577,12 +587,13 @@ mod tests {
         );
     }
 
+    #[allow(clippy::type_complexity)] // it's fine bro
     fn prepare_migrate_tests() -> (
         OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>,
-        WasmClientState,
-        WasmConsensusState,
-        WasmClientState,
-        WasmConsensusState,
+        WasmClientStateOf<TendermintLightClient>,
+        WasmConsensusStateOf<TendermintLightClient>,
+        WasmClientStateOf<TendermintLightClient>,
+        WasmConsensusStateOf<TendermintLightClient>,
     ) {
         (
             mock_dependencies(),
@@ -623,7 +634,7 @@ mod tests {
 
         TendermintLightClient::migrate_client_store(deps.as_mut()).unwrap();
 
-        let wasm_client_state: WasmClientState =
+        let wasm_client_state: WasmClientStateOf<TendermintLightClient> =
             read_subject_client_state::<TendermintLightClient>(deps.as_ref()).unwrap();
         // we didn't miss updating any fields
         assert_eq!(wasm_client_state, substitute_wasm_client_state);
@@ -690,7 +701,9 @@ mod tests {
             );
             assert_eq!(
                 TendermintLightClient::migrate_client_store(deps.as_mut()),
-                Err(Error::MigrateFieldsChanged.into())
+                Err(
+                    Error::MigrateClientStore(MigrateClientStoreError::MigrateFieldsChanged).into()
+                )
             );
         }
     }
@@ -717,7 +730,7 @@ mod tests {
 
         assert_eq!(
             TendermintLightClient::migrate_client_store(deps.as_mut()),
-            Err(Error::SubstituteClientFrozen.into())
+            Err(Error::MigrateClientStore(MigrateClientStoreError::SubstituteClientFrozen).into())
         );
     }
 }

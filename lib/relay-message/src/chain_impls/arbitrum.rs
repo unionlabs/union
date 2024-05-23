@@ -2,7 +2,7 @@ use std::{collections::VecDeque, marker::PhantomData};
 
 use chain_utils::{
     arbitrum::Arbitrum,
-    ethereum::{EthereumChain, EthereumChainExt, IbcHandlerExt},
+    ethereum::{EthereumChain, EthereumChainExt, EthereumConsensusChain, IbcHandlerExt},
 };
 use ethers::providers::Middleware;
 use frunk::{hlist_pat, HList};

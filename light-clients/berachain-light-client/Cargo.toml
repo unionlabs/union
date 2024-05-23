@@ -1,0 +1,48 @@
+[package]
+authors = ["Union Labs"]
+edition = "2021"
+license = "BSL-1.1"
+name    = "berachain-light-client"
+publish = false
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytes                   = { workspace = true }
+cosmwasm-std            = { workspace = true, features = ["abort", "iterator"] }
+ethereum-light-client   = { workspace = true, features = ["mainnet", "library"] }
+hex                     = { workspace = true }
+prost                   = { workspace = true }
+protos                  = { workspace = true, features = ["proto_full", "std"] }
+schemars                = { workspace = true }
+serde                   = { workspace = true, features = ["derive"] }
+serde-json-wasm         = { workspace = true }
+serde-utils             = { workspace = true }
+sha2                    = { workspace = true }
+sha3                    = { workspace = true }
+tendermint-light-client = { workspace = true, features = ["library"] }
+tendermint-verifier     = { workspace = true }
+thiserror               = { workspace = true }
+
+ethereum-verifier.workspace = true
+hex-literal.workspace       = true
+ics008-wasm-client          = { workspace = true }
+ics23                       = { workspace = true }
+unionlabs                   = { workspace = true }
+
+[dev-dependencies]
+base64                = { workspace = true }
+ethereum-light-client = { workspace = true, features = ["test-utils"] }
+lazy_static           = "1.4.0"
+serde_json            = { workspace = true }
+
+
+[features]

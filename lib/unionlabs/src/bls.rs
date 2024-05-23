@@ -18,6 +18,8 @@ impl TryFrom<Vec<u8>> for BlsSecretKey {
 
 hex_string_array_wrapper! {
     pub struct BlsPublicKey(pub [u8; BLS_PUBLIC_KEY_BYTES_LEN]);
+
+    /// NOTE: This is not validated!
     pub struct BlsSignature(pub [u8; BLS_SIGNATURE_BYTES_LEN]);
 }
 

@@ -25,13 +25,11 @@ pub struct ClientState {
     pub latest_height: Height,
     pub proof_specs: Vec<ProofSpec>,
     pub upgrade_path: Vec<String>,
-    pub allow_update_after_expiry: bool,
-    pub allow_update_after_misbehavior: bool,
 }
 
 impl From<ClientState> for protos::ibc::lightclients::tendermint::v1::ClientState {
-    #[allow(deprecated)]
     fn from(value: ClientState) -> Self {
+        #[allow(deprecated)]
         Self {
             chain_id: value.chain_id,
             trust_level: Some(value.trust_level.into()),
@@ -42,8 +40,8 @@ impl From<ClientState> for protos::ibc::lightclients::tendermint::v1::ClientStat
             latest_height: Some(value.latest_height.into()),
             proof_specs: value.proof_specs.into_iter().map(Into::into).collect(),
             upgrade_path: value.upgrade_path,
-            allow_update_after_expiry: value.allow_update_after_expiry,
-            allow_update_after_misbehaviour: value.allow_update_after_misbehavior,
+            allow_update_after_expiry: Default::default(),
+            allow_update_after_misbehaviour: Default::default(),
         }
     }
 }
@@ -67,7 +65,6 @@ pub enum TryFromClientStateError {
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::ClientState> for ClientState {
     type Error = TryFromClientStateError;
 
-    #[allow(deprecated)]
     fn try_from(
         value: protos::ibc::lightclients::tendermint::v1::ClientState,
     ) -> Result<Self, Self::Error> {
@@ -94,8 +91,6 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::ClientState> for ClientS
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(TryFromClientStateError::ProofSpecs)?,
             upgrade_path: value.upgrade_path,
-            allow_update_after_expiry: value.allow_update_after_expiry,
-            allow_update_after_misbehavior: value.allow_update_after_misbehaviour,
         })
     }
 }

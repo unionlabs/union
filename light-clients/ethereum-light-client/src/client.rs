@@ -481,7 +481,7 @@ fn migrate_check_allowed_fields(
             == substitute_client_state.epochs_per_sync_committee_period
 }
 
-fn do_verify_membership(
+pub fn do_verify_membership(
     path: String,
     storage_root: H256,
     ibc_commitment_slot: U256,
@@ -543,7 +543,7 @@ pub fn canonicalize_stored_value(
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
-fn do_verify_non_membership(
+pub fn do_verify_non_membership(
     path: String,
     storage_root: H256,
     ibc_commitment_slot: U256,
@@ -578,7 +578,7 @@ pub fn check_commitment_key(
     }
 }
 
-fn is_client_expired(
+pub fn is_client_expired(
     consensus_state_timestamp: u64,
     trusting_period: u64,
     current_block_time: u64,
@@ -591,11 +591,8 @@ mod test {
     use std::{cmp::Ordering, fs, marker::PhantomData};
 
     use cosmwasm_std::{
-        testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
-        Binary, OwnedDeps, SystemResult, Timestamp,
-    };
-    use ethereum_verifier::crypto::{
-        eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
+        testing::{mock_env, MockApi, MockQuerier, MockStorage},
+        OwnedDeps, Timestamp,
     };
     use ics008_wasm_client::storage_utils::{
         consensus_db_key, read_subject_consensus_state, HOST_CLIENT_STATE_KEY,
@@ -603,7 +600,6 @@ mod test {
     };
     use serde::Deserialize;
     use unionlabs::{
-        bls::BlsPublicKey,
         encoding::Encode,
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
@@ -611,6 +607,7 @@ mod test {
     };
 
     use super::*;
+    use crate::client::test_utils::custom_query_handler;
 
     #[derive(Deserialize)]
     struct MembershipTest<T> {
@@ -872,45 +869,6 @@ mod test {
                         .unwrap()
                         .aggregate_pubkey
                 );
-            }
-        }
-    }
-
-    fn custom_query_handler(query: &UnionCustomQuery) -> MockQuerierCustomHandlerResult {
-        match query {
-            UnionCustomQuery::AggregateVerify {
-                public_keys,
-                message,
-                signature,
-            } => {
-                let pubkeys: Vec<BlsPublicKey> = public_keys
-                    .iter()
-                    .map(|pk| pk.0.clone().try_into().unwrap())
-                    .collect();
-
-                let res = fast_aggregate_verify_unchecked(
-                    pubkeys.iter().collect::<Vec<&BlsPublicKey>>().as_slice(),
-                    message.as_ref(),
-                    &signature.0.clone().try_into().unwrap(),
-                );
-
-                SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
-                    serde_json::to_vec(&res.is_ok()).unwrap().into(),
-                ))
-            }
-            UnionCustomQuery::Aggregate { public_keys } => {
-                let pubkey = eth_aggregate_public_keys_unchecked(
-                    public_keys
-                        .iter()
-                        .map(|pk| pk.as_ref().try_into().unwrap())
-                        .collect::<Vec<BlsPublicKey>>()
-                        .as_slice(),
-                )
-                .unwrap();
-
-                SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
-                    serde_json::to_vec(&Binary(pubkey.into())).unwrap().into(),
-                ))
             }
         }
     }
@@ -1322,5 +1280,53 @@ mod test {
             EthereumLightClient::migrate_client_store(deps.as_mut()),
             Err(Error::SubstituteClientFrozen.into())
         );
+    }
+}
+
+#[cfg(any(feature = "test-utils", test))]
+pub mod test_utils {
+    use cosmwasm_std::{testing::MockQuerierCustomHandlerResult, Binary, SystemResult};
+    use ethereum_verifier::crypto::{
+        eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
+    };
+    use unionlabs::{bls::BlsPublicKey, cosmwasm::wasm::union::custom_query::UnionCustomQuery};
+
+    pub fn custom_query_handler(query: &UnionCustomQuery) -> MockQuerierCustomHandlerResult {
+        match query {
+            UnionCustomQuery::AggregateVerify {
+                public_keys,
+                message,
+                signature,
+            } => {
+                let pubkeys: Vec<BlsPublicKey> = public_keys
+                    .iter()
+                    .map(|pk| pk.0.clone().try_into().unwrap())
+                    .collect();
+
+                let res = fast_aggregate_verify_unchecked(
+                    pubkeys.iter().collect::<Vec<&BlsPublicKey>>().as_slice(),
+                    message.as_ref(),
+                    &signature.0.clone().try_into().unwrap(),
+                );
+
+                SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
+                    serde_json::to_vec(&res.is_ok()).unwrap().into(),
+                ))
+            }
+            UnionCustomQuery::Aggregate { public_keys } => {
+                let pubkey = eth_aggregate_public_keys_unchecked(
+                    public_keys
+                        .iter()
+                        .map(|pk| pk.as_ref().try_into().unwrap())
+                        .collect::<Vec<BlsPublicKey>>()
+                        .as_slice(),
+                )
+                .unwrap();
+
+                SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
+                    serde_json::to_vec(&Binary(pubkey.into())).unwrap().into(),
+                ))
+            }
+        }
     }
 }

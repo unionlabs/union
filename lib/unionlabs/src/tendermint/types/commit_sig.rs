@@ -5,7 +5,7 @@ use crate::google::protobuf::timestamp::TryFromEthAbiTimestampError;
 use crate::{
     errors::{required, InvalidLength, MissingField, UnknownEnumVariant},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
-    hash::{H160, H512},
+    hash::H160,
     tendermint::types::block_id_flag::BlockIdFlag,
 };
 
@@ -15,12 +15,16 @@ pub enum CommitSig {
     Commit {
         validator_address: H160,
         timestamp: Timestamp,
-        signature: H512,
+        #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+        signature: Vec<u8>,
     },
     Nil {
         validator_address: H160,
         timestamp: Timestamp,
-        signature: H512,
+        #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+        signature: Vec<u8>,
     },
 }
 
@@ -41,7 +45,7 @@ impl From<CommitSig> for protos::tendermint::types::CommitSig {
                 block_id_flag: BlockIdFlag::Commit.into(),
                 validator_address: validator_address.into(),
                 timestamp: Some(timestamp.into()),
-                signature: signature.into(),
+                signature,
             },
             CommitSig::Nil {
                 validator_address,
@@ -51,7 +55,7 @@ impl From<CommitSig> for protos::tendermint::types::CommitSig {
                 block_id_flag: BlockIdFlag::Nil.into(),
                 validator_address: validator_address.into(),
                 timestamp: Some(timestamp.into()),
-                signature: signature.into(),
+                signature,
             },
         }
     }
@@ -63,7 +67,6 @@ pub enum TryFromEthAbiCommitSigError {
     BlockIdFlag(UnknownEnumVariant<u8>),
     ValidatorAddress(crate::errors::InvalidLength),
     Timestamp(TryFromEthAbiTimestampError),
-    Signature(InvalidLength),
     UnknownBlockIdFlag,
     AbsentWithValidatorAddress,
     AbsentWithTimestamp,
@@ -101,11 +104,7 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
                     .timestamp
                     .try_into()
                     .map_err(TryFromEthAbiCommitSigError::Timestamp)?,
-                signature: value
-                    .signature
-                    .to_vec()
-                    .try_into()
-                    .map_err(TryFromEthAbiCommitSigError::Signature)?,
+                signature: value.signature.to_vec(),
             }),
             BlockIdFlag::Nil => Ok(Self::Nil {
                 validator_address: value
@@ -116,26 +115,29 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
                     .timestamp
                     .try_into()
                     .map_err(TryFromEthAbiCommitSigError::Timestamp)?,
-                signature: value
-                    .signature
-                    .to_vec()
-                    .try_into()
-                    .map_err(TryFromEthAbiCommitSigError::Signature)?,
+                signature: value.signature.to_vec(),
             }),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromCommitSigError {
-    MissingField(MissingField),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid validator address")]
     ValidatorAddress(InvalidLength),
+    #[error("invalid block id flag")]
     BlockIdFlag(UnknownEnumVariant<i32>),
+    #[error("invalid timestamp")]
     Timestamp(TryFromTimestampError),
-    Signature(InvalidLength),
+    #[error("block id flag was `Unknown`")]
     UnknownBlockIdFlag,
+    #[error("an absent commit sig had an address")]
     AbsentWithValidatorAddress,
+    #[error("an absent commit sig had a timestamp")]
     AbsentWithTimestamp,
+    #[error("an absent commit sig had a signature")]
     AbsentWithSignature,
 }
 
@@ -151,7 +153,10 @@ impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
             BlockIdFlag::Absent => {
                 if !value.validator_address.is_empty() {
                     Err(TryFromCommitSigError::AbsentWithValidatorAddress)
-                } else if value.timestamp.is_some() {
+                } else if value
+                    .timestamp
+                    .is_some_and(|ts| ts != Timestamp::default().into())
+                {
                     Err(TryFromCommitSigError::AbsentWithTimestamp)
                 } else if !value.signature.is_empty() {
                     Err(TryFromCommitSigError::AbsentWithSignature)
@@ -167,10 +172,7 @@ impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
                 timestamp: required!(value.timestamp)?
                     .try_into()
                     .map_err(TryFromCommitSigError::Timestamp)?,
-                signature: value
-                    .signature
-                    .try_into()
-                    .map_err(TryFromCommitSigError::Signature)?,
+                signature: value.signature,
             }),
             BlockIdFlag::Nil => Ok(Self::Nil {
                 validator_address: value
@@ -180,10 +182,7 @@ impl TryFrom<protos::tendermint::types::CommitSig> for CommitSig {
                 timestamp: required!(value.timestamp)?
                     .try_into()
                     .map_err(TryFromCommitSigError::Timestamp)?,
-                signature: value
-                    .signature
-                    .try_into()
-                    .map_err(TryFromCommitSigError::Signature)?,
+                signature: value.signature,
             }),
         }
     }
@@ -220,5 +219,26 @@ impl From<CommitSig> for contracts::glue::TendermintTypesCommitSigData {
                 signature: signature.into(),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tendermint::types::commit_sig::CommitSig;
+
+    #[test]
+    fn proto_json() {
+        let json = r#"
+          {
+            "block_id_flag": 1,
+            "validator_address": "",
+            "timestamp": "0001-01-01T00:00:00Z",
+            "signature": null
+          }
+        "#;
+
+        let proto = serde_json::from_str::<protos::tendermint::types::CommitSig>(json).unwrap();
+
+        assert_eq!(CommitSig::try_from(proto).unwrap(), CommitSig::Absent);
     }
 }

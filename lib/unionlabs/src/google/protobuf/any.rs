@@ -132,7 +132,7 @@ impl<T: Encode<Proto> + TypeUrl> From<Any<T>> for protos::google::protobuf::Any 
     fn from(val: Any<T>) -> Self {
         protos::google::protobuf::Any {
             type_url: T::type_url().to_string(),
-            value: val.0.encode(),
+            value: val.0.encode().into(),
         }
     }
 }
@@ -214,7 +214,7 @@ pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobu
     let bz = t.encode_to_vec();
     protos::google::protobuf::Any {
         type_url: T::type_url(),
-        value: bz,
+        value: bz.into(),
     }
 }
 

@@ -27,7 +27,7 @@ pub trait Id = Debug
     + PartialEq
     + Serialize
     + for<'de> Deserialize<'de>
-    + FromStr<Err: Error + Send + Sync + 'static>
+    + FromStr<Err: Error + PartialEq + Clone + Send + Sync + 'static>
     + Display
     + Send
     + Sync

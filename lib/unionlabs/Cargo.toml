@@ -26,7 +26,6 @@ ethers                   = { workspace = true, optional = true }
 ethers-contract-derive   = { workspace = true, optional = true }
 ethers-core              = { workspace = true, optional = true }
 frame-support-procedural = { workspace = true }
-frunk                    = { workspace = true }
 generic-array            = "0.14.7"
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }

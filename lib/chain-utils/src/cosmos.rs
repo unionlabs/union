@@ -29,7 +29,11 @@ use unionlabs::{
     WasmClientType,
 };
 
-use crate::{cosmos_sdk::CosmosSdkChain, private_key::PrivateKey, Pool};
+use crate::{
+    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs},
+    private_key::PrivateKey,
+    Pool,
+};
 
 #[derive(Debug, Clone)]
 pub struct Cosmos {
@@ -52,16 +56,8 @@ pub struct Config {
 }
 
 impl CosmosSdkChain for Cosmos {
-    fn grpc_url(&self) -> String {
-        self.grpc_url.clone()
-    }
-
     fn fee_denom(&self) -> String {
         self.fee_denom.clone()
-    }
-
-    fn tm_client(&self) -> &WebSocketClient {
-        &self.tm_client
     }
 
     fn signers(&self) -> &Pool<CosmosSigner> {
@@ -70,6 +66,16 @@ impl CosmosSdkChain for Cosmos {
 
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
         &self.checksum_cache
+    }
+}
+
+impl CosmosSdkChainRpcs for Cosmos {
+    fn grpc_url(&self) -> String {
+        self.grpc_url.clone()
+    }
+
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
     }
 }
 
@@ -111,7 +117,7 @@ impl Chain for Cosmos {
         self.tm_client
             .latest_block()
             .await
-            .map(|height| self.make_height(height.block.header.height.value()))
+            .map(|response| self.make_height(response.block.header.height.value()))
     }
 
     fn query_latest_height_as_destination(
@@ -205,8 +211,6 @@ impl Chain for Cosmos {
             },
             proof_specs: SDK_SPECS.into(),
             upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
-            allow_update_after_expiry: false,
-            allow_update_after_misbehavior: false,
         }
     }
 

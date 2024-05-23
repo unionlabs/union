@@ -53,7 +53,7 @@ pub struct StatusResponse {
     pub height: u64,
     /// block height timestamp
     #[prost(message, optional, tag = "3")]
-    pub timestamp: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     /// app hash of the current block
     #[prost(bytes = "vec", tag = "4")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,

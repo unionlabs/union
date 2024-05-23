@@ -56,6 +56,9 @@ pub mod scroll;
 /// Types specific to the linea protocol.
 pub mod linea;
 
+/// Types specific to the berachain protocol.
+pub mod berachain;
+
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
 
@@ -147,6 +150,7 @@ pub enum WasmClientType {
     Scroll,
     Arbitrum,
     Linea,
+    Berachain,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -194,6 +198,7 @@ impl FromStr for WasmClientType {
             "Scroll" => Ok(WasmClientType::Scroll),
             "Arbitrum" => Ok(WasmClientType::Arbitrum),
             "Linea" => Ok(WasmClientType::Linea),
+            "Berachain" => Ok(WasmClientType::Berachain),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
@@ -209,6 +214,7 @@ impl Display for WasmClientType {
             Self::Scroll => write!(f, "Scroll"),
             Self::Arbitrum => write!(f, "Arbitrum"),
             Self::Linea => write!(f, "Linea"),
+            Self::Berachain => write!(f, "Berachain"),
         }
     }
 }

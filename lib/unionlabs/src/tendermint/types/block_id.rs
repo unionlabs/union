@@ -3,7 +3,7 @@ use macros::model;
 #[cfg(feature = "ethabi")]
 use crate::tendermint::types::part_set_header::TryFromEthAbiPartSetHeaderError;
 use crate::{
-    errors::{InvalidLength, MissingField},
+    errors::{required, InvalidLength, MissingField},
     hash::H256,
     tendermint::types::part_set_header::{PartSetHeader, TryFromPartSetHeaderError},
 };
@@ -11,15 +11,19 @@ use crate::{
 #[derive(Default)]
 #[model(proto(raw(protos::tendermint::types::BlockId), into, from))]
 pub struct BlockId {
-    pub hash: H256,
+    /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.
+    pub hash: Option<H256>,
     pub part_set_header: PartSetHeader,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromBlockIdError {
-    MissingField(MissingField),
-    Hash(InvalidLength),
-    PartSetHeader(TryFromPartSetHeaderError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid hash")]
+    Hash(#[source] InvalidLength),
+    #[error("invalid part set header")]
+    PartSetHeader(#[from] TryFromPartSetHeaderError),
 }
 
 impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
@@ -27,22 +31,31 @@ impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
 
     fn try_from(value: protos::tendermint::types::BlockId) -> Result<Self, Self::Error> {
         Ok(Self {
-            hash: value.hash.try_into().map_err(TryFromBlockIdError::Hash)?,
-            part_set_header: value
-                .part_set_header
-                .ok_or(TryFromBlockIdError::MissingField(MissingField(
-                    "part_set_header",
-                )))?
-                .try_into()
-                .map_err(TryFromBlockIdError::PartSetHeader)?,
+            hash: maybe_empty_h256(&value.hash).map_err(TryFromBlockIdError::Hash)?,
+            part_set_header: required!(value.part_set_header)?.try_into()?,
         })
     }
+}
+
+pub(crate) fn maybe_empty_h256(value: &[u8]) -> Result<Option<H256>, InvalidLength> {
+    Ok(if value.is_empty() {
+        None
+    } else {
+        Some(
+            value
+                .try_into()
+                .map_err(|err: InvalidLength| InvalidLength {
+                    expected: crate::errors::ExpectedLength::Either(0, 32),
+                    found: err.found,
+                })?,
+        )
+    })
 }
 
 impl From<BlockId> for protos::tendermint::types::BlockId {
     fn from(value: BlockId) -> Self {
         Self {
-            hash: value.hash.into(),
+            hash: value.hash.map(Into::into).unwrap_or_default(),
             part_set_header: Some(value.part_set_header.into()),
         }
     }
@@ -52,10 +65,18 @@ impl From<BlockId> for protos::tendermint::types::BlockId {
 #[cfg(test)]
 fn proto_roundtrip() {
     crate::test_utils::assert_proto_roundtrip(&BlockId {
-        hash: [1; 32].into(),
+        hash: Some([1; 32].into()),
         part_set_header: PartSetHeader {
             total: 1,
-            hash: [2; 32].into(),
+            hash: Some([2; 32].into()),
+        },
+    });
+
+    crate::test_utils::assert_proto_roundtrip(&BlockId {
+        hash: None,
+        part_set_header: PartSetHeader {
+            total: 1,
+            hash: None,
         },
     });
 }
@@ -64,7 +85,7 @@ fn proto_roundtrip() {
 impl From<BlockId> for contracts::glue::TendermintTypesBlockIDData {
     fn from(value: BlockId) -> Self {
         Self {
-            hash: value.hash.into_bytes().into(),
+            hash: value.hash.map(Into::into).unwrap_or_default(),
             part_set_header: value.part_set_header.into(),
         }
     }
@@ -83,11 +104,7 @@ impl TryFrom<contracts::glue::TendermintTypesBlockIDData> for BlockId {
 
     fn try_from(value: contracts::glue::TendermintTypesBlockIDData) -> Result<Self, Self::Error> {
         Ok(Self {
-            hash: value
-                .hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiBlockIdError::Hash)?,
+            hash: maybe_empty_h256(&value.hash).map_err(TryFromEthAbiBlockIdError::Hash)?,
             part_set_header: value
                 .part_set_header
                 .try_into()

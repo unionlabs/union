@@ -1,14 +1,65 @@
-use ics008_wasm_client::IbcClientError;
+use ics008_wasm_client::{IbcClient, IbcClientError};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
     ibc::{
-        core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+        core::commitment::merkle_proof::MerkleProof,
         lightclients::{cometbls::header::Header, tendermint},
     },
 };
 
 use crate::client::TendermintLightClient;
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+// TODO: Use an error reporter at the top level of ics008-wasm-client so we don't have to include the sources manually in the display impl
+pub enum Error {
+    #[error(transparent)]
+    MathOverflow(#[from] MathOverflow),
+
+    #[error(transparent)]
+    NegativeTimestamp(#[from] NegativeTimestamp),
+
+    #[error("unimplemented feature")]
+    // TODO: Remove this from this variant
+    Unimplemented,
+
+    #[error("unable to decode header")]
+    HeaderDecode(#[source] DecodeErrorOf<Proto, Header>),
+
+    #[error(transparent)]
+    MerkleProofDecode(#[from] MerkleProofDecode),
+
+    #[error("unable to decode client state")]
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, tendermint::client_state::ClientState>),
+
+    #[error(transparent)]
+    IbcHeightTooLargeForTendermintHeight(#[from] IbcHeightTooLargeForTendermintHeight),
+
+    #[error(transparent)]
+    RevisionNumberMismatch(#[from] RevisionNumberMismatch),
+
+    #[error("invalid header")]
+    InvalidHeader(#[from] InvalidHeaderError),
+
+    // NOTE: This is only emitted when it's not possible to parse the revision number from the chain id; perhaps make this more descriptive?
+    #[error(transparent)]
+    InvalidChainId(#[from] InvalidChainId),
+
+    #[error(transparent)]
+    TrustedValidatorsMismatch(#[from] TrustedValidatorsMismatch),
+
+    #[error("verify membership error")]
+    VerifyMembership(#[from] ics23::ibc_api::VerifyMembershipError),
+
+    #[error(transparent)]
+    MigrateClientStore(#[from] MigrateClientStoreError),
+
+    #[error(transparent)]
+    TendermintVerify(#[from] tendermint_verifier::error::Error),
+
+    #[error(transparent)]
+    InvalidHostTimestamp(#[from] InvalidHostTimestamp),
+}
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum InvalidHeaderError {
@@ -33,65 +84,49 @@ pub enum InvalidHeaderError {
     },
 }
 
-#[derive(thiserror::Error, Debug, PartialEq)]
-pub enum Error {
-    #[error("math operation with overflow")]
-    MathOverflow,
-
-    #[error("timestamp is negative ({0})")]
-    NegativeTimestamp(i64),
-
-    #[error("unimplemented feature")]
-    // TODO: Remove this from this variant
-    Unimplemented,
-
-    #[error("unable to decode header")]
-    HeaderDecode(#[source] DecodeErrorOf<Proto, Header>),
-
-    #[error("unable to decode merkle proof")]
-    MerkleProofDecode(#[source] DecodeErrorOf<Proto, MerkleProof>),
-
-    #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, tendermint::client_state::ClientState>),
-
-    #[error("the ibc height.revision_height does not fit in an i64 ({0})")]
-    IbcHeightTooLargeForTendermintHeight(u64),
-
-    #[error("trusted revision number ({trusted_revision_number}) does not match the header ({header_revision_number})")]
-    RevisionNumberMismatch {
-        trusted_revision_number: u64,
-        header_revision_number: u64,
-    },
-
-    #[error("invalid header")]
-    InvalidHeader(#[from] InvalidHeaderError),
-
-    #[error("consensus state not found for {0}")]
-    // TODO: Move this variant into IbcClientError
-    ConsensusStateNotFound(Height),
-
-    // NOTE: This is only emitted when it's not possible to parse the revision number from the chain id; perhaps make this more descriptive?
-    #[error("invalid chain id ({0})")]
-    InvalidChainId(String),
-
-    #[error("trusted validators hash ({0}) does not match the saved one ({1})")]
-    TrustedValidatorsMismatch(H256, H256),
-
-    #[error("verify membership error: {0}")]
-    VerifyMembership(#[from] ics23::ibc_api::VerifyMembershipError),
-
-    #[error(transparent)]
-    TendermintVerify(#[from] tendermint_verifier::error::Error),
-
-    #[error("invalid timestamp from the host ({0})")]
-    InvalidHostTimestamp(cosmwasm_std::Timestamp),
-
+#[derive(Debug, PartialEq, thiserror::Error)]
+pub enum MigrateClientStoreError {
     #[error("substitute client is frozen")]
     SubstituteClientFrozen,
 
     #[error("forbidden fields have been changed during state migration")]
     MigrateFieldsChanged,
 }
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+#[error("trusted validators hash ({0}) does not match the saved one ({1})")]
+pub struct TrustedValidatorsMismatch(pub H256, pub H256);
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+#[error("trusted revision number ({trusted_revision_number}) does not match the header ({header_revision_number})")]
+pub struct RevisionNumberMismatch {
+    pub trusted_revision_number: u64,
+    pub header_revision_number: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("timestamp is negative ({0})")]
+pub struct NegativeTimestamp(pub i64);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("unable to decode merkle proof")]
+pub struct MerkleProofDecode(#[source] pub DecodeErrorOf<Proto, MerkleProof>);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("the ibc height.revision_height does not fit in an i64 ({0})")]
+pub struct IbcHeightTooLargeForTendermintHeight(pub u64);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("invalid timestamp from the host ({0})")]
+pub struct InvalidHostTimestamp(pub cosmwasm_std::Timestamp);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("invalid chain id ({0})")]
+pub struct InvalidChainId(pub String);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("math operation with overflow")]
+pub struct MathOverflow;
 
 // required for IbcClient trait
 impl From<Error> for IbcClientError<TendermintLightClient> {
@@ -101,9 +136,18 @@ impl From<Error> for IbcClientError<TendermintLightClient> {
 }
 
 // convenience
-impl From<InvalidHeaderError> for IbcClientError<TendermintLightClient> {
+impl<T: IbcClient<Error: From<InvalidHeaderError>>> From<InvalidHeaderError> for IbcClientError<T> {
     fn from(value: InvalidHeaderError) -> Self {
-        IbcClientError::ClientSpecific(Error::InvalidHeader(value))
+        IbcClientError::ClientSpecific(T::Error::from(value))
+    }
+}
+
+// convenience
+impl<T: IbcClient<Error: From<MigrateClientStoreError>>> From<MigrateClientStoreError>
+    for IbcClientError<T>
+{
+    fn from(value: MigrateClientStoreError) -> Self {
+        IbcClientError::ClientSpecific(T::Error::from(value))
     }
 }
 

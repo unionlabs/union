@@ -11,16 +11,13 @@ pub struct ClientState {
     /// duration of the period since the LastestTimestamp during which the
     /// submitted headers are valid for upgrade
     #[prost(message, optional, tag = "3")]
-    pub trusting_period:
-        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
+    pub trusting_period: ::core::option::Option<::pbjson_types::Duration>,
     /// duration of the staking unbonding period
     #[prost(message, optional, tag = "4")]
-    pub unbonding_period:
-        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
+    pub unbonding_period: ::core::option::Option<::pbjson_types::Duration>,
     /// defines how much new (untrusted) header's Time can drift into the future.
     #[prost(message, optional, tag = "5")]
-    pub max_clock_drift:
-        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
+    pub max_clock_drift: ::core::option::Option<::pbjson_types::Duration>,
     /// Block height when the client was frozen due to a misbehaviour
     #[prost(message, optional, tag = "6")]
     pub frozen_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
@@ -63,7 +60,7 @@ pub struct ConsensusState {
     /// timestamp that corresponds to the block height in which the ConsensusState
     /// was stored.
     #[prost(message, optional, tag = "1")]
-    pub timestamp: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     /// commitment root (i.e app hash)
     #[prost(message, optional, tag = "2")]
     pub root: ::core::option::Option<super::super::super::core::commitment::v1::MerkleRoot>,

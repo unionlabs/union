@@ -9,7 +9,6 @@ Axelar
 BAYC
 BLOCKSCOUT
 Berachain
-Berachain's
 Beriker
 Bitfield
 Bitvector
@@ -254,6 +253,7 @@ backported
 bankkeeper
 banktypes
 baseapp
+beacond
 beacondata
 beatae
 bech
@@ -523,6 +523,7 @@ groth
 groupkeeper
 groupmodule
 grpclog
+hackerman
 hasher
 hasown
 hastscript
@@ -780,6 +781,7 @@ partytown
 passthru
 patchelf
 paulhauner
+pbjson
 pedersen
 permissioned
 permissionless
@@ -831,6 +833,7 @@ psim
 pubkey
 pubkey's
 pubkeys
+publicnode
 publint
 punct
 purgecss

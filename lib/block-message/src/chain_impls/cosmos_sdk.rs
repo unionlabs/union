@@ -270,27 +270,26 @@ where
             }) => {
                 assert!(from_height.revision_height() < to_height.revision_height());
 
-                let new_from_height = from_height.increment();
-
                 if to_height.revision_height() - from_height.revision_height() == 1 {
                     fetch(id(
                         c.chain_id(),
                         Fetch::<C>::specific(FetchTransactions {
                             height: from_height,
-                            // who needs const blocks
                             page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
                         }),
                     ))
                 } else {
-                    // is exclusive on `to`, so fetch the `from` block and "discard" the `to` block
+                    // this is exclusive on `to`, so fetch the `from` block and "discard" the `to` block
                     // the assumption is that another message with `to..N` will be queued, which then following
                     // this logic will fetch `to`.
+
+                    let new_from_height = from_height.increment();
+
                     conc(
                         [fetch(id(
                             c.chain_id(),
                             Fetch::<C>::specific(FetchTransactions {
                                 height: from_height,
-                                // who needs const blocks
                                 page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
                             }),
                         ))]

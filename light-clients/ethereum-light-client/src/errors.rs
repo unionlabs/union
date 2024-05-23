@@ -82,6 +82,7 @@ pub enum Error {
     CounterpartyStorageNotNil,
 
     #[error(transparent)]
+    // TODO: use in other eth l2s
     StoredValueMismatch(#[from] StoredValueMismatch),
 
     #[error("not enough signatures")]

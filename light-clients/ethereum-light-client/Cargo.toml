@@ -29,6 +29,7 @@ rlp                    = { workspace = true }
 schemars               = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
 serde-json-wasm        = { workspace = true }
+serde_json             = { workspace = true, optional = true }
 sha3                   = { workspace = true }
 thiserror              = { workspace = true }
 tiny-keccak            = { workspace = true, features = ["keccak"] }
@@ -51,3 +52,6 @@ minimal = []
 
 # enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
 library = []
+
+# exposes some useful testing utilities
+test-utils = ["dep:serde_json"]

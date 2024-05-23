@@ -57,10 +57,11 @@
           };
         };
         lightClients = [
-          self'.packages.ethereum-light-client-minimal
-          self'.packages.ethereum-light-client-mainnet
-          self'.packages.scroll-light-client
-          self'.packages.arbitrum-light-client
+          # self'.packages.ethereum-light-client-minimal
+          # self'.packages.ethereum-light-client-mainnet
+          # self'.packages.scroll-light-client
+          # self'.packages.arbitrum-light-client
+          # self'.packages.berachain-light-client
         ];
         cosmwasmContracts = [
           {
@@ -80,27 +81,27 @@
               label = "ucs01-relay";
             }];
           }
-          {
-            code = self'.packages.ucs02-nft;
-            instances = [{
-              message = {
-                # Must be the index of `cw721-base` within this contracts list
-                cw721_base_code_id = 4;
-                incoming_proxy = null;
-                outgoing_proxy = null;
-                pauser = null;
-                cw721_admin = null;
-              };
-              salt = "00";
-              label = "ucs02-nft";
-            }];
-          }
-          {
-            code = self'.packages.cw721-base;
-            instances = [ ];
-          }
+          # {
+          #   code = self'.packages.ucs02-nft;
+          #   instances = [{
+          #     message = {
+          #       # Must be the index of `cw721-base` within this contracts list
+          #       cw721_base_code_id = 4;
+          #       incoming_proxy = null;
+          #       outgoing_proxy = null;
+          #       pauser = null;
+          #       cw721_admin = null;
+          #     };
+          #     salt = "00";
+          #     label = "ucs02-nft";
+          #   }];
+          # }
+          # {
+          #   code = self'.packages.cw721-base;
+          #   instances = [ ];
+          # }
         ];
-        portIncrease = 0;
+        portIncrease = 10000;
       };
 
       devnet-stargaze = mkCosmosDevnet {
@@ -385,7 +386,6 @@
 
         # FIXME: This shouldn't be defined in this file
         devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
-
           { name = "genesis.json"; path = "${./genesis/devnet-eth/genesis.json}"; }
           { name = "dev-key0.prv"; path = "${./genesis/devnet-eth/dev-key0.prv}"; }
           { name = "dev-key1.prv"; path = "${./genesis/devnet-eth/dev-key1.prv}"; }

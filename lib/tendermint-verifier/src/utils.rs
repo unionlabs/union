@@ -1,48 +1,56 @@
 use prost::Message;
 use unionlabs::{
-    encoding::Encode,
+    encoding::{EncodeAs, Proto},
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256},
-    tendermint::types::{
-        block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
-        canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
-        commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
-        simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
+    tendermint::{
+        crypto::public_key::PublicKey,
+        types::{
+            block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
+            canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
+            commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
+            simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
+        },
     },
 };
 
-use crate::merkle::calculate_merkle_root;
+use crate::{error::Error, merkle::calculate_merkle_root};
 
-#[must_use]
 pub(crate) fn canonical_vote(
     commit: &Commit,
     commit_sig: &CommitSig,
     timestamp: &Timestamp,
     chain_id: &str,
-) -> Vec<u8> {
+) -> Result<Vec<u8>, Error> {
     let block_id = match commit_sig {
         CommitSig::Absent => BlockId::default(),
         CommitSig::Commit { .. } => commit.block_id.clone(),
         CommitSig::Nil { .. } => BlockId::default(),
     };
 
-    Into::<protos::tendermint::types::LegacyCanonicalVote>::into(CanonicalVote {
-        ty: SignedMsgType::Precommit,
-        height: commit.height,
-        round: (commit.round.inner() as i64)
-            .try_into()
-            .expect("impossible"), // SAFE because within the bounds
-        block_id: CanonicalBlockId {
-            hash: block_id.hash,
-            part_set_header: CanonicalPartSetHeader {
-                total: block_id.part_set_header.total,
-                hash: block_id.part_set_header.hash,
+    Ok(
+        Into::<protos::tendermint::types::LegacyCanonicalVote>::into(CanonicalVote {
+            ty: SignedMsgType::Precommit,
+            height: commit.height,
+            // roundabout way to go from i32 >= 0 to i64 >= 0
+            round: i64::from(commit.round.inner())
+                .try_into()
+                .expect("value is bounded >= 0; qed;"), // SAFE because within the bounds
+            block_id: CanonicalBlockId {
+                hash: block_id.hash.ok_or(Error::MissingBlockIdHash)?,
+                part_set_header: CanonicalPartSetHeader {
+                    total: block_id.part_set_header.total,
+                    hash: block_id
+                        .part_set_header
+                        .hash
+                        .ok_or(Error::MissingBlockIdHash)?,
+                },
             },
-        },
-        chain_id: chain_id.to_string(),
-        timestamp: *timestamp,
-    })
-    .encode_length_delimited_to_vec()
+            chain_id: chain_id.to_string(),
+            timestamp: *timestamp,
+        })
+        .encode_length_delimited_to_vec(),
+    )
 }
 
 #[must_use]
@@ -57,18 +65,22 @@ pub(crate) fn get_validator_by_address<'a>(
 }
 
 #[must_use]
-pub fn validators_hash(vals: &ValidatorSet) -> H256 {
-    let raw_validators: Vec<Vec<u8>> = vals
+pub fn validators_hash(validator_set: &ValidatorSet) -> H256 {
+    let raw_validators = validator_set
         .validators
         .iter()
         .map(|validator| {
             SimpleValidator {
-                pub_key: validator.pub_key.clone(),
+                pub_key: match &validator.pub_key {
+                    // hackerman
+                    PublicKey::Bls12_381(key) => PublicKey::Bn254(key.clone()),
+                    key => key.clone(),
+                },
                 voting_power: validator.voting_power.inner(),
             }
-            .encode()
+            .encode_as::<Proto>()
         })
-        .collect();
+        .collect::<Vec<_>>();
 
     calculate_merkle_root(&raw_validators)
 }

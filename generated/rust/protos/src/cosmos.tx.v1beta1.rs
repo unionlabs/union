@@ -93,7 +93,7 @@ pub struct SignDocDirectAux {
     pub body_bytes: ::prost::alloc::vec::Vec<u8>,
     /// public_key is the public key of the signing account.
     #[prost(message, optional, tag = "2")]
-    pub public_key: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub public_key: ::core::option::Option<::pbjson_types::Any>,
     /// chain_id is the identifier of the chain this transaction targets.
     /// It prevents signed transactions from being used on another chain by an
     /// attacker.
@@ -129,7 +129,7 @@ pub struct TxBody {
     /// is referred to as the primary signer and pays the fee for the whole
     /// transaction.
     #[prost(message, repeated, tag = "1")]
-    pub messages: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub messages: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// memo is any arbitrary note/comment to be added to the transaction.
     /// WARNING: in clients, any publicly exposed text should not be called memo,
     /// but should be called `note` instead (see <https://github.com/cosmos/cosmos-sdk/issues/9122>).
@@ -143,13 +143,12 @@ pub struct TxBody {
     /// when the default options are not sufficient. If any of these are present
     /// and can't be handled, the transaction will be rejected
     #[prost(message, repeated, tag = "1023")]
-    pub extension_options: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub extension_options: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// extension_options are arbitrary options that can be added by chains
     /// when the default options are not sufficient. If any of these are present
     /// and can't be handled, they will be ignored
     #[prost(message, repeated, tag = "2047")]
-    pub non_critical_extension_options:
-        ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub non_critical_extension_options: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
 impl ::prost::Name for TxBody {
     const NAME: &'static str = "TxBody";
@@ -201,7 +200,7 @@ pub struct SignerInfo {
     /// that already exist in state. If unset, the verifier can use the required \
     /// signer address for this position and lookup the public key.
     #[prost(message, optional, tag = "1")]
-    pub public_key: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub public_key: ::core::option::Option<::pbjson_types::Any>,
     /// mode_info describes the signing mode of the signer and is a nested
     /// structure to support nested multisig pubkey's
     #[prost(message, optional, tag = "2")]

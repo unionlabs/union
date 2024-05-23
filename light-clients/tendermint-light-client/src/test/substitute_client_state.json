@@ -55,9 +55,7 @@
         "prehash_key_before_comparison": false
       }
     ],
-    "upgrade_path": ["first", "second"],
-    "allow_update_after_expiry": true,
-    "allow_update_after_misbehavior": true
+    "upgrade_path": ["first", "second"]
   },
   "latest_height": {
     "revision_number": 1,

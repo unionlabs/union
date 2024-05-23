@@ -1,8 +1,14 @@
 [dependencies]
+[dependencies.chrono]
+features  = ["alloc"]
+workspace = true
 [dependencies.ethers]
 features  = ["rustls"]
 optional  = true
 workspace = true
+[dependencies.pbjson-types]
+git = "https://github.com/recoord/pbjson"
+rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"
 [dependencies.prost]
 features  = ["prost-derive"]
 workspace = true
@@ -273,6 +279,7 @@ proto_full = [
   "union+galois+api+v2",
   "union+galois+api+v3",
   "union+ibc+lightclients+arbitrum+v1",
+  "union+ibc+lightclients+berachain+v1",
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
   "union+ibc+lightclients+linea+v1",
@@ -304,6 +311,14 @@ proto_full = [
 "union+galois+api+v2" = ["tendermint+types"]
 "union+galois+api+v3" = ["tendermint+types"]
 "union+ibc+lightclients+arbitrum+v1" = ["ibc+core+client+v1", "union+ibc+lightclients+ethereum+v1"]
+"union+ibc+lightclients+berachain+v1" = [
+  "cosmos+ics23+v1",
+  "google+protobuf",
+  "ibc+core+client+v1",
+  "ibc+core+commitment+v1",
+  "ibc+lightclients+tendermint+v1",
+  "union+ibc+lightclients+ethereum+v1",
+]
 "union+ibc+lightclients+cometbls+v1" = [
   "google+protobuf",
   "ibc+core+client+v1",

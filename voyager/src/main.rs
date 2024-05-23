@@ -19,9 +19,11 @@ use std::{
 };
 
 use chain_utils::{
+    any_chain,
     arbitrum::Arbitrum,
+    berachain::Berachain,
     cosmos::Cosmos,
-    ethereum::{Ethereum, EthereumChain},
+    ethereum::{Ethereum, EthereumConsensusChain},
     scroll::Scroll,
     union::Union,
     wasm::Wasm,
@@ -66,8 +68,8 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{
-        any_state_proof_to_json, AppArgs, ArbitrumCmd, Command, Handshake, HandshakeType, QueryCmd,
-        UtilCmd,
+        any_state_proof_to_json, AppArgs, ArbitrumCmd, BerachainCmd, Command, Handshake,
+        HandshakeType, QueryCmd, UtilCmd,
     },
     config::{Config, GetChainError},
     queue::{
@@ -222,8 +224,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 .unwrap(),
             );
 
-            dbg!(&chains);
-
             match cmd {
                 QueryCmd::IbcPath(path) => {
                     let json = match (on, &tracking.ty) {
@@ -280,6 +280,15 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                             )
                             .await
                         }
+                        (AnyChain::Union(union), ChainConfigType::Berachain(_)) => {
+                            any_state_proof_to_json::<Wasm<Union>, Berachain>(
+                                chains,
+                                path,
+                                Wasm(union),
+                                at,
+                            )
+                            .await
+                        }
                         (AnyChain::Cosmos(cosmos), ChainConfigType::Union(_)) => {
                             // NOTE: ChainSpec is arbitrary
                             any_state_proof_to_json::<Wasm<Cosmos>, Union>(
@@ -316,6 +325,12 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                             .await
                         }
 
+                        (AnyChain::Berachain(berachain), ChainConfigType::Union(_)) => {
+                            any_state_proof_to_json::<Berachain, Wasm<Union>>(
+                                chains, path, berachain, at,
+                            )
+                            .await
+                        }
                         (AnyChain::Cosmos(cosmos), ChainConfigType::Cosmos(_)) => {
                             any_state_proof_to_json::<Cosmos, Cosmos>(chains, path, cosmos, at)
                                 .await
@@ -413,6 +428,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 (AnyChain::Union(union), AnyChain::Arbitrum(scroll)) => {
                     mk_handshake::<Wasm<Union>, Arbitrum>(&Wasm(union), &scroll, ty, chains).await
                 }
+                (AnyChain::Union(union), AnyChain::Berachain(berachain)) => {
+                    mk_handshake::<Wasm<Union>, Berachain>(&Wasm(union), &berachain, ty, chains)
+                        .await
+                }
                 (AnyChain::Cosmos(cosmos), AnyChain::Union(union)) => {
                     mk_handshake::<Wasm<Cosmos>, Union>(&Wasm(cosmos), &union, ty, chains).await
                 }
@@ -443,6 +462,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 (AnyChain::Arbitrum(scroll), AnyChain::Union(union)) => {
                     mk_handshake::<Arbitrum, Wasm<Union>>(&scroll, &Wasm(union), ty, chains).await
                 }
+                (AnyChain::Berachain(berachain), AnyChain::Union(union)) => {
+                    mk_handshake::<Berachain, Wasm<Union>>(&berachain, &Wasm(union), ty, chains)
+                        .await
+                }
                 _ => panic!("invalid"),
             };
 
@@ -458,6 +481,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 AnyChain::EthereumMinimal(on) => mk_init_fetch::<Ethereum<Minimal>>(&on).await,
                 AnyChain::Scroll(on) => mk_init_fetch::<Scroll>(&on).await,
                 AnyChain::Arbitrum(on) => mk_init_fetch::<Arbitrum>(&on).await,
+                AnyChain::Berachain(on) => mk_init_fetch::<Berachain>(&on).await,
             };
 
             print_json(&msg);
@@ -491,11 +515,43 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         .query_latest_height()
                         .await
                         .map_err(|e| VoyagerError::Command(e))?,
+                    AnyChain::Berachain(on) => on
+                        .query_latest_height()
+                        .await
+                        .map_err(|e| VoyagerError::Command(Box::new(e)))?,
                 };
 
                 print_json(&height);
             }
-            UtilCmd::Arbitrum(arb_cmd) => match arb_cmd {
+            UtilCmd::QuerySelfConsensusState { on, height } => {
+                let on = voyager_config.get_chain(&on).await?;
+
+                any_chain! {
+                    |on| {
+                        let height = match height {
+                            QueryHeight::Latest => on.query_latest_height().await.unwrap(),
+                            QueryHeight::Specific(height) => height,
+                        };
+
+                        print_json(&on.self_consensus_state(height).await)
+                    }
+                };
+            }
+            UtilCmd::QuerySelfClientState { on, height } => {
+                let on = voyager_config.get_chain(&on).await?;
+
+                any_chain! {
+                    |on| {
+                        let height = match height {
+                            QueryHeight::Latest => on.query_latest_height().await.unwrap(),
+                            QueryHeight::Specific(height) => height,
+                        };
+
+                        print_json(&on.self_client_state(height).await)
+                    }
+                };
+            }
+            UtilCmd::Arbitrum(cmd) => match cmd {
                 ArbitrumCmd::LatestConfirmedAtBeaconSlot { on, slot } => print_json(
                     &Arbitrum::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
                         .expect("chain not found in config")
@@ -506,6 +562,26 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                     &Arbitrum::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
                         .expect("chain not found in config")
                         .execution_height_of_beacon_slot(slot)
+                        .await,
+                ),
+            },
+            UtilCmd::Berachain(cmd) => match cmd {
+                BerachainCmd::ExecutionHeightOfBeaconSlot { on, slot } => print_json(
+                    &Berachain::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
+                        .expect("chain not found in config")
+                        .execution_height_of_beacon_slot(slot)
+                        .await,
+                ),
+                BerachainCmd::ExecutionHeaderAtBeaconSlot { on, slot } => print_json(
+                    &Berachain::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
+                        .expect("chain not found in config")
+                        .execution_header_at_beacon_slot(slot)
+                        .await,
+                ),
+                BerachainCmd::BeaconHeaderAtBeaconSlot { on, slot } => print_json(
+                    &Berachain::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
+                        .expect("chain not found in config")
+                        .beacon_block_header_at_beacon_slot(slot)
                         .await,
                 ),
             },
@@ -803,6 +879,7 @@ where
                     client_id: client_b_id,
                     connection_id: "".to_string().parse().unwrap(),
                     prefix: MerklePrefix {
+                        // TODO: Make configurable
                         key_prefix: b"ibc".to_vec(),
                     },
                 },

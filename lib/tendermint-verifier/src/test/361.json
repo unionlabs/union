@@ -68,7 +68,7 @@
   },
   "validator_set": {
     "proposer": {
-      "address": "0217A42A8BEA30521411A8B34BBFBEABF81DAA1D",
+      "address": "0x0217a42a8bea30521411a8b34bbfbeabf81daa1d",
       "pub_key": {
         "@type": "ed25519",
         "@value": "0xc461c9f66adafabc1cd3d1a57fd69eb4ee3842050ab8737b21a029df6e0df768"
@@ -78,7 +78,7 @@
     },
     "validators": [
       {
-        "address": "0217A42A8BEA30521411A8B34BBFBEABF81DAA1D",
+        "address": "0x0217a42a8bea30521411a8b34bbfbeabf81daa1d",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0xc461c9f66adafabc1cd3d1a57fd69eb4ee3842050ab8737b21a029df6e0df768"
@@ -87,7 +87,7 @@
         "proposer_priority": 0
       },
       {
-        "address": "12729FC85FF80E52064B6F46312B77C95F90F4BF",
+        "address": "0x12729fc85ff80e52064b6f46312b77c95f90f4bf",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0xdadbada3cd3c252d650fd9589b72a15b8a396fefde212b0cbe5cc87d1de598bf"
@@ -96,7 +96,7 @@
         "proposer_priority": 0
       },
       {
-        "address": "3FB23E5CD869EE24A00604BCF0B9A2696AB0B599",
+        "address": "0x3fb23e5cd869ee24a00604bcf0b9a2696ab0b599",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0x280baa494775fb0a9aa33945ba11d58e9c6cce4524ca0a4ce2339e538da5ac5e"
@@ -105,7 +105,7 @@
         "proposer_priority": 0
       },
       {
-        "address": "55C7594DBA46848C8241BD06E400129A1082CD4C",
+        "address": "0x55c7594dba46848c8241bd06e400129a1082cd4c",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0x05c8e3335f980483183ff9484be2558b221d5cc5e81c4a26d3d73269fcf24759"
@@ -122,7 +122,7 @@
   },
   "trusted_validators": {
     "proposer": {
-      "address": "3FB23E5CD869EE24A00604BCF0B9A2696AB0B599",
+      "address": "0x3fb23e5cd869ee24a00604bcf0b9a2696ab0b599",
       "pub_key": {
         "@type": "ed25519",
         "@value": "0x280baa494775fb0a9aa33945ba11d58e9c6cce4524ca0a4ce2339e538da5ac5e"
@@ -132,7 +132,7 @@
     },
     "validators": [
       {
-        "address": "0217A42A8BEA30521411A8B34BBFBEABF81DAA1D",
+        "address": "0x0217a42a8bea30521411a8b34bbfbeabf81daa1d",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0xc461c9f66adafabc1cd3d1a57fd69eb4ee3842050ab8737b21a029df6e0df768"
@@ -141,7 +141,7 @@
         "proposer_priority": 0
       },
       {
-        "address": "12729FC85FF80E52064B6F46312B77C95F90F4BF",
+        "address": "0x12729fc85ff80e52064b6f46312b77c95f90f4bf",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0xdadbada3cd3c252d650fd9589b72a15b8a396fefde212b0cbe5cc87d1de598bf"
@@ -150,7 +150,7 @@
         "proposer_priority": 0
       },
       {
-        "address": "3FB23E5CD869EE24A00604BCF0B9A2696AB0B599",
+        "address": "0x3fb23e5cd869ee24a00604bcf0b9a2696ab0b599",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0x280baa494775fb0a9aa33945ba11d58e9c6cce4524ca0a4ce2339e538da5ac5e"
@@ -159,7 +159,7 @@
         "proposer_priority": 0
       },
       {
-        "address": "55C7594DBA46848C8241BD06E400129A1082CD4C",
+        "address": "0x55c7594dba46848c8241bd06e400129a1082cd4c",
         "pub_key": {
           "@type": "ed25519",
           "@value": "0x05c8e3335f980483183ff9484be2558b221d5cc5e81c4a26d3d73269fcf24759"

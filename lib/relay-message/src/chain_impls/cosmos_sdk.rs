@@ -3,6 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
 use prost::Message;
 use queue_msg::{data, fetch, seq, wait, QueueMsg};
+use tracing::debug;
 use unionlabs::{
     encoding::{Decode, DecodeAs, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
@@ -372,6 +373,18 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
+    const IBC_STORE_PATH: &str = "store/ibc/key";
+
+    let path_string = path.to_string();
+
+    debug!(
+        grpc_url = %c.grpc_url(),
+        path = %IBC_STORE_PATH,
+        data = %path_string,
+        %height,
+        "fetching abci query"
+    );
+
     let mut client =
         protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
             c.grpc_url().clone(),
@@ -382,8 +395,8 @@ where
     let query_result = client
         .abci_query(
             protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
-                data: path.to_string().into_bytes(),
-                path: "store/ibc/key".to_string(),
+                data: path_string.into_bytes(),
+                path: IBC_STORE_PATH.to_string(),
                 height: i64::try_from(height.revision_height()).unwrap() - 1_i64,
                 prove: matches!(ty, AbciQueryType::Proof),
             },
@@ -391,6 +404,19 @@ where
         .await
         .unwrap()
         .into_inner();
+
+    debug!(
+        code = %query_result.code,
+        log = %query_result.log,
+        info = %query_result.info,
+        index = %query_result.index,
+        key = %::serde_utils::to_hex(&query_result.key),
+        value = %::serde_utils::to_hex(&query_result.value),
+        // proof_ops = %query_result.proof_ops,
+        height = %query_result.height,
+        codespace = %query_result.codespace,
+        "fetched abci query"
+    );
 
     match ty {
         AbciQueryType::State => match path {
@@ -630,7 +656,7 @@ where
 pub mod fetch {
     use std::marker::PhantomData;
 
-    use chain_utils::cosmos_sdk::CosmosSdkChain;
+    use chain_utils::cosmos_sdk::CosmosSdkChainRpcs;
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
     use queue_msg::{data, queue_msg, QueueMsg};
     use serde::{Deserialize, Serialize};
@@ -692,7 +718,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<TrustedCommit<Hc, Tr>>>,
+        Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<TrustedCommit<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -722,7 +748,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<UntrustedCommit<Hc, Tr>>>,
+        Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<UntrustedCommit<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -752,7 +778,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<TrustedValidators<Hc, Tr>>>,
+        Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<TrustedValidators<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -784,7 +810,7 @@ pub mod fetch {
         height: Hc::Height,
     ) -> QueueMsg<RelayMessageTypes>
     where
-        Hc: CosmosSdkChain + ChainExt<Data<Tr>: From<UntrustedValidators<Hc, Tr>>>,
+        Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<UntrustedValidators<Hc, Tr>>>,
         Tr: ChainExt,
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     {
@@ -876,9 +902,9 @@ pub mod tendermint_helpers {
                     nanos: header_timestamp.nanos.try_into().unwrap(),
                 },
                 last_block_id: BlockId {
-                    hash: tendermint_hash_to_h256(
+                    hash: Some(tendermint_hash_to_h256(
                         commit.signed_header.header.last_block_id.unwrap().hash,
-                    ),
+                    )),
                     part_set_header: PartSetHeader {
                         total: commit
                             .signed_header
@@ -887,7 +913,7 @@ pub mod tendermint_helpers {
                             .unwrap()
                             .part_set_header
                             .total,
-                        hash: tendermint_hash_to_h256(
+                        hash: Some(tendermint_hash_to_h256(
                             commit
                                 .signed_header
                                 .header
@@ -895,7 +921,7 @@ pub mod tendermint_helpers {
                                 .unwrap()
                                 .part_set_header
                                 .hash,
-                        ),
+                        )),
                     },
                 },
                 last_commit_hash: tendermint_hash_to_h256(
@@ -936,12 +962,14 @@ pub mod tendermint_helpers {
                     .try_into()
                     .unwrap(),
                 block_id: BlockId {
-                    hash: tendermint_hash_to_h256(commit.signed_header.commit.block_id.hash),
+                    hash: Some(tendermint_hash_to_h256(
+                        commit.signed_header.commit.block_id.hash,
+                    )),
                     part_set_header: PartSetHeader {
                         total: commit.signed_header.commit.block_id.part_set_header.total,
-                        hash: tendermint_hash_to_h256(
+                        hash: Some(tendermint_hash_to_h256(
                             commit.signed_header.commit.block_id.part_set_header.hash,
-                        ),
+                        )),
                     },
                 },
                 signatures: commit
@@ -972,7 +1000,7 @@ pub mod tendermint_helpers {
                         nanos: ts.nanos.try_into().unwrap(),
                     }
                 },
-                signature: signature.unwrap().into_bytes().try_into().unwrap(),
+                signature: signature.unwrap().into_bytes(),
             },
             ::tendermint::block::CommitSig::BlockIdFlagNil {
                 validator_address,
@@ -988,7 +1016,7 @@ pub mod tendermint_helpers {
                         nanos: ts.nanos.try_into().unwrap(),
                     }
                 },
-                signature: signature.unwrap().into_bytes().try_into().unwrap(),
+                signature: signature.unwrap().into_bytes(),
             },
         }
     }

@@ -41,3 +41,4 @@ serde_json  = { workspace = true }
 
 
 [features]
+library = []

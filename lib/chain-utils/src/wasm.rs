@@ -1,16 +1,22 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use frame_support_procedural::DefaultNoBound;
 use futures::Future;
+use tendermint_rpc::WebSocketClient;
 use unionlabs::{
     encoding::Proto,
     google::protobuf::any::Any,
     hash::H256,
     iter,
+    signer::CosmosSigner,
     traits::{Chain, FromStrExact},
+    WasmClientType,
 };
 
-use crate::cosmos_sdk::CosmosSdkChain;
+use crate::{
+    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs},
+    Pool,
+};
 
 #[derive(Debug, Clone)]
 pub struct Wasm<C: Chain>(pub C);
@@ -20,24 +26,26 @@ pub trait Wraps<T: CosmosSdkChain + Chain>: CosmosSdkChain + Chain {
 }
 
 impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
-    fn grpc_url(&self) -> String {
-        self.0.grpc_url()
-    }
-
     fn fee_denom(&self) -> String {
-        self.0.fee_denom()
+        self.0.fee_denom().clone()
     }
 
-    fn tm_client(&self) -> &tendermint_rpc::WebSocketClient {
-        self.0.tm_client()
-    }
-
-    fn signers(&self) -> &crate::Pool<unionlabs::signer::CosmosSigner> {
+    fn signers(&self) -> &Pool<CosmosSigner> {
         self.0.signers()
     }
 
-    fn checksum_cache(&self) -> &std::sync::Arc<dashmap::DashMap<H256, unionlabs::WasmClientType>> {
+    fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
         self.0.checksum_cache()
+    }
+}
+
+impl<T: CosmosSdkChainRpcs + CosmosSdkChain> CosmosSdkChainRpcs for Wasm<T> {
+    fn grpc_url(&self) -> String {
+        self.0.grpc_url().clone()
+    }
+
+    fn tm_client(&self) -> &WebSocketClient {
+        self.0.tm_client()
     }
 }
 

@@ -691,14 +691,33 @@ pub enum UtilCmd {
     QueryLatestHeight {
         on: String,
     },
+    QuerySelfConsensusState {
+        on: String,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight<Height>,
+    },
+    QuerySelfClientState {
+        on: String,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight<Height>,
+    },
     #[command(subcommand)]
     Arbitrum(ArbitrumCmd),
+    #[command(subcommand)]
+    Berachain(BerachainCmd),
 }
 
 #[derive(Debug, Subcommand)]
 pub enum ArbitrumCmd {
     LatestConfirmedAtBeaconSlot { on: String, slot: u64 },
     ExecutionHeightOfBeaconSlot { on: String, slot: u64 },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BerachainCmd {
+    ExecutionHeightOfBeaconSlot { on: String, slot: u64 },
+    ExecutionHeaderAtBeaconSlot { on: String, slot: u64 },
+    BeaconHeaderAtBeaconSlot { on: String, slot: u64 },
 }
 
 #[derive(Debug, Subcommand)]

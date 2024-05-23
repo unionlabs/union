@@ -18,7 +18,7 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "2")]
-    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// The height at which the upgrade must be performed.
     #[prost(int64, tag = "3")]
     pub height: i64,
@@ -31,7 +31,7 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "5")]
-    pub upgraded_client_state: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub upgraded_client_state: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for Plan {
     const NAME: &'static str = "Plan";

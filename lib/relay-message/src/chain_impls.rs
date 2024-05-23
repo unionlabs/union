@@ -122,3 +122,5 @@ pub mod union;
 pub mod arbitrum;
 pub mod ethereum;
 pub mod scroll;
+
+pub mod berachain;

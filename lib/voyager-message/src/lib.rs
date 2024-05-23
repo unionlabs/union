@@ -6,8 +6,8 @@ use std::{collections::VecDeque, fmt::Debug, str::FromStr};
 
 use block_message::BlockMessageTypes;
 use chain_utils::{
-    arbitrum::Arbitrum, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union,
-    wasm::Wasm, Chains,
+    arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll,
+    union::Union, wasm::Wasm, Chains,
 };
 use queue_msg::{
     event, noop, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
@@ -22,7 +22,7 @@ use unionlabs::{
         ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    WasmClientType,
+    ClientType, WasmClientType,
 };
 
 pub struct VoyagerMessageTypes;
@@ -254,7 +254,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
                     match ibc_event.client_type {
-                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Cometbls) => {
+                        ClientType::Wasm(WasmClientType::Cometbls) => {
                             event::<RelayMessageTypes>(relay_message::id::<Wasm<Cosmos>, Union, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -266,7 +266,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                 },
                             ))
                         }
-                        unionlabs::ClientType::Tendermint => {
+                        ClientType::Tendermint => {
                             event::<RelayMessageTypes>(relay_message::id::<Cosmos, Cosmos, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -288,7 +288,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
                     match ibc_event.client_type {
-                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMinimal) => {
+                        ClientType::Wasm(WasmClientType::EthereumMinimal) => {
                             event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -300,7 +300,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                 },
                             ))
                         }
-                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMainnet) => {
+                        ClientType::Wasm(WasmClientType::EthereumMainnet) => {
                             event(relay_message::id::<Wasm<Union>, Ethereum<Mainnet>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -312,7 +312,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                 },
                             ))
                         }
-                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Scroll) => {
+                        ClientType::Wasm(WasmClientType::Scroll) => {
                             event(relay_message::id::<Wasm<Union>, Scroll, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -324,7 +324,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                 },
                             ))
                         }
-                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Arbitrum) => {
+                        ClientType::Wasm(WasmClientType::Arbitrum) => {
                             event(relay_message::id::<Wasm<Union>, Arbitrum, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -336,7 +336,19 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                 },
                             ))
                         }
-                        unionlabs::ClientType::Tendermint => {
+                        ClientType::Wasm(WasmClientType::Berachain) => {
+                            event(relay_message::id::<Wasm<Union>, Berachain, _>(
+                                chain_id,
+                                relay_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Union, Berachain>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        ClientType::Tendermint => {
                             event(relay_message::id::<Union, Wasm<Cosmos>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -358,7 +370,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
                     match ibc_event.client_type {
-                        unionlabs::ClientType::Cometbls => {
+                        ClientType::Cometbls => {
                             event(relay_message::id::<Ethereum<Mainnet>, Wasm<Union>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -380,7 +392,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
                     match ibc_event.client_type {
-                        unionlabs::ClientType::Cometbls => {
+                        ClientType::Cometbls => {
                             event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
@@ -402,18 +414,16 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
                     match ibc_event.client_type {
-                        unionlabs::ClientType::Cometbls => {
-                            event(relay_message::id::<Scroll, Wasm<Union>, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Scroll, Wasm<Union>>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
+                        ClientType::Cometbls => event(relay_message::id::<Scroll, Wasm<Union>, _>(
+                            chain_id,
+                            relay_message::event::IbcEvent {
+                                tx_hash: ibc_event.tx_hash,
+                                height: ibc_event.height,
+                                event: chain_event_to_lc_event::<Scroll, Wasm<Union>>(
+                                    ibc_event.event,
+                                ),
+                            },
+                        )),
                         _ => unimplemented!(),
                     },
                 ),
@@ -424,13 +434,35 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
                     match ibc_event.client_type {
-                        unionlabs::ClientType::Cometbls => {
+                        ClientType::Cometbls => {
                             event(relay_message::id::<Arbitrum, Wasm<Union>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Arbitrum, Wasm<Union>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        _ => unimplemented!(),
+                    },
+                ),
+                QueueMsg::Data(block_message::AnyChainIdentified::Berachain(
+                    block_message::Identified {
+                        chain_id,
+                        t: block_message::data::Data::IbcEvent(ibc_event),
+                    },
+                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
+                    match ibc_event.client_type {
+                        ClientType::Cometbls => {
+                            event(relay_message::id::<Berachain, Wasm<Union>, _>(
+                                chain_id,
+                                relay_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Berachain, Wasm<Union>>(
                                         ibc_event.event,
                                     ),
                                 },
@@ -725,11 +757,6 @@ where
             connection_id,
         }),
     }
-}
-
-pub enum ClientType {
-    Wasm(WasmClientType),
-    Tendermint,
 }
 
 #[cfg(test)]

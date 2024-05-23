@@ -416,6 +416,7 @@ pub async fn chains_from_config(
     let mut ethereum_mainnet = HashMap::new();
     let mut scroll = HashMap::new();
     let mut arbitrum = HashMap::new();
+    let mut berachain = HashMap::new();
 
     fn insert_into_chain_map<C: Chain>(
         map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
@@ -458,6 +459,9 @@ pub async fn chains_from_config(
             AnyChain::Arbitrum(c) => {
                 insert_into_chain_map(&mut arbitrum, c);
             }
+            AnyChain::Berachain(c) => {
+                insert_into_chain_map(&mut berachain, c);
+            }
         }
     }
 
@@ -468,6 +472,7 @@ pub async fn chains_from_config(
         union,
         cosmos,
         arbitrum,
+        berachain,
     })
 }
 

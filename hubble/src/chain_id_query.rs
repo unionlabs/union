@@ -129,6 +129,11 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                     cs.chain_id().to_string()
                                 }
                                 WasmClientType::Linea => todo!("We still need to add linea"),
+                                WasmClientType::Berachain => {
+                                    let cs = unionlabs::ibc::lightclients::berachain::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
+
+                                    cs.chain_id()
+                                }
                             };
 
                             datas.push(Data {

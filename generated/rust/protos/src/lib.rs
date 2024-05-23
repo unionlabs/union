@@ -859,6 +859,14 @@ pub mod union {
                     // @@protoc_insertion_point(union.ibc.lightclients.arbitrum.v1)
                 }
             }
+            pub mod berachain {
+                #[cfg(feature = "union+ibc+lightclients+berachain+v1")]
+                // @@protoc_insertion_point(attribute:union.ibc.lightclients.berachain.v1)
+                pub mod v1 {
+                    include!("union.ibc.lightclients.berachain.v1.rs");
+                    // @@protoc_insertion_point(union.ibc.lightclients.berachain.v1)
+                }
+            }
             pub mod cometbls {
                 #[cfg(feature = "union+ibc+lightclients+cometbls+v1")]
                 // @@protoc_insertion_point(attribute:union.ibc.lightclients.cometbls.v1)

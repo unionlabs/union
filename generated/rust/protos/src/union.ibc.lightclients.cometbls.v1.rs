@@ -77,8 +77,7 @@ pub struct LightHeader {
     #[prost(int64, tag = "1")]
     pub height: i64,
     #[prost(message, optional, tag = "2")]
-    pub time:
-        ::core::option::Option<super::super::super::super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "3")]
     pub validators_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "4")]

@@ -90,7 +90,7 @@ pub struct ContractInfo {
     /// Extension is an extension point to store custom metadata within the
     /// persistence model.
     #[prost(message, optional, tag = "7")]
-    pub extension: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub extension: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for ContractInfo {
     const NAME: &'static str = "ContractInfo";
@@ -319,12 +319,12 @@ pub struct ContractGrant {
     /// Limit defines execution limits that are enforced and updated when the grant
     /// is applied. When the limit lapsed the grant is removed.
     #[prost(message, optional, tag = "2")]
-    pub limit: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub limit: ::core::option::Option<::pbjson_types::Any>,
     /// Filter define more fine-grained control on the message payload passed
     /// to the contract in the operation. When no filter applies on execution, the
     /// operation is prohibited.
     #[prost(message, optional, tag = "3")]
-    pub filter: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub filter: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for ContractGrant {
     const NAME: &'static str = "ContractGrant";

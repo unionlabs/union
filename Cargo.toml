@@ -21,11 +21,13 @@ members = [
   "lib/beacon-api",
   "lib/block-message",
   "lib/chain-utils",
+  "lib/cometbft-rpc",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
   "lib/ics-008-wasm-client",
   "lib/ics23",
   "lib/linea-verifier",
+  "lib/linea-zktrie",
   "lib/macros",
   "lib/pg-queue",
   "lib/poseidon-rs",
@@ -51,6 +53,7 @@ members = [
   "lib/tendermint-verifier",
 
   "light-clients/arbitrum-light-client",
+  "light-clients/berachain-light-client",
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
   "light-clients/scroll-light-client",
@@ -66,7 +69,6 @@ members = [
   "unionvisor",
   "voyager",
   "zerg",
-  "lib/linea-zktrie",
 ]
 
 [workspace.package]
@@ -89,6 +91,7 @@ arbitrum-verifier         = { path = "lib/arbitrum-verifier", default-features =
 beacon-api                = { path = "lib/beacon-api", default-features = false }
 block-message             = { path = "lib/block-message", default-features = false }
 chain-utils               = { path = "lib/chain-utils", default-features = false }
+cometbft-rpc              = { path = "lib/cometbft-rpc", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 contracts                 = { path = "generated/rust/contracts", default-features = false }
 ethereum-light-client     = { path = "light-clients/ethereum-light-client", default-features = false }
@@ -113,6 +116,7 @@ scroll-verifier           = { path = "lib/scroll-verifier", default-features = f
 serde-utils               = { path = "lib/serde-utils", default-features = false }
 ssz                       = { path = "lib/ssz", default-features = false }
 ssz-derive                = { path = "lib/ssz-derive", default-features = false }
+tendermint-light-client   = { path = "light-clients/tendermint-light-client", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }
 token-factory-api         = { path = "cosmwasm/token-factory-api", default-features = false }
 ucs01-relay               = { path = "cosmwasm/ucs01-relay", default-features = false }

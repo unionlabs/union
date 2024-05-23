@@ -1,0 +1,47 @@
+syntax = "proto3";
+package union.ibc.lightclients.berachain.v1;
+
+option go_package = "union/ibc/lightclients/berachain";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
+import "ibc/core/client/v1/client.proto";
+import "cosmos/ics23/v1/proofs.proto";
+import "ibc/core/commitment/v1/commitment.proto";
+
+message ClientState {
+    string chain_id = 1;
+
+    // TENDERMINT
+    .ibc.lightclients.tendermint.v1.Fraction trust_level = 2;
+    .google.protobuf.Duration trusting_period = 3;
+    .google.protobuf.Duration max_clock_drift = 4;
+    .ibc.core.client.v1.Height frozen_height = 5;
+    .ibc.core.client.v1.Height latest_height = 6;
+    repeated .cosmos.ics23.v1.ProofSpec proof_specs = 7;
+    repeated string upgrade_path = 8;
+
+    // ETHEREUM
+    bytes ibc_commitment_slot = 9;
+    bytes ibc_contract_address = 10;
+}
+
+message ConsensusState {
+    uint64 eth_timestamp = 1;
+    .google.protobuf.Timestamp comet_timestamp = 2;
+
+    bytes eth_storage_root = 3;
+    bytes comet_next_validators_hash = 4;
+}
+
+message Header {
+    // Full cometbft header.
+    .ibc.lightclients.tendermint.v1.Header cometbft_header = 1;
+    // Latest execution header stored in the beacon state.
+    .union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader execution_header = 2;
+    // Proof of the latest execution header stored in the beacon state.
+    .ibc.core.commitment.v1.MerkleProof execution_header_proof = 3;
+    // Proof of the ibc contract in the evm state root.
+    .union.ibc.lightclients.ethereum.v1.AccountProof account_proof = 4;
+}

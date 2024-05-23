@@ -94,14 +94,18 @@ impl ::prost::Name for NetAddress {
         ::prost::alloc::format!("tendermint.p2p.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProtocolVersion {
     #[prost(uint64, tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub p2p: u64,
     #[prost(uint64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block: u64,
     #[prost(uint64, tag = "3")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub app: u64,
 }
 impl ::prost::Name for ProtocolVersion {
@@ -111,12 +115,14 @@ impl ::prost::Name for ProtocolVersion {
         ::prost::alloc::format!("tendermint.p2p.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DefaultNodeInfo {
     #[prost(message, optional, tag = "1")]
     pub protocol_version: ::core::option::Option<ProtocolVersion>,
     #[prost(string, tag = "2")]
+    #[serde(alias = "id")]
     pub default_node_id: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub listen_addr: ::prost::alloc::string::String,
@@ -125,6 +131,7 @@ pub struct DefaultNodeInfo {
     #[prost(string, tag = "5")]
     pub version: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "6")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub channels: ::prost::alloc::vec::Vec<u8>,
     #[prost(string, tag = "7")]
     pub moniker: ::prost::alloc::string::String,
@@ -138,6 +145,7 @@ impl ::prost::Name for DefaultNodeInfo {
         ::prost::alloc::format!("tendermint.p2p.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DefaultNodeInfoOther {

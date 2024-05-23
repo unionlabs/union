@@ -670,6 +670,11 @@ let
     '' else ''
       ${nodeBin} genesis validate --home .
     ''}
+
+    sed -i 's/chain-id = ""/chain-id = "${chainId}"/' $out/config/client.toml
+
+    sed -i 's/max_body_bytes = 1000000/max_body_bytes = 100000000/' $out/config/config.toml
+    sed -i 's/max_tx_bytes = 1048576/max_tx_bytes = 10485760/' $out/config/config.toml
   '';
 
   mkValidatorHome = idx:
@@ -685,15 +690,10 @@ let
         cp --no-preserve=mode -L ${mkPrivValidatorKey idx} $out/config/priv_validator_key.json
         cp --no-preserve=mode -L ${mkNodeKey idx} $out/config/node_key.json
 
-        cat $out/config/config.toml | grep "persistent_peers ="
-
         cat ${mkNodeId 0}
 
-        # All nodes connect to node 0
+        # all nodes connect to node 0
         sed -i "s/persistent_peers = \".*\"/persistent_peers = \"$(cat ${mkNodeId 0})@${chainName}-0:26656\"/" $out/config/config.toml
-        sed -i 's/chain-id = ""/chain-id = "${chainId}"/' $out/config/client.toml
-
-        cat $out/config/config.toml | grep "persistent_peers ="
       '';
 
   mkNodeService = idx:
@@ -739,11 +739,12 @@ let
                   start \
                   --home home \
                   $$params \
-                  --rpc.laddr tcp://0.0.0.0:26657 \
-                  --api.enable true \
+                  --rpc.laddr              tcp://0.0.0.0:26657 \
                   --rpc.unsafe \
-                  --api.address tcp://0.0.0.0:1317 \
-                  --grpc.address 0.0.0.0:9090 \
+                  --api.enable             true \
+                  --api.address            tcp://0.0.0.0:1317 \
+                  --api.rpc-max-body-bytes 100000000 \
+                  --grpc.address           0.0.0.0:9090 \
                   --log_level rpc-server:warn,*:info
               ''
             else

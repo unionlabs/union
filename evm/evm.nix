@@ -154,7 +154,7 @@
         {
           network = "devnet";
           rpc-url = "http://localhost:8545";
-          private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
+          private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
           extra-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
         }
         {
@@ -177,7 +177,7 @@
         }
         {
           network = "berachain-testnet";
-          rpc-url = "https://artio.drpc.org";
+          rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
           private-key = ''"$1"'';
           extra-args = "";
         }

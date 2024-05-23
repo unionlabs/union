@@ -111,6 +111,7 @@ macro_rules! try_from_block_poll_msg {
 }
 
 pub mod arbitrum;
+pub mod berachain;
 pub mod cosmos;
 pub mod ethereum;
 pub mod scroll;

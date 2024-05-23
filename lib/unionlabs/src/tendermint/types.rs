@@ -1,3 +1,4 @@
+pub mod block;
 pub mod block_id;
 pub mod block_id_flag;
 pub mod canonical_block_header;
@@ -5,7 +6,13 @@ pub mod canonical_block_id;
 pub mod canonical_vote;
 pub mod commit;
 pub mod commit_sig;
+pub mod data;
+pub mod duplicate_vote_evidence;
+pub mod evidence;
+pub mod evidence_list;
 pub mod header;
+pub mod light_block;
+pub mod light_client_attack_evidence;
 pub mod part_set_header;
 pub mod signed_header;
 pub mod signed_msg_type;

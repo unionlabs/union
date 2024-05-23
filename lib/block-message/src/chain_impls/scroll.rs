@@ -1,9 +1,12 @@
 use std::collections::VecDeque;
 
-use chain_utils::scroll::{Scroll, SCROLL_REVISION_NUMBER};
+use chain_utils::{
+    ethereum::EthereumConsensusChain,
+    scroll::{Scroll, SCROLL_REVISION_NUMBER},
+};
 use enumorph::Enumorph;
 use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, QueueMsg};
-use unionlabs::{ethereum::config::Mainnet, traits::Chain};
+use unionlabs::{ibc::core::client::height::IsHeight, traits::Chain};
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
@@ -64,7 +67,15 @@ where
             ScrollFetch::FetchBeaconBlockRange(beacon_block_range) => {
                 fetch_beacon_block_range(c, beacon_block_range, &c.l1.beacon_api_client).await
             }
-            ScrollFetch::FetchChannel(channel) => fetch_channel(c, channel).await,
+            ScrollFetch::FetchChannel(FetchChannel { height, path }) => {
+                fetch_channel(
+                    c,
+                    path,
+                    c.execution_height_of_beacon_slot(height.revision_height())
+                        .await,
+                )
+                .await
+            }
         }
     }
 }
@@ -72,7 +83,7 @@ where
 #[queue_msg]
 #[derive(Enumorph)]
 pub enum ScrollFetch {
-    FetchEvents(FetchEvents<Mainnet>),
+    FetchEvents(FetchEvents<Scroll>),
     FetchGetLogs(FetchGetLogs),
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 

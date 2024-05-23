@@ -44,6 +44,8 @@ pub enum ExpectedLength {
     Between(usize, usize),
     #[display(fmt = "greater than or equal to ({_0})")]
     Gte(usize),
+    #[display(fmt = "either {_0} or {_1}")]
+    Either(usize, usize),
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]

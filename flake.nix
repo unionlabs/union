@@ -222,6 +222,7 @@
         ./light-clients/scroll-light-client/scroll-light-client.nix
         ./light-clients/arbitrum-light-client/arbitrum-light-client.nix
         ./light-clients/linea-light-client/linea-light-client.nix
+        ./light-clients/berachain-light-client/berachain-light-client.nix
         ./lib/cometbls-groth16-verifier/default.nix
         ./lib/linea-verifier/default.nix
         ./lib/linea-zktrie/default.nix

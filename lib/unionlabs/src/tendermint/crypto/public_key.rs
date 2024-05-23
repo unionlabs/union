@@ -20,6 +20,11 @@ pub enum PublicKey {
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         Vec<u8>,
     ),
+    Bls12_381(
+        #[serde(with = "::serde_utils::hex_string")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+        Vec<u8>,
+    ),
 }
 
 impl From<PublicKey> for protos::tendermint::crypto::PublicKey {
@@ -33,14 +38,18 @@ impl From<PublicKey> for protos::tendermint::crypto::PublicKey {
                     protos::tendermint::crypto::public_key::Sum::Secp256k1(key)
                 }
                 PublicKey::Bn254(key) => protos::tendermint::crypto::public_key::Sum::Bn254(key),
+                PublicKey::Bls12_381(key) => {
+                    protos::tendermint::crypto::public_key::Sum::Bls12_381(key)
+                }
             }),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromPublicKeyError {
-    MissingField(MissingField),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
 }
 
 impl TryFrom<protos::tendermint::crypto::PublicKey> for PublicKey {
@@ -51,6 +60,33 @@ impl TryFrom<protos::tendermint::crypto::PublicKey> for PublicKey {
             protos::tendermint::crypto::public_key::Sum::Ed25519(key) => Self::Ed25519(key),
             protos::tendermint::crypto::public_key::Sum::Secp256k1(key) => Self::Secp256k1(key),
             protos::tendermint::crypto::public_key::Sum::Bn254(key) => Self::Bn254(key),
+            protos::tendermint::crypto::public_key::Sum::Bls12_381(key) => Self::Bls12_381(key),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{assert_json_roundtrip, assert_proto_roundtrip};
+
+    #[test]
+    fn roundtrip() {
+        let json = r#"
+            {
+              "type": "cometbft/PubKeyBls12_381",
+              "value": "qU0dNr3Bzxn6J1+beEAyuCm1f+Nd1P5nX+AyW6ODjmFChhRw5DwS25BIcoBtxuVx"
+            }
+        "#;
+
+        let public_key_raw =
+            serde_json::from_str::<protos::tendermint::crypto::PublicKey>(json).unwrap();
+
+        assert_json_roundtrip(&public_key_raw);
+
+        let public_key = PublicKey::try_from(public_key_raw).unwrap();
+
+        assert_json_roundtrip(&public_key);
+        assert_proto_roundtrip(&public_key);
     }
 }

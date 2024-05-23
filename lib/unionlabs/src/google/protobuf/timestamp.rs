@@ -8,9 +8,10 @@ use serde::{
 };
 
 use crate::{
-    bounded::{BoundedI32, BoundedI64, BoundedIntError},
+    bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
     constants::metric::NANOS_PER_SECOND,
     google::protobuf::duration::Duration,
+    result_unwrap,
 };
 
 /// See <https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=c27d92ace805175896bb68664bb492b6>
@@ -18,6 +19,11 @@ pub const TIMESTAMP_SECONDS_MAX: i64 = 253_402_300_799;
 pub const TIMESTAMP_SECONDS_MIN: i64 = -62_135_596_800;
 
 const NANOS_MAX: i32 = NANOS_PER_SECOND - 1;
+
+pub type ValidTimestampUnixNanos = BoundedI128<
+    { TIMESTAMP_SECONDS_MIN as i128 * NANOS_PER_SECOND as i128 },
+    { (TIMESTAMP_SECONDS_MAX as i128 * NANOS_PER_SECOND as i128) + NANOS_MAX as i128 },
+>;
 
 #[model(
     proto(raw(protos::google::protobuf::Timestamp), into, from),
@@ -33,6 +39,19 @@ pub struct Timestamp {
     // As per the proto docs: "Must be from 0 to 999,999,999 inclusive."
     pub nanos: BoundedI32<0, NANOS_MAX>,
 }
+
+impl Default for Timestamp {
+    fn default() -> Self {
+        MIN_TIMESTAMP
+    }
+}
+
+pub const MIN_TIMESTAMP: Timestamp = Timestamp {
+    seconds: result_unwrap!(
+        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new(TIMESTAMP_SECONDS_MIN)
+    ),
+    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new(0)),
+};
 
 impl Ord for Timestamp {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -72,18 +91,46 @@ impl Serialize for Timestamp {
 
 impl Timestamp {
     #[must_use]
-    /// # Panics
+    pub fn try_from_unix_nanos(nanos: i128) -> Option<Self> {
+        Some(Self {
+            seconds: i64::try_from(nanos / i128::from(NANOS_PER_SECOND))
+                .ok()?
+                .try_into()
+                .ok()?,
+            nanos: i32::try_from(nanos % i128::from(NANOS_PER_SECOND))
+                .ok()?
+                .try_into()
+                .ok()?,
+        })
+    }
+
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)] // panics are impossible
+    pub fn from_unix_nanos(nanos: ValidTimestampUnixNanos) -> Self {
+        Self {
+            seconds: i64::try_from(nanos.inner() / i128::from(NANOS_PER_SECOND))
+                .expect("type is bounded; qed;")
+                .try_into()
+                .expect("type is bounded; qed;"),
+            nanos: i32::try_from(nanos.inner() % i128::from(NANOS_PER_SECOND))
+                .expect("type is bounded; qed;")
+                .try_into()
+                .expect("type is bounded; qed;"),
+        }
+    }
+
     /// Returns the timestamp as unix timestamp in nanoseconds.
-    /// Assumes the timestamp is correct. Panics otherwise.
-    pub fn unix_nanos(&self) -> u64 {
+    #[allow(clippy::missing_panics_doc)] // panics are impossible
+    #[must_use]
+    pub fn as_unix_nanos(&self) -> u64 {
         u64::try_from(self.seconds.inner()).expect("impossible") * 1_000_000_000
             + u64::try_from(self.nanos.inner()).expect("impossible")
     }
 
-    #[must_use]
     /// Returns the duration between `self` and `other`. If `self` > `other`, the
     /// resulting [`Duration`] will be positive, and if `other` > `self` then the
     /// resulting [`Duration`] will be negative.
+    #[must_use]
     pub fn duration_since(&self, other: &Self) -> Option<Duration> {
         match self.cmp(other) {
             Ordering::Greater => {
@@ -144,6 +191,12 @@ impl Display for Timestamp {
 
 impl From<Timestamp> for DateTime<Utc> {
     fn from(value: Timestamp) -> Self {
+        <DateTime<Utc>>::from(&value)
+    }
+}
+
+impl From<&Timestamp> for DateTime<Utc> {
+    fn from(value: &Timestamp) -> Self {
         DateTime::from_timestamp(
             value.seconds.inner(),
             value
@@ -209,11 +262,14 @@ impl FromStr for Timestamp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromCosmwasmTimestampError {
-    Seconds(BoundedIntError<i64>),
-    Nanos(BoundedIntError<i32>),
-    IntCast(TryFromIntError),
+    #[error("invalid seconds")]
+    Seconds(#[source] BoundedIntError<i64>),
+    #[error("invalid seconds")]
+    Nanos(#[source] BoundedIntError<i32>),
+    #[error("cosmwasm_std::Timestamp::seconds value could not be converted to an i64")]
+    SecondsCast(TryFromIntError),
 }
 
 #[cfg(feature = "cosmwasm")]
@@ -221,15 +277,17 @@ impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
     type Error = TryFromCosmwasmTimestampError;
 
     fn try_from(value: cosmwasm_std::Timestamp) -> Result<Self, Self::Error> {
+        const NANOS_EXPECT_MSG: &str = "cosmwasm_std::Timestamp::subsec_nanos returns a value mod 1_000_000_000, this should be infallible; qed;";
+
         Ok(Self {
-            seconds: TryInto::<i64>::try_into(value.seconds())
-                .map_err(TryFromCosmwasmTimestampError::IntCast)?
+            seconds: i64::try_from(value.seconds())
+                .map_err(TryFromCosmwasmTimestampError::SecondsCast)?
                 .try_into()
                 .map_err(TryFromCosmwasmTimestampError::Seconds)?,
-            nanos: TryInto::<i32>::try_into(value.nanos())
-                .map_err(TryFromCosmwasmTimestampError::IntCast)?
+            nanos: i32::try_from(value.subsec_nanos())
+                .expect(NANOS_EXPECT_MSG)
                 .try_into()
-                .map_err(TryFromCosmwasmTimestampError::Nanos)?,
+                .expect(NANOS_EXPECT_MSG),
         })
     }
 }
@@ -237,6 +295,7 @@ impl TryFrom<cosmwasm_std::Timestamp> for Timestamp {
 #[cfg(feature = "cosmwasm")]
 impl From<Timestamp> for cosmwasm_std::Timestamp {
     fn from(value: Timestamp) -> Self {
+        // TODO(benluelo): Yes this needs to be a fallible conversion, unwrap in the application code if this invariant is upheld elsewhere
         // REVIEW(aeryz): I always expect timestamp to be non-negative integer, that's
         // why `unwrap`ping seems like the right way to go, please give me a heads up
         // if there is an exception and we should convert this implementation to
@@ -334,7 +393,7 @@ mod tests {
     use crate::test_utils::assert_string_roundtrip;
 
     macro_rules! ts {
-        ($s:literal, $n:literal) => {
+        ($s:expr, $n:expr) => {
             Timestamp {
                 seconds: BoundedI64::new($s).unwrap(),
                 nanos: BoundedI32::new($n).unwrap(),
@@ -377,6 +436,10 @@ mod tests {
         Timestamp::from_str("2017-01-15T01:30:15.03441Z").unwrap();
 
         assert_string_roundtrip(&ts!(12345, 6789));
+
+        Timestamp::from_str("0001-01-01T00:00:00Z").unwrap();
+
+        assert_string_roundtrip(&ts!(TIMESTAMP_SECONDS_MIN, 0));
     }
 
     #[test]
@@ -421,16 +484,105 @@ mod tests {
 
         for items in test_items {
             assert_eq!(
-                Timestamp {
-                    seconds: items.0 .0.try_into().unwrap(),
-                    nanos: items.0 .1.try_into().unwrap()
-                }
-                .checked_add(Duration::new(items.1 .0, items.1 .1).unwrap()),
+                ts!(items.0 .0, items.0 .1)
+                    .checked_add(Duration::new(items.1 .0, items.1 .1).unwrap()),
                 items.2.map(|(seconds, nanos)| Timestamp {
                     seconds: seconds.try_into().unwrap(),
                     nanos: nanos.try_into().unwrap()
                 })
             );
         }
+    }
+
+    #[test]
+    fn try_from_unix_nanos() {
+        assert_eq!(Timestamp::try_from_unix_nanos(1), Some(ts!(0, 1)));
+
+        assert_eq!(
+            Timestamp::try_from_unix_nanos(NANOS_PER_SECOND.into()),
+            Some(ts!(1, 0))
+        );
+
+        assert_eq!(
+            Timestamp::try_from_unix_nanos(
+                i128::from(TIMESTAMP_SECONDS_MAX) * i128::from(NANOS_PER_SECOND)
+            ),
+            Some(ts!(TIMESTAMP_SECONDS_MAX, 0))
+        );
+
+        assert_eq!(
+            Timestamp::try_from_unix_nanos(
+                i128::from(TIMESTAMP_SECONDS_MIN) * i128::from(NANOS_PER_SECOND)
+            ),
+            Some(ts!(TIMESTAMP_SECONDS_MIN, 0))
+        );
+
+        assert_eq!(
+            Timestamp::try_from_unix_nanos(
+                i128::from(TIMESTAMP_SECONDS_MAX + 1) * i128::from(NANOS_PER_SECOND)
+            ),
+            None
+        );
+
+        assert_eq!(
+            Timestamp::try_from_unix_nanos(
+                i128::from(TIMESTAMP_SECONDS_MIN - 1) * i128::from(NANOS_PER_SECOND)
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn from_unix_nanos() {
+        assert_eq!(Timestamp::from_unix_nanos(1.try_into().unwrap()), ts!(0, 1));
+
+        assert_eq!(
+            Timestamp::from_unix_nanos(i128::from(NANOS_PER_SECOND).try_into().unwrap()),
+            ts!(1, 0)
+        );
+
+        assert_eq!(
+            Timestamp::from_unix_nanos(
+                (i128::from(TIMESTAMP_SECONDS_MAX) * i128::from(NANOS_PER_SECOND))
+                    .try_into()
+                    .unwrap()
+            ),
+            ts!(TIMESTAMP_SECONDS_MAX, 0)
+        );
+
+        assert_eq!(
+            Timestamp::from_unix_nanos(
+                (i128::from(TIMESTAMP_SECONDS_MIN) * i128::from(NANOS_PER_SECOND))
+                    .try_into()
+                    .unwrap()
+            ),
+            ts!(TIMESTAMP_SECONDS_MIN, 0)
+        );
+
+        ValidTimestampUnixNanos::try_from(
+            (i128::from(TIMESTAMP_SECONDS_MAX) + 1) * i128::from(NANOS_PER_SECOND),
+        )
+        .unwrap_err();
+
+        ValidTimestampUnixNanos::try_from(
+            (i128::from(TIMESTAMP_SECONDS_MIN) - 1) * i128::from(NANOS_PER_SECOND),
+        )
+        .unwrap_err();
+    }
+
+    #[test]
+    #[cfg(feature = "cosmwasm")]
+    fn cosmwasm_timestamp() {
+        use cosmwasm_std::Timestamp as CwTs;
+
+        let cw_ts = CwTs::from_nanos(
+            ((123_456 * i64::from(NANOS_PER_SECOND)) + 100)
+                .try_into()
+                .unwrap(),
+        );
+
+        let ts = Timestamp::try_from(cw_ts).unwrap();
+
+        assert_eq!(ts, ts!(123_456, 100));
     }
 }

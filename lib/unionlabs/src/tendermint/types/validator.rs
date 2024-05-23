@@ -7,9 +7,8 @@ use crate::{
     tendermint::crypto::public_key::{PublicKey, TryFromPublicKeyError},
 };
 
-#[model(proto(raw(protos::tendermint::types::Validator), into, from))]
+#[model(proto(raw(protos::tendermint::types::Validator), from))]
 pub struct Validator {
-    #[serde(with = "::serde_utils::hex_upper_unprefixed")]
     pub address: H160,
     pub pub_key: PublicKey,
     pub voting_power: BoundedI64<0, { i64::MAX }>,
@@ -27,12 +26,16 @@ impl From<Validator> for protos::tendermint::types::Validator {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromValidatorError {
-    MissingField(MissingField),
-    Address(InvalidLength),
-    VotingPower(BoundedIntError<i64>),
-    PubKey(TryFromPublicKeyError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid address")]
+    Address(#[source] InvalidLength),
+    #[error("invalid voting power")]
+    VotingPower(#[source] BoundedIntError<i64>),
+    #[error("invalid pubkey")]
+    PubKey(#[source] TryFromPublicKeyError),
 }
 
 impl TryFrom<protos::tendermint::types::Validator> for Validator {
