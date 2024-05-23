@@ -7513,6 +7513,7 @@ dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
  "ethabi",
+ "serde-utils",
  "thiserror",
  "token-factory-api",
 ]

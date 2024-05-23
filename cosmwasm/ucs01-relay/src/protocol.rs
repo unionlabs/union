@@ -627,9 +627,17 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 .deps
                 .api
                 .addr_canonicalize(&packet.sender)
-                .map_err(|_| EncodingError::InvalidEncoding)?
+                .map_err(|err| EncodingError::InvalidSender {
+                    value: packet.sender,
+                    err,
+                })?
                 .into(),
-            HexBinary::from_hex(&packet.receiver).map_err(|_| EncodingError::InvalidEncoding)?,
+            HexBinary::from_hex(&packet.receiver).map_err(|err| {
+                EncodingError::InvalidReceiver {
+                    value: packet.receiver,
+                    err,
+                }
+            })?,
             packet.tokens,
         ))
     }
