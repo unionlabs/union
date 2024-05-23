@@ -1,6 +1,6 @@
 use std::{ops::Range, time::Duration};
 
-use backon::Retryable;
+use backon::{BackoffBuilder, ConstantBuilder, Retryable};
 use color_eyre::Report;
 use ethers::{
     providers::{Http, Middleware, Provider},
@@ -189,7 +189,22 @@ async fn index_blocks(
         } => {
             // This most likely indicates we caught up indexing with the node. We now switch to
             // single block mode.
-            index_blocks_by_chunk(pool, height..range.end, chain_id, provider, 1).await?;
+            (|| {
+                index_blocks_by_chunk(
+                    pool.clone(),
+                    height..range.end,
+                    chain_id,
+                    provider.clone(),
+                    1,
+                )
+                .inspect_err(|e| debug!(?e, "err indexing block, not problematic if not found"))
+            })
+            .retry(
+                &ConstantBuilder::default()
+                    .with_delay(Duration::from_secs(1))
+                    .with_max_times(30),
+            )
+            .await?
         }
         err => return Err(err.into()),
     }
@@ -392,6 +407,7 @@ impl BlockInsert {
         height: u64,
         provider: &Provider<Http>,
     ) -> Result<Self, FromProviderError> {
+        let mut tries = 0;
         debug!(
             chain_id = chain_id.canonical,
             height, "fetching block from provider"
