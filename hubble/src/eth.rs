@@ -407,6 +407,7 @@ impl BlockInsert {
             })
         })
         .retry(&crate::expo_backoff())
+        .when(|e| !matches!(e, FromProviderError::BlockNotFound))
         .await
         .map_err(Into::into)
     }
