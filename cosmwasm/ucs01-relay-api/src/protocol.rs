@@ -307,7 +307,7 @@ pub trait TransferProtocol {
                             false,
                         ))
                     }
-                    Memo::None {} => {}
+                    Memo::None { .. } => {}
                 };
             }
 

@@ -34,7 +34,7 @@ pub struct PfmRefundPacketKey {
     // Block height of the original transaction
     pub height: u64,
     // Index of the original transaction from `cosmwasm_std::types::TransactionInfo`
-    pub index: u32,
+    pub index: u64,
 }
 
 impl<'a> Prefixer<'a> for PfmRefundPacketKey {

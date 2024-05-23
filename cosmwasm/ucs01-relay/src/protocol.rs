@@ -536,10 +536,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                     .expect("can normalize denom");
                 Coin {
                     denom: transfer_token.denom,
-                    amount: transfer_token
-                        .amount
-                        .try_into()
-                        .expect("CosmWasm require transferred amount to be Uint128..."),
+                    amount: transfer_token.amount,
                 }
             })
             .collect();
@@ -547,19 +544,13 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         // Forward the packet
         let forward_response = self.forward_transfer_packet(
             tokens,
-            original_packet,
+            original_packet.clone(),
             forward,
             override_addr,
             false,
             PacketReturnInfo::NewPacket(PacketId {
                 height: self.common.env.block.height,
-                index: self
-                    .common
-                    .env
-                    .transaction
-                    .clone()
-                    .expect("transaction has tx info")
-                    .index,
+                index: original_packet.sequence,
             }),
         );
         let forward_response_messages = forward_response
@@ -951,10 +942,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                     .expect("can normalize denom");
                 Coin {
                     denom: transfer_token.denom,
-                    amount: transfer_token
-                        .amount
-                        .try_into()
-                        .expect("CosmWasm require transferred amount to be Uint128..."),
+                    amount: transfer_token.amount,
                 }
             })
             .collect();
@@ -962,19 +950,13 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         // Forward the packet
         let forward_response = self.forward_transfer_packet(
             tokens,
-            original_packet,
+            original_packet.clone(),
             forward,
             override_addr,
             false,
             PacketReturnInfo::NewPacket(PacketId {
                 height: self.common.env.block.height,
-                index: self
-                    .common
-                    .env
-                    .transaction
-                    .clone()
-                    .expect("transaction has tx info")
-                    .index,
+                index: original_packet.sequence,
             }),
         );
         let forward_response_messages = forward_response

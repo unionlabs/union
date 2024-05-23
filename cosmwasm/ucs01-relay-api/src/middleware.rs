@@ -48,7 +48,7 @@ pub enum PacketReturnInfo {
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PacketId {
     pub height: u64,
-    pub index: u32,
+    pub index: u64,
 }
 
 /// Information about an in flight packet, used to process retries and refunds.
@@ -71,7 +71,7 @@ pub struct InFlightPfmPacket {
 #[serde(untagged)]
 pub enum Memo {
     Forward { forward: PacketForward },
-    None {},
+    None { balls: String },
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -132,5 +132,22 @@ impl<T: Into<String> + From<String>> Validate<T> for NotEmptyString {
         } else {
             Ok(s.into())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Memo;
+
+    #[test]
+    fn serde_parses_memo() {
+        // let memo = "\"balls\": \"string\"";
+        let memo = "{\"forward\": {\"receiver\": \"[eth_addr]\",\"port\": \"[union-eth port]\",\"channel\": \"[unioneth channel]\",\"timeout\": \"1000000\",\"retries\": 0}}";
+
+        let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
+
+        dbg!(parsed);
+
+        // panic!()
     }
 }
