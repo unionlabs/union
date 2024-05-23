@@ -66,6 +66,7 @@
           type = types.listOf (
             types.submodule {
               options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
+              options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
               options.type = mkOption { type = types.enum [ "tendermint" "ethereum" ]; };
               options.start_height = mkOption { type = types.int; example = 1; default = 0; };
               options.chunk_size = mkOption { type = types.int; example = 1; default = 200; };
