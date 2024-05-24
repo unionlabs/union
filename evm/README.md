@@ -47,17 +47,20 @@ This links are working if you run a local devnet on a x86 machine only (Blocksco
 
 ## Testnet 8
 
-### V1 (deprecated)
-- IBCHandler: [0x6b6b60a68b8dcbb170f25045974d10098917f816](https://sepolia.etherscan.io/address/0x6b6b60a68b8dcbb170f25045974d10098917f816)
-- CometblsClient: [0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3](https://sepolia.etherscan.io/address/0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3)
-- UCS01: [0x3d0eb16ad2619666dbde1921282cd885b58eeefe](https://sepolia.etherscan.io/address/0x3d0eb16ad2619666dbde1921282cd885b58eeefe)
-- UCS02: [0xb455b205106c9b72e967399e15efd8a025fd4a90](https://sepolia.etherscan.io/address/0xb455b205106c9b72e967399e15efd8a025fd4a90)
+Note that the addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
+Production contracts will get solely upgraded through the proxy.
 
-### V2 (live)
+### Sepolia
 - IBCHandler: [0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb](https://sepolia.etherscan.io/address/0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb)
 - CometblsClient: [0x96979ed96ae00d724109b5ad859568e1239c0837](https://sepolia.etherscan.io/address/0x96979ed96ae00d724109b5ad859568e1239c0837)
 - UCS01: [0xd0081080ae8493cf7340458eaf4412030df5feeb](https://sepolia.etherscan.io/address/0xd0081080ae8493cf7340458eaf4412030df5feeb)
 - UCS02: [0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9](https://sepolia.etherscan.io/address/0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9)
+
+### Berachain
+- IBCHandler: [0x6b6b60a68b8dcbb170f25045974d10098917f816](https://artio.beratrail.io/address/0x6b6b60a68b8dcbb170f25045974d10098917f816)
+- CometblsClient: [0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3](https://artio.beratrail.io/address/0xf906a05a25bf5b61a5e4ff24be9122e2cea5f1e3)
+- UCS01: [0x3d0eb16ad2619666dbde1921282cd885b58eeefe](https://artio.beratrail.io//address/0x3d0eb16ad2619666dbde1921282cd885b58eeefe)
+- UCS02: [0xb455b205106c9b72e967399e15efd8a025fd4a90](https://artio.beratrail.io/address/0xb455b205106c9b72e967399e15efd8a025fd4a90)
 
 ## Other networks
 
