@@ -39,7 +39,7 @@
     "@urql/svelte": "^4.2.0",
     "@wagmi/connectors": "^5.0.5",
     "@wagmi/core": "^2.10.3",
-    "@web3modal/wagmi": "^4.2.1",
+    "@web3modal/wagmi": "^4.2.2",
     "bits-ui": "^0.21.9",
     "cmdk-sv": "^0.0.17",
     "formsnap": "^1.0.0",
@@ -48,7 +48,7 @@
     "graphql-ws": "^5.16.0",
     "mode-watcher": "^0.3.0",
     "svelte-french-toast": "^1.2.0",
-    "svelte-legos": "^0.2.2",
+    "svelte-legos": "^0.2.3",
     "svelte-persisted-store": "^0.9.4",
     "svelte-radix": "^1.1.0",
     "svelte-ux": "^0.63.4",
@@ -56,7 +56,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.30.0",
     "vaul-svelte": "^0.3.1",
-    "viem": "^2.12.0"
+    "viem": "^2.12.1"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.3",

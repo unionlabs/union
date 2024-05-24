@@ -70,7 +70,7 @@ const superFormResults = superForm(
           return toast.error("No good", { className: "font-mono text-lg" })
         }
 
-        toast.success("Faucet request submitted 🤌 Check wallet for $UNO in a few moments", {
+        toast.success("Faucet request submitted 🤌 Check wallet for $U in a few moments", {
           duration: 5_000,
           className: "text-sm p-2.5"
         })
@@ -140,7 +140,7 @@ $: newTransfers =
     method="POST"
     class={cn(
       'space-y-8 max-w-[580px]',
-      $cosmosStore.address ? 'sm:w-[480px] w-[380px]' : 'sm:w-[460px] w-[400px]',
+      $cosmosStore.address ? 'sm:w-[485px] w-[380px]' : 'sm:w-[460px] w-[400px]',
       'px-1',
       ($delayed || $submitting || $message?.status === 'success') && 'invisible',
     )}
