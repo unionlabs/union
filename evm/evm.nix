@@ -175,6 +175,12 @@
           private-key = ''"$1"'';
           extra-args = "";
         }
+        {
+          network = "berachain-testnet";
+          rpc-url = "https://artio.drpc.org";
+          private-key = ''"$1"'';
+          extra-args = "";
+        }
       ];
 
       eth-deploy = { rpc-url, private-key, extra-args, ... }: pkgs.writeShellApplication {
