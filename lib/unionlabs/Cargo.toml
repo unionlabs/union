@@ -69,4 +69,4 @@ cosmwasm = []
 arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
 fuzzing   = ["arbitrary", "serde_json"]
 
-stargate = ["cosmwasm-std/stargate"]
+stargate = ["cosmwasm", "cosmwasm-std/stargate"]
