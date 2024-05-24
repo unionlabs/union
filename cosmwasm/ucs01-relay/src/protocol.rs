@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcEndpoint,
-    IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
+    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use diferred_ack_api::{Acknowledgement, DiferredAckMsg, DiferredPacketInfo, Response};
 use sha2::{Digest, Sha256};
@@ -542,7 +542,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .collect();
 
         // Forward the packet
-        let forward_response = self.forward_transfer_packet(
+        let forward_response = match self.forward_transfer_packet(
             tokens,
             original_packet.clone(),
             forward,
@@ -552,7 +552,14 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                 height: self.common.env.block.height,
                 index: original_packet.sequence,
             }),
-        );
+        ) {
+            Ok(forward_response) => forward_response,
+            Err(e) => {
+                return IbcReceiveResponse::new(&[1])
+                    .add_event(Event::new("forward_err").add_attribute("error", e.to_string()))
+            }
+        };
+
         let forward_response_messages = forward_response
             .messages
             .iter()
@@ -572,7 +579,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         receiver: Addr,
         nonrefundable: bool,
         return_info: PacketReturnInfo,
-    ) -> IbcReceiveResponse<Self::CustomMsg> {
+    ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
         // Prepare forward message
         let msg_info = MessageInfo {
             sender: receiver,
@@ -600,8 +607,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             self.common.env.clone(),
             msg_info,
             transfer_msg,
-        )
-        .unwrap();
+        )?;
 
         let (refund_sequence, in_flight_packet) = match return_info {
             PacketReturnInfo::InFlight(in_flight_packet) => {
@@ -650,9 +656,9 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .iter()
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
-        IbcReceiveResponse::without_ack()
+        Ok(IbcReceiveResponse::without_ack()
             .add_messages(transfer_messages)
-            .add_events(transfer.events)
+            .add_events(transfer.events))
     }
 
     fn pfm_ack(
@@ -948,7 +954,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .collect();
 
         // Forward the packet
-        let forward_response = self.forward_transfer_packet(
+        let forward_response = match self.forward_transfer_packet(
             tokens,
             original_packet.clone(),
             forward,
@@ -958,7 +964,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 height: self.common.env.block.height,
                 index: original_packet.sequence,
             }),
-        );
+        ) {
+            Ok(forward_response) => forward_response,
+            Err(e) => {
+                return IbcReceiveResponse::new(&[1])
+                    .add_event(Event::new("forward_err").add_attribute("error", e.to_string()))
+            }
+        };
+
         let forward_response_messages = forward_response
             .messages
             .iter()
@@ -978,7 +991,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         receiver: Addr,
         nonrefundable: bool,
         return_info: PacketReturnInfo,
-    ) -> IbcReceiveResponse<Self::CustomMsg> {
+    ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
         // Prepare forward message
         let msg_info = MessageInfo {
             sender: receiver,
@@ -1006,8 +1019,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             self.common.env.clone(),
             msg_info,
             transfer_msg,
-        )
-        .unwrap();
+        )?;
 
         let (refund_sequence, in_flight_packet) = match return_info {
             PacketReturnInfo::InFlight(in_flight_packet) => {
@@ -1056,9 +1068,9 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .iter()
             .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
 
-        IbcReceiveResponse::without_ack()
+        Ok(IbcReceiveResponse::without_ack()
             .add_messages(transfer_messages)
-            .add_events(transfer.events)
+            .add_events(transfer.events))
     }
 
     fn pfm_ack(

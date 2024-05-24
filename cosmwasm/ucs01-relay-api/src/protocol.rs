@@ -368,7 +368,7 @@ pub trait TransferProtocol {
         receiver: Addr,
         nonrefundable: bool,
         return_info: PacketReturnInfo,
-    ) -> IbcReceiveResponse<Self::CustomMsg>;
+    ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
 
     fn pfm_ack(
         &mut self,
