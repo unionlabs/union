@@ -281,7 +281,7 @@ pub trait TransferProtocol {
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn receive(&mut self, original_packet: IbcPacket) -> IbcReceiveResponse<Self::CustomMsg> {
-        let mut handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
+        let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
             let packet = Self::Packet::try_from(original_packet.data.clone())?;
 
             // NOTE: The default message ack is always successful and only

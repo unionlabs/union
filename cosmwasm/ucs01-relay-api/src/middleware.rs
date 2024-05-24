@@ -1,5 +1,3 @@
-use std::ops::{Deref, DerefMut};
-
 use cosmwasm_std::{Addr, Binary, IbcTimeout};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -7,8 +5,6 @@ use unionlabs::{
     id::{ChannelId, PortId},
     validated::{Validate, Validated},
 };
-
-use crate::types::EncodingError;
 
 pub const DEFAULT_PFM_TIMEOUT: &str = "1m";
 pub const DEFAULT_PFM_RETRIES: u8 = 0;
