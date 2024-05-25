@@ -53,6 +53,9 @@ tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 uint                     = "*"
 wasmparser               = { version = "0.113" }
+near-primitives-core = { version = "0.21" }
+near-sdk = "5.1.0"
+borsh = { version = "1.5.0", features = ["borsh-derive"] }
 
 [dev-dependencies]
 rand       = "0.8.5"

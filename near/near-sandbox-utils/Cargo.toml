@@ -1,0 +1,20 @@
+[package]
+name = "near-sandbox-utils"
+version = "0.7.1"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/near/sandbox"
+description = """
+Utility library for launching NEAR sandbox environments.
+"""
+
+[dependencies]
+anyhow = "1"
+tokio = { version = "1", features = ["process"] }
+binary-install = "0.2.0"
+chrono = "0.4"
+fs2 = "0.4"
+home = "0.5.5"
+
+[features]
+global_install = []
