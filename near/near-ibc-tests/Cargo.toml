@@ -21,7 +21,9 @@ near-workspaces.workspace = true
 near-primitives = "0.20"
 near-jsonrpc-client = "0.8"
 near-jsonrpc-primitives = "0.20"
+near-primitives-core = { version = "0.21" }
 sha2 = "*"
 base64 = "*"
 near-store = { git = "https://github.com/near/nearcore" }
 env_logger = "0.9"
+near-crypto = "0.20" 
