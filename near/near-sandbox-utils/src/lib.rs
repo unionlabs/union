@@ -1,11 +1,13 @@
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
+
 use anyhow::{anyhow, Context};
 use binary_install::Cache;
 use chrono::Utc;
 use fs2::FileExt;
 use tokio::process::{Child, Command};
-
-use std::fs::File;
-use std::path::{Path, PathBuf};
 
 pub mod sync;
 
@@ -197,7 +199,7 @@ pub fn init_with_version(home_dir: impl AsRef<Path>, version: &str) -> anyhow::R
     let home_dir = home_dir.as_ref().to_str().unwrap();
     Command::new(&bin_path)
         .envs(log_vars())
-        .args(["--home", home_dir, "init", "--fast"])
+        .args(["--home", home_dir, "init"])
         .spawn()
         .with_context(|| format!("failed to init sandbox using '{}'", bin_path.display()))
 }

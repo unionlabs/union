@@ -1,7 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use near_primitives_core::{
     hash::CryptoHash,
-    types::{Balance, BlockHeight},
+    types::{Balance, BlockHeight, MerkleHash},
 };
 use near_sdk::AccountId;
 
@@ -27,6 +27,77 @@ pub struct BlockHeaderInnerLiteView {
     pub timestamp_nanosec: u64,
     pub next_bp_hash: CryptoHash,
     pub block_merkle_root: CryptoHash,
+}
+
+/// Epoch identifier -- wrapped hash, to make it easier to distinguish.
+/// EpochId of epoch T is the hash of last block in T-2
+/// EpochId of first two epochs is 0
+#[derive(
+    Debug,
+    Clone,
+    Default,
+    Hash,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    derive_more::AsRef,
+    BorshSerialize,
+    BorshDeserialize,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[as_ref(forward)]
+pub struct EpochId(pub CryptoHash);
+
+impl std::str::FromStr for EpochId {
+    type Err = Box<dyn std::error::Error + Send + Sync>;
+
+    /// Decodes base58-encoded string into a 32-byte crypto hash.
+    fn from_str(epoch_id_str: &str) -> Result<Self, Self::Err> {
+        Ok(EpochId(CryptoHash::from_str(epoch_id_str)?))
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, serde::Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct BlockHeaderInnerLite {
+    /// Height of this block.
+    pub height: BlockHeight,
+    /// Epoch start hash of this block's epoch.
+    /// Used for retrieving validator information
+    pub epoch_id: EpochId,
+    pub next_epoch_id: EpochId,
+    /// Root hash of the state at the previous block.
+    pub prev_state_root: MerkleHash,
+    /// Root of the outcomes of transactions and receipts from the previous chunks.
+    pub prev_outcome_root: MerkleHash,
+    /// Timestamp at which the block was built (number of non-leap-nanoseconds since January 1, 1970 0:00:00 UTC).
+    pub timestamp: u64,
+    /// Hash of the next epoch block producers set
+    pub next_bp_hash: CryptoHash,
+    /// Merkle root of block hashes up to the current block.
+    pub block_merkle_root: CryptoHash,
+}
+
+impl From<BlockHeaderInnerLiteView> for BlockHeaderInnerLite {
+    fn from(value: BlockHeaderInnerLiteView) -> Self {
+        Self {
+            height: value.height,
+            epoch_id: EpochId(value.epoch_id),
+            next_epoch_id: EpochId(value.next_epoch_id),
+            prev_state_root: value.prev_state_root,
+            prev_outcome_root: value.outcome_root,
+            timestamp: value.timestamp,
+            next_bp_hash: value.next_bp_hash,
+            block_merkle_root: value.block_merkle_root,
+        }
+    }
+}
+
+#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+pub struct HeaderUpdate {
+    pub new_state: LightClientBlockView,
+    pub trusted_height: BlockHeight,
 }
 
 #[derive(

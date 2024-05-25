@@ -53,7 +53,7 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 uint                     = "*"
 wasmparser               = { version = "0.113" }
 near-primitives-core = { version = "0.21" }
-near-sdk = "5.1.0"
+near-sdk = { version = "5.1.0", default-features = false }
 borsh = { version = "1.5.0", features = ["borsh-derive"] }
 
 [dev-dependencies]
