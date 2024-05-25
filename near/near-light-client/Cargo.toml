@@ -1,5 +1,5 @@
 [package]
-authors = ["Jacob Lindahl <jacob.lindahl@near.org>"]
+authors = [""]
 edition = "2021"
 name = "near-light-client"
 version = "0.1.0"
@@ -20,7 +20,6 @@ elastic-array = "0.11"
 tokio = { version = "1.18.1", features = ["full"] }
 anyhow = "1.0"
 near-units = "0.2.0"
-workspaces = "0.7.0"
 
 [lib]
 crate-type = ["cdylib"]

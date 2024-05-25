@@ -13,15 +13,15 @@ use near_sdk_contract_tools::Owner;
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_path::MerklePath},
     id::ClientId,
+    near::types::{
+        ApprovalInner, BlockHeaderInnerLite, BlockHeaderInnerLiteView, HeaderUpdate,
+        LightClientBlockView, Signature, ValidatorStakeView,
+    },
 };
 
 use crate::{
-    merkle,
-    types::{
-        ApprovalInner, BlockHeaderInnerLiteView, LightClientBlockView, Signature,
-        ValidatorStakeView,
-    },
-    ClientState, ConsensusState, HeaderUpdate, RawStateProof, StateProof,
+    merkle::{self, combine_hash},
+    ClientState, ConsensusState, RawStateProof, StateProof,
 };
 
 #[near_bindgen]
@@ -42,12 +42,17 @@ impl Contract {
     ) -> Self {
         let client_state: ClientState = borsh::from_slice(&client_state).unwrap();
         let consensus_state: ConsensusState = borsh::from_slice(&consensus_state).unwrap();
+        let mut block_producers = LookupMap::new(b"epoch_block_producers".as_slice());
+        block_producers.insert(
+            consensus_state.state.epoch_id.clone(),
+            client_state.initial_block_producers.clone().unwrap(),
+        );
         let mut consensus_states: LookupMap<u64, ConsensusState> = LookupMap::new(b"c");
         consensus_states.insert(client_state.latest_height, consensus_state);
         Self {
             client_state,
             consensus_states,
-            epoch_block_producers_map: LookupMap::new(b"epoch_block_producers".as_slice()),
+            epoch_block_producers_map: block_producers,
         }
     }
 
@@ -226,31 +231,67 @@ fn reconstruct_light_client_block_view_fields(
 ) -> (CryptoHash, CryptoHash, Vec<u8>) {
     let concat = |first: &[u8], second: &[u8]| [first, second].concat();
 
-    let current_block_hash = CryptoHash(
-        env::sha256(&concat(
-            &env::sha256(&concat(
-                &env::sha256(&borsh::to_vec(&block_view.inner_lite).unwrap()),
-                block_view.inner_rest_hash.as_bytes(),
-            )),
-            block_view.prev_block_hash.as_bytes(),
-        ))
-        .try_into()
-        .unwrap(),
+    // let current_block_hash = CryptoHash(
+    //     env::sha256(
+    //         &borsh::to_vec(&(
+    //             &env::sha256(
+    //                 &borsh::to_vec(&(
+    //                     &env::sha256(&borsh::to_vec(&block_view.inner_lite).unwrap()),
+    //                     block_view.inner_rest_hash.as_bytes(),
+    //                 ))
+    //                 .unwrap(),
+    //             ),
+    //             block_view.prev_block_hash.as_bytes(),
+    //         ))
+    //         .unwrap(),
+    //     )
+    //     .try_into()
+    //     .unwrap(),
+    // );
+
+    let current_block_hash = combine_hash(
+        &combine_hash(
+            &CryptoHash(
+                env::sha256(
+                    &borsh::to_vec(&Into::<BlockHeaderInnerLite>::into(
+                        block_view.inner_lite.clone(),
+                    ))
+                    .unwrap(),
+                )
+                .try_into()
+                .unwrap(),
+            ),
+            &block_view.inner_rest_hash,
+        ),
+        &block_view.prev_block_hash,
     );
 
-    let next_block_hash = CryptoHash(
-        env::sha256(&concat(
-            block_view.next_block_inner_hash.as_bytes(),
-            current_block_hash.as_bytes(),
-        ))
-        .try_into()
-        .unwrap(),
-    );
+    let next_block_hash = combine_hash(&block_view.next_block_inner_hash, &current_block_hash);
 
-    let approval_message = concat(
-        &borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash.clone())).unwrap(),
-        &(block_view.inner_lite.height + 2).to_le_bytes(),
-    );
+    // let next_block_hash = CryptoHash(
+    //     env::sha256(
+    //         &borsh::to_vec(&(
+    //             block_view.next_block_inner_hash.as_bytes(),
+    //             current_block_hash.as_bytes(),
+    //         ))
+    //         .unwrap(),
+    //     )
+    //     .try_into()
+    //     .unwrap(),
+    // );
+
+    // let mut approval_message =
+    //     borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash.clone())).unwrap();
+    // approval_message.extend_from_slice(&(block_view.inner_lite.height + 2).to_le_bytes());
+    let endorsement = ApprovalInner::Endorsement(next_block_hash.clone());
+    let approval_message = {
+        let mut temp_vec = Vec::new();
+        BorshSerialize::serialize(&endorsement, &mut temp_vec).unwrap();
+        //temp_vec.extend_from_slice(&(endorsement.try_to_vec().ok()?[..]));
+        temp_vec.extend_from_slice(&((block_view.inner_lite.height + 2).to_le_bytes()[..]));
+        println!("temp_vec len: {:?}", temp_vec.len());
+        temp_vec
+    };
 
     (current_block_hash, next_block_hash, approval_message)
 }
@@ -317,6 +358,13 @@ fn validate_head(
     }
 }
 
-fn verify_signature(_public_key: &Vec<u8>, _signature: &Signature, _message: &Vec<u8>) -> bool {
-    true
+fn verify_signature(public_key: &Vec<u8>, signature: &Signature, message: &Vec<u8>) -> bool {
+    let &Signature::Ed25519(sig) = &signature else {
+        panic!("signature must be ed25519");
+    };
+    env::ed25519_verify(
+        sig.as_slice().try_into().unwrap(),
+        &message,
+        public_key.as_slice().try_into().unwrap(),
+    )
 }
