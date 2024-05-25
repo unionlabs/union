@@ -1,7 +1,7 @@
 mod contract;
 mod merkle;
 mod nibble_slice;
-mod types;
+pub mod types;
 use std::collections::HashMap;
 
 pub use contract::*;
@@ -11,7 +11,7 @@ use near_primitives_core::{
     types::{AccountId, BlockHeight},
 };
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use types::{BlockHeaderInnerLiteView, LightClientBlockView, ValidatorStakeView};
+use unionlabs::near::types::{BlockHeaderInnerLiteView, ValidatorStakeView};
 
 use crate::nibble_slice::NibbleSlice;
 
@@ -19,17 +19,12 @@ use crate::nibble_slice::NibbleSlice;
 pub struct ClientState {
     latest_height: u64,
     ibc_account_id: AccountId,
+    initial_block_producers: Option<Vec<ValidatorStakeView>>,
 }
 
 #[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
 pub struct ConsensusState {
     pub state: BlockHeaderInnerLiteView,
-}
-
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
-pub struct HeaderUpdate {
-    pub new_state: LightClientBlockView,
-    pub trusted_height: BlockHeight,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
