@@ -352,9 +352,12 @@ fn validate_head(
     }
 
     if let Some(next_bps) = &block_view.next_bps {
-        if env::sha256(&borsh::to_vec(next_bps).unwrap()) != block_view.inner_lite.next_bp_hash.0 {
-            panic!("no bro no");
+        if CryptoHash::hash_borsh(next_bps) != block_view.inner_lite.next_bp_hash {
+            panic!("next bps hash mismatch");
         }
+        // if env::sha256(&borsh::to_vec(next_bps).unwrap()) != block_view.inner_lite.next_bp_hash.0 {
+        //     panic!("no bro no");
+        // }
     }
 }
 

@@ -146,10 +146,26 @@ pub enum ValidatorStakeView {
 )]
 pub struct ValidatorStakeViewV1 {
     pub account_id: AccountId,
-    // TODO(aeryz): make a near specific publickey type or use a common one?
+    // TODO(aeryz): implement the public key type and also impl BorshSerialize for it
     pub public_key: Vec<u8>,
     // TODO(aeryz): #[serde(with = "dec_format")]
     pub stake: Balance,
+}
+
+impl BorshSerialize for PublicKey {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
+        match self {
+            PublicKey::ED25519(public_key) => {
+                BorshSerialize::serialize(&0u8, writer)?;
+                writer.write_all(&public_key.0)?;
+            }
+            PublicKey::SECP256K1(public_key) => {
+                BorshSerialize::serialize(&1u8, writer)?;
+                writer.write_all(&public_key.0)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 // TODO(aeryz): make this the proper type
