@@ -8,16 +8,41 @@ let
   cosmwasm-deployer =
     pkgs.writeShellApplication {
       name = "cosmwasm-deployer";
-      runtimeInputs = [ node ];
+      runtimeInputs = [ node pkgs.jq ];
       text = if builtins.length instantiations == 0 then "" else ''
         mkdir -p /tmp
-        ${builtins.concatStringsSep "\n" (pkgs.lib.imap0 (idx: {code-id, salt, label, message }:
+        ${builtins.concatStringsSep "\n" (pkgs.lib.imap0 (idx: {code-id, salt, label, message, fund ? null }:
           ''
+            ${
+              if fund != null
+              then 
+              ''
+              CODE_HASH="$(${pkgs.lib.getExe node} query wasm code-info ${builtins.toString code-id}  --output json --node http://${depends-on-node}:26657 | jq .data_hash -r)"
+              CREATOR="$(${pkgs.lib.getExe node} query wasm code-info ${builtins.toString code-id}  --output json --node http://${depends-on-node}:26657 | jq .creator -r)"
+              # following command's output eg: "address: union...."
+              ADDRESS="$(${pkgs.lib.getExe node} query wasm build-address "$CODE_HASH" "$CREATOR" ${salt} '${builtins.toJSON message}' --node http://${depends-on-node}:26657 | cut -d" " -f2)"
+            ${pkgs.lib.getExe node} \
+              tx \
+              bank \
+              send \
+              alice \
+              "$ADDRESS" \
+              "${fund}" \
+              --from alice \
+              --keyring-backend test \
+              --gas=auto \
+              --gas-adjustment=1.4 \
+              -y \
+              --node http://${depends-on-node}:26657 \
+              --generate-only > ./msg${builtins.toString idx}_fund.json
+              ''
+              else ""
+            }
             ${pkgs.lib.getExe node} \
              tx \
              wasm \
              instantiate2 \
-             --no-admin \
+             --admin alice \
              ${builtins.toString code-id} \
              '${builtins.toJSON message}' \
              "${salt}" \
@@ -30,6 +55,7 @@ let
              -y \
              --node http://${depends-on-node}:26657 \
              --generate-only > ./msg${builtins.toString idx}.json
+
           ''
         ) instantiations)}
 

@@ -79,6 +79,7 @@
               # salt must be non-prefixed hex string
               salt = "00";
               label = "ucs01-relay";
+              fund = "1000000000muno";
             }];
           }
           {
