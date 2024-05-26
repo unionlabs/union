@@ -131,7 +131,6 @@ where
                 .client
                 .query(self.method.into_request(block_reference)?)
                 .await;
-            println!("RESP: {:?}", resp);
             let resp = resp.map_err(|e| RpcErrorCode::QueryFailure.custom(e))?;
 
             T::from_response(resp)

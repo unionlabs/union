@@ -1,4 +1,4 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::BorshSerialize;
 use near_primitives_core::{hash::CryptoHash, types::MerkleHash};
 use unionlabs::near::types::{Direction, MerklePath};
 
@@ -28,11 +28,4 @@ pub fn compute_root_from_path(path: &MerklePath, item_hash: MerkleHash) -> Merkl
         }
     }
     res
-}
-
-pub fn compute_root_from_path_and_item<T: BorshSerialize>(
-    path: &MerklePath,
-    item: T,
-) -> MerkleHash {
-    compute_root_from_path(path, CryptoHash::hash_borsh(item))
 }

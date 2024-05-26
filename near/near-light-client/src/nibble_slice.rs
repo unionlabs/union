@@ -18,8 +18,6 @@
 
 use std::{cmp::*, fmt};
 
-use elastic_array::ElasticArray36;
-
 /// Nibble-orientated view onto byte-slice, allowing nibble-precision offsets.
 ///
 /// This is an immutable struct. No operations actually change it.
@@ -78,11 +76,6 @@ impl<'a> NibbleSlice<'a> {
         NibbleSlice { data, offset }
     }
 
-    /// Get an iterator for the series of nibbles.
-    pub fn iter(&'a self) -> NibbleSliceIterator<'a> {
-        NibbleSliceIterator { p: self, i: 0 }
-    }
-
     /// Create a new nibble slice from the given HPE encoded data (e.g. output of `encoded()`).
     pub fn from_encoded(data: &'a [u8]) -> (Self, bool) {
         (
@@ -134,84 +127,6 @@ impl<'a> NibbleSlice<'a> {
             }
         }
         s
-    }
-
-    /// Encode while nibble slice in prefixed hex notation, noting whether it `is_leaf`.
-    #[inline]
-    pub fn encode_nibbles(nibbles: &[u8], is_leaf: bool) -> ElasticArray36<u8> {
-        let l = nibbles.len();
-        let mut r = ElasticArray36::new();
-        let mut i = l % 2;
-        r.push(if i == 1 { 0x10 + nibbles[0] } else { 0 } + if is_leaf { 0x20 } else { 0 });
-        while i < l {
-            r.push(nibbles[i] * 16 + nibbles[i + 1]);
-            i += 2;
-        }
-        r
-    }
-
-    /// Encode while nibble slice in prefixed hex notation, noting whether it `is_leaf`.
-    #[inline]
-    pub fn encoded(&self, is_leaf: bool) -> ElasticArray36<u8> {
-        let l = self.len();
-        let mut r = ElasticArray36::new();
-        let mut i = l % 2;
-        r.push(if i == 1 { 0x10 + self.at(0) } else { 0 } + if is_leaf { 0x20 } else { 0 });
-        while i < l {
-            r.push(self.at(i) * 16 + self.at(i + 1));
-            i += 2;
-        }
-        r
-    }
-
-    pub fn merge_encoded(&self, other: &Self, is_leaf: bool) -> ElasticArray36<u8> {
-        let l = self.len() + other.len();
-        let mut r = ElasticArray36::new();
-        let mut i = l % 2;
-        r.push(if i == 1 { 0x10 + self.at(0) } else { 0 } + if is_leaf { 0x20 } else { 0 });
-        while i < l {
-            let bit1 = if i < self.len() {
-                self.at(i)
-            } else {
-                other.at(i - self.len())
-            };
-            let bit2 = if i + 1 < l {
-                if i + 1 < self.len() {
-                    self.at(i + 1)
-                } else {
-                    other.at(i + 1 - self.len())
-                }
-            } else {
-                0
-            };
-
-            r.push(bit1 * 16 + bit2);
-            i += 2;
-        }
-        r
-    }
-
-    /// Encode only the leftmost `n` bytes of the nibble slice in prefixed hex notation,
-    /// noting whether it `is_leaf`.
-    pub fn encoded_leftmost(&self, n: usize, is_leaf: bool) -> ElasticArray36<u8> {
-        let l = min(self.len(), n);
-        let mut r = ElasticArray36::new();
-        let mut i = l % 2;
-        r.push(if i == 1 { 0x10 + self.at(0) } else { 0 } + if is_leaf { 0x20 } else { 0 });
-        while i < l {
-            r.push(self.at(i) * 16 + self.at(i + 1));
-            i += 2;
-        }
-        r
-    }
-
-    // Helper to convert nibbles to bytes.
-    pub fn nibbles_to_bytes(nibbles: &[u8]) -> Vec<u8> {
-        assert_eq!(nibbles.len() % 2, 0);
-        let encoded = NibbleSlice::encode_nibbles(&nibbles, false);
-        // Ignore first element returned by `encode_nibbles` because it contains only
-        // `is_leaf` info for even length.
-        encoded[1..].to_vec()
     }
 }
 
