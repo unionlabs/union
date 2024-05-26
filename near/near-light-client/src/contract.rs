@@ -21,7 +21,8 @@ use unionlabs::{
 
 use crate::{
     merkle::{self, combine_hash},
-    ClientState, ConsensusState, RawStateProof, StateProof,
+    state_proof::RawStateProof,
+    ClientState, ConsensusState,
 };
 
 #[near_bindgen]
@@ -105,6 +106,7 @@ impl Contract {
         }
     }
 
+    #[allow(unused)]
     pub fn verify_membership(
         &self,
         height: Height,
@@ -126,20 +128,12 @@ impl Contract {
 
         if !state_proof.verify(
             // TODO(aeryz): chained
-            &state_proof.chunk_hash,
+            &consensus_state.chunk_prev_state_root,
             &self.client_state.ibc_account_id,
             &key,
             Some(&borsh::to_vec(&value).unwrap()),
         ) {
             panic!("commitment verification failed");
-        }
-
-        if merkle::verify_path(
-            consensus_state.state.prev_state_root,
-            &state_proof.chunk_state_proof,
-            state_proof.chunk_hash,
-        ) {
-            panic!("chunk prev state root verification failed");
         }
 
         true
@@ -167,6 +161,7 @@ impl Contract {
         )
     }
 
+    #[allow(unused)]
     pub fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
         false
     }
@@ -201,6 +196,7 @@ impl Contract {
         )
     }
 
+    #[allow(unused)]
     pub fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>) {}
 }
 
@@ -235,7 +231,7 @@ fn key_from_path(path: &str) -> Vec<u8> {
 fn reconstruct_light_client_block_view_fields(
     block_view: LightClientBlockView,
 ) -> (CryptoHash, CryptoHash, Vec<u8>) {
-    let concat = |first: &[u8], second: &[u8]| [first, second].concat();
+    // let concat = |first: &[u8], second: &[u8]| [first, second].concat();
 
     // let current_block_hash = CryptoHash(
     //     env::sha256(
