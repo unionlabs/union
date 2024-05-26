@@ -1,53 +1,41 @@
-use std::{collections::HashMap, thread::sleep, time::Duration};
+mod msgs;
+mod utils;
 
-use borsh::{BorshDeserialize, BorshSerialize};
-use ibc_vm_rs::{
-    states::connection_handshake, IbcEvent, Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
-};
-use near_jsonrpc_client::methods::{
-    self, next_light_client_block::LightClientBlockView, RpcMethod,
-};
-use near_primitives::{
-    block::{ApprovalInner, Block},
-    hash::CryptoHash,
-    merkle::{merklize, verify_path, MerklePath},
-    sharding::{ChunkHash, ChunkHashHeight},
-    trie_key::trie_key_parsers,
-    types::{BlockHeight, BlockReference, StateRoot},
-    views::{
-        validator_stake_view::ValidatorStakeView, BlockHeaderInnerLiteView, BlockView,
-        QueryRequest, StateItem,
-    },
-};
-use near_sdk::PublicKey;
-use near_store::{NibbleSlice, RawTrieNode};
-use near_units::parse_near;
+use std::{thread::sleep, time::Duration};
+
+use ibc_vm_rs::{states::connection_handshake, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX};
+use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
-    error::RpcErrorCode,
     network::Sandbox,
-    prelude::*,
-    result::ValueOrReceiptId,
-    rpc::query::ProcessQuery,
     sandbox,
-    types::{ChunkHeader, Gas, KeyType, NearToken, SecretKey},
+    types::{Gas, KeyType, NearToken, SecretKey},
     Account, AccountId, Contract, Worker,
 };
-use serde_json::json;
-use sha2::{Digest, Sha256};
 use unionlabs::{
-    encoding::{DecodeAs, EncodeAs, Proto},
+    encoding::{DecodeAs, Proto},
     ibc::core::{
         channel::{self, channel::Channel},
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
-        connection::{self, connection_end::ConnectionEnd, version::Version},
+        connection,
     },
-    id::{ChannelId, ConnectionId, PortId},
-    near::types::{self, HeaderUpdate, MerklePathItem},
+    near::types::HeaderUpdate,
     validated::ValidateT,
 };
+use utils::convert_block_producers;
 
-const WASM_FILEPATH: &str =
+use crate::{
+    msgs::{
+        ChannelOpenAck, ChannelOpenInit, ClientState, ConnectionOpenAck, ConnectionOpenInit,
+        ConnectionOpenTry, ConsensusState, CreateClient, GetAccountId, GetCommitment,
+        RegisterClient, UpdateClient,
+    },
+    utils::{
+        chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
+    },
+};
+
+const IBC_WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/near_ibc.wasm";
 const LC_WASM_FILEPATH: &str =
     "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/near_light_client.wasm";
@@ -66,54 +54,42 @@ const INITIAL_HEIGHT: Height = Height {
     revision_height: 100,
 };
 
+struct NearContract {
+    account_id: AccountId,
+    secret_key: SecretKey,
+    contract: Contract,
+}
+
+pub async fn deploy_contract(
+    sandbox: &Worker<Sandbox>,
+    account_id: &str,
+    wasm_path: &'static str,
+) -> Contract {
+    let wasm_blob = std::fs::read(wasm_path).unwrap();
+    let account_id = account_id.to_string().try_into().unwrap();
+    let secret_key = SecretKey::from_seed(KeyType::ED25519, "testificate");
+    sandbox
+        .create_tla_and_deploy(account_id, secret_key, &wasm_blob)
+        .await
+        .unwrap()
+        .unwrap()
+}
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
     let sandbox = sandbox().await.unwrap();
-    let wasm = std::fs::read(WASM_FILEPATH).unwrap();
-    let lc_wasm = std::fs::read(LC_WASM_FILEPATH).unwrap();
-    let ibc_app_wasm = std::fs::read(IBC_APP_WASM_FILEPATH).unwrap();
 
-    let ibc_account_id: AccountId = String::from("ibc.test.near").try_into().unwrap();
-    let ibc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
-    let contract = sandbox
-        .create_tla_and_deploy(ibc_account_id.clone(), ibc_sk.clone(), &wasm)
-        .await
-        .unwrap()
-        .unwrap();
-    let lc_account_id: AccountId = String::from("light-client.test.near").try_into().unwrap();
-    let lc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
-    let lc = sandbox
-        .create_tla_and_deploy(lc_account_id.clone(), lc_sk.clone(), &lc_wasm)
-        .await
-        .unwrap()
-        .unwrap();
-    let counterparty_lc_account_id: AccountId = String::from("counterparty-light-client.test.near")
-        .try_into()
-        .unwrap();
-    let counterparty_lc_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
-    let counterparty_lc = sandbox
-        .create_tla_and_deploy(
-            counterparty_lc_account_id.clone(),
-            counterparty_lc_sk.clone(),
-            &lc_wasm,
-        )
-        .await
-        .unwrap()
-        .unwrap();
-    let ibc_app_account_id: AccountId = String::from("ibc-app.test.near").try_into().unwrap();
-    let ibc_app_sk = SecretKey::from_seed(KeyType::ED25519, "testificate");
-    let ibc_app = sandbox
-        .create_tla_and_deploy(
-            ibc_app_account_id.clone(),
-            ibc_app_sk.clone(),
-            &ibc_app_wasm,
-        )
-        .await
-        .unwrap()
-        .unwrap();
-
-    println!("contract id ({:?}), lc id ({:?})", contract.id(), lc.id());
+    let ibc_contract = deploy_contract(&sandbox, "ibc.test.near", IBC_WASM_FILEPATH).await;
+    let alice_lc = deploy_contract(&sandbox, "light-client.test.near", LC_WASM_FILEPATH).await;
+    let bob_lc = deploy_contract(
+        &sandbox,
+        "counterparty-light-client.test.near",
+        LC_WASM_FILEPATH,
+    )
+    .await;
+    let _ibc_app_contract =
+        deploy_contract(&sandbox, "ibc-app.test.near", IBC_APP_WASM_FILEPATH).await;
 
     // create accounts
     let owner = sandbox.root_account().unwrap();
@@ -128,75 +104,25 @@ async fn main() {
 
     println!("calling register");
 
-    test_register_client(&user, &contract, &lc, alice::CLIENT_TYPE.to_string()).await;
-    test_register_client(
+    register_client(
         &user,
-        &contract,
-        &counterparty_lc,
-        bob::CLIENT_TYPE.to_string(),
+        &ibc_contract,
+        &alice_lc,
+        alice::CLIENT_TYPE.to_string(),
     )
     .await;
+    register_client(&user, &ibc_contract, &bob_lc, bob::CLIENT_TYPE.to_string()).await;
 
-    test_create_client(&sandbox, &user, &contract, alice::CLIENT_TYPE.to_string()).await;
-    test_create_client(&sandbox, &user, &contract, bob::CLIENT_TYPE.to_string()).await;
+    create_client(
+        &sandbox,
+        &user,
+        &ibc_contract,
+        alice::CLIENT_TYPE.to_string(),
+    )
+    .await;
+    create_client(&sandbox, &user, &ibc_contract, bob::CLIENT_TYPE.to_string()).await;
 
-    connection_open(&sandbox, &user, &contract, &lc, &counterparty_lc).await;
-
-    // let height = block.height();
-
-    // let nodes = proof
-    //     .proof
-    //     .into_iter()
-    //     .map(|bytes| {
-    //         let hash = CryptoHash::hash_bytes(&bytes);
-    //         let node = near_store::RawTrieNodeWithSize::try_from_slice(&bytes).unwrap();
-    //         (hash, node)
-    //     })
-    //     .collect::<HashMap<_, _>>();
-
-    // println!("Nodes: {:?}", nodes);
-
-    // let next_block = sandbox
-    //     .view_block()
-    //     .block_height(block.height() + 1)
-    //     .await
-    //     .unwrap();
-
-    // let root = next_block.chunks()[0].prev_state_root.clone();
-
-    // let (hash, merkle_path) = merklize_chunks(next_block.chunks());
-
-    // println!(
-    //     "merklized hash: {:?}, chunk root: {:?}",
-    //     hash,
-    //     next_block.header().chunk_headers_root()
-    // );
-    // println!("merkle path: {:?}", merkle_path);
-
-    // println!(
-    //     "verify merkle: {}",
-    //     verify_path(
-    //         hash,
-    //         &merkle_path[0],
-    //         ChunkHashHeight(
-    //             ChunkHash(CryptoHash(next_block.chunks()[0].chunk_hash.0)),
-    //             next_block.chunks()[0].height_included
-    //         )
-    //     )
-    // );
-
-    // let res = verify(
-    //     nodes,
-    //     &CryptoHash(root.0.clone()),
-    //     contract.id(),
-    //     &out,
-    //     Some(&proof.data[&out]),
-    // );
-    // println!("Res: {}", res);
-
-    // test_create_client(&user, &contract).await;
-    // test_open_connection_starting_from_init(&user, &contract).await;
-    // test_open_channel_starting_from_init(&user, &contract, &ibc_app).await;
+    connection_open(&sandbox, &user, &ibc_contract, &alice_lc, &bob_lc).await;
 }
 
 async fn connection_open(
@@ -241,131 +167,23 @@ async fn connection_open(
 
     let current_block = sandbox.view_block().await.unwrap();
     sleep(Duration::from_secs(2));
-    let mut proof_key = b"commitments".to_vec();
-    proof_key.extend(borsh::to_vec("connections/connection-1").unwrap());
-
-    let state = sandbox
-        .view_state(ibc_contract.id())
-        .prefix(&proof_key)
-        .block_height(current_block.height() - 1)
-        .await
-        .unwrap();
-    let state_proof: Vec<Vec<u8>> = state
-        .proof
-        .clone()
-        .into_iter()
-        .map(|item| item.to_vec())
-        .collect();
 
     let light_client_block = sandbox
         .next_light_client_block(current_block.hash())
         .await
         .unwrap();
-    println!(
-        "EPOCH ID UPDATE: {:?}",
-        light_client_block.inner_lite.epoch_id.0
-    );
 
-    let chunks = sandbox
-        .view_block()
-        .block_height(light_client_block.inner_lite.height)
-        .await
-        .unwrap()
-        .chunks()
-        .to_vec();
+    let current_height = light_client_block.inner_lite.height;
 
-    let prev_state_root = chunks[0].prev_state_root.clone();
-
-    let (_, merkle_path) = merklize(
-        &chunks
-            .into_iter()
-            .map(|chunk| CryptoHash(chunk.prev_state_root.0))
-            .collect::<Vec<CryptoHash>>(),
-    );
+    let (prev_state_root, prev_state_root_proof) = chunk_proof(sandbox, current_height).await;
 
     let update_bob = UpdateClient {
         client_id: bob_client_id.clone(),
         client_msg: borsh::to_vec(&HeaderUpdate {
-            new_state: types::LightClientBlockView {
-                prev_block_hash: near_primitives_core::hash::CryptoHash(
-                    light_client_block.prev_block_hash.0,
-                ),
-                next_block_inner_hash: near_primitives_core::hash::CryptoHash(
-                    light_client_block.next_block_inner_hash.0,
-                ),
-                inner_lite: types::BlockHeaderInnerLiteView {
-                    height: light_client_block.inner_lite.height,
-                    epoch_id: near_primitives_core::hash::CryptoHash(
-                        light_client_block.inner_lite.epoch_id.0,
-                    ),
-                    next_epoch_id: near_primitives_core::hash::CryptoHash(
-                        light_client_block.inner_lite.next_epoch_id.0,
-                    ),
-                    prev_state_root: near_primitives_core::hash::CryptoHash(
-                        light_client_block.inner_lite.prev_state_root.0,
-                    ),
-                    outcome_root: near_primitives_core::hash::CryptoHash(
-                        light_client_block.inner_lite.outcome_root.0,
-                    ),
-                    timestamp: light_client_block.inner_lite.timestamp,
-                    timestamp_nanosec: light_client_block.inner_lite.timestamp_nanosec,
-                    next_bp_hash: near_primitives_core::hash::CryptoHash(
-                        light_client_block.inner_lite.next_bp_hash.0,
-                    ),
-                    block_merkle_root: near_primitives_core::hash::CryptoHash(
-                        light_client_block.inner_lite.block_merkle_root.0,
-                    ),
-                },
-                inner_rest_hash: near_primitives_core::hash::CryptoHash(
-                    light_client_block.inner_rest_hash.0,
-                ),
-                next_bps: light_client_block.next_bps.map(|bps| {
-                    bps.into_iter()
-                        .map(|stake| {
-                            let ValidatorStakeView::V1(stake) = stake;
-                            types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
-                                account_id: stake.account_id,
-                                public_key: types::PublicKey::Ed25519(
-                                    stake.public_key.key_data().try_into().unwrap(),
-                                ),
-                                // public_key: PublicKey::from_parts(
-                                //     near_sdk::CurveType::ED25519,
-                                //     stake.public_key.key_data().to_vec(),
-                                // )
-                                // .unwrap(),
-                                stake: stake.stake,
-                            })
-                        })
-                        .collect()
-                }),
-                approvals_after_next: light_client_block
-                    .approvals_after_next
-                    .into_iter()
-                    .map(|sig| {
-                        sig.map(|s| match s.as_ref() {
-                            near_crypto::Signature::ED25519(sig) => {
-                                Box::new(types::Signature::Ed25519(sig.to_bytes().to_vec()))
-                            }
-                            near_crypto::Signature::SECP256K1(_) => {
-                                Box::new(types::Signature::Secp256k1(Vec::new()))
-                            }
-                        })
-                    })
-                    .collect(),
-            },
+            new_state: convert_light_client_block_view(light_client_block),
             trusted_height: latest_height.revision_height,
-            prev_state_root_proof: merkle_path[0]
-                .clone()
-                .into_iter()
-                .map(|item| MerklePathItem {
-                    hash: near_primitives_core::hash::CryptoHash(item.hash.0),
-                    direction: match item.direction {
-                        near_primitives::merkle::Direction::Left => types::Direction::Left,
-                        near_primitives::merkle::Direction::Right => types::Direction::Right,
-                    },
-                })
-                .collect(),
-            prev_state_root: near_primitives_core::hash::CryptoHash(prev_state_root.0),
+            prev_state_root_proof,
+            prev_state_root,
         })
         .unwrap(),
     };
@@ -381,33 +199,41 @@ async fn connection_open(
 
     println!("Update result: {res:?}");
 
-    // let open_try = ConnectionOpenTry {
-    //     client_id: bob_client_id.clone(),
-    //     counterparty: connection_handshake::Counterparty {
-    //         client_id: alice_client_id.clone().validate().unwrap(),
-    //         connection_id: "connection-1".into(),
-    //         prefix: MerklePrefix {
-    //             key_prefix: b"ibc".into(),
-    //         },
-    //     },
-    //     counterparty_versions: DEFAULT_IBC_VERSION.clone(),
-    //     connection_end_proof: serde_json::to_vec(&state_proof).unwrap(),
-    //     proof_height: Height {
-    //         revision_number: 0,
-    //         revision_height: current_block.height() - 1,
-    //     },
-    //     delay_period: 0,
-    // };
+    let connection_end_proof = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        current_height - 1,
+        "connections/connection-1",
+    )
+    .await;
 
-    // println!("calling connection open try on bob");
-    // let res = user
-    //     .call(ibc_contract.id(), "connection_open_try")
-    //     .args_json(open_try)
-    //     .gas(Gas::from_gas(300000000000000))
-    //     .transact()
-    //     .await
-    //     .unwrap();
-    // println!("connection open try res: {:?}", res);
+    let open_try = ConnectionOpenTry {
+        client_id: bob_client_id.clone(),
+        counterparty: connection_handshake::Counterparty {
+            client_id: alice_client_id.clone().validate().unwrap(),
+            connection_id: "connection-1".into(),
+            prefix: MerklePrefix {
+                key_prefix: b"ibc".into(),
+            },
+        },
+        counterparty_versions: DEFAULT_IBC_VERSION.clone(),
+        connection_end_proof,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: current_height - 1,
+        },
+        delay_period: 0,
+    };
+
+    println!("calling connection open try on bob");
+    let res = user
+        .call(ibc_contract.id(), "connection_open_try")
+        .args_json(open_try)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap();
+    println!("connection open try res: {:?}", res);
 
     // sandbox.fast_forward(1).await.unwrap();
     // let current_block = sandbox.view_block().await.unwrap();
@@ -534,169 +360,9 @@ async fn connection_open(
     // println!("[ + ] Connection opened between {alice_client_id} and {bob_client_id}");
 }
 
-fn merklize_chunks(chunks: &[ChunkHeader]) -> (CryptoHash, Vec<MerklePath>) {
-    merklize(
-        &chunks
-            .into_iter()
-            .map(|chunk| {
-                ChunkHashHeight(
-                    ChunkHash(CryptoHash(chunk.chunk_hash.0)),
-                    chunk.height_included,
-                )
-            })
-            .collect::<Vec<ChunkHashHeight>>(),
-    )
-}
-
-// fn verify(
-//     nodes: HashMap<CryptoHash, near_store::RawTrieNodeWithSize>,
-//     state_root: &StateRoot,
-//     account_id: &AccountId,
-//     key: &[u8],
-//     expected: Option<&[u8]>,
-// ) -> bool {
-//     let query = trie_key_parsers::get_raw_prefix_for_contract_data(account_id, key);
-//     let mut key = NibbleSlice::new(&query);
-
-//     let mut expected_hash = state_root;
-//     while let Some(node) = nodes.get(expected_hash) {
-//         match &node.node {
-//             RawTrieNode::Leaf(node_key, value) => {
-//                 let nib = &NibbleSlice::from_encoded(&node_key).0;
-//                 return if &key != nib {
-//                     expected.is_none()
-//                 } else {
-//                     expected.is_some_and(|expected| value == expected)
-//                 };
-//             }
-//             RawTrieNode::Extension(node_key, child_hash) => {
-//                 expected_hash = child_hash;
-
-//                 // To avoid unnecessary copy
-//                 let nib = NibbleSlice::from_encoded(&node_key).0;
-//                 if !key.starts_with(&nib) {
-//                     return expected.is_none();
-//                 }
-//                 key = key.mid(nib.len());
-//             }
-//             RawTrieNode::BranchNoValue(children) => {
-//                 if key.is_empty() {
-//                     return expected.is_none();
-//                 }
-//                 match children[key.at(0)] {
-//                     Some(ref child_hash) => {
-//                         key = key.mid(1);
-//                         expected_hash = child_hash;
-//                     }
-//                     None => return expected.is_none(),
-//                 }
-//             }
-//             RawTrieNode::BranchWithValue(value, children) => {
-//                 if key.is_empty() {
-//                     return expected.is_some_and(|exp| value == exp);
-//                 }
-//                 match children[key.at(0)] {
-//                     Some(ref child_hash) => {
-//                         key = key.mid(1);
-//                         expected_hash = child_hash;
-//                     }
-//                     None => return expected.is_none(),
-//                 }
-//             }
-//         }
-//     }
-//     false
-// }
-
-#[derive(serde::Serialize)]
-struct RegisterClient {
-    client_type: String,
-    account: String,
-}
-
-#[derive(Clone, serde::Serialize)]
-struct UpdateClient {
-    client_id: String,
-    client_msg: Vec<u8>,
-}
-
-#[derive(serde::Serialize)]
-struct CreateClient {
-    client_type: String,
-    client_state: Vec<u8>,
-    consensus_state: Vec<u8>,
-}
-
-#[derive(serde::Serialize)]
-struct ConnectionOpenInit {
-    client_id: String,
-    counterparty: connection_handshake::Counterparty,
-    version: Version,
-    delay_period: u64,
-}
-
-#[derive(serde::Serialize)]
-struct ConnectionOpenTry {
-    client_id: String,
-    counterparty: connection_handshake::Counterparty,
-    counterparty_versions: Vec<Version>,
-    connection_end_proof: Vec<u8>,
-    proof_height: Height,
-    delay_period: u64,
-}
-
-#[derive(serde::Serialize)]
-struct ConnectionOpenAck {
-    connection_id: String,
-    version: Version,
-    counterparty_connection_id: String,
-    connection_end_proof: Vec<u8>,
-    proof_height: Height,
-}
-
-#[derive(serde::Serialize)]
-struct ConnectionOpenConfirm {
-    connection_id: String,
-    connection_end_proof: Vec<u8>,
-    proof_height: Height,
-}
-
-#[derive(serde::Serialize)]
-struct ChannelOpenInit {
-    connection_hops: Vec<ConnectionId>,
-    port_id: PortId,
-    counterparty: channel::counterparty::Counterparty,
-    version: String,
-}
-
-#[derive(serde::Serialize)]
-struct ChannelOpenAck {
-    channel_id: ChannelId,
-    port_id: PortId,
-    counterparty_channel_id: String,
-    counterparty_version: String,
-    proof_try: Vec<u8>,
-    proof_height: Height,
-}
-
-#[derive(serde::Serialize)]
-struct GetCommitment {
-    key: String,
-}
-
-#[derive(serde::Serialize)]
-struct GetAccountId {
-    client_type: String,
-}
-
 /// Expectations:
 /// 1. Light client's account id should be saved under the key `client_type`
-async fn test_register_client(
-    user: &Account,
-    contract: &Contract,
-    lc: &Contract,
-    client_type: String,
-) {
+async fn register_client(user: &Account, contract: &Contract, lc: &Contract, client_type: String) {
     let register = RegisterClient {
         client_type: client_type.clone(),
         account: lc.id().to_string(),
@@ -721,17 +387,10 @@ async fn test_register_client(
     .unwrap();
 
     assert_eq!(&account_id, lc.id());
-    println!("[ + ] `test_register_client`: Client successfully registered");
+    println!("[ + ] `register_client`: Client successfully registered");
 }
 
-#[derive(BorshSerialize, BorshDeserialize)]
-pub struct ClientState {
-    latest_height: u64,
-    ibc_account_id: AccountId,
-    initial_block_producers: Option<Vec<types::ValidatorStakeView>>,
-}
-
-async fn test_create_client(
+async fn create_client(
     sandbox: &Worker<Sandbox>,
     user: &Account,
     ibc_contract: &Contract,
@@ -743,7 +402,6 @@ async fn test_create_client(
         .next_light_client_block(current_block.hash())
         .await
         .unwrap();
-    println!("EPOCH ID INIT: {:?}", lc_block.inner_lite.epoch_id);
     let height = lc_block.inner_lite.height;
     let create = CreateClient {
         client_type: client_type.clone(),
@@ -752,25 +410,11 @@ async fn test_create_client(
             ibc_account_id: ibc_contract.id().clone(),
             // TODO(aeryz): this is only valid in this sandboxed environment where the validator set is not changing. For a real environment,
             // the relayer must read the block producers using another endpoint.
-            initial_block_producers: lc_block.next_bps.map(|bps| {
-                bps.into_iter()
-                    .map(|stake| {
-                        let ValidatorStakeView::V1(stake) = stake;
-                        let stake = types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
-                            account_id: stake.account_id,
-                            public_key: types::PublicKey::Ed25519(
-                                stake.public_key.key_data().try_into().unwrap(),
-                            ),
-                            stake: stake.stake,
-                        });
-                        stake
-                    })
-                    .collect()
-            }),
+            initial_block_producers: lc_block.next_bps.map(convert_block_producers),
         })
         .unwrap(),
         consensus_state: borsh::to_vec(&ConsensusState {
-            state: lc_block.inner_lite,
+            state: convert_block_header_inner(lc_block.inner_lite),
             chunk_prev_state_root: CryptoHash(
                 sandbox
                     .view_block()
@@ -792,91 +436,9 @@ async fn test_create_client(
         .await
         .unwrap();
 
-    println!("failures: {:?}", res.receipt_failures());
     assert!(res.receipt_failures().is_empty());
-
-    // let outcomes = res.receipt_outcomes();
-
-    // // receipt for initializing the client
-    // assert!(matches!(
-    //     outcomes[0].clone().into_result().unwrap(),
-    //     ValueOrReceiptId::ReceiptId(..)
-    // ));
-    // // tx result for initializing the client
-    // assert!(matches!(
-    //     outcomes[1].clone().into_result().unwrap(),
-    //     ValueOrReceiptId::Value(..)
-    // ));
-
-    // // receipt for calling `client.status`
-    // assert!(matches!(
-    //     outcomes[3].clone().into_result().unwrap(),
-    //     ValueOrReceiptId::ReceiptId(..)
-    // ));
-    // // result of `client.status`
-    // match outcomes[4].clone().into_result().unwrap() {
-    //     ValueOrReceiptId::Value(val) => assert_eq!(val.json::<Status>().unwrap(), Status::Active),
-    //     ValueOrReceiptId::ReceiptId(_) => panic!("expected to get value"),
-    // }
-
-    // // receipt for calling `client.latest_height`
-    // assert!(matches!(
-    //     outcomes[6].clone().into_result().unwrap(),
-    //     ValueOrReceiptId::ReceiptId(..)
-    // ));
-    // // result of `client.latest_height`
-    // match outcomes[7].clone().into_result().unwrap() {
-    //     ValueOrReceiptId::Value(val) => {
-    //         assert_eq!(
-    //             val.json::<Height>().unwrap().revision_height,
-    //             block.height() - 1
-    //         )
-    //     }
-    //     ValueOrReceiptId::ReceiptId(_) => panic!("expected to get value"),
-    // }
-
-    // assert_eq!(outcomes[9].logs.len(), 1);
-    // assert_eq!(
-    //     IbcEvent::ClientCreated {
-    //         client_id: format!("{client_type}-").validate().unwrap(),
-    //         client_type: client_type.clone(),
-    //         initial_height: block.height() - 1,
-    //     },
-    //     serde_json::from_str(&outcomes[9].logs[0]).unwrap()
-    // );
-
-    println!("[ + ] `test_create_client`: Client of type {client_type} created successfully");
+    println!("[ + ] `create_client`: Client of type {client_type} created successfully");
 }
-
-#[derive(BorshSerialize, BorshDeserialize)]
-pub struct ConsensusState {
-    pub state: BlockHeaderInnerLiteView,
-    pub chunk_prev_state_root: CryptoHash,
-}
-
-// async fn test_update_client(
-//     user: &Account,
-//     contract: &Contract,
-//     lc: &Contract,
-//     state_root: &StateRoot,
-//     height: u64,
-//     state: BlockHeaderInnerLiteView,
-// ) {
-//     let update = UpdateClient {
-//         client_id: "cometbls-1".into(),
-//         client_msg: borsh::to_vec(&(height, ConsensusState { state })).unwrap(),
-//     };
-
-//     let res = user
-//         .call(contract.id(), "update_client")
-//         .args_json(update)
-//         .gas(Gas::from_gas(300000000000000))
-//         .transact()
-//         .await
-//         .unwrap();
-
-//     println!("Update res: {:?}", res);
-// }
 
 async fn test_open_connection_starting_from_init(user: &Account, contract: &Contract) {
     let open_init = ConnectionOpenInit {
