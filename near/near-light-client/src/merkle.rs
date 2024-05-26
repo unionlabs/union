@@ -1,38 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_primitives_core::hash::CryptoHash;
-
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    BorshSerialize,
-    BorshDeserialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-pub struct MerklePathItem {
-    pub hash: MerkleHash,
-    pub direction: Direction,
-}
-
-pub type MerkleHash = CryptoHash;
-pub type MerklePath = Vec<MerklePathItem>;
-
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    BorshSerialize,
-    BorshDeserialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-pub enum Direction {
-    Left,
-    Right,
-}
+use near_primitives_core::{hash::CryptoHash, types::MerkleHash};
+use unionlabs::near::types::{Direction, MerklePath};
 
 pub fn combine_hash(hash1: &MerkleHash, hash2: &MerkleHash) -> MerkleHash {
     CryptoHash::hash_borsh((hash1, hash2))

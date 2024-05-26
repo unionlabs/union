@@ -2797,7 +2797,7 @@ dependencies = [
  "anyhow",
  "borsh 1.5.1",
  "ibc-vm-rs",
- "near-contract-standards",
+ "near-contract-standards 4.1.1",
  "near-sdk 4.1.1",
  "near-sdk-contract-tools",
  "near-units",
@@ -5659,6 +5659,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-contract-standards"
+version = "5.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0e78fe14d389ae76f792735a2108a6b8332a2bed61197310bf5ad718fb1e424"
+dependencies = [
+ "near-sdk 5.1.0",
+]
+
+[[package]]
 name = "near-crypto"
 version = "0.0.0"
 source = "git+https://github.com/near/nearcore#821aba84093c88d5f425be292fab6bbafd182541"
@@ -5794,7 +5803,7 @@ version = "0.1.0"
 dependencies = [
  "borsh 1.5.1",
  "ibc-vm-rs",
- "near-contract-standards",
+ "near-contract-standards 4.1.1",
  "near-sdk 4.1.1",
  "near-sdk-contract-tools",
  "serde",
@@ -5812,13 +5821,13 @@ dependencies = [
  "borsh 1.5.1",
  "env_logger",
  "ibc-vm-rs",
- "near-contract-standards",
+ "near-contract-standards 5.1.0",
  "near-crypto 0.20.1",
  "near-jsonrpc-client 0.8.0",
  "near-jsonrpc-primitives 0.20.1",
  "near-primitives 0.20.1",
  "near-primitives-core 0.21.2",
- "near-sdk 4.1.1",
+ "near-sdk 5.1.0",
  "near-sdk-contract-tools",
  "near-store",
  "near-units",
@@ -5908,7 +5917,7 @@ dependencies = [
  "borsh 1.5.1",
  "elastic-array",
  "ibc-vm-rs",
- "near-contract-standards",
+ "near-contract-standards 4.1.1",
  "near-primitives-core 0.21.2",
  "near-sdk 5.1.0",
  "near-sdk-contract-tools",
@@ -11150,6 +11159,7 @@ dependencies = [
  "bip32",
  "bitvec 1.0.1",
  "borsh 1.5.1",
+ "bs58 0.4.0",
  "chrono",
  "clap 4.5.4",
  "contracts",

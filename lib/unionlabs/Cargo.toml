@@ -56,6 +56,7 @@ wasmparser               = { version = "0.113" }
 near-primitives-core = { version = "0.21" }
 near-sdk = { version = "5.1.0", default-features = false }
 borsh = { version = "1.5.0", features = ["borsh-derive"] }
+bs58 = "0.4"
 
 [dev-dependencies]
 rand       = "0.8.5"

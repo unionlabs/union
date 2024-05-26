@@ -5,8 +5,8 @@ name = "near-ibc-tests"
 version = "0.1.0"
 
 [dependencies]
-near-contract-standards = "4.1.1"
-near-sdk = "4.1.1"
+near-contract-standards = "5.1.0"
+near-sdk = { version = "5.1.0", default-features = false }
 near-sdk-contract-tools = "2.1.0"
 ibc-vm-rs.workspace = true
 serde_json.workspace = true
