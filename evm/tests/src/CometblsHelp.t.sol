@@ -89,7 +89,7 @@ contract CometblsHelpTests is Test {
         uint64 timestamp,
         bytes32 appHash,
         bytes32 validatorsHash
-    ) public {
+    ) public view {
         UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState =
         UnionIbcLightclientsCometblsV1ConsensusState.Data({
             timestamp: timestamp,

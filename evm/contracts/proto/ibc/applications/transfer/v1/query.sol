@@ -419,7 +419,7 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -660,7 +660,7 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1036,7 +1036,7 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
          */
         IbcApplicationsTransferV1DenomTrace.Data[] memory tmp = new IbcApplicationsTransferV1DenomTrace
             .Data[](self.denom_traces.length + 1);
-        for (uint256 i = 0; i < self.denom_traces.length; i++) {
+        for (uint256 i; i < self.denom_traces.length; i++) {
             tmp[i] = self.denom_traces[i];
         }
         tmp[self.denom_traces.length] = value;
@@ -1147,15 +1147,13 @@ library IbcApplicationsTransferV1QueryParamsRequest {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -1207,7 +1205,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1444,7 +1442,7 @@ library IbcApplicationsTransferV1QueryParamsResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

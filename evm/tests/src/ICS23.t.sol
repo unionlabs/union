@@ -14,7 +14,7 @@ contract ICS23Test is Test {
         bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
-    ) external returns (bool) {
+    ) external pure returns (bool) {
         return ICS23MembershipVerifier.verifyMembership(
             root, proof, prefix, path, value
         );
@@ -25,22 +25,22 @@ contract ICS23Test is Test {
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
-    ) external returns (bool) {
+    ) external pure returns (bool) {
         return ICS23MembershipVerifier.verifyNonMembership(
             root, proof, prefix, path
         );
     }
 
-    function test_decode() public {
+    function test_decode() public pure {
         bytes memory proof =
             hex"0acf0112cc010a0441413d3d1ac3010a20636c69656e74732f30392d6c6f63616c686f73742f636c69656e74537461746512350a2a2f6962632e6c69676874636c69656e74732e6c6f63616c686f73742e76322e436c69656e74537461746512070a05080210d9021a0c0801180120012a040002b205222c080112050204b205201a212075c4910f51207d3c65960120fe931f138e2624668d75869f51b8442593dd5eab222c08011205060ab205201a2120c617eef82d350859fc4c1b0118079fad20ecd1e5fe2294c86a86e94c0d14ca550afe010afb010a03696263122016df45c79ca168d31360706db2979a792fcd9c2371478a77af951f39ec59487d1a090801180120012a0100222708011201011a20c505c0fd48b1cf2b65619f12b3144e19c60b4e6b62525ee936be93d041623ebf222708011201011a20dd55097e1841a5872eb9dbdf5ca65b54143f01aa24b598538786884a824191602225080112210182c1cabef1a0591f8016c06a396858762bb949a7dfc03e568b4273b3c205273d222508011221010d9399f8bc11620accd23dbfaeca52b7cda51a92ec71c044cd1d39a34bea2826222708011201011a2022ecbf124eff995ecf01998dd8346b71810af164e192feeb4d4287085128b9df";
 
-        CosmosIcs23V1CommitmentProof.Data memory commitmentProof =
-            CosmosIcs23V1CommitmentProof.decode(proof);
+        CosmosIcs23V1CommitmentProof.decode(proof);
     }
 
     function getExists(IbcCoreCommitmentV1MerkleProof.Data memory decoded)
         internal
+        pure
         returns (
             UnionIcs23.ExistenceProof memory,
             UnionIcs23.ExistenceProof memory
@@ -53,7 +53,7 @@ contract ICS23Test is Test {
 
         existProof.path =
             new UnionIcs23.InnerOp[](decoded.proofs[0].exist.path.length);
-        for (uint256 i = 0; i < existProof.path.length; i++) {
+        for (uint256 i; i < existProof.path.length; i++) {
             existProof.path[i].prefix = decoded.proofs[0].exist.path[i].prefix;
             existProof.path[i].suffix = decoded.proofs[0].exist.path[i].suffix;
         }
@@ -65,7 +65,7 @@ contract ICS23Test is Test {
 
         existProof2.path =
             new UnionIcs23.InnerOp[](decoded.proofs[1].exist.path.length);
-        for (uint256 i = 0; i < existProof2.path.length; i++) {
+        for (uint256 i; i < existProof2.path.length; i++) {
             existProof2.path[i].prefix = decoded.proofs[1].exist.path[i].prefix;
             existProof2.path[i].suffix = decoded.proofs[1].exist.path[i].suffix;
         }
@@ -244,6 +244,7 @@ contract ICS23Test is Test {
 
     function getNonExists(IbcCoreCommitmentV1MerkleProof.Data memory decoded)
         internal
+        pure
         returns (
             UnionIcs23.NonExistenceProof memory,
             UnionIcs23.ExistenceProof memory
@@ -260,7 +261,7 @@ contract ICS23Test is Test {
         leftExistProof.path = new UnionIcs23.InnerOp[](
             decoded.proofs[0].nonexist.left.path.length
         );
-        for (uint256 i = 0; i < leftExistProof.path.length; i++) {
+        for (uint256 i; i < leftExistProof.path.length; i++) {
             leftExistProof.path[i].prefix =
                 decoded.proofs[0].nonexist.left.path[i].prefix;
             leftExistProof.path[i].suffix =
@@ -276,7 +277,7 @@ contract ICS23Test is Test {
         rightExistProof.path = new UnionIcs23.InnerOp[](
             decoded.proofs[0].nonexist.right.path.length
         );
-        for (uint256 i = 0; i < rightExistProof.path.length; i++) {
+        for (uint256 i; i < rightExistProof.path.length; i++) {
             rightExistProof.path[i].prefix =
                 decoded.proofs[0].nonexist.right.path[i].prefix;
             rightExistProof.path[i].suffix =
@@ -293,7 +294,7 @@ contract ICS23Test is Test {
 
         existProof2.path =
             new UnionIcs23.InnerOp[](decoded.proofs[1].exist.path.length);
-        for (uint256 i = 0; i < existProof2.path.length; i++) {
+        for (uint256 i; i < existProof2.path.length; i++) {
             existProof2.path[i].prefix = decoded.proofs[1].exist.path[i].prefix;
             existProof2.path[i].suffix = decoded.proofs[1].exist.path[i].suffix;
         }

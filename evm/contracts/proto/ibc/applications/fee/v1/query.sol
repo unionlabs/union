@@ -559,7 +559,7 @@ library IbcApplicationsFeeV1QueryIncentivizedPacketsResponse {
          */
         IbcApplicationsFeeV1IdentifiedPacketFees.Data[] memory tmp = new IbcApplicationsFeeV1IdentifiedPacketFees
             .Data[](self.incentivized_packets.length + 1);
-        for (uint256 i = 0; i < self.incentivized_packets.length; i++) {
+        for (uint256 i; i < self.incentivized_packets.length; i++) {
             tmp[i] = self.incentivized_packets[i];
         }
         tmp[self.incentivized_packets.length] = value;
@@ -1060,7 +1060,7 @@ library IbcApplicationsFeeV1QueryIncentivizedPacketResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1715,7 +1715,7 @@ library IbcApplicationsFeeV1QueryIncentivizedPacketsForChannelResponse {
          */
         IbcApplicationsFeeV1IdentifiedPacketFees.Data[] memory tmp = new IbcApplicationsFeeV1IdentifiedPacketFees
             .Data[](self.incentivized_packets.length + 1);
-        for (uint256 i = 0; i < self.incentivized_packets.length; i++) {
+        for (uint256 i; i < self.incentivized_packets.length; i++) {
             tmp[i] = self.incentivized_packets[i];
         }
         tmp[self.incentivized_packets.length] = value;
@@ -1942,7 +1942,7 @@ library IbcApplicationsFeeV1QueryTotalRecvFeesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -2249,7 +2249,7 @@ library IbcApplicationsFeeV1QueryTotalRecvFeesResponse {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.recv_fees.length + 1);
-        for (uint256 i = 0; i < self.recv_fees.length; i++) {
+        for (uint256 i; i < self.recv_fees.length; i++) {
             tmp[i] = self.recv_fees[i];
         }
         tmp[self.recv_fees.length] = value;
@@ -2476,7 +2476,7 @@ library IbcApplicationsFeeV1QueryTotalAckFeesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -2783,7 +2783,7 @@ library IbcApplicationsFeeV1QueryTotalAckFeesResponse {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.ack_fees.length + 1);
-        for (uint256 i = 0; i < self.ack_fees.length; i++) {
+        for (uint256 i; i < self.ack_fees.length; i++) {
             tmp[i] = self.ack_fees[i];
         }
         tmp[self.ack_fees.length] = value;
@@ -3010,7 +3010,7 @@ library IbcApplicationsFeeV1QueryTotalTimeoutFeesRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -3318,7 +3318,7 @@ library IbcApplicationsFeeV1QueryTotalTimeoutFeesResponse {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.timeout_fees.length + 1);
-        for (uint256 i = 0; i < self.timeout_fees.length; i++) {
+        for (uint256 i; i < self.timeout_fees.length; i++) {
             tmp[i] = self.timeout_fees[i];
         }
         tmp[self.timeout_fees.length] = value;
@@ -4821,7 +4821,7 @@ library IbcApplicationsFeeV1QueryFeeEnabledChannelsResponse {
          */
         IbcApplicationsFeeV1FeeEnabledChannel.Data[] memory tmp = new IbcApplicationsFeeV1FeeEnabledChannel
             .Data[](self.fee_enabled_channels.length + 1);
-        for (uint256 i = 0; i < self.fee_enabled_channels.length; i++) {
+        for (uint256 i; i < self.fee_enabled_channels.length; i++) {
             tmp[i] = self.fee_enabled_channels[i];
         }
         tmp[self.fee_enabled_channels.length] = value;

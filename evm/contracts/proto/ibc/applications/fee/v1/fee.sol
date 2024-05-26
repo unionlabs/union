@@ -403,7 +403,7 @@ library IbcApplicationsFeeV1Fee {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.recv_fee.length + 1);
-        for (uint256 i = 0; i < self.recv_fee.length; i++) {
+        for (uint256 i; i < self.recv_fee.length; i++) {
             tmp[i] = self.recv_fee[i];
         }
         tmp[self.recv_fee.length] = value;
@@ -425,7 +425,7 @@ library IbcApplicationsFeeV1Fee {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.ack_fee.length + 1);
-        for (uint256 i = 0; i < self.ack_fee.length; i++) {
+        for (uint256 i; i < self.ack_fee.length; i++) {
             tmp[i] = self.ack_fee[i];
         }
         tmp[self.ack_fee.length] = value;
@@ -447,7 +447,7 @@ library IbcApplicationsFeeV1Fee {
          */
         CosmosBaseV1beta1Coin.Data[] memory tmp =
             new CosmosBaseV1beta1Coin.Data[](self.timeout_fee.length + 1);
-        for (uint256 i = 0; i < self.timeout_fee.length; i++) {
+        for (uint256 i; i < self.timeout_fee.length; i++) {
             tmp[i] = self.timeout_fee[i];
         }
         tmp[self.timeout_fee.length] = value;
@@ -799,7 +799,7 @@ library IbcApplicationsFeeV1PacketFee {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.relayers.length + 1);
-        for (uint256 i = 0; i < self.relayers.length; i++) {
+        for (uint256 i; i < self.relayers.length; i++) {
             tmp[i] = self.relayers[i];
         }
         tmp[self.relayers.length] = value;
@@ -1105,7 +1105,7 @@ library IbcApplicationsFeeV1PacketFees {
          */
         IbcApplicationsFeeV1PacketFee.Data[] memory tmp = new IbcApplicationsFeeV1PacketFee
             .Data[](self.packet_fees.length + 1);
-        for (uint256 i = 0; i < self.packet_fees.length; i++) {
+        for (uint256 i; i < self.packet_fees.length; i++) {
             tmp[i] = self.packet_fees[i];
         }
         tmp[self.packet_fees.length] = value;
@@ -1465,7 +1465,7 @@ library IbcApplicationsFeeV1IdentifiedPacketFees {
          */
         IbcApplicationsFeeV1PacketFee.Data[] memory tmp = new IbcApplicationsFeeV1PacketFee
             .Data[](self.packet_fees.length + 1);
-        for (uint256 i = 0; i < self.packet_fees.length; i++) {
+        for (uint256 i; i < self.packet_fees.length; i++) {
             tmp[i] = self.packet_fees[i];
         }
         tmp[self.packet_fees.length] = value;

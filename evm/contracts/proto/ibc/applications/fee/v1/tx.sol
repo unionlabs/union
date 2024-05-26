@@ -394,15 +394,13 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -454,7 +452,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -882,15 +880,13 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -942,7 +938,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1364,7 +1360,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.relayers.length + 1);
-        for (uint256 i = 0; i < self.relayers.length; i++) {
+        for (uint256 i; i < self.relayers.length; i++) {
             tmp[i] = self.relayers[i];
         }
         tmp[self.relayers.length] = value;
@@ -1475,15 +1471,13 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -1535,7 +1529,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1823,7 +1817,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1942,15 +1936,13 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -2002,7 +1994,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

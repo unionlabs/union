@@ -284,8 +284,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrAcknowledgementIsEmpty();
         }
 
-        IbcCoreChannelV1Channel.Data storage channel =
-            ensureChannelState(destinationPort, destinationChannel);
+        ensureChannelState(destinationPort, destinationChannel);
 
         bytes32 ackCommitmentKey = IBCCommitment
             .packetAcknowledgementCommitmentKey(
@@ -607,7 +606,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     function ensureChannelState(
         string memory portId,
         string calldata channelId
-    ) internal returns (IbcCoreChannelV1Channel.Data storage) {
+    ) internal view returns (IbcCoreChannelV1Channel.Data storage) {
         IbcCoreChannelV1Channel.Data storage channel =
             channels[portId][channelId];
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {

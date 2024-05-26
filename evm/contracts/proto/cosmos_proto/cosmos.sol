@@ -429,7 +429,7 @@ library Cosmos_protoScalarDescriptor {
         uint256 count =
             ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
         r.field_type = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; i++) {
             (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
             CosmosProtoCosmosProtoGlobalEnums.ScalarType x =
                 CosmosProtoCosmosProtoGlobalEnums.decode_ScalarType(tmp);
@@ -545,7 +545,6 @@ library Cosmos_protoScalarDescriptor {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.description).length);
         e += 1
@@ -601,7 +600,7 @@ library Cosmos_protoScalarDescriptor {
          */
         CosmosProtoCosmosProtoGlobalEnums.ScalarType[] memory tmp = new CosmosProtoCosmosProtoGlobalEnums
             .ScalarType[](self.field_type.length + 1);
-        for (uint256 i = 0; i < self.field_type.length; i++) {
+        for (uint256 i; i < self.field_type.length; i++) {
             tmp[i] = self.field_type[i];
         }
         tmp[self.field_type.length] = value;
@@ -684,7 +683,7 @@ library CosmosProtoCosmosProtoGlobalEnums {
         returns (uint256)
     {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_ScalarType(a[i]));
         }
         return e;

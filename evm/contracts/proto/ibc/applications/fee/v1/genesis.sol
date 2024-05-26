@@ -666,7 +666,7 @@ library IbcApplicationsFeeV1GenesisState {
          */
         IbcApplicationsFeeV1IdentifiedPacketFees.Data[] memory tmp = new IbcApplicationsFeeV1IdentifiedPacketFees
             .Data[](self.identified_fees.length + 1);
-        for (uint256 i = 0; i < self.identified_fees.length; i++) {
+        for (uint256 i; i < self.identified_fees.length; i++) {
             tmp[i] = self.identified_fees[i];
         }
         tmp[self.identified_fees.length] = value;
@@ -688,7 +688,7 @@ library IbcApplicationsFeeV1GenesisState {
          */
         IbcApplicationsFeeV1FeeEnabledChannel.Data[] memory tmp = new IbcApplicationsFeeV1FeeEnabledChannel
             .Data[](self.fee_enabled_channels.length + 1);
-        for (uint256 i = 0; i < self.fee_enabled_channels.length; i++) {
+        for (uint256 i; i < self.fee_enabled_channels.length; i++) {
             tmp[i] = self.fee_enabled_channels[i];
         }
         tmp[self.fee_enabled_channels.length] = value;
@@ -710,7 +710,7 @@ library IbcApplicationsFeeV1GenesisState {
          */
         IbcApplicationsFeeV1RegisteredPayee.Data[] memory tmp = new IbcApplicationsFeeV1RegisteredPayee
             .Data[](self.registered_payees.length + 1);
-        for (uint256 i = 0; i < self.registered_payees.length; i++) {
+        for (uint256 i; i < self.registered_payees.length; i++) {
             tmp[i] = self.registered_payees[i];
         }
         tmp[self.registered_payees.length] = value;
@@ -732,8 +732,7 @@ library IbcApplicationsFeeV1GenesisState {
          */
         IbcApplicationsFeeV1RegisteredCounterpartyPayee.Data[] memory tmp = new IbcApplicationsFeeV1RegisteredCounterpartyPayee
             .Data[](self.registered_counterparty_payees.length + 1);
-        for (uint256 i = 0; i < self.registered_counterparty_payees.length; i++)
-        {
+        for (uint256 i; i < self.registered_counterparty_payees.length; i++) {
             tmp[i] = self.registered_counterparty_payees[i];
         }
         tmp[self.registered_counterparty_payees.length] = value;
@@ -755,7 +754,7 @@ library IbcApplicationsFeeV1GenesisState {
          */
         IbcApplicationsFeeV1ForwardRelayerAddress.Data[] memory tmp = new IbcApplicationsFeeV1ForwardRelayerAddress
             .Data[](self.forward_relayers.length + 1);
-        for (uint256 i = 0; i < self.forward_relayers.length; i++) {
+        for (uint256 i; i < self.forward_relayers.length; i++) {
             tmp[i] = self.forward_relayers[i];
         }
         tmp[self.forward_relayers.length] = value;

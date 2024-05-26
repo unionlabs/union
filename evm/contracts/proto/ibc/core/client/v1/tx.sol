@@ -379,15 +379,13 @@ library IbcCoreClientV1MsgCreateClientResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -439,7 +437,7 @@ library IbcCoreClientV1MsgCreateClientResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -854,15 +852,13 @@ library IbcCoreClientV1MsgUpdateClientResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -914,7 +910,7 @@ library IbcCoreClientV1MsgUpdateClientResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1430,15 +1426,13 @@ library IbcCoreClientV1MsgUpgradeClientResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -1490,7 +1484,7 @@ library IbcCoreClientV1MsgUpgradeClientResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1904,15 +1898,13 @@ library IbcCoreClientV1MsgSubmitMisbehaviourResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -1964,7 +1956,7 @@ library IbcCoreClientV1MsgSubmitMisbehaviourResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

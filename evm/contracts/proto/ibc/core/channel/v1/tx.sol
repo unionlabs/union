@@ -1729,15 +1729,13 @@ library IbcCoreChannelV1MsgChannelOpenAckResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -1789,7 +1787,7 @@ library IbcCoreChannelV1MsgChannelOpenAckResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -2268,15 +2266,13 @@ library IbcCoreChannelV1MsgChannelOpenConfirmResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -2328,7 +2324,7 @@ library IbcCoreChannelV1MsgChannelOpenConfirmResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -2721,15 +2717,13 @@ library IbcCoreChannelV1MsgChannelCloseInitResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -2781,7 +2775,7 @@ library IbcCoreChannelV1MsgChannelCloseInitResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -3260,15 +3254,13 @@ library IbcCoreChannelV1MsgChannelCloseConfirmResponse {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -3320,7 +3312,7 @@ library IbcCoreChannelV1MsgChannelCloseConfirmResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -5830,7 +5822,7 @@ library IbcCoreChannelV1TxGlobalEnums {
         ResponseResultType[] memory a
     ) internal pure returns (uint256) {
         uint256 e = 0;
-        for (uint256 i = 0; i < a.length; i++) {
+        for (uint256 i; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_ResponseResultType(a[i]));
         }
         return e;

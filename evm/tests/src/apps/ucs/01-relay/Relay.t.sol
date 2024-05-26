@@ -120,7 +120,7 @@ contract RelayTests is Test {
     }
 
     function sendLocalToken(
-        string memory sourcePort,
+        string memory,
         string memory sourceChannel,
         address sender,
         bytes memory receiver,
@@ -150,7 +150,7 @@ contract RelayTests is Test {
     }
 
     function sendRemoteToken(
-        string memory sourcePort,
+        string memory,
         string memory sourceChannel,
         bytes memory sender,
         address receiver,
@@ -230,17 +230,17 @@ contract RelayTests is Test {
         );
     }
 
-    function test_isRemote_ok() public {
+    function test_isRemote_ok() public pure {
         assertEq(RelayLib.isFromChannel("a", "b", "a/b/X"), true);
         assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.bb/c/X"), true);
     }
 
-    function test_isRemote_ko() public {
+    function test_isRemote_ko() public pure {
         assertEq(RelayLib.isFromChannel("a", "b", "b/b/X"), false);
         assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.b/c/X"), false);
     }
 
-    function test_makeForeignDenom() public {
+    function test_makeForeignDenom() public pure {
         assertEq(RelayLib.makeForeignDenom("a", "b", "BLA"), "a/b/BLA");
         assertEq(
             RelayLib.makeForeignDenom("wasm.xyz", "channel-1", "muno"),
@@ -248,7 +248,7 @@ contract RelayTests is Test {
         );
     }
 
-    function test_makeDenomPrefix() public {
+    function test_makeDenomPrefix() public pure {
         assertEq(RelayLib.makeDenomPrefix("a", "b"), "a/b/");
         assertEq(
             RelayLib.makeDenomPrefix("wasm.xyz", "channel-99"),
@@ -256,11 +256,11 @@ contract RelayTests is Test {
         );
     }
 
-    function test_hexToAddress(address addr) public {
+    function test_hexToAddress(address addr) public pure {
         assertEq(Hex.hexToAddress(addr.toHexString()), addr);
     }
 
-    function test_hexToUint256(uint256 v) public {
+    function test_hexToUint256(uint256 v) public pure {
         assertEq(Hex.hexToUint256(v.toHexString()), v);
     }
 
@@ -599,8 +599,7 @@ contract RelayTests is Test {
         );
 
         assertEq(acknowledgement, abi.encodePacked(RelayLib.ACK_FAILURE));
-        (bytes32[] memory reads, bytes32[] memory writes) =
-            vm.accesses(address(relay));
+        (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
     }
 
@@ -1040,7 +1039,7 @@ contract RelayTests is Test {
             sourcePort, sourceChannel, destinationPort, destinationChannel
         );
 
-        address denomAddress = sendLocalToken(
+        sendLocalToken(
             destinationPort,
             destinationChannel,
             sender,
@@ -1338,7 +1337,7 @@ contract RelayTests is Test {
             sourcePort, sourceChannel, destinationPort, destinationChannel
         );
 
-        address denomAddress = sendLocalToken(
+        sendLocalToken(
             destinationPort,
             destinationChannel,
             sender,
@@ -1356,8 +1355,7 @@ contract RelayTests is Test {
             packet, abi.encodePacked(RelayLib.ACK_SUCCESS), relayer
         );
 
-        (bytes32[] memory reads, bytes32[] memory writes) =
-            vm.accesses(address(relay));
+        (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
     }
 
@@ -1425,8 +1423,7 @@ contract RelayTests is Test {
             packet, abi.encodePacked(RelayLib.ACK_SUCCESS), relayer
         );
 
-        (bytes32[] memory reads, bytes32[] memory writes) =
-            vm.accesses(address(relay));
+        (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
     }
 }

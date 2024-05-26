@@ -668,7 +668,7 @@ library CosmosAuthV1beta1ModuleAccount {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.permissions.length + 1);
-        for (uint256 i = 0; i < self.permissions.length; i++) {
+        for (uint256 i; i < self.permissions.length; i++) {
             tmp[i] = self.permissions[i];
         }
         tmp[self.permissions.length] = value;
@@ -974,7 +974,7 @@ library CosmosAuthV1beta1ModuleCredential {
          * First resize the array. Then add the new element to the end.
          */
         bytes[] memory tmp = new bytes[](self.derivation_keys.length + 1);
-        for (uint256 i = 0; i < self.derivation_keys.length; i++) {
+        for (uint256 i; i < self.derivation_keys.length; i++) {
             tmp[i] = self.derivation_keys[i];
         }
         tmp[self.derivation_keys.length] = value;

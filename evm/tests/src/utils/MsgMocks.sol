@@ -73,7 +73,7 @@ library MsgMocks {
     /// Builds a MsgConnectionOpenInit
     function connectionOpenInit(string memory clientId)
         internal
-        view
+        pure
         returns (IBCMsgs.MsgConnectionOpenInit memory m)
     {
         m.clientId = clientId;
@@ -85,7 +85,7 @@ library MsgMocks {
     function connectionOpenTry(
         string memory clientId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgConnectionOpenTry memory m) {
+    ) internal pure returns (IBCMsgs.MsgConnectionOpenTry memory m) {
         m.clientId = clientId;
         m.counterparty.client_id = "counterparty-client-id";
         m.counterparty.connection_id = "counterparty-conn-id";
@@ -124,7 +124,7 @@ library MsgMocks {
         string memory clientId,
         string memory connId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgConnectionOpenAck memory m) {
+    ) internal pure returns (IBCMsgs.MsgConnectionOpenAck memory m) {
         m.connectionId = connId;
         m.version =
             ConnectionVersion.Data({identifier: "1", features: new string[](2)});
@@ -162,7 +162,7 @@ library MsgMocks {
         string memory clientId,
         string memory connId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgConnectionOpenConfirm memory m) {
+    ) internal pure returns (IBCMsgs.MsgConnectionOpenConfirm memory m) {
         m.connectionId = connId;
 
         // mocking connection data
@@ -193,7 +193,7 @@ library MsgMocks {
     function channelOpenInit(
         string memory connId,
         string memory portId
-    ) internal view returns (IBCMsgs.MsgChannelOpenInit memory m) {
+    ) internal pure returns (IBCMsgs.MsgChannelOpenInit memory m) {
         ChannelCounterparty.Data memory counterparty;
         counterparty.port_id = "counterparty-port-id";
         counterparty.channel_id = "";
@@ -211,7 +211,7 @@ library MsgMocks {
         string memory portId,
         string memory channelId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgChannelOpenAck memory m) {
+    ) internal pure returns (IBCMsgs.MsgChannelOpenAck memory m) {
         m.portId = portId;
         m.channelId = channelId;
         m.counterpartyVersion = "counterparty-version";
@@ -240,7 +240,7 @@ library MsgMocks {
         string memory connId,
         string memory portId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgChannelOpenTry memory m) {
+    ) internal pure returns (IBCMsgs.MsgChannelOpenTry memory m) {
         m.portId = portId;
         m.counterpartyVersion = "counterparty-version";
         m.channel = Channel.Data({
@@ -268,7 +268,7 @@ library MsgMocks {
         string memory portId,
         string memory channelId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgChannelOpenConfirm memory m) {
+    ) internal pure returns (IBCMsgs.MsgChannelOpenConfirm memory m) {
         m.portId = portId;
         m.channelId = channelId;
 
@@ -289,7 +289,7 @@ library MsgMocks {
     function channelCloseInit(
         string memory portId,
         string memory channelId
-    ) internal view returns (IBCMsgs.MsgChannelCloseInit memory m) {
+    ) internal pure returns (IBCMsgs.MsgChannelCloseInit memory m) {
         m.portId = portId;
         m.channelId = channelId;
     }
@@ -298,7 +298,7 @@ library MsgMocks {
         string memory portId,
         string memory channelId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgChannelCloseConfirm memory m) {
+    ) internal pure returns (IBCMsgs.MsgChannelCloseConfirm memory m) {
         m.portId = portId;
         m.channelId = channelId;
 
@@ -324,7 +324,7 @@ library MsgMocks {
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes memory payload
-    ) internal view returns (IBCMsgs.MsgPacketRecv memory m) {
+    ) internal pure returns (IBCMsgs.MsgPacketRecv memory m) {
         m.packet.destination_port = portId;
         m.packet.destination_channel = channelId;
         m.packet.source_port = "counterparty-port-id";
@@ -344,7 +344,7 @@ library MsgMocks {
         uint64 timeoutTimestamp,
         bytes memory payload,
         bytes memory acknowledgement
-    ) internal view returns (IBCMsgs.MsgPacketAcknowledgement memory m) {
+    ) internal pure returns (IBCMsgs.MsgPacketAcknowledgement memory m) {
         m.packet.source_port = portId;
         m.packet.source_channel = channelId;
         m.packet.destination_port = "counterparty-port-id";
@@ -364,7 +364,7 @@ library MsgMocks {
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes memory payload
-    ) internal view returns (IBCMsgs.MsgPacketTimeout memory m) {
+    ) internal pure returns (IBCMsgs.MsgPacketTimeout memory m) {
         m.packet.source_port = portId;
         m.packet.source_channel = channelId;
         m.packet.destination_port = "counterparty-port-id";

@@ -43,7 +43,7 @@ contract TestPlus is Test {
 library MsgMocks {
     function connectionOpenInit(string memory clientId)
         internal
-        view
+        pure
         returns (IBCMsgs.MsgConnectionOpenInit memory m)
     {
         m.clientId = clientId;
@@ -54,7 +54,7 @@ library MsgMocks {
     function connectionOpenTry(
         string memory clientId,
         string memory connId
-    ) internal view returns (IBCMsgs.MsgConnectionOpenTry memory m) {
+    ) internal pure returns (IBCMsgs.MsgConnectionOpenTry memory m) {
         m.clientId = clientId;
         m.counterparty.client_id = clientId;
         m.counterparty.connection_id = connId;
@@ -69,7 +69,7 @@ library MsgMocks {
         string memory clientId,
         string memory connId,
         uint64 proofHeight
-    ) internal view returns (IBCMsgs.MsgConnectionOpenAck memory m) {
+    ) internal pure returns (IBCMsgs.MsgConnectionOpenAck memory m) {
         m.connectionId = connId;
         m.version = IbcCoreConnectionV1Version.Data({
             identifier: "1",
@@ -148,8 +148,8 @@ library MsgMocks {
 
     function channelOpenInit(
         string memory portId,
-        uint64 revisionHeight
-    ) internal view returns (IBCMsgs.MsgChannelOpenInit memory m) {
+        uint64
+    ) internal pure returns (IBCMsgs.MsgChannelOpenInit memory m) {
         IbcCoreChannelV1Counterparty.Data memory counterparty;
         counterparty.port_id = "1";
         counterparty.channel_id = "1";

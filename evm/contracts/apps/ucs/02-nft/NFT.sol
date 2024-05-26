@@ -235,7 +235,7 @@ contract UCS02NFT is
         uint256[] calldata tokens
     ) internal {
         uint256 tokensLength = tokens.length;
-        for (uint256 i = 0; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; i++) {
             uint256 tokenId = tokens[i];
             IERC721Denom(nftClass).burn(tokenId);
         }
@@ -248,8 +248,7 @@ contract UCS02NFT is
     ) internal {
         uint256 tokensLength = tokens.length;
         increaseOutstanding(sourceChannel, nftClass, tokensLength);
-        string[] memory tokenUris = new string[](tokensLength);
-        for (uint256 i = 0; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; i++) {
             uint256 tokenId = tokens[i];
             IERC721Denom(nftClass).safeTransferFrom(
                 msg.sender, address(this), tokenId
@@ -263,7 +262,7 @@ contract UCS02NFT is
         address nftClass,
         string memory nftDenom,
         uint256[] calldata tokens
-    ) internal returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         uint256 tokensLength = tokens.length;
         bool supportsMetadata = IERC165(nftClass).supportsInterface(
             type(IERC721Metadata).interfaceId
@@ -275,7 +274,7 @@ contract UCS02NFT is
             name = IERC721Metadata(nftClass).name();
             symbol = IERC721Metadata(nftClass).symbol();
             tokenUris = new string[](tokensLength);
-            for (uint256 i = 0; i < tokensLength; i++) {
+            for (uint256 i; i < tokensLength; i++) {
                 uint256 tokenId = tokens[i];
                 tokenUris[i] = IERC721Metadata(nftClass).tokenURI(tokenId);
             }
@@ -345,7 +344,7 @@ contract UCS02NFT is
         address relayer
     ) external override onlyIBC returns (bytes memory) {
         // TODO: maybe consider threading _res in the failure ack
-        (bool success, bytes memory _res) = address(this).call(
+        (bool success,) = address(this).call(
             abi.encodeWithSelector(
                 this.onRecvPacketProcessing.selector, ibcPacket, relayer
             )
@@ -376,7 +375,7 @@ contract UCS02NFT is
             );
         }
         uint256 tokenIdsLength = packet.tokenIds.length;
-        for (uint256 i = 0; i < tokenIdsLength; i++) {
+        for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
             string memory tokenUri = "";
             if (packet.tokenUris.length == tokenIdsLength) {
@@ -398,7 +397,7 @@ contract UCS02NFT is
         decreaseOutstanding(
             ibcPacket.destination_channel, nftClass, tokenIdsLength
         );
-        for (uint256 i = 0; i < tokenIdsLength; i++) {
+        for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
             IERC721Denom(nftClass).safeTransferFrom(
                 address(this), receiver, tokenId
@@ -409,7 +408,7 @@ contract UCS02NFT is
 
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address relayer
+        address
     ) public {
         if (msg.sender != address(this)) {
             revert NFTLib.ErrUnauthorized();
@@ -452,7 +451,7 @@ contract UCS02NFT is
     function onAcknowledgementPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         bytes calldata acknowledgement,
-        address _relayer
+        address
     ) external override onlyIBC {
         if (
             acknowledgement.length != NFTLib.ACK_LENGTH
@@ -488,7 +487,7 @@ contract UCS02NFT is
         if (isLocal) {
             decreaseOutstanding(channelId, nftClass, tokenIdsLength);
         }
-        for (uint256 i = 0; i < tokenIdsLength; i++) {
+        for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
             if (isLocal) {
                 // The token was originating from the local chain, we escrowed
@@ -519,7 +518,7 @@ contract UCS02NFT is
 
     function onTimeoutPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address _relayer
+        address
     ) external override onlyIBC {
         refundTokens(
             ibcPacket.sequence,
@@ -530,12 +529,12 @@ contract UCS02NFT is
 
     function onChanOpenInit(
         IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata _connectionHops,
-        string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version
-    ) external override onlyIBC {
+    ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(version)) {
             revert NFTLib.ErrInvalidProtocolVersion();
         }
@@ -546,13 +545,13 @@ contract UCS02NFT is
 
     function onChanOpenTry(
         IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata _connectionHops,
-        string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version,
         string calldata counterpartyVersion
-    ) external override onlyIBC {
+    ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(version)) {
             revert NFTLib.ErrInvalidProtocolVersion();
         }
@@ -565,32 +564,32 @@ contract UCS02NFT is
     }
 
     function onChanOpenAck(
-        string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
+        string calldata,
+        string calldata,
+        string calldata,
         string calldata counterpartyVersion
-    ) external override onlyIBC {
+    ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(counterpartyVersion)) {
             revert NFTLib.ErrInvalidCounterpartyProtocolVersion();
         }
     }
 
     function onChanOpenConfirm(
-        string calldata _portId,
-        string calldata _channelId
+        string calldata,
+        string calldata
     ) external override onlyIBC {}
 
     function onChanCloseInit(
-        string calldata _portId,
-        string calldata _channelId
-    ) external override onlyIBC {
+        string calldata,
+        string calldata
+    ) external view override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
-        string calldata _portId,
-        string calldata _channelId
-    ) external override onlyIBC {
+        string calldata,
+        string calldata
+    ) external view override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }
 

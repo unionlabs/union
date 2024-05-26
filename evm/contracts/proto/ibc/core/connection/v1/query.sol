@@ -747,7 +747,7 @@ library IbcCoreConnectionV1QueryConnectionsRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -1175,7 +1175,7 @@ library IbcCoreConnectionV1QueryConnectionsResponse {
          */
         IbcCoreConnectionV1IdentifiedConnection.Data[] memory tmp = new IbcCoreConnectionV1IdentifiedConnection
             .Data[](self.connections.length + 1);
-        for (uint256 i = 0; i < self.connections.length; i++) {
+        for (uint256 i; i < self.connections.length; i++) {
             tmp[i] = self.connections[i];
         }
         tmp[self.connections.length] = value;
@@ -1748,7 +1748,7 @@ library IbcCoreConnectionV1QueryClientConnectionsResponse {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.connection_paths.length + 1);
-        for (uint256 i = 0; i < self.connection_paths.length; i++) {
+        for (uint256 i; i < self.connection_paths.length; i++) {
             tmp[i] = self.connection_paths[i];
         }
         tmp[self.connection_paths.length] = value;
@@ -3032,15 +3032,13 @@ library IbcCoreConnectionV1QueryConnectionParamsRequest {
 
     /**
      * @dev The encoder for internal usage
-     * @param r The struct to be encoded
      * @param p The offset of bytes array to start decode
-     * @param bs The bytes array to be decoded
      * @return The number of bytes encoded
      */
     function _encode(
-        Data memory r,
+        Data memory,
         uint256 p,
-        bytes memory bs
+        bytes memory
     ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
@@ -3092,7 +3090,7 @@ library IbcCoreConnectionV1QueryConnectionParamsRequest {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -3324,7 +3322,7 @@ library IbcCoreConnectionV1QueryConnectionParamsResponse {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

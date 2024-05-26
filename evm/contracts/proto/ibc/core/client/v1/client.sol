@@ -517,7 +517,7 @@ library IbcCoreClientV1ConsensusStateWithHeight {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -865,7 +865,7 @@ library IbcCoreClientV1ClientConsensusStates {
          */
         IbcCoreClientV1ConsensusStateWithHeight.Data[] memory tmp = new IbcCoreClientV1ConsensusStateWithHeight
             .Data[](self.consensus_states.length + 1);
-        for (uint256 i = 0; i < self.consensus_states.length; i++) {
+        for (uint256 i; i < self.consensus_states.length; i++) {
             tmp[i] = self.consensus_states[i];
         }
         tmp[self.consensus_states.length] = value;
@@ -2054,7 +2054,7 @@ library IbcCoreClientV1Params {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.allowed_clients.length + 1);
-        for (uint256 i = 0; i < self.allowed_clients.length; i++) {
+        for (uint256 i; i < self.allowed_clients.length; i++) {
             tmp[i] = self.allowed_clients[i];
         }
         tmp[self.allowed_clients.length] = value;

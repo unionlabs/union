@@ -59,7 +59,7 @@ library IBCChannelLib {
         string memory feature
     ) internal pure returns (bool) {
         bytes32 h = keccak256(bytes(feature));
-        for (uint256 i = 0; i < version.features.length; i++) {
+        for (uint256 i; i < version.features.length; i++) {
             if (keccak256(bytes(version.features[i])) == h) {
                 return true;
             }
@@ -376,8 +376,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
 
-        IbcCoreConnectionV1ConnectionEnd.Data memory connection =
-            ensureConnectionState(channel.connection_hops[0]);
+        ensureConnectionState(channel.connection_hops[0]);
 
         channel.state = IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
         updateChannelCommitment(msg_.portId, msg_.channelId);
@@ -498,6 +497,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
 
     function ensureConnectionState(string memory connectionId)
         internal
+        view
         returns (IbcCoreConnectionV1ConnectionEnd.Data memory)
     {
         IbcCoreConnectionV1ConnectionEnd.Data memory connection =
@@ -514,6 +514,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         IbcCoreChannelV1GlobalEnums.Order ordering
     )
         internal
+        view
         returns (string memory, IbcCoreConnectionV1ConnectionEnd.Data memory)
     {
         if (connectionHops.length != 1) {

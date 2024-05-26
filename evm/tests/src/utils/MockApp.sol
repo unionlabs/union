@@ -30,16 +30,16 @@ contract MockApp is IIBCModule {
     }
 
     function onAcknowledgementPacket(
-        Packet.Data calldata packet,
-        bytes calldata acknowledgement,
-        address relayer
+        Packet.Data calldata,
+        bytes calldata,
+        address
     ) external virtual override {
         emit MockPacketAck();
     }
 
     function onTimeoutPacket(
-        Packet.Data calldata packet,
-        address relayer
+        Packet.Data calldata,
+        address
     ) external virtual override {
         emit MockPacketTimeout();
     }
@@ -59,7 +59,7 @@ contract MockApp is IIBCModule {
         ChannelEnums.Order,
         string[] calldata,
         string calldata,
-        string calldata channelId,
+        string calldata,
         ChannelCounterparty.Data calldata,
         string calldata,
         string calldata
@@ -68,31 +68,31 @@ contract MockApp is IIBCModule {
     }
 
     function onChanOpenAck(
-        string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
-        string calldata counterpartyVersion
+        string calldata,
+        string calldata,
+        string calldata,
+        string calldata
     ) external virtual override {
         emit MockChannelOpenAck();
     }
 
     function onChanOpenConfirm(
-        string calldata portId,
-        string calldata channelId
+        string calldata,
+        string calldata
     ) external virtual override {
         emit MockChannelOpenConfirm();
     }
 
     function onChanCloseInit(
-        string calldata portId,
-        string calldata channelId
+        string calldata,
+        string calldata
     ) external virtual override {
         emit MockChannelCloseInit();
     }
 
     function onChanCloseConfirm(
-        string calldata portId,
-        string calldata channelId
+        string calldata,
+        string calldata
     ) external virtual override {
         emit MockChannelCloseConfirm();
     }

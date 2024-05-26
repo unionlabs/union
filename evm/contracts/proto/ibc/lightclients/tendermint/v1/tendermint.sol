@@ -709,7 +709,7 @@ library IbcLightclientsTendermintV1ClientState {
          */
         CosmosIcs23V1ProofSpec.Data[] memory tmp =
             new CosmosIcs23V1ProofSpec.Data[](self.proof_specs.length + 1);
-        for (uint256 i = 0; i < self.proof_specs.length; i++) {
+        for (uint256 i; i < self.proof_specs.length; i++) {
             tmp[i] = self.proof_specs[i];
         }
         tmp[self.proof_specs.length] = value;
@@ -730,7 +730,7 @@ library IbcLightclientsTendermintV1ClientState {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.upgrade_path.length + 1);
-        for (uint256 i = 0; i < self.upgrade_path.length; i++) {
+        for (uint256 i; i < self.upgrade_path.length; i++) {
             tmp[i] = self.upgrade_path[i];
         }
         tmp[self.upgrade_path.length] = value;
@@ -1730,7 +1730,7 @@ library IbcLightclientsTendermintV1Header {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 

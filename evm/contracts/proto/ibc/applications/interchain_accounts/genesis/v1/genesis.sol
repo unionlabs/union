@@ -290,7 +290,7 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
 
     // empty checker
 
-    function _empty(Data memory r) internal pure returns (bool) {
+    function _empty(Data memory) internal pure returns (bool) {
         return true;
     }
 
@@ -855,7 +855,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[] memory
             tmp = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
                 .Data[](self.active_channels.length + 1);
-        for (uint256 i = 0; i < self.active_channels.length; i++) {
+        for (uint256 i; i < self.active_channels.length; i++) {
             tmp[i] = self.active_channels[i];
         }
         tmp[self.active_channels.length] = value;
@@ -879,7 +879,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
             .Data[] memory tmp = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
                 .Data[](self.interchain_accounts.length + 1);
-        for (uint256 i = 0; i < self.interchain_accounts.length; i++) {
+        for (uint256 i; i < self.interchain_accounts.length; i++) {
             tmp[i] = self.interchain_accounts[i];
         }
         tmp[self.interchain_accounts.length] = value;
@@ -897,7 +897,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.ports.length + 1);
-        for (uint256 i = 0; i < self.ports.length; i++) {
+        for (uint256 i; i < self.ports.length; i++) {
             tmp[i] = self.ports[i];
         }
         tmp[self.ports.length] = value;
@@ -1424,7 +1424,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[] memory
             tmp = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
                 .Data[](self.active_channels.length + 1);
-        for (uint256 i = 0; i < self.active_channels.length; i++) {
+        for (uint256 i; i < self.active_channels.length; i++) {
             tmp[i] = self.active_channels[i];
         }
         tmp[self.active_channels.length] = value;
@@ -1448,7 +1448,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
             .Data[] memory tmp = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
                 .Data[](self.interchain_accounts.length + 1);
-        for (uint256 i = 0; i < self.interchain_accounts.length; i++) {
+        for (uint256 i; i < self.interchain_accounts.length; i++) {
             tmp[i] = self.interchain_accounts[i];
         }
         tmp[self.interchain_accounts.length] = value;

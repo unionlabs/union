@@ -667,7 +667,7 @@ library IbcCoreCommitmentV1MerklePath {
          * First resize the array. Then add the new element to the end.
          */
         string[] memory tmp = new string[](self.key_path.length + 1);
-        for (uint256 i = 0; i < self.key_path.length; i++) {
+        for (uint256 i; i < self.key_path.length; i++) {
             tmp[i] = self.key_path[i];
         }
         tmp[self.key_path.length] = value;
@@ -970,7 +970,7 @@ library IbcCoreCommitmentV1MerkleProof {
          */
         CosmosIcs23V1CommitmentProof.Data[] memory tmp =
             new CosmosIcs23V1CommitmentProof.Data[](self.proofs.length + 1);
-        for (uint256 i = 0; i < self.proofs.length; i++) {
+        for (uint256 i; i < self.proofs.length; i++) {
             tmp[i] = self.proofs[i];
         }
         tmp[self.proofs.length] = value;
