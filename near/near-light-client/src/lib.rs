@@ -5,13 +5,12 @@ pub mod types;
 use std::collections::HashMap;
 
 pub use contract::*;
-use merkle::MerklePath;
 use near_primitives_core::{
     hash::CryptoHash,
     types::{AccountId, BlockHeight},
 };
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use unionlabs::near::types::{BlockHeaderInnerLiteView, ValidatorStakeView};
+use unionlabs::near::types::{BlockHeaderInnerLiteView, MerklePath, ValidatorStakeView};
 
 use crate::nibble_slice::NibbleSlice;
 
@@ -25,12 +24,11 @@ pub struct ClientState {
 #[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
 pub struct ConsensusState {
     pub state: BlockHeaderInnerLiteView,
+    pub chunk_prev_state_root: CryptoHash,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RawStateProof {
-    pub chunk_hash: CryptoHash,
-    pub chunk_state_proof: MerklePath,
     pub state_proof: Vec<Vec<u8>>,
 }
 
@@ -46,18 +44,12 @@ impl RawStateProof {
             })
             .collect();
 
-        StateProof {
-            state_proof_nodes,
-            chunk_state_proof: self.chunk_state_proof,
-            chunk_hash: self.chunk_hash,
-        }
+        StateProof { state_proof_nodes }
     }
 }
 
 pub struct StateProof {
-    pub chunk_hash: CryptoHash,
     pub state_proof_nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
-    pub chunk_state_proof: MerklePath,
 }
 
 impl StateProof {

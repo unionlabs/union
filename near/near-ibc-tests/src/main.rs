@@ -10,7 +10,7 @@ use near_jsonrpc_client::methods::{
 use near_primitives::{
     block::{ApprovalInner, Block},
     hash::CryptoHash,
-    merkle::{merklize, verify_path, MerklePath, MerklePathItem},
+    merkle::{merklize, verify_path, MerklePath},
     sharding::{ChunkHash, ChunkHashHeight},
     trie_key::trie_key_parsers,
     types::{BlockHeight, BlockReference, StateRoot},
@@ -19,6 +19,7 @@ use near_primitives::{
         QueryRequest, StateItem,
     },
 };
+use near_sdk::PublicKey;
 use near_store::{NibbleSlice, RawTrieNode};
 use near_units::parse_near;
 use near_workspaces::{
@@ -42,7 +43,7 @@ use unionlabs::{
         connection::{self, connection_end::ConnectionEnd, version::Version},
     },
     id::{ChannelId, ConnectionId, PortId},
-    near::types::{self, HeaderUpdate},
+    near::types::{self, HeaderUpdate, MerklePathItem},
     validated::ValidateT,
 };
 
@@ -265,6 +266,23 @@ async fn connection_open(
         light_client_block.inner_lite.epoch_id.0
     );
 
+    let chunks = sandbox
+        .view_block()
+        .block_height(light_client_block.inner_lite.height)
+        .await
+        .unwrap()
+        .chunks()
+        .to_vec();
+
+    let prev_state_root = chunks[0].prev_state_root.clone();
+
+    let (_, merkle_path) = merklize(
+        &chunks
+            .into_iter()
+            .map(|chunk| CryptoHash(chunk.prev_state_root.0))
+            .collect::<Vec<CryptoHash>>(),
+    );
+
     let update_bob = UpdateClient {
         client_id: bob_client_id.clone(),
         client_msg: borsh::to_vec(&HeaderUpdate {
@@ -307,7 +325,14 @@ async fn connection_open(
                             let ValidatorStakeView::V1(stake) = stake;
                             types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
                                 account_id: stake.account_id,
-                                public_key: stake.public_key.key_data().to_vec(),
+                                public_key: types::PublicKey::Ed25519(
+                                    stake.public_key.key_data().try_into().unwrap(),
+                                ),
+                                // public_key: PublicKey::from_parts(
+                                //     near_sdk::CurveType::ED25519,
+                                //     stake.public_key.key_data().to_vec(),
+                                // )
+                                // .unwrap(),
                                 stake: stake.stake,
                             })
                         })
@@ -329,6 +354,18 @@ async fn connection_open(
                     .collect(),
             },
             trusted_height: latest_height.revision_height,
+            prev_state_root_proof: merkle_path[0]
+                .clone()
+                .into_iter()
+                .map(|item| MerklePathItem {
+                    hash: near_primitives_core::hash::CryptoHash(item.hash.0),
+                    direction: match item.direction {
+                        near_primitives::merkle::Direction::Left => types::Direction::Left,
+                        near_primitives::merkle::Direction::Right => types::Direction::Right,
+                    },
+                })
+                .collect(),
+            prev_state_root: near_primitives_core::hash::CryptoHash(prev_state_root.0),
         })
         .unwrap(),
     };
@@ -707,10 +744,11 @@ async fn test_create_client(
         .await
         .unwrap();
     println!("EPOCH ID INIT: {:?}", lc_block.inner_lite.epoch_id);
+    let height = lc_block.inner_lite.height;
     let create = CreateClient {
         client_type: client_type.clone(),
         client_state: borsh::to_vec(&ClientState {
-            latest_height: current_block.height() - 1,
+            latest_height: height - 1,
             ibc_account_id: ibc_contract.id().clone(),
             // TODO(aeryz): this is only valid in this sandboxed environment where the validator set is not changing. For a real environment,
             // the relayer must read the block producers using another endpoint.
@@ -718,11 +756,14 @@ async fn test_create_client(
                 bps.into_iter()
                     .map(|stake| {
                         let ValidatorStakeView::V1(stake) = stake;
-                        types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
+                        let stake = types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
                             account_id: stake.account_id,
-                            public_key: stake.public_key.key_data().to_vec(),
+                            public_key: types::PublicKey::Ed25519(
+                                stake.public_key.key_data().try_into().unwrap(),
+                            ),
                             stake: stake.stake,
-                        })
+                        });
+                        stake
                     })
                     .collect()
             }),
@@ -730,6 +771,16 @@ async fn test_create_client(
         .unwrap(),
         consensus_state: borsh::to_vec(&ConsensusState {
             state: lc_block.inner_lite,
+            chunk_prev_state_root: CryptoHash(
+                sandbox
+                    .view_block()
+                    .block_height(height)
+                    .await
+                    .unwrap()
+                    .chunks()[0]
+                    .prev_state_root
+                    .0,
+            ),
         })
         .unwrap(),
     };
@@ -800,31 +851,32 @@ async fn test_create_client(
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct ConsensusState {
     pub state: BlockHeaderInnerLiteView,
+    pub chunk_prev_state_root: CryptoHash,
 }
 
-async fn test_update_client(
-    user: &Account,
-    contract: &Contract,
-    lc: &Contract,
-    state_root: &StateRoot,
-    height: u64,
-    state: BlockHeaderInnerLiteView,
-) {
-    let update = UpdateClient {
-        client_id: "cometbls-1".into(),
-        client_msg: borsh::to_vec(&(height, ConsensusState { state })).unwrap(),
-    };
+// async fn test_update_client(
+//     user: &Account,
+//     contract: &Contract,
+//     lc: &Contract,
+//     state_root: &StateRoot,
+//     height: u64,
+//     state: BlockHeaderInnerLiteView,
+// ) {
+//     let update = UpdateClient {
+//         client_id: "cometbls-1".into(),
+//         client_msg: borsh::to_vec(&(height, ConsensusState { state })).unwrap(),
+//     };
 
-    let res = user
-        .call(contract.id(), "update_client")
-        .args_json(update)
-        .gas(Gas::from_gas(300000000000000))
-        .transact()
-        .await
-        .unwrap();
+//     let res = user
+//         .call(contract.id(), "update_client")
+//         .args_json(update)
+//         .gas(Gas::from_gas(300000000000000))
+//         .transact()
+//         .await
+//         .unwrap();
 
-    println!("Update res: {:?}", res);
-}
+//     println!("Update res: {:?}", res);
+// }
 
 async fn test_open_connection_starting_from_init(user: &Account, contract: &Contract) {
     let open_init = ConnectionOpenInit {

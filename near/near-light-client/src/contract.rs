@@ -15,7 +15,7 @@ use unionlabs::{
     id::ClientId,
     near::types::{
         ApprovalInner, BlockHeaderInnerLite, BlockHeaderInnerLiteView, HeaderUpdate,
-        LightClientBlockView, Signature, ValidatorStakeView,
+        LightClientBlockView, PublicKey, Signature, ValidatorStakeView,
     },
 };
 
@@ -156,10 +156,15 @@ impl Contract {
 
         validate_head(
             consensus_state.state.clone(),
-            header_update.new_state,
+            header_update.new_state.clone(),
             &self.epoch_block_producers_map,
         );
-        true
+
+        merkle::verify_path(
+            header_update.new_state.inner_lite.prev_state_root,
+            &header_update.prev_state_root_proof,
+            header_update.prev_state_root,
+        )
     }
 
     pub fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
@@ -170,6 +175,7 @@ impl Contract {
         let header_update: HeaderUpdate = borsh::from_slice(&client_msg).unwrap();
         let new_consensus_state = ConsensusState {
             state: header_update.new_state.inner_lite.clone(),
+            chunk_prev_state_root: header_update.prev_state_root,
         };
         self.consensus_states.insert(
             header_update.new_state.inner_lite.height,
@@ -338,7 +344,11 @@ fn validate_head(
             Some(signature) => {
                 approved_stake += block_producer.stake;
 
-                if !verify_signature(&block_producer.public_key, signature, &approval_message) {
+                let PublicKey::Ed25519(pubkey) = block_producer.public_key else {
+                    panic!("pubkey type is not supported");
+                };
+
+                if !verify_signature(&pubkey[..], signature, &approval_message) {
                     panic!("no bro no");
                 }
             }
@@ -361,13 +371,13 @@ fn validate_head(
     }
 }
 
-fn verify_signature(public_key: &Vec<u8>, signature: &Signature, message: &Vec<u8>) -> bool {
+fn verify_signature(public_key: &[u8], signature: &Signature, message: &Vec<u8>) -> bool {
     let &Signature::Ed25519(sig) = &signature else {
         panic!("signature must be ed25519");
     };
     env::ed25519_verify(
         sig.as_slice().try_into().unwrap(),
         &message,
-        public_key.as_slice().try_into().unwrap(),
+        public_key.try_into().unwrap(),
     )
 }
