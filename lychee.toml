@@ -17,3 +17,4 @@ exclude = [
 
 exclude_all_private = true
 exclude_link_local  = true
+accept = ["200", "429"]
