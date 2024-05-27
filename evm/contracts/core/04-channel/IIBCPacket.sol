@@ -26,9 +26,8 @@ interface IIBCPacket {
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
     function writeAcknowledgement(
-        string calldata destinationChannel,
-        uint64 sequence,
-        bytes calldata acknowledgement
+        IbcCoreChannelV1Packet.Data calldata packet,
+        bytes memory acknowledgement
     ) external;
 
     /**

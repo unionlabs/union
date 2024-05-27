@@ -249,29 +249,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                     QueueMsg::Noop
                 }
-                unionlabs::events::IbcEvent::RecvPacket(packet) => aggregate(
-                    [fetch(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        FetchState {
-                            at: QueryHeight::Specific(ibc_event.height),
-                            path: ConnectionPath {
-                                connection_id: packet.connection_id.clone(),
-                            }
-                            .into(),
-                        },
-                    ))],
-                    [],
-                    id(
-                        hc.chain_id(),
-                        AggregatePacketMsgAfterUpdate {
-                            update_to: ibc_event.height,
-                            event_height: ibc_event.height,
-                            tx_hash: ibc_event.tx_hash,
-                            packet_event: PacketEvent::Recv(packet),
-                            __marker: PhantomData,
-                        },
-                    ),
-                ),
+                unionlabs::events::IbcEvent::RecvPacket(recv) => {
+                    tracing::info!(?recv, "packet received");
+                    QueueMsg::Noop
+                }
                 unionlabs::events::IbcEvent::SendPacket(send) => {
                     // in parallel, run height timeout, timestamp timeout, and send packet
                     conc([
@@ -341,13 +322,32 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     QueueMsg::Noop
                 }
                 unionlabs::events::IbcEvent::TimeoutPacket(timeout) => {
-                    tracing::error!(?timeout, "packet timed out");
+                    tracing::info!(?timeout, "packet timed out");
                     QueueMsg::Noop
                 }
-                unionlabs::events::IbcEvent::WriteAcknowledgement(write_ack) => {
-                    tracing::info!(?write_ack, "packet acknowledgement written");
-                    QueueMsg::Noop
-                }
+                unionlabs::events::IbcEvent::WriteAcknowledgement(write_ack) => aggregate(
+                    [fetch(id::<Hc, Tr, _>(
+                        hc.chain_id(),
+                        FetchState {
+                            at: QueryHeight::Specific(ibc_event.height),
+                            path: ConnectionPath {
+                                connection_id: write_ack.connection_id.clone(),
+                            }
+                            .into(),
+                        },
+                    ))],
+                    [],
+                    id(
+                        hc.chain_id(),
+                        AggregatePacketMsgAfterUpdate {
+                            update_to: ibc_event.height,
+                            event_height: ibc_event.height,
+                            tx_hash: ibc_event.tx_hash,
+                            packet_event: PacketEvent::WriteAck(write_ack),
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
             },
             Event::Command(command) => match command {
                 Command::UpdateClient {

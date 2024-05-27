@@ -1,22 +1,18 @@
-use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64};
+use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{
-    hash::H256,
     ics24::{self},
-    id::{ChannelId, PortId},
     traits::{ChainIdOf, ClientIdOf, HeightOf},
     QueryHeight,
 };
 
 use crate::{
     any_enum, any_lc,
-    data::{
-        AnyData, Data, LatestHeight, PacketAcknowledgement, SelfClientState, SelfConsensusState,
-    },
+    data::{AnyData, Data, LatestHeight, SelfClientState, SelfConsensusState},
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, RelayMessageTypes,
 };
@@ -35,8 +31,6 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
 
     SelfClientState(FetchSelfClientState<Hc, Tr>),
     SelfConsensusState(FetchSelfConsensusState<Hc, Tr>),
-
-    PacketAcknowledgement(FetchPacketAcknowledgement<Hc, Tr>),
 
     UpdateHeaders(FetchUpdateHeaders<Hc, Tr>),
 
@@ -87,14 +81,6 @@ pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
     pub path: ics24::Path<Hc::ClientId, Tr::Height>,
-}
-
-#[queue_msg]
-pub struct FetchPacketAcknowledgement<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
-    pub tx_hash: H256,
-    pub destination_port_id: PortId,
-    pub destination_channel_id: ChannelId,
-    pub sequence: NonZeroU64,
 }
 
 #[queue_msg]
@@ -196,36 +182,6 @@ where
                     SelfConsensusState {
                         self_consensus_state: c.self_consensus_state(height).await,
                         __marker: PhantomData,
-                    },
-                ))
-            }
-            Fetch::PacketAcknowledgement(FetchPacketAcknowledgement {
-                tx_hash,
-                destination_port_id,
-                destination_channel_id,
-                sequence,
-                __marker,
-            }) => {
-                let ack = c
-                    .read_ack(
-                        tx_hash,
-                        destination_channel_id.clone(),
-                        destination_port_id.clone(),
-                        sequence,
-                    )
-                    .await;
-
-                data(id::<Hc, Tr, _>(
-                    c.chain_id(),
-                    PacketAcknowledgement {
-                        fetched_by: FetchPacketAcknowledgement {
-                            tx_hash,
-                            destination_port_id,
-                            destination_channel_id,
-                            sequence,
-                            __marker,
-                        },
-                        ack,
                     },
                 ))
             }

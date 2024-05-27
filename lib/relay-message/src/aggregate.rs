@@ -11,7 +11,7 @@ use queue_msg::{
 use unionlabs::{
     events::{
         ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
-        ConnectionOpenTry, RecvPacket, SendPacket,
+        ConnectionOpenTry, SendPacket, WriteAcknowledgement,
     },
     hash::H256,
     ibc::core::{
@@ -45,19 +45,13 @@ use unionlabs::{
 
 use crate::{
     any_enum, any_lc,
-    data::{
-        AnyData, Data, IbcProof, IbcState, LatestHeight, PacketAcknowledgement, SelfClientState,
-        SelfConsensusState,
-    },
+    data::{AnyData, Data, IbcProof, IbcState, LatestHeight, SelfClientState, SelfConsensusState},
     effect::{
         AnyEffect, Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
         MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
         MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData, MsgTimeoutData,
     },
-    fetch::{
-        AnyFetch, Fetch, FetchLatestHeight, FetchPacketAcknowledgement, FetchProof, FetchState,
-        FetchUpdateHeaders,
-    },
+    fetch::{AnyFetch, Fetch, FetchLatestHeight, FetchProof, FetchState, FetchUpdateHeaders},
     id, identified,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForHeight, WaitForTimestamp, WaitForTrustedHeight},
@@ -138,8 +132,6 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,
 
         identified!(LatestHeight<Tr, Hc>): IsAggregateData,
-
-        identified!(PacketAcknowledgement<Hc, Tr>): IsAggregateData,
 
         identified!(LatestHeight<Hc, Tr>): IsAggregateData,
 
@@ -287,9 +279,10 @@ pub struct AggregateMsgRecvPacket<Hc: ChainExt, #[cover] Tr: ChainExt> {
 #[queue_msg]
 pub struct AggregateMsgAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
-    pub event: RecvPacket,
+    pub event: WriteAcknowledgement,
     // HACK: Need to pass the block hash through, figure out a better/cleaner way to do this
     // TODO: Replace with the ack directly?
+    // TODO: Remove
     pub tx_hash: H256,
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
@@ -347,7 +340,7 @@ pub struct AggregatePacketMsgAfterUpdate<Hc: ChainExt, #[cover] Tr: ChainExt> {
 #[queue_msg]
 pub enum PacketEvent {
     Send(SendPacket),
-    Recv(RecvPacket),
+    WriteAck(WriteAcknowledgement),
 }
 
 #[queue_msg]
@@ -567,7 +560,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            PacketEvent::Recv(recv) => {
+            PacketEvent::WriteAck(recv) => {
                 Aggregate::from(AggregateMsgAfterUpdate::AckPacket(AggregateMsgAckPacket {
                     event_height,
                     event: recv,
@@ -1521,30 +1514,18 @@ where
                 tx_hash,
                 counterparty_client_id,
             }) => aggregate(
-                [
-                    fetch(id::<Hc, Tr, _>(
-                        this_chain_id.clone(),
-                        FetchPacketAcknowledgement {
-                            tx_hash,
-                            destination_port_id: event.packet_dst_port.clone(),
-                            destination_channel_id: event.packet_dst_channel.clone(),
+                [fetch(id::<Hc, Tr, _>(
+                    this_chain_id.clone(),
+                    FetchProof {
+                        at: trusted_client_state_fetched_at_height,
+                        path: AcknowledgementPath {
+                            port_id: event.packet_dst_port.clone(),
+                            channel_id: event.packet_dst_channel.clone(),
                             sequence: event.packet_sequence,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(id::<Hc, Tr, _>(
-                        this_chain_id.clone(),
-                        FetchProof {
-                            at: trusted_client_state_fetched_at_height,
-                            path: AcknowledgementPath {
-                                port_id: event.packet_dst_port.clone(),
-                                channel_id: event.packet_dst_channel.clone(),
-                                sequence: event.packet_sequence,
-                            }
-                            .into(),
-                        },
-                    )),
-                ],
+                        }
+                        .into(),
+                    },
+                ))],
                 [id(
                     this_chain_id.clone(),
                     IbcState {
@@ -2282,14 +2263,11 @@ where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
 
-    identified!(PacketAcknowledgement<Hc, Tr>): IsAggregateData,
-
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Hc>)>,
 {
     type AggregatedData = HList![
         Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>,
-        identified!(PacketAcknowledgement<Hc, Tr>),
         Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>,
     ];
 
@@ -2318,11 +2296,6 @@ where
                 __marker: _
             },
             Identified {
-                chain_id: packet_acknowledgement_chain_id,
-                t: PacketAcknowledgement { fetched_by: _, ack },
-                __marker: _,
-            },
-            Identified {
                 chain_id: commitment_proof_chain_id,
                 t: IbcProof {
                     proof: acknowledgement_proof,
@@ -2335,7 +2308,6 @@ where
         ]: Self::AggregatedData,
     ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
-        assert_eq!(this_chain_id, packet_acknowledgement_chain_id);
         assert_eq!(commitment_proof_chain_id, this_chain_id);
 
         tracing::debug!("aggregate ack_packet");
@@ -2357,7 +2329,7 @@ where
                         timeout_height: event.packet_timeout_height,
                         timeout_timestamp: event.packet_timeout_timestamp,
                     },
-                    acknowledgement: ack,
+                    acknowledgement: event.packet_ack_hex,
                     proof_acked: acknowledgement_proof,
                 },
                 __marker: PhantomData,

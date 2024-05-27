@@ -1,4 +1,4 @@
-use std::{error::Error, num::NonZeroU64, sync::Arc};
+use std::{error::Error, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
 use contracts::ibc_handler::IBCHandler;
@@ -11,14 +11,13 @@ use unionlabs::{
     google::protobuf::any::Any,
     hash::{H160, H256},
     ibc::{core::client::height::Height, lightclients::scroll},
-    id::{ChannelId, PortId},
     traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     uint::U256,
 };
 
 use crate::{
     ethereum::{
-        self, read_ack, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
+        self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
         EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
@@ -338,22 +337,5 @@ impl Chain for Scroll {
                 .timestamp
                 * 1_000_000_000,
         }
-    }
-
-    async fn read_ack(
-        &self,
-        tx_hash: H256,
-        destination_channel_id: ChannelId,
-        destination_port_id: PortId,
-        sequence: NonZeroU64,
-    ) -> Vec<u8> {
-        read_ack(
-            self,
-            tx_hash,
-            destination_port_id,
-            destination_channel_id,
-            sequence,
-        )
-        .await
     }
 }

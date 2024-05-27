@@ -23,10 +23,7 @@ library IBCPacketLib {
     );
     event RecvPacket(IbcCoreChannelV1Packet.Data packet);
     event WriteAcknowledgement(
-        string destinationPort,
-        string destinationChannel,
-        uint64 sequence,
-        bytes acknowledgement
+        IbcCoreChannelV1Packet.Data packet, bytes acknowledgement
     );
     event AcknowledgePacket(
         IbcCoreChannelV1Packet.Data packet, bytes acknowledgement
@@ -264,31 +261,24 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         bytes memory acknowledgement =
             module.onRecvPacket(msg_.packet, msg.sender);
         if (acknowledgement.length > 0) {
-            _writeAcknowledgement(
-                msg_.packet.destination_port,
-                msg_.packet.destination_channel,
-                msg_.packet.sequence,
-                acknowledgement
-            );
+            _writeAcknowledgement(msg_.packet, acknowledgement);
         }
         emit IBCPacketLib.RecvPacket(msg_.packet);
     }
 
     function _writeAcknowledgement(
-        string memory destinationPort,
-        string calldata destinationChannel,
-        uint64 sequence,
+        IbcCoreChannelV1Packet.Data calldata packet,
         bytes memory acknowledgement
     ) internal {
         if (acknowledgement.length == 0) {
             revert IBCPacketLib.ErrAcknowledgementIsEmpty();
         }
 
-        ensureChannelState(destinationPort, destinationChannel);
+        ensureChannelState(packet.destination_port, packet.destination_channel);
 
         bytes32 ackCommitmentKey = IBCCommitment
             .packetAcknowledgementCommitmentKey(
-            destinationPort, destinationChannel, sequence
+            packet.destination_port, packet.destination_channel, packet.sequence
         );
         bytes32 ackCommitment = commitments[ackCommitmentKey];
         if (ackCommitment != bytes32(0)) {
@@ -297,9 +287,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         commitments[ackCommitmentKey] =
             keccak256(abi.encodePacked(sha256(acknowledgement)));
 
-        emit IBCPacketLib.WriteAcknowledgement(
-            destinationPort, destinationChannel, sequence, acknowledgement
-        );
+        emit IBCPacketLib.WriteAcknowledgement(packet, acknowledgement);
     }
 
     /**
@@ -307,21 +295,20 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
     function writeAcknowledgement(
-        string calldata destinationChannel,
-        uint64 sequence,
-        bytes calldata acknowledgement
+        IbcCoreChannelV1Packet.Data calldata packet,
+        bytes memory acknowledgement
     ) external override {
         string memory destinationPort = msg.sender.toHexString();
         if (
             !authenticateCapability(
-                channelCapabilityPath(destinationPort, destinationChannel)
+                channelCapabilityPath(
+                    destinationPort, packet.destination_channel
+                )
             )
         ) {
             revert IBCPacketLib.ErrUnauthorized();
         }
-        _writeAcknowledgement(
-            destinationPort, destinationChannel, sequence, acknowledgement
-        );
+        _writeAcknowledgement(packet, acknowledgement);
     }
 
     /**

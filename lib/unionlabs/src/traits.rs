@@ -2,7 +2,6 @@ use core::{
     fmt::{Debug, Display},
     future::Future,
     hash::Hash,
-    num::NonZeroU64,
     str::FromStr,
 };
 use std::error::Error;
@@ -13,12 +12,11 @@ use crate::{
     encoding::Encoding,
     ethereum::config::ChainSpec,
     google::protobuf::any::Any,
-    hash::H256,
     ibc::{
         core::client::height::{Height, IsHeight},
         lightclients::{arbitrum, cometbls, ethereum, scroll, tendermint, wasm},
     },
-    id::{ChannelId, ClientId, PortId},
+    id::ClientId,
     uint::U256,
     MaybeArbitrary, TypeUrl,
 };
@@ -145,17 +143,6 @@ pub trait Chain: Sized + Send + Sync + 'static {
         &self,
         height: Self::Height,
     ) -> impl Future<Output = Self::SelfConsensusState> + '_;
-
-    /// Read the acknowledgement for a packet, as raw bytes.
-    ///
-    /// NOTE: This is required because the ack isn't provided in the [`RecvPacket`](crate::events::RecvPacket) event, but is instead written as a separate [`WriteAcknowledgement`](crate::events::WriteAcknowledgement) event.
-    fn read_ack(
-        &self,
-        tx_hash: H256,
-        destination_channel_id: ChannelId,
-        destination_port_id: PortId,
-        sequence: NonZeroU64,
-    ) -> impl Future<Output = Vec<u8>> + '_;
 }
 
 pub trait ClientState {
