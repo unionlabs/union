@@ -15,6 +15,6 @@ exclude = [
   '^https://union-testnet-grpc.polkachu.com',
 ]
 
+accept              = ["200", "429"]
 exclude_all_private = true
 exclude_link_local  = true
-accept = ["200", "429"]
