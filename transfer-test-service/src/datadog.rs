@@ -1,7 +1,5 @@
 use reqwest::Client;
-use serde::{ Deserialize, Serialize };
-use std::env;
-use tokio;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub struct Data {
@@ -56,7 +54,7 @@ pub async fn send_to_datadog(api_key: &str, data: &Data) -> Result<(), reqwest::
 pub async fn send_log_to_datadog(
     api_key: &str,
     log: &Log,
-    host: &str
+    host: &str,
 ) -> Result<(), reqwest::Error> {
     let client = Client::new();
     let url = host.to_owned() + "/input" + "?dd-api-key=" + api_key;
@@ -74,7 +72,7 @@ pub fn log_builder(
     ddtags: Option<String>,
     hostname: Option<String>,
     service: Option<String>,
-    status: Option<String>
+    status: Option<String>,
 ) -> Log {
     let log_info = Log {
         message: message,
