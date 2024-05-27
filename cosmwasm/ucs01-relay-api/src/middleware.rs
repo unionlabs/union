@@ -67,7 +67,7 @@ pub struct InFlightPfmPacket {
 #[serde(untagged)]
 pub enum Memo {
     Forward { forward: PacketForward },
-    None { balls: String },
+    None {},
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
