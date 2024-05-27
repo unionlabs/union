@@ -17,13 +17,7 @@ import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import { Separator } from "$lib/components/ui/separator/index.ts"
-import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-
-/**
- * TODO:
- * [ ] - Display user received transactions & show spinner while loading
- */
 
 const debounceDelay = 3_500
 let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
@@ -86,10 +80,6 @@ const superFormResults = superForm(
 
 const { enhance, message, delayed, errors, submitting, form } = superFormResults
 
-$: {
-  console.log(JSON.stringify(superFormResults, undefined, 2))
-}
-
 let opacity = 0
 let focused = false
 let input: HTMLInputElement
@@ -122,19 +112,8 @@ $: newTransfers =
   <title>Union | Faucet</title>
 </svelte:head>
 
-<DraftPageNotice />
-
 <main class="mx-auto w-full flex flex-col items-center px-4 mt-10">
   <h1 class="text-5xl font-black my-8">Faucet</h1>
-  <!-- {#if $delayed || $submitting || submissionStatus === 'submitting'}
-    LOADING
-  {/if}
-  {#if $message?.status === 'success'}
-    <div>{$message.text}</div>
-  {/if}
-  {#if $errors._errors?.length}
-    <div>{JSON.stringify($errors, undefined, 2)}</div>
-  {/if} -->
   <form
     use:enhance
     method="POST"
@@ -216,7 +195,7 @@ $: newTransfers =
         A valid Union wallet address
       </Form.Description>
     </Form.Field>
-    <div class="flex gap-x-3 w-full">
+    <div class="flex gap-x-2 w-full">
       <Form.Button
         disabled={$submitting || $form.address.length === 0}
         class={cn(
