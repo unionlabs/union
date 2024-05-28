@@ -26,9 +26,9 @@ use utils::convert_block_producers;
 
 use crate::{
     msgs::{
-        ChannelOpenAck, ChannelOpenInit, ClientState, ConnectionOpenAck, ConnectionOpenInit,
-        ConnectionOpenTry, ConsensusState, CreateClient, GetAccountId, GetCommitment,
-        RegisterClient, UpdateClient,
+        ChannelOpenAck, ChannelOpenInit, ClientState, ConnectionOpenAck, ConnectionOpenConfirm,
+        ConnectionOpenInit, ConnectionOpenTry, ConsensusState, CreateClient, GetAccountId,
+        GetCommitment, RegisterClient, UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
@@ -125,19 +125,17 @@ async fn main() {
     connection_open(&sandbox, &user, &ibc_contract, &alice_lc, &bob_lc).await;
 }
 
-async fn connection_open(
+async fn connection_open_init(
     sandbox: &Worker<Sandbox>,
     user: &Account,
     ibc_contract: &Contract,
-    alice_lc: &Contract,
-    bob_lc: &Contract,
+    client_id: &str,
+    counterparty_client_id: &str,
 ) {
-    let alice_client_id = format!("{}-1", alice::CLIENT_TYPE);
-    let bob_client_id = format!("{}-2", bob::CLIENT_TYPE);
     let open_init = ConnectionOpenInit {
-        client_id: alice_client_id.clone(),
+        client_id: client_id.to_string(),
         counterparty: connection_handshake::Counterparty {
-            client_id: bob_client_id.clone().validate().unwrap(),
+            client_id: counterparty_client_id.to_string().validate().unwrap(),
             connection_id: "".into(),
             prefix: MerklePrefix {
                 key_prefix: b"ibc".into(),
@@ -155,63 +153,30 @@ async fn connection_open(
         .await
         .unwrap();
     println!("connection open init res: {:?}", res);
+}
 
-    let latest_height: Height = serde_json::from_slice(
-        &user
-            .view(bob_lc.id(), "latest_height")
-            .await
-            .unwrap()
-            .result,
-    )
-    .unwrap();
-
-    let current_block = sandbox.view_block().await.unwrap();
-    sleep(Duration::from_secs(2));
-
-    let light_client_block = sandbox
-        .next_light_client_block(current_block.hash())
-        .await
-        .unwrap();
-
-    let current_height = light_client_block.inner_lite.height;
-
-    let (prev_state_root, prev_state_root_proof) = chunk_proof(sandbox, current_height).await;
-
-    let update_bob = UpdateClient {
-        client_id: bob_client_id.clone(),
-        client_msg: borsh::to_vec(&HeaderUpdate {
-            new_state: convert_light_client_block_view(light_client_block),
-            trusted_height: latest_height.revision_height,
-            prev_state_root_proof,
-            prev_state_root,
-        })
-        .unwrap(),
-    };
-
-    let res = user
-        .call(ibc_contract.id(), "update_client")
-        .args_json(update_bob)
-        .gas(Gas::from_gas(300000000000000))
-        .transact()
-        .await
-        .unwrap()
-        .unwrap();
-
-    println!("Update result: {res:?}");
-
+async fn connection_open_try(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    client_id: &str,
+    counterparty_client_id: &str,
+    counterparty_connection_id: &str,
+    proof_height: u64,
+) {
     let connection_end_proof = state_proof(
         sandbox,
         ibc_contract.id(),
-        current_height - 1,
-        "connections/connection-1",
+        proof_height,
+        &format!("connections/{counterparty_connection_id}"),
     )
     .await;
 
     let open_try = ConnectionOpenTry {
-        client_id: bob_client_id.clone(),
+        client_id: client_id.to_string(),
         counterparty: connection_handshake::Counterparty {
-            client_id: alice_client_id.clone().validate().unwrap(),
-            connection_id: "connection-1".into(),
+            client_id: counterparty_client_id.to_string().validate().unwrap(),
+            connection_id: counterparty_connection_id.to_string(),
             prefix: MerklePrefix {
                 key_prefix: b"ibc".into(),
             },
@@ -220,7 +185,7 @@ async fn connection_open(
         connection_end_proof,
         proof_height: Height {
             revision_number: 0,
-            revision_height: current_height - 1,
+            revision_height: proof_height,
         },
         delay_period: 0,
     };
@@ -234,130 +199,210 @@ async fn connection_open(
         .await
         .unwrap();
     println!("connection open try res: {:?}", res);
+}
 
-    // sandbox.fast_forward(1).await.unwrap();
-    // let current_block = sandbox.view_block().await.unwrap();
-    // let mut proof_key = b"commitments".to_vec();
-    // proof_key.extend(borsh::to_vec("connections/connection-2").unwrap());
+async fn connection_open_ack(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    client_id: &str,
+    connection_id: &str,
+    counterparty_client_id: &str,
+    counterparty_connection_id: &str,
+    proof_height: u64,
+) {
+    let connection_end_proof = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        proof_height,
+        &format!("connections/{counterparty_connection_id}"),
+    )
+    .await;
 
-    // let state = sandbox
-    //     .view_state(ibc_contract.id())
-    //     .prefix(&proof_key)
-    //     .block_height(current_block.height() - 1)
-    //     .await
-    //     .unwrap();
-    // println!("got the proof data: {:?}", state.data);
-    // let state_proof: Vec<Vec<u8>> = state
-    //     .proof
-    //     .clone()
-    //     .into_iter()
-    //     .map(|item| item.to_vec())
-    //     .collect();
+    let open_ack = ConnectionOpenAck {
+        connection_id: connection_id.to_string(),
+        version: DEFAULT_IBC_VERSION[0].clone(),
+        counterparty_connection_id: counterparty_connection_id.to_string(),
+        connection_end_proof,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: proof_height,
+        },
+    };
 
-    // let update_alice = UpdateClient {
-    //     client_id: alice_client_id.clone(),
-    //     client_msg: borsh::to_vec(&(
-    //         current_block.height() - 1,
-    //         ConsensusState {
-    //             state_root: CryptoHash(current_block.chunks()[0].prev_state_root.0.clone()),
-    //         },
-    //     ))
-    //     .unwrap(),
-    // };
+    println!("calling connection open ack on alice");
+    let res = user
+        .call(ibc_contract.id(), "connection_open_ack")
+        .args_json(open_ack)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap();
+    println!("connection open ack res: {:?}", res);
+}
 
-    // let res = user
-    //     .call(ibc_contract.id(), "update_client")
-    //     .args_json(update_alice)
-    //     .gas(Gas::from_gas(300000000000000))
-    //     .transact()
-    //     .await
-    //     .unwrap()
-    //     .unwrap();
+async fn connection_open_confirm(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    client_id: &str,
+    connection_id: &str,
+    counterparty_client_id: &str,
+    counterparty_connection_id: &str,
+    proof_height: u64,
+) {
+    let connection_end_proof = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        proof_height,
+        &format!("connections/{counterparty_connection_id}"),
+    )
+    .await;
 
-    // println!("Update result: {res:?}");
+    let open_confirm = ConnectionOpenConfirm {
+        connection_id: connection_id.to_string(),
+        connection_end_proof,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: proof_height,
+        },
+    };
 
-    // let open_ack = ConnectionOpenAck {
-    //     connection_id: "connection-1".into(),
-    //     version: DEFAULT_IBC_VERSION[0].clone(),
-    //     counterparty_connection_id: "connection-2".into(),
-    //     connection_end_proof: serde_json::to_vec(&state_proof).unwrap(),
-    //     proof_height: Height {
-    //         revision_number: 0,
-    //         revision_height: current_block.height() - 1,
-    //     },
-    // };
+    println!("calling connection open ack on alice");
+    let res = user
+        .call(ibc_contract.id(), "connection_open_confirm")
+        .args_json(open_confirm)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap();
+    println!("connection open confirm res: {:?}", res);
+}
 
-    // println!("calling connection open ack on alice");
-    // let res = user
-    //     .call(ibc_contract.id(), "connection_open_ack")
-    //     .args_json(open_ack)
-    //     .gas(Gas::from_gas(300000000000000))
-    //     .transact()
-    //     .await
-    //     .unwrap();
-    // println!("connection open ack res: {:?}", res);
+async fn wait_until_block_height(sandbox: &Worker<Sandbox>, height: u64) {
+    loop {
+        let current_height = sandbox.view_block().await.unwrap().height();
+        if current_height >= height {
+            break;
+        }
+        sleep(Duration::from_millis(100));
+    }
+}
 
-    // sandbox.fast_forward(1).await.unwrap();
-    // let current_block = sandbox.view_block().await.unwrap();
-    // let mut proof_key = b"commitments".to_vec();
-    // proof_key.extend(borsh::to_vec("connections/connection-1").unwrap());
+async fn update_client(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    client: &Contract,
+    client_id: &str,
+) -> u64 {
+    let latest_height: Height = serde_json::from_slice(
+        &user
+            .view(client.id(), "latest_height")
+            .await
+            .unwrap()
+            .result,
+    )
+    .unwrap();
 
-    // let state = sandbox
-    //     .view_state(ibc_contract.id())
-    //     .prefix(&proof_key)
-    //     .block_height(current_block.height() - 1)
-    //     .await
-    //     .unwrap();
-    // println!("got the proof data: {:?}", state.data);
-    // let state_proof: Vec<Vec<u8>> = state
-    //     .proof
-    //     .clone()
-    //     .into_iter()
-    //     .map(|item| item.to_vec())
-    //     .collect();
+    let current_block = sandbox.view_block().await.unwrap();
+    sleep(Duration::from_secs(2));
+    // wait_until_block_height(sandbox, current_block.height() + 2).await;
 
-    // let update_bob = UpdateClient {
-    //     client_id: bob_client_id.clone(),
-    //     client_msg: borsh::to_vec(&(
-    //         current_block.height() - 1,
-    //         ConsensusState {
-    //             state_root: CryptoHash(current_block.chunks()[0].prev_state_root.0.clone()),
-    //         },
-    //     ))
-    //     .unwrap(),
-    // };
+    let light_client_block = sandbox
+        .next_light_client_block(current_block.hash())
+        .await
+        .unwrap();
 
-    // let res = user
-    //     .call(ibc_contract.id(), "update_client")
-    //     .args_json(update_bob)
-    //     .gas(Gas::from_gas(300000000000000))
-    //     .transact()
-    //     .await
-    //     .unwrap()
-    //     .unwrap();
+    let current_height = light_client_block.inner_lite.height;
 
-    // println!("Update result: {res:?}");
+    let (prev_state_root, prev_state_root_proof) = chunk_proof(sandbox, current_height).await;
 
-    // let open_confirm = ConnectionOpenConfirm {
-    //     connection_id: "connection-2".to_string(),
-    //     connection_end_proof: serde_json::to_vec(&state_proof).unwrap(),
-    //     proof_height: Height {
-    //         revision_number: 0,
-    //         revision_height: current_block.height() - 1,
-    //     },
-    // };
+    let update = UpdateClient {
+        client_id: client_id.to_string(),
+        client_msg: borsh::to_vec(&HeaderUpdate {
+            new_state: convert_light_client_block_view(light_client_block),
+            trusted_height: latest_height.revision_height,
+            prev_state_root_proof,
+            prev_state_root,
+        })
+        .unwrap(),
+    };
 
-    // println!("calling connection open confirm on bob");
-    // let res = user
-    //     .call(ibc_contract.id(), "connection_open_confirm")
-    //     .args_json(open_confirm)
-    //     .gas(Gas::from_gas(300000000000000))
-    //     .transact()
-    //     .await
-    //     .unwrap();
-    // println!("connection open confirm res: {:?}", res);
+    let res = user
+        .call(ibc_contract.id(), "update_client")
+        .args_json(update)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
 
-    // println!("[ + ] Connection opened between {alice_client_id} and {bob_client_id}");
+    println!("Update result: {res:?}");
+    current_height
+}
+
+async fn connection_open(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    alice_lc: &Contract,
+    bob_lc: &Contract,
+) {
+    let alice_client_id = format!("{}-1", alice::CLIENT_TYPE);
+    let bob_client_id = format!("{}-2", bob::CLIENT_TYPE);
+    connection_open_init(
+        sandbox,
+        user,
+        ibc_contract,
+        &alice_client_id,
+        &bob_client_id,
+    )
+    .await;
+
+    let current_height = update_client(sandbox, user, ibc_contract, bob_lc, &bob_client_id).await;
+
+    connection_open_try(
+        sandbox,
+        user,
+        ibc_contract,
+        &bob_client_id,
+        &alice_client_id,
+        "connection-1",
+        current_height - 1,
+    )
+    .await;
+
+    let current_height =
+        update_client(sandbox, user, ibc_contract, alice_lc, &alice_client_id).await;
+
+    connection_open_ack(
+        sandbox,
+        user,
+        ibc_contract,
+        &alice_client_id,
+        "connection-1",
+        &bob_client_id,
+        "connection-2",
+        current_height - 1,
+    )
+    .await;
+
+    let current_height = update_client(sandbox, user, ibc_contract, bob_lc, &bob_client_id).await;
+
+    connection_open_confirm(
+        sandbox,
+        user,
+        ibc_contract,
+        &bob_client_id,
+        "connection-2",
+        &alice_client_id,
+        "connection-1",
+        current_height - 1,
+    )
+    .await;
+
+    println!("[ + ] Connection opened between {alice_client_id} and {bob_client_id}");
 }
 
 /// Expectations:
