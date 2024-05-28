@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/svelte-query"
 
-export function blockHeightQuery() {
-  return createQuery({
+export const blockHeightQuery = () =>
+  createQuery({
     queryKey: ["block-height", "union"],
     queryFn: async () => {
       const response = await fetch("https://rpc.testnet.bonlulu.uno/block")
@@ -18,4 +18,3 @@ export function blockHeightQuery() {
     refetchInterval: 6_000,
     refetchOnWindowFocus: false
   })
-}

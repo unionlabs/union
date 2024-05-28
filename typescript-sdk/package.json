@@ -20,7 +20,7 @@
     "@cosmjs/encoding": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
     "@cosmjs/tendermint-rpc": "0.32.3",
-    "viem": "^2.12.5"
+    "viem": "^2.13.1"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",

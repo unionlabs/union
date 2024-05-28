@@ -32,7 +32,7 @@ let collapsibleOpen = true
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn(
-        'truncate space-x-2 px-4 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
+        'truncate space-x-2 px-2.5 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
         ($sepoliaStore.connectionStatus === 'connected' ||
           $cosmosStore.connectionStatus === 'connected') &&
           'border-cyan-300/50',

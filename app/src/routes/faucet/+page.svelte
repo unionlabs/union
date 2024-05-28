@@ -153,7 +153,7 @@ $: newTransfers =
             class={cn(
               'peer',
               submissionStatus === 'submitting' && 'animate-pulse',
-              'sm:text-md text-xs w-full h-10 sm:h-11 disabled:opacity-90 disabled:bg-stone-950',
+              'font-mono sm:text-md text-xs w-full h-10 sm:h-11 disabled:opacity-90 disabled:bg-stone-950',
               'rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9]',
               'focus:outline-none outline-transparent focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0',
             )}

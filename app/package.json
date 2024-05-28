@@ -42,7 +42,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.30.0",
     "vaul-svelte": "^0.3.1",
-    "viem": "^2.12.5"
+    "viem": "^2.13.1"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.5",
@@ -96,7 +96,7 @@
     "typescript": "^5.4.5",
     "unplugin-icons": "^0.19.0",
     "unplugin-turbo-console": "^1.8.6",
-    "vite": "^5.2.11",
+    "vite": "^5.2.12",
     "vite-plugin-inspect": "^0.8.4",
     "vite-plugin-tailwind-purgecss": "^0.3.3",
     "vitest": "^1.6.0"

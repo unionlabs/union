@@ -130,16 +130,8 @@ export default (<Config>{
         "9xl": "96rem"
       }),
       fontFamily: _ => ({
-        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
-        display: [
-          "Inter var",
-          {
-            fontFeatureSettings: '"ss01", "cv09", "ss08" "zero"',
-            fontVariationSettings: '"opsz" 32'
-          }
-        ],
-        mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
-        jetbrains: ["JetBrains Mono", ...defaultTheme.fontFamily.mono]
+        sans: ["geist-sans", ...defaultTheme.fontFamily.sans],
+        mono: ["geist-mono", ...defaultTheme.fontFamily.mono]
       }),
       animation: _ => ({
         wiggle: "wiggle 1s ease-in-out infinite",
