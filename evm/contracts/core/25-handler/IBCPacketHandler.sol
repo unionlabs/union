@@ -26,9 +26,8 @@ abstract contract IBCPacketHandler is IIBCPacket, ModuleManager {
     }
 
     function writeAcknowledgement(
-        string calldata,
-        uint64,
-        bytes calldata
+        IbcCoreChannelV1Packet.Data calldata,
+        bytes memory
     ) external override {
         passthrough(ibcPacket);
     }

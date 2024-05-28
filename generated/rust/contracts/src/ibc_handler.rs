@@ -55,7 +55,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("acknowledgePacket"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                     ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
@@ -146,7 +146,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("channelCloseConfirm",),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::String,
@@ -172,7 +172,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("channelCloseInit"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::String,
@@ -193,7 +193,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("channelOpenAck"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::String,
@@ -221,7 +221,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("channelOpenConfirm"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::String,
@@ -247,7 +247,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("channelOpenInit"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
@@ -287,7 +287,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("channelOpenTry"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
@@ -484,7 +484,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("connectionOpenAck"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Bytes,
@@ -525,7 +525,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("connectionOpenConfirm",),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Bytes,
@@ -550,7 +550,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("connectionOpenInit"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
@@ -592,7 +592,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("connectionOpenTry"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                     ::ethers::core::abi::ethabi::ParamType::String,
@@ -705,7 +705,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("createClient"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Bytes,
@@ -988,7 +988,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("recvPacket"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                     ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
@@ -1024,14 +1024,14 @@ pub mod ibc_handler {
                         name: ::std::borrow::ToOwned::to_owned("registerClient"),
                         inputs: ::std::vec![
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("clientType"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::String,
                                 internal_type: ::core::option::Option::Some(
                                     ::std::borrow::ToOwned::to_owned("string"),
                                 ),
                             },
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("client"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Address,
                                 internal_type: ::core::option::Option::Some(
                                     ::std::borrow::ToOwned::to_owned("contract ILightClient"),
@@ -1059,14 +1059,14 @@ pub mod ibc_handler {
                         name: ::std::borrow::ToOwned::to_owned("sendPacket"),
                         inputs: ::std::vec![
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("sourceChannel"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::String,
                                 internal_type: ::core::option::Option::Some(
                                     ::std::borrow::ToOwned::to_owned("string"),
                                 ),
                             },
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("timeoutHeight"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                     ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
                                     ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
@@ -1078,14 +1078,14 @@ pub mod ibc_handler {
                                 ),
                             },
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("timeoutTimestamp"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
                                 internal_type: ::core::option::Option::Some(
                                     ::std::borrow::ToOwned::to_owned("uint64"),
                                 ),
                             },
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("data"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Bytes,
                                 internal_type: ::core::option::Option::Some(
                                     ::std::borrow::ToOwned::to_owned("bytes"),
@@ -1108,7 +1108,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("timeoutPacket"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                     ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
@@ -1160,7 +1160,7 @@ pub mod ibc_handler {
                     ::std::vec![::ethers::core::abi::ethabi::Function {
                         name: ::std::borrow::ToOwned::to_owned("updateClient"),
                         inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
-                            name: ::std::borrow::ToOwned::to_owned("msg_"),
+                            name: ::std::string::String::new(),
                             kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
                                 ::ethers::core::abi::ethabi::ParamType::String,
                                 ::ethers::core::abi::ethabi::ParamType::Bytes,
@@ -1205,21 +1205,28 @@ pub mod ibc_handler {
                         name: ::std::borrow::ToOwned::to_owned("writeAcknowledgement",),
                         inputs: ::std::vec![
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("destinationChannel",),
-                                kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                name: ::std::string::String::new(),
+                                kind: ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                    ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::String,
+                                    ::ethers::core::abi::ethabi::ParamType::Bytes,
+                                    ::ethers::core::abi::ethabi::ParamType::Tuple(::std::vec![
+                                        ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                        ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                    ],),
+                                    ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                ],),
                                 internal_type: ::core::option::Option::Some(
-                                    ::std::borrow::ToOwned::to_owned("string"),
+                                    ::std::borrow::ToOwned::to_owned(
+                                        "struct IbcCoreChannelV1Packet.Data",
+                                    ),
                                 ),
                             },
                             ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("sequence"),
-                                kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
-                                internal_type: ::core::option::Option::Some(
-                                    ::std::borrow::ToOwned::to_owned("uint64"),
-                                ),
-                            },
-                            ::ethers::core::abi::ethabi::Param {
-                                name: ::std::borrow::ToOwned::to_owned("acknowledgement"),
+                                name: ::std::string::String::new(),
                                 kind: ::ethers::core::abi::ethabi::ParamType::Bytes,
                                 internal_type: ::core::option::Option::Some(
                                     ::std::borrow::ToOwned::to_owned("bytes"),
@@ -1494,10 +1501,10 @@ pub mod ibc_handler {
         ///Calls the contract's `acknowledgePacket` (0x59f37976) function
         pub fn acknowledge_packet(
             &self,
-            msg: MsgPacketAcknowledgement,
+            p0: MsgPacketAcknowledgement,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([89, 243, 121, 118], (msg,))
+                .method_hash([89, 243, 121, 118], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `capabilities` (0x5717bcf5) function
@@ -1522,55 +1529,55 @@ pub mod ibc_handler {
         ///Calls the contract's `channelCloseConfirm` (0x25cbc3a6) function
         pub fn channel_close_confirm(
             &self,
-            msg: MsgChannelCloseConfirm,
+            p0: MsgChannelCloseConfirm,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([37, 203, 195, 166], (msg,))
+                .method_hash([37, 203, 195, 166], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `channelCloseInit` (0xa06cb3a2) function
         pub fn channel_close_init(
             &self,
-            msg: MsgChannelCloseInit,
+            p0: MsgChannelCloseInit,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([160, 108, 179, 162], (msg,))
+                .method_hash([160, 108, 179, 162], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `channelOpenAck` (0x256c4199) function
         pub fn channel_open_ack(
             &self,
-            msg: MsgChannelOpenAck,
+            p0: MsgChannelOpenAck,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([37, 108, 65, 153], (msg,))
+                .method_hash([37, 108, 65, 153], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `channelOpenConfirm` (0x5bd51b62) function
         pub fn channel_open_confirm(
             &self,
-            msg: MsgChannelOpenConfirm,
+            p0: MsgChannelOpenConfirm,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([91, 213, 27, 98], (msg,))
+                .method_hash([91, 213, 27, 98], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `channelOpenInit` (0xdd3469fc) function
         pub fn channel_open_init(
             &self,
-            msg: MsgChannelOpenInit,
+            p0: MsgChannelOpenInit,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
             self.0
-                .method_hash([221, 52, 105, 252], (msg,))
+                .method_hash([221, 52, 105, 252], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `channelOpenTry` (0x11b88a15) function
         pub fn channel_open_try(
             &self,
-            msg: MsgChannelOpenTry,
+            p0: MsgChannelOpenTry,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
             self.0
-                .method_hash([17, 184, 138, 21], (msg,))
+                .method_hash([17, 184, 138, 21], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `channels` (0x5b3de260) function
@@ -1630,37 +1637,37 @@ pub mod ibc_handler {
         ///Calls the contract's `connectionOpenAck` (0xb531861f) function
         pub fn connection_open_ack(
             &self,
-            msg: MsgConnectionOpenAck,
+            p0: MsgConnectionOpenAck,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([181, 49, 134, 31], (msg,))
+                .method_hash([181, 49, 134, 31], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `connectionOpenConfirm` (0x6a728f2c) function
         pub fn connection_open_confirm(
             &self,
-            msg: MsgConnectionOpenConfirm,
+            p0: MsgConnectionOpenConfirm,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([106, 114, 143, 44], (msg,))
+                .method_hash([106, 114, 143, 44], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `connectionOpenInit` (0x9b35b84b) function
         pub fn connection_open_init(
             &self,
-            msg: MsgConnectionOpenInit,
+            p0: MsgConnectionOpenInit,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
             self.0
-                .method_hash([155, 53, 184, 75], (msg,))
+                .method_hash([155, 53, 184, 75], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `connectionOpenTry` (0x04f68e5c) function
         pub fn connection_open_try(
             &self,
-            msg: MsgConnectionOpenTry,
+            p0: MsgConnectionOpenTry,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
             self.0
-                .method_hash([4, 246, 142, 92], (msg,))
+                .method_hash([4, 246, 142, 92], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `connections` (0x31973f00) function
@@ -1683,10 +1690,10 @@ pub mod ibc_handler {
         ///Calls the contract's `createClient` (0xd5a24481) function
         pub fn create_client(
             &self,
-            msg: MsgCreateClient,
+            p0: MsgCreateClient,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
             self.0
-                .method_hash([213, 162, 68, 129], (msg,))
+                .method_hash([213, 162, 68, 129], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `getChannel` (0x3000217a) function
@@ -1781,20 +1788,20 @@ pub mod ibc_handler {
         ///Calls the contract's `recvPacket` (0x236ebd70) function
         pub fn recv_packet(
             &self,
-            msg: MsgPacketRecv,
+            p0: MsgPacketRecv,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([35, 110, 189, 112], (msg,))
+                .method_hash([35, 110, 189, 112], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `registerClient` (0x18c19870) function
         pub fn register_client(
             &self,
-            client_type: ::std::string::String,
-            client: ::ethers::core::types::Address,
+            p0: ::std::string::String,
+            p1: ::ethers::core::types::Address,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([24, 193, 152, 112], (client_type, client))
+                .method_hash([24, 193, 152, 112], (p0, p1))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `renounceOwnership` (0x715018a6) function
@@ -1821,10 +1828,10 @@ pub mod ibc_handler {
         ///Calls the contract's `timeoutPacket` (0xaa18c8b1) function
         pub fn timeout_packet(
             &self,
-            msg: MsgPacketTimeout,
+            p0: MsgPacketTimeout,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([170, 24, 200, 177], (msg,))
+                .method_hash([170, 24, 200, 177], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `transferOwnership` (0xf2fde38b) function
@@ -1839,10 +1846,10 @@ pub mod ibc_handler {
         ///Calls the contract's `updateClient` (0xda6cea55) function
         pub fn update_client(
             &self,
-            msg: MsgUpdateClient,
+            p0: MsgUpdateClient,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([218, 108, 234, 85], (msg,))
+                .method_hash([218, 108, 234, 85], (p0,))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `upgradeToAndCall` (0x4f1ef286) function
@@ -1855,18 +1862,14 @@ pub mod ibc_handler {
                 .method_hash([79, 30, 242, 134], (new_implementation, data))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `writeAcknowledgement` (0x84c647a1) function
+        ///Calls the contract's `writeAcknowledgement` (0xca956667) function
         pub fn write_acknowledgement(
             &self,
-            destination_channel: ::std::string::String,
-            sequence: u64,
-            acknowledgement: ::ethers::core::types::Bytes,
+            p0: IbcCoreChannelV1PacketData,
+            p1: ::ethers::core::types::Bytes,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash(
-                    [132, 198, 71, 161],
-                    (destination_channel, sequence, acknowledgement),
-                )
+                .method_hash([202, 149, 102, 103], (p0, p1))
                 .expect("method not found (this should never happen)")
         }
         ///Gets the contract's `Initialized` event
@@ -2573,9 +2576,7 @@ pub mod ibc_handler {
         name = "acknowledgePacket",
         abi = "acknowledgePacket(((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,bytes,(uint64,uint64)))"
     )]
-    pub struct AcknowledgePacketCall {
-        pub msg: MsgPacketAcknowledgement,
-    }
+    pub struct AcknowledgePacketCall(pub MsgPacketAcknowledgement);
     ///Container type for all input parameters for the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
     #[derive(
         Clone,
@@ -2623,9 +2624,7 @@ pub mod ibc_handler {
         name = "channelCloseConfirm",
         abi = "channelCloseConfirm((string,string,bytes,(uint64,uint64)))"
     )]
-    pub struct ChannelCloseConfirmCall {
-        pub msg: MsgChannelCloseConfirm,
-    }
+    pub struct ChannelCloseConfirmCall(pub MsgChannelCloseConfirm);
     ///Container type for all input parameters for the `channelCloseInit` function with signature `channelCloseInit((string,string))` and selector `0xa06cb3a2`
     #[derive(
         Clone,
@@ -2638,9 +2637,7 @@ pub mod ibc_handler {
         Hash,
     )]
     #[ethcall(name = "channelCloseInit", abi = "channelCloseInit((string,string))")]
-    pub struct ChannelCloseInitCall {
-        pub msg: MsgChannelCloseInit,
-    }
+    pub struct ChannelCloseInitCall(pub MsgChannelCloseInit);
     ///Container type for all input parameters for the `channelOpenAck` function with signature `channelOpenAck((string,string,string,string,bytes,(uint64,uint64)))` and selector `0x256c4199`
     #[derive(
         Clone,
@@ -2656,9 +2653,7 @@ pub mod ibc_handler {
         name = "channelOpenAck",
         abi = "channelOpenAck((string,string,string,string,bytes,(uint64,uint64)))"
     )]
-    pub struct ChannelOpenAckCall {
-        pub msg: MsgChannelOpenAck,
-    }
+    pub struct ChannelOpenAckCall(pub MsgChannelOpenAck);
     ///Container type for all input parameters for the `channelOpenConfirm` function with signature `channelOpenConfirm((string,string,bytes,(uint64,uint64)))` and selector `0x5bd51b62`
     #[derive(
         Clone,
@@ -2674,9 +2669,7 @@ pub mod ibc_handler {
         name = "channelOpenConfirm",
         abi = "channelOpenConfirm((string,string,bytes,(uint64,uint64)))"
     )]
-    pub struct ChannelOpenConfirmCall {
-        pub msg: MsgChannelOpenConfirm,
-    }
+    pub struct ChannelOpenConfirmCall(pub MsgChannelOpenConfirm);
     ///Container type for all input parameters for the `channelOpenInit` function with signature `channelOpenInit((string,(uint8,uint8,(string,string),string[],string)))` and selector `0xdd3469fc`
     #[derive(
         Clone,
@@ -2692,9 +2685,7 @@ pub mod ibc_handler {
         name = "channelOpenInit",
         abi = "channelOpenInit((string,(uint8,uint8,(string,string),string[],string)))"
     )]
-    pub struct ChannelOpenInitCall {
-        pub msg: MsgChannelOpenInit,
-    }
+    pub struct ChannelOpenInitCall(pub MsgChannelOpenInit);
     ///Container type for all input parameters for the `channelOpenTry` function with signature `channelOpenTry((string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64)))` and selector `0x11b88a15`
     #[derive(
         Clone,
@@ -2710,9 +2701,7 @@ pub mod ibc_handler {
         name = "channelOpenTry",
         abi = "channelOpenTry((string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64)))"
     )]
-    pub struct ChannelOpenTryCall {
-        pub msg: MsgChannelOpenTry,
-    }
+    pub struct ChannelOpenTryCall(pub MsgChannelOpenTry);
     ///Container type for all input parameters for the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
     #[derive(
         Clone,
@@ -2793,9 +2782,7 @@ pub mod ibc_handler {
         name = "connectionOpenAck",
         abi = "connectionOpenAck((string,bytes,(string,string[]),string,bytes,bytes,bytes,(uint64,uint64),(uint64,uint64)))"
     )]
-    pub struct ConnectionOpenAckCall {
-        pub msg: MsgConnectionOpenAck,
-    }
+    pub struct ConnectionOpenAckCall(pub MsgConnectionOpenAck);
     ///Container type for all input parameters for the `connectionOpenConfirm` function with signature `connectionOpenConfirm((string,bytes,(uint64,uint64)))` and selector `0x6a728f2c`
     #[derive(
         Clone,
@@ -2811,9 +2798,7 @@ pub mod ibc_handler {
         name = "connectionOpenConfirm",
         abi = "connectionOpenConfirm((string,bytes,(uint64,uint64)))"
     )]
-    pub struct ConnectionOpenConfirmCall {
-        pub msg: MsgConnectionOpenConfirm,
-    }
+    pub struct ConnectionOpenConfirmCall(pub MsgConnectionOpenConfirm);
     ///Container type for all input parameters for the `connectionOpenInit` function with signature `connectionOpenInit((string,(string,string[]),(string,string,(bytes)),uint64))` and selector `0x9b35b84b`
     #[derive(
         Clone,
@@ -2829,9 +2814,7 @@ pub mod ibc_handler {
         name = "connectionOpenInit",
         abi = "connectionOpenInit((string,(string,string[]),(string,string,(bytes)),uint64))"
     )]
-    pub struct ConnectionOpenInitCall {
-        pub msg: MsgConnectionOpenInit,
-    }
+    pub struct ConnectionOpenInitCall(pub MsgConnectionOpenInit);
     ///Container type for all input parameters for the `connectionOpenTry` function with signature `connectionOpenTry(((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64)))` and selector `0x04f68e5c`
     #[derive(
         Clone,
@@ -2847,9 +2830,7 @@ pub mod ibc_handler {
         name = "connectionOpenTry",
         abi = "connectionOpenTry(((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64)))"
     )]
-    pub struct ConnectionOpenTryCall {
-        pub msg: MsgConnectionOpenTry,
-    }
+    pub struct ConnectionOpenTryCall(pub MsgConnectionOpenTry);
     ///Container type for all input parameters for the `connections` function with signature `connections(string)` and selector `0x31973f00`
     #[derive(
         Clone,
@@ -2875,9 +2856,7 @@ pub mod ibc_handler {
         Hash,
     )]
     #[ethcall(name = "createClient", abi = "createClient((string,bytes,bytes))")]
-    pub struct CreateClientCall {
-        pub msg: MsgCreateClient,
-    }
+    pub struct CreateClientCall(pub MsgCreateClient);
     ///Container type for all input parameters for the `getChannel` function with signature `getChannel(string,string)` and selector `0x3000217a`
     #[derive(
         Clone,
@@ -3042,9 +3021,7 @@ pub mod ibc_handler {
         name = "recvPacket",
         abi = "recvPacket(((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64)))"
     )]
-    pub struct RecvPacketCall {
-        pub msg: MsgPacketRecv,
-    }
+    pub struct RecvPacketCall(pub MsgPacketRecv);
     ///Container type for all input parameters for the `registerClient` function with signature `registerClient(string,address)` and selector `0x18c19870`
     #[derive(
         Clone,
@@ -3057,10 +3034,10 @@ pub mod ibc_handler {
         Hash,
     )]
     #[ethcall(name = "registerClient", abi = "registerClient(string,address)")]
-    pub struct RegisterClientCall {
-        pub client_type: ::std::string::String,
-        pub client: ::ethers::core::types::Address,
-    }
+    pub struct RegisterClientCall(
+        pub ::std::string::String,
+        pub ::ethers::core::types::Address,
+    );
     ///Container type for all input parameters for the `renounceOwnership` function with signature `renounceOwnership()` and selector `0x715018a6`
     #[derive(
         Clone,
@@ -3089,12 +3066,12 @@ pub mod ibc_handler {
         name = "sendPacket",
         abi = "sendPacket(string,(uint64,uint64),uint64,bytes)"
     )]
-    pub struct SendPacketCall {
-        pub source_channel: ::std::string::String,
-        pub timeout_height: IbcCoreClientV1HeightData,
-        pub timeout_timestamp: u64,
-        pub data: ::ethers::core::types::Bytes,
-    }
+    pub struct SendPacketCall(
+        pub ::std::string::String,
+        pub IbcCoreClientV1HeightData,
+        pub u64,
+        pub ::ethers::core::types::Bytes,
+    );
     ///Container type for all input parameters for the `timeoutPacket` function with signature `timeoutPacket(((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),uint64))` and selector `0xaa18c8b1`
     #[derive(
         Clone,
@@ -3110,9 +3087,7 @@ pub mod ibc_handler {
         name = "timeoutPacket",
         abi = "timeoutPacket(((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),uint64))"
     )]
-    pub struct TimeoutPacketCall {
-        pub msg: MsgPacketTimeout,
-    }
+    pub struct TimeoutPacketCall(pub MsgPacketTimeout);
     ///Container type for all input parameters for the `transferOwnership` function with signature `transferOwnership(address)` and selector `0xf2fde38b`
     #[derive(
         Clone,
@@ -3140,9 +3115,7 @@ pub mod ibc_handler {
         Hash,
     )]
     #[ethcall(name = "updateClient", abi = "updateClient((string,bytes))")]
-    pub struct UpdateClientCall {
-        pub msg: MsgUpdateClient,
-    }
+    pub struct UpdateClientCall(pub MsgUpdateClient);
     ///Container type for all input parameters for the `upgradeToAndCall` function with signature `upgradeToAndCall(address,bytes)` and selector `0x4f1ef286`
     #[derive(
         Clone,
@@ -3159,7 +3132,7 @@ pub mod ibc_handler {
         pub new_implementation: ::ethers::core::types::Address,
         pub data: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `writeAcknowledgement` function with signature `writeAcknowledgement(string,uint64,bytes)` and selector `0x84c647a1`
+    ///Container type for all input parameters for the `writeAcknowledgement` function with signature `writeAcknowledgement((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes)` and selector `0xca956667`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3172,13 +3145,12 @@ pub mod ibc_handler {
     )]
     #[ethcall(
         name = "writeAcknowledgement",
-        abi = "writeAcknowledgement(string,uint64,bytes)"
+        abi = "writeAcknowledgement((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes)"
     )]
-    pub struct WriteAcknowledgementCall {
-        pub destination_channel: ::std::string::String,
-        pub sequence: u64,
-        pub acknowledgement: ::ethers::core::types::Bytes,
-    }
+    pub struct WriteAcknowledgementCall(
+        pub IbcCoreChannelV1PacketData,
+        pub ::ethers::core::types::Bytes,
+    );
     ///Container type for all of the contract's call
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCHandlerCalls {

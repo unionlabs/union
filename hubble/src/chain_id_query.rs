@@ -203,9 +203,9 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                     )
                     .unwrap();
 
-                    match &*msg.msg.client_type {
+                    match &*msg.0.client_type {
                         "cometbls" => {
-                            let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<EthAbi>(&msg.msg.client_state_bytes).unwrap();
+                            let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<EthAbi>(&msg.0.client_state_bytes).unwrap();
 
                             datas.push(Data {
                                 chain_id: record.id,

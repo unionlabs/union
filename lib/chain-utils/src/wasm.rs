@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, num::NonZeroU64};
+use std::marker::PhantomData;
 
 use frame_support_procedural::DefaultNoBound;
 use futures::Future;
@@ -142,20 +142,5 @@ impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
         height: Self::Height,
     ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
         self.0.self_consensus_state(height)
-    }
-
-    fn read_ack(
-        &self,
-        tx_hash: unionlabs::hash::H256,
-        destination_channel_id: unionlabs::id::ChannelId,
-        destination_port_id: unionlabs::id::PortId,
-        sequence: NonZeroU64,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        self.0.read_ack(
-            tx_hash,
-            destination_channel_id,
-            destination_port_id,
-            sequence,
-        )
     }
 }

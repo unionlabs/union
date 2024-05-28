@@ -198,9 +198,11 @@ where
                 }
             };
 
+            let msg_name = msg_any.type_url.clone();
+
             let tx_hash = hc.broadcast_tx_commit(signer, [msg_any]).await?;
 
-            tracing::info!("cosmos tx {:?} => {:?}", tx_hash, msg);
+            tracing::info!(%tx_hash, msg = %msg_name, "cosmos tx");
 
             Ok(())
         })

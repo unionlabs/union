@@ -10,10 +10,7 @@ use unionlabs::{
     traits::{ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{
-    any_enum, fetch::FetchPacketAcknowledgement, AnyLightClientIdentified, ChainExt,
-    RelayMessageTypes,
-};
+use crate::{any_enum, AnyLightClientIdentified, ChainExt, RelayMessageTypes};
 
 #[apply(any_enum)]
 /// Data that will likely be used in a [`QueueMsg::Aggregate`].
@@ -25,8 +22,6 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 
     LatestHeight(LatestHeight<Hc, Tr>),
     UnfinalizedClientState(UnfinalizedTrustedClientState<Hc, Tr>),
-
-    PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
     // state
     ClientState(IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>),
@@ -109,12 +104,6 @@ pub struct IbcProof<P: IbcPath<Hc, Tr>, Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub proof: Hc::StateProof,
-}
-
-#[queue_msg]
-pub struct PacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
-    pub fetched_by: FetchPacketAcknowledgement<Hc, Tr>,
-    pub ack: Vec<u8>,
 }
 
 #[queue_msg]

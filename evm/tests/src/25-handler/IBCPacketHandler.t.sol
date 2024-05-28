@@ -142,6 +142,25 @@ contract IBCPacketHandlerTest is TestPlus {
     string connectionId;
     string channelId;
 
+    function mkWriteAckPacket(
+        string memory destinationChannel,
+        uint64 sequence
+    ) public returns (IbcCoreChannelV1Packet.Data memory) {
+        return IbcCoreChannelV1Packet.Data({
+            sequence: sequence,
+            source_port: "",
+            source_channel: "",
+            destination_port: address(app).toHexString(),
+            destination_channel: destinationChannel,
+            data: bytes(""),
+            timeout_height: IbcCoreClientV1Height.Data({
+                revision_number: 0,
+                revision_height: 0
+            }),
+            timeout_timestamp: 0
+        });
+    }
+
     function setUp() public {
         handler = IBCHandlerFake(
             address(
@@ -616,7 +635,9 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(acknowledgement.length > 0);
         vm.prank(address(app));
-        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
+        handler.writeAcknowledgement(
+            mkWriteAckPacket(channelId, sequence), acknowledgement
+        );
     }
 
     function test_writeAcknowledgement_alreadyExist(
@@ -626,10 +647,14 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(acknowledgement.length > 0);
         client.pushValidMembership();
         vm.prank(address(app));
-        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
+        handler.writeAcknowledgement(
+            mkWriteAckPacket(channelId, sequence), acknowledgement
+        );
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrAcknowledgementAlreadyExists.selector);
-        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
+        handler.writeAcknowledgement(
+            mkWriteAckPacket(channelId, sequence), acknowledgement
+        );
     }
 
     function test_writeAcknowledgement_emptyAcknowledgement(uint64 sequence)
@@ -637,7 +662,9 @@ contract IBCPacketHandlerTest is TestPlus {
     {
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
-        handler.writeAcknowledgement(channelId, sequence, bytes(""));
+        handler.writeAcknowledgement(
+            mkWriteAckPacket(channelId, sequence), bytes("")
+        );
     }
 
     function test_writeAcknowledgement_unauthorized(
@@ -649,7 +676,9 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(acknowledgement.length > 0);
         vm.prank(address(malicious));
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
-        handler.writeAcknowledgement(channelId, sequence, acknowledgement);
+        handler.writeAcknowledgement(
+            mkWriteAckPacket(channelId, sequence), acknowledgement
+        );
     }
 
     function test_acknowledgePacket_ok(

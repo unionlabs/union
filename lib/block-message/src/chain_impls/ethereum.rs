@@ -8,7 +8,10 @@ use contracts::{
     ibc_channel_handshake::IBCChannelHandshakeEvents,
     ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientEvents},
     ibc_connection::IBCConnectionEvents,
-    ibc_packet::{AcknowledgePacketFilter, IBCPacketEvents, RecvPacketFilter, SendPacketFilter},
+    ibc_packet::{
+        AcknowledgePacketFilter, IBCPacketEvents, RecvPacketFilter, SendPacketFilter,
+        WriteAcknowledgementFilter,
+    },
 };
 use enumorph::Enumorph;
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
@@ -25,7 +28,7 @@ use unionlabs::{
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, IbcEvent, RecvPacket, SendPacket, UpdateClient,
+        CreateClient, IbcEvent, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
     },
     hash::H256,
     ibc::{
@@ -527,9 +530,14 @@ where
             )
         }
         IBCHandlerEvents::PacketEvent(IBCPacketEvents::WriteAcknowledgementFilter(raw_event)) => {
-            // TODO: Build write ack
-            tracing::info!("write acknowledgement: {raw_event:?}");
-            QueueMsg::Noop
+            with_channel(
+                c.chain_id(),
+                raw_event.packet.destination_port.clone(),
+                raw_event.packet.destination_channel.clone(),
+                event_height,
+                tx_hash,
+                raw_event,
+            )
         }
         IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => QueueMsg::Noop,
         IBCHandlerEvents::OwnableEvent(_) => QueueMsg::Noop,
@@ -641,6 +649,7 @@ where
 #[derive(Enumorph)]
 pub enum AggregateWithChannel<Hc: ChainExt + EthereumChain> {
     PacketAcknowledgement(EventInfo<Hc, AcknowledgePacketFilter>),
+    WriteAcknowledgement(EventInfo<Hc, WriteAcknowledgementFilter>),
     SendPacket(EventInfo<Hc, SendPacketFilter>),
     RecvPacket(EventInfo<Hc, RecvPacketFilter>),
 }
@@ -760,12 +769,32 @@ where
                     packet_timeout_height: raw_event.packet.timeout_height.into(),
                     packet_timeout_timestamp: raw_event.packet.timeout_timestamp,
                     packet_sequence: raw_event.packet.sequence.try_into().unwrap(),
-
                     packet_src_port: raw_event.packet.source_port.parse().unwrap(),
                     packet_src_channel: raw_event.packet.source_channel.parse().unwrap(),
                     packet_dst_port: raw_event.packet.destination_port.parse().unwrap(),
                     packet_dst_channel: raw_event.packet.destination_channel.parse().unwrap(),
                     packet_channel_ordering: channel.ordering,
+                    connection_id: channel.connection_hops[0].clone(),
+                }),
+            },
+            AggregateWithChannel::WriteAcknowledgement(EventInfo {
+                height,
+                tx_hash,
+                raw_event,
+            }) => ChainEvent {
+                client_type: unionlabs::ClientType::Cometbls,
+                tx_hash,
+                height,
+                event: IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+                    packet_data_hex: raw_event.packet.data.to_vec(),
+                    packet_timeout_height: raw_event.packet.timeout_height.into(),
+                    packet_timeout_timestamp: raw_event.packet.timeout_timestamp,
+                    packet_sequence: raw_event.packet.sequence.try_into().unwrap(),
+                    packet_src_port: raw_event.packet.source_port.parse().unwrap(),
+                    packet_src_channel: raw_event.packet.source_channel.parse().unwrap(),
+                    packet_dst_port: raw_event.packet.destination_port.parse().unwrap(),
+                    packet_dst_channel: raw_event.packet.destination_channel.parse().unwrap(),
+                    packet_ack_hex: raw_event.acknowledgement.to_vec(),
                     connection_id: channel.connection_hops[0].clone(),
                 }),
             },

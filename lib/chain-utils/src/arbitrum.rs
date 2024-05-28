@@ -25,8 +25,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, get_proof, read_ack, Ethereum, EthereumChain, EthereumInitError,
-        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
+        self, get_proof, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
     union::Union,
@@ -316,23 +316,6 @@ impl Chain for Arbitrum {
                 .timestamp
                 .as_u64(),
         }
-    }
-
-    async fn read_ack(
-        &self,
-        tx_hash: unionlabs::hash::H256,
-        destination_channel_id: unionlabs::id::ChannelId,
-        destination_port_id: unionlabs::id::PortId,
-        sequence: std::num::NonZeroU64,
-    ) -> Vec<u8> {
-        read_ack(
-            self,
-            tx_hash,
-            destination_port_id,
-            destination_channel_id,
-            sequence,
-        )
-        .await
     }
 }
 
