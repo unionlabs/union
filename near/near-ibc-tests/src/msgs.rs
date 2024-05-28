@@ -70,12 +70,31 @@ pub struct ChannelOpenInit {
 }
 
 #[derive(serde::Serialize)]
+pub struct ChannelOpenTry {
+    pub connection_hops: Vec<ConnectionId>,
+    pub port_id: PortId,
+    pub counterparty: channel::counterparty::Counterparty,
+    pub counterparty_version: String,
+    pub version: String,
+    pub proof_init: Vec<u8>,
+    pub proof_height: Height,
+}
+
+#[derive(serde::Serialize)]
 pub struct ChannelOpenAck {
     pub channel_id: ChannelId,
     pub port_id: PortId,
     pub counterparty_channel_id: String,
     pub counterparty_version: String,
     pub proof_try: Vec<u8>,
+    pub proof_height: Height,
+}
+
+#[derive(serde::Serialize)]
+pub struct ChannelOpenConfirm {
+    pub channel_id: ChannelId,
+    pub port_id: PortId,
+    pub proof_ack: Vec<u8>,
     pub proof_height: Height,
 }
 

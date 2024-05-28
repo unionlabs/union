@@ -4,6 +4,7 @@ mod utils;
 use std::{thread::sleep, time::Duration};
 
 use ibc_vm_rs::{states::connection_handshake, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX};
+use msgs::ChannelOpenTry;
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
     network::Sandbox,
@@ -26,9 +27,9 @@ use utils::convert_block_producers;
 
 use crate::{
     msgs::{
-        ChannelOpenAck, ChannelOpenInit, ClientState, ConnectionOpenAck, ConnectionOpenConfirm,
-        ConnectionOpenInit, ConnectionOpenTry, ConsensusState, CreateClient, GetAccountId,
-        GetCommitment, RegisterClient, UpdateClient,
+        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, ConsensusState, CreateClient,
+        GetAccountId, GetCommitment, RegisterClient, UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
@@ -88,7 +89,7 @@ async fn main() {
         LC_WASM_FILEPATH,
     )
     .await;
-    let _ibc_app_contract =
+    let ibc_app_contract =
         deploy_contract(&sandbox, "ibc-app.test.near", IBC_APP_WASM_FILEPATH).await;
 
     // create accounts
@@ -123,10 +124,18 @@ async fn main() {
     create_client(&sandbox, &user, &ibc_contract, bob::CLIENT_TYPE.to_string()).await;
 
     connection_open(&sandbox, &user, &ibc_contract, &alice_lc, &bob_lc).await;
+    channel_open(
+        &sandbox,
+        &user,
+        &ibc_contract,
+        &ibc_app_contract,
+        &alice_lc,
+        &bob_lc,
+    )
+    .await;
 }
 
 async fn connection_open_init(
-    sandbox: &Worker<Sandbox>,
     user: &Account,
     ibc_contract: &Contract,
     client_id: &str,
@@ -151,7 +160,10 @@ async fn connection_open_init(
         .args_json(open_init)
         .transact()
         .await
+        .unwrap()
         .unwrap();
+
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
     println!("connection open init res: {:?}", res);
 }
 
@@ -197,7 +209,10 @@ async fn connection_open_try(
         .gas(Gas::from_gas(300000000000000))
         .transact()
         .await
+        .unwrap()
         .unwrap();
+
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
     println!("connection open try res: {:?}", res);
 }
 
@@ -205,9 +220,7 @@ async fn connection_open_ack(
     sandbox: &Worker<Sandbox>,
     user: &Account,
     ibc_contract: &Contract,
-    client_id: &str,
     connection_id: &str,
-    counterparty_client_id: &str,
     counterparty_connection_id: &str,
     proof_height: u64,
 ) {
@@ -237,7 +250,10 @@ async fn connection_open_ack(
         .gas(Gas::from_gas(300000000000000))
         .transact()
         .await
+        .unwrap()
         .unwrap();
+
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
     println!("connection open ack res: {:?}", res);
 }
 
@@ -245,9 +261,7 @@ async fn connection_open_confirm(
     sandbox: &Worker<Sandbox>,
     user: &Account,
     ibc_contract: &Contract,
-    client_id: &str,
     connection_id: &str,
-    counterparty_client_id: &str,
     counterparty_connection_id: &str,
     proof_height: u64,
 ) {
@@ -275,7 +289,10 @@ async fn connection_open_confirm(
         .gas(Gas::from_gas(300000000000000))
         .transact()
         .await
+        .unwrap()
         .unwrap();
+
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
     println!("connection open confirm res: {:?}", res);
 }
 
@@ -338,6 +355,7 @@ async fn update_client(
         .unwrap()
         .unwrap();
 
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
     println!("Update result: {res:?}");
     current_height
 }
@@ -351,14 +369,7 @@ async fn connection_open(
 ) {
     let alice_client_id = format!("{}-1", alice::CLIENT_TYPE);
     let bob_client_id = format!("{}-2", bob::CLIENT_TYPE);
-    connection_open_init(
-        sandbox,
-        user,
-        ibc_contract,
-        &alice_client_id,
-        &bob_client_id,
-    )
-    .await;
+    connection_open_init(user, ibc_contract, &alice_client_id, &bob_client_id).await;
 
     let current_height = update_client(sandbox, user, ibc_contract, bob_lc, &bob_client_id).await;
 
@@ -380,9 +391,7 @@ async fn connection_open(
         sandbox,
         user,
         ibc_contract,
-        &alice_client_id,
         "connection-1",
-        &bob_client_id,
         "connection-2",
         current_height - 1,
     )
@@ -394,15 +403,233 @@ async fn connection_open(
         sandbox,
         user,
         ibc_contract,
-        &bob_client_id,
         "connection-2",
-        &alice_client_id,
         "connection-1",
         current_height - 1,
     )
     .await;
 
     println!("[ + ] Connection opened between {alice_client_id} and {bob_client_id}");
+}
+
+async fn channel_open_init(
+    user: &Account,
+    ibc_contract: &Contract,
+    ibc_app: &Contract,
+    connection_id: &str,
+) {
+    let port_id = ibc_app.id().to_string().validate().unwrap();
+    let channel_init = ChannelOpenInit {
+        connection_hops: vec![connection_id.to_string().validate().unwrap()],
+        port_id: port_id.clone(),
+        counterparty: channel::counterparty::Counterparty {
+            port_id,
+            channel_id: "".into(),
+        },
+        version: "ucs01".into(),
+    };
+
+    println!("calling channel open init");
+    let res = user
+        .call(ibc_contract.id(), "channel_open_init")
+        .gas(Gas::from_gas(300000000000000))
+        .args_json(channel_init)
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
+    println!("channel open init res: {:?}", res);
+}
+
+async fn channel_open_try(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    ibc_app: &Contract,
+    connection_id: &str,
+    counterparty_channel_id: &str,
+    proof_height: u64,
+) {
+    let port_id = ibc_app.id().to_string().validate().unwrap();
+
+    let proof_init = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        proof_height,
+        &format!("channelEnds/ports/{port_id}/channels/{counterparty_channel_id}"),
+    )
+    .await;
+
+    let open_try = ChannelOpenTry {
+        connection_hops: vec![connection_id.to_string().validate().unwrap()],
+        port_id: port_id.clone(),
+        counterparty: channel::counterparty::Counterparty {
+            port_id,
+            channel_id: counterparty_channel_id.to_string(),
+        },
+        counterparty_version: "ucs01".to_string(),
+        version: "ucs01".to_string(),
+        proof_init,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: proof_height,
+        },
+    };
+
+    println!("calling channel open try");
+    let res = user
+        .call(ibc_contract.id(), "channel_open_try")
+        .gas(Gas::from_gas(300000000000000))
+        .args_json(open_try)
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
+    println!("channel open try res: {:?}", res);
+}
+
+async fn channel_open_ack(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    ibc_app: &Contract,
+    channel_id: &str,
+    counterparty_channel_id: &str,
+    proof_height: u64,
+) {
+    let port_id = ibc_app.id().to_string().validate().unwrap();
+
+    let proof_try = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        proof_height,
+        &format!("channelEnds/ports/{port_id}/channels/{counterparty_channel_id}"),
+    )
+    .await;
+
+    let open_try = ChannelOpenAck {
+        channel_id: channel_id.to_string().validate().unwrap(),
+        port_id,
+        counterparty_channel_id: counterparty_channel_id.to_string(),
+        counterparty_version: "ucs01".to_string(),
+        proof_try,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: proof_height,
+        },
+    };
+
+    println!("calling channel open ack");
+    let res = user
+        .call(ibc_contract.id(), "channel_open_ack")
+        .gas(Gas::from_gas(300000000000000))
+        .args_json(open_try)
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
+    println!("channel open ack res: {:?}", res);
+}
+
+async fn channel_open_confirm(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    ibc_app: &Contract,
+    channel_id: &str,
+    counterparty_channel_id: &str,
+    proof_height: u64,
+) {
+    let port_id = ibc_app.id().to_string().validate().unwrap();
+
+    let proof_ack = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        proof_height,
+        &format!("channelEnds/ports/{port_id}/channels/{counterparty_channel_id}"),
+    )
+    .await;
+
+    let open_confirm = ChannelOpenConfirm {
+        channel_id: channel_id.to_string().validate().unwrap(),
+        port_id,
+        proof_ack,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: proof_height,
+        },
+    };
+
+    println!("calling channel open confirm");
+    let res = user
+        .call(ibc_contract.id(), "channel_open_confirm")
+        .gas(Gas::from_gas(300000000000000))
+        .args_json(open_confirm)
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
+    println!("channel open confirm res: {:?}", res);
+}
+
+async fn channel_open(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    ibc_app: &Contract,
+    alice_lc: &Contract,
+    bob_lc: &Contract,
+) {
+    let alice_client_id = format!("{}-1", alice::CLIENT_TYPE);
+    let bob_client_id = format!("{}-2", bob::CLIENT_TYPE);
+    channel_open_init(user, ibc_contract, ibc_app, "connection-1").await;
+
+    let current_height = update_client(sandbox, user, ibc_contract, bob_lc, &bob_client_id).await;
+
+    channel_open_try(
+        sandbox,
+        user,
+        ibc_contract,
+        ibc_app,
+        "connection-2",
+        "channel-1",
+        current_height - 1,
+    )
+    .await;
+
+    let current_height =
+        update_client(sandbox, user, ibc_contract, alice_lc, &alice_client_id).await;
+
+    channel_open_ack(
+        sandbox,
+        user,
+        ibc_contract,
+        ibc_app,
+        "channel-1",
+        "channel-2",
+        current_height - 1,
+    )
+    .await;
+
+    let current_height = update_client(sandbox, user, ibc_contract, bob_lc, &bob_client_id).await;
+
+    channel_open_confirm(
+        sandbox,
+        user,
+        ibc_contract,
+        ibc_app,
+        "channel-2",
+        "channel-1",
+        current_height - 1,
+    )
+    .await;
+
+    println!("[ + ] - `channel_open`: Channel opened.");
 }
 
 /// Expectations:
@@ -483,225 +710,4 @@ async fn create_client(
 
     assert!(res.receipt_failures().is_empty());
     println!("[ + ] `create_client`: Client of type {client_type} created successfully");
-}
-
-async fn test_open_connection_starting_from_init(user: &Account, contract: &Contract) {
-    let open_init = ConnectionOpenInit {
-        client_id: "cometbls-1".into(),
-        counterparty: connection_handshake::Counterparty {
-            client_id: "08-wasm-0".to_string().validate().unwrap(),
-            connection_id: "".into(),
-            prefix: MerklePrefix {
-                key_prefix: b"ibc".into(),
-            },
-        },
-        version: DEFAULT_IBC_VERSION[0].clone(),
-        delay_period: 0,
-    };
-
-    println!("calling connection open init");
-    let res = user
-        .call(contract.id(), "connection_open_init")
-        .args_json(open_init)
-        .transact()
-        .await
-        .unwrap();
-    println!("connection open init res: {:?}", res);
-
-    let connection_end_bytes: Vec<u8> = serde_json::from_slice(
-        user.view(contract.id(), "get_commitment")
-            .args_json(GetCommitment {
-                key: "connections/connection-1".into(),
-            })
-            .await
-            .unwrap()
-            .result
-            .as_slice(),
-    )
-    .unwrap();
-
-    let connection_end =
-        connection_handshake::ConnectionEnd::decode_as::<Proto>(&connection_end_bytes).unwrap();
-
-    assert_eq!(
-        connection_handshake::ConnectionEnd {
-            client_id: "cometbls-1".to_string().validate().unwrap(),
-            versions: DEFAULT_IBC_VERSION.clone(),
-            state: connection::state::State::Init,
-            counterparty: connection_handshake::Counterparty {
-                client_id: "08-wasm-0".to_string().validate().unwrap(),
-                connection_id: "".into(),
-                prefix: DEFAULT_MERKLE_PREFIX.clone()
-            },
-            delay_period: 0
-        },
-        connection_end
-    );
-
-    println!("Connection end: {connection_end:?}");
-
-    let open_ack = ConnectionOpenAck {
-        connection_id: "connection-1".to_string(),
-        version: DEFAULT_IBC_VERSION[0].clone(),
-        counterparty_connection_id: "connection-100".to_string(),
-        connection_end_proof: vec![1, 2, 3],
-        proof_height: Height {
-            revision_number: 0,
-            revision_height: 120,
-        },
-    };
-
-    println!("calling connection open ack");
-    let res = user
-        .call(contract.id(), "connection_open_ack")
-        .args_json(open_ack)
-        .transact()
-        .await
-        .unwrap();
-
-    println!("connectionopenack res: {res:?}");
-
-    let connection_end_bytes: Vec<u8> = serde_json::from_slice(
-        user.view(contract.id(), "get_commitment")
-            .args_json(GetCommitment {
-                key: "connections/connection-1".into(),
-            })
-            .await
-            .unwrap()
-            .result
-            .as_slice(),
-    )
-    .unwrap();
-
-    let connection_end =
-        connection_handshake::ConnectionEnd::decode_as::<Proto>(&connection_end_bytes).unwrap();
-    assert_eq!(
-        connection_handshake::ConnectionEnd {
-            client_id: "cometbls-1".to_string().validate().unwrap(),
-            versions: DEFAULT_IBC_VERSION.clone(),
-            state: connection::state::State::Open,
-            counterparty: connection_handshake::Counterparty {
-                client_id: "08-wasm-0".to_string().validate().unwrap(),
-                connection_id: "connection-100".into(),
-                prefix: DEFAULT_MERKLE_PREFIX.clone()
-            },
-            delay_period: 0
-        },
-        connection_end
-    );
-
-    println!("[ + ] `test_open_connection_starting_from_init`: Connection opened.");
-}
-
-async fn test_open_channel_starting_from_init(
-    user: &Account,
-    contract: &Contract,
-    ibc_app: &Contract,
-) {
-    let port_id = ibc_app.id().to_string().validate().unwrap();
-    let channel_init = ChannelOpenInit {
-        connection_hops: vec!["connection-1".to_string().validate().unwrap()],
-        port_id: port_id.clone(),
-        counterparty: channel::counterparty::Counterparty {
-            port_id: "transfer".to_string().validate().unwrap(),
-            channel_id: "".into(),
-        },
-        version: "ucs01".into(),
-    };
-
-    println!("calling channel open init");
-    let res = user
-        .call(contract.id(), "channel_open_init")
-        .gas(Gas::from_gas(300000000000000))
-        .args_json(channel_init)
-        .transact()
-        .await
-        .unwrap();
-    println!("channel open init res: {:?}", res);
-
-    let channel_end_bytes: Vec<u8> = serde_json::from_slice(
-        user.view(contract.id(), "get_commitment")
-            .args_json(GetCommitment {
-                key: format!(
-                    "channelEnds/ports/{}/channels/channel-1",
-                    port_id.to_string()
-                ),
-            })
-            .await
-            .unwrap()
-            .result
-            .as_slice(),
-    )
-    .unwrap();
-
-    let channel = Channel::decode_as::<Proto>(&channel_end_bytes).unwrap();
-
-    assert_eq!(
-        Channel {
-            state: channel::state::State::Init,
-            ordering: channel::order::Order::Unordered,
-            counterparty: channel::counterparty::Counterparty {
-                port_id: "transfer".to_string().validate().unwrap(),
-                channel_id: "".into()
-            },
-            connection_hops: vec!["connection-1".to_string().validate().unwrap()],
-            version: "ucs01".into()
-        },
-        channel
-    );
-
-    let channel_ack = ChannelOpenAck {
-        channel_id: "channel-1".to_string().validate().unwrap(),
-        port_id: port_id.clone(),
-        counterparty_channel_id: "channel-100".into(),
-        counterparty_version: "ucs01".into(),
-        proof_try: vec![1, 2, 3],
-        proof_height: Height {
-            revision_number: 0,
-            revision_height: 100,
-        },
-    };
-
-    println!("calling channel open ack");
-    let res = user
-        .call(contract.id(), "channel_open_ack")
-        .gas(Gas::from_gas(300000000000000))
-        .args_json(channel_ack)
-        .transact()
-        .await
-        .unwrap();
-    println!("channel open ack res: {:?}", res);
-
-    let channel_end_bytes: Vec<u8> = serde_json::from_slice(
-        user.view(contract.id(), "get_commitment")
-            .args_json(GetCommitment {
-                key: format!(
-                    "channelEnds/ports/{}/channels/channel-1",
-                    port_id.to_string()
-                ),
-            })
-            .await
-            .unwrap()
-            .result
-            .as_slice(),
-    )
-    .unwrap();
-
-    let channel = Channel::decode_as::<Proto>(&channel_end_bytes).unwrap();
-
-    assert_eq!(
-        Channel {
-            state: channel::state::State::Open,
-            ordering: channel::order::Order::Unordered,
-            counterparty: channel::counterparty::Counterparty {
-                port_id: "transfer".to_string().validate().unwrap(),
-                channel_id: "channel-100".into()
-            },
-            connection_hops: vec!["connection-1".to_string().validate().unwrap()],
-            version: "ucs01".into()
-        },
-        channel
-    );
-
-    println!("[ + ] - `test_open_channel_starting_from_init`: Channel opened.");
 }
