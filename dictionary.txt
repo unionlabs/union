@@ -721,6 +721,7 @@ omit
 omnichain
 omniflix
 oneof
+oneshot
 openapi
 openapiv
 opsz
