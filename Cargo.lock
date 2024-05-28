@@ -2780,8 +2780,8 @@ dependencies = [
  "borsh 1.5.1",
  "ibc-vm-rs",
  "near-contract-standards",
- "near-sdk 5.1.0",
- "near-sdk-contract-tools 2.1.0",
+ "near-sdk",
+ "near-sdk-contract-tools",
  "near-units",
  "serde",
  "serde_json",
@@ -5602,7 +5602,7 @@ version = "5.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0e78fe14d389ae76f792735a2108a6b8332a2bed61197310bf5ad718fb1e424"
 dependencies = [
- "near-sdk 5.1.0",
+ "near-sdk",
 ]
 
 [[package]]
@@ -5716,8 +5716,8 @@ dependencies = [
  "borsh 1.5.1",
  "ibc-vm-rs",
  "near-contract-standards",
- "near-sdk 5.1.0",
- "near-sdk-contract-tools 3.0.2",
+ "near-sdk",
+ "near-sdk-contract-tools",
  "serde",
  "serde_json",
  "thiserror",
@@ -5739,8 +5739,8 @@ dependencies = [
  "near-jsonrpc-primitives 0.20.1",
  "near-primitives 0.20.1",
  "near-primitives-core 0.21.2",
- "near-sdk 5.1.0",
- "near-sdk-contract-tools 2.1.0",
+ "near-sdk",
+ "near-sdk-contract-tools",
  "near-store",
  "near-units",
  "near-workspaces",
@@ -5830,8 +5830,8 @@ dependencies = [
  "ibc-vm-rs",
  "near-contract-standards",
  "near-primitives-core 0.21.2",
- "near-sdk 5.1.0",
- "near-sdk-contract-tools 3.0.2",
+ "near-sdk",
+ "near-sdk-contract-tools",
  "near-units",
  "serde",
  "serde_json",
@@ -6235,22 +6235,6 @@ dependencies = [
 
 [[package]]
 name = "near-sdk"
-version = "4.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15eb3de2defe3626260cc209a6cdb985c6b27b0bd4619fad97dcfae002c3c5bd"
-dependencies = [
- "base64 0.13.1",
- "borsh 0.9.3",
- "bs58 0.4.0",
- "near-sdk-macros 4.1.1",
- "near-sys",
- "once_cell",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "near-sdk"
 version = "5.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "520234cfdf04a805ac2f04715889d096eb83fdd5b99ca7d0f8027ae473f891a8"
@@ -6261,7 +6245,7 @@ dependencies = [
  "near-abi 0.4.3",
  "near-account-id 1.0.0",
  "near-gas",
- "near-sdk-macros 5.1.0",
+ "near-sdk-macros",
  "near-sys",
  "near-token",
  "once_cell",
@@ -6273,39 +6257,13 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-contract-tools"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f90458c4ad63ff557303de40e90494811fb9b308a3ee7346ac14d01f133d93ef"
-dependencies = [
- "near-sdk 4.1.1",
- "near-sdk-contract-tools-macros 2.1.0",
- "thiserror",
-]
-
-[[package]]
-name = "near-sdk-contract-tools"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "506ae008927f06b7f116598d3728604744317c0215e7ebe07c74c8297b5127b6"
 dependencies = [
- "near-sdk 5.1.0",
- "near-sdk-contract-tools-macros 3.0.2",
+ "near-sdk",
+ "near-sdk-contract-tools-macros",
  "thiserror",
-]
-
-[[package]]
-name = "near-sdk-contract-tools-macros"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0647bf0273ce9407b650e7f0cf777b7052325648a4d03c8a8993a6a5c5c17411"
-dependencies = [
- "darling 0.20.8",
- "heck 0.4.1",
- "proc-macro2",
- "quote",
- "strum 0.25.0",
- "strum_macros 0.25.3",
- "syn 2.0.60",
 ]
 
 [[package]]
@@ -6321,18 +6279,6 @@ dependencies = [
  "strum 0.26.2",
  "strum_macros 0.26.2",
  "syn 2.0.60",
-]
-
-[[package]]
-name = "near-sdk-macros"
-version = "4.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4907affc9f5ed559456509188ff0024f1f2099c0830e6bdb66eb61d5b75912c0"
-dependencies = [
- "Inflector",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -6556,7 +6502,7 @@ dependencies = [
  "near-jsonrpc-primitives 0.20.1",
  "near-primitives 0.20.1",
  "near-sandbox-utils 0.7.1",
- "near-sdk 5.1.0",
+ "near-sdk",
  "near-token",
  "rand 0.8.5",
  "reqwest",
@@ -10966,7 +10912,7 @@ dependencies = [
  "macros",
  "milagro_bls",
  "near-primitives-core 0.21.2",
- "near-sdk 5.1.0",
+ "near-sdk",
  "paste",
  "primitive-types 0.12.2",
  "prost 0.12.3",
@@ -11926,8 +11872,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "parity-secp256k1"
-version = "0.7.0"
-source = "git+https://github.com/paritytech/rust-secp256k1#d05fd8e152f8d110b587906e3d854196b086e42a"

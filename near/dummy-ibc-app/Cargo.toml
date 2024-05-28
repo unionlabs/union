@@ -9,7 +9,7 @@ borsh                   = { version = "1.5.0", features = ["borsh-derive"] }
 ibc-vm-rs.workspace     = true
 near-contract-standards = { workspace = true }
 near-sdk                = { workspace = true }
-near-sdk-contract-tools = "2.1.0"
+near-sdk-contract-tools = { workspace = true }
 serde.workspace         = true
 serde_json.workspace    = true
 unionlabs.workspace     = true
