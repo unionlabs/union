@@ -15,7 +15,12 @@ use near_sdk_contract_tools::owner::OwnerExternal;
 use near_sdk_contract_tools::Owner;
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
-    ibc::core::{channel, client::height::Height, commitment::merkle_path::MerklePath, connection},
+    ibc::core::{
+        channel::{self, packet::Packet},
+        client::height::Height,
+        commitment::merkle_path::MerklePath,
+        connection,
+    },
     ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
     validated::ValidateT,
@@ -244,6 +249,27 @@ impl Contract {
             ibc_vm_rs::channel_open_init(connection_hops, port_id, counterparty, version);
         fold(self, runnable, &[IbcResponse::Empty]).unwrap()
     }
+    pub fn channel_open_try(
+        &mut self,
+        connection_hops: Vec<ConnectionId>,
+        port_id: PortId,
+        counterparty: channel::counterparty::Counterparty,
+        counterparty_version: String,
+        version: String,
+        proof_init: Vec<u8>,
+        proof_height: Height,
+    ) -> Promise {
+        let runnable = ibc_vm_rs::channel_open_try(
+            connection_hops,
+            port_id,
+            counterparty,
+            counterparty_version,
+            version,
+            proof_init,
+            proof_height,
+        );
+        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+    }
 
     pub fn channel_open_ack(
         &mut self,
@@ -262,6 +288,18 @@ impl Contract {
             proof_try,
             proof_height,
         );
+        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+    }
+
+    pub fn channel_open_confirm(
+        &mut self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        proof_ack: Vec<u8>,
+        proof_height: Height,
+    ) -> Promise {
+        let runnable =
+            ibc_vm_rs::channel_open_confirm(channel_id, port_id, proof_ack, proof_height);
         fold(self, runnable, &[IbcResponse::Empty]).unwrap()
     }
 
@@ -351,6 +389,19 @@ impl Contract {
     }
 
     #[private]
+    pub fn callback_on_chan_open_try(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] err: bool,
+    ) -> Option<Promise> {
+        fold(
+            self,
+            current_state,
+            &[IbcResponse::OnChannelOpenTry { err }],
+        )
+    }
+
+    #[private]
     pub fn callback_on_chan_open_ack(
         &mut self,
         current_state: IbcState,
@@ -361,6 +412,28 @@ impl Contract {
             current_state,
             &[IbcResponse::OnChannelOpenAck { err }],
         )
+    }
+
+    #[private]
+    pub fn callback_on_chan_open_confirm(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] err: bool,
+    ) -> Option<Promise> {
+        fold(
+            self,
+            current_state,
+            &[IbcResponse::OnChannelOpenConfirm { err }],
+        )
+    }
+
+    #[private]
+    pub fn callback_on_recv_packet(
+        &mut self,
+        current_state: IbcState,
+        #[callback_unwrap] err: bool,
+    ) -> Option<Promise> {
+        fold(self, current_state, &[IbcResponse::OnRecvPacket { err }])
     }
 }
 
@@ -454,7 +527,31 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                         ),
                 );
             }
-            ibc_vm_rs::IbcMsg::OnChannelOpenTry { .. } => todo!(),
+            ibc_vm_rs::IbcMsg::OnChannelOpenTry {
+                order,
+                connection_hops,
+                port_id,
+                channel_id,
+                counterparty,
+                counterparty_version,
+            } => {
+                let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+                return Some(
+                    ibc_app::ext(account_id)
+                        .on_channel_open_try(
+                            order,
+                            connection_hops,
+                            port_id,
+                            channel_id,
+                            counterparty,
+                            counterparty_version,
+                        )
+                        .then(
+                            !Contract::ext(env::current_account_id())
+                                .callback_on_chan_open_try(runnable),
+                        ),
+                );
+            }
             ibc_vm_rs::IbcMsg::OnChannelOpenAck {
                 port_id,
                 channel_id,
@@ -476,8 +573,27 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                         ),
                 );
             }
-            ibc_vm_rs::IbcMsg::OnChannelOpenConfirm { .. } => todo!(),
-            ibc_vm_rs::IbcMsg::OnRecvPacket { .. } => todo!(),
+            ibc_vm_rs::IbcMsg::OnChannelOpenConfirm {
+                port_id,
+                channel_id,
+            } => {
+                let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+                return Some(
+                    ibc_app::ext(account_id)
+                        .on_channel_open_confirm(port_id, channel_id)
+                        .then(
+                            Contract::ext(env::current_account_id())
+                                .callback_on_chan_open_confirm(runnable),
+                        ),
+                );
+            }
+            ibc_vm_rs::IbcMsg::OnRecvPacket { packet } => {
+                let account_id =
+                    AccountId::try_from(packet.destination_port.clone().to_string()).unwrap();
+                return Some(ibc_app::ext(account_id).recv_packet(packet).then(
+                    Contract::ext(env::current_account_id()).callback_on_recv_packet(runnable),
+                ));
+            }
             ibc_vm_rs::IbcMsg::OnAcknowledgePacket { .. } => todo!(),
         },
     }
@@ -542,10 +658,23 @@ pub trait IbcApp {
         version: String,
     ) -> bool;
 
+    fn on_channel_open_try(
+        order: channel::order::Order,
+        connection_hops: Vec<ConnectionId>,
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty: channel::counterparty::Counterparty,
+        counterparty_version: String,
+    ) -> bool;
+
     fn on_channel_open_ack(
         port_id: PortId,
         channel_id: ChannelId,
         counterparty_channel_id: String,
         counterparty_version: String,
     ) -> bool;
+
+    fn on_channel_open_confirm(port_id: PortId, channel_id: ChannelId) -> bool;
+
+    fn recv_packet(packet: Packet) -> bool;
 }
