@@ -90,7 +90,7 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
         key: 'h',
         modifier: ['ctrl'],
         callback: () => {
-          console.log('Hiding tanstack devtools')
+          console.info('Hiding tanstack devtools')
           const tanstackDevtoolsElement = document.querySelector('div.tsqd-transitions-container')
           if (!tanstackDevtoolsElement) return
           tanstackDevtoolsElement.classList.toggle('hidden')

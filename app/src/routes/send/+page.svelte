@@ -71,11 +71,11 @@ const queryParams = queryParameters(
   { debounceHistory: 1_000, showDefaults: true }
 )
 
-let dialogOpenFromChain = false
-let dialogOpenToChain = false
-let dialogOpenToken = false
-let dialogOpenSettings = false
 let dialogOpenPast = false
+let dialogOpenToken = false
+let dialogOpenToChain = false
+let dialogOpenFromChain = false
+let dialogOpenSettings = false
 
 let [chainSearch, chainSearchResults] = ["", chains]
 
@@ -233,11 +233,9 @@ let buttonText = "Send it" satisfies
 </svelte:head>
 
 <main class="flex justify-center size-full items-start px-0 sm:px-3 max-h-full">
-  <Card.Root
-    class="size-full max-w-[475px] sm:mt-8 mt-6 p-2 bg-transparent border-none outline-none"
-  >
+  <Card.Root class="size-full max-w-[475px] sm:mt-8 p-2 bg-transparent border-none outline-none">
     <Card.Header
-      class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-4"
+      class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-3"
     >
       <Card.Title class="text-2xl font-black mt-1">Transfer</Card.Title>
       <Button
@@ -245,31 +243,30 @@ let buttonText = "Send it" satisfies
         type="button"
         variant="ghost"
         title="Ongoing transactions"
-        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl ml-auto"
         on:click={() => (dialogOpenPast = !dialogOpenPast)}
+        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl ml-auto"
       >
         <Timer class="size-5" />
       </Button>
       <Button
         size="icon"
         variant="ghost"
-        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl"
         on:click={() => (dialogOpenSettings = !dialogOpenSettings)}
+        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl"
       >
         <Settings class="size-5" />
       </Button>
     </Card.Header>
     <Card.Content
       class={cn(
-        'size-full pb-3 px-3.5 flex flex-col justify-between',
         devBorder,
-
+        'size-full pb-3 px-3.5 flex flex-col justify-between',
         'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md',
       )}
     >
       <div
         data-transfer-from-section
-        class={cn(devBorder, 'w-full pb-0 mt-4 mb-2 flex flex-row justify-between')}
+        class={cn(devBorder, 'w-full pb-0 sm:my-3 mt-2 flex flex-row justify-between')}
       >
         <Button
           variant="ghost"
@@ -296,8 +293,8 @@ let buttonText = "Send it" satisfies
         <Button
           size="icon"
           variant="outline"
-          class="h-8 w-16 rounded-xl dark:text-white my-auto mx-3"
           on:click={swapChainsClick}
+          class="h-8 w-16 rounded-xl dark:text-white my-auto mx-3"
         >
           <ArrowLeftRight class="size-5 dark:text-white" />
         </Button>
@@ -311,8 +308,8 @@ let buttonText = "Send it" satisfies
           <div class="flex space-x-1.5 h-full">
             <img
               src={selectedToChain?.icon}
-              alt={`${selectedToChain?.name} logo`}
               class="size-11 my-auto mr-auto"
+              alt={`${selectedToChain?.name} logo`}
             />
             <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
               <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
@@ -332,40 +329,32 @@ let buttonText = "Send it" satisfies
           on:click={() => (dialogOpenToken = !dialogOpenToken)}
           class={cn(
             devBorder,
-            'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pl-3 pt-1.5 border-none',
             'outline outline-1 outline-accent/90',
+            'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pt-1.5 border-none',
           )}
         >
           <div
             class={cn(
               devBorder,
-              'w-full max-w-[65px] h-full mr-1 flex flex-row justify-start items-center z-50',
+              'h-full flex flex-row justify-start items-center z-50',
             )}
           >
             <img
               alt="asset"
               src={`/images/icons/${selectedFromChain?.name}.svg`}
-              class={cn(
-                'size-14 outline-[1.5px] outline-accent outline rounded-full bg-[#0b0b0b]',
-                'p-1 z-10',
-              )}
+              class={cn('p-1 z-10', 'size-14 outline-[1.5px] rounded-full bg-[#0b0b0b]')}
             />
             <img
-              src={`/images/icons/${selectedAsset?.symbol.toLowerCase()}.svg`}
               alt="asset"
               class={cn('size-12 z-50 my-auto mt-4 -ml-8')}
+              src={`/images/icons/${selectedAsset?.symbol.toLowerCase()}.svg`}
             />
           </div>
 
           <div
             class={cn(devBorder, 'size-full max-w-[250px] flex flex-col justify-between space-y-3')}
           >
-            <p class="text-2xl font-black m-auto">{selectedAsset?.symbol}</p>
-            <p class="text-xs m-auto">
-              {selectedAsset?.source.chain}
-              {'->'}
-              {selectedAsset?.destination.chain}
-            </p>
+            <p class="text-5xl font-black m-auto">{selectedAsset?.symbol}</p>
           </div>
           <div class="h-full space-y-2">
             <p class="">balance</p>
@@ -391,8 +380,8 @@ let buttonText = "Send it" satisfies
           bind:value={inputValue.from}
           pattern="^[0-9]*[.,]?[0-9]*$"
           class={cn(
-            'text-5xl font-bold h-20 mt-2 mb-0 px-3 tabular-nums border-none',
             'outline-1 outline-accent/80 outline',
+            'text-5xl font-bold h-16 sm:h-20 mt-2 mb-0 px-3 tabular-nums border-none',
           )}
         />
       </div>
@@ -443,7 +432,7 @@ let buttonText = "Send it" satisfies
         </div>
       </div>
     </Card.Content>
-    <Card.Footer class="py-0 px-0 mt-4">
+    <Card.Footer class="p-0 mt-2 sm:mt-4">
       <Button
         type="button"
         disabled={false}

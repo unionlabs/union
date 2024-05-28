@@ -42,7 +42,7 @@ export const load = (_context => {
         ecosystem: "cosmos",
         icon: "/images/icons/osmosis.svg",
         id: "osmo-test-5",
-        live: true,
+        live: false,
         assets: [
           {
             port: "transfer",
