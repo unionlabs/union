@@ -7,10 +7,8 @@ import { browser } from "$app/environment"
 import { Toaster } from "svelte-french-toast"
 import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"
-import { setContextClient } from "@urql/svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
-import { graphqlClient } from "$lib/graphql/client.ts"
 import Header from "$lib/components/header/header.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import OnlineStatus from "$lib/components/online-status.svelte"
@@ -22,11 +20,6 @@ import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-clien
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
-
-/**
- * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
- */
-setContextClient(graphqlClient)
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 

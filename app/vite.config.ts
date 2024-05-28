@@ -35,7 +35,7 @@ export default defineConfig(config => {
       drop: ["console", "debugger"]
     },
     optimizeDeps: {
-      exclude: ["@urql/svelte", "@tanstack/svelte-query-devtools"]
+      exclude: ["@tanstack/svelte-query-devtools"]
     },
     server: {
       port: Number(PORT)

@@ -21,8 +21,8 @@
     },
     "plugins": [
       {
-        "name": "@0no-co/graphqlsp",
         "template": "gql",
+        "name": "@0no-co/graphqlsp",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
           "url": "https://graphql.union.build/v1/graphql",

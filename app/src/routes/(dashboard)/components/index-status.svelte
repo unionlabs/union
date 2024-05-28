@@ -1,5 +1,4 @@
 <script lang="ts">
-import { getContextClient, queryStore } from "@urql/svelte"
 import {
   flexRender,
   type ColumnDef,
