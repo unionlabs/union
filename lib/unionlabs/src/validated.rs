@@ -15,6 +15,17 @@ pub struct Validated<T, V: Validate<T>>(
     PhantomData<fn() -> V>,
 );
 
+#[cfg(feature = "schemars")]
+impl<T: schemars::JsonSchema, V: Validate<T>> schemars::JsonSchema for Validated<T, V> {
+    fn schema_name() -> String {
+        T::schema_name()
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        T::json_schema(gen)
+    }
+}
+
 #[cfg(feature = "arbitrary")]
 impl<'a, T: arbitrary::Arbitrary<'a>, V: ValidateExt<T>> arbitrary::Arbitrary<'a>
     for Validated<T, V>

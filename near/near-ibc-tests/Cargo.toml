@@ -1,29 +1,29 @@
 [package]
 authors = ["Jacob Lindahl <jacob.lindahl@near.org>"]
 edition = "2021"
-name = "near-ibc-tests"
+name    = "near-ibc-tests"
 version = "0.1.0"
 
 [dependencies]
-near-contract-standards = "5.1.0"
-near-sdk = { version = "5.1.0", default-features = false }
-near-sdk-contract-tools = "2.1.0"
-ibc-vm-rs.workspace = true
-serde_json.workspace = true
-serde.workspace = true
-borsh = { version = "1.5.0", features = ["borsh-derive"] }
-unionlabs.workspace = true
-tokio = { version = "1.18.1", features = ["full"] }
-anyhow = "1.0"
-near-units = "0.2.0"
+anyhow                    = "1.0"
+borsh                     = { workspace = true, features = ["borsh-derive"] }
+ibc-vm-rs.workspace       = true
+near-contract-standards   = "5.1.0"
+near-sdk                  = { workspace = true }
+near-sdk-contract-tools   = "2.1.0"
+near-units                = "0.2.0"
 near-workspaces.workspace = true
+serde.workspace           = true
+serde_json.workspace      = true
+tokio                     = { version = "1.18.1", features = ["full"] }
+unionlabs.workspace       = true
 # near-primitives = { git = "https://github.com/near/nearcore" }
-near-primitives = "0.20"
-near-jsonrpc-client = "0.8"
+base64                  = { workspace = true }
+env_logger              = "0.9"
+near-crypto             = "0.20"
+near-jsonrpc-client     = "0.8"
 near-jsonrpc-primitives = "0.20"
-near-primitives-core = { version = "0.21" }
-sha2 = "*"
-base64 = "*"
-near-store = { git = "https://github.com/near/nearcore" }
-env_logger = "0.9"
-near-crypto = "0.20" 
+near-primitives         = "0.20"
+near-primitives-core    = { version = "0.21" }
+near-store              = { git = "https://github.com/near/nearcore" }
+sha2                    = { workspace = true }

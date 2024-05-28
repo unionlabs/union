@@ -15,6 +15,7 @@ use crate::{
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum CreateClient {
     Init {
         client_type: String,

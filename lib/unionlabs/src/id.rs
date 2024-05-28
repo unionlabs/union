@@ -17,6 +17,9 @@ pub type ConnectionId = Validated<String, ConnectionIdValidator>;
 pub type ChannelIdValidator = (Bounded<8, 64>, Ics024IdentifierCharacters);
 pub type ChannelId = Validated<String, ChannelIdValidator>;
 
+#[cfg(feature = "schemars")]
+static_assertions::assert_impl_all!(ClientId: schemars::JsonSchema);
+
 // https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#paths-identifiers-separators
 pub struct Ics024IdentifierCharacters;
 

@@ -106,11 +106,15 @@ ethereum-light-client     = { path = "light-clients/ethereum-light-client", defa
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
 gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                = { path = "lib/gnark-mimc", default-features = false }
+ibc-vm-rs                 = { path = "lib/ibc-vm-rs", default-features = false }
 ics008-wasm-client        = { path = "lib/ics-008-wasm-client", default-features = false }
 ics23                     = { path = "lib/ics23", default-features = false }
 linea-verifier            = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie              = { path = "lib/linea-zktrie", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }
+near-light-client         = { path = "near/near-light-client", default-features = false }
+near-sandbox-utils        = { path = "near/near-sandbox-utils", default-features = false }
+near-workspaces           = { path = "lib/near-workspaces-rs", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }
@@ -132,10 +136,6 @@ ucs01-relay-api           = { path = "cosmwasm/ucs01-relay-api", default-feature
 unionlabs                 = { path = "lib/unionlabs", default-features = false }
 voyager-message           = { path = "lib/voyager-message", default-features = false }
 zktrie                    = { path = "lib/zktrie-rs", default-features = false }
-ibc-vm-rs                 = { path = "lib/ibc-vm-rs", default-features = false }
-near-workspaces           = { path = "lib/near-workspaces-rs", default-features = false }
-near-light-client         = { path = "near/near-light-client", default-features = false }
-near-sandbox-utils        = { path = "near/near-sandbox-utils", default-features = false }
 
 # external dependencies
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
@@ -154,6 +154,7 @@ axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bip32                    = { version = "0.5.0", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
+borsh                    = { version = "1.5.0", default-features = false }
 bytes                    = { version = "1.2.1", default-features = false }
 chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
@@ -175,6 +176,9 @@ go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }
+near-contract-standards  = { version = "5.1.0", default-features = false }
+near-sdk                 = { version = "5.1.0", default-features = false }
+near-sdk-contract-tools  = { version = "3.0.2", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
 primitive-types          = { version = "0.12.1", default-features = false }
 prost                    = { version = "0.12.3", default-features = false }
@@ -201,5 +205,5 @@ tracing-subscriber       = { version = "0.3", default-features = false, features
 typenum                  = { version = "1.17.0", default-features = false }
 
 [patch."crates-io"]
-arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
+arbitrary        = { git = "https://github.com/unionlabs/arbitrary" }
 parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }

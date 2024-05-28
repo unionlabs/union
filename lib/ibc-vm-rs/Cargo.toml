@@ -13,6 +13,10 @@ lazy_static.workspace = true
 frame-support-procedural.workspace = true
 thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
 hex.workspace = true
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [lints]
 workspace = true
+
+[features]
+schemars = ["dep:schemars"]

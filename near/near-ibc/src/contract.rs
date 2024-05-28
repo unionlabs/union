@@ -547,7 +547,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                             counterparty_version,
                         )
                         .then(
-                            !Contract::ext(env::current_account_id())
+                            Contract::ext(env::current_account_id())
                                 .callback_on_chan_open_try(runnable),
                         ),
                 );

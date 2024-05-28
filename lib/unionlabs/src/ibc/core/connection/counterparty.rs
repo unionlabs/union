@@ -20,6 +20,7 @@ use crate::{
         ConnectionId: Id,
     ",
 ))]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct Counterparty<ClientId: Id, ConnectionId: Id = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,

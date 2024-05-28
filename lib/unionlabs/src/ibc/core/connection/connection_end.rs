@@ -32,6 +32,7 @@ use crate::{
         CounterpartyConnectionId: Id,
     ",
 ))]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct ConnectionEnd<
     ClientId: Id,
     CounterpartyClientId: Id,

@@ -22,6 +22,7 @@ use crate::{
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ChannelOpenInit {
     Init {
         connection_hops: Vec<ConnectionId>,
@@ -201,6 +202,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
     }
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ChannelOpenTry {
     Init {
         connection_hops: Vec<ConnectionId>,
@@ -431,6 +433,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ChannelOpenAck {
     Init {
         channel_id: ChannelId,
@@ -645,6 +648,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ChannelOpenConfirm {
     Init {
         channel_id: ChannelId,
