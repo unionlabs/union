@@ -453,7 +453,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
         ibc_vm_rs::IbcAction::Query((client_id, ibc_queries)) => {
             let account_id = host.clients.get(&client_id.to_string()).unwrap();
             return Some(
-                light_client::ext(account_id.clone())
+                ext_light_client::ext(account_id.clone())
                     .query(ibc_queries)
                     .then(Contract::ext(env::current_account_id()).callback_query(runnable)),
             );
@@ -467,7 +467,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
             } => {
                 let account_id = host.account_ids.get(&client_type).unwrap();
                 return Some(
-                    light_client::ext(account_id.clone())
+                    ext_light_client::ext(account_id.clone())
                         .initialize(client_id, client_state, consensus_state)
                         .then(
                             Contract::ext(env::current_account_id()).callback_initialize(runnable),
@@ -480,7 +480,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
             } => {
                 let account_id = host.clients.get(&client_id.to_string()).unwrap();
                 return Some(
-                    light_client::ext(account_id.clone())
+                    ext_light_client::ext(account_id.clone())
                         .update_client_on_misbehaviour(client_msg)
                         .then(
                             Contract::ext(env::current_account_id())
@@ -494,7 +494,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
             } => {
                 let account_id = host.clients.get(&client_id.to_string()).unwrap();
                 return Some(
-                    light_client::ext(account_id.clone())
+                    ext_light_client::ext(account_id.clone())
                         .update_client(client_msg)
                         .then(
                             Contract::ext(env::current_account_id())
@@ -616,37 +616,42 @@ pub enum LightClientQuery {
     },
 }
 
-// TODO(aeryz): these ext contract api's should be defined under `ibc-vm` by splitted into technologies such as `near/cosmwasm etc`
-#[ext_contract(light_client)]
-pub trait LightClient {
-    fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>) -> Self;
+// // TODO(aeryz): these ext contract api's should be defined under `ibc-vm` by splitted into technologies such as `near/cosmwasm etc`
+pub mod GOHERE {
+    use near_sdk::ext_contract;
 
-    fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse>;
+    #[ext_contract(ext_light_client)]
+    pub trait LightClient {
+        #[init]
+        fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>)
+            -> Self;
 
-    fn status(&self) -> Status;
+        fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse>;
 
-    fn latest_height(&self) -> Height;
+        fn status(&self) -> Status;
 
-    fn verify_membership(
-        &self,
-        height: Height,
-        // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
-        delay_time_period: u64,
-        delay_block_period: u64,
-        proof: Vec<u8>,
-        path: MerklePath,
-        value: Vec<u8>,
-    ) -> bool;
+        fn latest_height(&self) -> Height;
 
-    fn verify_client_message(&self, client_msg: Vec<u8>) -> bool;
+        fn verify_membership(
+            &self,
+            height: Height,
+            // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
+            delay_time_period: u64,
+            delay_block_period: u64,
+            proof: Vec<u8>,
+            path: MerklePath,
+            value: Vec<u8>,
+        ) -> bool;
 
-    fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool;
+        fn verify_client_message(&self, client_msg: Vec<u8>) -> bool;
 
-    fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
+        fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool;
 
-    fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>);
+        fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
+
+        fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>);
+    }
 }
-
 #[ext_contract(ibc_app)]
 pub trait IbcApp {
     fn on_channel_open_init(
