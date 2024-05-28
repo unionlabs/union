@@ -143,6 +143,7 @@ pub trait IbcHost: Sized {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Copy, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum Status {
     Active,
     Frozen,
@@ -156,6 +157,7 @@ impl core::fmt::Display for Status {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum IbcResponse {
     Empty,
     Initialize,
@@ -209,6 +211,7 @@ pub enum IbcResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum IbcState {
     CreateClient(CreateClient),
     UpdateClient(UpdateClient),

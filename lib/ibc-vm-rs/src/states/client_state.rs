@@ -11,6 +11,7 @@ use crate::{
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum UpdateClient {
     Init {
         client_id: ClientId,

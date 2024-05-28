@@ -53,10 +53,12 @@ tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 uint                     = "*"
 wasmparser               = { version = "0.113" }
+
+borsh                = { workspace = true, features = ["borsh-derive"] }
+bs58                 = "0.4"
 near-primitives-core = { version = "0.21" }
-near-sdk = { version = "5.1.0", default-features = false }
-borsh = { version = "1.5.0", features = ["borsh-derive"] }
-bs58 = "0.4"
+near-sdk             = { workspace = true }
+schemars             = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
 rand       = "0.8.5"
@@ -72,4 +74,5 @@ std    = ["ethers-core/std"]
 arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
 fuzzing   = ["arbitrary", "serde_json"]
 
+schemars = ["dep:schemars"]
 stargate = ["cosmwasm-std/stargate"]

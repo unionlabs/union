@@ -11,7 +11,7 @@ ark-ff       = { version = "0.4.2", default-features = false }
 base64       = { workspace = true, features = ["alloc"] }
 hex          = { workspace = true, features = ["alloc"] }
 substrate-bn = { version = "0.6", default-features = false }
-thiserror    = { workspace = true, default-features = false }
+thiserror    = { workspace = true }
 
 [lints]
 workspace = true

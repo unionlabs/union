@@ -3,6 +3,7 @@ use macros::model;
 use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
 
 #[model(proto(raw(protos::ibc::core::connection::v1::Version), into, from))]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct Version {
     // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
     pub identifier: String,

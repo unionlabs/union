@@ -21,6 +21,7 @@ pub type Counterparty = connection::counterparty::Counterparty<ClientId, String>
 pub type ConnectionEnd = connection::connection_end::ConnectionEnd<ClientId, ClientId, String>;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ConnectionOpenInit {
     Init {
         client_id: ClientId,
@@ -163,6 +164,7 @@ fn verify_proposed_version(version: &Version, proposed_version: &Version) -> Res
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ConnectionOpenTry {
     Init {
         client_id: ClientId,
@@ -286,6 +288,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ConnectionOpenAck {
     Init {
         connection_id: String,
@@ -423,6 +426,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ConnectionOpenConfirm {
     Init {
         connection_id: String,

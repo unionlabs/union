@@ -3,8 +3,10 @@ use contracts::ibc_handler::IbcCoreCommitmentV1MerklePrefixData;
 use macros::model;
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerklePrefix), into, from))]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct MerklePrefix {
     #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "schemars", schemars(with = "String"))]
     pub key_prefix: Vec<u8>,
 }
 
