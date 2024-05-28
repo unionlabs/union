@@ -136,7 +136,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     counterparty,
                     version,
                 },
-                &[IbcResponse::OnChannelOpenAck { err }],
+                &[IbcResponse::OnChannelOpenInit { err }],
             ) => {
                 if err {
                     return Err(IbcError::IbcAppCallbackFailed.into());

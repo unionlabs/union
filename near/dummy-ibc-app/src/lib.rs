@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod contract;
 pub use contract::*;
 
