@@ -22,7 +22,40 @@
             --set NEAR_SANDBOX_BIN_PATH "${near-sandbox}/bin/neard";
         '';
         meta.mainProgram = "near-ibc-tests";
-      };   
+      };
+
+      cargo-near = craneLib.buildPackage rec {
+        pname = "cargo-near";
+        version = "v0.6.2";
+
+        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake pkgs.systemd ] ++ (
+          lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+        );
+
+        nativeBuildInputs = [
+          # pkgs.llvmPackages_14.libclang
+          # pkgs.llvmPackages_14.libcxxClang
+          pkgs.clang
+          # pkgs.stdenv.cc.libc
+        ];
+
+        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        PROTOC = "${pkgs.protobuf}/bin/protoc";
+        NEAR_SANDBOX_BIN_PATH = "${near-sandbox}/bin/neard";
+
+        # The integration tests are incredibly cursed
+        # https://github.com/near/cargo-near/blob/main/cargo-near/src/types/metadata.rs#L48
+        doCheck = false;
+
+        # cargoExtraArgs = " --verbose --verbose -p neard --features sandbox";
+
+        src = pkgs.fetchFromGitHub {
+          owner = "near";
+          repo = pname;
+          rev = "cargo-near-${version}";
+          hash = "sha256-kFMrsryyP/XpSzR88o/edaGEchbyDB1JpzwC6QoEMfA=";
+        };
+      };
 
 
       rustToolchain = rust.mkNightly {
@@ -60,8 +93,8 @@
       };
     in
     {
-      packages = { 
-        inherit near-ibc-tests near-sandbox;
+      packages = {
+        inherit near-ibc-tests near-sandbox cargo-near;
       };
     };
 }
