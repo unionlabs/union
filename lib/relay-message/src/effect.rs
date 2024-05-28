@@ -1,6 +1,6 @@
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{queue_msg, HandleEffect, QueueError, QueueMessageTypes, QueueMsg};
+use queue_msg::{noop, queue_msg, HandleEffect, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -55,11 +55,14 @@ impl HandleEffect<RelayMessageTypes> for AnyLightClientIdentified<AnyEffect> {
         any_lc! {
             |msg| {
                 store
-                    .with_chain(&msg.chain_id, move |c| async move { msg.t.handle(&c).await })
-                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
-                    .await
-                    .map_err(|e: <Hc as ChainExt>::MsgError| QueueError::Retry(Box::new(e)))
-                    .map(|()| QueueMsg::Noop)
+                .with_chain(
+                    &msg.chain_id,
+                    move |c| async move { msg.t.handle(&c).await },
+                )
+                .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                .await
+                .map_err(|e: <Hc as ChainExt>::MsgError| QueueError::Retry(Box::new(e)))
+                .map(|()| noop())
             }
         }
     }

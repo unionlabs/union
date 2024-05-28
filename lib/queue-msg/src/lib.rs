@@ -1,4 +1,5 @@
 #![feature(trait_alias, extract_if)]
+// #![warn(clippy::large_futures, clippy::large_stack_frames)]
 
 use std::{
     collections::VecDeque,
@@ -208,6 +209,12 @@ pub fn void<T: QueueMessageTypes>(t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Void(Box::new(t.into()))
 }
 
+#[inline]
+#[must_use = "constructing an instruction has no effect"]
+pub fn noop<T: QueueMessageTypes>() -> QueueMsg<T> {
+    QueueMsg::Noop
+}
+
 pub trait QueueMsgTypesTraits = Debug
     + Clone
     + PartialEq
@@ -364,7 +371,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                     Ok(msg.handle(store, depth + 1).await?.map(|msg| match msg {
                         QueueMsg::Data(data) => {
                             tracing::debug!(data = %serde_json::to_string(&data).unwrap(), "voiding data");
-                            QueueMsg::Noop
+                            noop()
                         }
                         msg => void(msg),
                     }))
@@ -448,37 +455,37 @@ mod tests {
 
     impl HandleEffect<UnitMessageTypes> for () {
         async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+            Ok(noop())
         }
     }
 
     impl HandleEvent<UnitMessageTypes> for () {
         fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+            Ok(noop())
         }
     }
 
     impl HandleData<UnitMessageTypes> for () {
         fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+            Ok(noop())
         }
     }
 
     impl HandleFetch<UnitMessageTypes> for () {
         async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+            Ok(noop())
         }
     }
 
     impl HandleWait<UnitMessageTypes> for () {
         async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+            Ok(noop())
         }
     }
 
     impl HandleAggregate<UnitMessageTypes> for () {
         fn handle(self, _: VecDeque<()>) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
+            Ok(noop())
         }
     }
 
@@ -629,22 +636,22 @@ mod tests {
                     seq([fetch(()), fetch(()), effect(())]),
                     seq([fetch(()), repeat(None, fetch(()))]),
                     seq([fetch(()), repeat(None, fetch(()))]),
-                    QueueMsg::Noop,
+                    noop(),
                 ],
                 vec_deque![
                     seq([fetch(()), repeat(None, fetch(()))]),
                     seq([fetch(()), repeat(None, fetch(()))]),
-                    QueueMsg::Noop,
+                    noop(),
                     seq([fetch(()), effect(())]),
                 ],
                 vec_deque![
                     seq([fetch(()), repeat(None, fetch(()))]),
-                    QueueMsg::Noop,
+                    noop(),
                     seq([fetch(()), effect(())]),
                     repeat(None, fetch(())),
                 ],
                 vec_deque![
-                    QueueMsg::Noop,
+                    noop(),
                     seq([fetch(()), effect(())]),
                     repeat(None, fetch(())),
                     repeat(None, fetch(())),
@@ -668,7 +675,7 @@ mod tests {
                 vec_deque![
                     seq([fetch(()), repeat(None, fetch(()))]),
                     seq([fetch(()), repeat(None, fetch(()))]),
-                    QueueMsg::Noop,
+                    noop(),
                 ],
             ],
         )

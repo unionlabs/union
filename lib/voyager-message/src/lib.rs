@@ -1,5 +1,6 @@
 #![feature(min_exhaustive_patterns)]
 #![allow(clippy::large_enum_variant)]
+#![warn(clippy::large_futures)]
 
 use std::{collections::VecDeque, fmt::Debug, str::FromStr};
 
@@ -9,7 +10,7 @@ use chain_utils::{
     wasm::Wasm, Chains,
 };
 use queue_msg::{
-    event, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
+    event, noop, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
     HandleWait, QueueError, QueueMessageTypes, QueueMsg,
 };
 use relay_message::RelayMessageTypes;
@@ -81,7 +82,7 @@ impl FromQueueMsg<RelayMessageTypes> for VoyagerMessageTypes {
                 receiver: VoyagerAggregate::Relay(receiver),
             },
             QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
-            QueueMsg::Noop => QueueMsg::Noop,
+            QueueMsg::Noop => noop(),
         }
     }
 }
@@ -124,7 +125,7 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
                 receiver: VoyagerAggregate::Block(receiver),
             },
             QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
-            QueueMsg::Noop => QueueMsg::Noop,
+            QueueMsg::Noop => noop(),
         }
     }
 }
@@ -143,7 +144,7 @@ impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
         Ok(match self {
             Self::Relay(msg) => {
                 <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    msg.handle(store).await?,
+                    Box::pin(msg.handle(store)).await?,
                 )
             }
         })
@@ -470,7 +471,7 @@ impl HandleFetch<VoyagerMessageTypes> for VoyagerFetch {
             }
             Self::Relay(fetch) => {
                 <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    fetch.handle(store).await?,
+                    Box::pin(fetch.handle(store)).await?,
                 )
             }
         })

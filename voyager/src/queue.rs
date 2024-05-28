@@ -268,11 +268,11 @@ impl Voyager {
         for i in 0..self.num_workers {
             tracing::info!("spawning worker {i}");
 
-            let reactor = Engine::new(self.chains.clone());
+            let engine = Engine::new(self.chains.clone());
             let mut q = self.queue.clone();
 
-            join_set.spawn(async move {
-                reactor
+            join_set.spawn(Box::pin(async move {
+                engine
                     .run(&mut q)
                     .try_for_each(|data| async move {
                         tracing::info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
@@ -280,7 +280,7 @@ impl Voyager {
                         Ok(())
                     })
                     .await
-            });
+            }));
         }
 
         let errs = vec![];

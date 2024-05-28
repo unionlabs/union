@@ -20,7 +20,7 @@ use futures::StreamExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, queue_msg, QueueMsg,
+    conc, data, fetch, noop, queue_msg, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -135,7 +135,7 @@ where
 
     if from_block == to_block {
         tracing::debug!(%from_block, %to_block, %from_slot, %to_slot, "beacon block range is empty");
-        QueueMsg::Noop
+        noop()
     } else {
         tracing::debug!(%from_block, %to_block, "fetching block range");
         // REVIEW: Surely transactions and events can be fetched in parallel?
@@ -162,7 +162,7 @@ where
 
                 match IBCHandlerEvents::decode_log(&log.into()) {
                     Ok(event) => {
-                        tracing::info!(?event, "found IBCHandler event");
+                        tracing::debug!(?event, "found IBCHandler event");
                         Some(mk_aggregate_event(c, event, event_height, tx_hash).await)
                     }
                     Err(e) => {
@@ -482,7 +482,7 @@ where
                 },
             ))
         }
-        IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => QueueMsg::Noop,
+        IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => noop(),
         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
             ClientUpdatedFilter {
                 client_id,
@@ -539,8 +539,8 @@ where
                 raw_event,
             )
         }
-        IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => QueueMsg::Noop,
-        IBCHandlerEvents::OwnableEvent(_) => QueueMsg::Noop,
+        IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => noop(),
+        IBCHandlerEvents::OwnableEvent(_) => noop(),
     }
 }
 

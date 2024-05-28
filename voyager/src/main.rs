@@ -8,8 +8,15 @@
 )]
 
 use std::{
-    error::Error, ffi::OsString, fmt::Debug, fs::read_to_string, iter, marker::PhantomData,
-    process::ExitCode, sync::Arc,
+    error::Error,
+    ffi::OsString,
+    fmt::{Debug, Write},
+    fs::read_to_string,
+    iter,
+    marker::PhantomData,
+    mem::size_of,
+    process::ExitCode,
+    sync::Arc,
 };
 
 use chain_utils::{
@@ -71,9 +78,9 @@ pub mod config;
 
 pub mod queue;
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() -> ExitCode {
+fn main() -> ExitCode {
     let args = AppArgs::parse();
+
     match args.log_format {
         cli::LogFormat::Text => {
             tracing_subscriber::fmt()
@@ -88,20 +95,24 @@ async fn main() -> ExitCode {
         }
     }
 
-    match do_main(args).await {
+    let res = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(args.stack_size)
+        .build()
+        .unwrap()
+        .block_on(do_main(args));
+
+    match res {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
-            // TODO: Clean this up, it sucks I know
+            let errs = iter::successors(err.source(), |e| (*e).source())
+                .enumerate()
+                .fold(format!("0: {err}\n"), |mut acc, (i, e)| {
+                    writeln!(acc, "{}: {e}", i + 1).unwrap();
+                    acc
+                });
 
-            let e = err.to_string().replace('\n', "\n\t");
-
-            eprintln!("Error:\n\t{e}");
-
-            for e in iter::successors(err.source(), |e| (*e).source()) {
-                let e = e.to_string().replace('\n', "\n\t");
-
-                eprintln!("Caused by:\n\t{e}");
-            }
+            eprintln!("{errs}");
 
             ExitCode::FAILURE
         }
@@ -1033,4 +1044,22 @@ fn mk_client_id<Hc: LightClientType<Tr>, Tr: Chain>(sequence: u64) -> ClientIdOf
     )
     .parse()
     .unwrap()
+}
+
+#[tokio::test]
+async fn size() {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
+    dbg!(size_of::<QueueMsg<VoyagerMessageTypes>>());
+
+    let mut msg: QueueMsg<VoyagerMessageTypes> =
+        seq([seq([seq([seq([seq([seq([seq([seq([seq([seq(
+            [seq([seq([seq([seq([seq([queue_msg::noop()])])])])])],
+        )])])])])])])])])]);
+
+    msg.handle(&chains_from_config(Default::default()).await.unwrap(), 0)
+        .await
+        .unwrap();
 }
