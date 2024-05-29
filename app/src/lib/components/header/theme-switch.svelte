@@ -9,7 +9,7 @@ import { Button } from "$lib/components/ui/button/index.ts"
   size="icon"
   variant="outline"
   on:click={toggleMode}
-  class="outline-none border-none hover:bg-transparent"
+  class="outline-none border-none hover:bg-transparent draft"
 >
   <Sun class="size-[1.3rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
   <Moon

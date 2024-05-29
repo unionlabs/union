@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { goto } from "$app/navigation"
+import { cn } from "$lib/utilities/shadcn"
 import Smile from "virtual:icons/lucide/smile"
 import Table from "virtual:icons/lucide/table"
 import Brain from "virtual:icons/lucide/brain"
@@ -38,8 +39,8 @@ const onInputChange = (event: InputEvent) =>
   }, 1_000)(event)
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-[475px]">
-  <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+<div class="relative mr-auto flex-1 w-full max-w-[485px]">
+  <Search class="absolute left-2.5 top-3 size-4 text-muted-foreground" />
   <Input
     type="search"
     name="search"
@@ -48,11 +49,14 @@ const onInputChange = (event: InputEvent) =>
     autocomplete="off"
     spellcheck="false"
     autocapitalize="none"
-    placeholder="Search..."
+    placeholder="Search…"
     on:click={onInputClick}
     bind:value={searchInput}
     on:input={onInputChange}
-    class="w-full rounded-lg bg-background pl-8 self-stretch lowercase border-[1px] bprder-[#fafafa25]/10"
+    class={cn(
+      "w-full rounded-md bg-background pl-8 self-stretch lowercase border-[1px] border-input focus-visible:border-secondary",
+      'shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50'
+    )}
   />
   <kbd
     class="absolute right-2.5 top-2.5 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"

@@ -120,6 +120,7 @@ export default (<Config>{
         28: "7rem"
       }),
       spacing: _ => ({
+        2.75: "0.6875rem",
         4.5: "1.125rem",
         5.5: "1.375rem",
         18: "4.5rem",

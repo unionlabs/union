@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.ts";
-  import Chevron from "./chevron.svelte"
-  import type { PageData } from "../$types";
+import { Button } from "$lib/components/ui/button/index.ts"
+import Chevron from "./chevron.svelte"
+import type { PageData } from "../$types"
 
-  export let selectedChain: PageData["chains"][number] | undefined; 
-  export let dialogOpen: boolean;
+export let selectedChain: PageData["chains"][number] | undefined
+export let dialogOpen: boolean
 </script>
 
 <Button

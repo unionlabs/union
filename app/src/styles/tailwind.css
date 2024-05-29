@@ -5,20 +5,40 @@
 @tailwind base;
 @tailwind utilities;
 @tailwind components;
-/* @tailwind variants; */
 
 @layer components {
   .min-size-full {
     min-width: 100%;
     min-height: 100%;
   }
+  
   .min-size-min {
     min-width: min-content;
     min-height: min-content;
   }
+  
+  .max-size-full {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .max-size-min {
+    max-width: min-content;
+    max-height: min-content;
+  }
+  
   .size-screen {
     width: 100vw;
     height: 100vh;
+  }
+
+  .draft {
+    width: 0;
+    height: 0;
+    opacity: 0;
+    display: none;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 
