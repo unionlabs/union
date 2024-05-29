@@ -67,14 +67,14 @@ file-types       = ["html"]
 language-servers = ["vscode-html-language-server", "emmet-lsp", "tailwindcss-ls"]
 name             = "html"
 roots            = [".git", "tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
-scope            = "text.html.basic"
+scope            = "source.html"
 
-[[language]]
-file-types      = ["css", "html", "svelte", "astro"]
-injection-regex = "(postcss|css|html)"
-name            = "tailwindcss"
-roots           = ["tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
-scope           = "source.css"
+# [[language]]
+# file-types      = ["css", "html", "svelte", "astro"]
+# injection-regex = "(postcss|css)"
+# name            = "tailwindcss"
+# roots           = ["tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
+# scope           = "source.css"
 
 [[language]]
 auto-format      = true
