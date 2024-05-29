@@ -13,6 +13,7 @@ workspace = true
 bech32             = "0.9.1"
 block-message      = { workspace = true }
 chain-utils        = { workspace = true }
+chrono             = {workspace = true, features = ["serde"] }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 contracts          = { workspace = true }
 cosmwasm-std       = { version = "2.0.0", features = ["stargate", "cosmwasm_1_3"] }
@@ -25,7 +26,7 @@ reqwest            = { version = "0.11", features = ["json"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
-sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }
+sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "chrono"] }
 tendermint         = { workspace = true }
 tendermint-proto   = { workspace = true }
 tendermint-rpc     = { workspace = true, features = ["http-client", "websocket-client"] }

@@ -3,10 +3,12 @@ use std::fs::read_to_string;
 use clap::Parser;
 use config::Config;
 use context::{ Context, IbcTransfer, TransferDirection };
+use sqlx::PgPool;
 
 pub mod config;
 pub mod context;
 pub mod datadog;
+pub mod sql_helper;
 use std::ffi::OsString;
 
 use tokio::{ signal, time::{ interval, Duration } };
@@ -17,12 +19,23 @@ pub struct AppArgs {
     /// The path to the configuration file.
     #[arg(long, short = 'c', global = true, default_value = "transfer-test-service-config.json")]
     pub config: OsString,
+
+    /// The database URL
+    #[arg(
+        long,
+        short = 'd',
+        global = true,
+        default_value = "postgres://user:password@localhost/dbname"
+    )]
+    pub database_url: String,
 }
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     tracing_subscriber::fmt::init();
     let args = AppArgs::parse();
+
+    // let pool = PgPool::connect(&args.database_url).await.unwrap();
 
     let transfer_test_config: Config = serde_json
         ::from_str(&read_to_string(args.config).unwrap())
@@ -103,7 +116,7 @@ async fn main() {
     }
 
     // Start packet monitoring task
-    // context.start_packet_monitoring().await;
+    context.start_packet_monitoring().await;
 
     // Keep the main task alive to allow other tasks to run
     signal::ctrl_c().await.unwrap();

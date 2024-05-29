@@ -7,7 +7,10 @@ use std::{
     time::{ SystemTime, UNIX_EPOCH },
 };
 
+use chrono::{ DateTime, Local, Utc };
 use bech32::FromBase32;
+use serde_json::{ Value as JsonValue, from_value, to_value };
+
 use chain_utils::{ cosmos_sdk::CosmosSdkChainExt, ethereum::Ethereum };
 // use tendermint::abci::Event as TendermintEvent;
 use ethers::providers::{ Middleware, ProviderError };
@@ -23,6 +26,8 @@ use tendermint_rpc::{
 use tokio::{ sync::Mutex, time::{ interval, Duration } };
 use ucs01_relay::msg::{ ExecuteMsg, TransferMsg };
 use unionlabs::{
+    ClientType,
+    events,
     cosmos::base::coin::Coin,
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     events::IbcEvent,
@@ -32,17 +37,12 @@ use unionlabs::{
     traits::Chain,
 };
 
-use crate::{ config::{ Config, DatadogData }, datadog::{ log_builder, send_log_to_datadog } }; //, events::{ EventType } };
+use crate::{
+    config::{ Config, DatadogData, PacketStatus },
+    datadog::{ log_builder, send_log_to_datadog },
+    sql_helper::insert_or_update_packet_status,
+}; //, events::{ EventType } };
 
-// Define a struct to store events for a packet sequence
-#[derive(Debug, Clone)]
-struct PacketStatus {
-    send_packet: Option<IbcEvent<ClientId, String, String>>,
-    recv_packet: Option<IbcEvent<ClientId, String, String>>,
-    write_ack: Option<IbcEvent<ClientId, String, String>>,
-    acknowledge_packet: Option<IbcEvent<ClientId, String, String>>,
-    last_update: SystemTime,
-}
 #[derive(Clone)]
 pub struct Context {
     pub output_file: String,
@@ -118,7 +118,12 @@ impl Context {
         }
     }
 
-    pub async fn listen_tendermint(&self, tm_client: WebSocketClient) {
+    pub async fn listen_tendermint(
+        &self,
+        tm_client: WebSocketClient,
+        source_chain: &str,
+        target_chain: &str
+    ) {
         let mut subs = tm_client
             .subscribe(tendermint_rpc::query::EventType::Tx.into()).await
             .unwrap();
@@ -127,7 +132,7 @@ impl Context {
                 Some(event_result) = subs.next() => {
                     match event_result {
                         Ok(event) => {
-                            self.handle_tendermint_tx_event(event).await;
+                            self.handle_tendermint_tx_event(event, source_chain, target_chain).await;
                         }
                         Err(e) => {
                             tracing::error!("Error while receiving event: {:?}", e);
@@ -141,10 +146,10 @@ impl Context {
 
     pub async fn listen(&self, source_chain: &str, target_chain: &str) {
         tokio::select! {
-            _ = self.listen_tendermint(self.osmosis.tm_client.clone()) => {
+            _ = self.listen_tendermint(self.osmosis.tm_client.clone(), source_chain, target_chain) => {
                 println!("Listening for events on Osmosis.");
             },
-            _ = self.listen_tendermint(self.union.tm_client.clone()) => {
+            _ = self.listen_tendermint(self.union.tm_client.clone(), source_chain, target_chain) => {
                 println!("Listening for events on Union.");
             },
         }
@@ -223,7 +228,12 @@ impl Context {
         }
     }
 
-    async fn handle_tendermint_tx_event(&self, event: Event) {
+    async fn handle_tendermint_tx_event(
+        &self,
+        event: Event,
+        source_chain: &str,
+        target_chain: &str
+    ) {
         match event.data {
             EventData::Tx { tx_result, .. } => {
                 for event in tx_result.result.events {
@@ -245,6 +255,12 @@ impl Context {
                         continue;
                     };
                     let unwrapped = my_event.unwrap();
+                    /*
+                    raw_log: 'failed to execute message; message index: 0: type: ucs01_relay::state::ChannelInfo;
+  key: [00, 0C, 63, 68, 61, 6E, 6E, 65, 6C, 5F, 69, 6E, 66, 6F, 63, 68, 61, 6E, 6E,
+  65, 6C, 2D, 30] not found: execute wasm contract failed'
+
+                     */
                     let packet_sequence = match unwrapped {
                         IbcEvent::SendPacket(ref e) => Some(e.packet_sequence),
                         IbcEvent::RecvPacket(ref e) => Some(e.packet_sequence),
@@ -252,34 +268,74 @@ impl Context {
                         IbcEvent::AcknowledgePacket(ref e) => Some(e.packet_sequence),
                         _ => None,
                     };
+                    println!("Packet sequence: {:?}", packet_sequence);
                     if let Some(sequence) = packet_sequence {
                         let mut packet_statuses = self.packet_statuses.lock().await;
-                        let status = packet_statuses.entry(sequence.get()).or_insert(PacketStatus {
-                            send_packet: None,
-                            recv_packet: None,
-                            write_ack: None,
-                            acknowledge_packet: None,
-                            last_update: SystemTime::now(),
-                        });
+                        // let status = packet_statuses.entry(sequence.get()).or_insert(PacketStatus {
+                        //     send_packet: None,
+                        //     recv_packet: None,
+                        //     write_ack: None,
+                        //     acknowledge_packet: None,
+                        //     last_update: SystemTime::now(),
+                        // });
                         // status.last_update = SystemTime::now();
+                        let status = packet_statuses
+                            .entry(sequence.get())
+                            .or_insert_with(||
+                                PacketStatus::new(
+                                    source_chain,
+                                    target_chain,
+                                    sequence.get().try_into().unwrap()
+                                )
+                            );
+
                         match unwrapped {
                             IbcEvent::SendPacket(ref e) => {
-                                status.send_packet = Some(IbcEvent::SendPacket(e.clone()));
-                                status.last_update = SystemTime::now();
+                                status.send_packet = Some(
+                                    to_value(
+                                        IbcEvent::<ClientId, ClientType, ClientId>::SendPacket(
+                                            e.clone()
+                                        )
+                                    ).expect("Serialization failed")
+                                );
+                                status.last_update = chrono::Utc::now();
+                                println!("SendPacket event: {:?}\n", e);
                             }
                             IbcEvent::RecvPacket(ref e) => {
-                                status.recv_packet = Some(IbcEvent::RecvPacket(e.clone()));
+                                status.recv_packet = Some(
+                                    to_value(
+                                        IbcEvent::<ClientId, ClientType, ClientId>::RecvPacket(
+                                            e.clone()
+                                        )
+                                    ).expect("Serialization failed")
+                                );
                             }
                             IbcEvent::WriteAcknowledgement(ref e) => {
-                                status.write_ack = Some(IbcEvent::WriteAcknowledgement(e.clone()));
+                                status.write_ack = Some(
+                                    to_value(
+                                        IbcEvent::<
+                                            ClientId,
+                                            ClientType,
+                                            ClientId
+                                        >::WriteAcknowledgement(e.clone())
+                                    ).expect("Serialization failed")
+                                );
                             }
                             IbcEvent::AcknowledgePacket(ref e) => {
                                 status.acknowledge_packet = Some(
-                                    IbcEvent::AcknowledgePacket(e.clone())
+                                    to_value(
+                                        IbcEvent::<
+                                            ClientId,
+                                            ClientType,
+                                            ClientId
+                                        >::AcknowledgePacket(e.clone())
+                                    ).expect("Serialization failed")
                                 );
                             }
                             _ => {}
                         }
+
+                        // insert_or_update_packet_status(pool, status.clone()).await.unwrap();
                     }
 
                     match unwrapped {
@@ -321,7 +377,7 @@ impl Context {
                 let mut sequences_to_remove = Vec::new();
 
                 let mut packet_statuses_locked = packet_statuses.lock().await;
-                let now = SystemTime::now();
+                let now = chrono::Utc::now();
                 for (sequence, status) in packet_statuses_locked.iter() {
                     println!("Looking at sequence: {}", sequence);
                     if status.send_packet.is_none() {
@@ -330,12 +386,18 @@ impl Context {
                         continue; // Skip if SendPacket has not been received
                     }
 
-                    let elapsed = now.duration_since(status.last_update).unwrap();
+                    let elapsed = (now - status.last_update).num_seconds();
+
                     let recv_packet_missing = status.recv_packet.is_none();
                     let write_ack_missing = status.write_ack.is_none();
                     let acknowledge_packet_missing = status.acknowledge_packet.is_none();
+
                     let ack_failed = status.write_ack.as_ref().map_or(false, |event| {
-                        if let IbcEvent::WriteAcknowledgement(ref ack_event) = event {
+                        if
+                            let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) = from_value::<
+                                IbcEvent<ClientId, ClientType, ClientId>
+                            >(event.clone())
+                        {
                             hex_encode(&ack_event.packet_ack_hex) == "00"
                         } else {
                             false
@@ -348,13 +410,13 @@ impl Context {
                         acknowledge_packet_missing ||
                         ack_failed
                     {
-                        if elapsed > Duration::from_secs(10) {
+                        if elapsed > 10 {
                             statuses_to_log.push((*sequence, status.clone()));
                         } else if ack_failed {
                             println!("Ack failed.");
                             statuses_to_log.push((*sequence, status.clone()));
                         } else {
-                            println!("time elapsed: {:?}", elapsed.as_secs());
+                            println!("time elapsed: {:?}", elapsed);
                             continue;
                         }
                     } else {
@@ -368,16 +430,27 @@ impl Context {
                         "RecvPacket is missing"
                     } else if status.write_ack.is_none() {
                         "WriteAcknowledgement is missing"
-                    } else if
-                        let Some(IbcEvent::WriteAcknowledgement(ref ack_event)) = status.write_ack
-                    {
-                        if hex_encode(&ack_event.packet_ack_hex) == "00" {
-                            "WriteAcknowledgement indicates failure (0x00)"
-                        } else if status.acknowledge_packet.is_none() {
-                            "AcknowledgePacket is missing"
+                    } else if let Some(ref json_val) = status.write_ack {
+                        if
+                            let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) = from_value::<
+                                IbcEvent<ClientId, ClientType, ClientId>
+                            >(json_val.clone())
+                        {
+                            if hex_encode(&ack_event.packet_ack_hex) == "00" {
+                                "WriteAcknowledgement indicates failure (0x00)"
+                            } else {
+                                "Unknown issue"
+                            }
                         } else {
                             "Unknown issue"
                         }
+                        // if hex_encode(&ack_event.packet_ack_hex) == "00" {
+                        //     "WriteAcknowledgement indicates failure (0x00)"
+                        // } else if status.acknowledge_packet.is_none() {
+                        //     "AcknowledgePacket is missing"
+                        // } else {
+                        //     "Unknown issue"
+                        // }
                     } else {
                         "Unknown issue"
                     };
