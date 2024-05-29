@@ -10,20 +10,18 @@ import { routes } from "$lib/components/navigation/index.ts"
 
 <header
   class={cn(
-    'py-3 pr-4 min-w-full w-screen',
+    'py-2 px-4 min-w-full w-screen flex flex-row items-center gap-4',
     'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30',
   )}
 >
-  <Shine depth={4} specularConstant={300} lightColor="#a0ecfd">
-    <Button
-      href="/"
-      variant="link"
-      class=" brightness-75 px-1 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
-    >
-      union
-    </Button>
-  </Shine>
-  <div class="w-full">
+  <Button
+    href="/"
+    variant="link"
+    class="p-0 no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
+  >
+    <img src="/images/logo/union-logo-wide-transparent.svg" alt="Union Logo" class="h-full w-full"/>
+  </Button>
+  <div class="flex-1 p-0 m-0">
     <SearchBar />
   </div>
   <div class="flex flex-row space-x-0 sm:space-x-4 my-auto">
