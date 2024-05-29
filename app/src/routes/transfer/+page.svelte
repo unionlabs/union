@@ -238,7 +238,7 @@ let buttonText = "Send it" satisfies
     <Card.Header
       class="flex flex-row w-full items-center h-10 gap-x-3 mb-3"
     >
-      <Card.Title tag="h1" class="flex-1">Transfer</Card.Title>
+      <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
       <Button
         size="icon"
         type="button"
