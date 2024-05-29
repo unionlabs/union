@@ -8,8 +8,6 @@ import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 
 export let data: LayoutData
 
-let innerWidth = window.innerWidth
-
 let isCollapsed = false
 $: [leftSize, rightSize] = [12, 88]
 
@@ -33,7 +31,7 @@ const onResize: Resizable.PaneProps["onResize"] = (size, _previousSize) => {
 </script>
 
 <main class="flex flex-row flex-1 overflow-y-hidden">
-  <Resizable.PaneGroup direction="horizontal" class="w-full rounded-lg" {onLayoutChange}>
+  <Resizable.PaneGroup direction="horizontal" class="w-full rounded-lg bg-re" {onLayoutChange}>
     <Resizable.Pane
       {onExpand}
       {onResize}
