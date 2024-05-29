@@ -16,6 +16,7 @@ import { queryParameters } from "sveltekit-search-params"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.js"
 import ChainDialog from "./components/chain-dialog.svelte"
+import ChainButton from "./components/chain-button.svelte"
 import ChevronDown from "virtual:icons/lucide/chevron-down"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
@@ -232,19 +233,20 @@ let buttonText = "Send it" satisfies
   <title>Union | Send</title>
 </svelte:head>
 
-<main class="flex justify-center size-full items-start px-0 sm:px-3 max-h-full">
-  <Card.Root class="size-full max-w-[475px] sm:mt-8 p-2 bg-transparent border-none outline-none">
+<main class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8">
+  <Card.Root class="max-w-[475px]">
     <Card.Header
-      class="pt-0.5 px-2 pb-0 flex flex-row w-full justify-between items-start h-10 gap-x-3 mb-3"
+      class="flex flex-row w-full items-center h-10 gap-x-3 mb-3"
     >
-      <Card.Title class="text-2xl font-black mt-1">Transfer</Card.Title>
+      <Card.Title>Transfer</Card.Title>
+      <div class="flex-1"></div>
       <Button
         size="icon"
         type="button"
         variant="ghost"
         title="Ongoing transactions"
         on:click={() => (dialogOpenPast = !dialogOpenPast)}
-        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl ml-auto"
+        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline"
       >
         <Timer class="size-5" />
       </Button>
@@ -252,7 +254,7 @@ let buttonText = "Send it" satisfies
         size="icon"
         variant="ghost"
         on:click={() => (dialogOpenSettings = !dialogOpenSettings)}
-        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline rounded-xl"
+        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline"
       >
         <Settings class="size-5" />
       </Button>
@@ -268,27 +270,7 @@ let buttonText = "Send it" satisfies
         data-transfer-from-section
         class={cn(devBorder, 'w-full pb-0 sm:my-3 mt-2 flex flex-row justify-between')}
       >
-        <Button
-          variant="ghost"
-          data-transfer-from-chain=""
-          on:click={() => (dialogOpenFromChain = !dialogOpenFromChain)}
-          class="flex flex-row justify-between space-x-2 p-2 border-none rounded-sm size-full"
-        >
-          <div class="flex space-x-1.5 h-full">
-            <img
-              src={selectedFromChain?.icon}
-              alt={`${selectedFromChain?.name} logo`}
-              class="size-11 my-auto mr-auto invert dark:invert-0"
-            />
-            <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
-              <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
-                {selectedFromChain?.name}
-              </span>
-              <span class="text-xs text-muted-foreground">{selectedFromChain?.id}</span>
-            </div>
-          </div>
-          <ChevronDown class="-mt-6 size-6 text-accent-foreground/60" />
-        </Button>
+        <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain}/>
 
         <Button
           size="icon"
@@ -299,27 +281,7 @@ let buttonText = "Send it" satisfies
           <ArrowLeftRight class="size-5 dark:text-white" />
         </Button>
 
-        <Button
-          variant="ghost"
-          data-transfer-to-chain=""
-          on:click={() => (dialogOpenToChain = !dialogOpenToChain)}
-          class="flex flex-row justify-between space-x-2 p-2 border-none rounded-sm size-full"
-        >
-          <div class="flex space-x-1.5 h-full">
-            <img
-              src={selectedToChain?.icon}
-              class="size-11 my-auto mr-auto"
-              alt={`${selectedToChain?.name} logo`}
-            />
-            <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
-              <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
-                {selectedToChain?.name}
-              </span>
-              <span class="text-xs text-muted-foreground">{selectedToChain?.id}</span>
-            </div>
-          </div>
-          <ChevronDown class="-mt-6 size-6 text-accent-foreground/60" />
-        </Button>
+        <ChainButton bind:selectedChain={selectedToChain} bind:dialogOpen={dialogOpenToChain}/>
       </div>
       <!-- asset -->
       <div class={cn('size-full mb-auto')}>
@@ -461,7 +423,7 @@ let buttonText = "Send it" satisfies
   {handleChainSelect}
   {chainSearchResults}
   queryParams={$queryParams}
-  dialogOpen={dialogOpenFromChain}
+  bind:dialogOpen={dialogOpenFromChain}
 />
 
 <!-- to-dialog -->
@@ -471,7 +433,7 @@ let buttonText = "Send it" satisfies
   {handleChainSelect}
   {chainSearchResults}
   queryParams={$queryParams}
-  dialogOpen={dialogOpenToChain}
+  bind:dialogOpen={dialogOpenToChain}
 />
 
 <!-- token dialog -->
