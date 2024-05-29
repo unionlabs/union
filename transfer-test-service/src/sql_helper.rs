@@ -1,7 +1,5 @@
-use serde::{ Deserialize, Serialize };
-use sqlx::{ FromRow, PgPool, Postgres, QueryBuilder };
+use sqlx::{ PgPool };
 use crate::config::PacketStatus;
-use std::time::{ SystemTime, UNIX_EPOCH };
 
 pub async fn insert_or_update_packet_status(
     pool: &PgPool,
@@ -33,26 +31,26 @@ pub async fn insert_or_update_packet_status(
 
     Ok(())
 }
-// pub async fn get_packet_statuses(
-//     pool: &PgPool,
-//     source_chain_id: i32,
-//     target_chain_id: i32
-// ) -> Result<Vec<PacketStatus>, sqlx::Error> {
-//     let statuses = sqlx
-//         ::query_as(
-//             PacketStatus,
-//             r#"
-//         SELECT source_chain_id, target_chain_id, sequence_number, send_packet, recv_packet, write_ack, acknowledge_packet, last_update
-//         FROM packet_statuses
-//         WHERE source_chain_id = $1 AND target_chain_id = $2
-//         "#,
-//             source_chain_id,
-//             target_chain_id
-//         )
-//         .fetch_all(pool).await?;
-
-//     Ok(statuses)
-// }
+pub async fn create_table_if_not_exists(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx
+        ::query(
+            r#"
+        CREATE TABLE IF NOT EXISTS packet_statuses (
+            source_chain_id INT NOT NULL,
+            target_chain_id INT NOT NULL,
+            sequence_number BIGINT NOT NULL,
+            send_packet JSONB,
+            recv_packet JSONB,
+            write_ack JSONB,
+            acknowledge_packet JSONB,
+            last_update TIMESTAMPTZ,
+            PRIMARY KEY (source_chain_id, target_chain_id, sequence_number)
+        );
+        "#
+        )
+        .execute(pool).await?;
+    Ok(())
+}
 
 pub async fn get_packet_statuses(
     pool: &PgPool,
@@ -71,6 +69,21 @@ pub async fn get_packet_statuses(
         .fetch_all(pool).await?;
 
     Ok(statuses)
+}
+
+pub async fn table_exists(pool: &PgPool, table_name: &str) -> Result<bool, sqlx::Error> {
+    let result: (i64,) = sqlx
+        ::query_as(
+            r#"
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = $1
+        "#
+        )
+        .bind(table_name)
+        .fetch_one(pool).await?;
+
+    Ok(result.0 > 0)
 }
 
 pub async fn delete_packet_status(

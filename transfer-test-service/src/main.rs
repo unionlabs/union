@@ -13,6 +13,8 @@ use std::ffi::OsString;
 
 use tokio::{ signal, time::{ interval, Duration } };
 
+use crate::sql_helper::create_table_if_not_exists; //, events::{ EventType } };
+
 /// Arguments provided to the top-level command.
 #[derive(Debug, Parser, Clone)]
 pub struct AppArgs {
@@ -25,7 +27,7 @@ pub struct AppArgs {
         long,
         short = 'd',
         global = true,
-        default_value = "postgres://user:password@localhost/dbname"
+        default_value = "postgres://postgres:postgrespassword@127.0.0.1:5432/default" //"postgres://user:password@localhost/dbname"
     )]
     pub database_url: String,
 }
@@ -35,15 +37,16 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let args = AppArgs::parse();
 
-    // let pool = PgPool::connect(&args.database_url).await.unwrap();
+    let pool: sqlx::Pool<sqlx::Postgres> = PgPool::connect(&args.database_url).await.unwrap();
 
+    create_table_if_not_exists(&pool).await.unwrap();
     let transfer_test_config: Config = serde_json
         ::from_str(&read_to_string(args.config).unwrap())
         .unwrap();
 
     println!("{}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
     let output = "transfer-test-service.csv";
-    let context = Context::new(transfer_test_config.clone(), output.to_string()).await;
+    let context = Context::new(transfer_test_config.clone(), output.to_string(), pool).await;
 
     // Task to handle listening for events
     for connection in &transfer_test_config.connections {
@@ -54,17 +57,17 @@ async fn main() {
             context_clone.listen(source_chain.as_str(), target_chain.as_str()).await;
         });
     }
-    let context_for_send = context.clone();
 
     // Parse connections from config and spawn tasks for each connection
     for connection in &transfer_test_config.connections {
         let source_chain = connection.source_chain.clone();
         let target_chain = connection.target_chain.clone();
+        let send_packet_interval = connection.send_packet_interval as u64;
         let context_clone = context.clone();
         let transfer_test_config_clone = transfer_test_config.clone();
 
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(60));
+            let mut interval = interval(Duration::from_secs(send_packet_interval));
             loop {
                 interval.tick().await;
 
@@ -108,16 +111,24 @@ async fn main() {
                     }
                 };
 
-                println!("Testing the direction & new func");
-                println!("direction: {:?}", direction);
                 context_clone.send_ibc_transfer(direction).await;
             }
         });
     }
 
     // Start packet monitoring task
-    context.start_packet_monitoring().await;
+    for connection in &transfer_test_config.connections {
+        let source_chain = connection.source_chain.clone();
+        let target_chain = connection.target_chain.clone();
+        let expect_full_circle = connection.expect_full_circle as u64;
+        let context_clone = context.clone();
 
-    // Keep the main task alive to allow other tasks to run
+        context_clone.check_packet_sequences(
+            source_chain.as_str(),
+            target_chain.as_str(),
+            expect_full_circle
+        ).await;
+    }
+
     signal::ctrl_c().await.unwrap();
 }

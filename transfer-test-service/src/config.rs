@@ -1,22 +1,6 @@
 use serde::{ Deserialize, Serialize };
-use sqlx::{ FromRow, PgPool, Postgres, QueryBuilder };
-use std::{
-    collections::HashMap,
-    fs::{ File, OpenOptions },
-    pin::Pin,
-    sync::Arc,
-    time::{ SystemTime, UNIX_EPOCH },
-};
-use chrono::{ DateTime, Local, Utc };
+use sqlx::{ FromRow };
 
-use unionlabs::{
-    cosmos::base::coin::Coin,
-    cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    events::IbcEvent,
-    google::protobuf::any::Any,
-    id::ClientId,
-    tendermint::abci::{ event::Event as TendermintEvent, event_attribute::EventAttribute },
-};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
@@ -45,6 +29,8 @@ pub struct DatadogData {
 pub struct ConnectionPair {
     pub source_chain: String,
     pub target_chain: String,
+    pub send_packet_interval: i32,
+    pub expect_full_circle: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -71,31 +57,34 @@ impl ChainId {
             _ => None,
         }
     }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            ChainId::Union => "union",
+            ChainId::Osmosis => "osmosis",
+            ChainId::Ethereum => "ethereum",
+            // Add other chain mappings as needed
+        }
+    }
+
+    pub fn from_i32(chain_id: &i32) -> &'static str {
+        match chain_id {
+            0 => "union",
+            1 => "osmosis",
+            2 => "ethereum",
+            // Add other chain mappings as needed
+            _ => "unknown",
+        }
+    }
 }
 
-// #[derive(Debug, Serialize, Deserialize, FromRow)]
-// pub struct PacketStatus {
-//     pub id: i32,
-//     pub source_chain_id: i32,
-//     pub target_chain_id: i32,
-//     pub sequence_number: i64,
-//     pub send_packet: Option<serde_json::Value>,
-//     pub recv_packet: Option<serde_json::Value>,
-//     pub write_ack: Option<serde_json::Value>,
-//     pub acknowledge_packet: Option<serde_json::Value>,
-//     pub last_update: SystemTime,
-// }
 // Define a struct to store events for a packet sequence
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct PacketStatus {
-    pub id: i32,
+    // pub id: i32,
     pub source_chain_id: i32,
     pub target_chain_id: i32,
     pub sequence_number: i64,
-    // pub send_packet: Option<IbcEvent<ClientId, String, String>>,
-    // pub recv_packet: Option<IbcEvent<ClientId, String, String>>,
-    // pub write_ack: Option<IbcEvent<ClientId, String, String>>,
-    // pub acknowledge_packet: Option<IbcEvent<ClientId, String, String>>,
     pub send_packet: Option<serde_json::Value>,
     pub recv_packet: Option<serde_json::Value>,
     pub write_ack: Option<serde_json::Value>,
@@ -105,10 +94,9 @@ pub struct PacketStatus {
 impl PacketStatus {
     pub fn new(source_chain_name: &str, target_chain_name: &str, sequence_number: i64) -> Self {
         let source_chain_id = ChainId::from_str(source_chain_name).unwrap() as i32;
-        let target_chain_id = ChainId::from_str(target_chain_name).unwrap() as i32;
+        let target_chain_id: i32 = ChainId::from_str(target_chain_name).unwrap() as i32;
 
         Self {
-            id: 0,
             source_chain_id,
             target_chain_id,
             sequence_number,

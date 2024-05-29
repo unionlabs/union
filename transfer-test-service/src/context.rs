@@ -4,43 +4,34 @@ use std::{
     fs::{ File, OpenOptions },
     pin::Pin,
     sync::Arc,
-    time::{ SystemTime, UNIX_EPOCH },
+    time::{ SystemTime },
 };
 
-use chrono::{ DateTime, Local, Utc };
 use bech32::FromBase32;
-use serde_json::{ Value as JsonValue, from_value, to_value };
-
 use chain_utils::{ cosmos_sdk::CosmosSdkChainExt, ethereum::Ethereum };
+use chrono::{ Utc };
 // use tendermint::abci::Event as TendermintEvent;
-use ethers::providers::{ Middleware, ProviderError };
+// use ethers::providers::{ Middleware, ProviderError };
 use futures::StreamExt;
 use hex::encode as hex_encode;
-use queue_msg::Queue;
-use tendermint_rpc::{
-    event::{ Event, EventData, TxInfo },
-    Client,
-    SubscriptionClient,
-    WebSocketClient,
-};
+use serde_json::{ from_value, to_value };
+use tendermint_rpc::{ event::{ Event, EventData }, SubscriptionClient, WebSocketClient };
 use tokio::{ sync::Mutex, time::{ interval, Duration } };
 use ucs01_relay::msg::{ ExecuteMsg, TransferMsg };
 use unionlabs::{
-    ClientType,
-    events,
     cosmos::base::coin::Coin,
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     events::IbcEvent,
     google::protobuf::any::Any,
     id::ClientId,
     tendermint::abci::{ event::Event as TendermintEvent, event_attribute::EventAttribute },
-    traits::Chain,
+    ClientType,
 };
 
 use crate::{
-    config::{ Config, DatadogData, PacketStatus },
+    config::{ ChainId, Config, DatadogData, PacketStatus },
     datadog::{ log_builder, send_log_to_datadog },
-    sql_helper::insert_or_update_packet_status,
+    sql_helper::{ delete_packet_status, get_packet_statuses, insert_or_update_packet_status },
 }; //, events::{ EventType } };
 
 #[derive(Clone)]
@@ -55,6 +46,7 @@ pub struct Context {
     pub osmosis_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
     pub datadog_data: DatadogData,
     pub packet_statuses: Arc<Mutex<HashMap<u64, PacketStatus>>>,
+    pub pool: sqlx::Pool<sqlx::Postgres>,
 }
 
 // Define the IbcTransfer trait
@@ -84,8 +76,69 @@ pub enum TransferDirection {
     },
 }
 
+pub trait TendermintClient {
+    fn tm_client(&self) -> &WebSocketClient;
+}
+
+impl TendermintClient for chain_utils::cosmos::Cosmos {
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
+    }
+}
+
+impl TendermintClient for chain_utils::union::Union {
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
+    }
+}
+
+pub trait ChainListener: Sync + Send {
+    fn listen<'a>(
+        &'a self,
+        context: &'a Context,
+        source_chain: &'a str,
+        target_chain: &'a str
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
+}
+
+impl<T> ChainListener for T where T: TendermintClient + Sync + Send + 'static {
+    fn listen<'a>(
+        &'a self,
+        context: &'a Context,
+        source_chain: &'a str,
+        target_chain: &'a str
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move {
+            println!("Listening for events on {}.", source_chain);
+            let mut subs = self
+                .tm_client()
+                .subscribe(tendermint_rpc::query::EventType::Tx.into()).await
+                .unwrap();
+            loop {
+                tokio::select! {
+                    Some(event_result) = subs.next() => {
+                        match event_result {
+                            Ok(event) => {
+                                context.handle_tendermint_tx_event(event, source_chain, target_chain).await;
+                            }
+                            Err(e) => {
+                                tracing::error!("Error while receiving event: {:?}", e);
+                            }
+                        }
+                    },
+                    else => break,
+                }
+            }
+        })
+    }
+}
+
 impl Context {
-    pub async fn new(transfer_test_config: Config, output: String) -> Context {
+    pub async fn new(
+        transfer_test_config: Config,
+        output: String,
+        pool: sqlx::Pool<sqlx::Postgres>
+    ) -> Context {
         let writer = OpenOptions::new().create(true).append(true).open(output.clone()).unwrap();
         tracing::debug!("Created writer.");
         let union = chain_utils::union::Union
@@ -101,8 +154,6 @@ impl Context {
         //     .unwrap();
         // tracing::debug!("Created Ethereum instance.");
 
-        let chain_id = osmosis.chain_id();
-
         let datadog_data = transfer_test_config.datadog_data.clone();
         Context {
             output_file: output,
@@ -115,6 +166,7 @@ impl Context {
             osmosis_txs: Arc::new(Mutex::new(HashMap::new())),
             datadog_data,
             packet_statuses: Arc::new(Mutex::new(HashMap::new())),
+            pool,
         }
     }
 
@@ -144,15 +196,19 @@ impl Context {
         }
     }
 
-    pub async fn listen(&self, source_chain: &str, target_chain: &str) {
-        tokio::select! {
-            _ = self.listen_tendermint(self.osmosis.tm_client.clone(), source_chain, target_chain) => {
-                println!("Listening for events on Osmosis.");
-            },
-            _ = self.listen_tendermint(self.union.tm_client.clone(), source_chain, target_chain) => {
-                println!("Listening for events on Union.");
-            },
+    pub fn get_chain_listener(&self, chain_id: &ChainId) -> &dyn ChainListener {
+        match chain_id {
+            ChainId::Union => &self.union as &dyn ChainListener,
+            ChainId::Osmosis => &self.osmosis as &dyn ChainListener,
+            // Add other chain mappings as needed
+            ChainId::Ethereum => unimplemented!("Ethereum listener is not implemented yet"),
         }
+    }
+
+    pub async fn listen(&self, source_chain: &str, target_chain: &str) {
+        let source_chain_id = ChainId::from_str(source_chain).expect("Invalid source chain");
+        let listener = self.get_chain_listener(&source_chain_id);
+        listener.listen(self, source_chain, target_chain).await;
     }
 
     pub async fn send_ibc_transfer_cosmos_to_cosmos(&self, direction: &TransferDirection) {
@@ -166,7 +222,14 @@ impl Context {
                 denom,
                 amount,
             } => {
-                println!("Sending IBC transfer from {} to {}.", source_chain, target_chain);
+                let time_now: SystemTime = SystemTime::now();
+                println!(
+                    "TIME: {:?}\tSending IBC transfer from {} to {}.",
+                    time_now,
+                    source_chain,
+                    target_chain
+                );
+
                 let (_hrp, data, _variant) = bech32
                     ::decode(&receiver_bech32)
                     .expect("Invalid Bech32 address");
@@ -183,8 +246,6 @@ impl Context {
                     memo: uuid.to_string(),
                     timeout: None,
                 });
-
-                let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 
                 let transfer_msg_bytes = serde_json::to_string(&transfer_msg).unwrap().into_bytes();
 
@@ -255,12 +316,7 @@ impl Context {
                         continue;
                     };
                     let unwrapped = my_event.unwrap();
-                    /*
-                    raw_log: 'failed to execute message; message index: 0: type: ucs01_relay::state::ChannelInfo;
-  key: [00, 0C, 63, 68, 61, 6E, 6E, 65, 6C, 5F, 69, 6E, 66, 6F, 63, 68, 61, 6E, 6E,
-  65, 6C, 2D, 30] not found: execute wasm contract failed'
 
-                     */
                     let packet_sequence = match unwrapped {
                         IbcEvent::SendPacket(ref e) => Some(e.packet_sequence),
                         IbcEvent::RecvPacket(ref e) => Some(e.packet_sequence),
@@ -268,26 +324,22 @@ impl Context {
                         IbcEvent::AcknowledgePacket(ref e) => Some(e.packet_sequence),
                         _ => None,
                     };
-                    println!("Packet sequence: {:?}", packet_sequence);
                     if let Some(sequence) = packet_sequence {
                         let mut packet_statuses = self.packet_statuses.lock().await;
-                        // let status = packet_statuses.entry(sequence.get()).or_insert(PacketStatus {
-                        //     send_packet: None,
-                        //     recv_packet: None,
-                        //     write_ack: None,
-                        //     acknowledge_packet: None,
-                        //     last_update: SystemTime::now(),
-                        // });
-                        // status.last_update = SystemTime::now();
+                        let mut sequences_to_remove: Vec<u64> = Vec::new();
+
                         let status = packet_statuses
                             .entry(sequence.get())
-                            .or_insert_with(||
+                            .or_insert_with(|| {
                                 PacketStatus::new(
                                     source_chain,
                                     target_chain,
                                     sequence.get().try_into().unwrap()
                                 )
-                            );
+                            });
+
+                        let mut should_insert_or_update = true;
+                        let mut issue = String::new();
 
                         match unwrapped {
                             IbcEvent::SendPacket(ref e) => {
@@ -299,63 +351,114 @@ impl Context {
                                     ).expect("Serialization failed")
                                 );
                                 status.last_update = chrono::Utc::now();
-                                println!("SendPacket event: {:?}\n", e);
+                                println!("SendPacket event. Sequence: {}", sequence);
                             }
                             IbcEvent::RecvPacket(ref e) => {
-                                status.recv_packet = Some(
-                                    to_value(
-                                        IbcEvent::<ClientId, ClientType, ClientId>::RecvPacket(
-                                            e.clone()
-                                        )
-                                    ).expect("Serialization failed")
-                                );
+                                if status.send_packet.is_none() {
+                                    issue = "RecvPacket received without SendPacket".to_string();
+                                } else {
+                                    status.recv_packet = Some(
+                                        to_value(
+                                            IbcEvent::<ClientId, ClientType, ClientId>::RecvPacket(
+                                                e.clone()
+                                            )
+                                        ).expect("Serialization failed")
+                                    );
+                                    println!("RecvPacket event. Sequence: {}", sequence);
+                                }
                             }
                             IbcEvent::WriteAcknowledgement(ref e) => {
-                                status.write_ack = Some(
-                                    to_value(
-                                        IbcEvent::<
-                                            ClientId,
-                                            ClientType,
-                                            ClientId
-                                        >::WriteAcknowledgement(e.clone())
-                                    ).expect("Serialization failed")
-                                );
+                                if status.recv_packet.is_none() {
+                                    issue =
+                                        "WriteAcknowledgement received without RecvPacket".to_string();
+                                } else {
+                                    status.write_ack = Some(
+                                        to_value(
+                                            IbcEvent::<
+                                                ClientId,
+                                                ClientType,
+                                                ClientId
+                                            >::WriteAcknowledgement(e.clone())
+                                        ).expect("Serialization failed")
+                                    );
+                                    println!("WriteAcknowledgement event. Sequence: {}", sequence);
+                                }
                             }
                             IbcEvent::AcknowledgePacket(ref e) => {
-                                status.acknowledge_packet = Some(
-                                    to_value(
-                                        IbcEvent::<
-                                            ClientId,
-                                            ClientType,
-                                            ClientId
-                                        >::AcknowledgePacket(e.clone())
-                                    ).expect("Serialization failed")
-                                );
+                                if status.write_ack.is_none() {
+                                    issue =
+                                        "AcknowledgePacket received without WriteAcknowledgement".to_string();
+                                } else {
+                                    status.acknowledge_packet = Some(
+                                        to_value(
+                                            IbcEvent::<
+                                                ClientId,
+                                                ClientType,
+                                                ClientId
+                                            >::AcknowledgePacket(e.clone())
+                                        ).expect("Serialization failed")
+                                    );
+                                    println!("AcknowledgePacket event. Sequence: {}", sequence);
+                                    delete_packet_status(
+                                        &self.pool,
+                                        status.source_chain_id,
+                                        status.target_chain_id,
+                                        status.sequence_number
+                                    ).await.unwrap();
+                                    sequences_to_remove.push(sequence.get());
+                                    should_insert_or_update = false;
+                                }
                             }
-                            _ => {}
+                            _ => {
+                                should_insert_or_update = false;
+                            }
+                        }
+                        if !issue.is_empty() {
+                            println!(
+                                "Incomplete packet sequence {}: {}. Packet: {:?}",
+                                sequence,
+                                issue,
+                                status
+                            );
+                            let log_info = log_builder(
+                                format!(
+                                    "Incomplete packet sequence {} from chain {} -> {}: {}. Packet: {:?}",
+                                    status.sequence_number,
+                                    ChainId::from_i32(&status.source_chain_id),
+                                    ChainId::from_i32(&status.target_chain_id),
+                                    issue,
+                                    status
+                                ),
+                                None,
+                                None,
+                                None,
+                                Some("error".to_string())
+                            );
+                            send_log_to_datadog(
+                                &self.datadog_data.datadog_api_key,
+                                &log_info,
+                                &self.datadog_data.datadog_log_host
+                            ).await.unwrap();
+                            delete_packet_status(
+                                &self.pool,
+                                status.source_chain_id,
+                                status.target_chain_id,
+                                status.sequence_number
+                            ).await.unwrap();
+                            sequences_to_remove.push(sequence.get());
+
+                            should_insert_or_update = false;
                         }
 
-                        // insert_or_update_packet_status(pool, status.clone()).await.unwrap();
-                    }
-
-                    match unwrapped {
-                        IbcEvent::SendPacket(e) => {
-                            println!("SendPacket event: {:?}\n", e);
+                        if should_insert_or_update {
+                            insert_or_update_packet_status(
+                                &self.pool,
+                                status.clone()
+                            ).await.unwrap();
                         }
-                        IbcEvent::RecvPacket(e) => {
-                            let packet_sequence = e.packet_sequence;
-
-                            println!("RecvPacket event: {:?}\n", e);
-                            // Just an example datadog usage. This can be used to log any event.
-                        }
-                        IbcEvent::AcknowledgePacket(e) => {
-                            println!("AcknowledgePacket event: {:?}\n", e);
-                        }
-                        IbcEvent::WriteAcknowledgement(e) => {
-                            println!("WriteAcknowledgement event: {:?}\n", e);
-                        }
-                        _ => {
-                            // println!("Untracked event: {:?}", unwrapped);
+                        // Remove collected sequences from the HashMap
+                        for sequence in sequences_to_remove {
+                            packet_statuses.remove(&sequence);
                         }
                     }
                 }
@@ -366,101 +469,108 @@ impl Context {
         }
     }
 
-    pub async fn start_packet_monitoring(&self) {
-        let packet_statuses = self.packet_statuses.clone();
+    pub async fn check_packet_sequences(
+        &self,
+        source_chain_name: &str,
+        target_chain_name: &str,
+        expect_full_circle: u64
+    ) {
+        let source_chain_id: i32 = ChainId::from_str(source_chain_name).unwrap() as i32;
+        let target_chain_id = ChainId::from_str(target_chain_name).unwrap() as i32;
         let datadog_data = self.datadog_data.clone();
-        tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(10)); // 10 minutes
-            loop {
-                interval.tick().await;
-                let mut statuses_to_log = Vec::new();
-                let mut sequences_to_remove = Vec::new();
+        let mut interval = interval(Duration::from_secs(expect_full_circle));
+        loop {
+            interval.tick().await;
 
-                let mut packet_statuses_locked = packet_statuses.lock().await;
-                let now = chrono::Utc::now();
-                for (sequence, status) in packet_statuses_locked.iter() {
-                    println!("Looking at sequence: {}", sequence);
-                    if status.send_packet.is_none() {
-                        println!("SendPacket is missing");
-                        sequences_to_remove.push(*sequence);
-                        continue; // Skip if SendPacket has not been received
-                    }
+            let statuses = get_packet_statuses(
+                &self.pool,
+                source_chain_id,
+                target_chain_id
+            ).await.unwrap();
+            let mut packet_statuses = self.packet_statuses.lock().await;
 
-                    let elapsed = (now - status.last_update).num_seconds();
+            for status in statuses {
+                let time_passed = Utc::now()
+                    .signed_duration_since(status.last_update)
+                    .num_seconds();
 
-                    let recv_packet_missing = status.recv_packet.is_none();
-                    let write_ack_missing = status.write_ack.is_none();
-                    let acknowledge_packet_missing = status.acknowledge_packet.is_none();
-
-                    let ack_failed = status.write_ack.as_ref().map_or(false, |event| {
-                        if
-                            let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) = from_value::<
-                                IbcEvent<ClientId, ClientType, ClientId>
-                            >(event.clone())
-                        {
-                            hex_encode(&ack_event.packet_ack_hex) == "00"
-                        } else {
-                            false
-                        }
-                    });
-
-                    if
-                        recv_packet_missing ||
-                        write_ack_missing ||
-                        acknowledge_packet_missing ||
-                        ack_failed
-                    {
-                        if elapsed > 10 {
-                            statuses_to_log.push((*sequence, status.clone()));
-                        } else if ack_failed {
-                            println!("Ack failed.");
-                            statuses_to_log.push((*sequence, status.clone()));
-                        } else {
-                            println!("time elapsed: {:?}", elapsed);
-                            continue;
-                        }
-                    } else {
-                        println!("Removing from list: {}", sequence);
-                        sequences_to_remove.push(*sequence);
-                    }
+                if time_passed < (expect_full_circle as i64) {
+                    continue;
                 }
 
-                for (sequence, status) in statuses_to_log {
-                    let issue = if status.recv_packet.is_none() {
-                        "RecvPacket is missing"
-                    } else if status.write_ack.is_none() {
-                        "WriteAcknowledgement is missing"
-                    } else if let Some(ref json_val) = status.write_ack {
-                        if
-                            let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) = from_value::<
-                                IbcEvent<ClientId, ClientType, ClientId>
-                            >(json_val.clone())
-                        {
-                            if hex_encode(&ack_event.packet_ack_hex) == "00" {
-                                "WriteAcknowledgement indicates failure (0x00)"
-                            } else {
-                                "Unknown issue"
-                            }
-                        } else {
-                            "Unknown issue"
-                        }
-                        // if hex_encode(&ack_event.packet_ack_hex) == "00" {
-                        //     "WriteAcknowledgement indicates failure (0x00)"
-                        // } else if status.acknowledge_packet.is_none() {
-                        //     "AcknowledgePacket is missing"
-                        // } else {
-                        //     "Unknown issue"
-                        // }
-                    } else {
-                        "Unknown issue"
-                    };
+                let mut can_be_removed = false;
+                let mut issue = String::new();
 
-                    println!("There is a problem with sequence {}: {}", sequence, issue);
+                match status.recv_packet {
+                    None => {
+                        issue = "RecvPacket is missing".to_string();
+                    }
+                    Some(serde_json::Value::Null) => {
+                        issue = "RecvPacket is null".to_string();
+                    }
+                    _ => {}
+                }
+
+                // If issue is empty string here, then the RecvPacket is present.
+                // We can check the WriteAcknowledgement and AcknowledgePacket fields.
+
+                if issue.is_empty() {
+                    match status.write_ack {
+                        None => {
+                            issue = "WriteAcknowledgement is missing".to_string();
+                        }
+                        Some(serde_json::Value::Null) => {
+                            issue = "WriteAcknowledgement is null".to_string();
+                        }
+                        _ => {
+                            if
+                                let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) =
+                                    from_value::<IbcEvent<ClientId, ClientType, ClientId>>(
+                                        status.write_ack.clone().unwrap()
+                                    )
+                            {
+                                let encoded_ack_hex = hex_encode(&ack_event.packet_ack_hex);
+                                if encoded_ack_hex != "01" {
+                                    issue =
+                                        format!("WriteAcknowledgement indicates failure ({}).", encoded_ack_hex);
+                                }
+                            }
+                        }
+                    };
+                }
+
+                // If issue is still empty string here, then the WriteAcknowledgement is present and valid.
+                // We can check the WriteAcknowledgement and AcknowledgePacket fields.
+
+                if issue.is_empty() {
+                    match status.acknowledge_packet {
+                        None => {
+                            issue = "AcknowledgePacket is missing".to_string();
+                        }
+                        Some(serde_json::Value::Null) => {
+                            issue = "AcknowledgePacket is null".to_string();
+                        }
+                        _ => {
+                            can_be_removed = true;
+                        }
+                    };
+                }
+
+                if issue != "" {
+                    println!(
+                        "There is a problem with sequence {}: {}. After: {} seconds.",
+                        status.sequence_number,
+                        issue,
+                        time_passed
+                    );
                     let log_info = log_builder(
                         format!(
-                            "Incomplete packet sequence {}: {}. Packet: {:?}",
-                            sequence,
+                            "Incomplete packet sequence {} from chain {} -> {}: {}. After: {} seconds. Packet: {:?}",
+                            status.sequence_number,
+                            ChainId::from_i32(&status.source_chain_id),
+                            ChainId::from_i32(&status.target_chain_id),
                             issue,
+                            time_passed,
                             status
                         ),
                         None,
@@ -473,16 +583,21 @@ impl Context {
                         &log_info,
                         &datadog_data.datadog_log_host
                     ).await.unwrap();
+                    can_be_removed = true; // already sent that as an error.
                 }
-                if !sequences_to_remove.is_empty() {
-                    // let mut packet_statuses_locked = packet_statuses.lock().await;
-                    for sequence in sequences_to_remove {
-                        println!("It is time to remove that sequence from list.: {}", sequence);
-                        packet_statuses_locked.remove(&sequence);
-                    }
+
+                if can_be_removed {
+                    println!("Deleting packet: {}", status.sequence_number);
+                    delete_packet_status(
+                        &self.pool,
+                        status.source_chain_id,
+                        status.target_chain_id,
+                        status.sequence_number
+                    ).await.unwrap();
+                    packet_statuses.remove(&(status.sequence_number as u64));
                 }
             }
-        });
+        }
     }
 }
 
@@ -502,8 +617,6 @@ impl IbcTransfer for Context {
                     denom: _,
                     amount: _,
                 } => {
-                    // Implement the logic for Cosmos to Cosmos transfer here
-                    println!("Cosmos to Cosmos transfer not implemented yet.");
                     self.send_ibc_transfer_cosmos_to_cosmos(&direction).await;
                 }
                 TransferDirection::EthToCosmos {

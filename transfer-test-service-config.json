@@ -67,7 +67,15 @@
   "connections": [
     {
       "source_chain": "union",
-      "target_chain": "osmosis"
+      "target_chain": "osmosis",
+      "send_packet_interval": 60,
+      "expect_full_circle": 120
+    },
+    {
+      "source_chain": "osmosis",
+      "target_chain": "union",
+      "send_packet_interval": 180,
+      "expect_full_circle": 240
     }
   ]
 }
