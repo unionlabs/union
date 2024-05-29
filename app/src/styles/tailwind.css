@@ -16,6 +16,10 @@
     min-width: min-content;
     min-height: min-content;
   }
+  .size-screen {
+    width: 100vw;
+    height: 100vh;
+  }
 }
 
 

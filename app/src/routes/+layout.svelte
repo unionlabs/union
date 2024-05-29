@@ -108,9 +108,8 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
   <Toaster position="bottom-right" />
 
   <Header />
-  <slot />
+  <div class="flex-1"><slot /></div>
   <Footer />
-
   <SvelteQueryDevtools
     position="bottom"
     client={queryClient}
