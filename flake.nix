@@ -495,13 +495,14 @@
             ]) ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
               postgresql
+              emmet-language-server
               nodePackages.graphqurl
               nodePackages_latest.nodejs
               nodePackages_latest.svelte-language-server
               nodePackages_latest."@astrojs/language-server"
               nodePackages_latest."@tailwindcss/language-server"
               nodePackages_latest.typescript-language-server
-              nodePackages_latest.vscode-css-languageserver-bin
+              nodePackages_latest.vscode-langservers-extracted
             ])
               ++ (with goPkgs; [
               go
