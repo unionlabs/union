@@ -10,7 +10,7 @@ import { routes } from "$lib/components/navigation/index.ts"
 
 <header
   class={cn(
-    'py-2 px-4 min-w-full w-screen flex flex-row items-center gap-4',
+    'p-2 md:px-4 min-w-full w-screen flex flex-row items-center gap-4',
     'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30',
   )}
 >

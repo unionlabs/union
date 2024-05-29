@@ -112,7 +112,7 @@ $: newTransfers =
   <title>Union | Faucet</title>
 </svelte:head>
 
-<main class="mx-auto w-full flex flex-col items-center px-4 mt-10">
+<main class="overflow-scroll flex flex-col items-center px-4">
   <h1 class="text-5xl font-black my-8">Faucet</h1>
   <form
     use:enhance
