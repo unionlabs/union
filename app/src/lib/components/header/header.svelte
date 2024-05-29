@@ -35,7 +35,7 @@ import { routes } from "$lib/components/navigation/index.ts"
             draft
               ? 'hidden'
               : [
-                  'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
+                  'px-4 py-2 my-auto title text-lg capitalize text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
                   $page.route.id === path && 'bg-muted-foreground/10',
                 ],
           )}
