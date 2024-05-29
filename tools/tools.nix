@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, crane, ... }: {
-    packages.keygen = (crane.buildWorkspaceMember {
-      crateDirFromRoot = "tools/keygen";
-    }).packages.keygen;
+    packages.devnet-utils = (crane.buildWorkspaceMember {
+      crateDirFromRoot = "tools/devnet-utils";
+    }).packages.devnet-utils;
   };
 }

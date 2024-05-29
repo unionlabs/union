@@ -5,7 +5,6 @@
 
       mkCosmosDevnet = import ./mkCosmosDevnet.nix {
         inherit pkgs dbg;
-        ucliBin = pkgs.lib.getExe self'.packages.ucli;
       };
       lnav = inputs'.nixpkgs-lnav.legacyPackages.lnav;
 
