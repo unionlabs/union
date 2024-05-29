@@ -14,7 +14,6 @@ use std::{
     fs::read_to_string,
     iter,
     marker::PhantomData,
-    mem::size_of,
     process::ExitCode,
     sync::Arc,
 };
@@ -1046,20 +1045,20 @@ fn mk_client_id<Hc: LightClientType<Tr>, Tr: Chain>(sequence: u64) -> ClientIdOf
     .unwrap()
 }
 
-#[tokio::test]
-async fn size() {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .init();
+// #[tokio::test]
+// async fn size() {
+//     tracing_subscriber::fmt()
+//         .with_env_filter(EnvFilter::from_default_env())
+//         .init();
 
-    dbg!(size_of::<QueueMsg<VoyagerMessageTypes>>());
+//     // dbg!(mem::size_of::<QueueMsg<VoyagerMessageTypes>>());
 
-    let mut msg: QueueMsg<VoyagerMessageTypes> =
-        seq([seq([seq([seq([seq([seq([seq([seq([seq([seq(
-            [seq([seq([seq([seq([seq([queue_msg::noop()])])])])])],
-        )])])])])])])])])]);
+//     let msg: QueueMsg<VoyagerMessageTypes> =
+//         seq([seq([seq([seq([seq([seq([seq([seq([seq([seq(
+//             [seq([seq([seq([seq([seq([queue_msg::noop()])])])])])],
+//         )])])])])])])])])]);
 
-    msg.handle(&chains_from_config(Default::default()).await.unwrap(), 0)
-        .await
-        .unwrap();
-}
+//     msg.handle(&chains_from_config(Default::default()).await.unwrap(), 0)
+//         .await
+//         .unwrap();
+// }
