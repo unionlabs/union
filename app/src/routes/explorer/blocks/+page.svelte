@@ -135,8 +135,8 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 })
 </script>
 
-<main class="mb-12 mt-10 flex size-full min-size-full flex-col items-center justify-center">
-  <div class="rounded-md border-2 space-y-2 h-min max-h-[600px] overflow-auto w-6xl bg-card">
+<main class="p-4">
+  <div class="rounded-md border-2 space-y-2 h-min overflow-auto w-6xl bg-card">
     <div
       bind:this={virtualListElement}
       class={cn('rounded-md border border-secondary border-solid')}

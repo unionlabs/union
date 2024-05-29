@@ -18,6 +18,7 @@ import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
 import { QueryClient, MutationCache, notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
+    import { cn } from "$lib/utilities/shadcn";
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
@@ -108,7 +109,7 @@ $: if ($navigating) console.log("Navigating to", $page.url.pathname)
   <Toaster position="bottom-right" />
 
   <Header />
-  <div class="flex-1"><slot /></div>
+  <slot />
   <Footer />
   <SvelteQueryDevtools
     position="bottom"
