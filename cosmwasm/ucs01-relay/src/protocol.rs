@@ -1030,15 +1030,15 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             ),
         };
 
-        if let Some(reply_sub) = transfer
+        let reply_sub = transfer
             .messages
             .iter_mut()
             .find(|sub| sub.id == Self::IBC_SEND_ID)
-        {
-            reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
-                .expect("can serialize")
-                .into();
-        }
+            .expect("reply exists");
+
+        reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
+            .expect("can serialize")
+            .into();
 
         Ok(IbcReceiveResponse::without_ack()
             .add_submessages(transfer.messages)

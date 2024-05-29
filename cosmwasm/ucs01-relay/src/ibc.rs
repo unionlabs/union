@@ -52,31 +52,34 @@ pub fn reply(
         }
         (Ics20Protocol::IBC_SEND_ID, SubMsgResult::Ok(value))
         | (Ucs01Protocol::IBC_SEND_ID, SubMsgResult::Ok(value)) => {
-            if let Some(msg_response) = value.msg_responses.iter().find(|msg_response| {
-                msg_response
-                    .type_url
-                    .eq("cosmwasm.wasm.v1.MsgIBCSendResponse")
-            }) {
-                let send_res: MsgIbcSendResponse =
-                    MsgIbcSendResponse::decode(msg_response.value.as_slice()).expect("is type url");
+            let msg_response = value
+                .msg_responses
+                .iter()
+                .find(|msg_response| {
+                    msg_response
+                        .type_url
+                        .eq("/cosmwasm.wasm.v1.MsgIBCSendResponse")
+                })
+                .expect("type url is correct and exists");
+            let send_res: MsgIbcSendResponse =
+                MsgIbcSendResponse::decode(msg_response.value.as_slice()).expect("is type url");
 
-                let in_flight_packet: InFlightPfmPacket =
-                    serde_json_wasm::from_slice(reply.payload.as_slice()).expect("binary is type");
+            let in_flight_packet: InFlightPfmPacket =
+                serde_json_wasm::from_slice(reply.payload.as_slice()).expect("binary is type");
 
-                let refund_packet_key = PfmRefundPacketKey {
-                    channel_id: in_flight_packet.clone().refund_channel_id,
-                    port_id: in_flight_packet.clone().refund_port_id,
-                    sequence: send_res.sequence,
-                };
+            let refund_packet_key = PfmRefundPacketKey {
+                channel_id: in_flight_packet.clone().refund_channel_id,
+                port_id: in_flight_packet.clone().refund_port_id,
+                sequence: send_res.sequence,
+            };
 
-                let _ = IN_FLIGHT_PFM_PACKETS
-                    .update(
-                        deps.storage,
-                        refund_packet_key,
-                        |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
-                    )
-                    .expect("infallible update");
-            }
+            let _ = IN_FLIGHT_PFM_PACKETS
+                .update(
+                    deps.storage,
+                    refund_packet_key,
+                    |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
+                )
+                .expect("infallible update");
 
             Ok(Response::new())
         }
