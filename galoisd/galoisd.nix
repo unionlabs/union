@@ -97,7 +97,7 @@
           text = ''
             ${ensureAtRepositoryRoot}
 
-            if [[ -f "./.devnet/circuit/r1cs.bin" && -f "./.devnet/circuit/pk.bin" && -f "./.devnet/circuit/vk.bin" ]] 
+            if [[ -f "./.devnet/circuit/r1cs.bin" && -f "./.devnet/circuit/pk.bin" && -f "./.devnet/circuit/vk.bin" ]]
             then
               echo "Circuit is already downloaded"
               exit 0
@@ -110,6 +110,28 @@
             ${pkgs.lib.getExe self'.packages.download-circuit} .
           '';
         };
+
+      # Beware this is only valid for the `serve` command of galoisd
+      galoisd-testnet-standalone =
+        let
+          unpackCircuit = circuit: pkgs.runCommand "galoisd-circuit-${circuit.name}-unpacked" { buildInputs = [ pkgs.unzip ]; } ''
+            unzip ${circuit} -d $out
+          '';
+          unpacked-circuit = unpackCircuit (pkgs.fetchurl {
+            url = "https://circuit.cryptware.io/testnet.zip";
+            hash = "sha256-ImDwglgLdRjd9pxg5B7w2KNSPm1+kTu2k20yw8Rjtzc=";
+          });
+        in
+        mkCi false (pkgs.symlinkJoin {
+          name = "galoisd";
+          paths = [ self'.packages.galoisd ];
+          buildInputs = [ pkgs.makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/galoisd \
+              --append-flags "--cs-path ${unpacked-circuit}/r1cs.bin --vk-path ${unpacked-circuit}/vk.bin --pk-path ${unpacked-circuit}/pk.bin" \
+              --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+          '';
+        });
     };
   };
 }
