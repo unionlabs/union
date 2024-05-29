@@ -9,6 +9,7 @@ use states::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         Counterparty as ConnectionCounterparty,
     },
+    packet::SendPacket,
     CreateClient,
 };
 use unionlabs::{
@@ -100,6 +101,9 @@ pub enum IbcError {
 
     #[error("packet is already timed out")]
     TimedOutPacket,
+
+    #[error("zero timeout is not allowed")]
+    ZeroTimeout,
 
     #[error("committed packet ({comm}) does not match the calculated one ({exp_comm})", comm = serde_utils::to_hex(.0), exp_comm= serde_utils::to_hex(.1))]
     PacketCommitmentMismatch(Vec<u8>, Vec<u8>),
@@ -209,8 +213,8 @@ pub enum IbcResponse {
         err: bool,
     },
     OnRecvPacket {
-        // TODO(aeryz): what's gonna be the error type?
-        err: bool,
+        // TODO(aeryz): what's the type of this ack?
+        ack: Vec<u8>,
     },
     OnAcknowledgePacket {
         // TODO(aeryz): what's gonna be the error type?
@@ -231,6 +235,7 @@ pub enum IbcState {
     ChannelOpenTry(ChannelOpenTry),
     ChannelOpenAck(ChannelOpenAck),
     ChannelOpenConfirm(ChannelOpenConfirm),
+    SendPacket(SendPacket),
 }
 
 macro_rules! cast_either {
@@ -264,7 +269,8 @@ impl<T: IbcHost> Runnable<T> for IbcState {
                 ChannelOpenInit,
                 ChannelOpenTry,
                 ChannelOpenAck,
-                ChannelOpenConfirm
+                ChannelOpenConfirm,
+                SendPacket
             ]
         );
         Ok(res)
@@ -526,5 +532,22 @@ pub fn update_client(client_id: ClientId, client_msg: Vec<u8>) -> IbcState {
     IbcState::UpdateClient(UpdateClient::Init {
         client_id,
         client_msg,
+    })
+}
+
+pub fn send_packet(
+    source_port: PortId,
+    source_channel: ChannelId,
+    timeout_height: Height,
+    timeout_timestamp: u64,
+    // TODO(aeryz): enforce this to be non-empty at type level
+    data: Vec<u8>,
+) -> IbcState {
+    IbcState::SendPacket(SendPacket::Init {
+        source_port,
+        source_channel,
+        timeout_height,
+        timeout_timestamp,
+        data,
     })
 }

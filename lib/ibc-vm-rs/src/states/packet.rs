@@ -111,11 +111,19 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     .into());
                 }
 
-                if packet.timeout_height > host.current_height() {
+                if packet.timeout_height == Default::default() && packet.timeout_timestamp == 0 {
+                    return Err(IbcError::ZeroTimeout.into());
+                }
+
+                if packet.timeout_height != Default::default()
+                    && packet.timeout_height > host.current_height()
+                {
                     return Err(IbcError::TimedOutPacket.into());
                 }
 
-                if packet.timeout_timestamp > host.current_timestamp() {
+                if packet.timeout_timestamp != 0
+                    && packet.timeout_timestamp > host.current_timestamp()
+                {
                     return Err(IbcError::TimedOutPacket.into());
                 }
 
@@ -218,12 +226,8 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
             }
             (
                 RecvPacket::CallbackCalled { packet, channel },
-                &[IbcResponse::OnRecvPacket { err }],
+                &[IbcResponse::OnRecvPacket { ack }],
             ) => {
-                if err {
-                    return Err(IbcError::IbcAppCallbackFailed.into());
-                }
-
                 host.commit_raw(
                     ReceiptPath {
                         port_id: packet.destination_port.clone(),
@@ -310,6 +314,10 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                 },
                 &[IbcResponse::Empty],
             ) => {
+                if timeout_height == Default::default() && timeout_timestamp == 0 {
+                    return Err(IbcError::ZeroTimeout.into());
+                }
+
                 let channel: Channel = host
                     .read(
                         &ChannelEndPath {
@@ -415,11 +423,12 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                 },
                 &[IbcResponse::TimestampAtHeight { timestamp }],
             ) => {
-                if timeout_height > height {
+                // TODO(aeryz): if the timestamp is not specified, we don't need to fetch it. could be a nice optimization.
+                if timeout_height != Default::default() && height >= timeout_height {
                     return Err(IbcError::TimedOutPacket.into());
                 }
 
-                if timeout_timestamp > timestamp {
+                if timeout_timestamp != 0 && timestamp >= timeout_timestamp {
                     return Err(IbcError::TimedOutPacket.into());
                 }
 
@@ -471,7 +480,9 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         packet_channel_ordering: Order::Unordered,
                         connection_id,
                     }),
-                    IbcVmResponse::Empty,
+                    IbcVmResponse::SendPacket {
+                        sequence: packet.sequence.into(),
+                    },
                 ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
@@ -709,9 +720,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                         packet_channel_ordering: Order::Unordered,
                         connection_id,
                     }),
-                    IbcVmResponse::SendPacket {
-                        sequence: packet.sequence.into(),
-                    },
+                    IbcVmResponse::Empty,
                 ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),

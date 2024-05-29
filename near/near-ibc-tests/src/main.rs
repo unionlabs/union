@@ -133,6 +133,15 @@ async fn main() {
         &bob_lc,
     )
     .await;
+
+    initiate_ping(
+        &sandbox,
+        &user,
+        &ibc_contract,
+        &ibc_app_contract,
+        "channel-1",
+    )
+    .await;
 }
 
 async fn connection_open_init(
@@ -710,4 +719,34 @@ async fn create_client(
 
     assert!(res.receipt_failures().is_empty());
     println!("[ + ] `create_client`: Client of type {client_type} created successfully");
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Ping {
+    ibc_addr: AccountId,
+    source_channel: String,
+}
+
+pub async fn initiate_ping(
+    sandbox: &Worker<Sandbox>,
+    user: &Account,
+    ibc_contract: &Contract,
+    ibc_app: &Contract,
+    source_channel: &str,
+) {
+    let ping = Ping {
+        ibc_addr: ibc_contract.id().clone(),
+        source_channel: source_channel.to_string(),
+    };
+
+    let res = user
+        .call(ibc_app.id(), "ping")
+        .args_json(ping)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+
+    println!("{res:?}");
 }

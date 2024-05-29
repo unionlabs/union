@@ -1,7 +1,7 @@
-use ibc_vm_rs::{IbcEvent, Status};
+use ibc_vm_rs::{IbcEvent, IbcVmResponse, Status};
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    near_bindgen, PanicOnDefault,
+    env, ext_contract, near_bindgen, AccountId, PanicOnDefault, Promise,
 };
 #[allow(unused)]
 use near_sdk_contract_tools::owner::OwnerExternal;
@@ -10,19 +10,26 @@ use near_sdk_contract_tools::Owner;
 use unionlabs::{
     events::SendPacket,
     ibc::core::{channel, client::height::Height, commitment::merkle_path::MerklePath},
-    id::{ChannelId, ClientId, ConnectionId},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
+    validated::ValidateT,
 };
 
 #[near_bindgen]
-#[derive(PanicOnDefault, BorshDeserialize, BorshSerialize, Owner)]
+#[derive(BorshDeserialize, BorshSerialize, Owner)]
 pub struct Contract {}
+
+impl Default for Contract {
+    fn default() -> Self {
+        Self {}
+    }
+}
 
 #[near_bindgen]
 impl Contract {
     pub fn on_channel_open_init(
         order: channel::order::Order,
         connection_hops: Vec<ConnectionId>,
-        port_id: unionlabs::id::PortId,
+        port_id: PortId,
         channel_id: ChannelId,
         counterparty: channel::counterparty::Counterparty,
         version: String,
@@ -33,7 +40,7 @@ impl Contract {
     pub fn on_channel_open_try(
         order: channel::order::Order,
         connection_hops: Vec<ConnectionId>,
-        port_id: unionlabs::id::PortId,
+        port_id: PortId,
         channel_id: ChannelId,
         counterparty: channel::counterparty::Counterparty,
         counterparty_version: String,
@@ -42,7 +49,7 @@ impl Contract {
     }
 
     pub fn on_channel_open_ack(
-        port_id: unionlabs::id::PortId,
+        port_id: PortId,
         channel_id: ChannelId,
         counterparty_channel_id: String,
         counterparty_version: String,
@@ -50,7 +57,39 @@ impl Contract {
         false
     }
 
-    pub fn on_channel_open_confirm(port_id: unionlabs::id::PortId, channel_id: ChannelId) -> bool {
+    pub fn on_channel_open_confirm(port_id: PortId, channel_id: ChannelId) -> bool {
         false
     }
+
+    pub fn ping(ibc_addr: AccountId, source_channel: ChannelId) -> Promise {
+        ext_ibc::ext(ibc_addr)
+            .send_packet(
+                env::current_account_id().to_string().validate().unwrap(),
+                source_channel,
+                Height {
+                    revision_number: 0,
+                    revision_height: 1000000000,
+                },
+                0,
+                b"hello world!".to_vec(),
+            )
+            .then(Contract::ext(env::current_account_id()).ping_callback())
+    }
+
+    #[private]
+    pub fn ping_callback(&self, #[callback_unwrap] sequence: IbcVmResponse) {
+        env::log_str(&format!("packet with sequence {sequence:?} is sent!!"));
+    }
+}
+
+#[ext_contract(ext_ibc)]
+pub trait Ibc {
+    fn send_packet(
+        &mut self,
+        source_port: PortId,
+        source_channel: ChannelId,
+        timeout_height: Height,
+        timeout_timestamp: u64,
+        data: Vec<u8>,
+    ) -> u64;
 }
