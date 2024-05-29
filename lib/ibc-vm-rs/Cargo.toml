@@ -19,4 +19,4 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 workspace = true
 
 [features]
-schemars = ["dep:schemars"]
+schemars = ["dep:schemars", "unionlabs/schemars"]

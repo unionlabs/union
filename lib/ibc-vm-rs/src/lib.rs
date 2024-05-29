@@ -158,6 +158,14 @@ impl core::fmt::Display for Status {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
+pub enum IbcVmResponse {
+    SendPacket { sequence: u64 },
+    Empty,
+}
+
+// TODO(aeryz): rename this
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum IbcResponse {
     Empty,
     Initialize,
@@ -241,7 +249,7 @@ impl<T: IbcHost> Runnable<T> for IbcState {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = cast_either!(
             self,
             host,
@@ -368,7 +376,7 @@ pub trait Runnable<T: IbcHost>: Serialize + Sized {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error>;
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error>;
 }
 
 pub enum Either<L, R> {

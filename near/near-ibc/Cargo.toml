@@ -6,14 +6,15 @@ version = "0.1.0"
 
 [dependencies]
 borsh                   = { workspace = true, features = ["borsh-derive"] }
-ibc-vm-rs               = { workspace = true, features = ["schemars"] }
+ibc-vm-rs               = { workspace = true }
 near-contract-standards = { workspace = true }
-near-sdk                = { workspace = true, features = ["abi", "__abi-generate"] }
+near-sdk                = { workspace = true }
 near-sdk-contract-tools = {workspace = true}
 serde.workspace         = true
 serde_json.workspace    = true
 thiserror.workspace     = true
-unionlabs               = { workspace = true, features = ["schemars"] }
+unionlabs               = { workspace = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [lib]
 crate-type = ["cdylib"]
@@ -25,3 +26,6 @@ must-use-candidate      = "allow"
 needless-pass-by-value  = "allow"
 pedantic                = "warn"
 wildcard-imports        = "allow"
+
+[features]
+schemars = ["dep:schemars", "ibc-vm-rs/schemars", "near-sdk/abi", "near-sdk/__abi-generate", "unionlabs/schemars"]

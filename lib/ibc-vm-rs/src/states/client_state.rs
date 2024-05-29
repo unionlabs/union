@@ -7,7 +7,8 @@ use unionlabs::{
 };
 
 use crate::{
-    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
+    Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -37,7 +38,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, &resp) {
             (
                 UpdateClient::Init {
@@ -100,13 +101,16 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
             (
                 UpdateClient::UpdatedStateOnMisbehaviour { client_id },
                 &[IbcResponse::UpdateStateOnMisbehaviour],
-            ) => Either::Right(IbcEvent::ClientMisbehaviour(events::ClientMisbehaviour {
-                client_id,
-                // TODO(aeryz): why????
-                client_type: "TODO(aeryz) why in the hell do we have this here".to_string(),
-                // TODO(aeryz): this should be deprecated, can't see it in the latest ibc
-                consensus_height: Height::default(),
-            })),
+            ) => Either::Right((
+                IbcEvent::ClientMisbehaviour(events::ClientMisbehaviour {
+                    client_id,
+                    // TODO(aeryz): why????
+                    client_type: "TODO(aeryz) why in the hell do we have this here".to_string(),
+                    // TODO(aeryz): this should be deprecated, can't see it in the latest ibc
+                    consensus_height: Height::default(),
+                }),
+                IbcVmResponse::Empty,
+            )),
             (
                 UpdateClient::UpdatedState { client_id },
                 &[IbcResponse::UpdateState {
@@ -137,11 +141,14 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     })
                     .collect::<Result<Vec<_>, <T as IbcHost>::Error>>()?;
 
-                Either::Right(IbcEvent::UpdateClient(events::UpdateClient {
-                    client_id,
-                    client_type: "TODO(aeryz): I hate this".to_string(),
-                    consensus_heights,
-                }))
+                Either::Right((
+                    IbcEvent::UpdateClient(events::UpdateClient {
+                        client_id,
+                        client_type: "TODO(aeryz): I hate this".to_string(),
+                        consensus_heights,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             (_, _) => return Err(IbcError::UnexpectedAction.into()),
         };
