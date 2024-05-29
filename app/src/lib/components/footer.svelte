@@ -22,7 +22,7 @@ const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-acce
   class={cn(
     'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16',
     'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-lg',
-    'grid lg:hidden grid-cols-5 place-content-center divide-x-[1px] divide-[#fafafa25] items-center',
+    'grid lg:hidden grid-cols-5 place-content-center items-center',
     // styling children
     '*:flex *:hover:bg-transparent *:text-xs *:gap-px *:flex-col *:h-16 *:w-full *:rounded-none *:border-solid *:border-t-0',
   )}
