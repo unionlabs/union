@@ -18,7 +18,7 @@ use unionlabs::{
 
 use crate::{
     states::connection_handshake::ConnectionEnd, Either, IbcAction, IbcError, IbcEvent, IbcHost,
-    IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
+    IbcMsg, IbcQuery, IbcResponse, IbcVmResponse, Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -53,7 +53,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenInit::Init {
@@ -187,13 +187,16 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     one,
                 )?;
 
-                Either::Right(IbcEvent::ChannelOpenInit(events::ChannelOpenInit {
-                    port_id,
-                    channel_id,
-                    counterparty_port_id: counterparty.port_id,
-                    connection_id: connection_hops[0].clone(),
-                    version,
-                }))
+                Either::Right((
+                    IbcEvent::ChannelOpenInit(events::ChannelOpenInit {
+                        port_id,
+                        channel_id,
+                        counterparty_port_id: counterparty.port_id,
+                        connection_id: connection_hops[0].clone(),
+                        version,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -237,7 +240,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenTry::Init {
@@ -416,14 +419,17 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     one,
                 )?;
 
-                Either::Right(IbcEvent::ChannelOpenTry(events::ChannelOpenTry {
-                    port_id,
-                    channel_id,
-                    counterparty_port_id: counterparty.port_id,
-                    counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
-                    connection_id: connection_hops[0].clone(),
-                    version,
-                }))
+                Either::Right((
+                    IbcEvent::ChannelOpenTry(events::ChannelOpenTry {
+                        port_id,
+                        channel_id,
+                        counterparty_port_id: counterparty.port_id,
+                        counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
+                        connection_id: connection_hops[0].clone(),
+                        version,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -465,7 +471,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenAck::Init {
@@ -632,13 +638,16 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
 
                 host.commit(channel_path, channel)?;
 
-                Either::Right(IbcEvent::ChannelOpenAck(events::ChannelOpenAck {
-                    port_id,
-                    channel_id,
-                    counterparty_port_id,
-                    counterparty_channel_id: counterparty_channel_id.validate().unwrap(),
-                    connection_id,
-                }))
+                Either::Right((
+                    IbcEvent::ChannelOpenAck(events::ChannelOpenAck {
+                        port_id,
+                        channel_id,
+                        counterparty_port_id,
+                        counterparty_channel_id: counterparty_channel_id.validate().unwrap(),
+                        connection_id,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -676,7 +685,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ChannelOpenConfirm::Init {
@@ -836,13 +845,16 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
 
                 host.commit(channel_path, channel)?;
 
-                Either::Right(IbcEvent::ChannelOpenConfirm(events::ChannelOpenConfirm {
-                    port_id,
-                    channel_id,
-                    counterparty_port_id: counterparty.port_id,
-                    counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
-                    connection_id,
-                }))
+                Either::Right((
+                    IbcEvent::ChannelOpenConfirm(events::ChannelOpenConfirm {
+                        port_id,
+                        channel_id,
+                        counterparty_port_id: counterparty.port_id,
+                        counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
+                        connection_id,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };

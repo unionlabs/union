@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 borsh                   = { workspace = true, features = ["borsh-derive"] }
-ibc-vm-rs               = { workspace = true,features = ["schemars"] }
+ibc-vm-rs               = { workspace = true }
 near-contract-standards = { workspace = true }
 near-primitives-core    = { version = "0.21" }
 near-sdk                = { workspace = true, features = ["wee_alloc"] }
@@ -29,3 +29,6 @@ must-use-candidate      = "allow"
 needless-pass-by-value  = "allow"
 pedantic                = "warn"
 wildcard-imports        = "allow"
+
+[features]
+schemars = ["ibc-vm-rs/schemars"]

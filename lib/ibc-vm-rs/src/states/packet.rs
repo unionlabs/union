@@ -17,7 +17,8 @@ use unionlabs::{
 
 use super::connection_handshake::ConnectionEnd;
 use crate::{
-    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
+    Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -44,7 +45,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 RecvPacket::Init {
@@ -128,18 +129,21 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     }
                     .into(),
                 ) {
-                    Some(_) => Either::Right(IbcEvent::RecvPacket(events::RecvPacket {
-                        packet_data_hex: packet.data,
-                        packet_timeout_height: packet.timeout_height,
-                        packet_timeout_timestamp: packet.timeout_timestamp,
-                        packet_sequence: packet.sequence,
-                        packet_src_port: packet.source_port,
-                        packet_src_channel: packet.source_channel,
-                        packet_dst_port: packet.destination_port,
-                        packet_dst_channel: packet.destination_channel,
-                        packet_channel_ordering: channel.ordering,
-                        connection_id: channel.connection_hops[0].clone(),
-                    })),
+                    Some(_) => Either::Right((
+                        IbcEvent::RecvPacket(events::RecvPacket {
+                            packet_data_hex: packet.data,
+                            packet_timeout_height: packet.timeout_height,
+                            packet_timeout_timestamp: packet.timeout_timestamp,
+                            packet_sequence: packet.sequence,
+                            packet_src_port: packet.source_port,
+                            packet_src_channel: packet.source_channel,
+                            packet_dst_port: packet.destination_port,
+                            packet_dst_channel: packet.destination_channel,
+                            packet_channel_ordering: channel.ordering,
+                            connection_id: channel.connection_hops[0].clone(),
+                        }),
+                        IbcVmResponse::Empty,
+                    )),
                     None => {
                         // TODO(aeryz): known size can be optimized
                         let mut packet_commitment = Vec::new();
@@ -230,18 +234,21 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     vec![1],
                 )?;
 
-                Either::Right(IbcEvent::RecvPacket(events::RecvPacket {
-                    packet_data_hex: packet.data,
-                    packet_timeout_height: packet.timeout_height,
-                    packet_timeout_timestamp: packet.timeout_timestamp,
-                    packet_sequence: packet.sequence,
-                    packet_src_port: packet.source_port,
-                    packet_src_channel: packet.source_channel,
-                    packet_dst_port: packet.destination_port,
-                    packet_dst_channel: packet.destination_channel,
-                    packet_channel_ordering: channel.ordering,
-                    connection_id: channel.connection_hops[0].clone(),
-                }))
+                Either::Right((
+                    IbcEvent::RecvPacket(events::RecvPacket {
+                        packet_data_hex: packet.data,
+                        packet_timeout_height: packet.timeout_height,
+                        packet_timeout_timestamp: packet.timeout_timestamp,
+                        packet_sequence: packet.sequence,
+                        packet_src_port: packet.source_port,
+                        packet_src_channel: packet.source_channel,
+                        packet_dst_port: packet.destination_port,
+                        packet_dst_channel: packet.destination_channel,
+                        packet_channel_ordering: channel.ordering,
+                        connection_id: channel.connection_hops[0].clone(),
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -291,7 +298,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 SendPacket::Init {
@@ -451,18 +458,21 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                     commitment,
                 )?;
 
-                Either::Right(IbcEvent::SendPacket(events::SendPacket {
-                    packet_data_hex: packet.data,
-                    packet_timeout_height: timeout_height,
-                    packet_timeout_timestamp: timeout_timestamp,
-                    packet_sequence: packet.sequence,
-                    packet_src_port: packet.source_port,
-                    packet_src_channel: packet.source_channel,
-                    packet_dst_port: packet.destination_port,
-                    packet_dst_channel: packet.destination_channel,
-                    packet_channel_ordering: Order::Unordered,
-                    connection_id,
-                }))
+                Either::Right((
+                    IbcEvent::SendPacket(events::SendPacket {
+                        packet_data_hex: packet.data,
+                        packet_timeout_height: timeout_height,
+                        packet_timeout_timestamp: timeout_timestamp,
+                        packet_sequence: packet.sequence,
+                        packet_src_port: packet.source_port,
+                        packet_src_channel: packet.source_channel,
+                        packet_dst_port: packet.destination_port,
+                        packet_dst_channel: packet.destination_channel,
+                        packet_channel_ordering: Order::Unordered,
+                        connection_id,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -517,7 +527,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 Acknowledgement::Init {
@@ -594,8 +604,8 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     }
                     .into(),
                 ) else {
-                    return Ok(Either::Right(IbcEvent::AcknowledgePacket(
-                        events::AcknowledgePacket {
+                    return Ok(Either::Right((
+                        IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
                             packet_timeout_height: packet.timeout_height,
                             packet_timeout_timestamp: packet.timeout_timestamp,
                             packet_sequence: packet.sequence,
@@ -605,7 +615,8 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                             packet_dst_channel: packet.destination_channel,
                             packet_channel_ordering: Order::Unordered,
                             connection_id: channel.connection_hops[0].clone(),
-                        },
+                        }),
+                        IbcVmResponse::Empty,
                     )));
                 };
 
@@ -686,17 +697,22 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     .into(),
                 )?;
 
-                Either::Right(IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
-                    packet_timeout_height: packet.timeout_height,
-                    packet_timeout_timestamp: packet.timeout_timestamp,
-                    packet_sequence: packet.sequence,
-                    packet_src_port: packet.source_port,
-                    packet_src_channel: packet.source_channel,
-                    packet_dst_port: packet.destination_port,
-                    packet_dst_channel: packet.destination_channel,
-                    packet_channel_ordering: Order::Unordered,
-                    connection_id,
-                }))
+                Either::Right((
+                    IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
+                        packet_timeout_height: packet.timeout_height,
+                        packet_timeout_timestamp: packet.timeout_timestamp,
+                        packet_sequence: packet.sequence,
+                        packet_src_port: packet.source_port,
+                        packet_src_channel: packet.source_channel,
+                        packet_dst_port: packet.destination_port,
+                        packet_dst_channel: packet.destination_channel,
+                        packet_channel_ordering: Order::Unordered,
+                        connection_id,
+                    }),
+                    IbcVmResponse::SendPacket {
+                        sequence: packet.sequence.into(),
+                    },
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };

@@ -1,13 +1,13 @@
 use ibc_vm_rs::{
     states::{connection_handshake, CreateClient},
-    IbcHost, IbcQuery, IbcResponse, IbcState, Runnable, Status,
+    IbcHost, IbcQuery, IbcResponse, IbcState, IbcVmResponse, Runnable, Status,
 };
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     collections::LookupMap,
     env, ext_contract, near_bindgen,
     store::{unordered_map, UnorderedMap},
-    AccountId, BorshStorageKey, Promise,
+    AccountId, BorshStorageKey, Promise, PromiseOrValue,
 };
 #[allow(unused)]
 use near_sdk_contract_tools::owner::OwnerExternal;
@@ -158,14 +158,6 @@ impl Contract {
                 entry.insert(account_id.clone());
             }
         }
-        // match self.account_ids.entry("AAAAAAAAAAAAAAAAAAAAA".to_string()) {
-        //     unordered_map::Entry::Occupied(_) => panic!("already registered"),
-        //     unordered_map::Entry::Vacant(entry) => {
-        //         entry.insert(account_id.clone());
-        //     }
-        // }
-        // self.thisisfortest
-        //     .insert(&"BBBBBBBBBB".to_string(), &account_id);
     }
 
     pub fn create_client(
@@ -173,9 +165,9 @@ impl Contract {
         client_type: String,
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable = ibc_vm_rs::create_client(client_type, client_state, consensus_state);
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     pub fn connection_open_init(
@@ -184,10 +176,10 @@ impl Contract {
         counterparty: connection_handshake::Counterparty,
         version: connection::version::Version,
         delay_period: u64,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable =
             ibc_vm_rs::connection_open_init(client_id, counterparty, version, delay_period);
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
     pub fn connection_open_try(
         &mut self,
@@ -197,7 +189,7 @@ impl Contract {
         connection_end_proof: Vec<u8>,
         proof_height: Height,
         delay_period: u64,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable = ibc_vm_rs::connection_open_try(
             client_id,
             counterparty,
@@ -206,7 +198,7 @@ impl Contract {
             proof_height,
             delay_period,
         );
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     pub fn connection_open_ack(
@@ -216,7 +208,7 @@ impl Contract {
         counterparty_connection_id: String,
         connection_end_proof: Vec<u8>,
         proof_height: Height,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable = ibc_vm_rs::connection_open_ack(
             connection_id,
             version,
@@ -224,7 +216,7 @@ impl Contract {
             connection_end_proof,
             proof_height,
         );
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     pub fn connection_open_confirm(
@@ -232,10 +224,10 @@ impl Contract {
         connection_id: String,
         connection_end_proof: Vec<u8>,
         proof_height: Height,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable =
             ibc_vm_rs::connection_open_confirm(connection_id, connection_end_proof, proof_height);
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     pub fn channel_open_init(
@@ -244,10 +236,10 @@ impl Contract {
         port_id: PortId,
         counterparty: channel::counterparty::Counterparty,
         version: String,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable =
             ibc_vm_rs::channel_open_init(connection_hops, port_id, counterparty, version);
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
     pub fn channel_open_try(
         &mut self,
@@ -258,7 +250,7 @@ impl Contract {
         version: String,
         proof_init: Vec<u8>,
         proof_height: Height,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable = ibc_vm_rs::channel_open_try(
             connection_hops,
             port_id,
@@ -268,7 +260,7 @@ impl Contract {
             proof_init,
             proof_height,
         );
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     pub fn channel_open_ack(
@@ -279,7 +271,7 @@ impl Contract {
         counterparty_version: String,
         proof_try: Vec<u8>,
         proof_height: Height,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable = ibc_vm_rs::channel_open_ack(
             channel_id,
             port_id,
@@ -288,7 +280,7 @@ impl Contract {
             proof_try,
             proof_height,
         );
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     pub fn channel_open_confirm(
@@ -297,15 +289,19 @@ impl Contract {
         port_id: PortId,
         proof_ack: Vec<u8>,
         proof_height: Height,
-    ) -> Promise {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable =
             ibc_vm_rs::channel_open_confirm(channel_id, port_id, proof_ack, proof_height);
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
-    pub fn update_client(&mut self, client_id: ClientId, client_msg: Vec<u8>) -> Promise {
+    pub fn update_client(
+        &mut self,
+        client_id: ClientId,
+        client_msg: Vec<u8>,
+    ) -> PromiseOrValue<IbcVmResponse> {
         let runnable = ibc_vm_rs::update_client(client_id, client_msg);
-        fold(self, runnable, &[IbcResponse::Empty]).unwrap()
+        fold(self, runnable, &[IbcResponse::Empty])
     }
 
     // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
@@ -323,12 +319,15 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] responses: Vec<IbcResponse>,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(self, current_state, &responses)
     }
 
     #[private]
-    pub fn callback_initialize(&mut self, current_state: IbcState) -> Promise {
+    pub fn callback_initialize(
+        &mut self,
+        current_state: IbcState,
+    ) -> PromiseOrValue<IbcVmResponse> {
         match &current_state {
             IbcState::CreateClient(CreateClient::Initialize {
                 client_id,
@@ -343,14 +342,14 @@ impl Contract {
             }
             _ => panic!("wut?"),
         };
-        fold(self, current_state, &[IbcResponse::Initialize]).unwrap()
+        fold(self, current_state, &[IbcResponse::Initialize])
     }
 
     #[private]
     pub fn callback_update_client_on_misbehaviour(
         &mut self,
         current_state: IbcState,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(
             self,
             current_state,
@@ -363,7 +362,7 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] client_updated: (Vec<u8>, Vec<(Height, Vec<u8>)>),
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         let (client_state, consensus_states) = client_updated;
         fold(
             self,
@@ -380,7 +379,7 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] err: bool,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(
             self,
             current_state,
@@ -393,7 +392,7 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] err: bool,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(
             self,
             current_state,
@@ -406,7 +405,7 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] err: bool,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(
             self,
             current_state,
@@ -419,7 +418,7 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] err: bool,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(
             self,
             current_state,
@@ -432,27 +431,31 @@ impl Contract {
         &mut self,
         current_state: IbcState,
         #[callback_unwrap] err: bool,
-    ) -> Option<Promise> {
+    ) -> PromiseOrValue<IbcVmResponse> {
         fold(self, current_state, &[IbcResponse::OnRecvPacket { err }])
     }
 }
 
 // TODO(aeryz): i hate naming lol
-pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -> Option<Promise> {
+pub fn fold(
+    host: &mut Contract,
+    runnable: IbcState,
+    response: &[IbcResponse],
+) -> PromiseOrValue<IbcVmResponse> {
     let either = runnable.process(host, response).unwrap();
 
     let (runnable, ibc_action) = match either {
         ibc_vm_rs::Either::Left(cont) => cont,
         ibc_vm_rs::Either::Right(event) => {
             env::log_str(&serde_json::to_string(&event).unwrap());
-            return None;
+            return PromiseOrValue::Value(IbcVmResponse::Empty);
         }
     };
 
     match ibc_action {
         ibc_vm_rs::IbcAction::Query((client_id, ibc_queries)) => {
             let account_id = host.clients.get(&client_id.to_string()).unwrap();
-            return Some(
+            return PromiseOrValue::Promise(
                 ext_light_client::ext(account_id.clone())
                     .query(ibc_queries)
                     .then(Contract::ext(env::current_account_id()).callback_query(runnable)),
@@ -466,7 +469,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 consensus_state,
             } => {
                 let account_id = host.account_ids.get(&client_type).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ext_light_client::ext(account_id.clone())
                         .initialize(client_id, client_state, consensus_state)
                         .then(
@@ -479,7 +482,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 client_msg,
             } => {
                 let account_id = host.clients.get(&client_id.to_string()).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ext_light_client::ext(account_id.clone())
                         .update_client_on_misbehaviour(client_msg)
                         .then(
@@ -493,7 +496,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 client_msg,
             } => {
                 let account_id = host.clients.get(&client_id.to_string()).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ext_light_client::ext(account_id.clone())
                         .update_client(client_msg)
                         .then(
@@ -511,7 +514,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 version,
             } => {
                 let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ibc_app::ext(account_id)
                         .on_channel_open_init(
                             order,
@@ -536,7 +539,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 counterparty_version,
             } => {
                 let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ibc_app::ext(account_id)
                         .on_channel_open_try(
                             order,
@@ -559,7 +562,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 counterparty_version,
             } => {
                 let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ibc_app::ext(account_id)
                         .on_channel_open_ack(
                             port_id,
@@ -578,7 +581,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
                 channel_id,
             } => {
                 let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return Some(
+                return PromiseOrValue::Promise(
                     ibc_app::ext(account_id)
                         .on_channel_open_confirm(port_id, channel_id)
                         .then(
@@ -590,7 +593,7 @@ pub fn fold(host: &mut Contract, runnable: IbcState, response: &[IbcResponse]) -
             ibc_vm_rs::IbcMsg::OnRecvPacket { packet } => {
                 let account_id =
                     AccountId::try_from(packet.destination_port.clone().to_string()).unwrap();
-                return Some(ibc_app::ext(account_id).recv_packet(packet).then(
+                return PromiseOrValue::Promise(ibc_app::ext(account_id).recv_packet(packet).then(
                     Contract::ext(env::current_account_id()).callback_on_recv_packet(runnable),
                 ));
             }
@@ -616,42 +619,36 @@ pub enum LightClientQuery {
     },
 }
 
-// // TODO(aeryz): these ext contract api's should be defined under `ibc-vm` by splitted into technologies such as `near/cosmwasm etc`
-pub mod GOHERE {
-    use near_sdk::ext_contract;
+#[ext_contract(ext_light_client)]
+pub trait LightClient {
+    fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>);
 
-    #[ext_contract(ext_light_client)]
-    pub trait LightClient {
-        #[init]
-        fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>)
-            -> Self;
+    fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse>;
 
-        fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse>;
+    fn status(&self) -> Status;
 
-        fn status(&self) -> Status;
+    fn latest_height(&self) -> Height;
 
-        fn latest_height(&self) -> Height;
+    fn verify_membership(
+        &self,
+        height: Height,
+        // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
+        delay_time_period: u64,
+        delay_block_period: u64,
+        proof: Vec<u8>,
+        path: MerklePath,
+        value: Vec<u8>,
+    ) -> bool;
 
-        fn verify_membership(
-            &self,
-            height: Height,
-            // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
-            delay_time_period: u64,
-            delay_block_period: u64,
-            proof: Vec<u8>,
-            path: MerklePath,
-            value: Vec<u8>,
-        ) -> bool;
+    fn verify_client_message(&self, client_msg: Vec<u8>) -> bool;
 
-        fn verify_client_message(&self, client_msg: Vec<u8>) -> bool;
+    fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool;
 
-        fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool;
+    fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
 
-        fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
-
-        fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>);
-    }
+    fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>);
 }
+
 #[ext_contract(ibc_app)]
 pub trait IbcApp {
     fn on_channel_open_init(

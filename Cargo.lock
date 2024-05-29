@@ -5718,6 +5718,7 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "near-sdk-contract-tools",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror",

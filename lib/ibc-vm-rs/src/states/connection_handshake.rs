@@ -13,8 +13,8 @@ use unionlabs::{
 };
 
 use crate::{
-    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcQuery, IbcResponse, Runnable, Status,
-    DEFAULT_IBC_VERSION,
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcQuery, IbcResponse, IbcVmResponse, Runnable,
+    Status, DEFAULT_IBC_VERSION,
 };
 
 pub type Counterparty = connection::counterparty::Counterparty<ClientId, String>;
@@ -43,7 +43,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenInit::Init {
@@ -107,11 +107,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                     end,
                 )?;
 
-                Either::Right(IbcEvent::ConnectionOpenInit(events::ConnectionOpenInit {
-                    connection_id,
-                    client_id,
-                    counterparty_client_id,
-                }))
+                Either::Right((
+                    IbcEvent::ConnectionOpenInit(events::ConnectionOpenInit {
+                        connection_id,
+                        client_id,
+                        counterparty_client_id,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -187,7 +190,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenTry::Init {
@@ -273,12 +276,15 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     .into(),
                     end,
                 )?;
-                Either::Right(IbcEvent::ConnectionOpenTry(events::ConnectionOpenTry {
-                    connection_id,
-                    client_id,
-                    counterparty_client_id: counterparty.client_id,
-                    counterparty_connection_id: counterparty.connection_id.validate().unwrap(),
-                }))
+                Either::Right((
+                    IbcEvent::ConnectionOpenTry(events::ConnectionOpenTry {
+                        connection_id,
+                        client_id,
+                        counterparty_client_id: counterparty.client_id,
+                        counterparty_connection_id: counterparty.connection_id.validate().unwrap(),
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -311,7 +317,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenAck::Init {
@@ -411,12 +417,15 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     connection,
                 )?;
 
-                Either::Right(IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
-                    connection_id: connection_id.validate().unwrap(),
-                    client_id,
-                    counterparty_client_id,
-                    counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
-                }))
+                Either::Right((
+                    IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
+                        connection_id: connection_id.validate().unwrap(),
+                        client_id,
+                        counterparty_client_id,
+                        counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
@@ -446,7 +455,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 ConnectionOpenConfirm::Init {
@@ -542,13 +551,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     connection,
                 )?;
 
-                Either::Right(IbcEvent::ConnectionOpenConfirm(
-                    events::ConnectionOpenConfirm {
+                Either::Right((
+                    IbcEvent::ConnectionOpenConfirm(events::ConnectionOpenConfirm {
                         connection_id: connection_id.validate().unwrap(),
                         client_id,
                         counterparty_client_id,
                         counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
-                    },
+                    }),
+                    IbcVmResponse::Empty,
                 ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),

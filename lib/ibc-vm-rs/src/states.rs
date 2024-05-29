@@ -11,7 +11,8 @@ use unionlabs::{
 };
 
 use crate::{
-    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, Runnable, Status,
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
+    Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -43,7 +44,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), IbcEvent>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
         let res = match (self, resp) {
             (
                 CreateClient::Init {
@@ -115,11 +116,14 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     .into(),
                     consensus_state.clone(),
                 )?;
-                Either::Right(IbcEvent::CreateClient(events::CreateClient {
-                    client_id,
-                    client_type,
-                    consensus_height: height,
-                }))
+                Either::Right((
+                    IbcEvent::CreateClient(events::CreateClient {
+                        client_id,
+                        client_type,
+                        consensus_height: height,
+                    }),
+                    IbcVmResponse::Empty,
+                ))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
