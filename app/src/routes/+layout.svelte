@@ -18,7 +18,6 @@ import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
 import { QueryClient, MutationCache, notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
-    import { cn } from "$lib/utilities/shadcn";
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 

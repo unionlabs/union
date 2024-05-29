@@ -743,6 +743,7 @@ oxalica
 oxlint
 pagefind
 paloma
+paneforge
 paramaters
 paramproposal
 paramsclient
@@ -1142,6 +1143,7 @@ zerg
 zerion
 zerolog
 zetachain
+zkgm
 zkps
 zktrie
 zstd

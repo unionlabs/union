@@ -57,6 +57,7 @@ onMount(() => {
 export let data: PageData
 const { chains, assets } = data
 
+const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
 
 const queryParams = queryParameters(
   {
