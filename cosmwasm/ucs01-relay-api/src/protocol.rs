@@ -183,9 +183,9 @@ pub trait TransferProtocol {
         &mut self,
         ibc_packet: IbcPacketAckMsg,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(ibc_packet.acknowledgement.data.clone())?;
+        let packet = Self::Packet::try_from(ibc_packet.original_packet.data.clone())?;
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
-        let ack: GenericAck = Self::Ack::try_from(ibc_packet.original_packet.data.clone())?.into();
+        let ack: GenericAck = Self::Ack::try_from(ibc_packet.acknowledgement.data.clone())?.into();
         let memo: String = packet.extension().clone().into();
 
         let (ack_msgs, ack_attr) =
