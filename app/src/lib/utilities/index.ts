@@ -1,5 +1,5 @@
-export function raise(error: unknown): never {
-  throw typeof error === "string" ? new Error(error) : error
+function raise(message?: string, opts?: ErrorOptions): never {
+  throw new Error(message, opts)
 }
 
 export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> => x.catch(() => undefined)

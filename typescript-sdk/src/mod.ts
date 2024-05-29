@@ -4,7 +4,7 @@ import {
   type ExecuteInstruction
 } from "@cosmjs/cosmwasm-stargate"
 import { raise } from "./utilities.ts"
-import { ucs01relayAbi } from "./abi/ucs01-relay.ts"
+import { ucs01RelayAbi } from "./abi/ucs01-relay.ts"
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 import type { Optional, Coin, ExtractParameters } from "./types.ts"
 import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
@@ -25,7 +25,6 @@ export interface IUnionClient {
   transferEvmAsset(parameters: {
     receiver: `union${string}`
     denomAddress: Address
-    sourcePort: string
     sourceChannel: string
     amount: bigint
     account: Account | Address
@@ -98,8 +97,10 @@ export class UnionClient implements IUnionClient {
   #cosmosOfflineSigner: CosmosOfflineSigner
   #gas?: Coin
   /** EVM */
+
+  // 0x3d0eb16ad2619666dbde1921282cd885b58eeefe
   #evmSigner?: EvmClient
-  #UCS01_ADDRESS: Address = "0x3d0EB16AD2619666dbde1921282cd885b58eEefE" satisfies Address
+  #UCS01_ADDRESS: Address = "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb" satisfies Address
   #UCS02_ADDRESS: Address = "0xB455b205106c9b72E967399E15EFd8A025FD4A90" satisfies Address
   #COMETBLS_ADDRESS: Address = "0xf906A05a25bf5b61a5e4Ff24bE9122E2Cea5F1E3" satisfies Address
   #IBC_HANDLER_ADDRESS: Address = "0x6B6b60a68b8DCbB170F25045974d10098917F816" satisfies Address
@@ -244,7 +245,6 @@ export class UnionClient implements IUnionClient {
     receiver,
     denomAddress,
     sourceChannel,
-    sourcePort,
     amount,
     contractAddress = this.#UCS01_ADDRESS,
     simulate = true
@@ -252,17 +252,27 @@ export class UnionClient implements IUnionClient {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
     const writeContractParameters = {
       account,
-      abi: ucs01relayAbi,
+      abi: ucs01RelayAbi,
       chain: signer.chain,
+      /**
+       * @dev `send` function of UCS01 contract: https://github.com/unionlabs/union/blob/1b9e4a6551163e552d85405eb70917fdfdc14b55/evm/contracts/apps/ucs/01-relay/Relay.sol#L50-L56
+       */
       functionName: "send",
       address: contractAddress,
+      /**
+       * string calldata sourceChannel,
+       * bytes calldata receiver,
+       * LocalToken[] calldata tokens,
+       * IbcCoreClientV1Height.Data calldata timeoutHeight,
+       * uint64 timeoutTimestamp
+       */
       args: [
-        sourcePort,
         sourceChannel,
         unionToEvmAddress(receiver),
         [{ denom: denomAddress, amount }],
-        8n,
-        10_000_000n
+        { revision_number: 9n, revision_height: 10_000_000_000n },
+        // BigInt(Date.now()) + 7n * 24n * 60n * 60n * 1000n // now + 7 days
+        999_999_999_999_999n
       ]
     } as const
     if (!simulate) return await signer.writeContract(writeContractParameters)
@@ -270,3 +280,5 @@ export class UnionClient implements IUnionClient {
     return await signer.writeContract(request)
   }
 }
+
+// console.log(BigInt(Date.now()) + 7n * 24n * 60n * 60n * 1000n)

@@ -51,7 +51,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 >
   <span
     class={cn(
-      'w-full text-left',
+      'w-full text-left font-mono',
       connectText === 'Sepolia' || connectText === 'Union'
         ? 'text-lg sm:text-sm'
         : 'text-sm sm:text-[15.5px]',

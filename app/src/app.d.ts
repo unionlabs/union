@@ -3,18 +3,22 @@ import type { Window as KeplrWindow } from "@keplr-wallet/types"
 
 declare global {
   namespace App {}
+
   namespace Superforms {
     type Message = {
       text: string
       type: "error" | "success"
     }
   }
+
   interface Window extends KeplrWindow, LeapWindow {
     EventEmitter: typeof EventEmitter
   }
+
   interface WindowEventMap {
     "eip6963:announceProvider": CustomEvent
   }
+
   interface EIP6963ProviderInfo {
     rdns: string
     uuid: string
