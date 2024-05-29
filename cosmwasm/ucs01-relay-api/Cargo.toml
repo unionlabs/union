@@ -20,3 +20,4 @@ token-factory-api = { workspace = true }
 diferred-ack-api  = { workspace = true }
 unionlabs         = { workspace = true }
 protos            = { workspace = true }
+prost             = { workspace = true }

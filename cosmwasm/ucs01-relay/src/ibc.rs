@@ -5,13 +5,15 @@ use cosmwasm_std::{
     IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg,
     IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Reply, Response, SubMsgResult,
 };
+use prost::Message;
+use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
-use ucs01_relay_api::protocol::TransferProtocol;
+use ucs01_relay_api::{middleware::InFlightPfmPacket, protocol::TransferProtocol};
 
 use crate::{
     error::ContractError,
     protocol::{protocol_ordering, Ics20Protocol, ProtocolCommon, Ucs01Protocol},
-    state::{ChannelInfo, CHANNEL_INFO},
+    state::{ChannelInfo, PfmRefundPacketKey, CHANNEL_INFO, IN_FLIGHT_PFM_PACKETS},
 };
 
 fn to_response<T>(
@@ -36,13 +38,47 @@ fn to_response<T>(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_: DepsMut, _: Env, reply: Reply) -> Result<Response<TokenFactoryMsg>, ContractError> {
+pub fn reply(
+    deps: DepsMut,
+    _: Env,
+    reply: Reply,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match (reply.id, reply.result) {
         (Ics20Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ics20Protocol::receive_error(err)))
         }
         (Ucs01Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ucs01Protocol::receive_error(err)))
+        }
+        (Ics20Protocol::IBC_SEND_ID, SubMsgResult::Ok(value))
+        | (Ucs01Protocol::IBC_SEND_ID, SubMsgResult::Ok(value)) => {
+            if let Some(msg_response) = value.msg_responses.iter().find(|msg_response| {
+                msg_response
+                    .type_url
+                    .eq("cosmwasm.wasm.v1.MsgIBCSendResponse")
+            }) {
+                let send_res: MsgIbcSendResponse =
+                    MsgIbcSendResponse::decode(msg_response.value.as_slice()).expect("is type url");
+
+                let in_flight_packet: InFlightPfmPacket =
+                    serde_json_wasm::from_slice(reply.payload.as_slice()).expect("binary is type");
+
+                let refund_packet_key = PfmRefundPacketKey {
+                    channel_id: in_flight_packet.clone().refund_channel_id,
+                    port_id: in_flight_packet.clone().refund_port_id,
+                    sequence: send_res.sequence,
+                };
+
+                let _ = IN_FLIGHT_PFM_PACKETS
+                    .update(
+                        deps.storage,
+                        refund_packet_key,
+                        |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
+                    )
+                    .expect("infallible update");
+            }
+
+            Ok(Response::new())
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,
@@ -229,7 +265,7 @@ pub fn ibc_packet_timeout(
                 channel: channel_info,
             },
         }
-        .send_timeout(msg.packet.data),
+        .send_timeout(msg.packet),
         Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -238,7 +274,7 @@ pub fn ibc_packet_timeout(
                 channel: channel_info,
             },
         }
-        .send_timeout(msg.packet.data),
+        .send_timeout(msg.packet),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
             protocol_version: v.into(),

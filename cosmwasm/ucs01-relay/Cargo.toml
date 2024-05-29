@@ -36,3 +36,4 @@ token-factory-api = { workspace = true }
 diferred-ack-api  = { workspace = true }
 ucs01-relay-api   = { workspace = true }
 protos            = { workspace = true }
+prost             = { workspace = true }

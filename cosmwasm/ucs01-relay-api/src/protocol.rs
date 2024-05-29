@@ -79,6 +79,7 @@ pub trait TransferProtocol {
     const ORDERING: IbcOrder;
     /// Must be unique per Protocol
     const RECEIVE_REPLY_ID: u64;
+    const IBC_SEND_ID: u64;
 
     type Packet: TryFrom<Binary, Error = EncodingError>
         + TryInto<Binary, Error = EncodingError>
@@ -161,13 +162,17 @@ pub trait TransferProtocol {
         };
 
         let tokens = packet.tokens();
-        Ok(Response::new()
-            .add_messages(send_msgs)
-            .add_message(IbcMsg::SendPacket {
+        let sub = SubMsg::reply_on_success(
+            IbcMsg::SendPacket {
                 channel_id: self.channel_endpoint().channel_id.clone(),
                 data: packet.try_into()?,
                 timeout: input.current_time.plus_seconds(input.timeout_delta).into(),
-            })
+            },
+            Self::IBC_SEND_ID,
+        );
+        Ok(Response::new()
+            .add_messages(send_msgs)
+            .add_submessage(sub)
             .add_events([
                 transfer_event
                     .add_attributes([
@@ -188,35 +193,40 @@ pub trait TransferProtocol {
         let ack: GenericAck = Self::Ack::try_from(ibc_packet.acknowledgement.data.clone())?.into();
         let memo: String = packet.extension().clone().into();
 
-        let (ack_msgs, ack_attr) =
-            if let Ok(Memo::Forward { forward }) = serde_json_wasm::from_str::<Memo>(&memo) {
-                self.pfm_ack(ack, forward, packet.sender(), packet.tokens())?
-            } else {
-                match ack {
-                    Ok(value) => {
-                        let value_string = value.to_string();
-                        (
-                            self.send_tokens_success(
-                                packet.sender(),
-                                packet.receiver(),
-                                packet.tokens(),
-                            )?,
-                            (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
-                        )
-                    }
-                    Err(error) => {
-                        let error_string = error.to_string();
-                        (
-                            self.send_tokens_failure(
-                                packet.sender(),
-                                packet.receiver(),
-                                packet.tokens(),
-                            )?,
-                            (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
-                        )
-                    }
+        let (ack_msgs, ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
+            ack.clone(),
+            ibc_packet.original_packet.clone(),
+            packet.sender(),
+            packet.tokens(),
+            ibc_packet.original_packet.sequence,
+        )? {
+            (ack_msgs, ack_attr)
+        } else {
+            match ack {
+                Ok(value) => {
+                    let value_string = value.to_string();
+                    (
+                        self.send_tokens_success(
+                            packet.sender(),
+                            packet.receiver(),
+                            packet.tokens(),
+                        )?,
+                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                    )
                 }
-            };
+                Err(error) => {
+                    let error_string = error.to_string();
+                    (
+                        self.send_tokens_failure(
+                            packet.sender(),
+                            packet.receiver(),
+                            packet.tokens(),
+                        )?,
+                        (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
+                    )
+                }
+            }
+        };
 
         let packet_event = {
             Event::new(PACKET_EVENT)
@@ -240,21 +250,23 @@ pub trait TransferProtocol {
 
     fn send_timeout(
         &mut self,
-        raw_packet: impl Into<Binary>,
+        ibc_packet: IbcPacket,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(raw_packet.into())?;
+        let packet = Self::Packet::try_from(ibc_packet.clone().data)?;
         // same branch as failure ack
         let memo = Into::<String>::into(packet.extension().clone());
-        let (refund_msgs, _) =
-            if let Ok(Memo::Forward { forward }) = serde_json_wasm::from_str::<Memo>(&memo) {
-                let ack = GenericAck::Err("giving up on forwarded packet after timeout".to_owned());
-                self.pfm_ack(ack, forward, packet.sender(), packet.tokens())?
-            } else {
-                (
-                    self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
-                    None,
-                )
-            };
+        let ack = GenericAck::Err("giving up on forwarded packet after timeout".to_owned());
+        let refund_msgs = if let Some((ack_msgs, _)) = self.pfm_ack(
+            ack,
+            ibc_packet.clone(),
+            packet.sender(),
+            packet.tokens(),
+            ibc_packet.sequence,
+        )? {
+            ack_msgs
+        } else {
+            self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?
+        };
 
         let timeout_event = if memo.is_empty() {
             Event::new(PACKET_EVENT)
@@ -373,10 +385,11 @@ pub trait TransferProtocol {
     fn pfm_ack(
         &mut self,
         ack: GenericAck,
-        original_forward_packet: PacketForward,
+        ibc_packet: IbcPacket,
         sender: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
-    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>), Self::Error>;
+        sequence: u64,
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>)>, Self::Error>;
 }
 
 #[cfg(test)]

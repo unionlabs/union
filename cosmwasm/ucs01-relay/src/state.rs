@@ -31,16 +31,12 @@ pub type Hash = [u8; HASH_LENGTH];
 pub struct PfmRefundPacketKey {
     pub channel_id: String,
     pub port_id: String,
-    // Block height of the original transaction
-    pub height: u64,
-    // Index of the original transaction from `cosmwasm_std::types::TransactionInfo`
-    pub index: u64,
+    pub sequence: u64,
 }
 
 impl<'a> Prefixer<'a> for PfmRefundPacketKey {
     fn prefix(&self) -> Vec<cw_storage_plus::Key> {
-        let mut res = self.index.prefix();
-        res.extend(self.height.prefix());
+        let mut res = self.sequence.prefix();
         res.extend(self.port_id.prefix());
         res.extend(self.channel_id.prefix());
         res
@@ -67,8 +63,7 @@ impl<'a> PrimaryKey<'a> for PfmRefundPacketKey {
     type SuperSuffix = <(String, String, u64) as PrimaryKey<'a>>::SuperSuffix;
 
     fn key(&self) -> Vec<cw_storage_plus::Key> {
-        let mut res = self.index.prefix();
-        res.extend(self.height.prefix());
+        let mut res = self.sequence.prefix();
         res.extend(self.port_id.prefix());
         res.extend(self.channel_id.prefix());
         res
