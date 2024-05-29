@@ -40,6 +40,8 @@ pub struct AppArgs {
     pub config_file_path: OsString,
     #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
     pub log_format: LogFormat,
+    #[arg(long, global = true, default_value_t = 2 * 1024 * 1024)]
+    pub stack_size: usize,
     #[command(subcommand)]
     pub command: Command,
 }

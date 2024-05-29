@@ -8,10 +8,13 @@ use std::{
 };
 
 use serde::{de::DeserializeOwned, Serialize};
-use sqlx::{migrate::Migrator, query, query_as, types::Json, Acquire, Postgres};
+use sqlx::{migrate::Migrator, query, types::Json, Acquire, Postgres};
 use tracing::Instrument;
 
 pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
+
+// TODO: Remove
+pub use serde_stacker;
 
 /// A fifo queue backed by a postgres table. Not suitable for high-throughput, but enough for ~1k items/sec.
 ///
@@ -92,14 +95,14 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         let mut tx = conn.begin().await?;
 
-        #[derive(Debug)]
-        struct Record<T> {
-            id: i64,
-            item: Json<T>,
-        }
+        // #[derive(Debug)]
+        // struct Record<T> {
+        //     id: i64,
+        //     item: String,
+        // }
 
-        let row = query_as!(
-            Record::<T>,
+        let row = query!(
+            // Record::<T>,
             "
             UPDATE queue
             SET status = 'done'::status
@@ -111,7 +114,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
               FOR UPDATE SKIP LOCKED
               LIMIT 1
             )
-            RETURNING id, item as \"item: Json<T>\"",
+            RETURNING id, item::text as \"item!: String\"",
         )
         .fetch_optional(tx.as_mut())
         .await?;
@@ -119,7 +122,17 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         match row {
             Some(row) => {
                 let span = tracing::info_span!("processing item", id = row.id);
-                let (r, res) = f(row.item.0).instrument(span).await;
+
+                tracing::trace!(%row.item);
+
+                let mut deserializer: serde_json::Deserializer<serde_json::de::StrRead> =
+                    serde_json::Deserializer::from_str(&row.item);
+                deserializer.disable_recursion_limit();
+                let deserializer = serde_stacker::Deserializer::new(&mut deserializer);
+
+                let json = T::deserialize(deserializer).unwrap();
+
+                let (r, res) = f(json).instrument(span).await;
 
                 match res {
                     Err(error) => {

@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
-    data, defer_absolute, fetch, now, queue_msg, seq, wait, HandleWait, QueueError,
+    data, defer_absolute, fetch, noop, now, queue_msg, seq, wait, HandleWait, QueueError,
     QueueMessageTypes, QueueMsg,
 };
 use unionlabs::{
@@ -61,7 +61,7 @@ where
             Wait::Height(WaitForHeight { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
                 if chain_height >= height {
-                    QueueMsg::Noop
+                    noop()
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain

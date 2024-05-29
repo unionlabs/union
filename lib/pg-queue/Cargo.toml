@@ -11,8 +11,9 @@ workspace = true
 test-include = []
 
 [dependencies]
-serde      = { workspace = true }
-serde_json = { workspace = true }
-sqlx       = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio"] }
-tokio      = { workspace = true, features = ["time"] }
-tracing    = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true, features = ["unbounded_depth"] }
+serde_stacker = "0.1.11"
+sqlx          = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio"] }
+tokio         = { workspace = true, features = ["time"] }
+tracing       = { workspace = true }

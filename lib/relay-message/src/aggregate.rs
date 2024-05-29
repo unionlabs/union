@@ -5,7 +5,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, defer_relative, effect, fetch, queue_msg, seq, wait, HandleAggregate, QueueError,
+    conc, defer_relative, effect, fetch, noop, queue_msg, seq, wait, HandleAggregate, QueueError,
     QueueMessageTypes, QueueMsg,
 };
 use unionlabs::{
@@ -2396,7 +2396,7 @@ where
                 destination_channel = %packet.destination_channel,
                 "packet received, cancelling timeout"
             );
-            QueueMsg::Noop
+            noop()
         } else {
             seq([
                 // void(wait(id(
@@ -2593,7 +2593,7 @@ where
         assert_eq!(this_chain_id, next_connection_sequence_chain_id);
 
         if next_connection_sequence >= sequence {
-            QueueMsg::Noop
+            noop()
         } else {
             seq([
                 defer_relative(3),
@@ -2650,7 +2650,7 @@ where
         assert_eq!(this_chain_id, next_client_sequence_chain_id);
 
         if next_client_sequence >= sequence {
-            QueueMsg::Noop
+            noop()
         } else {
             seq([
                 defer_relative(3),
@@ -2710,7 +2710,7 @@ where
         assert_eq!(connection_id, path_connection_id);
 
         if connection.state == connection::state::State::Open {
-            QueueMsg::Noop
+            noop()
         } else {
             seq([
                 defer_relative(3),
