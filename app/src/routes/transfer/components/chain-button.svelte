@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.ts";
-  import ChevronDown from "virtual:icons/lucide/chevron-down"
+  import Chevron from "./chevron.svelte"
   import type { PageData } from "../$types";
 
   export let selectedChain: PageData["chains"][number] | undefined; 
@@ -8,23 +8,23 @@
 </script>
 
 <Button
-  variant="ghost"
+  variant="outline"
   data-transfer-from-chain=""
   on:click={() => (dialogOpen = !dialogOpen)}
-  class="flex flex-row justify-between space-x-2 p-2 border-none rounded-sm size-full"
+  class="flex flex-row items-center size-full"
 >
-  <div class="flex space-x-1.5 h-full">
+  <div class="flex items-center space-x-1.5 flex-1">
     <img
       src={selectedChain?.icon}
       alt={`${selectedChain?.name} logo`}
-      class="size-11  invert dark:invert-0"
+      class="size-9  invert dark:invert-0"
     />
-    <div class="size-full mr-auto flex flex-col items-start justify-center space-y-2">
-      <span class="sm:text-[1.5rem] text-xl font-extrabold mr-auto w-full text-left">
+    <div class="flex flex-col items-start">
+      <div class="font-bold text-md mr-auto w-full text-left">
         {selectedChain?.name}
-      </span>
-      <span class="text-xs text-muted-foreground">{selectedChain?.id}</span>
+      </div>
+      <div class="text-xs font-mono text-muted-foreground">{selectedChain?.id}</div>
     </div>
   </div>
-  <ChevronDown class="-mt-6 size-6 text-accent-foreground/60" />
+  <Chevron/>
 </Button>

@@ -17,13 +17,14 @@ import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.js"
 import ChainDialog from "./components/chain-dialog.svelte"
 import ChainButton from "./components/chain-button.svelte"
-import ChevronDown from "virtual:icons/lucide/chevron-down"
+import Chevron from "./components/chevron.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import AssetsDialog from "./components/assets-dialog.svelte"
 import SettingsDialog from "./components/settings-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
+import CardSectionHeading from "./components/card-section-heading.svelte"
 
 /**
  * TODO:
@@ -56,7 +57,6 @@ onMount(() => {
 export let data: PageData
 const { chains, assets } = data
 
-const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
 
 const queryParams = queryParameters(
   {
@@ -234,12 +234,11 @@ let buttonText = "Send it" satisfies
 </svelte:head>
 
 <main class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8">
-  <Card.Root class="max-w-[475px]">
+  <Card.Root class="max-w-[475px] w-full">
     <Card.Header
       class="flex flex-row w-full items-center h-10 gap-x-3 mb-3"
     >
-      <Card.Title>Transfer</Card.Title>
-      <div class="flex-1"></div>
+      <Card.Title tag="h1" class="flex-1">Transfer</Card.Title>
       <Button
         size="icon"
         type="button"
@@ -261,96 +260,58 @@ let buttonText = "Send it" satisfies
     </Card.Header>
     <Card.Content
       class={cn(
-        devBorder,
         'size-full pb-3 px-3.5 flex flex-col justify-between',
         'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md',
       )}
     >
       <div
         data-transfer-from-section
-        class={cn(devBorder, 'w-full pb-0 sm:my-3 mt-2 flex flex-row justify-between')}
       >
+
+        <CardSectionHeading>From</CardSectionHeading>
         <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain}/>
 
+
+        <div class="flex flex-col items-center pt-4">
         <Button
           size="icon"
           variant="outline"
           on:click={swapChainsClick}
-          class="h-8 w-16 rounded-xl dark:text-white my-auto mx-3"
         >
-          <ArrowLeftRight class="size-5 dark:text-white" />
+          <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
         </Button>
+        </div>
 
+        <CardSectionHeading>To</CardSectionHeading>
         <ChainButton bind:selectedChain={selectedToChain} bind:dialogOpen={dialogOpenToChain}/>
       </div>
       <!-- asset -->
-      <div class={cn('size-full mb-auto')}>
-        <p class="text-left text-2xl my-2 font-extrabold ml-2">Asset</p>
-        <Button
-          variant="outline"
-          on:click={() => (dialogOpenToken = !dialogOpenToken)}
-          class={cn(
-            devBorder,
-            'outline outline-1 outline-accent/90',
-            'size-full max-h-[5.5rem] flex flex-row justify-between space-x-2 px-2 pt-1.5 border-none',
-          )}
-        >
-          <div
-            class={cn(
-              devBorder,
-              'h-full flex flex-row justify-start items-center z-50',
-            )}
-          >
-            <img
-              alt="asset"
-              src={`/images/icons/${selectedFromChain?.name}.svg`}
-              class={cn('p-1 z-10', 'size-14 outline-[1.5px] rounded-full bg-[#0b0b0b]')}
-            />
-            <img
-              alt="asset"
-              class={cn('size-12 z-50 my-auto mt-4 -ml-8')}
-              src={`/images/icons/${selectedAsset?.symbol.toLowerCase()}.svg`}
-            />
-          </div>
+      <CardSectionHeading>Asset</CardSectionHeading>
+      <Button
+        variant="outline"
+        on:click={() => (dialogOpenToken = !dialogOpenToken)}
+      >
+        <div class="text-2xl font-bold flex-1 text-left">{selectedAsset?.symbol}</div>
 
-          <div
-            class={cn(devBorder, 'size-full max-w-[250px] flex flex-col justify-between space-y-3')}
-          >
-            <p class="text-5xl font-black m-auto">{selectedAsset?.symbol}</p>
-          </div>
-          <div class="h-full space-y-2">
-            <p class="">balance</p>
-            <p class={cn(devBorder, 'font-sans text-2xl font-black m-auto tabular-nums')}>--</p>
-          </div>
+        <Chevron/>
+      </Button>
 
-          <ChevronDown class={cn(devBorder, 'size-6 mb-auto mt-0.5 ml-auto')} />
-        </Button>
-      </div>
-
-      <!-- amount -->
-      <div class={cn('my-2')}>
-        <p class="text-left text-2xl font-extrabold ml-2">Amount</p>
-        <Input
-          minlength={1}
-          maxlength={64}
-          placeholder="0.00"
-          autocorrect="off"
-          autocomplete="off"
-          spellcheck="false"
-          autocapitalize="none"
-          data-transfer-from-amount
-          bind:value={inputValue.from}
-          pattern="^[0-9]*[.,]?[0-9]*$"
-          class={cn(
-            'outline-1 outline-accent/80 outline',
-            'text-5xl font-bold h-16 sm:h-20 mt-2 mb-0 px-3 tabular-nums border-none',
-          )}
-        />
-      </div>
-      <!-- recipient -->
-      <div class={cn('my-2')}>
-        <p class="text-left text-xl font-extrabold ml-2 mb-2">Recipient</p>
-        <div class="relative flex-1 mr-auto">
+      <CardSectionHeading>Amount</CardSectionHeading>
+      <Input
+        minlength={1}
+        maxlength={64}
+        placeholder="0.00"
+        autocorrect="off"
+        autocomplete="off"
+        spellcheck="false"
+        autocapitalize="none"
+        data-transfer-from-amount
+        bind:value={inputValue.from}
+        pattern="^[0-9]*[.,]?[0-9]*$"
+        
+      />
+      <CardSectionHeading>Recipient</CardSectionHeading>
+        <div class="flex gap-2 flex-row">
           <Input
             minlength={1}
             maxlength={64}
@@ -363,18 +324,14 @@ let buttonText = "Send it" satisfies
             bind:value={inputValue.recipient}
             disabled={recipientInputState === 'locked' && inputValue.recipient.length > 0}
             class={cn(
-              inputValue.recipient.startsWith('0x') ? 'text-[0.94rem]' : 'text-[0.9rem]',
-              'text-justify mt-2 mb-0 px-3 tabular-nums border-none text-balance my-auto',
-              'outline-1 outline-accent/80 outline',
             )}
           />
           <Button
             size="icon"
             type="button"
-            variant="ghost"
+            variant="outline"
             name="recipient-lock"
             on:click={onUnlockClick}
-            class="absolute bottom-[1px] right-0 rounded-l-none"
           >
             <LockLockedIcon
               class={cn(
@@ -392,7 +349,6 @@ let buttonText = "Send it" satisfies
             />
           </Button>
         </div>
-      </div>
     </Card.Content>
     <Card.Footer class="p-0 mt-2 sm:mt-4">
       <Button
@@ -441,7 +397,7 @@ let buttonText = "Send it" satisfies
   {handleAssetSearch}
   {handleAssetSelect}
   {assetSearchResults}
-  dialogOpen={dialogOpenToken}
+  bind:dialogOpen={dialogOpenToken}
 />
 
 <DraftPageNotice className="hidden sm:inline" />
