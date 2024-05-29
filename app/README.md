@@ -1,5 +1,9 @@
 # Union's Web App
 
+## General Guidelines
+
+- Components that are only used used within a single route should follow the official SvelteKit guideline and be placed in the same directory as the route ([reference](https://kit.svelte.dev/docs/project-structure#project-files)).
+
 ## Tools Used
 
 - Data fetching: [TanStack Query](https://tanstack.com/query/latest/docs/framework/svelte/ssr)

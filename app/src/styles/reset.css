@@ -4,8 +4,10 @@
 
 * {
   margin: 0;
-  scrollbar-width: 0.1rem;
-  scrollbar-color: transparent transparent;
+  box-sizing: border-box;
+  text-size-adjust: 100%;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
 }
 
 input {
@@ -19,10 +21,6 @@ input[type=number]::-webkit-outer-spin-button {
   -moz-appearance: none;
   appearance: none;
   margin: 0;
-}
-
-*::-webkit-scrollbar {
-  display: none;
 }
 
 button {

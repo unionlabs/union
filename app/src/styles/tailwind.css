@@ -3,40 +3,22 @@
  * You probably want to edit `index.css` instead
  */
 @tailwind base;
-@tailwind components;
 @tailwind utilities;
+@tailwind components;
+/* @tailwind variants; */
 
-@font-face {
-  font-family: 'Inter var';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/inter/InterVariable.woff2') format('woff2');
+@layer components {
+  .min-size-full {
+    min-width: 100%;
+    min-height: 100%;
+  }
+  .min-size-min {
+    min-width: min-content;
+    min-height: min-content;
+  }
 }
 
-@font-face {
-  font-family: 'Inter var';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/inter/InterVariable-Italic.woff2') format('woff2');
-}
 
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono/JetBrainsMono.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono/JetBrainsMono-Italic.woff2') format('woff2');
-}
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -90,7 +72,7 @@
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
 
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 240 3.7% 18.9%;
     --secondary-foreground: 0 0% 98%;
 
     --accent: 240 3.7% 15.9%;
@@ -102,14 +84,12 @@
     --ring: 240 3.7% 15.9%;
   }
 }
-
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-inherit text-inherit;
+    @apply bg-background text-foreground;
     /* font-feature-settings: "rlig" 1, "calt" 1; */
     font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
@@ -122,21 +102,6 @@
   }
 
   /* Font face Geist font */
-
-  /* === Scrollbars === */
-
-  ::-webkit-scrollbar {
-    @apply w-2;
-    @apply h-2;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply !bg-muted;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply rounded-sm !bg-muted-foreground/30;
-  }
 
   /* Firefox */
   /* https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-color#browser_compatibility */
@@ -156,7 +121,6 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
   .antialised {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -172,6 +136,15 @@
     @apply absolute inline-flex h-9 w-9 items-center justify-center rounded-full border-4 border-background bg-muted text-center -indent-px font-mono text-base font-medium;
     @apply ml-[-50px] mt-[-4px];
     content: counter(step);
+  }
+
+  .chunk-container {
+    @apply shadow-none;
+  }
+
+  .chunk-container::after {
+    content: "";
+    @apply absolute -inset-4 rounded-xl border shadow-xl;
   }
 }
 
@@ -207,6 +180,10 @@
   display: none;
 }
 
+[data-metadata] .pre-copy-btn {
+  @apply top-16 !important;
+}
+
 .super-debug {
   @apply bg-zinc-950 text-[#FFF8] dark:bg-zinc-900 !important;
 }
@@ -226,15 +203,12 @@
 .super-debug--code .undefined {
   @apply !text-[#FFF8];
 }
-
 .super-debug--code .string {
   @apply !text-[#FFF8];
 }
-
 .super-debug--code .number {
   @apply !text-[#FFF8];
 }
-
 .super-debug--code .boolean {
   @apply !text-[#FFF8];
 }

@@ -22,11 +22,6 @@ export const ucs02NftAbi = <const>[
     name: "getOutstanding",
     inputs: [
       {
-        name: "sourcePort",
-        type: "string",
-        internalType: "string"
-      },
-      {
         name: "sourceChannel",
         type: "string",
         internalType: "string"
@@ -146,7 +141,7 @@ export const ucs02NftAbi = <const>[
         internalType: "bytes"
       },
       {
-        name: "_relayer",
+        name: "",
         type: "address",
         internalType: "address"
       }
@@ -159,53 +154,53 @@ export const ucs02NftAbi = <const>[
     name: "onChanCloseConfirm",
     inputs: [
       {
-        name: "_portId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "_channelId",
+        name: "",
         type: "string",
         internalType: "string"
       }
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "view"
   },
   {
     type: "function",
     name: "onChanCloseInit",
     inputs: [
       {
-        name: "_portId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "_channelId",
+        name: "",
         type: "string",
         internalType: "string"
       }
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "view"
   },
   {
     type: "function",
     name: "onChanOpenAck",
     inputs: [
       {
-        name: "portId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "channelId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "counterpartyChannelId",
+        name: "",
         type: "string",
         internalType: "string"
       },
@@ -216,19 +211,19 @@ export const ucs02NftAbi = <const>[
       }
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "view"
   },
   {
     type: "function",
     name: "onChanOpenConfirm",
     inputs: [
       {
-        name: "_portId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "_channelId",
+        name: "",
         type: "string",
         internalType: "string"
       }
@@ -246,22 +241,22 @@ export const ucs02NftAbi = <const>[
         internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
       },
       {
-        name: "_connectionHops",
+        name: "",
         type: "string[]",
         internalType: "string[]"
       },
       {
-        name: "portId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "channelId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "counterpartyEndpoint",
+        name: "",
         type: "tuple",
         internalType: "struct IbcCoreChannelV1Counterparty.Data",
         components: [
@@ -284,7 +279,7 @@ export const ucs02NftAbi = <const>[
       }
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -296,22 +291,22 @@ export const ucs02NftAbi = <const>[
         internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
       },
       {
-        name: "_connectionHops",
+        name: "",
         type: "string[]",
         internalType: "string[]"
       },
       {
-        name: "portId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "channelId",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "counterpartyEndpoint",
+        name: "",
         type: "tuple",
         internalType: "struct IbcCoreChannelV1Counterparty.Data",
         components: [
@@ -339,7 +334,7 @@ export const ucs02NftAbi = <const>[
       }
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -517,7 +512,7 @@ export const ucs02NftAbi = <const>[
         ]
       },
       {
-        name: "relayer",
+        name: "",
         type: "address",
         internalType: "address"
       }
@@ -589,7 +584,7 @@ export const ucs02NftAbi = <const>[
         ]
       },
       {
-        name: "_relayer",
+        name: "",
         type: "address",
         internalType: "address"
       }
@@ -647,11 +642,6 @@ export const ucs02NftAbi = <const>[
     type: "function",
     name: "send",
     inputs: [
-      {
-        name: "sourcePort",
-        type: "string",
-        internalType: "string"
-      },
       {
         name: "sourceChannel",
         type: "string",
@@ -731,7 +721,7 @@ export const ucs02NftAbi = <const>[
       {
         name: "nftClass",
         type: "address",
-        indexed: false,
+        indexed: true,
         internalType: "address"
       }
     ],
@@ -813,7 +803,7 @@ export const ucs02NftAbi = <const>[
       {
         name: "nftClass",
         type: "address",
-        indexed: false,
+        indexed: true,
         internalType: "address"
       },
       {
@@ -856,7 +846,7 @@ export const ucs02NftAbi = <const>[
       {
         name: "nftClass",
         type: "address",
-        indexed: false,
+        indexed: true,
         internalType: "address"
       },
       {
@@ -899,7 +889,7 @@ export const ucs02NftAbi = <const>[
       {
         name: "nftClass",
         type: "address",
-        indexed: false,
+        indexed: true,
         internalType: "address"
       },
       {

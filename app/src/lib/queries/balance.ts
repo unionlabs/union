@@ -1,8 +1,5 @@
 import * as v from "valibot"
-import { graphql } from "gql.tada"
-import { URLS } from "$lib/constants"
-import { request } from "graphql-request"
-import { API_KEY } from "$lib/constants/keys"
+import { KEY } from "$lib/constants/keys.ts"
 import { formatUnits, type Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQuery } from "@tanstack/svelte-query"
@@ -27,16 +24,10 @@ export function balanceQuery<TChain extends ChainId>({
 }) {
   return createQuery({
     queryKey: ["balance", chain, asset, address],
-    queryFn: async () =>
-      request(
-        URLS.GRAPHQL,
-        // TODO: Update the query once REST API codegen is done
-        graphql(/* GraphQL */ `
-        query userBalances($address: String!) {
-          __typename
-        }`),
-        { address }
-      ),
+    // TODO: Update the query once REST API codegen is done
+    queryFn: () => {
+      throw new Error("Not implemented")
+    },
     enabled: !!address
   })
 }
@@ -82,7 +73,7 @@ export function evmBalancesQuery({
             ? restParams.tokenSpecification // if tokenSpecification is a string, use it
             : "DEFAULT_TOKENS"
       console.log(address, assetsToCheck)
-      const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${API_KEY.ALCHEMY}`, {
+      const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`, {
         method: "POST",
         body: JSON.stringify({
           id: 1,

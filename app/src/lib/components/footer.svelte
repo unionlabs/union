@@ -4,7 +4,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import HomeIcon from "virtual:icons/lucide/home"
 import MenuIcon from "virtual:icons/lucide/menu"
 import WalletMinimalIcon from "virtual:icons/lucide/wallet"
-import Button from "$lib/components/ui/button/button.svelte"
+import { Button } from "$lib/components/ui/button/index.ts"
 import ArrowDownUpIcon from "virtual:icons/lucide/arrow-up-down"
 import { Navigation } from "$lib/components/navigation/index.ts"
 
@@ -13,16 +13,16 @@ const onWalletClick = () => document.querySelector("button[data-dialog-trigger]"
 let navigationDrawerOpen = false
 $: if ($navigating) navigationDrawerOpen = false
 
-const navigationButtonStyle =
-  "my-auto self-center hover:bg-transparent h-16 w-full rounded-none hover:bg-muted border-solid border-t-0"
 const navigationIconStyle = "size-9 min-w-6 dark:hover:text-white text-zinc-accent"
 </script>
 
 <footer
   class={cn(
-    'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 py-2 ',
+    'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 py-2',
+    'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-lg',
     'grid lg:hidden grid-cols-4 gap-y-2 place-content-center divide-x-[1px] divide-[#fafafa25]',
-    'border-t-[1px] border-solid border-[#fafafa25] border-opacity-90 backdrop-blur-md',
+    // styling children
+    '*:my-auto *:self-center *:h-16 *:w-full *:rounded-none *:border-solid *:border-t-0',
   )}
 >
   <Button
@@ -31,7 +31,7 @@ const navigationIconStyle = "size-9 min-w-6 dark:hover:text-white text-zinc-acce
     name="home"
     variant="link"
     aria-label="Home page link"
-    class={navigationButtonStyle}
+    class="hover:bg-transparent hover:bg-muted"
   >
     <HomeIcon class={navigationIconStyle} />
   </Button>
@@ -41,7 +41,7 @@ const navigationIconStyle = "size-9 min-w-6 dark:hover:text-white text-zinc-acce
     href="/send"
     variant="link"
     aria-label="send page link"
-    class={navigationButtonStyle}
+    class="hover:bg-transparent hover:bg-muted"
   >
     <ArrowDownUpIcon class={navigationIconStyle} />
   </Button>
@@ -51,18 +51,17 @@ const navigationIconStyle = "size-9 min-w-6 dark:hover:text-white text-zinc-acce
     type="button"
     variant="ghost"
     on:click={() => onWalletClick()}
-    class={navigationButtonStyle}
+    class="hover:bg-transparent hover:bg-muted"
   >
     <WalletMinimalIcon class={navigationIconStyle} />
   </Button>
-
   <Button
     size="icon"
     name="menu"
     type="button"
     variant="ghost"
     on:click={() => (navigationDrawerOpen = !navigationDrawerOpen)}
-    class={navigationButtonStyle}
+    class="hover:bg-transparent hover:bg-muted"
   >
     <MenuIcon class={navigationIconStyle} />
     <Navigation {navigationDrawerOpen} />

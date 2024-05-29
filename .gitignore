@@ -64,3 +64,4 @@ process-compose.yml
 process-compose.override.yml
 *.cpuprofile
 .vite-inspect
+~partytown/

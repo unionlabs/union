@@ -123,12 +123,38 @@ export const assets = [
     },
     denom: "muno",
     symbol: "UNO",
+    kind: "cosmwasm",
     contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-    display: "osmosisUNO",
+    display: "UNO (native to Osmosis)",
     explorerLink: "https://testnet.bonlulu.uno/union/tx/",
     id: "union-osmosis-uno"
   },
-  // UNO from Union to Osmosis - verified
+  // UNO from Union to Sepolia
+  {
+    source: {
+      chain: "union-testnet-8",
+      channel: "channel-0",
+      client: "08-wasm-0",
+      connection: "connection-1",
+      port: "",
+      explorerLink: "https://api.bonlulu.uno/union/tx/"
+    },
+    destination: {
+      chain: "11155111",
+      channel: "channel-0",
+      port: "",
+      client: "",
+      connection: "",
+      explorerLink: "https://sepolia.etherscan.io/tx/"
+    },
+    denom: "muno",
+    symbol: "UNO",
+    kind: "cosmwasm",
+    contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+    display: "UNO (native to Sepolia)",
+    id: "union-sepolia-uno"
+  },
+  // UNO from Osmosis to Union - validated
   {
     source: {
       port: "transfer",
@@ -148,10 +174,13 @@ export const assets = [
     },
     denom: "muno",
     symbol: "UNO",
-    display: "unionUNO",
+    kind: "ibc",
+    display: "UNO (Osmosis to native)",
+    contractAddress: null,
     explorerLink: "https://www.mintscan.io/osmosis-testnet/tx/",
     id: "osmosis-union-uno"
   },
+  // OSMO from Osmosis to Union - validated
   {
     source: {
       port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
@@ -172,11 +201,14 @@ export const assets = [
     denom:
       "factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3",
     symbol: "OSMO",
-    contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-    display: "OSMO",
+    // contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
+    contractAddress: null,
+    kind: "cosmwasm",
+    display: "OSMO (native to Union)",
     explorerLink: "https://www.mintscan.io/osmosis-testnet/tx/",
     id: "osmosis-union-osmo"
   },
+  // OSMO from Union to Osmosis - validated
   {
     source: {
       port: "wasm.union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
@@ -196,8 +228,9 @@ export const assets = [
     },
     denom: "muno",
     symbol: "UNO",
+    kind: "ibc",
     contractAddress: "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7",
-    display: "ethUNO",
+    display: "UNO (Union to native)",
     explorerLink: "https://sepolia.etherscan.io/tx",
     id: "union-osmosis-eth-uno"
   }
@@ -220,7 +253,8 @@ export interface Asset {
     chain: ChainId
     explorerLink?: string
   }
-  contractAddress?: string
+  kind: "ibc" | "cosmwasm" | "evm"
+  contractAddress: string | null
   symbol: string
   denom: string
   display: string

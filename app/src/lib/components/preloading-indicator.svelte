@@ -18,14 +18,14 @@ onMount(() => {
   <div class="absolute w-full h-1 z-[999] left-0 top-0">
     <div
       style="width: {progress * 100}%"
-      class={cn(['absolute h-full bg-cyan-300 transition-[width] duration-500 left-0 top-0'])}
+      class={cn(['absolute h-full bg-union-accent-600 transition-[width] duration-500 left-0 top-0'])}
     />
   </div>
 {/if}
 
 {#if progress >= 0.4}
   <div
-    class="fixed w-full h-full bg-[rgba(234,248,255,0.04)] pointer-events-none z-[998] animate-[fade_0.4s]"
+    class="fixed size-full bg-[rgba(234,248,255,0.04)] pointer-events-none z-[998] animate-[fade_0.4s]"
   />
 {/if}
 

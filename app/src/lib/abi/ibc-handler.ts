@@ -273,39 +273,39 @@ export const ibcHandlerAbi = <const>[
   },
   {
     type: "function",
-    name: "nextChannelSequence",
+    name: "nextChannelSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextClientSequence",
+    name: "nextClientSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextConnectionSequence",
+    name: "nextConnectionSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
@@ -358,7 +358,7 @@ export const ibcHandlerAbi = <const>[
     name: "ClientCreated",
     inputs: [
       {
-        name: "",
+        name: "clientId",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -371,13 +371,13 @@ export const ibcHandlerAbi = <const>[
     name: "ClientRegistered",
     inputs: [
       {
-        name: "",
+        name: "clientType",
         type: "string",
         indexed: false,
         internalType: "string"
       },
       {
-        name: "",
+        name: "clientAddress",
         type: "address",
         indexed: false,
         internalType: "address"
@@ -390,13 +390,13 @@ export const ibcHandlerAbi = <const>[
     name: "ClientUpdated",
     inputs: [
       {
-        name: "",
+        name: "clientId",
         type: "string",
         indexed: false,
         internalType: "string"
       },
       {
-        name: "",
+        name: "height",
         type: "tuple",
         indexed: false,
         internalType: "struct IbcCoreClientV1Height.Data",
@@ -809,39 +809,39 @@ export const ibcHandlerAbi = <const>[
   },
   {
     type: "function",
-    name: "nextChannelSequence",
+    name: "nextChannelSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextClientSequence",
+    name: "nextClientSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextConnectionSequence",
+    name: "nextConnectionSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
@@ -946,11 +946,6 @@ export const ibcHandlerAbi = <const>[
     type: "function",
     name: "sendPacket",
     inputs: [
-      {
-        name: "sourcePort",
-        type: "string",
-        internalType: "string"
-      },
       {
         name: "sourceChannel",
         type: "string",
@@ -1099,19 +1094,63 @@ export const ibcHandlerAbi = <const>[
     name: "writeAcknowledgement",
     inputs: [
       {
-        name: "destinationPort",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "destinationChannel",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "sequence",
-        type: "uint64",
-        internalType: "uint64"
+        name: "packet",
+        type: "tuple",
+        internalType: "struct IbcCoreChannelV1Packet.Data",
+        components: [
+          {
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
+          },
+          {
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "data",
+            type: "bytes",
+            internalType: "bytes"
+          },
+          {
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
+          },
+          {
+            name: "timeout_timestamp",
+            type: "uint64",
+            internalType: "uint64"
+          }
+        ]
       },
       {
         name: "acknowledgement",
@@ -1389,22 +1428,64 @@ export const ibcHandlerAbi = <const>[
     name: "WriteAcknowledgement",
     inputs: [
       {
-        name: "destinationPort",
-        type: "string",
+        name: "packet",
+        type: "tuple",
         indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "destinationChannel",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "sequence",
-        type: "uint64",
-        indexed: false,
-        internalType: "uint64"
+        internalType: "struct IbcCoreChannelV1Packet.Data",
+        components: [
+          {
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
+          },
+          {
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "data",
+            type: "bytes",
+            internalType: "bytes"
+          },
+          {
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
+          },
+          {
+            name: "timeout_timestamp",
+            type: "uint64",
+            internalType: "uint64"
+          }
+        ]
       },
       {
         name: "acknowledgement",
@@ -1862,6 +1943,23 @@ export const ibcHandlerAbi = <const>[
             internalType: "string"
           },
           {
+            name: "version",
+            type: "tuple",
+            internalType: "struct IbcCoreConnectionV1Version.Data",
+            components: [
+              {
+                name: "identifier",
+                type: "string",
+                internalType: "string"
+              },
+              {
+                name: "features",
+                type: "string[]",
+                internalType: "string[]"
+              }
+            ]
+          },
+          {
             name: "counterparty",
             type: "tuple",
             internalType: "struct IbcCoreConnectionV1Counterparty.Data",
@@ -2117,39 +2215,64 @@ export const ibcHandlerAbi = <const>[
   },
   {
     type: "function",
-    name: "nextChannelSequence",
+    name: "getCompatibleVersions",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "tuple[]",
+        internalType: "struct IbcCoreConnectionV1Version.Data[]",
+        components: [
+          {
+            name: "identifier",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "features",
+            type: "string[]",
+            internalType: "string[]"
+          }
+        ]
+      }
+    ],
+    stateMutability: "pure"
+  },
+  {
+    type: "function",
+    name: "nextChannelSequencePath",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextClientSequence",
+    name: "nextClientSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextConnectionSequence",
+    name: "nextConnectionSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
@@ -2160,6 +2283,24 @@ export const ibcHandlerAbi = <const>[
     inputs: [
       {
         name: "connectionId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "clientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyClientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyConnectionId",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -2176,6 +2317,24 @@ export const ibcHandlerAbi = <const>[
         type: "string",
         indexed: false,
         internalType: "string"
+      },
+      {
+        name: "clientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyClientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyConnectionId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
       }
     ],
     anonymous: false
@@ -2189,6 +2348,18 @@ export const ibcHandlerAbi = <const>[
         type: "string",
         indexed: false,
         internalType: "string"
+      },
+      {
+        name: "clientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyClientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
       }
     ],
     anonymous: false
@@ -2199,6 +2370,24 @@ export const ibcHandlerAbi = <const>[
     inputs: [
       {
         name: "connectionId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "clientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyClientId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyConnectionId",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -2242,6 +2431,11 @@ export const ibcHandlerAbi = <const>[
     inputs: []
   },
   {
+    type: "error",
+    name: "ErrVersionMustBeUnset",
+    inputs: []
+  },
+  {
     type: "constructor",
     inputs: [],
     stateMutability: "nonpayable"
@@ -2277,7 +2471,7 @@ export const ibcHandlerAbi = <const>[
     name: "acknowledgePacket",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgPacketAcknowledgement",
         components: [
@@ -2421,7 +2615,7 @@ export const ibcHandlerAbi = <const>[
     name: "channelCloseConfirm",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgChannelCloseConfirm",
         components: [
@@ -2468,7 +2662,7 @@ export const ibcHandlerAbi = <const>[
     name: "channelCloseInit",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgChannelCloseInit",
         components: [
@@ -2493,7 +2687,7 @@ export const ibcHandlerAbi = <const>[
     name: "channelOpenAck",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgChannelOpenAck",
         components: [
@@ -2550,7 +2744,7 @@ export const ibcHandlerAbi = <const>[
     name: "channelOpenConfirm",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgChannelOpenConfirm",
         components: [
@@ -2597,7 +2791,7 @@ export const ibcHandlerAbi = <const>[
     name: "channelOpenInit",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgChannelOpenInit",
         components: [
@@ -2667,7 +2861,7 @@ export const ibcHandlerAbi = <const>[
     name: "channelOpenTry",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgChannelOpenTry",
         components: [
@@ -2891,7 +3085,7 @@ export const ibcHandlerAbi = <const>[
     name: "connectionOpenAck",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgConnectionOpenAck",
         components: [
@@ -2987,7 +3181,7 @@ export const ibcHandlerAbi = <const>[
     name: "connectionOpenConfirm",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgConnectionOpenConfirm",
         components: [
@@ -3029,7 +3223,7 @@ export const ibcHandlerAbi = <const>[
     name: "connectionOpenInit",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgConnectionOpenInit",
         components: [
@@ -3037,6 +3231,23 @@ export const ibcHandlerAbi = <const>[
             name: "clientId",
             type: "string",
             internalType: "string"
+          },
+          {
+            name: "version",
+            type: "tuple",
+            internalType: "struct IbcCoreConnectionV1Version.Data",
+            components: [
+              {
+                name: "identifier",
+                type: "string",
+                internalType: "string"
+              },
+              {
+                name: "features",
+                type: "string[]",
+                internalType: "string[]"
+              }
+            ]
           },
           {
             name: "counterparty",
@@ -3089,7 +3300,7 @@ export const ibcHandlerAbi = <const>[
     name: "connectionOpenTry",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgConnectionOpenTry",
         components: [
@@ -3278,7 +3489,7 @@ export const ibcHandlerAbi = <const>[
     name: "createClient",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgCreateClient",
         components: [
@@ -3368,11 +3579,6 @@ export const ibcHandlerAbi = <const>[
             internalType: "string"
           }
         ]
-      },
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
       }
     ],
     stateMutability: "view"
@@ -3392,30 +3598,6 @@ export const ibcHandlerAbi = <const>[
         name: "",
         type: "address",
         internalType: "contract ILightClient"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getClientState",
-    inputs: [
-      {
-        name: "clientId",
-        type: "string",
-        internalType: "string"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
       }
     ],
     stateMutability: "view"
@@ -3498,173 +3680,6 @@ export const ibcHandlerAbi = <const>[
             internalType: "uint64"
           }
         ]
-      },
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getConsensusState",
-    inputs: [
-      {
-        name: "clientId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "height",
-        type: "tuple",
-        internalType: "struct IbcCoreClientV1Height.Data",
-        components: [
-          {
-            name: "revision_number",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "revision_height",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      }
-    ],
-    outputs: [
-      {
-        name: "consensusStateBytes",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getHashedPacketAcknowledgementCommitment",
-    inputs: [
-      {
-        name: "portId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "channelId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "sequence",
-        type: "uint64",
-        internalType: "uint64"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bytes32",
-        internalType: "bytes32"
-      },
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getHashedPacketCommitment",
-    inputs: [
-      {
-        name: "portId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "channelId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "sequence",
-        type: "uint64",
-        internalType: "uint64"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bytes32",
-        internalType: "bytes32"
-      },
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getNextSequenceSend",
-    inputs: [
-      {
-        name: "portId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "channelId",
-        type: "string",
-        internalType: "string"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "uint64",
-        internalType: "uint64"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "hasPacketReceipt",
-    inputs: [
-      {
-        name: "portId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "channelId",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "sequence",
-        type: "uint64",
-        internalType: "uint64"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
       }
     ],
     stateMutability: "view"
@@ -3704,39 +3719,39 @@ export const ibcHandlerAbi = <const>[
   },
   {
     type: "function",
-    name: "nextChannelSequence",
+    name: "nextChannelSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextClientSequence",
+    name: "nextClientSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextConnectionSequence",
+    name: "nextConnectionSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
@@ -3785,7 +3800,7 @@ export const ibcHandlerAbi = <const>[
     name: "recvPacket",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgPacketRecv",
         components: [
@@ -3906,17 +3921,12 @@ export const ibcHandlerAbi = <const>[
     name: "sendPacket",
     inputs: [
       {
-        name: "sourcePort",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
-        name: "sourceChannel",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "timeoutHeight",
+        name: "",
         type: "tuple",
         internalType: "struct IbcCoreClientV1Height.Data",
         components: [
@@ -3933,12 +3943,12 @@ export const ibcHandlerAbi = <const>[
         ]
       },
       {
-        name: "timeoutTimestamp",
+        name: "",
         type: "uint64",
         internalType: "uint64"
       },
       {
-        name: "data",
+        name: "",
         type: "bytes",
         internalType: "bytes"
       }
@@ -3957,7 +3967,7 @@ export const ibcHandlerAbi = <const>[
     name: "timeoutPacket",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgPacketTimeout",
         components: [
@@ -4071,7 +4081,7 @@ export const ibcHandlerAbi = <const>[
     name: "updateClient",
     inputs: [
       {
-        name: "msg_",
+        name: "",
         type: "tuple",
         internalType: "struct IBCMsgs.MsgUpdateClient",
         components: [
@@ -4114,22 +4124,66 @@ export const ibcHandlerAbi = <const>[
     name: "writeAcknowledgement",
     inputs: [
       {
-        name: "destinationPortId",
-        type: "string",
-        internalType: "string"
+        name: "",
+        type: "tuple",
+        internalType: "struct IbcCoreChannelV1Packet.Data",
+        components: [
+          {
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
+          },
+          {
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "data",
+            type: "bytes",
+            internalType: "bytes"
+          },
+          {
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
+          },
+          {
+            name: "timeout_timestamp",
+            type: "uint64",
+            internalType: "uint64"
+          }
+        ]
       },
       {
-        name: "destinationChannel",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "sequence",
-        type: "uint64",
-        internalType: "uint64"
-      },
-      {
-        name: "acknowledgement",
+        name: "",
         type: "bytes",
         internalType: "bytes"
       }
@@ -4908,39 +4962,39 @@ export const ibcHandlerAbi = <const>[
   },
   {
     type: "function",
-    name: "nextChannelSequence",
+    name: "nextChannelSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextClientSequence",
+    name: "nextClientSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "nextConnectionSequence",
+    name: "nextConnectionSequencePath",
     inputs: [],
     outputs: [
       {
         name: "",
-        type: "uint64",
-        internalType: "uint64"
+        type: "bytes32",
+        internalType: "bytes32"
       }
     ],
     stateMutability: "view"
@@ -4988,13 +5042,31 @@ export const ibcHandlerAbi = <const>[
     name: "ChannelOpenAck",
     inputs: [
       {
+        name: "portId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
         name: "channelId",
         type: "string",
         indexed: false,
         internalType: "string"
       },
       {
-        name: "portId",
+        name: "counterpartyPortId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyChannelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "connectionId",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -5007,13 +5079,31 @@ export const ibcHandlerAbi = <const>[
     name: "ChannelOpenConfirm",
     inputs: [
       {
+        name: "portId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
         name: "channelId",
         type: "string",
         indexed: false,
         internalType: "string"
       },
       {
-        name: "portId",
+        name: "counterpartyPortId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyChannelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "connectionId",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -5026,7 +5116,19 @@ export const ibcHandlerAbi = <const>[
     name: "ChannelOpenInit",
     inputs: [
       {
+        name: "portId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
         name: "channelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyPortId",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -5038,13 +5140,7 @@ export const ibcHandlerAbi = <const>[
         internalType: "string"
       },
       {
-        name: "portId",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "counterpartyPortId",
+        name: "version",
         type: "string",
         indexed: false,
         internalType: "string"
@@ -5057,25 +5153,31 @@ export const ibcHandlerAbi = <const>[
     name: "ChannelOpenTry",
     inputs: [
       {
-        name: "channelId",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "connectionId",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
         name: "portId",
         type: "string",
         indexed: false,
         internalType: "string"
       },
       {
+        name: "channelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
         name: "counterpartyPortId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "counterpartyChannelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
+      },
+      {
+        name: "connectionId",
         type: "string",
         indexed: false,
         internalType: "string"

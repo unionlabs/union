@@ -1,5 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 256 256" class="invert dark:invert-0" data-wallet-icon="true"
-  data-chain-icon="union">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 256 256" class="invert dark:invert-0" data-chain-icon="true">
   <path fill="#fff" fill-rule="evenodd" d="M168 160a64 64 0 0 1-128 0h32a32 32 0 0 0 64 0h32Z" clip-rule="evenodd" />
   <path fill="#fff" d="M216 144h-32v-32h32zm-80-32h32v32h-32zm-16 32H88v-32h32zm-80-32h32v32H40z" />
   <path fill="#fff" fill-rule="evenodd" d="M88 96a64 64 0 0 1 128 0h-32a32 32 0 0 0-64 0H88Z" clip-rule="evenodd" />

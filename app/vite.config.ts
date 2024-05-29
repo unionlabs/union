@@ -12,7 +12,6 @@ export default defineConfig(config => {
     INSPECT,
     NODE_ENV,
     VISUALIZE,
-    VITE_APP_VERSION,
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
@@ -36,16 +35,14 @@ export default defineConfig(config => {
       drop: ["console", "debugger"]
     },
     optimizeDeps: {
-      exclude: ["@urql/svelte", "@tanstack/svelte-query-devtools"]
+      exclude: ["@tanstack/svelte-query-devtools"]
     },
     server: {
       port: Number(PORT)
     },
-    test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
     define: {
       // Node polyfills
-      "process.env": {},
-      __APP_VERSION__: JSON.stringify(VITE_APP_VERSION)
+      "process.env": {}
     },
     // Node polyfills
     resolve: {
@@ -55,6 +52,7 @@ export default defineConfig(config => {
         "node:process": "process",
         stream: "rollup-plugin-node-polyfills/polyfills/stream"
       }
-    }
+    },
+    test: { include: ["src/**/*.{test,spec}.{js,ts}"] }
   }
 })

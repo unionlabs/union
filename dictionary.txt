@@ -15,6 +15,7 @@ Bitfield
 Bitvector
 Boiron
 Boneh
+CBFF
 CCTP
 CFLAGS
 CHAINSTACK
@@ -32,7 +33,9 @@ Connor
 Cosmoverse
 Counterparties
 Counterparty
+Cpath
 Cryptopunks
+Csvg
 Cypherpunk
 DATADIR
 DYLD
@@ -348,6 +351,7 @@ consensuskeeper
 consensusparamkeeper
 consensusparamtypes
 consensys
+consola
 consts
 conv
 converstion
@@ -420,6 +424,7 @@ dymension
 echarts
 eitherway
 elems
+elgafar
 elit
 endianness
 entrypoints
@@ -495,6 +500,7 @@ govtypes
 govv1
 govv1beta1
 gowork
+graphcache
 graphqlsp
 graphqurl
 groomlake
@@ -732,6 +738,7 @@ outdir
 outfile
 outro
 overrrides
+overscan
 oxalica
 oxlint
 pagefind
@@ -813,9 +820,11 @@ qself
 qxpx
 qxrx
 qypy
+rabby
 randao
 rawfile
 rclone
+rdns
 readarray
 receiveds
 recursiving
@@ -1130,6 +1139,7 @@ ypyp
 yqyp
 zellij
 zerg
+zerion
 zerolog
 zetachain
 zkps

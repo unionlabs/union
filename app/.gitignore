@@ -10,3 +10,4 @@ vite.config.*.timestamp-*
 .eslintcache
 .prettiercache
 stats
+~partytown

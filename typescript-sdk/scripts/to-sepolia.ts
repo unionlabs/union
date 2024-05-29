@@ -36,7 +36,7 @@ const unoFromUnionToSepolia = await unionClient.transferAssets({
       },
       funds: [
         // denom: `factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
-        { amount: "3000", denom: `muno` }
+        { amount: "300", denom: `muno` }
       ]
     }
   ]

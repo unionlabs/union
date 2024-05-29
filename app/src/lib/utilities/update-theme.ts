@@ -1,4 +1,4 @@
-import { isBrowser } from "./index.ts"
+const isBrowser = typeof document !== "undefined"
 
 export function updateTheme({ activeTheme, path }: { activeTheme: string; path: string }) {
   if (!isBrowser) return

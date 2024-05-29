@@ -1,19 +1,44 @@
+@import url('./fonts.css');
 @import url('./reset.css');
 @import url('./tailwind.css');
 
-/* If the user prefers dark mode, 
-we of course apply color-scheme: dark, as usual */
+/* source: https://heropatterns.com */
+:root {
+  --background-color: #ffffff;
+  --background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e2fcfc' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dark {
+  --background-color: #09090B;
+  --background-image:  url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a0ecfd' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+html[data-theme='dark'], body[data-theme='dark'] {
+  color-scheme: dark;
+  background-color: var(--background-color);
+  background-image: var(--background-image);
+}
+
+html[data-theme='light'], body[data-theme='light'] {
+  color-scheme: light;
+  background-color: var(--background-color);
+  background-image: var(--background-image);
+}
+
 @media (prefers-color-scheme: dark) {
-  html {
+  html, body {
     color-scheme: dark;
+    background-color: var(--background-color);
+    background-image: var(--background-image);
   }
 }
 
-/* If the user prefers light mode, 
-we still enforce color-scheme: dark, despite the user preference */
+
 @media (prefers-color-scheme: light) {
-  html {
-    color-scheme: dark;
+  html, body {
+    color-scheme: light;
+    background-color: var(--background-color);
+    background-image: var(--background-image);
   }
 }
 

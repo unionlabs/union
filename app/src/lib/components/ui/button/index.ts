@@ -33,6 +33,7 @@ type Props = ButtonPrimitive.Props & {
   variant?: Variant
   size?: Size
   name?: string
+  value?: any
 }
 
 type Events = ButtonPrimitive.Events

@@ -1,14 +1,21 @@
-// import "$lib/polyfill.ts"
 import {
   http,
   fallback,
   webSocket,
   reconnect,
   serialize,
+  getClient,
   getAccount,
+  getChainId,
+  watchClient,
   deserialize,
-  watchAccount,
   createConfig,
+  watchAccount,
+  watchChainId,
+  getConnectors,
+  getConnections,
+  watchConnectors,
+  watchConnections,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
@@ -16,16 +23,12 @@ import {
   switchChain as _switchChain,
   createStorage as createWagmiStorage
 } from "@wagmi/core"
-import { createClient } from "viem"
 import { sleep } from "$lib/utilities"
-import { writable } from "svelte/store"
 import { sepolia } from "@wagmi/core/chains"
-import { API_KEY } from "$lib/constants/keys.ts"
+import { KEY } from "$lib/constants/keys.ts"
+import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { walletConnect, injected, coinbaseWallet } from "@wagmi/connectors"
-import { walletActionsEip5792, walletActionsEip3074 } from "viem/experimental"
-
-const WALLET_CONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
@@ -37,23 +40,20 @@ export type ConnectorType = "injected" | "walletConnect"
 
 export const config = createConfig({
   chains: [sepolia],
-  client: ({ chain }) => {
-    return createClient({
-      chain,
-      cacheTime: 4_000,
-      pollingInterval: 4_000,
-      batch: { multicall: true },
-      transport: fallback([
-        unstable_connector(injected),
-        http(`https://ethereum-sepolia.core.chainstack.com/${API_KEY.CHAINSTACK}`),
-        webSocket(`wss://ethereum-sepolia.core.chainstack.com/ws/${API_KEY.CHAINSTACK}`)
-      ])
-    })
-      .extend(walletActionsEip5792())
-      .extend(walletActionsEip3074())
+  cacheTime: 4_000,
+  pollingInterval: 4_000,
+  batch: { multicall: true },
+  transports: {
+    [sepolia.id]: fallback([
+      unstable_connector(injected),
+      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`),
+      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`),
+      webSocket(`wss://ethereum-sepolia.core.chainstack.com/ws/${KEY.RPC.CHAINSTACK}`)
+    ])
   },
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,
+
   storage: createWagmiStorage({
     serialize,
     deserialize,
@@ -61,25 +61,37 @@ export const config = createConfig({
     storage: typeof window !== "undefined" ? window.sessionStorage : undefined
   }),
   connectors: [
-    injected({ shimDisconnect: true, unstable_shimAsyncInject: 2_500 }),
     walletConnect({
-      projectId: WALLET_CONNECT_PROJECT_ID,
+      projectId: KEY.WALLET_CONNECT_PROJECT_ID,
       qrModalOptions: {
         themeMode: "dark",
-        enableExplorer: true
+        enableExplorer: true,
+        explorerRecommendedWalletIds: [
+          /* Multichain */
+          "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0", // Trust
+          /* EVM */
+          "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369", // rainbow
+          "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // metamask
+          "ecc4036f814562b41a5268adc86270fba1365471402006302e70169465b7ac18", // zerion
+          "18388be9ac2d02726dbac9777c96efaac06d744b2f6d580fccdd4127a6d01fd1" // rabby
+          /* Cosmos */
+          // "3ed8cc046c6211a798dc5ec70f1302b43e07db9639fd287de44a9aa115a21ed6", // Leap
+          // "6adb6082c909901b9e7189af3a4a0223102cd6f8d5c39e39f3d49acb92b578bb", // Keplr
+        ]
       },
       metadata: {
-        name: "Union",
+        name: "Union App",
         description: "Union App (beta)",
         url: "https://app.union.build",
         icons: ["/images/icons/union.svg", "/images/logo.png"]
       }
     }),
+    injected({ shimDisconnect: true, unstable_shimAsyncInject: 2_500 }),
     coinbaseWallet({
       darkMode: true,
       appName: "Union",
       appLogoUrl: "/images/logo.png",
-      jsonRpcUrl: `https://ethereum-sepolia.core.chainstack.com/${API_KEY.CHAINSTACK}`
+      jsonRpcUrl: `https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`
     })
   ]
 })
@@ -117,6 +129,45 @@ export function createSepoliaStore(
 
 export const sepoliaStore = createSepoliaStore()
 
+export const client = readable(getClient(config), set => watchClient(config, { onChange: set }))
+export const chainId = readable(getChainId(config), set => watchChainId(config, { onChange: set }))
+export const account = readable(getAccount(config), set => watchAccount(config, { onChange: set }))
+export const connectors = readable(getConnectors(config), set =>
+  watchConnectors(config, { onChange: set })
+)
+export const connections = readable(getConnections(config), set =>
+  watchConnections(config, { onChange: set })
+)
+export const provider = readable<() => Promise<undefined | unknown>>(
+  async () =>
+    await getConnectors(config)
+      .find(async connector => await connector.isAuthorized())
+      ?.getProvider(),
+  set => {
+    watchConnectors(config, {
+      onChange: (connections, previousConnectors) => {
+        const connector = connections.find(connector => connector.isAuthorized())
+        if (connector) set(() => connector.getProvider({ chainId: getChainId(config) }))
+      }
+    })
+    watchAccount(config, {
+      onChange: account => {
+        if (!account.connector) return set(async () => undefined)
+        set(async () => await account.connector?.getProvider({ chainId: getChainId(config) }))
+      }
+    })
+  }
+)
+
+export {
+  client as evmClient,
+  chainId as evmChainId,
+  account as evmAccount,
+  connectors as evmConnectors,
+  connections as evmConnections,
+  provider as evmProvider
+}
+
 const desiredWalletIds = [
   "injected",
   "io.metamask",
@@ -146,7 +197,7 @@ export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 watchAccount(config, {
   onChange: account =>
     sepoliaStore.set({
-      chain: "sepolia",
+      chain: account.chain?.name ?? "sepolia",
       hoverState: "none",
       address: account.address,
       connectionStatus: account.status,
@@ -160,7 +211,7 @@ export async function evmConnect(
   chainId: ConfiguredChainId = sepolia.id
 ) {
   const connectors = config.connectors.filter(connector => connector.id === evmWalletId)
-  const connector = connectors[0] ?? connectors[1]
+  const connector = connectors[0] ?? connectors[1] ?? connectors[2]
   if (connector) return _connect(config, { connector, chainId })
 }
 

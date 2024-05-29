@@ -32,7 +32,7 @@ let collapsibleOpen = true
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn(
-        'truncate space-x-2 px-4 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
+        'truncate space-x-2 px-2.5 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
         ($sepoliaStore.connectionStatus === 'connected' ||
           $cosmosStore.connectionStatus === 'connected') &&
           'border-cyan-300/50',
@@ -43,13 +43,13 @@ let collapsibleOpen = true
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="h-full border-solid border-[1px] border-accent min-w-[95%] sm:min-w-min sm:max-w-[475px] px-2 flex flex-col justify-start"
+    class="h-full border-solid border-[1px] border-accent min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[475px] px-2 flex flex-col justify-start"
   >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title>
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn('size-8', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
+          class={cn('size-10', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
         >
           <Avatar.Image
             alt="ethereum avatar"
@@ -90,7 +90,7 @@ let collapsibleOpen = true
           chainWalletsInformation={evmWalletsInformation}
           connectedWalletId={$sepoliaStore.connectedWallet}
         />
-        <Separator class={cn(['px-0 bg-[#303033] my-1.5'])} />
+        <Separator class={cn('px-0 bg-[#303033] my-1.5')} />
         <Connection
           chain="cosmos"
           address={$cosmosStore.address}

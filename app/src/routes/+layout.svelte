@@ -1,31 +1,23 @@
 <script lang="ts">
 import "$lib/polyfill.ts"
 import "$styles/index.css"
-import {
-  hydrate,
-  dehydrate,
-  QueryClient,
-  MutationCache,
-  notifyManager,
-  QueryClientProvider
-} from "@tanstack/svelte-query"
+import { onMount } from "svelte"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
-import { setContext, onMount } from "svelte"
 import { Toaster } from "svelte-french-toast"
 import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"
-import { setContextClient } from "@urql/svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
-import { graphqlClient } from "$lib/graphql/client"
 import Header from "$lib/components/header/header.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
-import { cn } from "$lib/utilities/shadcn"
+import { QueryClient, MutationCache, notifyManager } from "@tanstack/svelte-query"
+import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
@@ -52,15 +44,11 @@ onMount(() => {
   else if (window?.leap) cosmosStore.connect("leap")
 })
 
-/**
- * @see https://commerce.nearform.com/open-source/urql/docs/basics/svelte/#providing-the-client
- */
-setContextClient(graphqlClient)
-
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
     queries: {
       enabled: browser,
+      gcTime: 1_000 * 60 * 60 * 24, // 24 hours
       refetchOnReconnect: () => !queryClient.isMutating()
     }
   },
@@ -72,43 +60,13 @@ const queryClient: QueryClient = new QueryClient({
     }
   })
 })
-setContext("$$_queryClient", queryClient)
 
-function hydrateClient() {
-  try {
-    const storeValue = localStorage.getItem("QUERY_CLIENT")
-    if (!storeValue) return
-    const persistedValue = JSON.parse(storeValue) as Record<string, any>
-    if ("timestamp" in persistedValue && persistedValue?.["timestamp"]) {
-      const MAX_AGE = 1000 * 60 * 60 * 24
-      const expired = Date.now() - persistedValue["timestamp"] > MAX_AGE
-      if (!expired) hydrate(queryClient, persistedValue.clientState)
-    } else localStorage.removeItem("QUERY_CLIENT")
-  } catch (error) {
-    localStorage.removeItem("QUERY_CLIENT")
-  }
-}
-const saveClient = () =>
-  localStorage.setItem(
-    "QUERY_CLIENT",
-    JSON.stringify({ timestamp: Date.now(), clientState: dehydrate(queryClient, {}) })
-  )
-
-const unload = () => saveClient()
-onMount(() => {
-  hydrateClient()
-  queryClient.mount()
-  return () => queryClient.unmount()
+const localStoragePersister = createSyncStoragePersister({
+  key: "SVELTE_QUERY",
+  storage: browser ? window.localStorage : undefined // or window.sessionStorage
 })
 
 $: if ($navigating) console.log("Navigating to", $page.url.pathname)
-
-/** @docs https://monogram.io/blog/add-partytown-to-svelte */
-let partytownScriptElement: HTMLScriptElement
-onMount(() => {
-  if (!partytownScriptElement) return
-  partytownScriptElement.textContent = partytownSnippet()
-})
 </script>
 
 <svelte:head>
@@ -117,47 +75,14 @@ onMount(() => {
   <script>
     partytown = { forward: ['dataLayer.push'] }
   </script>
-  <script bind:this={partytownScriptElement}></script>
+  {@html '<script>' + partytownSnippet() + '</script>'}
 </svelte:head>
 
 {#if $navigating}
   <PreloadingIndicator />
 {/if}
 
-<ModeWatcher />
-<Toaster />
-
-<QueryClientProvider client={queryClient}>
-  <Header />
-  <div
-    id="page"
-    data-vaul-drawer-wrapper
-    class="relative flex flex-col bg-background bg-opacity-10 mb-20"
-  >
-    <slot />
-  </div>
-  <Footer />
-  <SvelteQueryDevtools
-    position="bottom"
-    client={queryClient}
-    initialIsOpen={false}
-    buttonPosition="bottom-right"
-  />
-</QueryClientProvider>
-<OnlineStatus />
-
-<div
-  id="background-dotted-grid"
-  data-background-dotted-grid="true"
-  class={cn(
-    'absolute top-0 z-[-2] size-full min-h-screen bg-[size:20px_20px]',
-    'bg-[#b9e9ff78] bg-[radial-gradient(#638c91_0.3px,#b9e9ff78_1px)]',
-    'dark:bg-[#99e6ff20] dark:bg-[radial-gradient(#4545538c_0.3px,#09090b_1px)]',
-  )}
-></div>
-
 <svelte:window
-  on:beforeunload={unload}
   use:shortcut={{
     trigger: [
       // easily hide tanstack devtools with ctrl + h
@@ -165,7 +90,7 @@ onMount(() => {
         key: 'h',
         modifier: ['ctrl'],
         callback: () => {
-          console.log('Hiding tanstack devtools')
+          console.info('Hiding tanstack devtools')
           const tanstackDevtoolsElement = document.querySelector('div.tsqd-transitions-container')
           if (!tanstackDevtoolsElement) return
           tanstackDevtoolsElement.classList.toggle('hidden')
@@ -174,3 +99,23 @@ onMount(() => {
     ],
   }}
 />
+
+<PersistQueryClientProvider
+  client={queryClient}
+  persistOptions={{ persister: localStoragePersister }}
+>
+  <ModeWatcher />
+  <Toaster position="bottom-right" />
+
+  <Header />
+  <slot />
+  <Footer />
+
+  <SvelteQueryDevtools
+    position="bottom"
+    client={queryClient}
+    initialIsOpen={false}
+    buttonPosition="bottom-right"
+  />
+  <OnlineStatus />
+</PersistQueryClientProvider>

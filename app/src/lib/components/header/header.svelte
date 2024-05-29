@@ -1,7 +1,7 @@
 <script lang="ts">
+import { Shine } from "svelte-ux"
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
-import ThemeSwitch from "./theme-switch.svelte"
 import SearchBar from "$lib/components/search-bar.svelte"
 import Connect from "$lib/components/connect/connect.svelte"
 import Button from "$lib/components/ui/button/button.svelte"
@@ -9,19 +9,24 @@ import { routes } from "$lib/components/navigation/index.ts"
 </script>
 
 <header
-  class="bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30 py-4 px-2 lg:px-4 min-w-full w-screen"
+  class={cn(
+    'py-3 pr-4 min-w-full w-screen',
+    'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30',
+  )}
 >
-  <Button
-    href="/"
-    variant="link"
-    class="px-1 sm:pl-3 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
-  >
-    union
-  </Button>
+  <Shine depth={4} specularConstant={300} lightColor="#a0ecfd">
+    <Button
+      href="/"
+      variant="link"
+      class=" brightness-75 px-1 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
+    >
+      union
+    </Button>
+  </Shine>
   <div class="w-full">
     <SearchBar />
   </div>
-  <div class="flex flex-row space-x-0 sm:space-x-2 my-auto">
+  <div class="flex flex-row space-x-0 sm:space-x-4 my-auto">
     <nav class="my-auto hidden lg:flex space-x-0 sm:space-x-2">
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button
