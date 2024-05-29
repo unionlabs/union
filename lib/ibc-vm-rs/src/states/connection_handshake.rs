@@ -43,7 +43,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ConnectionOpenInit::Init {
@@ -108,11 +109,11 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                 )?;
 
                 Either::Right((
-                    IbcEvent::ConnectionOpenInit(events::ConnectionOpenInit {
+                    vec![IbcEvent::ConnectionOpenInit(events::ConnectionOpenInit {
                         connection_id,
                         client_id,
                         counterparty_client_id,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -190,7 +191,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ConnectionOpenTry::Init {
@@ -277,12 +279,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     end,
                 )?;
                 Either::Right((
-                    IbcEvent::ConnectionOpenTry(events::ConnectionOpenTry {
+                    vec![IbcEvent::ConnectionOpenTry(events::ConnectionOpenTry {
                         connection_id,
                         client_id,
                         counterparty_client_id: counterparty.client_id,
                         counterparty_connection_id: counterparty.connection_id.validate().unwrap(),
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -317,7 +319,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ConnectionOpenAck::Init {
@@ -418,12 +421,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 )?;
 
                 Either::Right((
-                    IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
+                    vec![IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
                         connection_id: connection_id.validate().unwrap(),
                         client_id,
                         counterparty_client_id,
                         counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -455,7 +458,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ConnectionOpenConfirm::Init {
@@ -552,12 +556,16 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 )?;
 
                 Either::Right((
-                    IbcEvent::ConnectionOpenConfirm(events::ConnectionOpenConfirm {
-                        connection_id: connection_id.validate().unwrap(),
-                        client_id,
-                        counterparty_client_id,
-                        counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
-                    }),
+                    vec![IbcEvent::ConnectionOpenConfirm(
+                        events::ConnectionOpenConfirm {
+                            connection_id: connection_id.validate().unwrap(),
+                            client_id,
+                            counterparty_client_id,
+                            counterparty_connection_id: counterparty_connection_id
+                                .validate()
+                                .unwrap(),
+                        },
+                    )],
                     IbcVmResponse::Empty,
                 ))
             }

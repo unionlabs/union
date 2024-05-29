@@ -3,8 +3,10 @@ mod utils;
 
 use std::{thread::sleep, time::Duration};
 
-use ibc_vm_rs::{states::connection_handshake, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX};
-use msgs::ChannelOpenTry;
+use ibc_vm_rs::{
+    states::connection_handshake, IbcEvent, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
+};
+use msgs::{ChannelOpenTry, RecvPacket};
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
     network::Sandbox,
@@ -15,7 +17,7 @@ use near_workspaces::{
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     ibc::core::{
-        channel::{self, channel::Channel},
+        channel::{self, channel::Channel, packet::Packet},
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
         connection,
@@ -27,9 +29,9 @@ use utils::convert_block_producers;
 
 use crate::{
     msgs::{
-        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState, ConnectionOpenAck,
-        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, ConsensusState, CreateClient,
-        GetAccountId, GetCommitment, RegisterClient, UpdateClient,
+        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState,
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+        ConsensusState, CreateClient, GetAccountId, GetCommitment, RegisterClient, UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
@@ -140,6 +142,8 @@ async fn main() {
         &ibc_contract,
         &ibc_app_contract,
         "channel-1",
+        &alice_lc,
+        &bob_lc,
     )
     .await;
 }
@@ -733,7 +737,12 @@ pub async fn initiate_ping(
     ibc_contract: &Contract,
     ibc_app: &Contract,
     source_channel: &str,
+    alice_lc: &Contract,
+    bob_lc: &Contract,
 ) {
+    let alice_client_id = format!("{}-1", alice::CLIENT_TYPE);
+    let bob_client_id = format!("{}-2", bob::CLIENT_TYPE);
+
     let ping = Ping {
         ibc_addr: ibc_contract.id().clone(),
         source_channel: source_channel.to_string(),
@@ -748,5 +757,128 @@ pub async fn initiate_ping(
         .unwrap()
         .unwrap();
 
-    println!("{res:?}");
+    let event: IbcEvent = res
+        .outcomes()
+        .iter()
+        .find_map(|outcome| {
+            outcome
+                .logs
+                .iter()
+                .find_map(|log| match serde_json::from_str::<IbcEvent>(log) {
+                    Ok(data) => Some(data.clone()),
+                    Err(_) => None,
+                })
+        })
+        .unwrap();
+
+    println!("[ + ] ping sent!");
+
+    let IbcEvent::SendPacket(send_event) = event else {
+        panic!("invalid event: {event:?}");
+    };
+
+    let current_height = update_client(sandbox, user, ibc_contract, bob_lc, &bob_client_id).await;
+
+    let commitment_proof = state_proof(
+        sandbox,
+        ibc_contract.id(),
+        current_height - 1,
+        &format!(
+            "commitments/ports/{}/channels/{}/sequences/{}",
+            send_event.packet_src_port, send_event.packet_src_channel, send_event.packet_sequence
+        ),
+    )
+    .await;
+
+    let recv_packet = RecvPacket {
+        packet: Packet {
+            sequence: send_event.packet_sequence,
+            source_port: send_event.packet_src_port,
+            source_channel: send_event.packet_src_channel,
+            destination_port: send_event.packet_dst_port,
+            destination_channel: send_event.packet_dst_channel,
+            data: send_event.packet_data_hex,
+            timeout_height: send_event.packet_timeout_height,
+            timeout_timestamp: send_event.packet_timeout_timestamp,
+        },
+        proof_commitment: commitment_proof,
+        proof_height: Height {
+            revision_number: 0,
+            revision_height: current_height - 1,
+        },
+    };
+
+    let res = user
+        .call(ibc_contract.id(), "recv_packet")
+        .args_json(recv_packet)
+        .gas(Gas::from_gas(300000000000000))
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+
+    let mut events: Vec<IbcEvent> = vec![];
+
+    for outcome in res.outcomes() {
+        for log in &outcome.logs {
+            if let Ok(data) = serde_json::from_str::<IbcEvent>(log) {
+                events.push(data);
+            }
+        }
+    }
+
+    match &events.as_slice() {
+        &[IbcEvent::RecvPacket(recv_event), IbcEvent::WriteAcknowledgement(ack_event)] => {
+            let recv_event = recv_event.clone();
+            let ack_event = ack_event.clone();
+            let current_height =
+                update_client(sandbox, user, ibc_contract, alice_lc, &alice_client_id).await;
+
+            let commitment_proof = state_proof(
+                sandbox,
+                ibc_contract.id(),
+                current_height - 1,
+                &format!(
+                    "acks/ports/{}/channels/{}/sequences/{}",
+                    recv_event.packet_dst_port,
+                    recv_event.packet_dst_channel,
+                    recv_event.packet_sequence
+                ),
+            )
+            .await;
+
+            let ack = AcknowledgePacket {
+                packet: Packet {
+                    sequence: ack_event.packet_sequence,
+                    source_port: ack_event.packet_src_port,
+                    source_channel: ack_event.packet_src_channel,
+                    destination_port: ack_event.packet_dst_port,
+                    destination_channel: ack_event.packet_dst_channel,
+                    data: ack_event.packet_data_hex,
+                    timeout_height: ack_event.packet_timeout_height,
+                    timeout_timestamp: ack_event.packet_timeout_timestamp,
+                },
+                ack: hex::decode(&ack_event.packet_ack_hex).unwrap(),
+                proof_ack: commitment_proof,
+                proof_height: Height {
+                    revision_number: 0,
+                    revision_height: current_height - 1,
+                },
+            };
+
+            let res = user
+                .call(ibc_contract.id(), "acknowledgement")
+                .args_json(ack)
+                .gas(Gas::from_gas(300000000000000))
+                .transact()
+                .await
+                .unwrap()
+                .unwrap();
+
+            println!("ack logs: {res:?}");
+        }
+        _ => panic!("unknown events"),
+    }
+
+    println!("Res: {res:?}");
 }

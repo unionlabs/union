@@ -9,7 +9,11 @@ use near_sdk_contract_tools::owner::OwnerExternal;
 use near_sdk_contract_tools::Owner;
 use unionlabs::{
     events::SendPacket,
-    ibc::core::{channel, client::height::Height, commitment::merkle_path::MerklePath},
+    ibc::core::{
+        channel::{self, packet::Packet},
+        client::height::Height,
+        commitment::merkle_path::MerklePath,
+    },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     validated::ValidateT,
 };
@@ -59,6 +63,15 @@ impl Contract {
 
     pub fn on_channel_open_confirm(port_id: PortId, channel_id: ChannelId) -> bool {
         false
+    }
+
+    pub fn on_acknowledge_packet(packet: Packet, ack: Vec<u8>) -> bool {
+        false
+    }
+
+    pub fn recv_packet(packet: Packet) -> Vec<u8> {
+        env::log_str("how do we do the async ack??");
+        vec![1, 2, 3]
     }
 
     pub fn ping(ibc_addr: AccountId, source_channel: ChannelId) -> Promise {

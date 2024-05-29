@@ -5733,6 +5733,7 @@ dependencies = [
  "base64 0.21.7",
  "borsh 1.5.1",
  "env_logger",
+ "hex 0.4.3",
  "ibc-vm-rs",
  "near-contract-standards",
  "near-crypto 0.20.1",

@@ -329,6 +329,27 @@ impl Contract {
         fold(self, runnable, &[IbcResponse::Empty])
     }
 
+    pub fn recv_packet(
+        &mut self,
+        packet: Packet,
+        proof_commitment: Vec<u8>,
+        proof_height: Height,
+    ) -> PromiseOrValue<IbcVmResponse> {
+        let runnable = ibc_vm_rs::recv_packet(packet, proof_commitment, proof_height);
+        fold(self, runnable, &[IbcResponse::Empty])
+    }
+
+    pub fn acknowledgement(
+        &mut self,
+        packet: Packet,
+        ack: Vec<u8>,
+        proof_ack: Vec<u8>,
+        proof_height: Height,
+    ) -> PromiseOrValue<IbcVmResponse> {
+        let runnable = ibc_vm_rs::acknowledge_packet(packet, ack, proof_ack, proof_height);
+        fold(self, runnable, &[IbcResponse::Empty])
+    }
+
     // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
     // when I try to fetch the contract state
     pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
@@ -455,9 +476,22 @@ impl Contract {
     pub fn callback_on_recv_packet(
         &mut self,
         current_state: IbcState,
+        #[callback_unwrap] ack: Vec<u8>,
+    ) -> PromiseOrValue<IbcVmResponse> {
+        fold(self, current_state, &[IbcResponse::OnRecvPacket { ack }])
+    }
+
+    #[private]
+    pub fn callback_on_acknowledge_packet(
+        &mut self,
+        current_state: IbcState,
         #[callback_unwrap] err: bool,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(self, current_state, &[IbcResponse::OnRecvPacket { err }])
+        fold(
+            self,
+            current_state,
+            &[IbcResponse::OnAcknowledgePacket { err }],
+        )
     }
 }
 
@@ -471,8 +505,10 @@ pub fn fold(
 
     let (runnable, ibc_action) = match either {
         ibc_vm_rs::Either::Left(cont) => cont,
-        ibc_vm_rs::Either::Right((event, val)) => {
-            env::log_str(&serde_json::to_string(&event).unwrap());
+        ibc_vm_rs::Either::Right((events, val)) => {
+            for event in events {
+                env::log_str(&serde_json::to_string(&event).unwrap());
+            }
             return PromiseOrValue::Value(val);
         }
     };
@@ -622,7 +658,18 @@ pub fn fold(
                     Contract::ext(env::current_account_id()).callback_on_recv_packet(runnable),
                 ));
             }
-            ibc_vm_rs::IbcMsg::OnAcknowledgePacket { .. } => todo!(),
+            ibc_vm_rs::IbcMsg::OnAcknowledgePacket { packet, ack } => {
+                let account_id =
+                    AccountId::try_from(packet.source_port.clone().to_string()).unwrap();
+                return PromiseOrValue::Promise(
+                    ibc_app::ext(account_id)
+                        .on_acknowledge_packet(packet, ack)
+                        .then(
+                            Contract::ext(env::current_account_id())
+                                .callback_on_acknowledge_packet(runnable),
+                        ),
+                );
+            }
         },
     }
 }
@@ -703,5 +750,7 @@ pub trait IbcApp {
 
     fn on_channel_open_confirm(port_id: PortId, channel_id: ChannelId) -> bool;
 
-    fn recv_packet(packet: Packet) -> bool;
+    fn on_acknowledge_packet(packet: Packet, ack: Vec<u8>) -> bool;
+
+    fn recv_packet(packet: Packet) -> Vec<u8>;
 }
