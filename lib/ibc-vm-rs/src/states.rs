@@ -44,7 +44,8 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 CreateClient::Init {
@@ -117,11 +118,11 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     consensus_state.clone(),
                 )?;
                 Either::Right((
-                    IbcEvent::CreateClient(events::CreateClient {
+                    vec![IbcEvent::CreateClient(events::CreateClient {
                         client_id,
                         client_type,
                         consensus_height: height,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }

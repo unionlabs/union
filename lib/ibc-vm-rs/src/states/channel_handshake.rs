@@ -53,7 +53,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ChannelOpenInit::Init {
@@ -188,13 +189,13 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                 )?;
 
                 Either::Right((
-                    IbcEvent::ChannelOpenInit(events::ChannelOpenInit {
+                    vec![IbcEvent::ChannelOpenInit(events::ChannelOpenInit {
                         port_id,
                         channel_id,
                         counterparty_port_id: counterparty.port_id,
                         connection_id: connection_hops[0].clone(),
                         version,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -240,7 +241,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ChannelOpenTry::Init {
@@ -420,14 +422,14 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                 )?;
 
                 Either::Right((
-                    IbcEvent::ChannelOpenTry(events::ChannelOpenTry {
+                    vec![IbcEvent::ChannelOpenTry(events::ChannelOpenTry {
                         port_id,
                         channel_id,
                         counterparty_port_id: counterparty.port_id,
                         counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
                         connection_id: connection_hops[0].clone(),
                         version,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -471,7 +473,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ChannelOpenAck::Init {
@@ -639,13 +642,13 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 host.commit(channel_path, channel)?;
 
                 Either::Right((
-                    IbcEvent::ChannelOpenAck(events::ChannelOpenAck {
+                    vec![IbcEvent::ChannelOpenAck(events::ChannelOpenAck {
                         port_id,
                         channel_id,
                         counterparty_port_id,
                         counterparty_channel_id: counterparty_channel_id.validate().unwrap(),
                         connection_id,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -685,7 +688,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 ChannelOpenConfirm::Init {
@@ -846,13 +850,13 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                 host.commit(channel_path, channel)?;
 
                 Either::Right((
-                    IbcEvent::ChannelOpenConfirm(events::ChannelOpenConfirm {
+                    vec![IbcEvent::ChannelOpenConfirm(events::ChannelOpenConfirm {
                         port_id,
                         channel_id,
                         counterparty_port_id: counterparty.port_id,
                         counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
                         connection_id,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }

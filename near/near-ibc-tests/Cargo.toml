@@ -27,3 +27,4 @@ near-primitives         = "0.20"
 near-primitives-core    = { version = "0.21" }
 near-store              = { git = "https://github.com/near/nearcore" }
 sha2                    = { workspace = true }
+hex.workspace = true

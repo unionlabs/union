@@ -3,7 +3,11 @@ use ibc_vm_rs::states::connection_handshake;
 use near_primitives_core::hash::CryptoHash;
 use near_sdk::AccountId;
 use unionlabs::{
-    ibc::core::{channel, client::height::Height, connection::version::Version},
+    ibc::core::{
+        channel::{self, packet::Packet},
+        client::height::Height,
+        connection::version::Version,
+    },
     id::{ChannelId, ConnectionId, PortId},
     near::types::{self, BlockHeaderInnerLiteView},
 };
@@ -119,4 +123,19 @@ pub struct ClientState {
     pub latest_height: u64,
     pub ibc_account_id: AccountId,
     pub initial_block_producers: Option<Vec<types::ValidatorStakeView>>,
+}
+
+#[derive(serde::Serialize)]
+pub struct RecvPacket {
+    pub packet: Packet,
+    pub proof_commitment: Vec<u8>,
+    pub proof_height: Height,
+}
+
+#[derive(serde::Serialize)]
+pub struct AcknowledgePacket {
+    pub packet: Packet,
+    pub ack: Vec<u8>,
+    pub proof_ack: Vec<u8>,
+    pub proof_height: Height,
 }

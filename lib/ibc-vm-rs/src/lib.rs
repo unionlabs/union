@@ -9,7 +9,7 @@ use states::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         Counterparty as ConnectionCounterparty,
     },
-    packet::SendPacket,
+    packet::{Acknowledgement, RecvPacket, SendPacket},
     CreateClient,
 };
 use unionlabs::{
@@ -57,6 +57,12 @@ pub enum IbcError {
     // TODO(aeryz): this should have the error
     #[error("ibc app callback failed")]
     IbcAppCallbackFailed,
+
+    #[error("acknowledgement with the sequence {0} already exists")]
+    AcknowledgementExists(u64),
+
+    #[error("empty acknowledgement")]
+    EmptyAcknowledgement,
 
     // TODO(aeryz): this should have the error
     #[error("membership verification failed")]
@@ -236,6 +242,8 @@ pub enum IbcState {
     ChannelOpenAck(ChannelOpenAck),
     ChannelOpenConfirm(ChannelOpenConfirm),
     SendPacket(SendPacket),
+    RecvPacket(RecvPacket),
+    AcknowledgePacket(Acknowledgement),
 }
 
 macro_rules! cast_either {
@@ -254,7 +262,8 @@ impl<T: IbcHost> Runnable<T> for IbcState {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = cast_either!(
             self,
             host,
@@ -270,7 +279,9 @@ impl<T: IbcHost> Runnable<T> for IbcState {
                 ChannelOpenTry,
                 ChannelOpenAck,
                 ChannelOpenConfirm,
-                SendPacket
+                SendPacket,
+                RecvPacket,
+                AcknowledgePacket
             ]
         );
         Ok(res)
@@ -382,7 +393,7 @@ pub trait Runnable<T: IbcHost>: Serialize + Sized {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error>;
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>;
 }
 
 pub enum Either<L, R> {
@@ -549,5 +560,27 @@ pub fn send_packet(
         timeout_height,
         timeout_timestamp,
         data,
+    })
+}
+
+pub fn recv_packet(packet: Packet, proof_commitment: Vec<u8>, proof_height: Height) -> IbcState {
+    IbcState::RecvPacket(RecvPacket::Init {
+        packet,
+        proof_commitment,
+        proof_height,
+    })
+}
+
+pub fn acknowledge_packet(
+    packet: Packet,
+    ack: Vec<u8>,
+    proof_ack: Vec<u8>,
+    proof_height: Height,
+) -> IbcState {
+    IbcState::AcknowledgePacket(Acknowledgement::Init {
+        packet,
+        ack,
+        proof_ack,
+        proof_height,
     })
 }

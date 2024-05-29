@@ -45,8 +45,9 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
-        let res = match (self, resp) {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
+        let res = match (self, &resp) {
             (
                 RecvPacket::Init {
                     packet,
@@ -116,13 +117,13 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                 }
 
                 if packet.timeout_height != Default::default()
-                    && packet.timeout_height > host.current_height()
+                    && host.current_height() >= packet.timeout_height
                 {
                     return Err(IbcError::TimedOutPacket.into());
                 }
 
                 if packet.timeout_timestamp != 0
-                    && packet.timeout_timestamp > host.current_timestamp()
+                    && host.current_timestamp() >= packet.timeout_timestamp
                 {
                     return Err(IbcError::TimedOutPacket.into());
                 }
@@ -138,7 +139,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     .into(),
                 ) {
                     Some(_) => Either::Right((
-                        IbcEvent::RecvPacket(events::RecvPacket {
+                        vec![IbcEvent::RecvPacket(events::RecvPacket {
                             packet_data_hex: packet.data,
                             packet_timeout_height: packet.timeout_height,
                             packet_timeout_timestamp: packet.timeout_timestamp,
@@ -149,30 +150,12 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                             packet_dst_channel: packet.destination_channel,
                             packet_channel_ordering: channel.ordering,
                             connection_id: channel.connection_hops[0].clone(),
-                        }),
+                        })],
                         IbcVmResponse::Empty,
                     )),
                     None => {
                         // TODO(aeryz): known size can be optimized
-                        let mut packet_commitment = Vec::new();
-                        packet_commitment
-                            .extend_from_slice(packet.timeout_timestamp.to_be_bytes().as_slice());
-                        packet_commitment.extend_from_slice(
-                            packet
-                                .timeout_height
-                                .revision_number
-                                .to_be_bytes()
-                                .as_slice(),
-                        );
-                        packet_commitment.extend_from_slice(
-                            packet
-                                .timeout_height
-                                .revision_height
-                                .to_be_bytes()
-                                .as_slice(),
-                        );
-                        packet_commitment
-                            .extend_from_slice(host.sha256(packet.data.clone()).as_slice());
+                        let packet_commitment = packet_commitment(host, &packet);
 
                         Either::Left((
                             RecvPacket::MembershipVerified {
@@ -189,12 +172,12 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                     path: MerklePath {
                                         key_path: vec![
                                             "ibc".into(),
-                                            format!(
-                                                "commitmens/ports/{}/channels/{}/sequences/{}",
-                                                packet.source_port,
-                                                packet.source_channel,
-                                                packet.sequence
-                                            ),
+                                            CommitmentPath {
+                                                port_id: packet.source_port.clone(),
+                                                channel_id: packet.source_channel.clone(),
+                                                sequence: packet.sequence,
+                                            }
+                                            .to_string(),
                                         ],
                                     },
                                     value: host.sha256(packet_commitment),
@@ -238,27 +221,71 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     vec![1],
                 )?;
 
-                Either::Right((
-                    IbcEvent::RecvPacket(events::RecvPacket {
-                        packet_data_hex: packet.data,
-                        packet_timeout_height: packet.timeout_height,
-                        packet_timeout_timestamp: packet.timeout_timestamp,
-                        packet_sequence: packet.sequence,
-                        packet_src_port: packet.source_port,
-                        packet_src_channel: packet.source_channel,
-                        packet_dst_port: packet.destination_port,
-                        packet_dst_channel: packet.destination_channel,
-                        packet_channel_ordering: channel.ordering,
-                        connection_id: channel.connection_hops[0].clone(),
-                    }),
-                    IbcVmResponse::Empty,
-                ))
+                let mut events = vec![IbcEvent::RecvPacket(events::RecvPacket {
+                    packet_data_hex: packet.data.clone(),
+                    packet_timeout_height: packet.timeout_height,
+                    packet_timeout_timestamp: packet.timeout_timestamp,
+                    packet_sequence: packet.sequence,
+                    packet_src_port: packet.source_port.clone(),
+                    packet_src_channel: packet.source_channel.clone(),
+                    packet_dst_port: packet.destination_port.clone(),
+                    packet_dst_channel: packet.destination_channel.clone(),
+                    packet_channel_ordering: channel.ordering,
+                    connection_id: channel.connection_hops[0].clone(),
+                })];
+
+                if !ack.is_empty() {
+                    events.push(IbcEvent::WriteAcknowledgement(write_acknowledgement(
+                        host,
+                        &channel,
+                        packet,
+                        ack.clone(),
+                    )?));
+                }
+
+                Either::Right((events, IbcVmResponse::Empty))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
         };
 
         Ok(res)
     }
+}
+
+pub fn write_acknowledgement<T: IbcHost>(
+    host: &mut T,
+    channel: &Channel,
+    packet: Packet,
+    ack: Vec<u8>,
+) -> Result<events::WriteAcknowledgement, T::Error> {
+    let ack_key = AcknowledgementPath {
+        port_id: packet.destination_port.clone(),
+        channel_id: packet.destination_channel.clone(),
+        sequence: packet.sequence,
+    }
+    .into();
+    if host.read_raw(&ack_key).is_some() {
+        return Err(IbcError::AcknowledgementExists(packet.sequence.into()).into());
+    }
+
+    if ack.is_empty() {
+        return Err(IbcError::EmptyAcknowledgement.into());
+    }
+
+    host.commit_raw(ack_key, host.sha256(ack.clone()))?;
+
+    Ok(events::WriteAcknowledgement {
+        packet_data_hex: packet.data,
+        packet_timeout_height: packet.timeout_height,
+        packet_timeout_timestamp: packet.timeout_timestamp,
+        packet_sequence: packet.sequence,
+        packet_src_port: packet.source_port,
+        packet_src_channel: packet.source_channel,
+        packet_dst_port: packet.destination_port,
+        packet_dst_channel: packet.destination_channel,
+        packet_ack_hex: hex::encode(ack).into_bytes(),
+        connection_id: channel.connection_hops[0].clone(),
+    })
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -302,7 +329,8 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 SendPacket::Init {
@@ -464,11 +492,11 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         sequence: packet.sequence,
                     }
                     .into(),
-                    commitment,
+                    host.sha256(commitment),
                 )?;
 
                 Either::Right((
-                    IbcEvent::SendPacket(events::SendPacket {
+                    vec![IbcEvent::SendPacket(events::SendPacket {
                         packet_data_hex: packet.data,
                         packet_timeout_height: timeout_height,
                         packet_timeout_timestamp: timeout_timestamp,
@@ -479,7 +507,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         packet_dst_channel: packet.destination_channel,
                         packet_channel_ordering: Order::Unordered,
                         connection_id,
-                    }),
+                    })],
                     IbcVmResponse::SendPacket {
                         sequence: packet.sequence.into(),
                     },
@@ -512,7 +540,7 @@ fn packet_commitment<T: IbcHost>(host: &mut T, packet: &Packet) -> Vec<u8> {
     packet_commitment
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Acknowledgement {
     Init {
         packet: Packet,
@@ -538,7 +566,8 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
         self,
         host: &mut T,
         resp: &[IbcResponse],
-    ) -> Result<Either<(Self, IbcAction), (IbcEvent, IbcVmResponse)>, <T as IbcHost>::Error> {
+    ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
+    {
         let res = match (self, resp) {
             (
                 Acknowledgement::Init {
@@ -552,14 +581,14 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                 let channel: Channel = host
                     .read(
                         &ChannelEndPath {
-                            port_id: packet.destination_port.clone(),
-                            channel_id: packet.destination_channel.clone(),
+                            port_id: packet.source_port.clone(),
+                            channel_id: packet.source_channel.clone(),
                         }
                         .into(),
                     )
                     .ok_or(IbcError::ChannelNotFound(
-                        packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        packet.source_port.clone(),
+                        packet.source_channel.clone(),
                     ))?;
 
                 // TODO(aeryz): flushing state?
@@ -616,7 +645,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     .into(),
                 ) else {
                     return Ok(Either::Right((
-                        IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
+                        vec![IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
                             packet_timeout_height: packet.timeout_height,
                             packet_timeout_timestamp: packet.timeout_timestamp,
                             packet_sequence: packet.sequence,
@@ -626,12 +655,13 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                             packet_dst_channel: packet.destination_channel,
                             packet_channel_ordering: Order::Unordered,
                             connection_id: channel.connection_hops[0].clone(),
-                        }),
+                        })],
                         IbcVmResponse::Empty,
                     )));
                 };
 
                 let packet_commitment = packet_commitment(host, &packet);
+                let packet_commitment = host.sha256(packet_commitment);
                 if commitment != packet_commitment {
                     return Err(
                         IbcError::PacketCommitmentMismatch(commitment, packet_commitment).into(),
@@ -662,7 +692,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                                     .to_string(),
                                 ],
                             },
-                            value: ack,
+                            value: host.sha256(ack),
                         }],
                     )
                         .into(),
@@ -709,7 +739,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                 )?;
 
                 Either::Right((
-                    IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
+                    vec![IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
                         packet_timeout_height: packet.timeout_height,
                         packet_timeout_timestamp: packet.timeout_timestamp,
                         packet_sequence: packet.sequence,
@@ -719,7 +749,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                         packet_dst_channel: packet.destination_channel,
                         packet_channel_ordering: Order::Unordered,
                         connection_id,
-                    }),
+                    })],
                     IbcVmResponse::Empty,
                 ))
             }
