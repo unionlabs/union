@@ -499,6 +499,7 @@
               nodePackages_latest.nodejs
               nodePackages_latest.svelte-language-server
               nodePackages_latest."@astrojs/language-server"
+              nodePackages_latest."@tailwindcss/language-server"
               nodePackages_latest.typescript-language-server
               nodePackages_latest.vscode-css-languageserver-bin
             ])

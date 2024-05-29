@@ -18,6 +18,43 @@ scope            = "source.astro"
 # block-comment-tokens = { start = "<!--", end = "-->" }
 
 [[language]]
+file-types       = ["css", "postcss"]
+language-servers = ["tailwindcss-css", "vscode-css-language-server"]
+name             = "css"
+scope            = "source.css"
+
+[language-server.tailwindcss-css]
+args        = ["--stdio"]
+command     = "tailwindcss-language-server"
+config      = {}
+language-id = "css"
+
+[[language]]
+file-types       = ["html"]
+language-servers = ["tailwindcss-html", "vscode-html-language-server"]
+name             = "html"
+scope            = "text.html.basic"
+
+[language-server.tailwindcss-html]
+args        = ["--stdio"]
+command     = "tailwindcss-language-server"
+config      = {}
+language-id = "html"
+
+[language-server.tailwindcss]
+args        = ["--stdio"]
+command     = "tailwindcss-language-server"
+config      = {}
+language-id = "svelte"
+
+[[language]]
+file-types      = ["css", "html", "svelte", "astro"]
+injection-regex = "(postcss|css|html)"
+name            = "tailwindcss"
+roots           = ["tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
+scope           = "source.css"
+
+[[language]]
 auto-format      = true
 language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
 name             = "javascript"
@@ -28,9 +65,13 @@ language-servers = [{ name = "typescript-language-server", except-features = ["f
 name             = "typescript"
 
 [[language]]
-auto-format      = true
-language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
-name             = "tsx"
+auto-format = true
+language-servers = [
+  { name = "typescript-language-server", except-features = ["format"] },
+  "biome",
+  "tailwindcss",
+]
+name = "tsx"
 
 [[language]]
 auto-format      = true
@@ -43,12 +84,16 @@ name             = "json"
 
 [[language]]
 auto-format      = true
-language-servers = [{ name = "svelteserver", except-features = ["format"] }, "biome"]
+file-types       = ["svelte"]
+language-servers = [{ name = "svelteserver", except-features = ["format"] }, "biome", "tailwindcss-ls"]
 name             = "svelte"
+roots            = ["svelte.config.js"]
+scope            = "source.svelte"
+
 
 [[grammar]]
 name   = "astro"
-source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "dfa0893bdc4bdfada102043404758c66e3580568" }
+source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "4be180759ec13651f72bacee65fa477c64222a1a" }
 
 # [[grammar]]
 # name   = "sql"
