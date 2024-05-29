@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use ibc_vm_rs::{
     states::{connection_handshake, CreateClient},
     IbcHost, IbcQuery, IbcResponse, IbcState, IbcVmResponse, Runnable, Status,
@@ -304,6 +306,29 @@ impl Contract {
         fold(self, runnable, &[IbcResponse::Empty])
     }
 
+    pub fn send_packet(
+        &mut self,
+        source_port: PortId,
+        source_channel: ChannelId,
+        timeout_height: Height,
+        timeout_timestamp: u64,
+        // TODO(aeryz): enforce this to be non-empty at type level
+        data: Vec<u8>,
+    ) -> PromiseOrValue<IbcVmResponse> {
+        if source_port.deref() != env::predecessor_account_id().as_str() {
+            panic!("expected sender to own the capability");
+        }
+
+        let runnable = ibc_vm_rs::send_packet(
+            source_port,
+            source_channel,
+            timeout_height,
+            timeout_timestamp,
+            data,
+        );
+        fold(self, runnable, &[IbcResponse::Empty])
+    }
+
     // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
     // when I try to fetch the contract state
     pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
@@ -446,9 +471,9 @@ pub fn fold(
 
     let (runnable, ibc_action) = match either {
         ibc_vm_rs::Either::Left(cont) => cont,
-        ibc_vm_rs::Either::Right(event) => {
+        ibc_vm_rs::Either::Right((event, val)) => {
             env::log_str(&serde_json::to_string(&event).unwrap());
-            return PromiseOrValue::Value(IbcVmResponse::Empty);
+            return PromiseOrValue::Value(val);
         }
     };
 
