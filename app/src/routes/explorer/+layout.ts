@@ -7,6 +7,7 @@ import BlocksIcon from "virtual:icons/lucide/blocks"
 import ConnectionIcon from "virtual:icons/mdi/connection"
 import SendHorizontalIcon from "virtual:icons/lucide/send-horizontal"
 import RocketIcon from "virtual:icons/lucide/rocket"
+import DatabaseIcon from "virtual:icons/lucide/database"
 
 const tables = ["blocks", "packets", "channels", "connections"] as const
 
@@ -25,7 +26,8 @@ export const load = (loadEvent => {
       { route: "channels", icon: TvIcon },
       { route: "packets", icon: SendHorizontalIcon },
       { route: "connections", icon: ConnectionIcon },
-      { route: "voyager-queue", icon: RocketIcon }
+      { route: "voyager-queue", icon: RocketIcon },
+      { route: "index-status", icon: DatabaseIcon }
     ] as Array<Table>
   }
 }) satisfies LayoutLoad
