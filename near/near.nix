@@ -14,8 +14,7 @@
             };
             extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
             extraNativeBuildInputs = [ pkgs.clang ];
-            extraEnv = {
-            };
+            extraEnv = { };
           }).packages.near-ibc-tests;
         installPhase = ''
           mkdir -p $out/bin

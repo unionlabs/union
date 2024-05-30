@@ -1,8 +1,8 @@
 [package]
-name         = "near-ibc"
 authors      = ["Union Labs"]
-license-file = { workspace = true }
 edition      = "2021"
+license-file = { workspace = true }
+name         = "near-ibc"
 version      = "0.1.0"
 
 [dependencies]

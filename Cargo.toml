@@ -74,8 +74,6 @@ members = [
   "near/near-light-client",
   "near/dummy-ibc-app",
   "near/near-ibc-tests",
-  "lib/near-workspaces-rs",
-  "near/near-sandbox-utils",
 ]
 
 [workspace.package]
@@ -112,8 +110,6 @@ linea-verifier            = { path = "lib/linea-verifier", default-features = fa
 linea-zktrie              = { path = "lib/linea-zktrie", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }
 near-light-client         = { path = "near/near-light-client", default-features = false }
-near-sandbox-utils        = { path = "near/near-sandbox-utils", default-features = false }
-near-workspaces           = { path = "lib/near-workspaces-rs", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }
@@ -147,6 +143,8 @@ ethers                 = { git = "https://github.com/unionlabs/ethers-rs", branc
 ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
+
+near-workspaces = { git = "https://github.com/unionlabs/near-workspace-rs", rev = "e8f278e891ff61cd160615a37b6cf977deeb7c40", default-features = false }
 
 arbitrary                = { version = "1.3.0", default-features = false }
 axum                     = { version = "0.6.20", default-features = false }
