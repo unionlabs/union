@@ -28,7 +28,12 @@ let isCollapsed = false
 let leftPane: Resizable.PaneAPI
 $: [leftSize, rightSize] = [12, 88]
 
-$: if (windowSize.width < 900) leftPane.collapse()
+$: if (windowSize?.width < 900) {
+  try {
+    leftPane.collapse()
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
+  } catch {}
+}
 
 const onLayoutChange: Resizable.PaneGroupProps["onLayoutChange"] = sizes => {
   document.cookie = `PaneForge:layout=${JSON.stringify(sizes)}`
@@ -45,7 +50,7 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
 }
 </script>
 
-<main class="flex flex-row flex-1 overflow-y-hidden resize">
+<main class="flex flex-row flex-1 overflow-y-hidden">
   <Resizable.PaneGroup direction="horizontal" class="w-full rounded-lg bg-re" {onLayoutChange}>
     <Resizable.Pane
       {onExpand}

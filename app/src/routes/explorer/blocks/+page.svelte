@@ -11,16 +11,17 @@ import {
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
+import { DurationUnits } from "svelte-ux"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { CHAIN_MAP } from "$lib/constants/chains"
 import * as Table from "$lib/components/ui/table"
-import { Duration, DurationUnits } from "svelte-ux"
 import { createQuery } from "@tanstack/svelte-query"
-import CellText from "../(components)/cell-text.svelte"
 import { removeArrayDuplicates } from "$lib/utilities"
 import type { Override } from "$lib/utilities/types.ts"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
+import CellText from "../(components)/cell-plain-text.svelte"
+import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
 $: cosmosBlocks = createQuery({
@@ -47,19 +48,20 @@ $: if (blockData) {
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "time",
-    size: 105,
-    maxSize: 105,
+    size: 90,
+    maxSize: 90,
+    minSize: 90,
     meta: {
       class: "ml-1.5 justify-start"
     },
     header: info => "Time",
     cell: info =>
-      flexRender(Duration, {
+      flexRender(CellDurationText, {
         totalUnits: 3,
         variant: "short",
+        class: "pl-2 text-clip",
         minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string),
-        class: "pl-2 text-clip"
+        start: new Date(info.getValue() as string)
       })
   },
   {
@@ -152,12 +154,14 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 })
 </script>
 
-<div
-  class="p-4 w-full flex justify-center"
->
+<svelte:head>
+  <title>union - explorer</title>
+</svelte:head>
+
+<div class="p-4 w-full flex justify-center">
   <div
     bind:this={virtualListElement}
-    class={cn('rounded-md border border-secondary border-solid w-full max-w-[965px]')}
+    class={cn('rounded-md border border-secondary border-solid w-full max-w-[990px]')}
   >
     <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
       <Table.Header

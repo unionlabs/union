@@ -1,5 +1,5 @@
 <script lang="ts">
-import { voyagerQueueQuery} from "$lib/graphql/documents/voyager-queue.ts"
+import { voyagerQueueQuery } from "$lib/graphql/documents/voyager-queue.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
@@ -10,8 +10,6 @@ $: voyagerQueue = createQuery({
   // enabled: false,
   queryFn: async () => request(URLS.GRAPHQL, voyagerQueueQuery, { limit: 10 })
 })
-
-  
 </script>
 
 <h1>Voyager Queue</h1>
