@@ -615,6 +615,7 @@ kysely
 kyve
 laddr
 lahcen
+langservers
 launchbadge
 lblst
 lcfur
