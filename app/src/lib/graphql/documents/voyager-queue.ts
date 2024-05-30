@@ -10,4 +10,3 @@ export const voyagerQueueQuery = graphql(/* GraphQL */ `
     }
   }
 `)
-

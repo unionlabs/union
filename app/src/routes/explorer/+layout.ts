@@ -4,10 +4,10 @@ import type { SvelteComponent } from "svelte"
 
 import TvIcon from "virtual:icons/lucide/tv"
 import BlocksIcon from "virtual:icons/lucide/blocks"
-import ConnectionIcon from "virtual:icons/mdi/connection"
-import SendHorizontalIcon from "virtual:icons/lucide/send-horizontal"
 import RocketIcon from "virtual:icons/lucide/rocket"
 import DatabaseIcon from "virtual:icons/lucide/database"
+import ConnectionIcon from "virtual:icons/mdi/connection"
+import SendHorizontalIcon from "virtual:icons/lucide/send-horizontal"
 
 const tables = ["blocks", "packets", "channels", "connections"] as const
 
