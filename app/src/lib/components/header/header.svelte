@@ -21,7 +21,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     <img
       src="/images/logo/union-logo-wide-transparent.svg"
       alt="Union Logo"
-      class="size-full max-w-26 select-none light:invert"
+      class="size-full max-w-26 select-none invert dark:invert-0"
     />
   </Button>
   <div class="flex-1 p-0 m-0 w-full">

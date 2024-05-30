@@ -237,7 +237,7 @@ let buttonText = "Transfer" satisfies
   class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
 >
   <Card.Root class={cn("max-w-[475px] w-full")}>
-    <Card.Header class="flex flex-row w-full items-center h-10 gap-x-3 mb-3">
+    <Card.Header class="flex flex-row w-full items-center gap-x-2">
       <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
       <Button
         size="icon"
