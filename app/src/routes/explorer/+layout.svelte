@@ -10,7 +10,12 @@ import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 export let data: LayoutData
 
 let windowSize = { width: window.innerWidth, height: window.innerHeight }
-const handleResize = () => (windowSize = { width: window.innerWidth, height: window.innerHeight })
+
+const handleResize = () => {
+  requestAnimationFrame(() => {
+    windowSize = { width: window.innerWidth, height: window.innerHeight }
+  })
+}
 
 onMount(() => {
   window.addEventListener("resize", handleResize)

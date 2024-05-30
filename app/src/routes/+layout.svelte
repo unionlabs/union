@@ -5,6 +5,7 @@ import { onMount } from "svelte"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { Toaster } from "svelte-french-toast"
+import { onNavigate } from "$app/navigation"
 import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"
 import { cosmosStore } from "$lib/wallet/cosmos"
@@ -66,7 +67,7 @@ const localStoragePersister = createSyncStoragePersister({
   storage: browser ? window.localStorage : undefined // or window.sessionStorage
 })
 
-$: if ($navigating) console.log("Navigating to", $page.url.pathname)
+onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
 </script>
 
 <svelte:head>

@@ -13,9 +13,6 @@ export let handleChainSelect: (name: string, target: "fromChain" | "toChain") =>
 export let queryParams: any
 
 $: {
-  console.log(queryParams)
-}
-$: {
   if (dialogOpen) document.body.style.overflow = "hidden"
   else document.body.style.overflow = "auto"
 }

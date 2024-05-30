@@ -1,5 +1,4 @@
 <script lang="ts">
-import { Shine } from "svelte-ux"
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
 import SearchBar from "$lib/components/search-bar.svelte"
@@ -22,10 +21,10 @@ import { routes } from "$lib/components/navigation/index.ts"
     <img
       src="/images/logo/union-logo-wide-transparent.svg"
       alt="Union Logo"
-      class="size-full select-none"
+      class="size-full max-w-26 select-none"
     />
   </Button>
-  <div class="flex-1 p-0 m-0">
+  <div class="flex-1 p-0 m-0 w-full">
     <SearchBar />
   </div>
   <div class="hidden sm:flex flex-row space-x-0 my-auto">

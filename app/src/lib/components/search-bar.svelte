@@ -21,7 +21,12 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 let windowSize = { width: window.innerWidth, height: window.innerHeight }
-const handleResize = () => (windowSize = { width: window.innerWidth, height: window.innerHeight })
+
+const handleResize = () => {
+  requestAnimationFrame(() => {
+    windowSize = { width: window.innerWidth, height: window.innerHeight }
+  })
+}
 
 onMount(() => {
   window.addEventListener("resize", handleResize)
@@ -39,7 +44,7 @@ const onInputChange = (event: InputEvent) =>
   }, 1_000)(event)
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-[485px]">
+<div class="relative mr-auto flex-1 w-full max-w-[490px]">
   <Search class="absolute left-2.5 top-3 size-4 text-muted-foreground" />
   <Input
     type="search"
@@ -54,8 +59,8 @@ const onInputChange = (event: InputEvent) =>
     bind:value={searchInput}
     on:input={onInputChange}
     class={cn(
-      "w-full rounded-md bg-background pl-8 self-stretch lowercase border-[1px] border-input focus-visible:border-secondary",
-      'shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50'
+      'w-full rounded-md bg-background pl-8 self-stretch lowercase border-[1px] border-input focus-visible:border-secondary',
+      'shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
     )}
   />
   <kbd

@@ -124,7 +124,6 @@ $: selectedToChain = chains.find(
 // console.log(JSON.stringify({ selectedFromChain, selectedToChain }, undefined, 2))
 
 let [tokenSearch, assetSearchResults] = ["", assets]
-// console.log(JSON.stringify(assets, undefined, 2))
 
 function handleAssetSearch(event: InputEvent) {
   const target = event.target
@@ -133,7 +132,6 @@ function handleAssetSearch(event: InputEvent) {
   assetSearchResults = assets.filter(asset =>
     asset.id.toLowerCase().includes(tokenSearch.toLowerCase())
   )
-  // console.log(JSON.stringify(assetSearchResults, undefined, 2))
 }
 
 let availableAssets = assets.filter(
@@ -148,7 +146,6 @@ $: availableAssets = assets.filter(
 )
 
 let selectedAsset = assets[0]
-// $: console.log(JSON.stringify({ selectedAsset }, undefined, 2))
 
 function handleAssetSelect(id: string) {
   console.log({ id }, availableAssets.find(asset => asset.id === id)?.id)
