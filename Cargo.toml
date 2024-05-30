@@ -58,7 +58,7 @@ members = [
   "light-clients/linea-light-client",
 
   "tools/generate-rust-sol-bindings",
-  "tools/keygen",
+  "tools/devnet-utils",
   "tools/parse-wasm-client-type",
   "tools/tidy",
 

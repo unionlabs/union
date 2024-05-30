@@ -1,6 +1,5 @@
 { pkgs
 , dbg
-, ucliBin
 , ...
 }:
 { node
@@ -43,9 +42,9 @@ let
     assert (builtins.isInt idx);
     pkgs.runCommand
       "${chainName}-mnemonic_${toString idx}"
-      { buildInputs = [ pkgs.keygen ]; }
+      { buildInputs = [ pkgs.devnet-utils ]; }
       ''
-        keygen mnemonic $(echo ${toString idx} | sha256sum - | cut -d' ' -f1) > $out
+        devnet-utils keygen mnemonic $(echo ${toString idx} | sha256sum - | cut -d' ' -f1) > $out
 
         echo "validator ${toString idx} mnemonic: $(cat $out)"
       '';
@@ -54,9 +53,9 @@ let
     assert (builtins.isInt idx);
     pkgs.runCommand
       "${chainName}-node-key_${toString idx}"
-      { buildInputs = [ pkgs.keygen ]; }
+      { buildInputs = [ pkgs.devnet-utils ]; }
       ''
-        NODE_KEY=$(keygen key --key-type ed25519 "$(cat ${mkNodeMnemonic idx})" | tr -d '\n')
+        NODE_KEY=$(devnet-utils keygen key --key-type ed25519 "$(cat ${mkNodeMnemonic idx})" | tr -d '\n')
 
         echo "validator ${toString idx} node_key: $NODE_KEY"
 
@@ -489,9 +488,9 @@ let
     '';
 
   getContractAddress = creator: checksum: salt:
-    pkgs.runCommand "get-contract-address" { buildInputs = [ pkgs.jq ]; } ''
+    pkgs.runCommand "get-contract-address" { buildInputs = [ pkgs.jq pkgs.devnet-utils ]; } ''
       export HOME=$(pwd)
-      CANONICAL_ADDR=$(${ucliBin} \
+      CANONICAL_ADDR=$(devnet-utils \
         compute \
         instantiate2-address \
         --creator "0x$(cat ${creator})" \
