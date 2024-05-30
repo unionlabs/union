@@ -1,20 +1,21 @@
 [package]
-authors = ["Jacob Lindahl <jacob.lindahl@near.org>"]
-edition = "2021"
-name    = "near-ibc"
-version = "0.1.0"
+name         = "near-ibc"
+authors      = ["Union Labs"]
+license-file = { workspace = true }
+edition      = "2021"
+version      = "0.1.0"
 
 [dependencies]
 borsh                   = { workspace = true, features = ["borsh-derive"] }
 ibc-vm-rs               = { workspace = true }
 near-contract-standards = { workspace = true }
 near-sdk                = { workspace = true }
-near-sdk-contract-tools = {workspace = true}
+near-sdk-contract-tools = { workspace = true }
+schemars                = { workspace = true, features = ["derive"], optional = true }
 serde.workspace         = true
 serde_json.workspace    = true
 thiserror.workspace     = true
 unionlabs               = { workspace = true }
-schemars = { workspace = true, features = ["derive"], optional = true }
 
 [lib]
 crate-type = ["cdylib"]
@@ -28,4 +29,10 @@ pedantic                = "warn"
 wildcard-imports        = "allow"
 
 [features]
-schemars = ["dep:schemars", "ibc-vm-rs/schemars", "near-sdk/abi", "near-sdk/__abi-generate", "unionlabs/schemars"]
+schemars = [
+  "dep:schemars",
+  "ibc-vm-rs/schemars",
+  "near-sdk/abi",
+  "near-sdk/__abi-generate",
+  "unionlabs/schemars",
+]

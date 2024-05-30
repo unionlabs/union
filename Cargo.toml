@@ -7,7 +7,6 @@ members = [
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
-  "cosmwasm/ibc-contract",
   "devnet-compose",
 
   "e2e/ensure-blocks",
@@ -205,5 +204,5 @@ tracing-subscriber       = { version = "0.3", default-features = false, features
 typenum                  = { version = "1.17.0", default-features = false }
 
 [patch."crates-io"]
-arbitrary        = { git = "https://github.com/unionlabs/arbitrary" }
+arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
 # parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }

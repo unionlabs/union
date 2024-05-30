@@ -20,6 +20,7 @@ unionlabs.workspace       = true
 # near-primitives = { git = "https://github.com/near/nearcore" }
 base64                  = { workspace = true }
 env_logger              = "0.9"
+hex.workspace           = true
 near-crypto             = "0.20"
 near-jsonrpc-client     = "0.8"
 near-jsonrpc-primitives = "0.20"
@@ -27,4 +28,3 @@ near-primitives         = "0.20"
 near-primitives-core    = { version = "0.21" }
 near-store              = { git = "https://github.com/near/nearcore" }
 sha2                    = { workspace = true }
-hex.workspace = true

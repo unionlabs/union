@@ -1,5 +1,7 @@
-use std::path::Path;
-use std::process::{Child, Command};
+use std::{
+    path::Path,
+    process::{Child, Command},
+};
 
 pub fn run_with_options(options: &[&str]) -> anyhow::Result<Child> {
     let bin_path = crate::ensure_sandbox_bin()?;

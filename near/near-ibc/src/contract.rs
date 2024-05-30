@@ -36,15 +36,6 @@ enum StorageKey {
     History,
 }
 
-// #[event(
-//     standard = "x-value-history",
-//     version = "1.0.0",
-//     serde = "near_sdk::serde"
-// )]
-// enum ContractEvent {
-//     ValueSet { old_value: u32, new_value: u32 },
-// }
-
 impl IbcHost for Contract {
     type Error = Error;
 
@@ -350,14 +341,10 @@ impl Contract {
         fold(self, runnable, &[IbcResponse::Empty])
     }
 
-    // TODO(aeryz): these getter functions are temporary since for some reason `view_state` won't work
+    // TODO(aeryz): this getter function is temporary since for some reason `view_state` won't work
     // when I try to fetch the contract state
     pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
         self.account_ids.get(&client_type).map(|item| item.clone())
-    }
-
-    pub fn get_commitment(&self, key: String) -> Option<Vec<u8>> {
-        self.commitments.get(&key).map(|item| item.clone())
     }
 
     #[private]
