@@ -743,7 +743,8 @@ let
                   --api.enable true \
                   --rpc.unsafe \
                   --api.address tcp://0.0.0.0:1317 \
-                  --grpc.address 0.0.0.0:9090
+                  --grpc.address 0.0.0.0:9090 \
+                  --log_level rpc-server:warn,*:info
               ''
             else
               startCommandOverwrite
