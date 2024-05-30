@@ -1,4 +1,4 @@
-{ ... }: {
+{ self, ... }: {
   perSystem = { self', pkgs, proto, goPkgs, ensureAtRepositoryRoot, mkCi, ... }: {
     packages = {
       galoisd-coverage-show =
@@ -134,4 +134,42 @@
         });
     };
   };
+
+  flake.nixosModules.galoisd = { lib, pkgs, config, ... }:
+    with lib;
+    let
+      cfg = config.services.galoisd;
+    in
+    {
+      options.services.galoisd = {
+        enable = mkEnableOption "Galois daemon service";
+        package = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.galoisd-testnet-standalone;
+        };
+        host = mkOption {
+          type = types.str;
+          default = "localhost:9999";
+        };
+        max-conn = mkOption {
+          type = types.int;
+          default = 1;
+        };
+      };
+      config =
+        mkIf cfg.enable {
+          systemd.services.galoisd = {
+            wantedBy = [ "multi-user.target" ];
+            description = "Galois Daemon";
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = ''
+                ${pkgs.lib.getExe cfg.package} serve ${cfg.host} --max-conn ${builtins.toString cfg.max-conn}
+              '';
+              Restart = mkForce "always";
+              RestartSec = 10;
+            };
+          };
+        };
+    };
 }
