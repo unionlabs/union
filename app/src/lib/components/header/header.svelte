@@ -21,14 +21,14 @@ import { routes } from "$lib/components/navigation/index.ts"
     <img
       src="/images/logo/union-logo-wide-transparent.svg"
       alt="Union Logo"
-      class="size-full max-w-26 select-none"
+      class="size-full max-w-26 select-none light:invert"
     />
   </Button>
   <div class="flex-1 p-0 m-0 w-full">
     <SearchBar />
   </div>
   <div class="hidden sm:flex flex-row space-x-0">
-    <nav class="hidden lg:flex space-x-0 sm:space-x-2 mr-0 sm:mr-3">
+    <nav class="hidden lg:flex items-center space-x-0 sm:space-x-2 mr-0 sm:mr-3">
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button
           size="sm"

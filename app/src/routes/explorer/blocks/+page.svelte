@@ -153,7 +153,7 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 </script>
 
 <div
-  class="py-4 rounded-md mt-4 border-2 space-y-2 h-min w-full bg-card self-center flex justify-center"
+  class="p-4 w-full flex justify-center"
 >
   <div
     bind:this={virtualListElement}
