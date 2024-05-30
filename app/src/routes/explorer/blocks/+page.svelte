@@ -1,49 +1,50 @@
 <script lang="ts">
-import {
-  flexRender,
-  type ColumnDef,
-  getCoreRowModel,
-  type TableOptions,
-  createSvelteTable,
-  getFilteredRowModel,
-  getPaginationRowModel
-} from "@tanstack/svelte-table"
-import request from "graphql-request"
-import { URLS } from "$lib/constants"
-import { writable } from "svelte/store"
-import { DurationUnits } from "svelte-ux"
-import { cn } from "$lib/utilities/shadcn.ts"
-import { CHAIN_MAP } from "$lib/constants/chains"
-import * as Table from "$lib/components/ui/table"
-import { createQuery } from "@tanstack/svelte-query"
-import { removeArrayDuplicates } from "$lib/utilities"
-import type { Override } from "$lib/utilities/types.ts"
-import { createVirtualizer } from "@tanstack/svelte-virtual"
-import Button from "$lib/components/ui/button/button.svelte"
-import CellText from "../(components)/cell-plain-text.svelte"
-import CellDurationText from "../(components)/cell-duration-text.svelte"
-import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
+  import {
+    flexRender,
+    type ColumnDef,
+    getCoreRowModel,
+    type TableOptions,
+    createSvelteTable,
+    getFilteredRowModel,
+    getPaginationRowModel,
+  } from '@tanstack/svelte-table'
+  import request from 'graphql-request'
+  import { URLS } from '$lib/constants'
+  import { writable } from 'svelte/store'
+  import { DurationUnits } from 'svelte-ux'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import { CHAIN_MAP } from '$lib/constants/chains'
+  import * as Table from '$lib/components/ui/table'
+  import { createQuery } from '@tanstack/svelte-query'
+  import { removeArrayDuplicates } from '$lib/utilities'
+  import type { Override } from '$lib/utilities/types.ts'
+  import { createVirtualizer } from '@tanstack/svelte-virtual'
+  import Button from '$lib/components/ui/button/button.svelte'
+  import CellText from '../(components)/cell-plain-text.svelte'
+  import { ScrollArea } from '$lib/components/ui/scroll-area/index.ts'
+  import CellDurationText from '../(components)/cell-duration-text.svelte'
+  import { cosmosBlocksQuery } from '$lib/graphql/documents/cosmos-blocks.ts'
 
-$: cosmosBlocks = createQuery({
-  queryKey: ["cosmos-blocks"],
-  refetchInterval: 6_000,
-  // enabled: false,
-  queryFn: async () => request(URLS.GRAPHQL, cosmosBlocksQuery, { limit: 100 })
-})
+  $: cosmosBlocks = createQuery({
+    queryKey: ['cosmos-blocks'],
+    refetchInterval: 6_000,
+    // enabled: false,
+    queryFn: async () => request(URLS.GRAPHQL, cosmosBlocksQuery, { limit: 100 }),
+  })
 
-$: blockData = $cosmosBlocks?.data?.data ?? []
+  $: blockData = $cosmosBlocks?.data?.data ?? []
 
-/**
- * we use this constructed type because importing the generated graphql types is too slow given the file size
- */
-type CosmosBlock = Override<(typeof blockData)[0], { time: string }>
+  /**
+   * we use this constructed type because importing the generated graphql types is too slow given the file size
+   */
+  type CosmosBlock = Override<(typeof blockData)[0], { time: string }>
 
-$: blocksStore = writable<Array<CosmosBlock>>(blockData as Array<CosmosBlock>)
-$: if (blockData) {
-  blocksStore.update(currentBlocks =>
-    removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], "height")
-  )
-}
+  $: blocksStore = writable<Array<CosmosBlock>>(blockData as Array<CosmosBlock>)
+  $: if (blockData) {
+    blocksStore.update(currentBlocks =>
+      removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], 'height'),
+    )
+  }
 
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
@@ -113,41 +114,41 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   }
 ]
 
-const options = writable<TableOptions<CosmosBlock>>({
-  data: $blocksStore,
-  enableHiding: true,
-  enableFilters: true,
-  columns: defaultColumns,
-  autoResetPageIndex: true, // Automatically update pagination when data or page size changes
-  enableColumnFilters: true,
-  enableColumnResizing: true,
-  enableMultiRowSelection: true,
-  getCoreRowModel: getCoreRowModel(),
-  getFilteredRowModel: getFilteredRowModel(),
-  getPaginationRowModel: getPaginationRowModel()
-})
+  const options = writable<TableOptions<CosmosBlock>>({
+    data: $blocksStore,
+    enableHiding: true,
+    enableFilters: true,
+    columns: defaultColumns,
+    autoResetPageIndex: true, // Automatically update pagination when data or page size changes
+    enableColumnFilters: true,
+    enableColumnResizing: true,
+    enableMultiRowSelection: true,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  })
 
-let virtualListElement: HTMLDivElement
+  let virtualListElement: HTMLDivElement
 
-const rerender = () =>
-  options.update(options => ({ ...options, data: $blocksStore as unknown as Array<CosmosBlock> }))
+  const rerender = () =>
+    options.update(options => ({ ...options, data: $blocksStore as unknown as Array<CosmosBlock> }))
 
-const table = createSvelteTable(options)
+  const table = createSvelteTable(options)
 
-$: blocksStore.subscribe(() => {
-  if (!$blocksStore) return
-  $table.setPageSize($blocksStore.length)
-  rerender()
-})
+  $: blocksStore.subscribe(() => {
+    if (!$blocksStore) return
+    $table.setPageSize($blocksStore.length)
+    rerender()
+  })
 
-$: rows = $table.getRowModel().rows
+  $: rows = $table.getRowModel().rows
 
-$: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
-  overscan: 20,
-  count: rows.length,
-  estimateSize: () => 34,
-  getScrollElement: () => virtualListElement
-})
+  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    overscan: 5,
+    count: rows.length,
+    estimateSize: () => 50,
+    getScrollElement: () => virtualListElement,
+  })
 </script>
 
 <svelte:head>
