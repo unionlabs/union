@@ -155,13 +155,12 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 </script>
 
 <svelte:head>
-  <title>union - explorer</title>
+  <title>Union - Explorer</title>
 </svelte:head>
 
-<div class="p-4 w-full flex justify-center">
   <div
     bind:this={virtualListElement}
-    class={cn('rounded-md border border-secondary border-solid w-full max-w-[990px]')}
+    class={cn('rounded-md border border-secondary border-solid w-full')}
   >
     <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
       <Table.Header
@@ -215,7 +214,6 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
       </Table.Body>
     </Table.Root>
   </div>
-</div>
 
 <style lang="postcss">
   :global(tr td:last-child) {

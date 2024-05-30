@@ -12,7 +12,6 @@ $: voyagerQueue = createQuery({
 })
 </script>
 
-<h1>Voyager Queue</h1>
 
 {#if $voyagerQueue?.data?.queue }
 <pre class="overflow-scroll">
