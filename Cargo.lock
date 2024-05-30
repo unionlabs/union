@@ -6210,6 +6210,7 @@ dependencies = [
 [[package]]
 name = "near-sandbox-utils"
 version = "0.7.1"
+source = "git+https://github.com/unionlabs/near-sandbox?rev=95d4e807aef874f3467b163b72cc634e59c0be0b#95d4e807aef874f3467b163b72cc634e59c0be0b"
 dependencies = [
  "anyhow",
  "binary-install 0.2.0",
@@ -6468,27 +6469,23 @@ dependencies = [
 [[package]]
 name = "near-workspaces"
 version = "0.10.0"
+source = "git+https://github.com/unionlabs/near-workspace-rs?rev=e8f278e891ff61cd160615a37b6cf977deeb7c40#e8f278e891ff61cd160615a37b6cf977deeb7c40"
 dependencies = [
- "anyhow",
  "async-trait",
  "base64 0.21.7",
  "bs58 0.5.1",
  "cargo-near",
- "cargo_metadata 0.18.1",
  "chrono",
  "fs2",
- "futures",
  "json-patch",
  "libc",
  "near-account-id 1.0.0",
- "near-chain-configs 0.20.1",
  "near-crypto 0.20.1",
  "near-gas",
  "near-jsonrpc-client 0.8.0",
  "near-jsonrpc-primitives 0.20.1",
  "near-primitives 0.20.1",
  "near-sandbox-utils 0.7.1",
- "near-sdk",
  "near-token",
  "rand 0.8.5",
  "reqwest",
@@ -6496,12 +6493,10 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "tempfile",
- "test-log",
  "thiserror",
  "tokio",
  "tokio-retry",
  "tracing",
- "tracing-subscriber",
  "url",
 ]
 
@@ -9905,27 +9900,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "test-log"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dffced63c2b5c7be278154d76b479f9f9920ed34e7574201407f0b14e2bbb93"
-dependencies = [
- "test-log-macros",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "test-log-macros"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5999e24eaa32083191ba4e425deb75cdf25efefabe5aaccb7446dd0d4122a3f5"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.60",
 ]
 
 [[package]]
