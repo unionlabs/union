@@ -25,8 +25,8 @@
     "@tanstack/svelte-table": "^8.17.3",
     "@tanstack/svelte-virtual": "^3.5.0",
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.10",
-    "@wagmi/connectors": "^5.0.6",
-    "@wagmi/core": "^2.10.4",
+    "@wagmi/connectors": "^5.0.7",
+    "@wagmi/core": "^2.10.5",
     "bits-ui": "^0.21.10",
     "cmdk-sv": "^0.0.17",
     "formsnap": "^1.0.0",
@@ -57,7 +57,7 @@
     "@keplr-wallet/types": "^0.12.95",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
-    "@melt-ui/svelte": "^0.79.1",
+    "@melt-ui/svelte": "^0.80.0",
     "@svelte-put/shortcut": "^3.1.1",
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.5.10",
@@ -103,5 +103,15 @@
     "vite-plugin-inspect": "^0.8.4",
     "vite-plugin-tailwind-purgecss": "^0.3.3",
     "vitest": "^1.6.0"
+  },
+  "overrides": {
+    "globalthis": "npm:@nolyfill/globalthis@latest",
+    "hasown": "npm:@nolyfill/hasown@latest",
+    "is-arguments": "npm:@nolyfill/is-arguments@latest",
+    "is-generator-function": "npm:@nolyfill/is-generator-function@latest",
+    "is-typed-array": "npm:@nolyfill/is-typed-array@latest",
+    "isarray": "npm:@nolyfill/isarray@latest",
+    "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@latest",
+    "which-typed-array": "npm:@nolyfill/which-typed-array@latest"
   }
 }

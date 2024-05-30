@@ -47,8 +47,8 @@ export const config = createConfig({
     [sepolia.id]: fallback([
       unstable_connector(injected),
       http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`),
-      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`),
-      webSocket(`wss://ethereum-sepolia.core.chainstack.com/ws/${KEY.RPC.CHAINSTACK}`)
+      http(`https://sepolia-01.union.build/${KEY.RPC.QUICK_NODE}/`),
+      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`)
     ])
   },
   syncConnectedChain: true,
