@@ -55,7 +55,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
         resp: &[IbcResponse],
     ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
     {
-        let res = match (self, resp) {
+        let res = match (self, &resp) {
             (
                 ChannelOpenInit::Init {
                     connection_hops,
@@ -105,8 +105,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                 },
                 &[IbcResponse::Status { status }],
             ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
+                if *status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, *status).into());
                 }
 
                 let channel_id = host.next_channel_identifier()?;
@@ -140,8 +140,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                 },
                 &[IbcResponse::OnChannelOpenInit { err }],
             ) => {
-                if err {
-                    return Err(IbcError::IbcAppCallbackFailed.into());
+                if let Some(err) = err {
+                    return Err(IbcError::IbcAppCallbackFailed(err.clone()).into());
                 }
 
                 let one = 1_u64.to_be_bytes().to_vec();
@@ -243,7 +243,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
         resp: &[IbcResponse],
     ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
     {
-        let res = match (self, resp) {
+        let res = match (self, &resp) {
             (
                 ChannelOpenTry::Init {
                     connection_hops,
@@ -335,8 +335,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                 },
                 &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
             ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
+                if *status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, *status).into());
                 }
 
                 if !valid {
@@ -373,8 +373,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                 },
                 &[IbcResponse::OnChannelOpenTry { err }],
             ) => {
-                if err {
-                    return Err(IbcError::IbcAppCallbackFailed.into());
+                if let Some(err) = err {
+                    return Err(IbcError::IbcAppCallbackFailed(err.clone()).into());
                 }
 
                 let one = 1_u64.to_be_bytes().to_vec();
@@ -475,7 +475,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
         resp: &[IbcResponse],
     ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
     {
-        let res = match (self, resp) {
+        let res = match (self, &resp) {
             (
                 ChannelOpenAck::Init {
                     channel_id,
@@ -585,8 +585,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 },
                 &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
             ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
+                if *status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, *status).into());
                 }
 
                 if !valid {
@@ -618,8 +618,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 },
                 &[IbcResponse::OnChannelOpenAck { err }],
             ) => {
-                if err {
-                    return Err(IbcError::IbcAppCallbackFailed.into());
+                if let Some(err) = err {
+                    return Err(IbcError::IbcAppCallbackFailed(err.clone()).into());
                 }
 
                 let channel_path = ChannelEndPath {
@@ -690,7 +690,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
         resp: &[IbcResponse],
     ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
     {
-        let res = match (self, resp) {
+        let res = match (self, &resp) {
             (
                 ChannelOpenConfirm::Init {
                     channel_id,
@@ -800,8 +800,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                 },
                 &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
             ) => {
-                if status != Status::Active {
-                    return Err(IbcError::NotActive(client_id, status).into());
+                if *status != Status::Active {
+                    return Err(IbcError::NotActive(client_id, *status).into());
                 }
 
                 if !valid {
@@ -829,8 +829,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                 },
                 &[IbcResponse::OnChannelOpenConfirm { err }],
             ) => {
-                if err {
-                    return Err(IbcError::IbcAppCallbackFailed.into());
+                if let Some(err) = err {
+                    return Err(IbcError::IbcAppCallbackFailed(err.clone()).into());
                 }
 
                 let channel_path = ChannelEndPath {

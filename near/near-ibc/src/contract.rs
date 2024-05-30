@@ -10,7 +10,7 @@ use ibc_vm_rs::{
         packet::{Acknowledgement, RecvPacket, SendPacket},
         CreateClient,
     },
-    IbcHost, IbcQuery, IbcResponse, IbcState, IbcVmResponse, Runnable, Status,
+    CallbackError, IbcHost, IbcQuery, IbcResponse, IbcState, IbcVmResponse, Runnable, Status,
 };
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
@@ -127,7 +127,6 @@ pub struct Contract {
     client_index: u64,
     connection_index: u64,
     channel_index: u64,
-    thisisfortest: LookupMap<String, AccountId>,
     account_ids: LookupMap<String, AccountId>,
 
     // client id -> account id
@@ -143,7 +142,6 @@ impl Default for Contract {
             account_ids: LookupMap::new(b"account_ids".as_slice()),
             clients: LookupMap::new(b"clients".as_slice()),
             connection_index: 0,
-            thisisfortest: LookupMap::new(b"lookup".as_slice()),
         }
     }
 }
@@ -461,7 +459,7 @@ impl Contract {
     pub fn callback_on_chan_open_init(
         &mut self,
         current_state: IbcState,
-        #[callback_unwrap] err: bool,
+        #[callback_unwrap] err: CallbackError,
     ) -> PromiseOrValue<IbcVmResponse> {
         self.step(current_state, &[IbcResponse::OnChannelOpenInit { err }])
     }
@@ -470,7 +468,7 @@ impl Contract {
     pub fn callback_on_chan_open_try(
         &mut self,
         current_state: IbcState,
-        #[callback_unwrap] err: bool,
+        #[callback_unwrap] err: CallbackError,
     ) -> PromiseOrValue<IbcVmResponse> {
         self.step(current_state, &[IbcResponse::OnChannelOpenTry { err }])
     }
@@ -479,7 +477,7 @@ impl Contract {
     pub fn callback_on_chan_open_ack(
         &mut self,
         current_state: IbcState,
-        #[callback_unwrap] err: bool,
+        #[callback_unwrap] err: CallbackError,
     ) -> PromiseOrValue<IbcVmResponse> {
         self.step(current_state, &[IbcResponse::OnChannelOpenAck { err }])
     }
@@ -488,7 +486,7 @@ impl Contract {
     pub fn callback_on_chan_open_confirm(
         &mut self,
         current_state: IbcState,
-        #[callback_unwrap] err: bool,
+        #[callback_unwrap] err: CallbackError,
     ) -> PromiseOrValue<IbcVmResponse> {
         self.step(current_state, &[IbcResponse::OnChannelOpenConfirm { err }])
     }
@@ -506,7 +504,7 @@ impl Contract {
     pub fn callback_on_acknowledge_packet(
         &mut self,
         current_state: IbcState,
-        #[callback_unwrap] err: bool,
+        #[callback_unwrap] err: CallbackError,
     ) -> PromiseOrValue<IbcVmResponse> {
         self.step(current_state, &[IbcResponse::OnAcknowledgePacket { err }])
     }

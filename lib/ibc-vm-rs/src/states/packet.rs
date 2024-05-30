@@ -568,7 +568,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
         resp: &[IbcResponse],
     ) -> Result<Either<(Self, IbcAction), (Vec<IbcEvent>, IbcVmResponse)>, <T as IbcHost>::Error>
     {
-        let res = match (self, resp) {
+        let res = match (self, &resp) {
             (
                 Acknowledgement::Init {
                     packet,
@@ -725,8 +725,8 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                 },
                 &[IbcResponse::OnAcknowledgePacket { err }],
             ) => {
-                if err {
-                    return Err(IbcError::IbcAppCallbackFailed.into());
+                if let Some(err) = err {
+                    return Err(IbcError::IbcAppCallbackFailed(err.clone()).into());
                 }
 
                 host.delete(
