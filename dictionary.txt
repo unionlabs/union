@@ -1,3 +1,4 @@
+
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -480,6 +481,7 @@ genutiltypes
 getenv
 githook
 gitopia
+globalthis
 gnark
 gnused
 goblingarden
@@ -508,6 +510,7 @@ groth
 groupkeeper
 groupmodule
 hasher
+hasown
 hastscript
 hasura
 hdata
@@ -712,6 +715,7 @@ noexecstack
 nois
 nolint
 nolus
+nolyfill
 nonexist
 noninclusion
 noopener

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import Menu from "./components/menu.svelte"
+import Menu from "./(components)/menu.svelte"
 import type { LayoutData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Resizable from "$lib/components/ui/resizable"

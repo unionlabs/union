@@ -1,7 +1,6 @@
 import {
   http,
   fallback,
-  webSocket,
   reconnect,
   serialize,
   getClient,

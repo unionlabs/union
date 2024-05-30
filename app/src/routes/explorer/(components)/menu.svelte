@@ -1,7 +1,7 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
-import type { LayoutData } from "../$types.ts"
+import type { LayoutData } from "../$types"
 import { Button } from "$lib/components/ui/button/index.ts"
 import * as Tooltip from "$lib/components/ui/tooltip/index.ts"
 

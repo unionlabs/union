@@ -10,7 +10,7 @@ import { routes } from "$lib/components/navigation/index.ts"
 
 <header
   class={cn(
-    'p-2 md:px-4 min-w-full w-screen flex flex-row items-center md:gap-4',
+    'p-2 md:p-3 min-w-full w-screen flex flex-row items-center md:gap-4',
     'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-secondary/65',
   )}
 >
@@ -22,7 +22,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     <img
       src="/images/logo/union-logo-wide-transparent.svg"
       alt="Union Logo"
-      class="h-full w-full select-none"
+      class="size-full select-none"
     />
   </Button>
   <div class="flex-1 p-0 m-0">

@@ -1,3 +1,4 @@
+import { redirect } from "@sveltejs/kit"
 import type { LayoutLoad } from "./$types"
 import type { SvelteComponent } from "svelte"
 
@@ -13,11 +14,16 @@ export interface Table {
   icon: typeof SvelteComponent
 }
 
-export const load = (_loadEvent => ({
-  tables: [
-    { route: "blocks", icon: BlocksIcon },
-    { route: "channels", icon: TvIcon },
-    { route: "packets", icon: SendHorizontalIcon },
-    { route: "connections", icon: ConnectionIcon }
-  ] as Array<Table>
-})) satisfies LayoutLoad
+export const load = (loadEvent => {
+  // Redirect if the user is visiting /explorer
+  if (loadEvent.url.pathname === "/explorer") throw redirect(302, "/explorer/blocks")
+
+  return {
+    tables: [
+      { route: "blocks", icon: BlocksIcon },
+      { route: "channels", icon: TvIcon },
+      { route: "packets", icon: SendHorizontalIcon },
+      { route: "connections", icon: ConnectionIcon }
+    ] as Array<Table>
+  }
+}) satisfies LayoutLoad
