@@ -1,9 +1,9 @@
 import Navigation from "./navigation.svelte"
 
 const routes = {
-  home: { draft: false, path: "/" },
-  send: { draft: false, path: "/send" },
+  transfer: { draft: false, path: "/transfer" },
   faucet: { draft: false, path: "/faucet" },
+  explorer: { draft: false, path: "/explorer" },
   transfers: { draft: true, path: "/transfers" }
 } as const
 

@@ -32,14 +32,14 @@ let collapsibleOpen = true
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn(
-        'truncate space-x-2 px-2.5 text-lg w-full min-w-[165px] hover:bg-cyan-300/80',
+        'truncate space-x-2 text-md w-full min-w-[145px] hover:bg-cyan-300/80',
         ($sepoliaStore.connectionStatus === 'connected' ||
           $cosmosStore.connectionStatus === 'connected') &&
           'border-cyan-300/50',
       )}
     >
-      <WalletIcon class="size-6 text-accent-foreground/90" />
-      <span class="uppercase tracking-wide font-semibold">{buttonText}</span>
+      <WalletIcon class="size-5 text-accent-foreground/90" />
+      <span class="font-semibold">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content

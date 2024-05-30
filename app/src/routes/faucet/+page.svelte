@@ -112,7 +112,7 @@ $: newTransfers =
   <title>Union | Faucet</title>
 </svelte:head>
 
-<main class="mx-auto w-full flex flex-col items-center px-4 mt-10">
+<main class="overflow-scroll flex flex-col items-center px-4">
   <h1 class="text-5xl font-black my-8">Faucet</h1>
   <form
     use:enhance
@@ -150,14 +150,15 @@ $: newTransfers =
             aria-invalid={$errors.address ? 'true' : 'false'}
             disabled={$submitting || inputState === 'locked'}
             placeholder="union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
-            class={cn(
+          />
+            <!-- Commented out for now because broken on light mode !-->
+            <!-- class={cn(
               'peer',
               submissionStatus === 'submitting' && 'animate-pulse',
               'font-mono sm:text-md text-xs w-full h-10 sm:h-11 disabled:opacity-90 disabled:bg-stone-950',
               'rounded-md border border-slate-800 bg-neutral-950 p-3.5 text-slate-100 transition-colors placeholder:select-none placeholder:text-neutral-600 focus:border-[#8678F9]',
               'focus:outline-none outline-transparent focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0',
-            )}
-          />
+            )} !-->
           <input
             disabled
             bind:this={input}
@@ -196,12 +197,13 @@ $: newTransfers =
       </Form.Description>
     </Form.Field>
     <div class="flex gap-x-2 w-full">
+      <!-- Commented out for now because broken on light mode !-->
+      <!-- class={cn(
+        submissionStatus === 'submitting' && 'animate-pulse',
+        'sm:text-md text-sm font-bold w-full sm:max-w-32 max-w-20 tracking-wider ml-1',
+      )} !-->
       <Form.Button
         disabled={$submitting || $form.address.length === 0}
-        class={cn(
-          submissionStatus === 'submitting' && 'animate-pulse',
-          'sm:text-md text-sm font-bold w-full sm:max-w-32 max-w-20 tracking-wider ml-1',
-        )}
       >
         Submit
         <LoadingIcon

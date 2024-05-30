@@ -1,5 +1,4 @@
 <script lang="ts">
-import { Shine } from "svelte-ux"
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
 import SearchBar from "$lib/components/search-bar.svelte"
@@ -10,24 +9,26 @@ import { routes } from "$lib/components/navigation/index.ts"
 
 <header
   class={cn(
-    'py-3 pr-4 min-w-full w-screen',
-    'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-[#4545538c]/30',
+    'p-2 md:p-3 min-w-full w-screen flex flex-row items-center md:gap-4',
+    'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-secondary/65',
   )}
 >
-  <Shine depth={4} specularConstant={300} lightColor="#a0ecfd">
-    <Button
-      href="/"
-      variant="link"
-      class=" brightness-75 px-1 text-2xl font-black tracking-wider text-white my-auto no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
-    >
-      union
-    </Button>
-  </Shine>
-  <div class="w-full">
+  <Button
+    href="/"
+    variant="link"
+    class="p-0 mr-0 md:mr-2 no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
+  >
+    <img
+      src="/images/logo/union-logo-wide-transparent.svg"
+      alt="Union Logo"
+      class="size-full max-w-26 select-none invert dark:invert-0"
+    />
+  </Button>
+  <div class="flex-1 p-0 m-0 w-full">
     <SearchBar />
   </div>
-  <div class="flex flex-row space-x-0 sm:space-x-4 my-auto">
-    <nav class="my-auto hidden lg:flex space-x-0 sm:space-x-2">
+  <div class="hidden sm:flex flex-row space-x-0">
+    <nav class="hidden lg:flex items-center space-x-0 sm:space-x-2 mr-0 sm:mr-3">
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button
           size="sm"
@@ -37,8 +38,8 @@ import { routes } from "$lib/components/navigation/index.ts"
             draft
               ? 'hidden'
               : [
-                  'px-2 my-auto text-lg text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
-                  $page.route.id === path && 'bg-muted-foreground/10',
+                  'p-2 capitalize no-underline decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
+                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-muted-foreground/10',
                 ],
           )}
         >
@@ -48,8 +49,6 @@ import { routes } from "$lib/components/navigation/index.ts"
     </nav>
     <div class="hidden sm:flex space-x-3">
       <Connect />
-      <!-- <ThemeSwitch /> -->
     </div>
-    <!-- <Navigation /> -->
   </div>
 </header>

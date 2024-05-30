@@ -13,7 +13,7 @@ export const load = (_context => {
   return {
     chains: [
       {
-        name: "union",
+        name: "Union Testnet",
         id: "union-testnet-8",
         ecosystem: "cosmos",
         icon: "/images/icons/union.svg",
@@ -31,14 +31,14 @@ export const load = (_context => {
         ]
       },
       {
-        name: "sepolia",
+        name: "Sepolia",
         ecosystem: "evm",
         icon: "/images/icons/ethereum.svg",
         id: "11155111",
         live: true
       },
       {
-        name: "osmosis",
+        name: "Osmosis Testnet",
         ecosystem: "cosmos",
         icon: "/images/icons/osmosis.svg",
         id: "osmo-test-5",
@@ -55,14 +55,14 @@ export const load = (_context => {
         ]
       },
       {
-        name: "stargaze",
+        name: "Stargaze Testnet",
         ecosystem: "cosmos",
         icon: "/images/icons/stargaze.svg",
         id: "stargaze-1",
         live: false
       },
       {
-        name: "scroll",
+        name: "Scroll Testnet",
         ecosystem: "cosmos",
         icon: "/images/icons/scroll.svg",
         id: "534352",

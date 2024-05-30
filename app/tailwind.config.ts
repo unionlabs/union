@@ -120,11 +120,21 @@ export default (<Config>{
         28: "7rem"
       }),
       spacing: _ => ({
+        2.75: "0.6875rem",
+        4.5: "1.125rem",
+        5.5: "1.375rem",
+        13: "3.25rem",
         18: "4.5rem",
         22: "5.5rem",
+        26: "6.5rem",
         28: "7rem"
       }),
+      width: _ => ({
+        "7xl": "80rem",
+        26: "6.5rem"
+      }),
       maxWidth: _ => ({
+        26: "6.5rem",
         "8xl": "88rem",
         "9xl": "96rem"
       }),
