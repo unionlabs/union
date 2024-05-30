@@ -1,11 +1,9 @@
 mod msgs;
 mod utils;
 
-use std::{thread::sleep, time::Duration};
+use std::{env, thread::sleep, time::Duration};
 
-use ibc_vm_rs::{
-    states::connection_handshake, IbcEvent, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
-};
+use ibc_vm_rs::{states::connection_handshake, IbcEvent, DEFAULT_IBC_VERSION};
 use msgs::{ChannelOpenTry, RecvPacket};
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
@@ -15,12 +13,10 @@ use near_workspaces::{
     Account, AccountId, Contract, Worker,
 };
 use unionlabs::{
-    encoding::{DecodeAs, Proto},
     ibc::core::{
-        channel::{self, channel::Channel, packet::Packet},
+        channel::{self, packet::Packet},
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
-        connection,
     },
     near::types::HeaderUpdate,
     validated::ValidateT,
@@ -31,19 +27,16 @@ use crate::{
     msgs::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        ConsensusState, CreateClient, GetAccountId, GetCommitment, RegisterClient, UpdateClient,
+        ConsensusState, CreateClient, GetAccountId, RegisterClient, UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
     },
 };
 
-const IBC_WASM_FILEPATH: &str =
-    "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/near_ibc.wasm";
-const LC_WASM_FILEPATH: &str =
-    "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/near_light_client.wasm";
-const IBC_APP_WASM_FILEPATH: &str =
-    "/home/aeryz/dev/union/union/target/wasm32-unknown-unknown/release/dummy_ibc_app.wasm";
+const IBC_WASM_PATH_ENV: &str = "IBC_WASM_FILEPATH";
+const NEAR_LC_WASM_PATH_ENV: &str = "NEAR_LC_WASM_FILEPATH";
+const IBC_APP_WASM_PATH_ENV: &str = "IBC_APP_WASM_FILEPATH";
 
 mod alice {
     pub const CLIENT_TYPE: &str = "near-alice";
@@ -52,22 +45,12 @@ mod bob {
     pub const CLIENT_TYPE: &str = "near-bob";
 }
 
-const INITIAL_HEIGHT: Height = Height {
-    revision_number: 0,
-    revision_height: 100,
-};
-
-struct NearContract {
-    account_id: AccountId,
-    secret_key: SecretKey,
-    contract: Contract,
-}
-
 pub async fn deploy_contract(
     sandbox: &Worker<Sandbox>,
     account_id: &str,
-    wasm_path: &'static str,
+    env_key: &'static str,
 ) -> Contract {
+    let wasm_path = env::var(env_key).unwrap();
     let wasm_blob = std::fs::read(wasm_path).unwrap();
     let account_id = account_id.to_string().try_into().unwrap();
     let secret_key = SecretKey::from_seed(KeyType::ED25519, "testificate");
@@ -83,16 +66,16 @@ async fn main() {
     env_logger::init();
     let sandbox = sandbox().await.unwrap();
 
-    let ibc_contract = deploy_contract(&sandbox, "ibc.test.near", IBC_WASM_FILEPATH).await;
-    let alice_lc = deploy_contract(&sandbox, "light-client.test.near", LC_WASM_FILEPATH).await;
+    let ibc_contract = deploy_contract(&sandbox, "ibc.test.near", IBC_WASM_PATH_ENV).await;
+    let alice_lc = deploy_contract(&sandbox, "light-client.test.near", NEAR_LC_WASM_PATH_ENV).await;
     let bob_lc = deploy_contract(
         &sandbox,
         "counterparty-light-client.test.near",
-        LC_WASM_FILEPATH,
+        NEAR_LC_WASM_PATH_ENV,
     )
     .await;
     let ibc_app_contract =
-        deploy_contract(&sandbox, "ibc-app.test.near", IBC_APP_WASM_FILEPATH).await;
+        deploy_contract(&sandbox, "ibc-app.test.near", IBC_APP_WASM_PATH_ENV).await;
 
     // create accounts
     let owner = sandbox.root_account().unwrap();
@@ -307,16 +290,6 @@ async fn connection_open_confirm(
 
     assert!(res.receipt_failures().is_empty() && res.failures().is_empty());
     println!("connection open confirm res: {:?}", res);
-}
-
-async fn wait_until_block_height(sandbox: &Worker<Sandbox>, height: u64) {
-    loop {
-        let current_height = sandbox.view_block().await.unwrap().height();
-        if current_height >= height {
-            break;
-        }
-        sleep(Duration::from_millis(100));
-    }
 }
 
 async fn update_client(

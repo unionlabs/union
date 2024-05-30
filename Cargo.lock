@@ -4517,22 +4517,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc-contract"
-version = "1.0.0"
-dependencies = [
- "cosmwasm-schema 1.5.3",
- "cosmwasm-std 2.0.3",
- "cw-storage-plus 2.0.0",
- "dlmalloc",
- "ethabi",
- "hex 0.4.3",
- "ibc-vm-rs",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
 name = "ibc-vm-rs"
 version = "0.1.0"
 dependencies = [

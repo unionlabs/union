@@ -103,11 +103,6 @@ pub struct ChannelOpenConfirm {
 }
 
 #[derive(serde::Serialize)]
-pub struct GetCommitment {
-    pub key: String,
-}
-
-#[derive(serde::Serialize)]
 pub struct GetAccountId {
     pub client_type: String,
 }

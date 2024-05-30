@@ -29,7 +29,6 @@ pub type IbcEvent = unionlabs::events::IbcEvent<ClientId, String, ClientId>;
 pub mod states;
 
 lazy_static::lazy_static! {
-    // TODO(aeryz): we don't support ordered channels
     pub static ref DEFAULT_IBC_VERSION: Vec<Version> = vec![Version { identifier: String::from("1"), features: vec![Order::Unordered.into()] }];
 
     pub static ref DEFAULT_MERKLE_PREFIX: MerklePrefix = MerklePrefix { key_prefix: b"ibc".into() };
@@ -219,7 +218,6 @@ pub enum IbcResponse {
         err: bool,
     },
     OnRecvPacket {
-        // TODO(aeryz): what's the type of this ack?
         ack: Vec<u8>,
     },
     OnAcknowledgePacket {
@@ -312,7 +310,6 @@ pub enum IbcQuery {
     LatestHeight,
     VerifyMembership {
         height: Height,
-        // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,
         delay_block_period: u64,
         proof: Vec<u8>,
@@ -387,8 +384,6 @@ pub enum IbcMsg {
 }
 
 pub trait Runnable<T: IbcHost>: Serialize + Sized {
-    // TODO(aeryz): in most of the cases, we will return a single ibcmsg and it will be known at the compile time,
-    // which means heap allocation can totally be emitted. We should make a struct for this.
     fn process(
         self,
         host: &mut T,

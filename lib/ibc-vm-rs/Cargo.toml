@@ -1,19 +1,19 @@
 [package]
-name = "ibc-vm-rs"
-version = "0.1.0"
-edition.workspace = true
+edition.workspace      = true
 license-file.workspace = true
-repository.workspace = true
+name                   = "ibc-vm-rs"
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-serde.workspace = true
-serde-utils.workspace = true
-unionlabs.workspace = true
-lazy_static.workspace = true
 frame-support-procedural.workspace = true
-thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
-hex.workspace = true
-schemars = { workspace = true, features = ["derive"], optional = true }
+hex.workspace                      = true
+lazy_static.workspace              = true
+schemars                           = { workspace = true, features = ["derive"], optional = true }
+serde-utils.workspace              = true
+serde.workspace                    = true
+thiserror                          = { version = "1.0", package = "thiserror-core", default-features = false }
+unionlabs.workspace                = true
 
 [lints]
 workspace = true
