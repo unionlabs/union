@@ -13,12 +13,9 @@ export let isCollapsed = false
 
 $: selectedTable = $page.route.id?.split("/").at(-1) || "blocks"
 
-let innerWidth = window.innerWidth
 let alwaysCollapsedWidth = 580
 let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
 </script>
-
-<svelte:window bind:innerWidth />
 
 <nav
   class={cn(
@@ -59,11 +56,11 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
         variant="link"
         href={`/explorer/${route}`}
         class={cn(
-          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted px-3 text-left justify-start self-start gap-x-1',
+          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted px-2.75 text-left justify-start self-start gap-x-2',
           selectedTable === route ? 'bg-muted' : 'bg-transparent',
         )}
       >
-        <svelte:component this={icon} class={'size-4.5 mr-2'} />
+        <svelte:component this={icon} class={'size-4.5'} />
         <span class="block">{route}</span>
       </Button>
     {/if}

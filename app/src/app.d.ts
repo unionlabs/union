@@ -1,5 +1,12 @@
+import "@tanstack/svelte-table"
 import type { LeapWindow } from "@leapwallet/types"
 import type { Window as KeplrWindow } from "@keplr-wallet/types"
+
+declare module "@tanstack/svelte-table" {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    class: string
+  }
+}
 
 declare global {
   namespace App {}

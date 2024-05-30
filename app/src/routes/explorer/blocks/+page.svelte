@@ -8,26 +8,19 @@ import {
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
-import { Shine } from "svelte-ux"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
+import { cn } from "$lib/utilities/shadcn.ts"
 import { CHAIN_MAP } from "$lib/constants/chains"
 import * as Table from "$lib/components/ui/table"
 import { createQuery } from "@tanstack/svelte-query"
+import CellText from "../components/cell-text.svelte"
 import { removeArrayDuplicates } from "$lib/utilities"
-import { rankItem } from "@tanstack/match-sorter-utils"
 import type { Override } from "$lib/utilities/types.ts"
-import { cn, flyAndScale } from "$lib/utilities/shadcn.ts"
-import ChevronLeft from "virtual:icons/lucide/chevron-left"
+import { Shine, Duration, DurationUnits } from "svelte-ux"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
-import * as Select from "$lib/components/ui/select/index.ts"
 import Button from "$lib/components/ui/button/button.svelte"
-import ChevronRight from "virtual:icons/lucide/chevron-right"
-import TimeElapsed from "$lib/components/time-elapsed.svelte"
-import DoubleArrowLeft from "virtual:icons/lucide/chevrons-left"
-import DoubleArrowRight from "virtual:icons/lucide/chevrons-right"
-import { dollarize, relativeTime } from "$lib/utilities/format.ts"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
 $: cosmosBlocks = createQuery({
@@ -54,18 +47,29 @@ $: if (blockData) {
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "time",
-    header: info => "Timestamp",
+    size: 105,
+    maxSize: 105,
     meta: {
-      class: "sticky"
+      class: "ml-1.5 justify-start"
     },
+    header: info => "Time",
     cell: info =>
-      flexRender(TimeElapsed, {
-        timestamp: new Date(info.getValue() as string)
+      flexRender(Duration, {
+        totalUnits: 3,
+        variant: "short",
+        minUnits: DurationUnits.Second,
+        start: new Date(info.getValue() as string),
+        class: "pl-2 after:content-['_ago'] sm:after:content-[''] text-clip"
       })
   },
   {
     accessorKey: "height",
     header: info => "Height",
+    size: 100,
+    maxSize: 100,
+    meta: {
+      class: "w-full justify-start"
+    },
     accessorFn: row => row.height,
     cell: info =>
       flexRender(Button, {
@@ -73,22 +77,35 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
         target: "_blank",
         value: info.getValue(),
         rel: "noopener noreferrer",
-        class: "hover:cursor-pointer tabular-nums lining-nums",
+        class: "hover:cursor-pointer tabular-nums lining-nums px-0 text-justify common-ligatures",
         href: `https://api.testnet.bonlulu.uno/cosmos/base/tendermint/v1beta1/blocks/${info.getValue()}`
       })
   },
   {
-    size: 1,
     accessorKey: "chain_id",
     header: info => "Chain ID",
-    cell: info => CHAIN_MAP[info.getValue() as unknown as number].chainId
+    meta: {
+      class: "w-full justify-start"
+    },
+    size: 100,
+    maxSize: 100,
+    cell: info =>
+      flexRender(CellText, {
+        value: CHAIN_MAP[info.getValue() as unknown as number].chainId,
+        class: "min-w-[105px] text-clip"
+      })
   },
   {
     accessorKey: "hash",
-    header: info => "hash",
+    meta: {
+      class: "w-full justify-end"
+    },
+    header: info => flexRender(CellText, { value: "Hash", class: "text-right pr-3" }),
+    size: 400,
+    maxSize: 400,
     cell: info =>
       flexRender(Button, {
-        class: "p-0",
+        class: "py-0 px-2.5 max-w-[600px]",
         variant: "link",
         target: "_blank",
         value: info.getValue(),
@@ -135,134 +152,71 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 })
 </script>
 
-<main class="p-4">
-  <div class="rounded-md border-2 space-y-2 h-min overflow-auto w-6xl bg-card">
-    <div
-      bind:this={virtualListElement}
-      class={cn('rounded-md border border-secondary border-solid')}
-    >
-      <Table.Root class={cn('size-full mx-auto rounded-md max-w-[1000px] overflow-auto')}>
-        <Table.Header
-          class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50')}
-        >
-          {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-            <Table.Row class="font-bold text-md sticky">
-              {#each headerGroup.headers as header (header.id)}
-                <Table.Head
-                  colspan={header.colSpan}
-                  class={cn(
-                    //
-                    'text-left px-2 sticky top-0',
-                    `w-[${header.getSize()}px]`,
-                  )}
-                >
-                  {#if !header.isPlaceholder}
-                    <Button
-                      variant="ghost"
-                      disabled={!header.column.getCanSort()}
-                      on:click={header.column.getToggleSortingHandler()}
-                      class={cn('cursor-pointer select-none capitalize')}
-                    >
-                      <svelte:component
-                        this={flexRender(header.column.columnDef.header, header.getContext())}
-                      />
-                    </Button>
-                  {/if}
-                </Table.Head>
-              {/each}
-            </Table.Row>
-          {/each}
-        </Table.Header>
-        <Table.Body class={cn('relative', `h-[${$virtualizer.getTotalSize()}px] w-6xl`)}>
-          {#each $virtualizer.getVirtualItems() as row, index (row.index)}
-            <Table.Row
-              class={cn(
-                'h-5 text-left overflow-auto',
-                'border-b-[1px] border-solid border-secondary',
-                // index % 2 === 0 ? 'bg-background' : 'border-gray-950',
-              )}
-            >
-              <!-- {index} -->
-              {#each rows[row.index].getVisibleCells() as cell, index (cell.id)}
-                <Table.Cell
-                  class={cn(
-                    //
-                    'px-2 py-0 text-left',
-                    // `w-[${cell.column.columnDef.size}]`,
-                  )}
-                >
-                  <svelte:component
-                    this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  />
-                </Table.Cell>
-              {/each}
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
-  </div>
-  <!-- <div class="w-full max-w-[925px] flex items-center justify-between p-2">
-    <div class="flex-1 text-sm text-muted-foreground">300 rows</div>
-    <div class="flex items-center space-x-6 lg:space-x-8">
-      <div class="flex items-center space-x-2">
-        <p class="text-sm font-medium">Rows per page</p>
-        <Select.Root
-          onSelectedChange={selected => $table.setPageSize(Number(selected?.value))}
-          selected={{ value: 10, label: '10' }}
-        >
-          <Select.Trigger class="h-8 w-[70px]">
-            <Select.Value placeholder="Select page size" />
-          </Select.Trigger>
-          <Select.Content
-            sideOffset={8}
-            transition={flyAndScale}
-            class="outline outline-[1px] outline-accent"
+<div
+  class="py-4 rounded-md mt-4 border-2 space-y-2 h-min w-full bg-card self-center flex justify-center"
+>
+  <div
+    bind:this={virtualListElement}
+    class={cn('rounded-md border border-secondary border-solid w-full max-w-[965px]')}
+  >
+    <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
+      <Table.Header
+        class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50')}
+      >
+        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+          <Table.Row class="font-bold text-md sticky">
+            {#each headerGroup.headers as header (header.id)}
+              <Table.Head
+                colspan={header.colSpan}
+                class={cn('text-left px-2 sticky top-0', `w-[${header.getSize()}px]`)}
+              >
+                {#if !header.isPlaceholder}
+                  <Button
+                    variant="ghost"
+                    disabled={!header.column.getCanSort()}
+                    on:click={header.column.getToggleSortingHandler()}
+                    class={cn(
+                      header.column.columnDef.meta?.class,
+                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent font-mono text-md',
+                    )}
+                  >
+                    <svelte:component
+                      this={flexRender(header.column.columnDef.header, header.getContext())}
+                    />
+                  </Button>
+                {/if}
+              </Table.Head>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Header>
+      <Table.Body class={cn('relative', `h-[${$virtualizer.getTotalSize()}px] w-full`)}>
+        {#each $virtualizer.getVirtualItems() as row, index (row.index)}
+          <Table.Row
+            class={cn(
+              'h-5 text-left overflow-auto',
+              'border-b-[1px] border-solid border-secondary',
+              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+            )}
           >
-            <Select.Item value="10">10</Select.Item>
-            <Select.Item value="20">20</Select.Item>
-            <Select.Item value="30">30</Select.Item>
-            <Select.Item value="40">40</Select.Item>
-            <Select.Item value="50">50</Select.Item>
-          </Select.Content>
-        </Select.Root>
-      </div>
-      <div class="flex w-[75px] items-center justify-center text-sm font-medium">1 of 3</div>
-      <div class="flex items-center space-x-2">
-        <Button variant="outline" class="hidden h-8 w-8 p-0 lg:flex" on:click={() => {}}>
-          <span class="sr-only">Go to first page</span>
-          <DoubleArrowLeft class="size-7" />
-        </Button>
-        <Button variant="outline" class="h-8 w-8 p-0">
-          <span class="sr-only">Go to previous page</span>
-          <ChevronLeft class="size-7" />
-        </Button>
-        <Button variant="outline" class="h-8 w-8 p-0">
-          <span class="sr-only">Go to next page</span>
-          <ChevronRight class="size-7" />
-        </Button>
-        <Button variant="outline" class="hidden h-8 w-8 p-0 lg:flex">
-          <span class="sr-only">Go to last page</span>
-          <DoubleArrowRight class="size-7" />
-        </Button>
-      </div>
-    </div>
+            {#each rows[row.index].getVisibleCells() as cell, index (cell.id)}
+              <Table.Cell class={cn('px-2 py-0 text-left')}>
+                <svelte:component
+                  this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+                />
+              </Table.Cell>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
   </div>
+</div>
 
-  <div class="w-full max-w-[925px] px-2 flex justify-between">
-    <p class="text-white/70 text-sm">{blockData.length} total rows</p>
-    <div class="flex">
-      <p class="w-max">Rows per page</p>
-      <Select.Root>
-        <Select.Trigger class="px-3">
-          <Select.Value placeholder="Theme" class="pr-2" />
-        </Select.Trigger>
-        <Select.Content class="outline-union-accent-500/50">
-          <Select.Item value="light">Light</Select.Item>
-          <Select.Item value="dark">Dark</Select.Item>
-          <Select.Item value="system">System</Select.Item>
-        </Select.Content>
-      </Select.Root>
-    </div> 
-  </div>-->
-</main>
+<style lang="postcss">
+  :global(tr td:last-child) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-variant: common-ligatures tabular-nums;
+  }
+</style>

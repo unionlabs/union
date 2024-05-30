@@ -1,9 +1,11 @@
 <script lang="ts">
 import { onMount } from "svelte"
+import { page } from "$app/stores"
 import toast from "svelte-french-toast"
 import { debounce } from "$lib/utilities"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
+import { queryParamStore } from "svelte-ux"
 import { cn } from "$lib/utilities/shadcn.ts"
 import Timer from "virtual:icons/lucide/timer"
 import Settings from "virtual:icons/lucide/settings"
@@ -234,11 +236,11 @@ let buttonText = "Send it" satisfies
   <title>Union | Send</title>
 </svelte:head>
 
-<main class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8">
+<main
+  class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
+>
   <Card.Root class="max-w-[475px] w-full">
-    <Card.Header
-      class="flex flex-row w-full items-center h-10 gap-x-3 mb-3"
-    >
+    <Card.Header class="flex flex-row w-full items-center h-10 gap-x-3 mb-3">
       <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
       <Button
         size="icon"
@@ -265,36 +267,25 @@ let buttonText = "Send it" satisfies
         'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md',
       )}
     >
-      <div
-        data-transfer-from-section
-      >
-
+      <div data-transfer-from-section>
         <CardSectionHeading>From</CardSectionHeading>
-        <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain}/>
-
+        <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain} />
 
         <div class="flex flex-col items-center pt-4">
-        <Button
-          size="icon"
-          variant="outline"
-          on:click={swapChainsClick}
-        >
-          <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
-        </Button>
+          <Button size="icon" variant="outline" on:click={swapChainsClick}>
+            <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
+          </Button>
         </div>
 
         <CardSectionHeading>To</CardSectionHeading>
-        <ChainButton bind:selectedChain={selectedToChain} bind:dialogOpen={dialogOpenToChain}/>
+        <ChainButton bind:selectedChain={selectedToChain} bind:dialogOpen={dialogOpenToChain} />
       </div>
       <!-- asset -->
       <CardSectionHeading>Asset</CardSectionHeading>
-      <Button
-        variant="outline"
-        on:click={() => (dialogOpenToken = !dialogOpenToken)}
-      >
+      <Button variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
         <div class="text-2xl font-bold flex-1 text-left">{selectedAsset?.symbol}</div>
 
-        <Chevron/>
+        <Chevron />
       </Button>
 
       <CardSectionHeading>Amount</CardSectionHeading>
@@ -309,47 +300,45 @@ let buttonText = "Send it" satisfies
         data-transfer-from-amount
         bind:value={inputValue.from}
         pattern="^[0-9]*[.,]?[0-9]*$"
-        
       />
       <CardSectionHeading>Recipient</CardSectionHeading>
-        <div class="flex gap-2 flex-row">
-          <Input
-            minlength={1}
-            maxlength={64}
-            autocorrect="off"
-            autocomplete="off"
-            spellcheck="false"
-            autocapitalize="none"
-            data-transfer-recipient-address
-            placeholder="Destination address"
-            bind:value={inputValue.recipient}
-            disabled={recipientInputState === 'locked' && inputValue.recipient.length > 0}
+      <div class="flex gap-2 flex-row">
+        <Input
+          minlength={1}
+          maxlength={64}
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="none"
+          data-transfer-recipient-address
+          placeholder="Destination address"
+          bind:value={inputValue.recipient}
+          disabled={recipientInputState === 'locked' && inputValue.recipient.length > 0}
+          class={cn()}
+        />
+        <Button
+          size="icon"
+          type="button"
+          variant="outline"
+          name="recipient-lock"
+          on:click={onUnlockClick}
+        >
+          <LockLockedIcon
             class={cn(
+              recipientInputState === 'locked' && inputValue.recipient.length > 0
+                ? 'size-5'
+                : 'hidden',
             )}
           />
-          <Button
-            size="icon"
-            type="button"
-            variant="outline"
-            name="recipient-lock"
-            on:click={onUnlockClick}
-          >
-            <LockLockedIcon
-              class={cn(
-                recipientInputState === 'locked' && inputValue.recipient.length > 0
-                  ? 'size-5'
-                  : 'hidden',
-              )}
-            />
-            <LockOpenIcon
-              class={cn(
-                recipientInputState === 'unlocked' || !inputValue.recipient.length
-                  ? 'size-5'
-                  : 'hidden',
-              )}
-            />
-          </Button>
-        </div>
+          <LockOpenIcon
+            class={cn(
+              recipientInputState === 'unlocked' || !inputValue.recipient.length
+                ? 'size-5'
+                : 'hidden',
+            )}
+          />
+        </Button>
+      </div>
     </Card.Content>
     <Card.Footer class="p-0 mt-2 sm:mt-4">
       <Button

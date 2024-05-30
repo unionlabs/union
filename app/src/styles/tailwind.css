@@ -32,6 +32,16 @@
     height: 100vh;
   }
 
+  .common-ligatures {
+    font-variant-ligatures: common-ligatures;
+  }
+
+  .truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .draft {
     width: 0;
     height: 0;

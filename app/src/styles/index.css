@@ -46,9 +46,3 @@ html[data-theme='light'], body[data-theme='light'] {
   color: #0d0d0d;
   background-color: #a0ecfd;
 }
-
-.truncate {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
