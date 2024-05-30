@@ -7,15 +7,55 @@ config  = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "e
 args    = ["lsp-proxy"]
 command = "biome"
 
+[language-server.emmet-lsp]
+args    = ["--stdio"]
+command = "emmet-language-server"
+
+[language-server.tailwindcss-ls]
+args    = ["--stdio"]
+command = "tailwindcss-language-server"
+
+[language-server.vscode-css-language-server]
+args                       = ["--stdio"]
+command                    = "vscode-css-language-server"
+config.css.validate.enable = true
+config.provideFormatter    = true
+
+[language-server.vscode-html-language-server]
+args    = ["--stdio"]
+command = "vscode-html-language-server"
+
 [[language]]
+auto-format      = true
+formatter        = { command = "biome", args = ["format", "**/*.astro", "--write"] }
 indent           = { tab-width = 2, unit = "  " }
 injection-regex  = "astro"
-language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome"]
+language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome", "tailwindcss-ls"]
 name             = "astro"
-roots            = ["package.json", "astro.config.ts", "tsconfig.json"]
+roots            = ["package.json", "astro.config.ts", "tsconfig.json", "tailwind.config.ts"]
 scope            = "source.astro"
 # not yet released
 # block-comment-tokens = { start = "<!--", end = "-->" }
+
+[[language]]
+auto-format = true
+file-types = ["css", "postcss"]
+language-servers = [
+  { name = "vscode-css-language-server", except-features = ["format"] },
+  "biome",
+  "emmet-lsp",
+  "tailwindcss-ls",
+]
+name = "css"
+scope = "source.css"
+
+[[language]]
+auto-format      = true
+file-types       = ["html"]
+language-servers = ["vscode-html-language-server", "emmet-lsp", "tailwindcss-ls"]
+name             = "html"
+roots            = [".git", "tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
+scope            = "source.html"
 
 [[language]]
 auto-format      = true
@@ -28,9 +68,13 @@ language-servers = [{ name = "typescript-language-server", except-features = ["f
 name             = "typescript"
 
 [[language]]
-auto-format      = true
-language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
-name             = "tsx"
+auto-format = true
+language-servers = [
+  { name = "typescript-language-server", except-features = ["format"] },
+  "biome",
+  "tailwindcss-ls",
+]
+name = "tsx"
 
 [[language]]
 auto-format      = true
@@ -42,13 +86,21 @@ language-servers = [{ name = "vscode-json-language-server", except-features = ["
 name             = "json"
 
 [[language]]
-auto-format      = true
-language-servers = [{ name = "svelteserver", except-features = ["format"] }, "biome"]
-name             = "svelte"
+auto-format = true
+file-types = ["svelte"]
+language-servers = [
+  { name = "svelteserver", except-features = ["format"] },
+  "biome",
+  "tailwindcss-ls",
+]
+name = "svelte"
+roots = ["svelte.config.js"]
+scope = "source.svelte"
+
 
 [[grammar]]
 name   = "astro"
-source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "dfa0893bdc4bdfada102043404758c66e3580568" }
+source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "4be180759ec13651f72bacee65fa477c64222a1a" }
 
 # [[grammar]]
 # name   = "sql"
