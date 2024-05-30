@@ -27,8 +27,8 @@ import { routes } from "$lib/components/navigation/index.ts"
   <div class="flex-1 p-0 m-0 w-full">
     <SearchBar />
   </div>
-  <div class="hidden sm:flex flex-row space-x-0 my-auto">
-    <nav class="my-auto hidden lg:flex space-x-0 sm:space-x-2 mr-0 sm:mr-3">
+  <div class="hidden sm:flex flex-row space-x-0">
+    <nav class="hidden lg:flex space-x-0 sm:space-x-2 mr-0 sm:mr-3">
       {#each Object.entries(routes) as [name, { draft, path }], index (name)}
         <Button
           size="sm"
@@ -38,8 +38,8 @@ import { routes } from "$lib/components/navigation/index.ts"
             draft
               ? 'hidden'
               : [
-                  'px-4 py-2 my-auto title text-lg capitalize text-white no-underline decoration-transparent border-solid border-[1px] border-transparent outline outline-1 outline-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
-                  $page.route.id === path && 'bg-muted-foreground/10',
+                  'p-2 capitalize no-underline decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
+                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-muted-foreground/10',
                 ],
           )}
         >
