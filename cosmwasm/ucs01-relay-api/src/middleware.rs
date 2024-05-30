@@ -24,6 +24,8 @@ pub enum PacketForwardError {
     PacketNotInRefundStore,
     #[error("Unable to encode/decode packet")]
     InvalidEncoding,
+    #[error("Unable to index for reply message in stack")]
+    NoReplyMessageInStack,
 }
 
 pub fn default_pfm_timeout() -> String {

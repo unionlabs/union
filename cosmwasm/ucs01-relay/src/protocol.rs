@@ -639,15 +639,19 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             ),
         };
 
-        let reply_sub = transfer
+        if let Some(reply_sub) = transfer
             .messages
             .iter_mut()
             .find(|sub| sub.id == Self::IBC_SEND_ID)
-            .expect("reply exists");
-
-        reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
-            .expect("can serialize")
-            .into();
+        {
+            reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
+                .expect("can serialize")
+                .into();
+        } else {
+            return Err(ContractError::MiddlewareError(
+                MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
+            ));
+        }
 
         Ok(IbcReceiveResponse::without_ack()
             .add_submessages(transfer.messages)
@@ -745,7 +749,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     const VERSION: &'static str = "ucs01-relay-1";
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 1;
-    const IBC_SEND_ID: u64 = 11;
+    const IBC_SEND_ID: u64 = 10;
 
     type Packet = Ucs01TransferPacket;
     type Ack = Ucs01Ack;
@@ -1030,15 +1034,19 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             ),
         };
 
-        let reply_sub = transfer
+        if let Some(reply_sub) = transfer
             .messages
             .iter_mut()
             .find(|sub| sub.id == Self::IBC_SEND_ID)
-            .expect("reply exists");
-
-        reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
-            .expect("can serialize")
-            .into();
+        {
+            reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
+                .expect("can serialize")
+                .into();
+        } else {
+            return Err(ContractError::MiddlewareError(
+                MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
+            ));
+        }
 
         Ok(IbcReceiveResponse::without_ack()
             .add_submessages(transfer.messages)

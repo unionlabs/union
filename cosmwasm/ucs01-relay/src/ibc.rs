@@ -50,8 +50,7 @@ pub fn reply(
         (Ucs01Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ucs01Protocol::receive_error(err)))
         }
-        (Ics20Protocol::IBC_SEND_ID, SubMsgResult::Ok(value))
-        | (Ucs01Protocol::IBC_SEND_ID, SubMsgResult::Ok(value)) => {
+        (Ics20Protocol::IBC_SEND_ID, SubMsgResult::Ok(value)) => {
             let msg_response = value
                 .msg_responses
                 .iter()
@@ -73,15 +72,12 @@ pub fn reply(
                 sequence: send_res.sequence,
             };
 
-            let _ = IN_FLIGHT_PFM_PACKETS
-                .update(
-                    deps.storage,
-                    refund_packet_key,
-                    |_| -> Result<_, ContractError> { Ok(in_flight_packet) },
-                )
+            IN_FLIGHT_PFM_PACKETS
+                .save(deps.storage, refund_packet_key, &in_flight_packet)
                 .expect("infallible update");
 
-            Ok(Response::new())
+            Ok(Response::new()
+                .add_attribute("pfm_store_inclusion", format!("{in_flight_packet:?}")))
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,
