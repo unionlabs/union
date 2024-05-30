@@ -25,7 +25,6 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import AssetsDialog from "./(components)/assets-dialog.svelte"
 import SettingsDialog from "./(components)/settings-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import DraftPageNotice from "$lib/components/draft-page-notice.svelte"
 import CardSectionHeading from "./(components)/card-section-heading.svelte"
 
 /**
@@ -380,5 +379,3 @@ let buttonText = "Transfer" satisfies
   {assetSearchResults}
   bind:dialogOpen={dialogOpenToken}
 />
-
-<DraftPageNotice className="hidden sm:inline" />

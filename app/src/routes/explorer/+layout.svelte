@@ -50,7 +50,7 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
     <Resizable.Pane
       {onExpand}
       {onCollapse}
-      maxSize={14}
+      maxSize={12}
       minSize={12}
       collapsible={true}
       collapsedSize={4.5}
@@ -71,8 +71,8 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
         <GripVerticalIcon />
       </div>
     </Resizable.Handle>
-    <Resizable.Pane defaultSize={rightSize} class="rounded-lg">
-      <ScrollArea class="size-full flex-1">
+    <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
+      <ScrollArea orientation="both" class="size-full flex-1">
         <slot />
       </ScrollArea>
     </Resizable.Pane>

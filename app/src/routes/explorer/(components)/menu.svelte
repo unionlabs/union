@@ -61,7 +61,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
         )}
       >
         <svelte:component this={icon} class={'size-4.5'} />
-        <span class="block">{route}</span>
+        <div>{route.replaceAll('-', ' ')}</div>
       </Button>
     {/if}
   {/each}

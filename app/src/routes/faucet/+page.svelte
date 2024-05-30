@@ -18,6 +18,7 @@ import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import { Separator } from "$lib/components/ui/separator/index.ts"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+import * as Card from "$lib/components/ui/card/index.ts"
 
 const debounceDelay = 3_500
 let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
@@ -112,8 +113,14 @@ $: newTransfers =
   <title>Union | Faucet</title>
 </svelte:head>
 
-<main class="overflow-scroll flex flex-col items-center px-4">
-  <h1 class="text-5xl font-black my-8">Faucet</h1>
+<main
+  class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
+>
+  <Card.Root class={cn("max-w-[475px] w-full")}>
+    <Card.Header>
+      <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Faucet</Card.Title>
+    </Card.Header>
+    <Card.Content>
   <form
     use:enhance
     method="POST"
@@ -223,6 +230,8 @@ $: newTransfers =
       </Button>
     </div>
   </form>
+    </Card.Content>
+  </Card.Root>
 </main>
 
 <style lang="postcss">
