@@ -48,9 +48,7 @@ $: if (blockData) {
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "time",
-    size: 90,
-    maxSize: 90,
-    minSize: 90,
+    size: 100,
     meta: {
       class: "ml-1.5 justify-start"
     },
@@ -68,7 +66,6 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
     accessorKey: "height",
     header: info => "Height",
     size: 100,
-    maxSize: 100,
     meta: {
       class: "w-full justify-start"
     },
@@ -100,11 +97,10 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "hash",
     meta: {
-      class: "w-full justify-end"
+      class: "w-full justify-start ml-1.5"
     },
-    header: info => flexRender(CellText, { value: "Hash", class: "text-right pr-3" }),
-    size: 400,
-    maxSize: 400,
+    header: info => flexRender(CellText, { value: "Hash", class: "text-left" }),
+    size: 1000,
     cell: info =>
       flexRender(Button, {
         class: "py-0 px-2.5 max-w-[600px]",
@@ -180,7 +176,7 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
                     on:click={header.column.getToggleSortingHandler()}
                     class={cn(
                       header.column.columnDef.meta?.class,
-                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent font-mono text-md',
+                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent text-md',
                     )}
                   >
                     <svelte:component
@@ -217,7 +213,6 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 
 <style lang="postcss">
   :global(tr td:last-child) {
-    text-align: right;
     font-variant-numeric: tabular-nums;
     font-variant: common-ligatures tabular-nums;
   }

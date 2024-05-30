@@ -9,8 +9,5 @@ export let variant: "long" | "short" = "short"
 export { _class as class }
 </script>
 
-<div class='min-w-18'>
-  <Duration {totalUnits} {variant} {minUnits} {start} class={_class} {...$$restProps} />
-</div>
+<Duration {totalUnits} {variant} {minUnits} {start} class={_class} {...$$restProps} />
 
-<style lang="postcss"></style>
