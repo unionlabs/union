@@ -6,6 +6,9 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Resizable from "$lib/components/ui/resizable"
 import GripVerticalIcon from "virtual:icons/tabler/grip-vertical"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
+import { page } from "$app/stores";
+import { derived } from "svelte/store";
+    import { onNavigate } from "$app/navigation";
 
 export let data: LayoutData
 
@@ -26,7 +29,7 @@ onMount(() => {
 
 let isCollapsed = false
 let leftPane: Resizable.PaneAPI
-$: [leftSize, rightSize] = [12, 88]
+$: [leftSize, rightSize] = [14, 88]
 
 $: if (windowSize?.width < 900) {
   try {
@@ -48,6 +51,10 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
   isCollapsed = false
   document.cookie = `PaneForge:collapsed=${false}`
 }
+
+// const explorerPage = derived(page, ($page) => $page.route.id?.split("/").at(-1));
+let explorerPage = $page.route.id?.split("/").at(-1).replaceAll('-', ' ');
+onNavigate(navigation => {explorerPage = navigation.to?.route.id?.split("/").at(-1)?.replaceAll('-', ' ')});
 </script>
 
 <main class="flex flex-row flex-1 overflow-y-hidden">
@@ -55,14 +62,14 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
     <Resizable.Pane
       {onExpand}
       {onCollapse}
-      maxSize={12}
-      minSize={12}
+      maxSize={14}
+      minSize={14}
       collapsible={true}
       collapsedSize={4.5}
       bind:pane={leftPane}
       defaultSize={leftSize}
       class={cn(
-        isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[160px] max-w-[180px]',
+        isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[180px] max-w-[180px]',
         'w-full border-r border-solid border-r-secondary',
       )}
     >
@@ -77,8 +84,10 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
       </div>
     </Resizable.Handle>
     <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
-      <ScrollArea orientation="both" class="size-full flex-1">
-        <slot />
+      <ScrollArea orientation="both" class="size-full flex-1 pr-6 pl-2">
+        <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize">{explorerPage}</h2>
+        <p class="text-muted-foreground pb-4">Lorem ipsum description</p>
+        <slot/>
       </ScrollArea>
     </Resizable.Pane>
   </Resizable.PaneGroup>
