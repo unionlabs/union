@@ -220,7 +220,7 @@ $: {
   }
 }
 
-let buttonText = "Send it" satisfies
+let buttonText = "Transfer" satisfies
   | "Send"
   | "Invalid amount"
   | "Connect Wallet"
@@ -236,7 +236,7 @@ let buttonText = "Send it" satisfies
 <main
   class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
 >
-  <Card.Root class="max-w-[475px] w-full">
+  <Card.Root class={cn("max-w-[475px] w-full")}>
     <Card.Header class="flex flex-row w-full items-center h-10 gap-x-3 mb-3">
       <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
       <Button
@@ -245,7 +245,7 @@ let buttonText = "Send it" satisfies
         variant="ghost"
         title="Ongoing transactions"
         on:click={() => (dialogOpenPast = !dialogOpenPast)}
-        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline"
+        class="size-8  text-foreground p-0 outline-1 outline-accent/80 outline"
       >
         <Timer class="size-5" />
       </Button>
@@ -258,12 +258,7 @@ let buttonText = "Send it" satisfies
         <Settings class="size-5" />
       </Button>
     </Card.Header>
-    <Card.Content
-      class={cn(
-        'size-full pb-3 px-3.5 flex flex-col justify-between',
-        'bg-card/60 bg-opacity-60 shadow-2xl shadow-cyan-300/10 border-none outline outline-1 outline-accent/50 rounded-md',
-      )}
-    >
+    <Card.Content>
       <div data-transfer-from-section>
         <CardSectionHeading>From</CardSectionHeading>
         <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain} />
@@ -337,12 +332,11 @@ let buttonText = "Send it" satisfies
         </Button>
       </div>
     </Card.Content>
-    <Card.Footer class="p-0 mt-2 sm:mt-4">
+    <Card.Footer>
       <Button
         type="button"
         disabled={false}
         data-transfer-button=""
-        class="w-full bg-secondary-foreground/90 text-xl font-bold"
         on:click={async event => {
           throw new Error('Not implemented')
         }}
@@ -388,6 +382,3 @@ let buttonText = "Send it" satisfies
 />
 
 <DraftPageNotice className="hidden sm:inline" />
-
-<style lang="postcss">
-</style>
