@@ -11,21 +11,9 @@ command = "biome"
 args    = ["--stdio"]
 command = "emmet-language-server"
 
-[language-server.tailwindcss]
-args        = ["--stdio"]
-command     = "tailwindcss-language-server"
-config      = {}
-language-id = "svelte"
-
 [language-server.tailwindcss-ls]
 args    = ["--stdio"]
 command = "tailwindcss-language-server"
-
-[language-server.tailwindcss-css]
-args        = ["--stdio"]
-command     = "tailwindcss-language-server"
-config      = {}
-language-id = "css"
 
 [language-server.vscode-css-language-server]
 args                       = ["--stdio"]
@@ -42,7 +30,7 @@ auto-format      = true
 formatter        = { command = "biome", args = ["format", "**/*.astro", "--write"] }
 indent           = { tab-width = 2, unit = "  " }
 injection-regex  = "astro"
-language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome"]
+language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome", "tailwindcss-ls"]
 name             = "astro"
 roots            = ["package.json", "astro.config.ts", "tsconfig.json", "tailwind.config.ts"]
 scope            = "source.astro"
@@ -69,13 +57,6 @@ name             = "html"
 roots            = [".git", "tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
 scope            = "source.html"
 
-# [[language]]
-# file-types      = ["css", "html", "svelte", "astro"]
-# injection-regex = "(postcss|css)"
-# name            = "tailwindcss"
-# roots           = ["tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts"]
-# scope           = "source.css"
-
 [[language]]
 auto-format      = true
 language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
@@ -91,7 +72,7 @@ auto-format = true
 language-servers = [
   { name = "typescript-language-server", except-features = ["format"] },
   "biome",
-  "tailwindcss",
+  "tailwindcss-ls",
 ]
 name = "tsx"
 
