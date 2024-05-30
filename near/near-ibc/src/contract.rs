@@ -1,15 +1,21 @@
 use std::ops::Deref;
 
 use ibc_vm_rs::{
-    states::{connection_handshake, CreateClient},
+    states::{
+        channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
+        client_state::UpdateClient,
+        connection_handshake::{
+            self, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+        },
+        packet::{Acknowledgement, RecvPacket, SendPacket},
+        CreateClient,
+    },
     IbcHost, IbcQuery, IbcResponse, IbcState, IbcVmResponse, Runnable, Status,
 };
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     collections::LookupMap,
-    env, ext_contract, near_bindgen,
-    store::{unordered_map, UnorderedMap},
-    AccountId, BorshStorageKey, Promise, PromiseOrValue,
+    env, ext_contract, near_bindgen, AccountId, BorshStorageKey, PromiseOrValue,
 };
 #[allow(unused)]
 use near_sdk_contract_tools::owner::OwnerExternal;
@@ -122,9 +128,10 @@ pub struct Contract {
     connection_index: u64,
     channel_index: u64,
     thisisfortest: LookupMap<String, AccountId>,
-    account_ids: UnorderedMap<String, AccountId>,
+    account_ids: LookupMap<String, AccountId>,
+
     // client id -> account id
-    clients: UnorderedMap<String, AccountId>,
+    clients: LookupMap<String, AccountId>,
 }
 
 impl Default for Contract {
@@ -133,8 +140,8 @@ impl Default for Contract {
             commitments: LookupMap::new(b"commitments".as_slice()),
             client_index: 0,
             channel_index: 0,
-            account_ids: UnorderedMap::new(b"account_ids".as_slice()),
-            clients: UnorderedMap::new(b"clients".as_slice()),
+            account_ids: LookupMap::new(b"account_ids".as_slice()),
+            clients: LookupMap::new(b"clients".as_slice()),
             connection_index: 0,
             thisisfortest: LookupMap::new(b"lookup".as_slice()),
         }
@@ -145,11 +152,8 @@ impl Default for Contract {
 impl Contract {
     pub fn register_client(&mut self, client_type: String, account: String) {
         let account_id: AccountId = account.try_into().unwrap();
-        match self.account_ids.entry(client_type) {
-            unordered_map::Entry::Occupied(_) => panic!("already registered"),
-            unordered_map::Entry::Vacant(entry) => {
-                entry.insert(account_id.clone());
-            }
+        if self.account_ids.insert(&client_type, &account_id).is_some() {
+            panic!("already registered");
         }
     }
 
@@ -159,8 +163,14 @@ impl Contract {
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::create_client(client_type, client_state, consensus_state);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            CreateClient::Init {
+                client_type,
+                client_state,
+                consensus_state,
+            }
+            .into(),
+        )
     }
 
     pub fn connection_open_init(
@@ -170,9 +180,15 @@ impl Contract {
         version: connection::version::Version,
         delay_period: u64,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable =
-            ibc_vm_rs::connection_open_init(client_id, counterparty, version, delay_period);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ConnectionOpenInit::Init {
+                client_id,
+                counterparty,
+                version,
+                delay_period,
+            }
+            .into(),
+        )
     }
     pub fn connection_open_try(
         &mut self,
@@ -183,15 +199,17 @@ impl Contract {
         proof_height: Height,
         delay_period: u64,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::connection_open_try(
-            client_id,
-            counterparty,
-            counterparty_versions,
-            connection_end_proof,
-            proof_height,
-            delay_period,
-        );
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ConnectionOpenTry::Init {
+                client_id,
+                counterparty,
+                counterparty_versions,
+                connection_end_proof,
+                proof_height,
+                delay_period,
+            }
+            .into(),
+        )
     }
 
     pub fn connection_open_ack(
@@ -202,14 +220,16 @@ impl Contract {
         connection_end_proof: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::connection_open_ack(
-            connection_id,
-            version,
-            counterparty_connection_id,
-            connection_end_proof,
-            proof_height,
-        );
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ConnectionOpenAck::Init {
+                connection_id,
+                version,
+                counterparty_connection_id,
+                connection_end_proof,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     pub fn connection_open_confirm(
@@ -218,9 +238,14 @@ impl Contract {
         connection_end_proof: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable =
-            ibc_vm_rs::connection_open_confirm(connection_id, connection_end_proof, proof_height);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ConnectionOpenConfirm::Init {
+                connection_id,
+                connection_end_proof,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     pub fn channel_open_init(
@@ -230,9 +255,15 @@ impl Contract {
         counterparty: channel::counterparty::Counterparty,
         version: String,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable =
-            ibc_vm_rs::channel_open_init(connection_hops, port_id, counterparty, version);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ChannelOpenInit::Init {
+                connection_hops,
+                port_id,
+                counterparty,
+                version,
+            }
+            .into(),
+        )
     }
     pub fn channel_open_try(
         &mut self,
@@ -244,16 +275,18 @@ impl Contract {
         proof_init: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::channel_open_try(
-            connection_hops,
-            port_id,
-            counterparty,
-            counterparty_version,
-            version,
-            proof_init,
-            proof_height,
-        );
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ChannelOpenTry::Init {
+                connection_hops,
+                port_id,
+                counterparty,
+                counterparty_version,
+                version,
+                proof_init,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     pub fn channel_open_ack(
@@ -265,15 +298,17 @@ impl Contract {
         proof_try: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::channel_open_ack(
-            channel_id,
-            port_id,
-            counterparty_channel_id,
-            counterparty_version,
-            proof_try,
-            proof_height,
-        );
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ChannelOpenAck::Init {
+                channel_id,
+                port_id,
+                counterparty_channel_id,
+                counterparty_version,
+                proof_try,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     pub fn channel_open_confirm(
@@ -283,9 +318,15 @@ impl Contract {
         proof_ack: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable =
-            ibc_vm_rs::channel_open_confirm(channel_id, port_id, proof_ack, proof_height);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            ChannelOpenConfirm::Init {
+                channel_id,
+                port_id,
+                proof_ack,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     pub fn update_client(
@@ -293,8 +334,13 @@ impl Contract {
         client_id: ClientId,
         client_msg: Vec<u8>,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::update_client(client_id, client_msg);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            UpdateClient::Init {
+                client_id,
+                client_msg,
+            }
+            .into(),
+        )
     }
 
     pub fn send_packet(
@@ -310,14 +356,16 @@ impl Contract {
             panic!("expected sender to own the capability");
         }
 
-        let runnable = ibc_vm_rs::send_packet(
-            source_port,
-            source_channel,
-            timeout_height,
-            timeout_timestamp,
-            data,
-        );
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            SendPacket::Init {
+                source_port,
+                source_channel,
+                timeout_height,
+                timeout_timestamp,
+                data,
+            }
+            .into(),
+        )
     }
 
     pub fn recv_packet(
@@ -326,8 +374,14 @@ impl Contract {
         proof_commitment: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::recv_packet(packet, proof_commitment, proof_height);
-        fold(self, runnable, &[IbcResponse::Empty])
+        self.init(
+            RecvPacket::Init {
+                packet,
+                proof_commitment,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     pub fn acknowledgement(
@@ -337,14 +391,15 @@ impl Contract {
         proof_ack: Vec<u8>,
         proof_height: Height,
     ) -> PromiseOrValue<IbcVmResponse> {
-        let runnable = ibc_vm_rs::acknowledge_packet(packet, ack, proof_ack, proof_height);
-        fold(self, runnable, &[IbcResponse::Empty])
-    }
-
-    // TODO(aeryz): this getter function is temporary since for some reason `view_state` won't work
-    // when I try to fetch the contract state
-    pub fn get_account_id(&self, client_type: String) -> Option<AccountId> {
-        self.account_ids.get(&client_type).map(|item| item.clone())
+        self.init(
+            Acknowledgement::Init {
+                packet,
+                ack,
+                proof_ack,
+                proof_height,
+            }
+            .into(),
+        )
     }
 
     #[private]
@@ -353,7 +408,7 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] responses: Vec<IbcResponse>,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(self, current_state, &responses)
+        self.step(current_state, &responses)
     }
 
     #[private]
@@ -371,11 +426,11 @@ impl Contract {
                 // TODO(aeryz): we want to impl borsh serialize for validate types in unionlabs
                 let _ = self
                     .clients
-                    .insert(client_id.clone().to_string(), account_id.clone());
+                    .insert(&client_id.clone().to_string(), &account_id);
             }
             _ => panic!("wut?"),
         };
-        fold(self, current_state, &[IbcResponse::Initialize])
+        self.step(current_state, &[IbcResponse::Initialize])
     }
 
     #[private]
@@ -383,11 +438,7 @@ impl Contract {
         &mut self,
         current_state: IbcState,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(
-            self,
-            current_state,
-            &[IbcResponse::UpdateStateOnMisbehaviour],
-        )
+        self.step(current_state, &[IbcResponse::UpdateStateOnMisbehaviour])
     }
 
     #[private]
@@ -397,8 +448,7 @@ impl Contract {
         #[callback_unwrap] client_updated: (Vec<u8>, Vec<(Height, Vec<u8>)>),
     ) -> PromiseOrValue<IbcVmResponse> {
         let (client_state, consensus_states) = client_updated;
-        fold(
-            self,
+        self.step(
             current_state,
             &[IbcResponse::UpdateState {
                 consensus_states,
@@ -413,11 +463,7 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] err: bool,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(
-            self,
-            current_state,
-            &[IbcResponse::OnChannelOpenInit { err }],
-        )
+        self.step(current_state, &[IbcResponse::OnChannelOpenInit { err }])
     }
 
     #[private]
@@ -426,11 +472,7 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] err: bool,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(
-            self,
-            current_state,
-            &[IbcResponse::OnChannelOpenTry { err }],
-        )
+        self.step(current_state, &[IbcResponse::OnChannelOpenTry { err }])
     }
 
     #[private]
@@ -439,11 +481,7 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] err: bool,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(
-            self,
-            current_state,
-            &[IbcResponse::OnChannelOpenAck { err }],
-        )
+        self.step(current_state, &[IbcResponse::OnChannelOpenAck { err }])
     }
 
     #[private]
@@ -452,11 +490,7 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] err: bool,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(
-            self,
-            current_state,
-            &[IbcResponse::OnChannelOpenConfirm { err }],
-        )
+        self.step(current_state, &[IbcResponse::OnChannelOpenConfirm { err }])
     }
 
     #[private]
@@ -465,7 +499,7 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] ack: Vec<u8>,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(self, current_state, &[IbcResponse::OnRecvPacket { ack }])
+        self.step(current_state, &[IbcResponse::OnRecvPacket { ack }])
     }
 
     #[private]
@@ -474,190 +508,193 @@ impl Contract {
         current_state: IbcState,
         #[callback_unwrap] err: bool,
     ) -> PromiseOrValue<IbcVmResponse> {
-        fold(
-            self,
-            current_state,
-            &[IbcResponse::OnAcknowledgePacket { err }],
-        )
+        self.step(current_state, &[IbcResponse::OnAcknowledgePacket { err }])
     }
-}
 
-// TODO(aeryz): i hate naming lol
-pub fn fold(
-    host: &mut Contract,
-    runnable: IbcState,
-    response: &[IbcResponse],
-) -> PromiseOrValue<IbcVmResponse> {
-    let either = runnable.process(host, response).unwrap();
+    fn init(&mut self, runnable: IbcState) -> PromiseOrValue<IbcVmResponse> {
+        self.step(runnable, &[IbcResponse::Empty])
+    }
 
-    let (runnable, ibc_action) = match either {
-        ibc_vm_rs::Either::Left(cont) => cont,
-        ibc_vm_rs::Either::Right((events, val)) => {
-            for event in events {
-                env::log_str(&serde_json::to_string(&event).unwrap());
+    fn step(
+        &mut self,
+        runnable: IbcState,
+        response: &[IbcResponse],
+    ) -> PromiseOrValue<IbcVmResponse> {
+        let either = runnable.process(self, response).unwrap();
+
+        let (runnable, ibc_action) = match either {
+            ibc_vm_rs::Either::Left(cont) => cont,
+            ibc_vm_rs::Either::Right((events, val)) => {
+                for event in events {
+                    env::log_str(&serde_json::to_string(&event).unwrap());
+                }
+                return PromiseOrValue::Value(val);
             }
-            return PromiseOrValue::Value(val);
+        };
+
+        match ibc_action {
+            ibc_vm_rs::IbcAction::Query((client_id, ibc_queries)) => {
+                let account_id = self.clients.get(&client_id.to_string()).unwrap();
+                return PromiseOrValue::Promise(
+                    ext_light_client::ext(account_id.clone())
+                        .query(ibc_queries)
+                        .then(Contract::ext(env::current_account_id()).callback_query(runnable)),
+                );
+            }
+            ibc_vm_rs::IbcAction::Write(ibc_msg) => match ibc_msg {
+                ibc_vm_rs::IbcMsg::Initialize {
+                    client_id,
+                    client_type,
+                    client_state,
+                    consensus_state,
+                } => {
+                    let account_id = self.account_ids.get(&client_type).unwrap();
+                    return PromiseOrValue::Promise(
+                        ext_light_client::ext(account_id.clone())
+                            .initialize(client_id, client_state, consensus_state)
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_initialize(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::UpdateStateOnMisbehaviour {
+                    client_id,
+                    client_msg,
+                } => {
+                    let account_id = self.clients.get(&client_id.to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ext_light_client::ext(account_id.clone())
+                            .update_client_on_misbehaviour(client_msg)
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_update_client_on_misbehaviour(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::UpdateState {
+                    client_id,
+                    client_msg,
+                } => {
+                    let account_id = self.clients.get(&client_id.to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ext_light_client::ext(account_id.clone())
+                            .update_client(client_msg)
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_update_client(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::OnChannelOpenInit {
+                    order,
+                    connection_hops,
+                    port_id,
+                    channel_id,
+                    counterparty,
+                    version,
+                } => {
+                    let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ibc_app::ext(account_id)
+                            .on_channel_open_init(
+                                order,
+                                connection_hops,
+                                port_id,
+                                channel_id,
+                                counterparty,
+                                version,
+                            )
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_on_chan_open_init(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::OnChannelOpenTry {
+                    order,
+                    connection_hops,
+                    port_id,
+                    channel_id,
+                    counterparty,
+                    counterparty_version,
+                } => {
+                    let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ibc_app::ext(account_id)
+                            .on_channel_open_try(
+                                order,
+                                connection_hops,
+                                port_id,
+                                channel_id,
+                                counterparty,
+                                counterparty_version,
+                            )
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_on_chan_open_try(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::OnChannelOpenAck {
+                    port_id,
+                    channel_id,
+                    counterparty_channel_id,
+                    counterparty_version,
+                } => {
+                    let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ibc_app::ext(account_id)
+                            .on_channel_open_ack(
+                                port_id,
+                                channel_id,
+                                counterparty_channel_id,
+                                counterparty_version,
+                            )
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_on_chan_open_ack(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::OnChannelOpenConfirm {
+                    port_id,
+                    channel_id,
+                } => {
+                    let account_id = AccountId::try_from(port_id.to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ibc_app::ext(account_id)
+                            .on_channel_open_confirm(port_id, channel_id)
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_on_chan_open_confirm(runnable),
+                            ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::OnRecvPacket { packet } => {
+                    let account_id =
+                        AccountId::try_from(packet.destination_port.clone().to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ibc_app::ext(account_id).recv_packet(packet).then(
+                            Contract::ext(env::current_account_id())
+                                .callback_on_recv_packet(runnable),
+                        ),
+                    );
+                }
+                ibc_vm_rs::IbcMsg::OnAcknowledgePacket { packet, ack } => {
+                    let account_id =
+                        AccountId::try_from(packet.source_port.clone().to_string()).unwrap();
+                    return PromiseOrValue::Promise(
+                        ibc_app::ext(account_id)
+                            .on_acknowledge_packet(packet, ack)
+                            .then(
+                                Contract::ext(env::current_account_id())
+                                    .callback_on_acknowledge_packet(runnable),
+                            ),
+                    );
+                }
+            },
         }
-    };
-
-    match ibc_action {
-        ibc_vm_rs::IbcAction::Query((client_id, ibc_queries)) => {
-            let account_id = host.clients.get(&client_id.to_string()).unwrap();
-            return PromiseOrValue::Promise(
-                ext_light_client::ext(account_id.clone())
-                    .query(ibc_queries)
-                    .then(Contract::ext(env::current_account_id()).callback_query(runnable)),
-            );
-        }
-        ibc_vm_rs::IbcAction::Write(ibc_msg) => match ibc_msg {
-            ibc_vm_rs::IbcMsg::Initialize {
-                client_id,
-                client_type,
-                client_state,
-                consensus_state,
-            } => {
-                let account_id = host.account_ids.get(&client_type).unwrap();
-                return PromiseOrValue::Promise(
-                    ext_light_client::ext(account_id.clone())
-                        .initialize(client_id, client_state, consensus_state)
-                        .then(
-                            Contract::ext(env::current_account_id()).callback_initialize(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::UpdateStateOnMisbehaviour {
-                client_id,
-                client_msg,
-            } => {
-                let account_id = host.clients.get(&client_id.to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ext_light_client::ext(account_id.clone())
-                        .update_client_on_misbehaviour(client_msg)
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_update_client_on_misbehaviour(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::UpdateState {
-                client_id,
-                client_msg,
-            } => {
-                let account_id = host.clients.get(&client_id.to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ext_light_client::ext(account_id.clone())
-                        .update_client(client_msg)
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_update_client(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::OnChannelOpenInit {
-                order,
-                connection_hops,
-                port_id,
-                channel_id,
-                counterparty,
-                version,
-            } => {
-                let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ibc_app::ext(account_id)
-                        .on_channel_open_init(
-                            order,
-                            connection_hops,
-                            port_id,
-                            channel_id,
-                            counterparty,
-                            version,
-                        )
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_on_chan_open_init(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::OnChannelOpenTry {
-                order,
-                connection_hops,
-                port_id,
-                channel_id,
-                counterparty,
-                counterparty_version,
-            } => {
-                let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ibc_app::ext(account_id)
-                        .on_channel_open_try(
-                            order,
-                            connection_hops,
-                            port_id,
-                            channel_id,
-                            counterparty,
-                            counterparty_version,
-                        )
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_on_chan_open_try(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::OnChannelOpenAck {
-                port_id,
-                channel_id,
-                counterparty_channel_id,
-                counterparty_version,
-            } => {
-                let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ibc_app::ext(account_id)
-                        .on_channel_open_ack(
-                            port_id,
-                            channel_id,
-                            counterparty_channel_id,
-                            counterparty_version,
-                        )
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_on_chan_open_ack(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::OnChannelOpenConfirm {
-                port_id,
-                channel_id,
-            } => {
-                let account_id = AccountId::try_from(port_id.to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ibc_app::ext(account_id)
-                        .on_channel_open_confirm(port_id, channel_id)
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_on_chan_open_confirm(runnable),
-                        ),
-                );
-            }
-            ibc_vm_rs::IbcMsg::OnRecvPacket { packet } => {
-                let account_id =
-                    AccountId::try_from(packet.destination_port.clone().to_string()).unwrap();
-                return PromiseOrValue::Promise(ibc_app::ext(account_id).recv_packet(packet).then(
-                    Contract::ext(env::current_account_id()).callback_on_recv_packet(runnable),
-                ));
-            }
-            ibc_vm_rs::IbcMsg::OnAcknowledgePacket { packet, ack } => {
-                let account_id =
-                    AccountId::try_from(packet.source_port.clone().to_string()).unwrap();
-                return PromiseOrValue::Promise(
-                    ibc_app::ext(account_id)
-                        .on_acknowledge_packet(packet, ack)
-                        .then(
-                            Contract::ext(env::current_account_id())
-                                .callback_on_acknowledge_packet(runnable),
-                        ),
-                );
-            }
-        },
     }
 }
 

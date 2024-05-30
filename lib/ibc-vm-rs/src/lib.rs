@@ -7,7 +7,6 @@ use states::{
     client_state::UpdateClient,
     connection_handshake::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        Counterparty as ConnectionCounterparty,
     },
     packet::{Acknowledgement, RecvPacket, SendPacket},
     CreateClient,
@@ -31,6 +30,7 @@ pub mod states;
 lazy_static::lazy_static! {
     pub static ref DEFAULT_IBC_VERSION: Vec<Version> = vec![Version { identifier: String::from("1"), features: vec![Order::Unordered.into()] }];
 
+    // TODO(aeryz): idk if this is enforced by ibc-go or by the spec. Because we don't have merkle prefix in ethereum or near.
     pub static ref DEFAULT_MERKLE_PREFIX: MerklePrefix = MerklePrefix { key_prefix: b"ibc".into() };
 }
 
@@ -203,6 +203,7 @@ pub enum IbcResponse {
     },
     OnChannelOpenInit {
         // TODO(aeryz): what's gonna be the error type?
+        // Make this Option<String>
         err: bool,
     },
     OnChannelOpenTry {
@@ -226,7 +227,7 @@ pub enum IbcResponse {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(enumorph::Enumorph, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum IbcState {
     CreateClient(CreateClient),
@@ -394,188 +395,4 @@ pub trait Runnable<T: IbcHost>: Serialize + Sized {
 pub enum Either<L, R> {
     Left(L),
     Right(R),
-}
-
-pub fn create_client(
-    client_type: String,
-    client_state: Vec<u8>,
-    consensus_state: Vec<u8>,
-) -> IbcState {
-    IbcState::CreateClient(CreateClient::Init {
-        client_type,
-        client_state,
-        consensus_state,
-    })
-}
-
-pub fn connection_open_init(
-    client_id: ClientId,
-    counterparty: ConnectionCounterparty,
-    version: Version,
-    delay_period: u64,
-) -> IbcState {
-    IbcState::ConnectionOpenInit(ConnectionOpenInit::Init {
-        client_id,
-        counterparty,
-        version,
-        delay_period,
-    })
-}
-
-pub fn connection_open_try(
-    client_id: ClientId,
-    counterparty: ConnectionCounterparty,
-    counterparty_versions: Vec<Version>,
-    connection_end_proof: Vec<u8>,
-    proof_height: Height,
-    delay_period: u64,
-) -> IbcState {
-    IbcState::ConnectionOpenTry(ConnectionOpenTry::Init {
-        client_id,
-        counterparty,
-        counterparty_versions,
-        connection_end_proof,
-        proof_height,
-        delay_period,
-    })
-}
-
-pub fn connection_open_ack(
-    connection_id: String,
-    version: Version,
-    counterparty_connection_id: String,
-    connection_end_proof: Vec<u8>,
-    proof_height: Height,
-) -> IbcState {
-    IbcState::ConnectionOpenAck(ConnectionOpenAck::Init {
-        connection_id,
-        version,
-        counterparty_connection_id,
-        connection_end_proof,
-        proof_height,
-    })
-}
-
-pub fn connection_open_confirm(
-    connection_id: String,
-    connection_end_proof: Vec<u8>,
-    proof_height: Height,
-) -> IbcState {
-    IbcState::ConnectionOpenConfirm(ConnectionOpenConfirm::Init {
-        connection_id,
-        connection_end_proof,
-        proof_height,
-    })
-}
-
-pub fn channel_open_init(
-    connection_hops: Vec<ConnectionId>,
-    port_id: PortId,
-    counterparty: channel::counterparty::Counterparty,
-    version: String,
-) -> IbcState {
-    IbcState::ChannelOpenInit(ChannelOpenInit::Init {
-        connection_hops,
-        port_id,
-        counterparty,
-        version,
-    })
-}
-
-pub fn channel_open_try(
-    connection_hops: Vec<ConnectionId>,
-    port_id: PortId,
-    counterparty: channel::counterparty::Counterparty,
-    counterparty_version: String,
-    version: String,
-    proof_init: Vec<u8>,
-    proof_height: Height,
-) -> IbcState {
-    IbcState::ChannelOpenTry(ChannelOpenTry::Init {
-        connection_hops,
-        port_id,
-        counterparty,
-        counterparty_version,
-        version,
-        proof_init,
-        proof_height,
-    })
-}
-
-pub fn channel_open_ack(
-    channel_id: ChannelId,
-    port_id: PortId,
-    counterparty_channel_id: String,
-    counterparty_version: String,
-    proof_try: Vec<u8>,
-    proof_height: Height,
-) -> IbcState {
-    IbcState::ChannelOpenAck(ChannelOpenAck::Init {
-        channel_id,
-        port_id,
-        counterparty_channel_id,
-        counterparty_version,
-        proof_try,
-        proof_height,
-    })
-}
-
-pub fn channel_open_confirm(
-    channel_id: ChannelId,
-    port_id: PortId,
-    proof_ack: Vec<u8>,
-    proof_height: Height,
-) -> IbcState {
-    IbcState::ChannelOpenConfirm(ChannelOpenConfirm::Init {
-        channel_id,
-        port_id,
-        proof_ack,
-        proof_height,
-    })
-}
-
-pub fn update_client(client_id: ClientId, client_msg: Vec<u8>) -> IbcState {
-    IbcState::UpdateClient(UpdateClient::Init {
-        client_id,
-        client_msg,
-    })
-}
-
-pub fn send_packet(
-    source_port: PortId,
-    source_channel: ChannelId,
-    timeout_height: Height,
-    timeout_timestamp: u64,
-    // TODO(aeryz): enforce this to be non-empty at type level
-    data: Vec<u8>,
-) -> IbcState {
-    IbcState::SendPacket(SendPacket::Init {
-        source_port,
-        source_channel,
-        timeout_height,
-        timeout_timestamp,
-        data,
-    })
-}
-
-pub fn recv_packet(packet: Packet, proof_commitment: Vec<u8>, proof_height: Height) -> IbcState {
-    IbcState::RecvPacket(RecvPacket::Init {
-        packet,
-        proof_commitment,
-        proof_height,
-    })
-}
-
-pub fn acknowledge_packet(
-    packet: Packet,
-    ack: Vec<u8>,
-    proof_ack: Vec<u8>,
-    proof_height: Height,
-) -> IbcState {
-    IbcState::AcknowledgePacket(Acknowledgement::Init {
-        packet,
-        ack,
-        proof_ack,
-        proof_height,
-    })
 }
