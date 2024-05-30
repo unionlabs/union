@@ -54,8 +54,8 @@ pub enum IbcError {
     IncorrectConnectionState(connection::state::State, connection::state::State),
 
     // TODO(aeryz): this should have the error
-    #[error("ibc app callback failed")]
-    IbcAppCallbackFailed,
+    #[error("ibc app callback failed ({0})")]
+    IbcAppCallbackFailed(String),
 
     #[error("acknowledgement with the sequence {0} already exists")]
     AcknowledgementExists(u64),
@@ -172,6 +172,8 @@ pub enum IbcVmResponse {
     Empty,
 }
 
+pub type CallbackError = Option<String>;
+
 // TODO(aeryz): rename this
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
@@ -202,28 +204,22 @@ pub enum IbcResponse {
         client_state: Vec<u8>,
     },
     OnChannelOpenInit {
-        // TODO(aeryz): what's gonna be the error type?
-        // Make this Option<String>
-        err: bool,
+        err: CallbackError,
     },
     OnChannelOpenTry {
-        // TODO(aeryz): what's gonna be the error type?
-        err: bool,
+        err: CallbackError,
     },
     OnChannelOpenAck {
-        // TODO(aeryz): what's gonna be the error type?
-        err: bool,
+        err: CallbackError,
     },
     OnChannelOpenConfirm {
-        // TODO(aeryz): what's gonna be the error type?
-        err: bool,
+        err: CallbackError,
     },
     OnRecvPacket {
         ack: Vec<u8>,
     },
     OnAcknowledgePacket {
-        // TODO(aeryz): what's gonna be the error type?
-        err: bool,
+        err: CallbackError,
     },
 }
 

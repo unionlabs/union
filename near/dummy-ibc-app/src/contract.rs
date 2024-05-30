@@ -37,8 +37,8 @@ impl Contract {
         channel_id: ChannelId,
         counterparty: channel::counterparty::Counterparty,
         version: String,
-    ) -> bool {
-        false
+    ) -> Option<String> {
+        None
     }
 
     pub fn on_channel_open_try(
@@ -48,8 +48,8 @@ impl Contract {
         channel_id: ChannelId,
         counterparty: channel::counterparty::Counterparty,
         counterparty_version: String,
-    ) -> bool {
-        false
+    ) -> Option<String> {
+        None
     }
 
     pub fn on_channel_open_ack(
@@ -57,16 +57,16 @@ impl Contract {
         channel_id: ChannelId,
         counterparty_channel_id: String,
         counterparty_version: String,
-    ) -> bool {
-        false
+    ) -> Option<String> {
+        None
     }
 
-    pub fn on_channel_open_confirm(port_id: PortId, channel_id: ChannelId) -> bool {
-        false
+    pub fn on_channel_open_confirm(port_id: PortId, channel_id: ChannelId) -> Option<String> {
+        None
     }
 
-    pub fn on_acknowledge_packet(packet: Packet, ack: Vec<u8>) -> bool {
-        false
+    pub fn on_acknowledge_packet(packet: Packet, ack: Vec<u8>) -> Option<String> {
+        None
     }
 
     pub fn recv_packet(packet: Packet) -> Vec<u8> {
