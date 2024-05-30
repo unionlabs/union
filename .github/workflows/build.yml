@@ -22,7 +22,7 @@ jobs:
       - run: exit 1
   packages:
     if: github.event.pull_request.draft == false
-    uses: unionlabs/workflows/.github/workflows/build.yml@e104e81267a8e17e17d14ccb86e28ff970a477cd
+    uses: unionlabs/workflows/.github/workflows/build.yml@12c5e8b46e0be8b6f3ccdf95ac7ee1df7a691e82
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -32,7 +32,7 @@ jobs:
       lfs: true
   devShells:
     if: github.event.pull_request.draft == false
-    uses: unionlabs/workflows/.github/workflows/build.yml@e104e81267a8e17e17d14ccb86e28ff970a477cd
+    uses: unionlabs/workflows/.github/workflows/build.yml@12c5e8b46e0be8b6f3ccdf95ac7ee1df7a691e82
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -42,7 +42,7 @@ jobs:
       lfs: true
   checks:
     if: github.event.pull_request.draft == false
-    uses: unionlabs/workflows/.github/workflows/build.yml@e104e81267a8e17e17d14ccb86e28ff970a477cd
+    uses: unionlabs/workflows/.github/workflows/build.yml@12c5e8b46e0be8b6f3ccdf95ac7ee1df7a691e82
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
