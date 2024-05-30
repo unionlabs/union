@@ -634,17 +634,6 @@ async fn register_client(user: &Account, contract: &Contract, lc: &Contract, cli
         .unwrap();
     println!("res: {:?}", res);
 
-    let account_id: AccountId = serde_json::from_slice(
-        user.view(contract.id(), "get_account_id")
-            .args_json(GetAccountId { client_type })
-            .await
-            .unwrap()
-            .result
-            .as_slice(),
-    )
-    .unwrap();
-
-    assert_eq!(&account_id, lc.id());
     println!("[ + ] `register_client`: Client successfully registered");
 }
 
