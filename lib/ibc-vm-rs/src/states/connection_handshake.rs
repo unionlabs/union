@@ -4,7 +4,7 @@ use unionlabs::{
     events,
     ibc::core::{
         client::height::Height,
-        commitment::{merkle_path::MerklePath, merkle_prefix::MerklePrefix},
+        commitment::merkle_path::MerklePath,
         connection::{self, version::Version},
     },
     ics24::ConnectionPath,
@@ -14,7 +14,7 @@ use unionlabs::{
 
 use crate::{
     Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcQuery, IbcResponse, IbcVmResponse, Runnable,
-    Status, DEFAULT_IBC_VERSION,
+    Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
 };
 
 pub type Counterparty = connection::counterparty::Counterparty<ClientId, String>;
@@ -205,7 +205,6 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                 },
                 &[IbcResponse::Empty],
             ) => {
-                // TODO(aeryz): do we want to do `validateSelfClient`?
                 let expected_counterparty = ConnectionEnd {
                     client_id: counterparty.client_id.clone(),
                     versions: counterparty_versions.clone(),
@@ -213,10 +212,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
                         connection_id: String::new(),
-                        prefix: MerklePrefix {
-                            // TODO(aeryz): make this a global constant or configurable per host?
-                            key_prefix: b"ibc".into(),
-                        },
+                        prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period,
                 };
@@ -360,10 +356,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
                         connection_id: connection_id.clone(),
-                        prefix: MerklePrefix {
-                            // TODO(aeryz): global const
-                            key_prefix: b"ibc".into(),
-                        },
+                        prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
                 };
@@ -495,10 +488,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
                         connection_id: connection_id.clone(),
-                        prefix: MerklePrefix {
-                            // TODO(aeryz): global const
-                            key_prefix: b"ibc".into(),
-                        },
+                        prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
                 };
