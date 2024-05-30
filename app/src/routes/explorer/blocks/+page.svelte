@@ -59,7 +59,7 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
         variant: "short",
         minUnits: DurationUnits.Second,
         start: new Date(info.getValue() as string),
-        class: "pl-2 after:content-['_ago'] sm:after:content-[''] text-clip"
+        class: "pl-2 text-clip"
       })
   },
   {
