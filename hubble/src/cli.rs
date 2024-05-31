@@ -1,6 +1,7 @@
 use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
+use tracing::{info_span, Instrument};
 use url::Url;
 
 use crate::logging::LogFormat;
@@ -70,9 +71,24 @@ pub enum IndexerConfig {
 
 impl IndexerConfig {
     pub async fn index(self, db: sqlx::PgPool) -> Result<(), color_eyre::eyre::Report> {
+        let rpc_type = match self {
+            Self::Tm(_) => "tendermint",
+            Self::Eth(_) => "ethereum",
+        };
+
+        let initializer_span = info_span!("initializer", rpc_type);
+        let indexer_span = info_span!("indexer", rpc_type);
+
         match self {
-            Self::Tm(cfg) => cfg.index(db).await,
-            Self::Eth(cfg) => cfg.indexer(db).await?.index().await,
+            Self::Tm(cfg) => cfg.index(db).instrument(indexer_span).await,
+            Self::Eth(cfg) => {
+                cfg.indexer(db)
+                    .instrument(initializer_span)
+                    .await?
+                    .index()
+                    .instrument(indexer_span)
+                    .await
+            }
         }
     }
 }

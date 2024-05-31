@@ -4,16 +4,16 @@ use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
 use ethers::{
     providers::{Http, Middleware, Provider},
-    types::{BlockNumber, H256},
+    types::H256,
 };
 use futures::{
     stream::{self, FuturesOrdered},
-    FutureExt, StreamExt, TryFutureExt, TryStreamExt,
+    FutureExt, StreamExt, TryFutureExt,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
-use tracing::{debug, info};
+use tracing::{debug, info, info_span, Instrument};
 use url::Url;
 
 const DEFAULT_CHUNK_SIZE: usize = 200;
@@ -67,51 +67,53 @@ impl Config {
         .await?
         .as_u64();
 
-        let chain_id = postgres::fetch_or_insert_chain_id(&pool, chain_id.to_string())
-            .await?
-            .get_inner_logged();
+        let indexing_span = info_span!("indexer", chain_id = chain_id);
+        async move {
+            let chain_id = postgres::fetch_or_insert_chain_id(&pool, chain_id.to_string())
+                .await?
+                .get_inner_logged();
 
-        let current = sqlx::query!(
-            r#"SELECT height 
+            let current = sqlx::query!(
+                r#"SELECT height 
             FROM "v0"."logs" 
             WHERE chain_id = $1 
             ORDER BY height DESC 
             NULLS LAST 
             LIMIT 1"#,
-            chain_id.db
-        )
-        .fetch_optional(&pool)
-        .await?
-        .map(|block| {
-            if block.height == 0 {
-                info!(
-                    self.start_height,
-                    chain_id.canonical,
-                    "no block found, starting at configured start height, or 0 if not defined"
-                );
-                self.start_height.unwrap_or_default()
-            } else {
-                info!(
-                    self.start_height,
-                    block.height,
-                    chain_id.canonical,
-                    "block found, starting max(start_height, block_height + 1)"
-                );
-                (block.height + 1).max(self.start_height.unwrap_or_default())
-            }
-        })
-        .unwrap_or(self.start_height.unwrap_or_default()) as u64;
+                chain_id.db
+            )
+            .fetch_optional(&pool)
+            .await?
+            .map(|block| {
+                if block.height == 0 {
+                    info!(
+                        self.start_height,
+                        "no block found, starting at configured start height, or 0 if not defined"
+                    );
+                    self.start_height.unwrap_or_default()
+                } else {
+                    info!(
+                        self.start_height,
+                        block.height, "block found, starting max(start_height, block_height + 1)"
+                    );
+                    (block.height + 1).max(self.start_height.unwrap_or_default())
+                }
+            })
+            .unwrap_or(self.start_height.unwrap_or_default()) as u64;
 
-        let range = current..u64::MAX;
+            let range = current..u64::MAX;
 
-        Ok(Indexer {
-            range,
-            tasks: tokio::task::JoinSet::new(),
-            chain_id,
-            pool,
-            provider,
-            chunk_size: self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
-        })
+            Ok(Indexer {
+                range,
+                tasks: tokio::task::JoinSet::new(),
+                chain_id,
+                pool,
+                provider,
+                chunk_size: self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
+            })
+        }
+        .instrument(indexing_span)
+        .await
     }
 }
 
@@ -119,32 +121,39 @@ impl Indexer {
     /// Spawns two long running tasks, one which continuously indexes from current to head, and one which indexes from current-20 to current.
     /// The second routine handles fixing up block reorgs.
     pub async fn index(mut self) -> Result<(), Report> {
-        info!(
-            self.chain_id.canonical,
-            "starting indexing from {} to {}", self.range.start, self.range.end
-        );
+        let indexing_span = info_span!("indexer", chain_id = self.chain_id.canonical);
+        async move {
+            info!(
+                "starting indexing from {} to {}",
+                self.range.start, self.range.end
+            );
 
-        debug!(self.chain_id.canonical, "spawning main indexing routine");
-        self.tasks.spawn(index_blocks(
-            self.pool.clone(),
-            self.range,
-            self.chain_id,
-            self.provider.clone(),
-            self.chunk_size,
-        ));
+            debug!("spawning main indexing routine");
+            self.tasks.spawn(
+                index_blocks(
+                    self.pool.clone(),
+                    self.range,
+                    self.chain_id,
+                    self.provider.clone(),
+                    self.chunk_size,
+                )
+                .in_current_span(),
+            );
 
-        debug!(self.chain_id.canonical, "spawning fork indexing routine");
-        self.tasks.spawn(reindex_blocks(
-            self.pool.clone(),
-            self.chain_id,
-            self.provider.clone(),
-        ));
+            // debug!("spawning fork indexing routine");
+            // self.tasks.spawn(
+            //     reindex_blocks(self.pool.clone(), self.chain_id, self.provider.clone())
+            //         .in_current_span(),
+            // );
 
-        self.tasks
-            .join_next()
-            .await
-            .expect("set has at least one task")??;
-        Ok(())
+            self.tasks
+                .join_next()
+                .await
+                .expect("set has at least one task")??;
+            Ok(())
+        }
+        .instrument(indexing_span)
+        .await
     }
 }
 
@@ -199,7 +208,7 @@ async fn index_blocks(
             .inspect_err(|e| {
                 debug!(
                     ?e,
-                    chain_id.canonical, height, "err indexing block, not problematic if not found"
+                    height, "err indexing block, not problematic if not found"
                 )
             })
             .await?
@@ -221,20 +230,13 @@ async fn index_blocks_by_chunk(
     while let Some(chunk) = chunks.next().await {
         if chunk.len() > 1 {
             info!(
-                chain_id.canonical,
                 "indexing blocks for chunk: {}..{}",
                 chunk.first().unwrap(),
                 chunk.last().unwrap()
             );
         } else {
-            info!(
-                chain_id.canonical,
-                "indexing block {}",
-                chunk.first().unwrap(),
-            );
+            info!("indexing block {}", chunk.first().unwrap(),);
         }
-
-        let mut tx = pool.begin().await.map_err(Report::from)?;
 
         let mut inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
             let provider_clone = provider.clone();
@@ -249,38 +251,36 @@ async fn index_blocks_by_chunk(
         }));
 
         while let Some((height, block)) = inserts.next().await {
-            debug!(?chain_id, ?block, ?height, "attempting to insert");
             let block = match block {
                 Err(FromProviderError::Other(err)) => {
-                    debug!(?chain_id, ?height, "provider error found on insert");
-                    tx.commit().await?;
+                    debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Other(err));
                 }
                 Err(err) => {
-                    debug!(?chain_id, ?height, "provider error found on insert");
-                    tx.commit().await?;
+                    debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Retryable { height, err });
                 }
                 Ok(block) => block,
             };
+            debug!(?height, "attempting to insert");
 
-            let log_block = block.clone();
+            let mut tx = pool.begin().await.map_err(Report::from)?;
 
             match block.execute(&mut tx).await {
                 Err(err) => {
-                    debug!(?err, ?chain_id, ?log_block, "error executing block insert");
+                    debug!(?err, "error executing block insert");
                     tx.rollback().await?;
                     return Err(err.into());
                 }
                 Ok(info) => {
                     debug!(
-                        chain_id.canonical,
                         height = info.height,
                         hash = info.hash,
                         num_transactions = info.num_tx,
                         num_events = info.num_events,
                         "indexed block"
                     );
+                    tx.commit().await?;
                     metrics::BLOCK_COLLECTOR
                         .with_label_values(&[chain_id.canonical])
                         .inc();
@@ -293,69 +293,68 @@ async fn index_blocks_by_chunk(
                 }
             }
         }
-        tx.commit().await?;
     }
     panic!("end of index_blocks_by_chunk should not occur");
 }
 
-/// A worker routine which continuously re-indexes the last 20 blocks into `PgLogs`.
-async fn reindex_blocks(
-    pool: PgPool,
-    chain_id: ChainId,
-    provider: Provider<Http>,
-) -> Result<(), Report> {
-    loop {
-        // Set start to the current height so we can continue re-indexing.
-        let current = fetch_latest_height(&pool, chain_id).await?;
-        let latest = provider
-            .get_block(BlockNumber::Latest)
-            .await?
-            .expect("provider should have latest block");
-        if latest.number.unwrap().as_u32() - current as u32 > 32 {
-            tokio::time::sleep(Duration::from_secs(12 * 32)).await;
-            continue;
-        }
+// /// A worker routine which continuously re-indexes the last 20 blocks into `PgLogs`.
+// async fn reindex_blocks(
+//     pool: PgPool,
+//     chain_id: ChainId,
+//     provider: Provider<Http>,
+// ) -> Result<(), Report> {
+//     loop {
+//         // Set start to the current height so we can continue re-indexing.
+//         let current = fetch_latest_height(&pool, chain_id).await?;
+//         let latest = provider
+//             .get_block(BlockNumber::Latest)
+//             .await?
+//             .expect("provider should have latest block");
+//         if latest.number.unwrap().as_u32() - current as u32 > 32 {
+//             tokio::time::sleep(Duration::from_secs(12 * 32)).await;
+//             continue;
+//         }
 
-        let tx = pool.begin().await?;
-        let chunk = (current - 20)..current;
-        let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-            BlockInsert::from_provider_retried(chain_id, height as u64, provider.clone())
-                .map_err(Report::from)
-        }));
-        inserts
-            .try_fold(tx, |mut tx, block| async move {
-                let log = PgLog {
-                    chain_id: block.chain_id,
-                    block_hash: block.hash.clone(),
-                    height: block.height,
-                    time: block.time,
-                    data: LogData {
-                        header: block.header,
-                        transactions: block.transactions,
-                    },
-                };
-                postgres::upsert_log(&mut tx, log).await?;
-                Ok(tx)
-            })
-            .await?;
-    }
-}
+//         let tx = pool.begin().await?;
+//         let chunk = (current - 20)..current;
+//         let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
+//             BlockInsert::from_provider_retried(chain_id, height as u64, provider.clone())
+//                 .map_err(Report::from)
+//         }));
+//         inserts
+//             .try_fold(tx, |mut tx, block| async move {
+//                 let log = PgLog {
+//                     chain_id: block.chain_id,
+//                     block_hash: block.hash.clone(),
+//                     height: block.height,
+//                     time: block.time,
+//                     data: LogData {
+//                         header: block.header,
+//                         transactions: block.transactions,
+//                     },
+//                 };
+//                 postgres::upsert_log(&mut tx, log).await?;
+//                 Ok(tx)
+//             })
+//             .await?;
+//     }
+// }
 
-async fn fetch_latest_height(pool: &PgPool, chain_id: ChainId) -> Result<i32, sqlx::Error> {
-    let latest = sqlx::query!(
-        "SELECT height FROM \"v0\".logs 
-        WHERE chain_id = $1 
-        ORDER BY height DESC 
-        NULLS LAST 
-        LIMIT 1",
-        chain_id.db
-    )
-    .fetch_optional(pool)
-    .await?
-    .map(|block| block.height)
-    .unwrap_or_default();
-    Ok(latest)
-}
+// async fn fetch_latest_height(pool: &PgPool, chain_id: ChainId) -> Result<i32, sqlx::Error> {
+//     let latest = sqlx::query!(
+//         "SELECT height FROM \"v0\".logs
+//         WHERE chain_id = $1
+//         ORDER BY height DESC
+//         NULLS LAST
+//         LIMIT 1",
+//         chain_id.db
+//     )
+//     .fetch_optional(pool)
+//     .await?
+//     .map(|block| block.height)
+//     .unwrap_or_default();
+//     Ok(latest)
+// }
 
 pub struct InsertInfo {
     height: i32,
@@ -409,19 +408,10 @@ impl BlockInsert {
         height: u64,
         provider: Provider<Http>,
     ) -> Result<Self, FromProviderError> {
-        debug!(
-            chain_id = chain_id.canonical,
-            height, "fetching block from provider"
-        );
+        debug!(height, "fetching block from provider");
         (move || {
-            Self::from_provider(chain_id, height, provider.clone()).inspect_err(move |e| {
-                debug!(
-                    ?e,
-                    chain_id = chain_id.canonical,
-                    height,
-                    "error fetching block from provider"
-                )
-            })
+            Self::from_provider(chain_id, height, provider.clone())
+                .inspect_err(move |e| debug!(?e, height, "error fetching block from provider"))
         })
         .retry(&crate::expo_backoff())
         .when(|e| !matches!(e, FromProviderError::BlockNotFound))

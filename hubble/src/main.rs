@@ -86,8 +86,13 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     "encountered error while indexing: {:?}. shutting down.",
                     err
                 );
+                info!("shutdown - setting unhealthy");
                 healthz::set_unhealthy();
-                set.shutdown().await;
+                info!("shutdown - shutting down");
+                let shutdown_hook = set.shutdown();
+                info!("shutdown - awaiting shutdown");
+                shutdown_hook.await;
+                info!("shutdown - returning");
                 return Err(err);
             }
             Err(err) => return Err(err.into()),
