@@ -103,5 +103,4 @@ const columns = [
 </script>
 
 <Table columns={columns} bind:dataStore={blocksStore}/>
-{JSON.stringify($blocksStore, null, 2)}
 
