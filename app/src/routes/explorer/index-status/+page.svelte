@@ -1,5 +1,6 @@
 <script lang="ts">
-import { voyagerQueueQuery } from "$lib/graphql/documents/voyager-queue.ts"
+import request from "graphql-request"
+import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 
@@ -7,11 +8,7 @@ $: indexStatus = createQuery({
   queryKey: ["index-status"],
   refetchInterval: 1_000,
   // enabled: false,
-  queryFn: async () => {
-    const response = await fetch(`${URLS.GRAPHQL_REST}/index_status`)
-    const json = (await response.json()) as { v0_index_status: unknown }
-    return json.v0_index_status
-  }
+  queryFn: async () => request(URLS.GRAPHQL, indexStatusQuery, {})
 })
 </script>
 
@@ -19,6 +16,6 @@ $: indexStatus = createQuery({
 
 {#if $indexStatus?.data }
 <pre class="overflow-scroll">
-  {JSON.stringify($indexStatus?.data, null, 2)}
+  {JSON.stringify($indexStatus?.data.v0_index_status, null, 2)}
 </pre>
 {/if}
