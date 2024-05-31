@@ -1,8 +1,5 @@
 <script lang="ts">
-import {
-  flexRender,
-  type ColumnDef,
-} from "@tanstack/svelte-table"
+import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
@@ -38,7 +35,6 @@ $: if (blockData) {
     removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], "height")
   )
 }
-
 const columns = [
   {
     accessorKey: "time",
@@ -46,7 +42,7 @@ const columns = [
     meta: {
       class: "ml-1.5 justify-start"
     },
-    header: info => "Time",
+    header: () => "Time",
     cell: info =>
       flexRender(CellDurationText, {
         totalUnits: 3,
@@ -58,7 +54,7 @@ const columns = [
   },
   {
     accessorKey: "height",
-    header: info => "Height",
+    header: () => "Height",
     size: 100,
     meta: {
       class: "w-full justify-start"
@@ -76,7 +72,7 @@ const columns = [
   },
   {
     accessorKey: "chain_id",
-    header: info => "Chain ID",
+    header: () => "Chain ID",
     meta: {
       class: "w-full justify-start"
     },
@@ -91,7 +87,7 @@ const columns = [
     meta: {
       class: "w-full justify-start"
     },
-    header: info => flexRender(CellText, { value: "Hash" }),
+    header: () => flexRender(CellText, { value: "Hash" }),
     size: 1000,
     cell: info =>
       flexRender(Button, {
@@ -105,10 +101,6 @@ const columns = [
   }
 ] as Array<ColumnDef<CosmosBlock>>
 </script>
-
-<svelte:head>
-  <title>Union - Explorer</title>
-</svelte:head>
 
 <Table columns={columns} bind:dataStore={blocksStore}/>
 {JSON.stringify($blocksStore, null, 2)}

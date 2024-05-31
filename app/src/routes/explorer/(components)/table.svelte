@@ -55,7 +55,6 @@ $: dataStore.subscribe(() => {
 })
 </script>
 
-
 <Card.Root>
   <div bind:this={virtualListElement} >
     <Table.Root>
