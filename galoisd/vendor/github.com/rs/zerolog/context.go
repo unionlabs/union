@@ -3,7 +3,7 @@ package zerolog
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net"
 	"time"
@@ -23,7 +23,7 @@ func (c Context) Logger() Logger {
 // Only map[string]interface{} and []interface{} are accepted. []interface{} must
 // alternate string keys and arbitrary values, and extraneous ones are ignored.
 func (c Context) Fields(fields interface{}) Context {
-	c.l.context = appendFields(c.l.context, fields)
+	c.l.context = appendFields(c.l.context, fields, c.l.stack)
 	return c
 }
 
@@ -57,7 +57,7 @@ func (c Context) Array(key string, arr LogArrayMarshaler) Context {
 
 // Object marshals an object that implement the LogObjectMarshaler interface.
 func (c Context) Object(key string, obj LogObjectMarshaler) Context {
-	e := newEvent(LevelWriterAdapter{ioutil.Discard}, 0)
+	e := newEvent(LevelWriterAdapter{io.Discard}, 0)
 	e.Object(key, obj)
 	c.l.context = enc.AppendObjectData(c.l.context, e.buf)
 	putEvent(e)
@@ -66,7 +66,7 @@ func (c Context) Object(key string, obj LogObjectMarshaler) Context {
 
 // EmbedObject marshals and Embeds an object that implement the LogObjectMarshaler interface.
 func (c Context) EmbedObject(obj LogObjectMarshaler) Context {
-	e := newEvent(LevelWriterAdapter{ioutil.Discard}, 0)
+	e := newEvent(LevelWriterAdapter{io.Discard}, 0)
 	e.EmbedObject(obj)
 	c.l.context = enc.AppendObjectData(c.l.context, e.buf)
 	putEvent(e)
@@ -163,6 +163,22 @@ func (c Context) Errs(key string, errs []error) Context {
 
 // Err adds the field "error" with serialized err to the logger context.
 func (c Context) Err(err error) Context {
+	if c.l.stack && ErrorStackMarshaler != nil {
+		switch m := ErrorStackMarshaler(err).(type) {
+		case nil:
+		case LogObjectMarshaler:
+			c = c.Object(ErrorStackFieldName, m)
+		case error:
+			if m != nil && !isNilValue(m) {
+				c = c.Str(ErrorStackFieldName, m.Error())
+			}
+		case string:
+			c = c.Str(ErrorStackFieldName, m)
+		default:
+			c = c.Interface(ErrorStackFieldName, m)
+		}
+	}
+
 	return c.AnErr(ErrorFieldName, err)
 }
 
@@ -309,25 +325,25 @@ func (c Context) Uints64(key string, i []uint64) Context {
 
 // Float32 adds the field key with f as a float32 to the logger context.
 func (c Context) Float32(key string, f float32) Context {
-	c.l.context = enc.AppendFloat32(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloat32(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
 // Floats32 adds the field key with f as a []float32 to the logger context.
 func (c Context) Floats32(key string, f []float32) Context {
-	c.l.context = enc.AppendFloats32(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloats32(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
 // Float64 adds the field key with f as a float64 to the logger context.
 func (c Context) Float64(key string, f float64) Context {
-	c.l.context = enc.AppendFloat64(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloat64(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
 // Floats64 adds the field key with f as a []float64 to the logger context.
 func (c Context) Floats64(key string, f []float64) Context {
-	c.l.context = enc.AppendFloats64(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloats64(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
@@ -349,13 +365,13 @@ func (c Context) Timestamp() Context {
 	return c
 }
 
-// Time adds the field key with t formated as string using zerolog.TimeFieldFormat.
+// Time adds the field key with t formatted as string using zerolog.TimeFieldFormat.
 func (c Context) Time(key string, t time.Time) Context {
 	c.l.context = enc.AppendTime(enc.AppendKey(c.l.context, key), t, TimeFieldFormat)
 	return c
 }
 
-// Times adds the field key with t formated as string using zerolog.TimeFieldFormat.
+// Times adds the field key with t formatted as string using zerolog.TimeFieldFormat.
 func (c Context) Times(key string, t []time.Time) Context {
 	c.l.context = enc.AppendTimes(enc.AppendKey(c.l.context, key), t, TimeFieldFormat)
 	return c
@@ -363,25 +379,40 @@ func (c Context) Times(key string, t []time.Time) Context {
 
 // Dur adds the fields key with d divided by unit and stored as a float.
 func (c Context) Dur(key string, d time.Duration) Context {
-	c.l.context = enc.AppendDuration(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger)
+	c.l.context = enc.AppendDuration(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 	return c
 }
 
 // Durs adds the fields key with d divided by unit and stored as a float.
 func (c Context) Durs(key string, d []time.Duration) Context {
-	c.l.context = enc.AppendDurations(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger)
+	c.l.context = enc.AppendDurations(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 	return c
 }
 
 // Interface adds the field key with obj marshaled using reflection.
 func (c Context) Interface(key string, i interface{}) Context {
+	if obj, ok := i.(LogObjectMarshaler); ok {
+		return c.Object(key, obj)
+	}
 	c.l.context = enc.AppendInterface(enc.AppendKey(c.l.context, key), i)
+	return c
+}
+
+// Type adds the field key with val's type using reflection.
+func (c Context) Type(key string, val interface{}) Context {
+	c.l.context = enc.AppendType(enc.AppendKey(c.l.context, key), val)
 	return c
 }
 
 // Any is a wrapper around Context.Interface.
 func (c Context) Any(key string, i interface{}) Context {
 	return c.Interface(key, i)
+}
+
+// Reset removes all the context fields.
+func (c Context) Reset() Context {
+	c.l.context = enc.AppendBeginMarker(make([]byte, 0, 500))
+	return c
 }
 
 type callerHook struct {

@@ -10,7 +10,7 @@ require (
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
 	github.com/consensys/gnark-crypto v0.12.2-0.20240215234832-d72fcb379d3e
 	github.com/cosmos/cosmos-sdk v0.50.2
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.19.0

@@ -12,13 +12,13 @@ func isNilValue(i interface{}) bool {
 	return (*[2]uintptr)(unsafe.Pointer(&i))[1] == 0
 }
 
-func appendFields(dst []byte, fields interface{}) []byte {
+func appendFields(dst []byte, fields interface{}, stack bool) []byte {
 	switch fields := fields.(type) {
 	case []interface{}:
 		if n := len(fields); n&0x1 == 1 { // odd number
 			fields = fields[:n-1]
 		}
-		dst = appendFieldList(dst, fields)
+		dst = appendFieldList(dst, fields, stack)
 	case map[string]interface{}:
 		keys := make([]string, 0, len(fields))
 		for key := range fields {
@@ -28,13 +28,13 @@ func appendFields(dst []byte, fields interface{}) []byte {
 		kv := make([]interface{}, 2)
 		for _, key := range keys {
 			kv[0], kv[1] = key, fields[key]
-			dst = appendFieldList(dst, kv)
+			dst = appendFieldList(dst, kv, stack)
 		}
 	}
 	return dst
 }
 
-func appendFieldList(dst []byte, kvList []interface{}) []byte {
+func appendFieldList(dst []byte, kvList []interface{}, stack bool) []byte {
 	for i, n := 0, len(kvList); i < n; i += 2 {
 		key, val := kvList[i], kvList[i+1]
 		if key, ok := key.(string); ok {
@@ -73,6 +73,21 @@ func appendFieldList(dst []byte, kvList []interface{}) []byte {
 				dst = enc.AppendString(dst, m)
 			default:
 				dst = enc.AppendInterface(dst, m)
+			}
+
+			if stack && ErrorStackMarshaler != nil {
+				dst = enc.AppendKey(dst, ErrorStackFieldName)
+				switch m := ErrorStackMarshaler(val).(type) {
+				case nil:
+				case error:
+					if m != nil && !isNilValue(m) {
+						dst = enc.AppendString(dst, m.Error())
+					}
+				case string:
+					dst = enc.AppendString(dst, m)
+				default:
+					dst = enc.AppendInterface(dst, m)
+				}
 			}
 		case []error:
 			dst = enc.AppendArrayStart(dst)
@@ -124,13 +139,13 @@ func appendFieldList(dst []byte, kvList []interface{}) []byte {
 		case uint64:
 			dst = enc.AppendUint64(dst, val)
 		case float32:
-			dst = enc.AppendFloat32(dst, val)
+			dst = enc.AppendFloat32(dst, val, FloatingPointPrecision)
 		case float64:
-			dst = enc.AppendFloat64(dst, val)
+			dst = enc.AppendFloat64(dst, val, FloatingPointPrecision)
 		case time.Time:
 			dst = enc.AppendTime(dst, val, TimeFieldFormat)
 		case time.Duration:
-			dst = enc.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = enc.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 		case *string:
 			if val != nil {
 				dst = enc.AppendString(dst, *val)
@@ -205,13 +220,13 @@ func appendFieldList(dst []byte, kvList []interface{}) []byte {
 			}
 		case *float32:
 			if val != nil {
-				dst = enc.AppendFloat32(dst, *val)
+				dst = enc.AppendFloat32(dst, *val, FloatingPointPrecision)
 			} else {
 				dst = enc.AppendNil(dst)
 			}
 		case *float64:
 			if val != nil {
-				dst = enc.AppendFloat64(dst, *val)
+				dst = enc.AppendFloat64(dst, *val, FloatingPointPrecision)
 			} else {
 				dst = enc.AppendNil(dst)
 			}
@@ -223,7 +238,7 @@ func appendFieldList(dst []byte, kvList []interface{}) []byte {
 			}
 		case *time.Duration:
 			if val != nil {
-				dst = enc.AppendDuration(dst, *val, DurationFieldUnit, DurationFieldInteger)
+				dst = enc.AppendDuration(dst, *val, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 			} else {
 				dst = enc.AppendNil(dst)
 			}
@@ -252,13 +267,13 @@ func appendFieldList(dst []byte, kvList []interface{}) []byte {
 		case []uint64:
 			dst = enc.AppendUints64(dst, val)
 		case []float32:
-			dst = enc.AppendFloats32(dst, val)
+			dst = enc.AppendFloats32(dst, val, FloatingPointPrecision)
 		case []float64:
-			dst = enc.AppendFloats64(dst, val)
+			dst = enc.AppendFloats64(dst, val, FloatingPointPrecision)
 		case []time.Time:
 			dst = enc.AppendTimes(dst, val, TimeFieldFormat)
 		case []time.Duration:
-			dst = enc.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = enc.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 		case nil:
 			dst = enc.AppendNil(dst)
 		case net.IP:

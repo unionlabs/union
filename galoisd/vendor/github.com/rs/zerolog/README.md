@@ -60,7 +60,7 @@ func main() {
 // Output: {"time":1516134303,"level":"debug","message":"hello world"}
 ```
 > Note: By default log writes to `os.Stderr`
-> Note: The default log level for `log.Print` is *debug*
+> Note: The default log level for `log.Print` is *trace*
 
 ### Contextual Logging
 
@@ -412,15 +412,7 @@ Equivalent of `Lshortfile`:
 
 ```go
 zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
-    short := file
-    for i := len(file) - 1; i > 0; i-- {
-        if file[i] == '/' {
-            short = file[i+1:]
-            break
-        }
-    }
-    file = short
-    return file + ":" + strconv.Itoa(line)
+    return filepath.Base(file) + ":" + strconv.Itoa(line)
 }
 log.Logger = log.With().Caller().Logger()
 log.Info().Msg("hello world")
@@ -547,7 +539,7 @@ and facilitates the unification of logging and tracing in some systems:
 type TracingHook struct{}
 
 func (h TracingHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
-    ctx := e.Ctx()
+    ctx := e.GetCtx()
     spanId := getSpanIdFromContext(ctx) // as per your tracing framework
     e.Str("span-id", spanId)
 }
@@ -646,10 +638,14 @@ Some settings can be changed and will be applied to all loggers:
 * `zerolog.LevelFieldName`: Can be set to customize level field name.
 * `zerolog.MessageFieldName`: Can be set to customize message field name.
 * `zerolog.ErrorFieldName`: Can be set to customize `Err` field name.
-* `zerolog.TimeFieldFormat`: Can be set to customize `Time` field value formatting. If set with `zerolog.TimeFormatUnix`, `zerolog.TimeFormatUnixMs` or `zerolog.TimeFormatUnixMicro`, times are formated as UNIX timestamp.
+* `zerolog.TimeFieldFormat`: Can be set to customize `Time` field value formatting. If set with `zerolog.TimeFormatUnix`, `zerolog.TimeFormatUnixMs` or `zerolog.TimeFormatUnixMicro`, times are formatted as UNIX timestamp.
 * `zerolog.DurationFieldUnit`: Can be set to customize the unit for time.Duration type fields added by `Dur` (default: `time.Millisecond`).
 * `zerolog.DurationFieldInteger`: If set to `true`, `Dur` fields are formatted as integers instead of floats (default: `false`). 
 * `zerolog.ErrorHandler`: Called whenever zerolog fails to write an event on its output. If not set, an error is printed on the stderr. This handler must be thread safe and non-blocking.
+* `zerolog.FloatingPointPrecision`: If set to a value other than -1, controls the number
+of digits when formatting float numbers in JSON. See
+[strconv.FormatFloat](https://pkg.go.dev/strconv#FormatFloat)
+for more details.
 
 ## Field Types
 

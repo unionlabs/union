@@ -11,10 +11,8 @@ import (
 	"galois/pkg/lightclient"
 	lcgadget "galois/pkg/lightclient/nonadjacent"
 	"io"
-	"log"
 	"math/big"
 	"os"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,9 +31,9 @@ import (
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
-	"github.com/consensys/gnark/logger"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-	"github.com/rs/zerolog"
+
+	"github.com/rs/zerolog/log"
 )
 
 type proverServer struct {
@@ -145,27 +143,33 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		return nil, fmt.Errorf("More signatures than validators")
 	}
 
+	reqJson, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	proveKey := sha256.Sum256(reqJson)
+
 	prove := func() (*grpc.ProveResponse, error) {
 
-		log.Println("Marshalling trusted validators...")
+		log.Debug().Msg("Marshalling trusted validators...")
 		trustedValidators, trustedValidatorsRoot, err := MarshalValidators(req.TrustedCommit.Validators)
 		if err != nil {
 			return nil, fmt.Errorf("Could not marshal trusted validators %s", err)
 		}
 
-		log.Println("Aggregating trusted signature...")
+		log.Debug().Msg("Aggregating trusted signature...")
 		trustedAggregatedSignature, err := AggregateSignatures(req.TrustedCommit.Signatures)
 		if err != nil {
 			return nil, fmt.Errorf("Could not aggregate trusted signature %s", err)
 		}
 
-		log.Println("Marshalling untrusted validators...")
+		log.Debug().Msg("Marshalling untrusted validators...")
 		untrustedValidators, _, err := MarshalValidators(req.UntrustedCommit.Validators)
 		if err != nil {
 			return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)
 		}
 
-		log.Println("Aggregating untrusted signature...")
+		log.Debug().Msg("Aggregating untrusted signature...")
 		untrustedAggregatedSignature, err := AggregateSignatures(req.UntrustedCommit.Signatures)
 		if err != nil {
 			return nil, fmt.Errorf("Could not aggregate untrusted signature %s", err)
@@ -222,7 +226,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 
 		inputsHash := getInputsHash(req.Vote.ChainID, req.UntrustedHeader, trustedValidatorsRoot)
 
-		log.Printf("Inputs hash: %X\n", inputsHash)
+		log.Debug().Hex("request_hash", proveKey[:]).Hex("inputs_hash", inputsHash).Send()
 
 		witness := lcgadget.Circuit{
 			DomainSeparationTag: []byte(cometbn254.CometblsSigDST),
@@ -262,10 +266,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			return nil, fmt.Errorf("Could not create witness %s", err)
 		}
 
-		logger.SetOutput(os.Stdout)
-		logger.Logger().Level(zerolog.TraceLevel)
-
-		log.Println("Executing proving backend...")
+		log.Debug().Hex("request_hash", proveKey[:]).Msg("proving")
 		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
 		if err != nil {
 			return nil, fmt.Errorf("Prover failed with %s", err)
@@ -331,15 +332,9 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		return &proveRes, nil
 	}
 
-	reqJson, err := json.MarshalIndent(req, "", "    ")
-	if err != nil {
-		return nil, err
-	}
-	proveKey := sha256.Sum256(reqJson)
-
 	result, found := p.results.LoadOrStore(proveKey, &grpc.ProveRequestPending{})
 	if found {
-		log.Println("Poll check...")
+		log.Debug().Hex("request_hash", proveKey[:]).Msg("poll")
 
 		switch _result := result.(type) {
 		case *grpc.ProveRequestPending:
@@ -366,7 +361,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			}, nil
 		}
 	} else {
-		log.Println("Poll new...")
+		log.Info().Hex("request_hash", proveKey[:]).Msg("new")
 
 		for true {
 			nbJobs := p.nbJobs.Load()
@@ -382,13 +377,14 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		}
 
 		go func() {
-			log.Println(string(reqJson))
 			proveRes, err := prove()
 			if err != nil {
+				log.Error().Str("action", "prove").Hex("request_hash", proveKey[:]).RawJSON("request", reqJson).Err(err).Send()
 				p.results.Store(proveKey, fmt.Errorf("failed to generate proof: %v", err))
 			} else {
+				resJson, _ := json.Marshal(proveRes)
+				log.Info().Str("action", "prove").Hex("request_hash", proveKey[:]).RawJSON("request", reqJson).RawJSON("response", resJson).Send()
 				p.results.Store(proveKey, proveRes)
-				runtime.GC()
 			}
 			for true {
 				value := p.nbJobs.Load()
@@ -408,21 +404,13 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 }
 
 func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*grpc.VerifyResponse, error) {
-	log.Println("Verifying...")
-
-	reqJson, err := json.MarshalIndent(req, "", "    ")
-	if err != nil {
-		return nil, err
-	}
-	log.Println(string(reqJson))
+	log.Debug().Msg("Verifying...")
 
 	var proof backend_bn254.Proof
-	_, err = proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
+	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
 	}
-
-	log.Printf("Inputs hash: %X\n", req.InputsHash)
 
 	witness := lcgadget.Circuit{
 		InputsHash: req.InputsHash,
@@ -433,18 +421,25 @@ func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*gr
 		return nil, fmt.Errorf("Unable to create private witness: %w", err)
 	}
 
+	reqJson, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
 	err = backend.Verify(
 		backend.Proof(&proof),
 		backend.VerifyingKey(&p.vk),
 		publicWitness,
 		backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
 	)
+
 	if err != nil {
-		log.Println("Verification failed: ", err)
+		log.Error().RawJSON("request", reqJson).Hex("inputs_hash", req.InputsHash).Str("action", "verify").Err(err).Send()
 		return &grpc.VerifyResponse{
 			Valid: false,
 		}, nil
 	} else {
+		log.Info().RawJSON("request", reqJson).Hex("inputs_hash", req.InputsHash).Str("action", "verify").Send()
 		return &grpc.VerifyResponse{
 			Valid: true,
 		}, nil
@@ -452,7 +447,7 @@ func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*gr
 }
 
 func (p *proverServer) GenerateContract(ctx context.Context, req *grpc.GenerateContractRequest) (*grpc.GenerateContractResponse, error) {
-	log.Println("Generating contract...")
+	log.Debug().Msg("Generating contract...")
 
 	var buffer bytes.Buffer
 	mem := bufio.NewWriter(&buffer)
@@ -468,7 +463,7 @@ func (p *proverServer) GenerateContract(ctx context.Context, req *grpc.GenerateC
 }
 
 func (p *proverServer) QueryStats(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
-	log.Println("Querying stats...")
+	log.Debug().Msg("Querying stats...")
 
 	return &grpc.QueryStatsResponse{
 		VariableStats: &grpc.VariableStats{
@@ -524,38 +519,26 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 	if _, err := os.Stat(r1csPath); err == nil {
 		if _, err = os.Stat(pkPath); err == nil {
 			if _, err = os.Stat(vkPath); err == nil {
-				log.Println("Loading R1CS...")
+				log.Info().Msg("Loading circuit...")
+
+				log.Debug().Msg("Loading R1CS...")
 				err := readFrom(r1csPath, constraint.R1CS(&cs))
 				if err != nil {
 					return cs, pk, vk, err
 				}
 
-				log.Println("Loading proving key...")
+				log.Debug().Msg("Loading proving key...")
 				err = readFrom(pkPath, backend.ProvingKey(&pk))
 				if err != nil {
 					return cs, pk, vk, err
 				}
 
-				log.Println("Loading verifying key...")
+				log.Debug().Msg("Loading verifying key...")
 				err = readFrom(vkPath, backend.VerifyingKey(&vk))
 				if err != nil {
 					return cs, pk, vk, err
 				}
 
-				log.Printf("VK Alpha X: %v", vk.G1.Alpha.X.String())
-				log.Printf("VK Alpha Y: %v", vk.G1.Alpha.Y.String())
-				log.Printf("VK Beta X0: %v", vk.G2.Beta.X.A0.String())
-				log.Printf("VK Beta X1: %v", vk.G2.Beta.X.A1.String())
-				log.Printf("VK Beta Y0: %v", vk.G2.Beta.Y.A0.String())
-				log.Printf("VK Beta Y1: %v", vk.G2.Beta.Y.A1.String())
-				log.Printf("VK Gamma X0: %v", vk.G2.Gamma.X.A0.String())
-				log.Printf("VK Gamma X1: %v", vk.G2.Gamma.X.A1.String())
-				log.Printf("VK Gamma Y0: %v", vk.G2.Gamma.Y.A0.String())
-				log.Printf("VK Gamma Y1: %v", vk.G2.Gamma.Y.A1.String())
-				log.Printf("VK Delta X0: %v", vk.G2.Delta.X.A0.String())
-				log.Printf("VK Delta X1: %v", vk.G2.Delta.X.A1.String())
-				log.Printf("VK Delta Y0: %v", vk.G2.Delta.Y.A0.String())
-				log.Printf("VK Delta Y1: %v", vk.G2.Delta.Y.A1.String())
 				var commitmentKeyBytes bytes.Buffer
 				mem := bufio.NewWriter(&commitmentKeyBytes)
 				_, err = vk.CommitmentKey.WriteRawTo(mem)
@@ -564,8 +547,15 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 				}
 				mem.Flush()
 				commitmentKey := commitmentKeyBytes.Bytes()
-				log.Printf("Pedersen commitment key: %X", commitmentKey)
-				log.Printf("Public committed: %v", vk.PublicAndCommitmentCommitted)
+
+				log.Debug().
+					Str("alpha", vk.G1.Alpha.String()).
+					Str("beta", vk.G1.Beta.String()).
+					Str("gamma", vk.G2.Gamma.String()).
+					Str("delta", vk.G2.Delta.String()).
+					Hex("pedersen", commitmentKey).
+					Msg("verifying_key")
+
 				return cs, pk, vk, nil
 			}
 		}
@@ -573,7 +563,7 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 
 	var circuit lcgadget.Circuit
 
-	log.Println("Compiling circuit...")
+	log.Info().Msg("Compiling circuit...")
 	r1csInstance, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithCompressThreshold(300))
 	if err != nil {
 		return cs, pk, vk, err
@@ -581,7 +571,7 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 
 	cs = *r1csInstance.(*cs_bn254.R1CS)
 
-	log.Println("Setup PK/VK")
+	log.Debug().Msg("Setup PK/VK")
 	err = backend_bn254.Setup(&cs, &pk, &vk)
 	if err != nil {
 		return cs, pk, vk, err
@@ -600,20 +590,6 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 		return cs, pk, vk, err
 	}
 
-	log.Printf("VK Alpha X: %v", vk.G1.Alpha.X.String())
-	log.Printf("VK Alpha Y: %v", vk.G1.Alpha.Y.String())
-	log.Printf("VK Beta X0: %v", vk.G2.Beta.X.A0.String())
-	log.Printf("VK Beta X1: %v", vk.G2.Beta.X.A1.String())
-	log.Printf("VK Beta Y0: %v", vk.G2.Beta.Y.A0.String())
-	log.Printf("VK Beta Y1: %v", vk.G2.Beta.Y.A1.String())
-	log.Printf("VK Gamma X0: %v", vk.G2.Gamma.X.A0.String())
-	log.Printf("VK Gamma X1: %v", vk.G2.Gamma.X.A1.String())
-	log.Printf("VK Gamma Y0: %v", vk.G2.Gamma.Y.A0.String())
-	log.Printf("VK Gamma Y1: %v", vk.G2.Gamma.Y.A1.String())
-	log.Printf("VK Delta X0: %v", vk.G2.Delta.X.A0.String())
-	log.Printf("VK Delta X1: %v", vk.G2.Delta.X.A1.String())
-	log.Printf("VK Delta Y0: %v", vk.G2.Delta.Y.A0.String())
-	log.Printf("VK Delta Y1: %v", vk.G2.Delta.Y.A1.String())
 	var commitmentKeyBytes bytes.Buffer
 	mem := bufio.NewWriter(&commitmentKeyBytes)
 	_, err = vk.CommitmentKey.WriteRawTo(mem)
@@ -622,8 +598,14 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 	}
 	mem.Flush()
 	commitmentKey := commitmentKeyBytes.Bytes()
-	log.Printf("Pedersen commitment key: %X", commitmentKey)
-	log.Printf("Public committed: %v", vk.PublicAndCommitmentCommitted)
+
+	log.Debug().
+		Str("alpha", vk.G1.Alpha.String()).
+		Str("beta", vk.G1.Beta.String()).
+		Str("gamma", vk.G2.Gamma.String()).
+		Str("delta", vk.G2.Delta.String()).
+		Hex("pedersen", commitmentKey).
+		Msg("verifying_key")
 
 	return cs, pk, vk, nil
 }
@@ -633,8 +615,6 @@ func NewProverServer(maxJobs uint32, r1csPath string, pkPath string, vkPath stri
 	if err != nil {
 		return nil, err
 	}
-
-	runtime.GC()
 
 	return &proverServer{cs: cs, pk: pk, vk: vk, maxJobs: maxJobs}, nil
 }
@@ -650,7 +630,7 @@ func readFrom(file string, obj io.ReaderFrom) error {
 }
 
 func saveTo(file string, x io.WriterTo) error {
-	log.Printf("Saving %s\n", file)
+	log.Debug().Str("path", file).Msg("saving")
 	f, err := os.Create(file)
 	if err != nil {
 		return err
@@ -661,7 +641,7 @@ func saveTo(file string, x io.WriterTo) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Saved %d bytes\n", written)
+	log.Debug().Str("path", file).Int64("bytes", written).Msg("saved")
 	w.Flush()
 	return nil
 }

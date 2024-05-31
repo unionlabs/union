@@ -24,7 +24,7 @@
 //
 // Sub-loggers let you chain loggers with additional context:
 //
-//     sublogger := log.With().Str("component": "foo").Logger()
+//     sublogger := log.With().Str("component", "foo").Logger()
 //     sublogger.Info().Msg("hello world")
 //     // Output: {"time":1494567715,"level":"info","message":"hello world","component":"foo"}
 //
@@ -118,7 +118,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -246,7 +245,7 @@ type Logger struct {
 // you may consider using sync wrapper.
 func New(w io.Writer) Logger {
 	if w == nil {
-		w = ioutil.Discard
+		w = io.Discard
 	}
 	lw, ok := w.(LevelWriter)
 	if !ok {
@@ -326,10 +325,13 @@ func (l Logger) Sample(s Sampler) Logger {
 }
 
 // Hook returns a logger with the h Hook.
-func (l Logger) Hook(h Hook) Logger {
-	newHooks := make([]Hook, len(l.hooks), len(l.hooks)+1)
+func (l Logger) Hook(hooks ...Hook) Logger {
+	if len(hooks) == 0 {
+		return l
+	}
+	newHooks := make([]Hook, len(l.hooks), len(l.hooks)+len(hooks))
 	copy(newHooks, l.hooks)
-	l.hooks = append(newHooks, h)
+	l.hooks = append(newHooks, hooks...)
 	return l
 }
 
@@ -385,7 +387,14 @@ func (l *Logger) Err(err error) *Event {
 //
 // You must call Msg on the returned event in order to send the event.
 func (l *Logger) Fatal() *Event {
-	return l.newEvent(FatalLevel, func(msg string) { os.Exit(1) })
+	return l.newEvent(FatalLevel, func(msg string) {
+		if closer, ok := l.w.(io.Closer); ok {
+			// Close the writer to flush any buffered message. Otherwise the message
+			// will be lost as os.Exit() terminates the program immediately.
+			closer.Close()
+		}
+		os.Exit(1)
+	})
 }
 
 // Panic starts a new message with panic level. The panic() function
@@ -450,6 +459,14 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 	}
 }
 
+// Println sends a log event using debug level and no extra field.
+// Arguments are handled in the manner of fmt.Println.
+func (l *Logger) Println(v ...interface{}) {
+	if e := l.Debug(); e.Enabled() {
+		e.CallerSkipFrame(1).Msg(fmt.Sprintln(v...))
+	}
+}
+
 // Write implements the io.Writer interface. This is useful to set as a writer
 // for the standard library log.
 func (l Logger) Write(p []byte) (n int, err error) {
@@ -488,6 +505,9 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 
 // should returns true if the log event should be logged.
 func (l *Logger) should(lvl Level) bool {
+	if l.w == nil {
+		return false
+	}
 	if lvl < l.level || lvl < GlobalLevel() {
 		return false
 	}
