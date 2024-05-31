@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT\n                        cl.client_id, ch.id\n                    FROM\n                        v0_cosmos.create_client cl\n                    JOIN\n                        v0.chains ch\n                    ON\n                        cl.chain_id = ch.id\n                    WHERE\n                        ch.chain_id = $1\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "client_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "7e8fccdd6fca3f6fe9fa4abe6daa45d2f5ea907b8343e14fe1b78fb2cd44d929"
+}

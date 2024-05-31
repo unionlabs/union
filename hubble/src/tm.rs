@@ -1,6 +1,6 @@
-use backon::{ExponentialBuilder, Retryable};
+use backon::Retryable;
 use color_eyre::eyre::{bail, Report};
-use futures::{stream, stream::TryStreamExt};
+use futures::{stream, stream::TryStreamExt, TryFutureExt};
 use sqlx::{Acquire, Postgres};
 use tendermint::block::Height;
 use tendermint_rpc::{
@@ -22,8 +22,10 @@ pub struct Config {
     pub url: Url,
     /// The GRPC endpoint of this chain. required for `--fetch-client-chain-ids`.
     pub grpc_url: Option<String>,
-    #[allow(dead_code)]
-    pub start: Option<u64>,
+
+    /// The height from which we start indexing
+    pub start_height: Option<u32>,
+
     #[allow(dead_code)]
     pub until: Option<u64>,
 
@@ -56,17 +58,28 @@ impl Config {
     {
         let client = HttpClient::new(self.url.as_str()).unwrap();
 
-        let (chain_id, mut height) = if self.harden {
-            (|| fetch_meta(&client, &pool))
-                .retry(&ExponentialBuilder::default())
+        let (chain_id, height) = if self.harden {
+            (|| fetch_meta(&client, &pool).inspect_err(|e| debug!(?e, "error fetching meta")))
+                .retry(&crate::expo_backoff())
                 .await?
         } else {
             fetch_meta(&client, &pool).await?
         };
 
+        // Determine from which height we should start indexing if we haven't
+        // indexed any blocks yet. If start_height > current_height, we jump to the new start height
+        let mut height: Height = (height.unwrap_or_default().value() as u32)
+            .max(self.start_height.unwrap_or_default())
+            .into();
+
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
-            debug!(?chain_id.canonical, "syncing with batch size {} up to height {}", Self::BATCH_SIZE, up_to);
+            debug!(
+                chain_id.canonical,
+                "syncing with batch size {} up to height {}",
+                Self::BATCH_SIZE,
+                up_to
+            );
             loop {
                 let batch_end =
                     std::cmp::min(up_to.value(), height.value() + Self::BATCH_SIZE as u64);
@@ -74,16 +87,24 @@ impl Config {
                     break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
                 }
 
-                debug!(?chain_id.canonical, "fast syncing for batch: {}..{}", height, batch_end);
+                debug!(
+                    chain_id.canonical,
+                    "fast syncing for batch: {}..{}", height, batch_end
+                );
                 let mut tx = pool.begin().await?;
                 let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
                 tx.commit().await?;
-                info!(?chain_id.canonical, "indexed blocks {}..{}", height.value(), next_height.value());
+                info!(
+                    chain_id.canonical,
+                    "indexed blocks {}..{}",
+                    height.value(),
+                    next_height.value()
+                );
                 height = next_height
             }
         }
 
-        info!(?chain_id.canonical, "syncing block by block");
+        info!(chain_id.canonical, "syncing block by block");
         let mut retry_count = 0;
         loop {
             debug!("starting regular sync protocol");
@@ -92,7 +113,7 @@ impl Config {
             let mut tx = pool.begin().await?;
             match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height).await? {
                 Some(h) => {
-                    info!(?chain_id.canonical, "indexed block {}", &height);
+                    info!(chain_id.canonical, "indexed block {}", &height);
                     height = h;
                     retry_count = 0;
                     tx.commit().await?;
@@ -112,19 +133,31 @@ impl Config {
     }
 }
 
-async fn fetch_meta<DB>(client: &HttpClient, pool: &DB) -> Result<(ChainId, Height), Report>
+/// fetches the ChainId for a given `HttpClient`, among with the `Height` up until we have indexed that chain in the DB.
+/// If we have not yet indexed any block for that chain, then Height = None.
+async fn fetch_meta<DB>(client: &HttpClient, pool: &DB) -> Result<(ChainId, Option<Height>), Report>
 where
     for<'a> &'a DB:
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
 {
-    info!("fetching chain-id from node");
-    let chain_id = client.status().await?.node_info.network.as_str().to_owned();
-    info!("chain-id is {}", &chain_id);
+    info!(?client, "fetching chain-id from node");
+    let chain_id = (|| {
+        client
+            .status()
+            .inspect_err(|e| debug!(?e, "error fetching client-id"))
+    })
+    .retry(&crate::expo_backoff())
+    .await?
+    .node_info
+    .network
+    .as_str()
+    .to_owned();
+    info!(?client, "chain-id is {}", &chain_id);
 
     let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
         .await?
         .get_inner_logged();
-    let height = Height::from(sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(pool).await?.map(|block| block.height + 1).unwrap_or_default() as u32);
+    let height = sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(pool).await?.map(|block| block.height + 1).map(|h| Height::from(h as u32));
     Ok((chain_id, height))
 }
 
@@ -155,7 +188,17 @@ async fn should_fast_sync_up_to(
     batch_size: u32,
     current: Height,
 ) -> Result<Option<Height>, Report> {
-    let latest = client.latest_block().await?.block.header.height;
+    debug!(?client, "getting latest block to fast sync up to");
+    let latest = (|| {
+        client
+            .latest_block()
+            .inspect_err(|e| debug!(?e, "error fetching latest block"))
+    })
+    .retry(&crate::expo_backoff())
+    .await?
+    .block
+    .header
+    .height;
     if latest.value() - current.value() >= batch_size.into() {
         Ok(Some(latest))
     } else {
@@ -182,12 +225,16 @@ async fn fetch_and_insert_blocks(
 
     let headers = if batch_size > 1 {
         Either::Left(
-            client
-                .blockchain(min, max)
-                .await?
-                .block_metas
-                .into_iter()
-                .map(|meta| meta.header),
+            (|| {
+                client
+                    .blockchain(min, max)
+                    .inspect_err(|e| debug!(?e, min, max, "error fetching blocks"))
+            })
+            .retry(&crate::expo_backoff())
+            .await?
+            .block_metas
+            .into_iter()
+            .map(|meta| meta.header),
         )
     } else {
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
@@ -221,10 +268,24 @@ async fn fetch_and_insert_blocks(
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
         .and_then(|header| async {
             debug!("fetching block results for height {}", header.height);
-            let block = (|| client.block_results(header.height))
-                .retry(&ExponentialBuilder::default())
-                .await?;
-            let txs = fetch_transactions_for_block(client, header.height, None).await?;
+            let block = (|| {
+                client
+                    .block_results(header.height)
+                    .inspect_err(|e| debug!(?e, ?header.height, "error fetching block results"))
+            })
+            .retry(&crate::expo_backoff())
+            .await?;
+            let txs = (|| {
+                debug!(
+                    "retrying fetching transactions for block for height {}",
+                    header.height
+                );
+                fetch_transactions_for_block(client, header.height, None).inspect_err(
+                    |e| debug!(?e, ?client, ?header.height, "error fetching transactions for block"),
+                )
+            })
+            .retry(&crate::expo_backoff())
+            .await?;
             Ok((header, block, txs))
         })
         .try_collect();
@@ -299,6 +360,14 @@ async fn fetch_transactions_for_block(
     height: Height,
     expected: impl Into<Option<usize>>,
 ) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
+    let expected = expected.into();
+
+    debug!(
+        ?client,
+        ?height,
+        ?expected,
+        "fetching transactions for block"
+    );
     let query = Query {
         event_type: None,
         conditions: vec![Condition {
@@ -308,7 +377,6 @@ async fn fetch_transactions_for_block(
             ),
         }],
     };
-    let expected = expected.into();
 
     let mut txs = if let Some(expected) = expected {
         Vec::with_capacity(expected)

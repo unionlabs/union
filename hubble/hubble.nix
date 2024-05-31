@@ -66,8 +66,10 @@
           type = types.listOf (
             types.submodule {
               options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
+              options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
               options.type = mkOption { type = types.enum [ "tendermint" "ethereum" ]; };
-              options.start = mkOption { type = types.int; example = 1; default = 0; };
+              options.start_height = mkOption { type = types.int; example = 1; default = 0; };
+              options.chunk_size = mkOption { type = types.int; example = 1; default = 200; };
               options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
               options.harden = mkOption { type = types.bool; example = true; default = true; };
             }
@@ -109,10 +111,14 @@
           {
             wantedBy = [ "multi-user.target" ];
             description = "Hubble";
+            unitConfig = {
+              StartLimitIntervalSec = mkForce 0;
+            };
             serviceConfig = {
               Type = "simple";
               ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
+              RestartSec = mkForce 3;
             };
             environment = {
               RUST_LOG = "${cfg.log-level}";

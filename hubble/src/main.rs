@@ -2,7 +2,10 @@
 #![feature(try_blocks)]
 #![allow(clippy::manual_async_fn, clippy::needless_lifetimes)]
 
+use std::time::Duration;
+
 use axum::{routing::get, Router};
+use backon::ExponentialBuilder;
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
@@ -37,11 +40,6 @@ async fn main() -> color_eyre::eyre::Result<()> {
         .connect(&args.database_url.unwrap())
         .await?;
 
-    if args.fetch_client_chain_ids {
-        chain_id_query::tx(db, args.indexers).await;
-        return Ok(());
-    }
-
     let mut set = JoinSet::new();
 
     if let Some(addr) = args.metrics_addr {
@@ -56,7 +54,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
         });
     }
 
-    args.indexers.into_iter().for_each(|indexer| {
+    args.indexers.clone().into_iter().for_each(|indexer| {
         let db: sqlx::Pool<sqlx::Postgres> = db.clone();
         set.spawn(async move {
             info!("starting indexer {:?}", indexer);
@@ -66,6 +64,20 @@ async fn main() -> color_eyre::eyre::Result<()> {
             })
         });
     });
+
+    let indexers = args.indexers.clone();
+
+    let client_updates = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+
+        loop {
+            info!("fetching new client counterparty_chain_ids");
+            chain_id_query::tx(db.clone(), indexers.clone()).await;
+            interval.tick().await;
+        }
+    };
+
+    set.spawn(client_updates);
 
     while let Some(res) = set.join_next().await {
         match res {
@@ -85,4 +97,12 @@ async fn main() -> color_eyre::eyre::Result<()> {
         }
     }
     Ok(())
+}
+
+/// Our ExponentialBackoff that we use everywhere.
+pub fn expo_backoff() -> ExponentialBuilder {
+    ExponentialBuilder::default()
+        .with_min_delay(Duration::from_secs(2))
+        .with_max_delay(Duration::from_secs(60))
+        .with_max_times(60)
 }

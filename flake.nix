@@ -489,6 +489,7 @@
               openssl
               pkg-config
               protobuf
+              httpie
               self'.packages.tdc
               self'.packages.voy-send-msg
               yq

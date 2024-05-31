@@ -1,5 +1,6 @@
 use std::{ops::Range, time::Duration};
 
+use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
 use ethers::{
     providers::{Http, Middleware, Provider},
@@ -7,13 +8,15 @@ use ethers::{
 };
 use futures::{
     stream::{self, FuturesOrdered},
-    StreamExt, TryFutureExt, TryStreamExt,
+    FutureExt, StreamExt, TryFutureExt, TryStreamExt,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::{debug, info};
 use url::Url;
+
+const DEFAULT_CHUNK_SIZE: usize = 200;
 
 use crate::{
     metrics,
@@ -23,6 +26,12 @@ use crate::{
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub url: Url,
+
+    /// The height from which we start indexing
+    pub start_height: Option<i32>,
+
+    /// How many blocks to fetch at the same time
+    pub chunk_size: Option<usize>,
 }
 
 /// Unit struct describing parametrization of associated types for Evm based chains.
@@ -42,6 +51,7 @@ pub struct Indexer {
     tasks: tokio::task::JoinSet<Result<(), Report>>,
     pool: PgPool,
     provider: Provider<Http>,
+    chunk_size: usize,
 }
 
 impl Config {
@@ -49,7 +59,13 @@ impl Config {
         let provider = Provider::<Http>::try_from(self.url.clone().as_str()).unwrap();
 
         info!("fetching chain-id from node");
-        let chain_id = provider.get_chainid().await?.as_u64();
+        let chain_id = (|| {
+            debug!(?provider, "retry fetching chain-id from node");
+            provider.get_chainid()
+        })
+        .retry(&crate::expo_backoff())
+        .await?
+        .as_u64();
 
         let chain_id = postgres::fetch_or_insert_chain_id(&pool, chain_id.to_string())
             .await?
@@ -68,14 +84,23 @@ impl Config {
         .await?
         .map(|block| {
             if block.height == 0 {
-                info!("no block found, starting at 0");
-                0
+                info!(
+                    self.start_height,
+                    chain_id.canonical,
+                    "no block found, starting at configured start height, or 0 if not defined"
+                );
+                self.start_height.unwrap_or_default()
             } else {
-                info!("block found, continuing at {}", block.height + 1);
-                block.height + 1
+                info!(
+                    self.start_height,
+                    block.height,
+                    chain_id.canonical,
+                    "block found, starting max(start_height, block_height + 1)"
+                );
+                (block.height + 1).max(self.start_height.unwrap_or_default())
             }
         })
-        .unwrap_or_default() as u64;
+        .unwrap_or(self.start_height.unwrap_or_default()) as u64;
 
         let range = current..u64::MAX;
 
@@ -85,6 +110,7 @@ impl Config {
             chain_id,
             pool,
             provider,
+            chunk_size: self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
         })
     }
 }
@@ -104,6 +130,7 @@ impl Indexer {
             self.range,
             self.chain_id,
             self.provider.clone(),
+            self.chunk_size,
         ));
 
         debug!(self.chain_id.canonical, "spawning fork indexing routine");
@@ -140,22 +167,42 @@ async fn index_blocks(
     range: Range<u64>,
     chain_id: ChainId,
     provider: Provider<Http>,
+    chunk_size: usize,
 ) -> Result<(), Report> {
-    let err =
-        match index_blocks_by_chunk(pool.clone(), range.clone(), chain_id, provider.clone(), 200)
-            .await
-        {
-            Ok(()) => return Ok(()),
-            Err(err) => err,
-        };
+    let err = match index_blocks_by_chunk(
+        pool.clone(),
+        range.clone(),
+        chain_id,
+        provider.clone(),
+        chunk_size,
+    )
+    .await
+    {
+        Ok(()) => return Ok(()),
+        Err(err) => err,
+    };
 
     match err {
-        IndexBlockError::Retryable { height, err } => {
+        IndexBlockError::Retryable {
+            height,
+            err: FromProviderError::BlockNotFound,
+        } => {
             // This most likely indicates we caught up indexing with the node. We now switch to
             // single block mode.
-            if matches!(err, FromProviderError::BlockNotFound) {
-                index_blocks_by_chunk(pool, height..range.end, chain_id, provider, 1).await?;
-            }
+            index_blocks_by_chunk(
+                pool.clone(),
+                height..range.end,
+                chain_id,
+                provider.clone(),
+                1,
+            )
+            .inspect_err(|e| {
+                debug!(
+                    ?e,
+                    chain_id.canonical, height, "err indexing block, not problematic if not found"
+                )
+            })
+            .await?
         }
         err => return Err(err.into()),
     }
@@ -190,37 +237,38 @@ async fn index_blocks_by_chunk(
         let mut tx = pool.begin().await.map_err(Report::from)?;
 
         let mut inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-            // Hack workaround because partial move for async blocks isn't possible.
-            async fn from_provider_retried(
-                chain_id: ChainId,
-                height: u64,
-                provider: &Provider<Http>,
-                max_retries: usize,
-            ) -> (u64, Result<(usize, BlockInsert), FromProviderError>) {
-                (
-                    height,
-                    BlockInsert::from_provider_retried(chain_id, height, provider, max_retries)
-                        .await,
+            let provider_clone = provider.clone();
+            (move || BlockInsert::from_provider_retried(chain_id, height, provider_clone.clone()))
+                .retry(
+                    &ConstantBuilder::default()
+                        .with_delay(Duration::from_secs(1))
+                        .with_max_times(30),
                 )
-            }
-            from_provider_retried(chain_id, height, &provider, 60)
+                .when(|_| chunk_size == 1)
+                .map(move |res| (height, res))
         }));
 
         while let Some((height, block)) = inserts.next().await {
-            let (_tries, block) = match block {
+            debug!(?chain_id, ?block, ?height, "attempting to insert");
+            let block = match block {
                 Err(FromProviderError::Other(err)) => {
+                    debug!(?chain_id, ?height, "provider error found on insert");
                     tx.commit().await?;
                     return Err(IndexBlockError::Other(err));
                 }
                 Err(err) => {
+                    debug!(?chain_id, ?height, "provider error found on insert");
                     tx.commit().await?;
                     return Err(IndexBlockError::Retryable { height, err });
                 }
                 Ok(block) => block,
             };
 
+            let log_block = block.clone();
+
             match block.execute(&mut tx).await {
                 Err(err) => {
+                    debug!(?err, ?chain_id, ?log_block, "error executing block insert");
                     tx.rollback().await?;
                     return Err(err.into());
                 }
@@ -247,7 +295,7 @@ async fn index_blocks_by_chunk(
         }
         tx.commit().await?;
     }
-    Ok(())
+    panic!("end of index_blocks_by_chunk should not occur");
 }
 
 /// A worker routine which continuously re-indexes the last 20 blocks into `PgLogs`.
@@ -271,11 +319,11 @@ async fn reindex_blocks(
         let tx = pool.begin().await?;
         let chunk = (current - 20)..current;
         let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-            BlockInsert::from_provider_retried(chain_id, height as u64, &provider, 1000)
+            BlockInsert::from_provider_retried(chain_id, height as u64, provider.clone())
                 .map_err(Report::from)
         }));
         inserts
-            .try_fold(tx, |mut tx, (_, block)| async move {
+            .try_fold(tx, |mut tx, block| async move {
                 let log = PgLog {
                     chain_id: block.chain_id,
                     block_hash: block.hash.clone(),
@@ -316,6 +364,8 @@ pub struct InsertInfo {
     num_events: i32,
 }
 
+#[must_use]
+#[derive(Debug, Clone)]
 pub struct BlockInsert {
     chain_id: ChainId,
     hash: String,
@@ -341,12 +391,6 @@ enum FromProviderError {
     Other(Report),
 }
 
-impl FromProviderError {
-    fn retryable(&self) -> bool {
-        matches!(self, FromProviderError::BlockNotFound)
-    }
-}
-
 impl From<ethers::providers::ProviderError> for FromProviderError {
     fn from(error: ethers::providers::ProviderError) -> Self {
         Self::Other(Report::from(error))
@@ -363,29 +407,32 @@ impl BlockInsert {
     async fn from_provider_retried(
         chain_id: ChainId,
         height: u64,
-        provider: &Provider<Http>,
-        max_retries: usize,
-    ) -> Result<(usize, Self), FromProviderError> {
-        let mut count = 0;
-        loop {
-            match Self::from_provider(chain_id, height, provider).await {
-                Ok(block) => return Ok((count, block)),
-                Err(err) => {
-                    if !err.retryable() || count > max_retries {
-                        return Err(err);
-                    }
-                    count += 1;
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                    continue;
-                }
-            }
-        }
+        provider: Provider<Http>,
+    ) -> Result<Self, FromProviderError> {
+        debug!(
+            chain_id = chain_id.canonical,
+            height, "fetching block from provider"
+        );
+        (move || {
+            Self::from_provider(chain_id, height, provider.clone()).inspect_err(move |e| {
+                debug!(
+                    ?e,
+                    chain_id = chain_id.canonical,
+                    height,
+                    "error fetching block from provider"
+                )
+            })
+        })
+        .retry(&crate::expo_backoff())
+        .when(|e| !matches!(e, FromProviderError::BlockNotFound))
+        .await
+        .map_err(Into::into)
     }
 
     async fn from_provider(
         chain_id: ChainId,
         height: u64,
-        provider: &Provider<Http>,
+        provider: Provider<Http>,
     ) -> Result<Self, FromProviderError> {
         let block = provider
             .get_block(height)
@@ -475,7 +522,7 @@ impl BlockInsert {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionInsert {
     hash: String,
     data: ethers::types::TransactionReceipt,
@@ -483,7 +530,7 @@ pub struct TransactionInsert {
     events: Vec<EventInsert>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EventInsert {
     data: serde_json::Value,
     log_index: usize,
