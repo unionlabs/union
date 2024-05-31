@@ -139,6 +139,7 @@
     with lib;
     let
       cfg = config.services.galoisd;
+      logLevels = [ "trace" "debug" "info" "warn" "error" "fatal" "panic" ];
     in
     {
       options.services.galoisd = {
@@ -155,6 +156,10 @@
           type = types.int;
           default = 1;
         };
+        log-level = mkOption {
+          type = types.enum logLevels;
+          default = "info";
+        };
       };
       config =
         mkIf cfg.enable {
@@ -163,8 +168,13 @@
             description = "Galois Daemon";
             serviceConfig = {
               Type = "simple";
+              # Default the log-level to `2` because we need to subtract 1 to get the correct value from the enum (index starting at 0).
+              # This is because `trace` level starts at -1, https://github.com/rs/zerolog/blob/c78e50e2da70f4ae63e1b65222c3acf12e9ba699/README.md#leveled-logging.
               ExecStart = ''
-                ${pkgs.lib.getExe cfg.package} serve ${cfg.host} --max-conn ${builtins.toString cfg.max-conn}
+                ${pkgs.lib.getExe cfg.package} \
+                  serve ${cfg.host} \
+                  --max-conn ${builtins.toString cfg.max-conn} \
+                  --log-level ${builtins.toString ((pkgs.lib.lists.findFirstIndex (x: x == cfg.log-level) 2 logLevels) - 1)}
               '';
               Restart = mkForce "always";
               RestartSec = 10;
