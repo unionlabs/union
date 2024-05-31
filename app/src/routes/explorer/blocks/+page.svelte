@@ -1,51 +1,123 @@
 <script lang="ts">
-  import {
-    flexRender,
-    type ColumnDef,
-    getCoreRowModel,
-    type TableOptions,
-    createSvelteTable,
-    getFilteredRowModel,
-    getPaginationRowModel,
-  } from '@tanstack/svelte-table'
-  import request from 'graphql-request'
-  import { URLS } from '$lib/constants'
-  import { writable } from 'svelte/store'
-  import { DurationUnits } from 'svelte-ux'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import { CHAIN_MAP } from '$lib/constants/chains'
-  import * as Table from '$lib/components/ui/table'
-  import { createQuery } from '@tanstack/svelte-query'
-  import { removeArrayDuplicates } from '$lib/utilities'
-  import type { Override } from '$lib/utilities/types.ts'
-  import { createVirtualizer } from '@tanstack/svelte-virtual'
-  import Button from '$lib/components/ui/button/button.svelte'
-  import CellText from '../(components)/cell-plain-text.svelte'
-  import { ScrollArea } from '$lib/components/ui/scroll-area/index.ts'
-  import CellDurationText from '../(components)/cell-duration-text.svelte'
-  import { cosmosBlocksQuery } from '$lib/graphql/documents/cosmos-blocks.ts'
+import {
+  flexRender,
+  type ColumnDef,
+  getCoreRowModel,
+  type TableOptions,
+  createSvelteTable,
+  getFilteredRowModel,
+  getPaginationRowModel
+} from "@tanstack/svelte-table"
+import request from "graphql-request"
+import { URLS } from "$lib/constants"
+import { writable } from "svelte/store"
+import { DurationUnits } from "svelte-ux"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { CHAIN_MAP } from "$lib/constants/chains"
+import * as Table from "$lib/components/ui/table"
+import { createQuery } from "@tanstack/svelte-query"
+import { removeArrayDuplicates } from "$lib/utilities"
+import type { Override } from "$lib/utilities/types.ts"
+import { createVirtualizer } from "@tanstack/svelte-virtual"
+import Button from "$lib/components/ui/button/button.svelte"
+import CellText from "../(components)/cell-plain-text.svelte"
+import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
+import CellDurationText from "../(components)/cell-duration-text.svelte"
+import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
-  $: cosmosBlocks = createQuery({
-    queryKey: ['cosmos-blocks'],
-    refetchInterval: 6_000,
-    // enabled: false,
-    queryFn: async () => request(URLS.GRAPHQL, cosmosBlocksQuery, { limit: 100 }),
-  })
+$: cosmosBlocks = createQuery({
+  queryKey: ["cosmos-blocks"],
+  refetchInterval: 6_000,
+  queryFn: async () => request(URLS.GRAPHQL, cosmosBlocksQuery, { limit: 100 })
+})
 
-  $: blockData = $cosmosBlocks?.data?.data ?? []
+$: blockData = $cosmosBlocks?.data?.data ?? []
 
-  /**
-   * we use this constructed type because importing the generated graphql types is too slow given the file size
-   */
-  type CosmosBlock = Override<(typeof blockData)[0], { time: string }>
+/**
+ * we use this constructed type because importing the generated graphql types is too slow given the file size
+ */
+type CosmosBlock = Override<(typeof blockData)[0], { time: string }>
 
-  $: blocksStore = writable<Array<CosmosBlock>>(blockData as Array<CosmosBlock>)
-  $: if (blockData) {
-    blocksStore.update(currentBlocks =>
-      removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], 'height'),
-    )
+$: blocksStore = writable<Array<CosmosBlock>>(blockData as Array<CosmosBlock>)
+$: if (blockData) {
+  blocksStore.update(currentBlocks =>
+    removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], "height")
+  )
+}
+
+const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
+  {
+    accessorKey: "time",
+    size: 90,
+    maxSize: 90,
+    minSize: 90,
+    meta: {
+      class: "ml-1.5 justify-start"
+    },
+    header: info => "Time",
+    cell: info =>
+      flexRender(CellDurationText, {
+        totalUnits: 3,
+        variant: "short",
+        class: "pl-2 text-clip",
+        minUnits: DurationUnits.Second,
+        start: new Date(info.getValue() as string)
+      })
+  },
+  {
+    accessorKey: "height",
+    header: info => "Height",
+    size: 100,
+    maxSize: 100,
+    meta: {
+      class: "w-full justify-start"
+    },
+    accessorFn: row => row.height,
+    cell: info =>
+      flexRender(Button, {
+        variant: "link",
+        target: "_blank",
+        value: info.getValue(),
+        rel: "noopener noreferrer",
+        class: "hover:cursor-pointer tabular-nums lining-nums px-0 text-justify common-ligatures",
+        href: `https://api.testnet.bonlulu.uno/cosmos/base/tendermint/v1beta1/blocks/${info.getValue()}`
+      })
+  },
+  {
+    accessorKey: "chain_id",
+    header: info => "Chain ID",
+    meta: {
+      class: "w-full justify-start"
+    },
+    size: 100,
+    maxSize: 100,
+    cell: info =>
+      flexRender(CellText, {
+        value: CHAIN_MAP[info.getValue() as unknown as number].chainId,
+        class: "min-w-[105px] text-clip"
+      })
+  },
+  {
+    accessorKey: "hash",
+    meta: {
+      class: "w-full justify-end"
+    },
+    header: info => flexRender(CellText, { value: "Hash", class: "text-right pr-3" }),
+    size: 400,
+    maxSize: 400,
+    cell: info =>
+      flexRender(Button, {
+        class: "py-0 px-2.5 max-w-[600px]",
+        variant: "link",
+        target: "_blank",
+        value: info.getValue(),
+        rel: "noopener noreferrer",
+        href: `https://rpc.testnet.bonlulu.uno/block_by_hash?hash=${info.getValue()}`
+      })
   }
+]
 
+<<<<<<< HEAD
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "time",
@@ -113,52 +185,65 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
       })
   }
 ]
+=======
+const options = writable<TableOptions<CosmosBlock>>({
+  data: $blocksStore,
+  enableHiding: true,
+  enableFilters: true,
+  columns: defaultColumns,
+  autoResetPageIndex: true, // Automatically update pagination when data or page size changes
+  enableColumnFilters: true,
+  enableColumnResizing: true,
+  enableMultiRowSelection: true,
+  getCoreRowModel: getCoreRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
+  getPaginationRowModel: getPaginationRowModel()
+})
+>>>>>>> 15099ad6a (chore: progress)
 
-  const options = writable<TableOptions<CosmosBlock>>({
-    data: $blocksStore,
-    enableHiding: true,
-    enableFilters: true,
-    columns: defaultColumns,
-    autoResetPageIndex: true, // Automatically update pagination when data or page size changes
-    enableColumnFilters: true,
-    enableColumnResizing: true,
-    enableMultiRowSelection: true,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  })
+let virtualListElement: HTMLDivElement
 
-  let virtualListElement: HTMLDivElement
+const rerender = () =>
+  options.update(options => ({ ...options, data: $blocksStore as unknown as Array<CosmosBlock> }))
 
-  const rerender = () =>
-    options.update(options => ({ ...options, data: $blocksStore as unknown as Array<CosmosBlock> }))
+const table = createSvelteTable(options)
 
-  const table = createSvelteTable(options)
+$: blocksStore.subscribe(() => {
+  if (!$blocksStore) return
+  $table.setPageSize($blocksStore.length)
+  rerender()
+})
 
-  $: blocksStore.subscribe(() => {
-    if (!$blocksStore) return
-    $table.setPageSize($blocksStore.length)
-    rerender()
-  })
+$: {
+  console.info($virtualizer?.getTotalSize(), "total size")
+}
 
-  $: rows = $table.getRowModel().rows
+$: rows = $table.getRowModel().rows
 
-  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
-    overscan: 5,
-    count: rows.length,
-    estimateSize: () => 50,
-    getScrollElement: () => virtualListElement,
-  })
+$: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+  overscan: 5,
+  count: rows.length,
+  estimateSize: () => 50,
+  getScrollElement: () => virtualListElement
+})
 </script>
 
 <svelte:head>
   <title>Union - Explorer</title>
 </svelte:head>
 
+<<<<<<< HEAD
   <div
     bind:this={virtualListElement}
     class={cn('rounded-md border border-secondary border-solid w-full')}
   >
+=======
+<div
+  bind:this={virtualListElement}
+  class={cn('rounded-md border border-secondary border-solid w-full overflow-auto h-[800px]')}
+>
+  <ScrollArea orientation="both" class={cn(`relative h-[${$virtualizer.getTotalSize()}px]`)}>
+>>>>>>> 15099ad6a (chore: progress)
     <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
       <Table.Header
         class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50')}
@@ -177,7 +262,11 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
                     on:click={header.column.getToggleSortingHandler()}
                     class={cn(
                       header.column.columnDef.meta?.class,
+<<<<<<< HEAD
                       'cursor-pointer select-none capitalize px-0 hover:bg-transparent text-md',
+=======
+                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent font-mono text-md',
+>>>>>>> 15099ad6a (chore: progress)
                     )}
                   >
                     <svelte:component
@@ -210,7 +299,12 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
         {/each}
       </Table.Body>
     </Table.Root>
+<<<<<<< HEAD
   </div>
+=======
+  </ScrollArea>
+</div>
+>>>>>>> 15099ad6a (chore: progress)
 
 <style lang="postcss">
   :global(tr td:last-child) {

@@ -6,9 +6,9 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Resizable from "$lib/components/ui/resizable"
 import GripVerticalIcon from "virtual:icons/tabler/grip-vertical"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
-import { page } from "$app/stores";
-import { derived } from "svelte/store";
-    import { onNavigate } from "$app/navigation";
+import { page } from "$app/stores"
+import { derived } from "svelte/store"
+import { onNavigate } from "$app/navigation"
 
 export let data: LayoutData
 
@@ -53,8 +53,10 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
 }
 
 // const explorerPage = derived(page, ($page) => $page.route.id?.split("/").at(-1));
-let explorerPage = $page.route.id?.split("/").at(-1).replaceAll('-', ' ');
-onNavigate(navigation => {explorerPage = navigation.to?.route.id?.split("/").at(-1)?.replaceAll('-', ' ')});
+let explorerPage = $page.route.id?.split("/").at(-1)?.replaceAll("-", " ")
+onNavigate(navigation => {
+  explorerPage = navigation.to?.route.id?.split("/").at(-1)?.replaceAll("-", " ")
+})
 </script>
 
 <main class="flex flex-row flex-1 overflow-y-hidden">
@@ -83,12 +85,10 @@ onNavigate(navigation => {explorerPage = navigation.to?.route.id?.split("/").at(
         <GripVerticalIcon />
       </div>
     </Resizable.Handle>
-    <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
-      <ScrollArea orientation="both" class="size-full flex-1 pr-6 pl-2">
-        <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize">{explorerPage}</h2>
-        <p class="text-muted-foreground pb-4">Lorem ipsum description</p>
-        <slot/>
-      </ScrollArea>
+    <Resizable.Pane defaultSize={rightSize} class="size-full flex-1 pr-6 pl-2 rounded-lg p-0">
+      <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize">{explorerPage}</h2>
+      <p class="text-muted-foreground pb-4">Lorem ipsum description</p>
+      <slot />
     </Resizable.Pane>
   </Resizable.PaneGroup>
 </main>
