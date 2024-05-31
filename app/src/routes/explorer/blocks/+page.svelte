@@ -110,6 +110,6 @@ const columns = [
   <title>Union - Explorer</title>
 </svelte:head>
 
-<Table columns={columns} bind:blocksStore={blocksStore}/>
+<Table columns={columns} bind:dataStore={blocksStore}/>
 {JSON.stringify($blocksStore, null, 2)}
 

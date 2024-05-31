@@ -16,19 +16,18 @@ import { createVirtualizer } from "@tanstack/svelte-virtual"
 import * as Card from "$lib/components/ui/card/index.ts"
 
 export let columns: Array<ColumnDef<any>>
-
 // https://github.com/TanStack/table/issues/4241
 // @ts-ignore
-export let blocksStore: Writable<Array<any>>
+export let dataStore: Writable<Array<any>>
 
 const options = writable<TableOptions<any>>({
-  data: $blocksStore,
+  data: $dataStore,
   enableHiding: true,
   enableFilters: true,
   // https://github.com/TanStack/table/issues/4241
   // @ts-ignore
   columns,
-  autoResetPageIndex: true, // Automatically update pagination when data or page size changes
+  autoResetPageIndex: true,
   enableColumnFilters: true,
   enableColumnResizing: true,
   enableMultiRowSelection: true,
@@ -38,10 +37,6 @@ const options = writable<TableOptions<any>>({
 })
 
 let virtualListElement: HTMLDivElement
-
-const rerender = () => {
-  options.update(options => ({ ...options, data: $blocksStore as unknown as Array<T> }))
-}
 
 const table = createSvelteTable(options)
 const rows = derived(table, $t => $t.getRowModel().rows)
@@ -53,10 +48,10 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
   getScrollElement: () => virtualListElement
 })
 
-$: blocksStore.subscribe(() => {
-  if (!$blocksStore) return
-  $table.setPageSize($blocksStore.length)
-  rerender()
+$: dataStore.subscribe(() => {
+  if (!$dataStore) return
+  $table.setPageSize($dataStore.length)
+  options.update(options => ({ ...options, data: $dataStore as unknown as Array<T> }))
 })
 </script>
 
