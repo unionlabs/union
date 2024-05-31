@@ -1,5 +1,5 @@
 <script lang="ts">
-import { voyagerQueueQuery} from "$lib/graphql/documents/voyager-queue.ts"
+import { voyagerQueueQuery } from "$lib/graphql/documents/voyager-queue.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 
@@ -9,12 +9,10 @@ $: indexStatus = createQuery({
   // enabled: false,
   queryFn: async () => {
     const response = await fetch(`${URLS.GRAPHQL_REST}/index_status`)
-    const json = await response.json() as { v0_index_status: unknown } ;
-    return json.v0_index_status;
+    const json = (await response.json()) as { v0_index_status: unknown }
+    return json.v0_index_status
   }
 })
-
-  
 </script>
 
 <h1>Index Status</h1>

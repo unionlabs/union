@@ -6,12 +6,11 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Resizable from "$lib/components/ui/resizable"
 import GripVerticalIcon from "virtual:icons/tabler/grip-vertical"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
-import { page } from "$app/stores";
-import { derived } from "svelte/store";
-    import { onNavigate } from "$app/navigation";
+import { page } from "$app/stores"
+import { derived } from "svelte/store"
+import { onNavigate } from "$app/navigation"
 
 export let data: LayoutData
-
 
 // Pane collapse on resize has been disabled because it was throwing console errors.
 
@@ -41,7 +40,6 @@ let isCollapsed = false
 let leftPane: Resizable.PaneAPI
 $: [leftSize, rightSize] = [14, 88]
 
-
 const onLayoutChange: Resizable.PaneGroupProps["onLayoutChange"] = sizes => {
   document.cookie = `PaneForge:layout=${JSON.stringify(sizes)}`
 }
@@ -56,13 +54,13 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
   document.cookie = `PaneForge:collapsed=${false}`
 }
 
-let explorerRoute = $page.route.id?.split("/").at(-1);
-$: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute)[0].description; 
+let explorerRoute = $page.route.id?.split("/").at(-1)
+$: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute)[0].description
 onNavigate(navigation => {
-  if (navigation.to?.route.id?.split("/").at(1) === 'explorer') {
-    explorerRoute = navigation.to?.route.id?.split("/").at(2);
+  if (navigation.to?.route.id?.split("/").at(1) === "explorer") {
+    explorerRoute = navigation.to?.route.id?.split("/").at(2)
   }
-});
+})
 </script>
 
 <main class="flex flex-row flex-1 overflow-y-hidden">
