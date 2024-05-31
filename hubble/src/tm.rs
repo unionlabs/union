@@ -277,7 +277,7 @@ async fn fetch_and_insert_blocks(
             .await?;
             let txs = (|| {
                 debug!(
-                    "retrying fetching trancations for block for height {}",
+                    "retrying fetching transactions for block for height {}",
                     header.height
                 );
                 fetch_transactions_for_block(client, header.height, None).inspect_err(
