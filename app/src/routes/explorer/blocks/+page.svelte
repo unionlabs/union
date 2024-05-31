@@ -23,6 +23,7 @@ import Button from "$lib/components/ui/button/button.svelte"
 import CellText from "../(components)/cell-plain-text.svelte"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
+import * as Card from "$lib/components/ui/card/index.ts"
 
 $: cosmosBlocks = createQuery({
   queryKey: ["cosmos-blocks"],
@@ -86,24 +87,22 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
     meta: {
       class: "w-full justify-start"
     },
-    size: 100,
-    maxSize: 100,
+    size: 200,
     cell: info =>
       flexRender(CellText, {
-        value: CHAIN_MAP[info.getValue() as unknown as number].chainId,
-        class: "min-w-[105px] text-clip"
+        value: CHAIN_MAP[info.getValue() as unknown as number].chainId
       })
   },
   {
     accessorKey: "hash",
     meta: {
-      class: "w-full justify-start ml-1.5"
+      class: "w-full justify-start"
     },
-    header: info => flexRender(CellText, { value: "Hash", class: "text-left" }),
+    header: info => flexRender(CellText, { value: "Hash" }),
     size: 1000,
     cell: info =>
       flexRender(Button, {
-        class: "py-0 px-2.5 max-w-[600px]",
+        class: "p-0 font-mono",
         variant: "link",
         target: "_blank",
         value: info.getValue(),
@@ -154,52 +153,35 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
   <title>Union - Explorer</title>
 </svelte:head>
 
-  <div
-    bind:this={virtualListElement}
-    class={cn('rounded-md border border-secondary border-solid w-full')}
-  >
-    <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
-      <Table.Header
-        class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50')}
-      >
+
+<Card.Root>
+  <div bind:this={virtualListElement} >
+    <Table.Root>
+      <Table.Header>
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row class="font-bold text-md sticky">
+          <Table.Row>
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
-                class={cn('text-left px-2 sticky top-0', `w-[${header.getSize()}px]`)}
+                class={cn(`w-[${header.getSize()}px]`)}
               >
-                {#if !header.isPlaceholder}
-                  <Button
-                    variant="ghost"
-                    disabled={!header.column.getCanSort()}
-                    on:click={header.column.getToggleSortingHandler()}
-                    class={cn(
-                      header.column.columnDef.meta?.class,
-                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent text-md',
-                    )}
-                  >
-                    <svelte:component
-                      this={flexRender(header.column.columnDef.header, header.getContext())}
-                    />
-                  </Button>
-                {/if}
+                  <svelte:component
+                    this={flexRender(header.column.columnDef.header, header.getContext())}
+                  />
               </Table.Head>
             {/each}
           </Table.Row>
         {/each}
       </Table.Header>
-      <Table.Body class={cn('relative', `h-[${$virtualizer.getTotalSize()}px] w-full`)}>
+      <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
           <Table.Row
             class={cn(
-              'h-5 text-left overflow-auto',
-              'border-b-[1px] border-solid border-secondary',
               index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
             )}
           >
             {#each rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              <Table.Cell class={cn('px-2 py-0 text-left')}>
+              <Table.Cell>
                 <svelte:component
                   this={flexRender(cell.column.columnDef.cell, cell.getContext())}
                 />
@@ -210,10 +192,5 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
       </Table.Body>
     </Table.Root>
   </div>
+</Card.Root>
 
-<style lang="postcss">
-  :global(tr td:last-child) {
-    font-variant-numeric: tabular-nums;
-    font-variant: common-ligatures tabular-nums;
-  }
-</style>
