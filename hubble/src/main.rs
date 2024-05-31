@@ -67,17 +67,17 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     let indexers = args.indexers.clone();
 
-    // let client_updates = async move {
-    //     let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+    let client_updates = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
 
-    //     loop {
-    //         info!("fetching new client counterparty_chain_ids");
-    //         chain_id_query::tx(db.clone(), indexers.clone()).await;
-    //         interval.tick().await;
-    //     }
-    // };
+        loop {
+            info!("fetching new client counterparty_chain_ids");
+            chain_id_query::tx(db.clone(), indexers.clone()).await;
+            interval.tick().await;
+        }
+    };
 
-    // set.spawn(client_updates);
+    set.spawn(client_updates);
 
     while let Some(res) = set.join_next().await {
         match res {
