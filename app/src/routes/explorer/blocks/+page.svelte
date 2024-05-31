@@ -37,11 +37,26 @@ $: if (blockData) {
 }
 const columns = [
   {
+    accessorKey: "chain_id",
+    header: () => "Chain ID",
+    meta: { },
+    size: 200,
+    cell: info => CHAIN_MAP[info.getValue() as unknown as number].chainId
+  },
+  {
+    accessorKey: "height",
+    header: () => "Height",
+    size: 200,
+    meta: {
+      class: "p-0"
+    },
+    accessorFn: row => row.height,
+    cell: info => info.getValue(),
+  },
+  {
     accessorKey: "time",
     size: 100,
-    meta: {
-      class: "ml-1.5 justify-start"
-    },
+    meta: { },
     header: () => "Time",
     cell: info =>
       flexRender(CellDurationText, {
@@ -53,50 +68,14 @@ const columns = [
       })
   },
   {
-    accessorKey: "height",
-    header: () => "Height",
-    size: 100,
-    meta: {
-      class: "w-full justify-start"
-    },
-    accessorFn: row => row.height,
-    cell: info =>
-      flexRender(Button, {
-        variant: "link",
-        target: "_blank",
-        value: info.getValue(),
-        rel: "noopener noreferrer",
-        class: "hover:cursor-pointer tabular-nums lining-nums px-0 text-justify common-ligatures",
-        href: `https://api.testnet.bonlulu.uno/cosmos/base/tendermint/v1beta1/blocks/${info.getValue()}`
-      })
-  },
-  {
-    accessorKey: "chain_id",
-    header: () => "Chain ID",
-    meta: {
-      class: "w-full justify-start"
-    },
+    accessorKey: "hash",
+    meta: {},
+    header: () => flexRender(CellText, { value: "Hash" }),
     size: 200,
     cell: info =>
       flexRender(CellText, {
-        value: CHAIN_MAP[info.getValue() as unknown as number].chainId
-      })
-  },
-  {
-    accessorKey: "hash",
-    meta: {
-      class: "w-full justify-start"
-    },
-    header: () => flexRender(CellText, { value: "Hash" }),
-    size: 1000,
-    cell: info =>
-      flexRender(Button, {
-        class: "p-0 font-mono",
-        variant: "link",
-        target: "_blank",
+        class: "p-0 m-0 font-mono",
         value: info.getValue(),
-        rel: "noopener noreferrer",
-        href: `https://rpc.testnet.bonlulu.uno/block_by_hash?hash=${info.getValue()}`
       })
   }
 ] as Array<ColumnDef<CosmosBlock>>

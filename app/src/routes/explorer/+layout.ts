@@ -28,7 +28,7 @@ export const load = (loadEvent => {
         icon: BlocksIcon,
         description: "Blocks from all chains indexed by Hubble"
       },
-      { route: "connections", icon: ConnectionIcon, description: "Open IBC Connections" },
+      { route: "connections", icon: ConnectionIcon, description: "IBC Connections based on on-chain handshake events. Status is only 'CONFIRM' if we have indexed the entire four-way handshake." },
       { route: "channels", icon: TvIcon, description: "Open IBC Channels" },
       { route: "packets", icon: SendHorizontalIcon, description: "Packets sent through Union" },
       {
