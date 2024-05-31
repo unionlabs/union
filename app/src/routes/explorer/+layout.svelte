@@ -63,6 +63,11 @@ onNavigate(navigation => {
 })
 </script>
 
+<svelte:head>
+  <title>Union - Explorer</title>
+</svelte:head>
+
+
 <main class="flex flex-row flex-1 overflow-y-hidden">
   <Resizable.PaneGroup direction="horizontal" class="w-full rounded-lg bg-re" {onLayoutChange}>
     <Resizable.Pane

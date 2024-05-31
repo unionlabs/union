@@ -1,28 +1,19 @@
 <script lang="ts">
-import {
-  flexRender,
-  type ColumnDef,
-  getCoreRowModel,
-  type TableOptions,
-  createSvelteTable,
-  getFilteredRowModel,
-  getPaginationRowModel
-} from "@tanstack/svelte-table"
+import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
 import { DurationUnits } from "svelte-ux"
-import { cn } from "$lib/utilities/shadcn.ts"
 import { CHAIN_MAP } from "$lib/constants/chains"
-import * as Table from "$lib/components/ui/table"
 import { createQuery } from "@tanstack/svelte-query"
 import { removeArrayDuplicates } from "$lib/utilities"
 import type { Override } from "$lib/utilities/types.ts"
-import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
 import CellText from "../(components)/cell-plain-text.svelte"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
+
+import Table from "../(components)/table.svelte"
 
 $: cosmosBlocks = createQuery({
   queryKey: ["cosmos-blocks"],
@@ -44,15 +35,14 @@ $: if (blockData) {
     removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], "height")
   )
 }
-
-const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
+const columns = [
   {
     accessorKey: "time",
     size: 100,
     meta: {
       class: "ml-1.5 justify-start"
     },
-    header: info => "Time",
+    header: () => "Time",
     cell: info =>
       flexRender(CellDurationText, {
         totalUnits: 3,
@@ -64,7 +54,7 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   },
   {
     accessorKey: "height",
-    header: info => "Height",
+    header: () => "Height",
     size: 100,
     meta: {
       class: "w-full justify-start"
@@ -82,28 +72,26 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   },
   {
     accessorKey: "chain_id",
-    header: info => "Chain ID",
+    header: () => "Chain ID",
     meta: {
       class: "w-full justify-start"
     },
-    size: 100,
-    maxSize: 100,
+    size: 200,
     cell: info =>
       flexRender(CellText, {
-        value: CHAIN_MAP[info.getValue() as unknown as number].chainId,
-        class: "min-w-[105px] text-clip"
+        value: CHAIN_MAP[info.getValue() as unknown as number].chainId
       })
   },
   {
     accessorKey: "hash",
     meta: {
-      class: "w-full justify-start ml-1.5"
+      class: "w-full justify-start"
     },
-    header: info => flexRender(CellText, { value: "Hash", class: "text-left" }),
+    header: () => flexRender(CellText, { value: "Hash" }),
     size: 1000,
     cell: info =>
       flexRender(Button, {
-        class: "py-0 px-2.5 max-w-[600px]",
+        class: "p-0 font-mono",
         variant: "link",
         target: "_blank",
         value: info.getValue(),
@@ -111,109 +99,9 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
         href: `https://rpc.testnet.bonlulu.uno/block_by_hash?hash=${info.getValue()}`
       })
   }
-]
-
-const options = writable<TableOptions<CosmosBlock>>({
-  data: $blocksStore,
-  enableHiding: true,
-  enableFilters: true,
-  columns: defaultColumns,
-  autoResetPageIndex: true, // Automatically update pagination when data or page size changes
-  enableColumnFilters: true,
-  enableColumnResizing: true,
-  enableMultiRowSelection: true,
-  getCoreRowModel: getCoreRowModel(),
-  getFilteredRowModel: getFilteredRowModel(),
-  getPaginationRowModel: getPaginationRowModel()
-})
-
-let virtualListElement: HTMLDivElement
-
-const rerender = () =>
-  options.update(options => ({ ...options, data: $blocksStore as unknown as Array<CosmosBlock> }))
-
-const table = createSvelteTable(options)
-
-$: blocksStore.subscribe(() => {
-  if (!$blocksStore) return
-  $table.setPageSize($blocksStore.length)
-  rerender()
-})
-
-$: rows = $table.getRowModel().rows
-
-$: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
-  overscan: 20,
-  count: rows.length,
-  estimateSize: () => 34,
-  getScrollElement: () => virtualListElement
-})
+] as Array<ColumnDef<CosmosBlock>>
 </script>
 
-<svelte:head>
-  <title>Union - Explorer</title>
-</svelte:head>
+<Table columns={columns} bind:dataStore={blocksStore}/>
+{JSON.stringify($blocksStore, null, 2)}
 
-  <div
-    bind:this={virtualListElement}
-    class={cn('rounded-md border border-secondary border-solid w-full')}
-  >
-    <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
-      <Table.Header
-        class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50')}
-      >
-        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row class="font-bold text-md sticky">
-            {#each headerGroup.headers as header (header.id)}
-              <Table.Head
-                colspan={header.colSpan}
-                class={cn('text-left px-2 sticky top-0', `w-[${header.getSize()}px]`)}
-              >
-                {#if !header.isPlaceholder}
-                  <Button
-                    variant="ghost"
-                    disabled={!header.column.getCanSort()}
-                    on:click={header.column.getToggleSortingHandler()}
-                    class={cn(
-                      header.column.columnDef.meta?.class,
-                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent text-md',
-                    )}
-                  >
-                    <svelte:component
-                      this={flexRender(header.column.columnDef.header, header.getContext())}
-                    />
-                  </Button>
-                {/if}
-              </Table.Head>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Header>
-      <Table.Body class={cn('relative', `h-[${$virtualizer.getTotalSize()}px] w-full`)}>
-        {#each $virtualizer.getVirtualItems() as row, index (row.index)}
-          <Table.Row
-            class={cn(
-              'h-5 text-left overflow-auto',
-              'border-b-[1px] border-solid border-secondary',
-              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
-            )}
-          >
-            {#each rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              <Table.Cell class={cn('px-2 py-0 text-left')}>
-                <svelte:component
-                  this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                />
-              </Table.Cell>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
-  </div>
-
-<style lang="postcss">
-  :global(tr td:last-child) {
-    font-variant-numeric: tabular-nums;
-    font-variant: common-ligatures tabular-nums;
-  }
-</style>

@@ -12,7 +12,7 @@ export { className as class }
 
 <tr
   class={cn(
-    'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+    'border-b border-secondary transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
     className,
   )}
   {...$$restProps}
