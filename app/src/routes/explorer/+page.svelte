@@ -1,6 +1,6 @@
 <script lang="ts">
 /**
  * Intentionally left blank.
- * See line 19 in {@link file://./+layout.ts}
+ * See what's being thrown inside the `load` function in {@link file://./+layout.ts}
  */
 </script>
