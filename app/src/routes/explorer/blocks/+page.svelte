@@ -39,7 +39,7 @@ const columns = [
   {
     accessorKey: "chain_id",
     header: () => "Chain ID",
-    meta: { },
+    meta: {},
     size: 200,
     cell: info => CHAIN_MAP[info.getValue() as unknown as number].chainId
   },
@@ -51,12 +51,12 @@ const columns = [
       class: "p-0"
     },
     accessorFn: row => row.height,
-    cell: info => info.getValue(),
+    cell: info => info.getValue()
   },
   {
     accessorKey: "time",
     size: 100,
-    meta: { },
+    meta: {},
     header: () => "Time",
     cell: info =>
       flexRender(CellDurationText, {
@@ -75,7 +75,7 @@ const columns = [
     cell: info =>
       flexRender(CellText, {
         class: "p-0 m-0 font-mono",
-        value: info.getValue(),
+        value: info.getValue()
       })
   }
 ] as Array<ColumnDef<CosmosBlock>>

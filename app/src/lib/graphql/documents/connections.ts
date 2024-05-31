@@ -1,17 +1,5 @@
 import { graphql } from "gql.tada"
 
-
-
-
-
-
-
-
-
-
-
-
-
 export const connectionsQuery = graphql(/* GraphQL */ `
 query ConnectionsQuery($limit: Int = 100) {
   v0_connection_map(order_by: [
@@ -33,4 +21,3 @@ query ConnectionsQuery($limit: Int = 100) {
   }
 }
 `)
-

@@ -11,8 +11,8 @@ import CellStatus from "../(components)/cell-status.svelte"
 import { DurationUnits } from "svelte-ux"
 
 $: connections = createQuery({
-  queryKey: ["index-status"],
-  refetchInterval: 500,
+  queryKey: ["connections"],
+  refetchInterval: 5_000,
   queryFn: async () => request(URLS.GRAPHQL, connectionsQuery, {})
 })
 
