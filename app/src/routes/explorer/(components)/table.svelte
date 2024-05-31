@@ -64,7 +64,7 @@ $: dataStore.subscribe(() => {
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
-                class={cn(`w-[${header.getSize()}px]`)}
+                class={cn(`w-[${header.getSize()}px] whitespace-nowrap`)}
               >
                   <svelte:component
                     this={flexRender(header.column.columnDef.header, header.getContext())}
@@ -74,7 +74,7 @@ $: dataStore.subscribe(() => {
           </Table.Row>
         {/each}
       </Table.Header>
-      <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]`)}>
+      <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]] whitespace-nowrap`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
           <Table.Row
             class={cn(
