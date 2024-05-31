@@ -28,6 +28,7 @@ use tikv_jemallocator::Jemalloc;
 static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
+// #[tokio::main(flavor = "multi_thread") ]
 async fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install().unwrap();
     let args = crate::cli::Args::parse();
@@ -86,8 +87,13 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     "encountered error while indexing: {:?}. shutting down.",
                     err
                 );
+                info!("shutdown - setting unhealth");
                 healthz::set_unhealthy();
-                set.shutdown().await;
+                info!("shutdown - shutting down");
+                let shutdown_hook = set.shutdown();
+                info!("shutdown - awaiting shutdown");
+                shutdown_hook.await;
+                info!("shutdown - returning");
                 return Err(err);
             }
             Err(err) => return Err(err.into()),
