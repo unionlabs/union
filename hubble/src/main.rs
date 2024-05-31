@@ -28,7 +28,6 @@ use tikv_jemallocator::Jemalloc;
 static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
-// #[tokio::main(flavor = "multi_thread") ]
 async fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install().unwrap();
     let args = crate::cli::Args::parse();
