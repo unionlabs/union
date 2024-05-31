@@ -1,37 +1,48 @@
 use core::future::Future;
 use std::{
     collections::HashMap,
-    fs::{ File, OpenOptions },
+    fs::{File, OpenOptions},
     pin::Pin,
     sync::Arc,
-    time::{ SystemTime },
+    time::SystemTime,
 };
 
 use bech32::FromBase32;
-use chain_utils::{ cosmos_sdk::CosmosSdkChainExt, ethereum::Ethereum };
-use chrono::{ Utc };
+use chain_utils::{
+    cosmos_sdk::CosmosSdkChainExt,
+    ethereum::{Ethereum, EthereumChainExt},
+};
+use chrono::Utc;
+use ethers::providers::Middleware;
 // use tendermint::abci::Event as TendermintEvent;
 // use ethers::providers::{ Middleware, ProviderError };
 use futures::StreamExt;
 use hex::encode as hex_encode;
-use serde_json::{ from_value, to_value };
-use tendermint_rpc::{ event::{ Event, EventData }, SubscriptionClient, WebSocketClient };
-use tokio::{ sync::Mutex, time::{ interval, Duration } };
-use ucs01_relay::msg::{ ExecuteMsg, TransferMsg };
+use serde_json::{from_value, to_value};
+use tendermint_rpc::{
+    event::{Event, EventData},
+    SubscriptionClient, WebSocketClient,
+};
+use tokio::{
+    sync::Mutex,
+    time::{interval, Duration},
+};
+use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use unionlabs::{
     cosmos::base::coin::Coin,
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
+    ethereum::config::Minimal,
     events::IbcEvent,
     google::protobuf::any::Any,
     id::ClientId,
-    tendermint::abci::{ event::Event as TendermintEvent, event_attribute::EventAttribute },
+    tendermint::abci::{event::Event as TendermintEvent, event_attribute::EventAttribute},
     ClientType,
 };
 
 use crate::{
-    config::{ ChainId, Config, DatadogData, PacketStatus },
-    datadog::{ log_builder, send_log_to_datadog },
-    sql_helper::{ delete_packet_status, get_packet_statuses, insert_or_update_packet_status },
+    config::{ChainId, Config, DatadogData, PacketStatus},
+    datadog::{log_builder, send_log_to_datadog},
+    sql_helper::{delete_packet_status, get_packet_statuses, insert_or_update_packet_status},
 }; //, events::{ EventType } };
 
 #[derive(Clone)]
@@ -39,9 +50,9 @@ pub struct Context {
     pub output_file: String,
     pub transfer_test_config: Config,
     pub writer: Arc<Mutex<File>>,
-    pub union: chain_utils::union::Union,
-    pub osmosis: chain_utils::cosmos::Cosmos,
-    // pub ethereum: chain_utils::ethereum::Ethereum<Minimal>,
+    pub union: Option<chain_utils::union::Union>,
+    pub osmosis: Option<chain_utils::cosmos::Cosmos>,
+    pub ethereum: Option<chain_utils::ethereum::Ethereum<Minimal>>,
     pub union_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
     pub osmosis_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
     pub datadog_data: DatadogData,
@@ -53,7 +64,7 @@ pub struct Context {
 pub trait IbcTransfer {
     fn send_ibc_transfer(
         &self,
-        direction: TransferDirection
+        direction: TransferDirection,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + '_>>;
 }
 
@@ -68,17 +79,25 @@ pub enum TransferDirection {
         denom: String,
         amount: String,
     },
-    EthToCosmos {
-        // Define necessary fields for Eth to Cosmos
-    },
     CosmosToEth {
-        // Define necessary fields for Cosmos to Eth
+        source_chain: String,
+        target_chain: String,
+        channel: String,
+        contract: String,
+        receiver_addr: String,
+        is_receiver_bech32: bool,
+        denom: String,
+        amount: String,
     },
 }
 
 pub trait TendermintClient {
     fn tm_client(&self) -> &WebSocketClient;
 }
+
+// pub trait EthereumClient {
+//     fn eth_client(&self) -> &ethers::providers::Provider<ethers::providers::Http>;
+// }
 
 impl TendermintClient for chain_utils::cosmos::Cosmos {
     fn tm_client(&self) -> &WebSocketClient {
@@ -92,27 +111,37 @@ impl TendermintClient for chain_utils::union::Union {
     }
 }
 
+// impl EthereumClient for chain_utils::ethereum::Ethereum<Minimal> {
+//     fn eth_client(&self) -> &ethers::providers::Provider<ethers::providers::Http> {
+//         &self.
+//     }
+// }
+
 pub trait ChainListener: Sync + Send {
     fn listen<'a>(
         &'a self,
         context: &'a Context,
         source_chain: &'a str,
-        target_chain: &'a str
+        target_chain: &'a str,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
 }
 
-impl<T> ChainListener for T where T: TendermintClient + Sync + Send + 'static {
+impl<T> ChainListener for T
+where
+    T: TendermintClient + Sync + Send + 'static,
+{
     fn listen<'a>(
         &'a self,
         context: &'a Context,
         source_chain: &'a str,
-        target_chain: &'a str
+        target_chain: &'a str,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         Box::pin(async move {
-            println!("Listening for events on {}.", source_chain);
+            tracing::debug!("Listening for events on {}.", source_chain);
             let mut subs = self
                 .tm_client()
-                .subscribe(tendermint_rpc::query::EventType::Tx.into()).await
+                .subscribe(tendermint_rpc::query::EventType::Tx.into())
+                .await
                 .unwrap();
             loop {
                 tokio::select! {
@@ -137,31 +166,42 @@ impl Context {
     pub async fn new(
         transfer_test_config: Config,
         output: String,
-        pool: sqlx::Pool<sqlx::Postgres>
+        pool: sqlx::Pool<sqlx::Postgres>,
     ) -> Context {
-        let writer = OpenOptions::new().create(true).append(true).open(output.clone()).unwrap();
+        let writer = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(output.clone())
+            .unwrap();
         tracing::debug!("Created writer.");
-        let union = chain_utils::union::Union
-            ::new(transfer_test_config.clone().union).await
-            .unwrap();
+        let union = Some(
+            chain_utils::union::Union::new(transfer_test_config.clone().union)
+                .await
+                .unwrap(),
+        );
         tracing::debug!("Created Union instance.");
-        let osmosis = chain_utils::cosmos::Cosmos
-            ::new(transfer_test_config.clone().osmosis).await
-            .unwrap();
+        let osmosis = Some(
+            chain_utils::cosmos::Cosmos::new(transfer_test_config.clone().osmosis)
+                .await
+                .unwrap(),
+        );
         tracing::debug!("Created Osmosis instance.");
         // let ethereum = chain_utils::ethereum::Ethereum
         //     ::new(transfer_test_config.clone().ethereum).await
         //     .unwrap();
-        // tracing::debug!("Created Ethereum instance.");
+        let ethereum = None; // TODO: Implement Ethereum listener
+
+        // //
+        tracing::debug!("Created Ethereum instance.");
 
         let datadog_data = transfer_test_config.datadog_data.clone();
         Context {
             output_file: output,
             transfer_test_config,
             writer: Arc::new(Mutex::new(writer)),
-            union,
-            osmosis,
-            // ethereum,
+            union: union,
+            osmosis: osmosis,
+            ethereum: ethereum,
             union_txs: Arc::new(Mutex::new(HashMap::new())),
             osmosis_txs: Arc::new(Mutex::new(HashMap::new())),
             datadog_data,
@@ -174,10 +214,11 @@ impl Context {
         &self,
         tm_client: WebSocketClient,
         source_chain: &str,
-        target_chain: &str
+        target_chain: &str,
     ) {
         let mut subs = tm_client
-            .subscribe(tendermint_rpc::query::EventType::Tx.into()).await
+            .subscribe(tendermint_rpc::query::EventType::Tx.into())
+            .await
             .unwrap();
         loop {
             tokio::select! {
@@ -196,19 +237,22 @@ impl Context {
         }
     }
 
-    pub fn get_chain_listener(&self, chain_id: &ChainId) -> &dyn ChainListener {
+    pub fn get_chain_listener(&self, chain_id: &ChainId) -> Option<&dyn ChainListener> {
         match chain_id {
-            ChainId::Union => &self.union as &dyn ChainListener,
-            ChainId::Osmosis => &self.osmosis as &dyn ChainListener,
+            ChainId::Union => self.union.as_ref().map(|u| u as &dyn ChainListener),
+            ChainId::Osmosis => self.osmosis.as_ref().map(|o| o as &dyn ChainListener),
             // Add other chain mappings as needed
-            ChainId::Ethereum => unimplemented!("Ethereum listener is not implemented yet"),
+            ChainId::Ethereum => None, // Ethereum listener is not implemented yet
         }
     }
 
     pub async fn listen(&self, source_chain: &str, target_chain: &str) {
         let source_chain_id = ChainId::from_str(source_chain).expect("Invalid source chain");
-        let listener = self.get_chain_listener(&source_chain_id);
-        listener.listen(self, source_chain, target_chain).await;
+        if let Some(listener) = self.get_chain_listener(&source_chain_id) {
+            listener.listen(self, source_chain, target_chain).await;
+        } else {
+            tracing::warn!("No listener available for chain: {}", source_chain);
+        }
     }
 
     pub async fn send_ibc_transfer_cosmos_to_cosmos(&self, direction: &TransferDirection) {
@@ -223,16 +267,15 @@ impl Context {
                 amount,
             } => {
                 let time_now: SystemTime = SystemTime::now();
-                println!(
+                tracing::debug!(
                     "TIME: {:?}\tSending IBC transfer from {} to {}.",
                     time_now,
                     source_chain,
                     target_chain
                 );
 
-                let (_hrp, data, _variant) = bech32
-                    ::decode(&receiver_bech32)
-                    .expect("Invalid Bech32 address");
+                let (_hrp, data, _variant) =
+                    bech32::decode(&receiver_bech32).expect("Invalid Bech32 address");
 
                 let bytes = Vec::<u8>::from_base32(&data).expect("Invalid base32 data");
                 let receiver = hex::encode(bytes);
@@ -249,42 +292,60 @@ impl Context {
 
                 let transfer_msg_bytes = serde_json::to_string(&transfer_msg).unwrap().into_bytes();
 
-                let signers = if source_chain == "osmosis" {
-                    self.osmosis.signers.clone()
+                if let Some(signers) = (if source_chain == "osmosis" {
+                    self.osmosis.as_ref().map(|o| o.signers.clone())
                 } else {
-                    self.union.signers.clone()
-                };
+                    self.union.as_ref().map(|u| u.signers.clone())
+                }) {
+                    // let signers = if source_chain == "osmosis" {
+                    //     self.osmosis.signers.clone()
+                    // } else {
+                    //     self.union.signers.clone()
+                    // };
 
-                signers.with(|signer| async move {
-                    println!("Sending Tx for {}.", signer.to_string());
-                    let msg = Any(MsgExecuteContract {
-                        sender: signer.to_string(),
-                        contract: contract.clone(),
-                        msg: transfer_msg_bytes,
-                        funds: vec![Coin {
-                            denom: denom.clone(),
-                            amount: amount.clone(),
-                        }],
-                    }).into();
+                    signers
+                        .with(|signer| async move {
+                            tracing::debug!("Sending Tx for {}.", signer.to_string());
+                            let msg = Any(MsgExecuteContract {
+                                sender: signer.to_string(),
+                                contract: contract.clone(),
+                                msg: transfer_msg_bytes,
+                                funds: vec![Coin {
+                                    denom: denom.clone(),
+                                    amount: amount.clone(),
+                                }],
+                            })
+                            .into();
 
-                    match (
-                        if source_chain == "osmosis" {
-                            self.osmosis.broadcast_tx_commit(signer.clone(), [msg]).await
-                        } else {
-                            self.union.broadcast_tx_commit(signer.clone(), [msg]).await
-                        }
-                    ) {
-                        Ok(tx_hash) => {
-                            println!("Transaction sent successfully. Hash: {:?}", tx_hash);
-                        }
-                        Err(e) => {
-                            println!("Failed to submit tx!{:?}", e);
-                        }
-                    }
-                }).await;
+                            match (if source_chain == "osmosis" {
+                                self.osmosis
+                                    .as_ref()
+                                    .unwrap()
+                                    .broadcast_tx_commit(signer.clone(), [msg])
+                                    .await
+                            } else {
+                                self.union
+                                    .as_ref()
+                                    .unwrap()
+                                    .broadcast_tx_commit(signer.clone(), [msg])
+                                    .await
+                            }) {
+                                Ok(tx_hash) => {
+                                    tracing::debug!(
+                                        "Transaction sent successfully. Hash: {:?}",
+                                        tx_hash
+                                    );
+                                }
+                                Err(e) => {
+                                    tracing::error!("Failed to submit tx!{:?}", e);
+                                }
+                            }
+                        })
+                        .await;
+                }
             }
             _ => {
-                println!("Invalid transfer direction.");
+                tracing::error!("Invalid transfer direction.");
             }
         }
     }
@@ -293,26 +354,27 @@ impl Context {
         &self,
         event: Event,
         source_chain: &str,
-        target_chain: &str
+        target_chain: &str,
     ) {
         match event.data {
             EventData::Tx { tx_result, .. } => {
                 for event in tx_result.result.events {
-                    let Some(my_event) = IbcEvent::<
-                        ClientId,
-                        String,
-                        String
-                    >::try_from_tendermint_event(TendermintEvent {
-                        ty: event.kind,
-                        attributes: event.attributes
-                            .into_iter()
-                            .map(|attr| EventAttribute {
-                                key: attr.key,
-                                value: attr.value,
-                                index: attr.index,
-                            })
-                            .collect(),
-                    }) else {
+                    let Some(my_event) =
+                        IbcEvent::<ClientId, String, String>::try_from_tendermint_event(
+                            TendermintEvent {
+                                ty: event.kind,
+                                attributes: event
+                                    .attributes
+                                    .into_iter()
+                                    .map(|attr| EventAttribute {
+                                        key: attr.key,
+                                        value: attr.value,
+                                        index: attr.index,
+                                    })
+                                    .collect(),
+                            },
+                        )
+                    else {
                         continue;
                     };
                     let unwrapped = my_event.unwrap();
@@ -328,15 +390,13 @@ impl Context {
                         let mut packet_statuses = self.packet_statuses.lock().await;
                         let mut sequences_to_remove: Vec<u64> = Vec::new();
 
-                        let status = packet_statuses
-                            .entry(sequence.get())
-                            .or_insert_with(|| {
-                                PacketStatus::new(
-                                    source_chain,
-                                    target_chain,
-                                    sequence.get().try_into().unwrap()
-                                )
-                            });
+                        let status = packet_statuses.entry(sequence.get()).or_insert_with(|| {
+                            PacketStatus::new(
+                                source_chain,
+                                target_chain,
+                                sequence.get().try_into().unwrap(),
+                            )
+                        });
 
                         let mut should_insert_or_update = true;
                         let mut issue = String::new();
@@ -346,12 +406,18 @@ impl Context {
                                 status.send_packet = Some(
                                     to_value(
                                         IbcEvent::<ClientId, ClientType, ClientId>::SendPacket(
-                                            e.clone()
-                                        )
-                                    ).expect("Serialization failed")
+                                            e.clone(),
+                                        ),
+                                    )
+                                    .expect("Serialization failed"),
                                 );
                                 status.last_update = chrono::Utc::now();
-                                println!("SendPacket event. Sequence: {}", sequence);
+                                tracing::info!(
+                                    "SendPacket event. Sequence: {}. Direction: {}->{}",
+                                    sequence,
+                                    source_chain,
+                                    target_chain
+                                );
                             }
                             IbcEvent::RecvPacket(ref e) => {
                                 if status.send_packet.is_none() {
@@ -360,17 +426,23 @@ impl Context {
                                     status.recv_packet = Some(
                                         to_value(
                                             IbcEvent::<ClientId, ClientType, ClientId>::RecvPacket(
-                                                e.clone()
-                                            )
-                                        ).expect("Serialization failed")
+                                                e.clone(),
+                                            ),
+                                        )
+                                        .expect("Serialization failed"),
                                     );
-                                    println!("RecvPacket event. Sequence: {}", sequence);
+                                    tracing::info!(
+                                        "RecvPacket event. Sequence: {}. Direction: {}->{}",
+                                        sequence,
+                                        source_chain,
+                                        target_chain
+                                    );
                                 }
                             }
                             IbcEvent::WriteAcknowledgement(ref e) => {
                                 if status.recv_packet.is_none() {
-                                    issue =
-                                        "WriteAcknowledgement received without RecvPacket".to_string();
+                                    issue = "WriteAcknowledgement received without RecvPacket"
+                                        .to_string();
                                 } else {
                                     status.write_ack = Some(
                                         to_value(
@@ -381,13 +453,19 @@ impl Context {
                                             >::WriteAcknowledgement(e.clone())
                                         ).expect("Serialization failed")
                                     );
-                                    println!("WriteAcknowledgement event. Sequence: {}", sequence);
+                                    tracing::info!(
+                                        "WriteAcknowledgement event. Sequence: {}. Direction: {}->{}",
+                                        sequence,
+                                        source_chain,
+                                        target_chain
+                                    );
                                 }
                             }
                             IbcEvent::AcknowledgePacket(ref e) => {
                                 if status.write_ack.is_none() {
                                     issue =
-                                        "AcknowledgePacket received without WriteAcknowledgement".to_string();
+                                        "AcknowledgePacket received without WriteAcknowledgement"
+                                            .to_string();
                                 } else {
                                     status.acknowledge_packet = Some(
                                         to_value(
@@ -398,13 +476,20 @@ impl Context {
                                             >::AcknowledgePacket(e.clone())
                                         ).expect("Serialization failed")
                                     );
-                                    println!("AcknowledgePacket event. Sequence: {}", sequence);
+                                    tracing::info!(
+                                        "AcknowledgePacket event. Sequence: {}. Direction: {}->{}",
+                                        sequence,
+                                        source_chain,
+                                        target_chain
+                                    );
                                     delete_packet_status(
                                         &self.pool,
                                         status.source_chain_id,
                                         status.target_chain_id,
-                                        status.sequence_number
-                                    ).await.unwrap();
+                                        status.sequence_number,
+                                    )
+                                    .await
+                                    .unwrap();
                                     sequences_to_remove.push(sequence.get());
                                     should_insert_or_update = false;
                                 }
@@ -414,7 +499,7 @@ impl Context {
                             }
                         }
                         if !issue.is_empty() {
-                            println!(
+                            tracing::warn!(
                                 "Incomplete packet sequence {}: {}. Packet: {:?}",
                                 sequence,
                                 issue,
@@ -437,24 +522,27 @@ impl Context {
                             send_log_to_datadog(
                                 &self.datadog_data.datadog_api_key,
                                 &log_info,
-                                &self.datadog_data.datadog_log_host
-                            ).await.unwrap();
+                                &self.datadog_data.datadog_log_host,
+                            )
+                            .await
+                            .unwrap();
                             delete_packet_status(
                                 &self.pool,
                                 status.source_chain_id,
                                 status.target_chain_id,
-                                status.sequence_number
-                            ).await.unwrap();
+                                status.sequence_number,
+                            )
+                            .await
+                            .unwrap();
                             sequences_to_remove.push(sequence.get());
 
                             should_insert_or_update = false;
                         }
 
                         if should_insert_or_update {
-                            insert_or_update_packet_status(
-                                &self.pool,
-                                status.clone()
-                            ).await.unwrap();
+                            insert_or_update_packet_status(&self.pool, status.clone())
+                                .await
+                                .unwrap();
                         }
                         // Remove collected sequences from the HashMap
                         for sequence in sequences_to_remove {
@@ -464,7 +552,7 @@ impl Context {
                 }
             }
             _ => {
-                println!("Unhandled event type: {:?}", event);
+                tracing::error!("Unhandled event type: {:?}", event);
             }
         }
     }
@@ -473,7 +561,7 @@ impl Context {
         &self,
         source_chain_name: &str,
         target_chain_name: &str,
-        expect_full_circle: u64
+        expect_full_circle: u64,
     ) {
         let source_chain_id: i32 = ChainId::from_str(source_chain_name).unwrap() as i32;
         let target_chain_id = ChainId::from_str(target_chain_name).unwrap() as i32;
@@ -482,11 +570,9 @@ impl Context {
         loop {
             interval.tick().await;
 
-            let statuses = get_packet_statuses(
-                &self.pool,
-                source_chain_id,
-                target_chain_id
-            ).await.unwrap();
+            let statuses = get_packet_statuses(&self.pool, source_chain_id, target_chain_id)
+                .await
+                .unwrap();
             let mut packet_statuses = self.packet_statuses.lock().await;
 
             for status in statuses {
@@ -523,16 +609,17 @@ impl Context {
                             issue = "WriteAcknowledgement is null".to_string();
                         }
                         _ => {
-                            if
-                                let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) =
-                                    from_value::<IbcEvent<ClientId, ClientType, ClientId>>(
-                                        status.write_ack.clone().unwrap()
-                                    )
+                            if let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) =
+                                from_value::<IbcEvent<ClientId, ClientType, ClientId>>(
+                                    status.write_ack.clone().unwrap(),
+                                )
                             {
                                 let encoded_ack_hex = hex_encode(&ack_event.packet_ack_hex);
                                 if encoded_ack_hex != "01" {
-                                    issue =
-                                        format!("WriteAcknowledgement indicates failure ({}).", encoded_ack_hex);
+                                    issue = format!(
+                                        "WriteAcknowledgement indicates failure ({}).",
+                                        encoded_ack_hex
+                                    );
                                 }
                             }
                         }
@@ -557,7 +644,7 @@ impl Context {
                 }
 
                 if issue != "" {
-                    println!(
+                    tracing::error!(
                         "There is a problem with sequence {}: {}. After: {} seconds.",
                         status.sequence_number,
                         issue,
@@ -581,19 +668,23 @@ impl Context {
                     send_log_to_datadog(
                         &datadog_data.datadog_api_key,
                         &log_info,
-                        &datadog_data.datadog_log_host
-                    ).await.unwrap();
+                        &datadog_data.datadog_log_host,
+                    )
+                    .await
+                    .unwrap();
                     can_be_removed = true; // already sent that as an error.
                 }
 
                 if can_be_removed {
-                    println!("Deleting packet: {}", status.sequence_number);
+                    tracing::info!("Deleting packet: {}", status.sequence_number);
                     delete_packet_status(
                         &self.pool,
                         status.source_chain_id,
                         status.target_chain_id,
-                        status.sequence_number
-                    ).await.unwrap();
+                        status.sequence_number,
+                    )
+                    .await
+                    .unwrap();
                     packet_statuses.remove(&(status.sequence_number as u64));
                 }
             }
@@ -604,7 +695,7 @@ impl Context {
 impl IbcTransfer for Context {
     fn send_ibc_transfer(
         &self,
-        direction: TransferDirection
+        direction: TransferDirection,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             match direction {
@@ -619,17 +710,17 @@ impl IbcTransfer for Context {
                 } => {
                     self.send_ibc_transfer_cosmos_to_cosmos(&direction).await;
                 }
-                TransferDirection::EthToCosmos {
-                    // Define necessary fields for Eth to Cosmos
-                } => {
-                    // Implement the logic for Eth to Cosmos transfer here
-                    println!("Eth to Cosmos transfer not implemented yet.");
-                }
                 TransferDirection::CosmosToEth {
-                    // Define necessary fields for Cosmos to Eth
+                    source_chain: _,
+                    target_chain: _,
+                    channel: _,
+                    contract: _,
+                    receiver_addr: _,
+                    is_receiver_bech32: _,
+                    denom: _,
+                    amount: _,
                 } => {
-                    // Implement the logic for Cosmos to Eth transfer here
-                    println!("Cosmos to Eth transfer not implemented yet.");
+                    tracing::warn!("Cosmos to Eth transfer not implemented yet.");
                 }
             }
         })

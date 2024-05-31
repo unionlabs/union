@@ -56,6 +56,7 @@
   },
   "union_contract": "union1lqx547hpfcyghk9narslvacaqd6ytfsgghzl065yt4574e4z2zfqw8juda",
   "osmosis_contract": "osmo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqcm3670",
+  "ethereum_contract": "0xF8F7758FbcEfd546eAEff7dE24AFf666B6228e73",
   "channel": "channel-0",
   "port": "0",
   "amount": "1000",

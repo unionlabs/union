@@ -44,7 +44,7 @@ async fn main() {
         ::from_str(&read_to_string(args.config).unwrap())
         .unwrap();
 
-    println!("{}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
+    tracing::debug!("{}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
     let output = "transfer-test-service.csv";
     let context = Context::new(transfer_test_config.clone(), output.to_string(), pool).await;
 
@@ -95,18 +95,40 @@ async fn main() {
                             amount: transfer_test_config_clone.amount.clone(),
                         }
                     }
-                    ("ethereum", "osmosis") | ("osmosis", "ethereum") => {
-                        TransferDirection::EthToCosmos {
-                            // Fill in with appropriate details for Ethereum to Cosmos transfer
-                        }
-                    }
                     ("union", "ethereum") | ("ethereum", "union") => {
                         TransferDirection::CosmosToEth {
-                            // Fill in with appropriate details for Cosmos to Ethereum transfer
+                            source_chain: source_chain.clone(),
+                            target_chain: target_chain.clone(),
+                            channel: transfer_test_config_clone.channel.clone(),
+                            contract: if source_chain == "union" {
+                                transfer_test_config_clone.union_contract.clone()
+                            } else {
+                                transfer_test_config_clone.ethereum_contract.clone()
+                            },
+                            receiver_addr: if target_chain == "union" {
+                                transfer_test_config_clone.union_contract.clone()
+                            } else {
+                                transfer_test_config_clone.ethereum_contract.clone()
+                            },
+                            is_receiver_bech32: if target_chain == "union" {
+                                true
+                            } else {
+                                false
+                            },
+                            denom: if source_chain == "osmosis" {
+                                transfer_test_config_clone.osmosis.fee_denom.clone()
+                            } else {
+                                transfer_test_config_clone.union.fee_denom.clone()
+                            },
+                            amount: transfer_test_config_clone.amount.clone(),
                         }
                     }
                     _ => {
-                        eprintln!("Unsupported connection: {} -> {}", source_chain, target_chain);
+                        tracing::error!(
+                            "Unsupported connection: {} -> {}",
+                            source_chain,
+                            target_chain
+                        );
                         continue;
                     }
                 };
