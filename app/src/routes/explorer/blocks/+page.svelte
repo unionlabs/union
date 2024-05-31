@@ -11,16 +11,17 @@ import {
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
+import { DurationUnits } from "svelte-ux"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { CHAIN_MAP } from "$lib/constants/chains"
 import * as Table from "$lib/components/ui/table"
-import { Duration, DurationUnits } from "svelte-ux"
 import { createQuery } from "@tanstack/svelte-query"
-import CellText from "../(components)/cell-text.svelte"
 import { removeArrayDuplicates } from "$lib/utilities"
 import type { Override } from "$lib/utilities/types.ts"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
+import CellText from "../(components)/cell-plain-text.svelte"
+import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
 $: cosmosBlocks = createQuery({
@@ -47,26 +48,24 @@ $: if (blockData) {
 const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "time",
-    size: 105,
-    maxSize: 105,
+    size: 100,
     meta: {
       class: "ml-1.5 justify-start"
     },
     header: info => "Time",
     cell: info =>
-      flexRender(Duration, {
+      flexRender(CellDurationText, {
         totalUnits: 3,
         variant: "short",
+        class: "pl-2 text-clip",
         minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string),
-        class: "pl-2 after:content-['_ago'] sm:after:content-[''] text-clip"
+        start: new Date(info.getValue() as string)
       })
   },
   {
     accessorKey: "height",
     header: info => "Height",
     size: 100,
-    maxSize: 100,
     meta: {
       class: "w-full justify-start"
     },
@@ -98,11 +97,10 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "hash",
     meta: {
-      class: "w-full justify-end"
+      class: "w-full justify-start ml-1.5"
     },
-    header: info => flexRender(CellText, { value: "Hash", class: "text-right pr-3" }),
-    size: 400,
-    maxSize: 400,
+    header: info => flexRender(CellText, { value: "Hash", class: "text-left" }),
+    size: 1000,
     cell: info =>
       flexRender(Button, {
         class: "py-0 px-2.5 max-w-[600px]",
@@ -152,12 +150,13 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 })
 </script>
 
-<div
-  class="p-4 w-full flex justify-center"
->
+<svelte:head>
+  <title>Union - Explorer</title>
+</svelte:head>
+
   <div
     bind:this={virtualListElement}
-    class={cn('rounded-md border border-secondary border-solid w-full max-w-[965px]')}
+    class={cn('rounded-md border border-secondary border-solid w-full')}
   >
     <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
       <Table.Header
@@ -177,7 +176,7 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
                     on:click={header.column.getToggleSortingHandler()}
                     class={cn(
                       header.column.columnDef.meta?.class,
-                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent font-mono text-md',
+                      'cursor-pointer select-none capitalize px-0 hover:bg-transparent text-md',
                     )}
                   >
                     <svelte:component
@@ -211,11 +210,9 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
       </Table.Body>
     </Table.Root>
   </div>
-</div>
 
 <style lang="postcss">
   :global(tr td:last-child) {
-    text-align: right;
     font-variant-numeric: tabular-nums;
     font-variant: common-ligatures tabular-nums;
   }

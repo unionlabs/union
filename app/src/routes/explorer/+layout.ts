@@ -4,6 +4,8 @@ import type { SvelteComponent } from "svelte"
 
 import TvIcon from "virtual:icons/lucide/tv"
 import BlocksIcon from "virtual:icons/lucide/blocks"
+import RocketIcon from "virtual:icons/lucide/rocket"
+import DatabaseIcon from "virtual:icons/lucide/database"
 import ConnectionIcon from "virtual:icons/mdi/connection"
 import SendHorizontalIcon from "virtual:icons/lucide/send-horizontal"
 
@@ -12,6 +14,7 @@ const tables = ["blocks", "packets", "channels", "connections"] as const
 export interface Table {
   route: (typeof tables)[number]
   icon: typeof SvelteComponent
+  description: string
 }
 
 export const load = (loadEvent => {
@@ -20,10 +23,24 @@ export const load = (loadEvent => {
 
   return {
     tables: [
-      { route: "blocks", icon: BlocksIcon },
-      { route: "channels", icon: TvIcon },
-      { route: "packets", icon: SendHorizontalIcon },
-      { route: "connections", icon: ConnectionIcon }
+      {
+        route: "blocks",
+        icon: BlocksIcon,
+        description: "Blocks from all chains indexed by Hubble"
+      },
+      { route: "connections", icon: ConnectionIcon, description: "Open IBC Connections" },
+      { route: "channels", icon: TvIcon, description: "Open IBC Channels" },
+      { route: "packets", icon: SendHorizontalIcon, description: "Packets sent through Union" },
+      {
+        route: "voyager-queue",
+        icon: RocketIcon,
+        description: "Voyager Relayer VM Operations Queue"
+      },
+      {
+        route: "index-status",
+        icon: DatabaseIcon,
+        description: "Statuses of Hubble indices for connected chains"
+      }
     ] as Array<Table>
   }
 }) satisfies LayoutLoad

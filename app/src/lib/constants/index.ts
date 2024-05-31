@@ -10,6 +10,7 @@ export const UNO = {
 export const URLS = {
   GRAPHQL: "https://graphql.union.build/v1/graphql",
   GRAPHQL_WSS: "wss://noble-pika-27.hasura.app/v1/graphql",
+  GRAPHQL_REST: "https://graphql.union.build/api/rest",
   UNION: {
     /**
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array
