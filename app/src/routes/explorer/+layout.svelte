@@ -12,31 +12,35 @@ import { derived } from "svelte/store";
 
 export let data: LayoutData
 
-let windowSize = { width: window.innerWidth, height: window.innerHeight }
 
-const handleResize = () => {
-  requestAnimationFrame(() => {
-    windowSize = { width: window.innerWidth, height: window.innerHeight }
-  })
-}
+// Pane collapse on resize has been disabled because it was throwing console errors.
 
-onMount(() => {
-  window.addEventListener("resize", handleResize)
-  return () => {
-    window.removeEventListener("resize", handleResize)
-  }
-})
+// let windowSize = { width: window.innerWidth, height: window.innerHeight }
+
+// const handleResize = () => {
+//   requestAnimationFrame(() => {
+//     windowSize = { width: window.innerWidth, height: window.innerHeight }
+//   })
+// }
+
+// onMount(() => {
+//   window.addEventListener("resize", handleResize)
+//   return () => {
+//     window.removeEventListener("resize", handleResize)
+//   }
+// })
+
+// $: if (windowSize?.width < 900) {
+//   try {
+//     leftPane.collapse()
+//     // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
+//   } catch {}
+// }
 
 let isCollapsed = false
 let leftPane: Resizable.PaneAPI
 $: [leftSize, rightSize] = [14, 88]
 
-$: if (windowSize?.width < 900) {
-  try {
-    leftPane.collapse()
-    // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
-  } catch {}
-}
 
 const onLayoutChange: Resizable.PaneGroupProps["onLayoutChange"] = sizes => {
   document.cookie = `PaneForge:layout=${JSON.stringify(sizes)}`
@@ -52,9 +56,13 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
   document.cookie = `PaneForge:collapsed=${false}`
 }
 
-// const explorerPage = derived(page, ($page) => $page.route.id?.split("/").at(-1));
-let explorerPage = $page.route.id?.split("/").at(-1).replaceAll('-', ' ');
-onNavigate(navigation => {explorerPage = navigation.to?.route.id?.split("/").at(-1)?.replaceAll('-', ' ')});
+let explorerRoute = $page.route.id?.split("/").at(-1);
+$: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute)[0].description; 
+onNavigate(navigation => {
+  if (navigation.to?.route.id?.split("/").at(1) === 'explorer') {
+    explorerRoute = navigation.to?.route.id?.split("/").at(2);
+  }
+});
 </script>
 
 <main class="flex flex-row flex-1 overflow-y-hidden">
@@ -85,8 +93,8 @@ onNavigate(navigation => {explorerPage = navigation.to?.route.id?.split("/").at(
     </Resizable.Handle>
     <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
       <ScrollArea orientation="both" class="size-full flex-1 pr-6 pl-2">
-        <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize">{explorerPage}</h2>
-        <p class="text-muted-foreground pb-4">Lorem ipsum description</p>
+        <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize">{explorerRoute?.replaceAll('-', ' ')}</h2>
+        <p class="text-muted-foreground pb-4">{explorerPageDescription}</p>
         <slot/>
       </ScrollArea>
     </Resizable.Pane>
