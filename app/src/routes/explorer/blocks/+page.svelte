@@ -21,7 +21,6 @@ import type { Override } from "$lib/utilities/types.ts"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
 import CellText from "../(components)/cell-plain-text.svelte"
-import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
@@ -50,7 +49,11 @@ const defaultColumns: Array<ColumnDef<CosmosBlock>> = [
     accessorKey: "time",
     size: 100,
     meta: {
-      class: "ml-1.5 justify-start"
+      /**
+       * - the max possible size for the time cell text content is around ~50px. Example: `1m 30s`,
+       * - so we need to set a min height here otherwise on lower rows, the text will be in 2 lines.
+       */
+      class: "ml-1.5 justify-start min-w-[50px]"
     },
     header: info => "Time",
     cell: info =>
@@ -158,16 +161,19 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
   <title>Union - Explorer</title>
 </svelte:head>
 
-  <div
-    bind:this={virtualListElement}
-    class={cn('rounded-md border border-secondary border-solid w-full')}
-  >
-    <Table.Root class={cn('size-full mx-auto rounded-md w-full')}>
+<div
+  bind:this={virtualListElement}
+  class={cn(
+    'rounded-md border border-secondary border-solid overflow-hidden w-full h-[800px] flex flex-col',
+  )}
+>
+  <div class={cn(`h-[${$virtualizer.getTotalSize()}px] min-h-[${$virtualizer.getTotalSize()}px]`)}>
+    <Table.Root class={cn('size-full mx-auto rounded-md w-full overflow-auto')}>
       <Table.Header
-        class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50')}
+        class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50 h-[20px]')}
       >
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row class="font-bold text-md sticky">
+          <Table.Row class="font-bold text-md">
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
@@ -193,31 +199,53 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
           </Table.Row>
         {/each}
       </Table.Header>
-      <Table.Body class={cn('relative', `h-[${$virtualizer.getTotalSize()}px] w-full`)}>
-        {#each $virtualizer.getVirtualItems() as row, index (row.index)}
-          <Table.Row
-            class={cn(
-              'h-5 text-left overflow-auto',
-              'border-b-[1px] border-solid border-secondary',
-              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
-            )}
-          >
-            {#each rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              <Table.Cell class={cn('px-2 py-0 text-left')}>
-                <svelte:component
-                  this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                />
-              </Table.Cell>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Body>
+      <div
+        class={cn(
+          /**
+           * @TODO
+           * this height calculation will need to be carefully tweaked to arrive at the best possible height
+           */
+          'overflow-auto h-[calc(800px-20px)] flex-1',
+        )}
+      >
+        <Table.Body class={'size-full'}>
+          {#each $virtualizer.getVirtualItems() as row, index (row.index)}
+            <Table.Row
+              class={cn(
+                'h-5 text-left overflow-auto',
+                'border-b-[1px] border-solid border-secondary',
+                index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+              )}
+            >
+              {#each rows[row.index].getVisibleCells() as cell, index (cell.id)}
+                <Table.Cell class={cn('px-2 py-0 text-left')}>
+                  <svelte:component
+                    this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  />
+                </Table.Cell>
+              {/each}
+            </Table.Row>
+          {/each}
+        </Table.Body>
+      </div>
     </Table.Root>
   </div>
+</div>
 
 <style lang="postcss">
   :global(tr td:last-child) {
     font-variant-numeric: tabular-nums;
     font-variant: common-ligatures tabular-nums;
+  }
+
+  .sticky {
+    z-index: 1;
+    background: #fff;
+    position: absolute;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .sticky.active {
+    position: sticky;
   }
 </style>
