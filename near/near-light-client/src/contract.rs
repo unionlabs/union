@@ -20,7 +20,7 @@ use unionlabs::{
 };
 
 use crate::{
-    merkle::{self, combine_hash},
+    merkle::{self, combine_hash, hash_borsh},
     state_proof::RawStateProof,
     ClientState, ConsensusState,
 };
@@ -127,7 +127,6 @@ impl Contract {
         let key = key_from_path(&path.key_path[1]);
 
         if !state_proof.verify(
-            // TODO(aeryz): chained
             &consensus_state.chunk_prev_state_root,
             &self.client_state.ibc_account_id,
             &key,
@@ -207,50 +206,9 @@ fn key_from_path(path: &str) -> Vec<u8> {
     commitments
 }
 
-// def reconstruct_light_client_block_view_fields(block_view):
-//     current_block_hash = sha256(concat(
-//         sha256(concat(
-//             sha256(borsh(block_view.inner_lite)),
-//             block_view.inner_rest_hash,
-//         )),
-//         block_view.prev_block_hash
-//     ))
-
-//     next_block_hash = sha256(concat(
-//         block_view.next_block_inner_hash,
-//         current_block_hash
-//     ))
-
-//     approval_message = concat(
-//         borsh(ApprovalInner::Endorsement(next_block_hash)),
-//         little_endian(block_view.inner_lite.height + 2)
-//     )
-
-//     return (current_block_hash, next_block_hash, approval_message)
-
 fn reconstruct_light_client_block_view_fields(
     block_view: LightClientBlockView,
 ) -> (CryptoHash, CryptoHash, Vec<u8>) {
-    // let concat = |first: &[u8], second: &[u8]| [first, second].concat();
-
-    // let current_block_hash = CryptoHash(
-    //     env::sha256(
-    //         &borsh::to_vec(&(
-    //             &env::sha256(
-    //                 &borsh::to_vec(&(
-    //                     &env::sha256(&borsh::to_vec(&block_view.inner_lite).unwrap()),
-    //                     block_view.inner_rest_hash.as_bytes(),
-    //                 ))
-    //                 .unwrap(),
-    //             ),
-    //             block_view.prev_block_hash.as_bytes(),
-    //         ))
-    //         .unwrap(),
-    //     )
-    //     .try_into()
-    //     .unwrap(),
-    // );
-
     let current_block_hash = combine_hash(
         &combine_hash(
             &CryptoHash(
@@ -270,30 +228,9 @@ fn reconstruct_light_client_block_view_fields(
 
     let next_block_hash = combine_hash(&block_view.next_block_inner_hash, &current_block_hash);
 
-    // let next_block_hash = CryptoHash(
-    //     env::sha256(
-    //         &borsh::to_vec(&(
-    //             block_view.next_block_inner_hash.as_bytes(),
-    //             current_block_hash.as_bytes(),
-    //         ))
-    //         .unwrap(),
-    //     )
-    //     .try_into()
-    //     .unwrap(),
-    // );
-
-    // let mut approval_message =
-    //     borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash.clone())).unwrap();
-    // approval_message.extend_from_slice(&(block_view.inner_lite.height + 2).to_le_bytes());
-    let endorsement = ApprovalInner::Endorsement(next_block_hash.clone());
-    let approval_message = {
-        let mut temp_vec = Vec::new();
-        BorshSerialize::serialize(&endorsement, &mut temp_vec).unwrap();
-        //temp_vec.extend_from_slice(&(endorsement.try_to_vec().ok()?[..]));
-        temp_vec.extend_from_slice(&((block_view.inner_lite.height + 2).to_le_bytes()[..]));
-        println!("temp_vec len: {:?}", temp_vec.len());
-        temp_vec
-    };
+    let mut approval_message =
+        borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash.clone())).unwrap();
+    approval_message.extend_from_slice(&(block_view.inner_lite.height + 2).to_le_bytes());
 
     (current_block_hash, next_block_hash, approval_message)
 }
@@ -358,12 +295,9 @@ fn validate_head(
     }
 
     if let Some(next_bps) = &block_view.next_bps {
-        if CryptoHash::hash_borsh(next_bps) != block_view.inner_lite.next_bp_hash {
+        if hash_borsh(next_bps) != block_view.inner_lite.next_bp_hash {
             panic!("next bps hash mismatch");
         }
-        // if env::sha256(&borsh::to_vec(next_bps).unwrap()) != block_view.inner_lite.next_bp_hash.0 {
-        //     panic!("no bro no");
-        // }
     }
 }
 
