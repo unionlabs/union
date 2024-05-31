@@ -78,3 +78,12 @@ func (sw syslogWriter) WriteLevel(level Level, p []byte) (n int, err error) {
 	n = len(p)
 	return
 }
+
+// Call the underlying writer's Close method if it is an io.Closer. Otherwise
+// does nothing.
+func (sw syslogWriter) Close() error {
+	if c, ok := sw.w.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}
