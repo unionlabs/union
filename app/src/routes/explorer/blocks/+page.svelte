@@ -2,28 +2,19 @@
 import {
   flexRender,
   type ColumnDef,
-  getCoreRowModel
-  //   type TableOptions,
-  //   createSvelteTable,
-  //   getFilteredRowModel,
-  //   getPaginationRowModel
 } from "@tanstack/svelte-table"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
 import { DurationUnits } from "svelte-ux"
-// import { cn } from "$lib/utilities/shadcn.ts"
 import { CHAIN_MAP } from "$lib/constants/chains"
-// import * as Table from "$lib/components/ui/table"
 import { createQuery } from "@tanstack/svelte-query"
 import { removeArrayDuplicates } from "$lib/utilities"
 import type { Override } from "$lib/utilities/types.ts"
-// import { createVirtualizer } from "@tanstack/svelte-virtual"
 import Button from "$lib/components/ui/button/button.svelte"
 import CellText from "../(components)/cell-plain-text.svelte"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
-// import * as Card from "$lib/components/ui/card/index.ts"
 
 import Table from "../(components)/table.svelte"
 
@@ -118,9 +109,6 @@ const columns = [
 <svelte:head>
   <title>Union - Explorer</title>
 </svelte:head>
-
-
-
 
 <Table columns={columns} bind:blocksStore={blocksStore}/>
 {JSON.stringify($blocksStore, null, 2)}
