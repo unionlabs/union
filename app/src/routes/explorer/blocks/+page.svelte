@@ -62,7 +62,6 @@ const columns = [
       flexRender(CellDurationText, {
         totalUnits: 3,
         variant: "short",
-        class: "pl-2 text-clip",
         minUnits: DurationUnits.Second,
         start: new Date(info.getValue() as string)
       })
