@@ -1,8 +1,10 @@
 use cosmwasm_std::{
     wasm_execute, Addr, AnyMsg, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
-    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, ReplyOn, Uint128, Uint512,
 };
-use diferred_ack_api::{Acknowledgement, DiferredAckMsg, DiferredPacketInfo, Response};
+use diferred_ack_api::{Acknowledgement, Response};
+use prost::Message;
+use protos::diferredack::v1beta1::MsgWriteDiferredAck;
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
@@ -10,7 +12,7 @@ use ucs01_relay_api::{
         InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError, PacketId,
         PacketReturnInfo,
     },
-    protocol::TransferProtocol,
+    protocol::{TransferProtocol, IBC_SEND_ID},
     types::{
         make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet,
         TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
@@ -388,7 +390,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     const VERSION: &'static str = "ics20-1";
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 0;
-    const IBC_SEND_ID: u64 = 10;
 
     type Packet = Ics20Packet;
     type Ack = Ics20Ack;
@@ -563,14 +564,9 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             }
         };
 
-        let forward_response_messages = forward_response
-            .messages
-            .iter()
-            .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
-
         IbcReceiveResponse::without_ack()
             .add_messages(msgs)
-            .add_messages(forward_response_messages)
+            .add_submessages(forward_response.messages)
             .add_events(forward_response.events)
     }
 
@@ -642,11 +638,17 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         if let Some(reply_sub) = transfer
             .messages
             .iter_mut()
-            .find(|sub| sub.id == Self::IBC_SEND_ID)
+            .find(|sub| sub.id == IBC_SEND_ID)
         {
-            reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
-                .expect("can serialize")
-                .into();
+            *reply_sub = reply_sub
+                .clone()
+                .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
+
+            if reply_sub.reply_on != ReplyOn::Success {
+                return Err(ContractError::MiddlewareError(
+                    MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
+                ));
+            }
         } else {
             return Err(ContractError::MiddlewareError(
                 MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
@@ -700,39 +702,48 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             }
         };
 
-        let packet_timeout_timestamp = refund_info
+        let packet_timeout_timestamp: u64 = refund_info
             .src_packet_timeout
             .timestamp()
             .unwrap_or_default()
-            .nanos()
-            .into();
+            .nanos();
         let packet_timeout_height = match refund_info.src_packet_timeout.block() {
             Some(timeout_block) => timeout_block.height.to_string(),
             None => 0_u64.to_string(),
         };
 
-        let diferred_packet_info = DiferredPacketInfo {
+        let ack_dif = protos::ibc::core::channel::v1::Acknowledgement {
+            response: ack_dif.response.map(|a| match a {
+                Response::Result(res) => {
+                    protos::ibc::core::channel::v1::acknowledgement::Response::Result(res.to_vec())
+                }
+                Response::Error(e) => {
+                    protos::ibc::core::channel::v1::acknowledgement::Response::Error(e)
+                }
+            }),
+        };
+
+        let diferred_packet_into = protos::diferredack::v1beta1::DiferredPacketInfo {
             refund_channel_id: refund_info.refund_channel_id,
             refund_port_id: refund_info.refund_port_id,
             packet_src_channel_id: refund_info.packet_src_channel_id,
             packet_src_port_id: refund_info.packet_src_port_id,
             packet_timeout_timestamp,
             packet_timeout_height,
-            packet_data: refund_info.packet_data.to_vec().into(),
-            sequence: refund_info.packet_sequence.into(),
+            packet_data: refund_info.packet_data.to_vec(),
+            sequence: refund_info.packet_sequence,
         };
 
-        let dif_ack_msg = DiferredAckMsg::WriteDiferredAck {
+        let value = MsgWriteDiferredAck {
             sender: self.self_addr().to_string(),
-            diferred_packet_info,
-            ack: ack_dif,
-        };
+            diferred_packet_info: Some(diferred_packet_into),
+            ack: Some(ack_dif),
+        }
+        .encode_to_vec();
 
         let diferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
-            type_url: "/diferredack.v1beta1.Msg/WriteDiferredAck".to_owned(),
-            value: dif_ack_msg
-                .try_into()
-                .map_err(|_| MiddlewareError::PacketForward(PacketForwardError::InvalidEncoding))?,
+            type_url: "/diferredack.v1beta1.MsgWriteDiferredAck".to_owned(),
+            value: value.into(),
         });
 
         ack_msgs.append(vec![diferred_ack_msg].as_mut());
@@ -749,7 +760,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     const VERSION: &'static str = "ucs01-relay-1";
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 1;
-    const IBC_SEND_ID: u64 = 10;
 
     type Packet = Ucs01TransferPacket;
     type Ack = Ucs01Ack;
@@ -958,14 +968,9 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             }
         };
 
-        let forward_response_messages = forward_response
-            .messages
-            .iter()
-            .map(|sub_msg| -> CosmosMsg<Self::CustomMsg> { sub_msg.msg.to_owned() });
-
         IbcReceiveResponse::without_ack()
             .add_messages(msgs)
-            .add_messages(forward_response_messages)
+            .add_submessages(forward_response.messages)
             .add_events(forward_response.events)
     }
 
@@ -1037,11 +1042,17 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         if let Some(reply_sub) = transfer
             .messages
             .iter_mut()
-            .find(|sub| sub.id == Self::IBC_SEND_ID)
+            .find(|sub| sub.id == IBC_SEND_ID)
         {
-            reply_sub.payload = serde_json_wasm::to_vec(&in_flight_packet)
-                .expect("can serialize")
-                .into();
+            *reply_sub = reply_sub
+                .clone()
+                .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
+
+            if reply_sub.reply_on != ReplyOn::Success {
+                return Err(ContractError::MiddlewareError(
+                    MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
+                ));
+            }
         } else {
             return Err(ContractError::MiddlewareError(
                 MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
@@ -1095,39 +1106,48 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             }
         };
 
-        let packet_timeout_timestamp = refund_info
+        let packet_timeout_timestamp: u64 = refund_info
             .src_packet_timeout
             .timestamp()
             .unwrap_or_default()
-            .nanos()
-            .into();
+            .nanos();
         let packet_timeout_height = match refund_info.src_packet_timeout.block() {
             Some(timeout_block) => timeout_block.height.to_string(),
             None => 0_u64.to_string(),
         };
 
-        let diferred_packet_info = DiferredPacketInfo {
+        let ack_dif = protos::ibc::core::channel::v1::Acknowledgement {
+            response: ack_dif.response.map(|a| match a {
+                Response::Result(res) => {
+                    protos::ibc::core::channel::v1::acknowledgement::Response::Result(res.to_vec())
+                }
+                Response::Error(e) => {
+                    protos::ibc::core::channel::v1::acknowledgement::Response::Error(e)
+                }
+            }),
+        };
+
+        let diferred_packet_into = protos::diferredack::v1beta1::DiferredPacketInfo {
             refund_channel_id: refund_info.refund_channel_id,
             refund_port_id: refund_info.refund_port_id,
             packet_src_channel_id: refund_info.packet_src_channel_id,
             packet_src_port_id: refund_info.packet_src_port_id,
             packet_timeout_timestamp,
             packet_timeout_height,
-            packet_data: refund_info.packet_data.to_vec().into(),
-            sequence: refund_info.packet_sequence.into(),
+            packet_data: refund_info.packet_data.to_vec(),
+            sequence: refund_info.packet_sequence,
         };
 
-        let dif_ack_msg = DiferredAckMsg::WriteDiferredAck {
+        let value = MsgWriteDiferredAck {
             sender: self.self_addr().to_string(),
-            diferred_packet_info,
-            ack: ack_dif,
-        };
+            diferred_packet_info: Some(diferred_packet_into),
+            ack: Some(ack_dif),
+        }
+        .encode_to_vec();
 
         let diferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
-            type_url: "/diferredack.v1beta1.Msg/WriteDiferredAck".to_owned(),
-            value: dif_ack_msg
-                .try_into()
-                .map_err(|_| MiddlewareError::PacketForward(PacketForwardError::InvalidEncoding))?,
+            type_url: "/diferredack.v1beta1.MsgWriteDiferredAck".to_owned(),
+            value: value.into(),
         });
 
         ack_msgs.append(vec![diferred_ack_msg].as_mut());

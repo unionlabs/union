@@ -8,7 +8,10 @@ use cosmwasm_std::{
 use prost::Message;
 use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
-use ucs01_relay_api::{middleware::InFlightPfmPacket, protocol::TransferProtocol};
+use ucs01_relay_api::{
+    middleware::InFlightPfmPacket,
+    protocol::{TransferProtocol, IBC_SEND_ID},
+};
 
 use crate::{
     error::ContractError,
@@ -50,7 +53,7 @@ pub fn reply(
         (Ucs01Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ucs01Protocol::receive_error(err)))
         }
-        (Ics20Protocol::IBC_SEND_ID, SubMsgResult::Ok(value)) => {
+        (IBC_SEND_ID, SubMsgResult::Ok(value)) => {
             let msg_response = value
                 .msg_responses
                 .iter()

@@ -33,6 +33,8 @@ pub const ATTR_VALUE_FALSE: &str = "false";
 
 pub const ATTR_ASSETS: &str = "assets";
 
+pub const IBC_SEND_ID: u64 = 10;
+
 #[derive(Error, Debug, PartialEq)]
 pub enum ProtocolError {
     #[error("Channel doesn't exist: {channel_id}")]
@@ -79,7 +81,6 @@ pub trait TransferProtocol {
     const ORDERING: IbcOrder;
     /// Must be unique per Protocol
     const RECEIVE_REPLY_ID: u64;
-    const IBC_SEND_ID: u64;
 
     type Packet: TryFrom<Binary, Error = EncodingError>
         + TryInto<Binary, Error = EncodingError>
@@ -168,7 +169,7 @@ pub trait TransferProtocol {
                 data: packet.try_into()?,
                 timeout: input.current_time.plus_seconds(input.timeout_delta).into(),
             },
-            Self::IBC_SEND_ID,
+            IBC_SEND_ID,
         );
         Ok(Response::new()
             .add_messages(send_msgs)
