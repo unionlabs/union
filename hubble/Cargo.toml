@@ -39,7 +39,7 @@ sqlx                = { workspace = true, features = ["postgres", "runtime-tokio
 tendermint          = { workspace = true, features = ["std"] }
 tendermint-rpc      = { workspace = true, features = ["http-client", "tokio"] }
 thiserror           = { workspace = true }
-time                = { version = "0.3.30", features = ["serde"] }
+time                = { workspace = true, features = ["serde"] }
 tokio               = { workspace = true, features = ["full"] }
 tonic               = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing             = { workspace = true }

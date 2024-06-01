@@ -5336,6 +5336,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.8",
+ "time",
  "tokio",
  "unionlabs",
 ]
@@ -5693,7 +5694,7 @@ dependencies = [
 [[package]]
 name = "near-sandbox-utils"
 version = "0.7.1"
-source = "git+https://github.com/unionlabs/near-sandbox?rev=95d4e807aef874f3467b163b72cc634e59c0be0b#95d4e807aef874f3467b163b72cc634e59c0be0b"
+source = "git+https://github.com/unionlabs/near-sandbox?branch=near-ibc#95d4e807aef874f3467b163b72cc634e59c0be0b"
 dependencies = [
  "anyhow",
  "binary-install",
@@ -5939,7 +5940,7 @@ dependencies = [
 [[package]]
 name = "near-workspaces"
 version = "0.10.0"
-source = "git+https://github.com/unionlabs/near-workspace-rs?rev=e8f278e891ff61cd160615a37b6cf977deeb7c40#e8f278e891ff61cd160615a37b6cf977deeb7c40"
+source = "git+ssh://git@github.com/unionlabs/near-workspace-rs.git?branch=near-ibc#1b68c7848ae538d0d9bbf64e60011924b01b9309"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
@@ -6143,7 +6144,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "681030a937600a36906c185595136d26abfebb4aa9c65701cefcaf8578bb982b"
 dependencies = [
- "proc-macro-crate 3.1.0",
+ "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
  "syn 2.0.60",
@@ -9329,9 +9330,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.34"
+version = "0.3.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
+checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
  "itoa",
@@ -9350,9 +9351,9 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ba3a3ef41e6672a2f0f001392bb5dcd3ff0a9992d618ca761a11c3121547774"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
  "num-conv",
  "time-core",
@@ -9981,9 +9982,9 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "digest 0.10.7",
- "rand 0.8.5",
+ "rand 0.4.6",
  "static_assertions",
 ]
 
