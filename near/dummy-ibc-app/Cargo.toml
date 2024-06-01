@@ -14,12 +14,6 @@ serde.workspace         = true
 serde_json.workspace    = true
 unionlabs.workspace     = true
 
-[dev-dependencies]
-anyhow     = "1.0"
-near-units = "0.2.0"
-tokio      = { version = "1.18.1", features = ["full"] }
-workspaces = "0.7.0"
-
 [lib]
 crate-type = ["cdylib"]
 
