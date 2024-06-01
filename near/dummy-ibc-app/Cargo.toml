@@ -1,5 +1,5 @@
 [package]
-authors = ["Jacob Lindahl <jacob.lindahl@near.org>"]
+authors = ["Union Labs"]
 edition = "2021"
 name    = "dummy-ibc-app"
 version = "0.1.0"

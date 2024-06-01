@@ -276,7 +276,7 @@
             packages.${cratePname} = cargoBuild.buildPackage (
               crateAttrs // {
                 inherit pnameSuffix;
-                cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
+                cargoExtraArgs = "-j1 ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!
                   " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
