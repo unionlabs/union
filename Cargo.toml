@@ -144,7 +144,7 @@ ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branc
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 
-near-workspaces = { git = "https://github.com/unionlabs/near-workspace-rs", rev = "e8f278e891ff61cd160615a37b6cf977deeb7c40", default-features = false }
+near-workspaces = { git = "https://github.com/unionlabs/near-workspace-rs", branch = "near-ibc", default-features = false }
 
 arbitrary                = { version = "1.3.0", default-features = false }
 axum                     = { version = "0.6.20", default-features = false }
@@ -154,7 +154,7 @@ bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }
 bytes                    = { version = "1.2.1", default-features = false }
 chrono                   = { version = "0.4.26", default-features = false }
-clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
+clap                     = { version = "4.3.0", default-features = false, features = ["std"] }    # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "1.5", default-features = false }
 cosmwasm-std             = { version = "1.5", default-features = false }
@@ -185,21 +185,23 @@ rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.3", default-features = false }
 serde                    = { version = "1.0.0", default-features = false }
 serde-json-wasm          = { version = "1.0.0", default-features = false }
-serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }     # serde-json requires one of "std" or "alloc"
+serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }  # serde-json requires one of "std" or "alloc"
 serde_with               = { version = "3.7.0", default-features = false, features = ["macros"] }
 sha2                     = { version = "0.10.7", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }
 subtle-encoding          = { version = "0.5.1", default-features = false }
-thiserror                = { version = "1.0.0", default-features = false }
-tiny-keccak              = { version = "2.0.2", default-features = false }
-tokio                    = { version = "1.33.0", default-features = false }
-tokio-stream             = { version = "0.1.14", default-features = false }
-toml                     = { version = "0.8.8", default-features = false }
-tonic                    = { version = "0.10", default-features = false }
-tracing                  = { version = "0.1.40", default-features = false }
-tracing-subscriber       = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
-typenum                  = { version = "1.17.0", default-features = false }
+# Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
+thiserror          = { version = "1.0.0", default-features = false }
+time               = { version = "0.3.36", default-features = false }
+tiny-keccak        = { version = "2.0.2", default-features = false }
+tokio              = { version = "1.33.0", default-features = false }
+tokio-stream       = { version = "0.1.14", default-features = false }
+toml               = { version = "0.8.8", default-features = false }
+tonic              = { version = "0.10", default-features = false }
+tracing            = { version = "0.1.40", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
+typenum            = { version = "1.17.0", default-features = false }
 
 [patch."crates-io"]
 arbitrary = { git = "https://github.com/unionlabs/arbitrary" }

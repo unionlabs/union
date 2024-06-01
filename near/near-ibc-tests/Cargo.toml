@@ -12,7 +12,7 @@ near-contract-standards   = "5.1.0"
 near-sdk                  = { workspace = true }
 near-sdk-contract-tools   = { workspace = true }
 near-units                = "0.2.0"
-near-workspaces.workspace = true
+near-workspaces           = { git = "ssh://git@github.com/unionlabs/near-workspace-rs.git", branch = "near-ibc", default-features = false }
 serde.workspace           = true
 serde_json.workspace      = true
 tokio                     = { version = "1.18.1", features = ["full"] }
@@ -28,3 +28,5 @@ near-primitives         = "0.20"
 near-primitives-core    = { version = "0.21" }
 near-store              = { git = "https://github.com/near/nearcore" }
 sha2                    = { workspace = true }
+# Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
+time = { version = "0.3.36", features = ["parsing", "serde"] }
