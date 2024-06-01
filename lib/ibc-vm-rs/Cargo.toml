@@ -6,6 +6,7 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
+enumorph.workspace                 = true
 frame-support-procedural.workspace = true
 hex.workspace                      = true
 lazy_static.workspace              = true
@@ -14,7 +15,6 @@ serde-utils.workspace              = true
 serde.workspace                    = true
 thiserror                          = { version = "1.0", package = "thiserror-core", default-features = false }
 unionlabs.workspace                = true
-enumorph.workspace = true
 
 [lints]
 workspace = true
