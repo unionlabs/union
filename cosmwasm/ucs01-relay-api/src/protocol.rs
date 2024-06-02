@@ -7,9 +7,18 @@ use cosmwasm_std::{
 use thiserror::Error;
 
 use crate::{
-    middleware::{Memo, PacketForward, PacketReturnInfo},
+    middleware::{Memo, PacketForward},
     types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
+
+// TODO: REMOVE
+/// Used for indexing in flight packets for refunds.
+#[derive(Debug, Clone)]
+pub struct PfmRefundPacketKey {
+    pub channel_id: String,
+    pub port_id: String,
+    pub sequence: u64,
+}
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
 pub const TRANSFER_MODULE: &str = "transfer";
@@ -194,7 +203,7 @@ pub trait TransferProtocol {
         let ack: GenericAck = Self::Ack::try_from(ibc_packet.acknowledgement.data.clone())?.into();
         let memo: String = packet.extension().clone().into();
 
-        let (ack_msgs, ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
+        let (ack_msgs, mut ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
             ack.clone(),
             ibc_packet.original_packet.clone(),
             packet.sender(),
@@ -212,7 +221,9 @@ pub trait TransferProtocol {
                             packet.receiver(),
                             packet.tokens(),
                         )?,
-                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                        Vec::from_iter(
+                            (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                        ),
                     )
                 }
                 Err(error) => {
@@ -223,7 +234,9 @@ pub trait TransferProtocol {
                             packet.receiver(),
                             packet.tokens(),
                         )?,
-                        (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
+                        Vec::from_iter(
+                            (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
+                        ),
                     )
                 }
             }
@@ -233,6 +246,14 @@ pub trait TransferProtocol {
             Event::new(PACKET_EVENT)
                 .add_attributes((!memo.is_empty()).then_some((ATTR_MEMO, &memo)))
         };
+
+        let refund_key = PfmRefundPacketKey {
+            channel_id: ibc_packet.original_packet.src.channel_id,
+            port_id: ibc_packet.original_packet.src.port_id,
+            sequence: ibc_packet.original_packet.sequence,
+        };
+
+        ack_attr.append(vec![("pfm_key", format!("{refund_key:?}"))].as_mut());
 
         Ok(IbcBasicResponse::new()
             .add_event(
@@ -379,8 +400,6 @@ pub trait TransferProtocol {
         original_packet: IbcPacket,
         forward: PacketForward,
         receiver: Addr,
-        nonrefundable: bool,
-        return_info: PacketReturnInfo,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
 
     fn pfm_ack(
@@ -390,7 +409,7 @@ pub trait TransferProtocol {
         sender: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
         sequence: u64,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>)>, Self::Error>;
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error>;
 }
 
 #[cfg(test)]

@@ -1,18 +1,17 @@
 use cosmwasm_std::{
     wasm_execute, Addr, AnyMsg, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
-    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, ReplyOn, Uint128, Uint512,
+    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
-use diferred_ack_api::{Acknowledgement, Response};
 use prost::Message;
-use protos::diferredack::v1beta1::MsgWriteDiferredAck;
+use protos::{
+    diferredack::v1beta1::MsgWriteDiferredAck,
+    ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement},
+};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
-    middleware::{
-        InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError, PacketId,
-        PacketReturnInfo,
-    },
-    protocol::{TransferProtocol, IBC_SEND_ID},
+    middleware::{InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError},
+    protocol::{TransferProtocol, ATTR_ERROR, ATTR_SUCCESS, IBC_SEND_ID},
     types::{
         make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet,
         TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
@@ -549,11 +548,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             original_packet.clone(),
             forward,
             override_addr,
-            false,
-            PacketReturnInfo::NewPacket(PacketId {
-                height: self.common.env.block.height,
-                index: original_packet.sequence,
-            }),
         ) {
             Ok(forward_response) => forward_response,
             Err(e) => {
@@ -576,8 +570,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         original_packet: IbcPacket,
         forward: PacketForward,
         receiver: Addr,
-        nonrefundable: bool,
-        return_info: PacketReturnInfo,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
         // Prepare forward message
         let msg_info = MessageInfo {
@@ -608,32 +600,13 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             transfer_msg,
         )?;
 
-        let (_, in_flight_packet) = match return_info {
-            PacketReturnInfo::InFlight(in_flight_packet) => {
-                (in_flight_packet.refund_id.clone(), in_flight_packet)
-            }
-            PacketReturnInfo::NewPacket(refund_sequence) => (
-                refund_sequence.clone(),
-                Box::new(InFlightPfmPacket {
-                    nonrefundable,
-                    original_sender_addr: self.common.info.sender.clone(),
-                    packet_data: original_packet.data,
-                    packet_src_channel_id: self
-                        .common
-                        .channel
-                        .counterparty_endpoint
-                        .channel_id
-                        .clone(),
-                    packet_src_port_id: self.common.channel.counterparty_endpoint.port_id.clone(),
-                    refund_channel_id: forward.channel.clone().value(),
-                    refund_port_id: forward.port.clone().value(),
-                    refund_id: refund_sequence,
-                    timeout,
-                    src_packet_timeout: original_packet.timeout,
-                    packet_sequence: original_packet.sequence,
-                }),
-            ),
-        };
+        let in_flight_packet = InFlightPfmPacket::new(
+            self.common.info.sender.clone(),
+            original_packet,
+            timeout,
+            forward.channel.value(),
+            forward.port.value(),
+        );
 
         if let Some(reply_sub) = transfer
             .messages
@@ -643,12 +616,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             *reply_sub = reply_sub
                 .clone()
                 .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
-
-            if reply_sub.reply_on != ReplyOn::Success {
-                return Err(ContractError::MiddlewareError(
-                    MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
-                ));
-            }
         } else {
             return Err(ContractError::MiddlewareError(
                 MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
@@ -667,11 +634,10 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         sender: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
         sequence: u64,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>)>, Self::Error>
-    {
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
         let refund_key = PfmRefundPacketKey {
-            channel_id: ibc_packet.dest.channel_id,
-            port_id: ibc_packet.dest.port_id,
+            channel_id: ibc_packet.src.channel_id,
+            port_id: ibc_packet.src.port_id,
             sequence,
         };
         let refund_info = match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key) {
@@ -679,27 +645,26 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             Err(_) => return Ok(None),
         };
 
-        let (mut ack_msgs, ack_attr, ack_dif) = match ack {
+        let (mut ack_msgs, mut ack_attr, ack_dif) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
                 (
                     self.send_tokens_success(sender, &String::new(), tokens)?,
-                    (!value_string.is_empty()).then_some(("success", value_string)),
+                    Vec::from_iter(
+                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                    ),
                     Acknowledgement {
-                        response: Some(Response::Result(value.to_vec().into())),
+                        response: Some(Response::Result(value.to_vec())),
                     },
                 )
             }
-            Err(error) => {
-                let error_string = error.to_string();
-                (
-                    self.send_tokens_failure(sender, &String::new(), tokens)?,
-                    (!error_string.is_empty()).then_some(("error", error_string)),
-                    Acknowledgement {
-                        response: Some(Response::Error(error)),
-                    },
-                )
-            }
+            Err(error) => (
+                self.send_tokens_failure(sender, &String::new(), tokens)?,
+                Vec::from_iter((!error.is_empty()).then_some((ATTR_ERROR, error.clone()))),
+                Acknowledgement {
+                    response: Some(Response::Error(error)),
+                },
+            ),
         };
 
         let packet_timeout_timestamp: u64 = refund_info
@@ -708,19 +673,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .unwrap_or_default()
             .nanos();
         let packet_timeout_height = match refund_info.src_packet_timeout.block() {
-            Some(timeout_block) => timeout_block.height.to_string(),
-            None => 0_u64.to_string(),
-        };
-
-        let ack_dif = protos::ibc::core::channel::v1::Acknowledgement {
-            response: ack_dif.response.map(|a| match a {
-                Response::Result(res) => {
-                    protos::ibc::core::channel::v1::acknowledgement::Response::Result(res.to_vec())
-                }
-                Response::Error(e) => {
-                    protos::ibc::core::channel::v1::acknowledgement::Response::Error(e)
-                }
-            }),
+            Some(timeout_block) => format!("{}-{}", timeout_block.revision, timeout_block.height),
+            None => "0-0".to_string(),
         };
 
         let diferred_packet_into = protos::diferredack::v1beta1::DiferredPacketInfo {
@@ -747,6 +701,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         });
 
         ack_msgs.append(vec![diferred_ack_msg].as_mut());
+        ack_attr.append(vec![("pfm", "pfm_ack_confirm".to_string())].as_mut());
 
         Ok(Some((ack_msgs, ack_attr)))
     }
@@ -953,11 +908,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             original_packet.clone(),
             forward,
             override_addr,
-            false,
-            PacketReturnInfo::NewPacket(PacketId {
-                height: self.common.env.block.height,
-                index: original_packet.sequence,
-            }),
         ) {
             Ok(forward_response) => forward_response,
             Err(e) => {
@@ -980,8 +930,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         original_packet: IbcPacket,
         forward: PacketForward,
         receiver: Addr,
-        nonrefundable: bool,
-        return_info: PacketReturnInfo,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
         // Prepare forward message
         let msg_info = MessageInfo {
@@ -1012,32 +960,13 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             transfer_msg,
         )?;
 
-        let (_, in_flight_packet) = match return_info {
-            PacketReturnInfo::InFlight(in_flight_packet) => {
-                (in_flight_packet.refund_id.clone(), in_flight_packet)
-            }
-            PacketReturnInfo::NewPacket(refund_sequence) => (
-                refund_sequence.clone(),
-                Box::new(InFlightPfmPacket {
-                    nonrefundable,
-                    original_sender_addr: self.common.info.sender.clone(),
-                    packet_data: original_packet.data,
-                    packet_src_channel_id: self
-                        .common
-                        .channel
-                        .counterparty_endpoint
-                        .channel_id
-                        .clone(),
-                    packet_src_port_id: self.common.channel.counterparty_endpoint.port_id.clone(),
-                    refund_channel_id: forward.channel.value(),
-                    refund_port_id: forward.port.value(),
-                    refund_id: refund_sequence,
-                    timeout,
-                    src_packet_timeout: original_packet.timeout,
-                    packet_sequence: original_packet.sequence,
-                }),
-            ),
-        };
+        let in_flight_packet = InFlightPfmPacket::new(
+            self.common.info.sender.clone(),
+            original_packet,
+            timeout,
+            forward.channel.value(),
+            forward.port.value(),
+        );
 
         if let Some(reply_sub) = transfer
             .messages
@@ -1047,12 +976,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             *reply_sub = reply_sub
                 .clone()
                 .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
-
-            if reply_sub.reply_on != ReplyOn::Success {
-                return Err(ContractError::MiddlewareError(
-                    MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
-                ));
-            }
         } else {
             return Err(ContractError::MiddlewareError(
                 MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
@@ -1071,11 +994,10 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         sender: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
         sequence: u64,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Option<(&str, String)>)>, Self::Error>
-    {
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
         let refund_key = PfmRefundPacketKey {
-            channel_id: ibc_packet.dest.channel_id,
-            port_id: ibc_packet.dest.port_id,
+            channel_id: ibc_packet.src.channel_id,
+            port_id: ibc_packet.src.port_id,
             sequence,
         };
         let refund_info = match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key) {
@@ -1083,27 +1005,26 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             Err(_) => return Ok(None),
         };
 
-        let (mut ack_msgs, ack_attr, ack_dif) = match ack {
+        let (mut ack_msgs, mut ack_attr, ack_dif) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
                 (
                     self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
-                    (!value_string.is_empty()).then_some(("success", value_string)),
+                    Vec::from_iter(
+                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                    ),
                     Acknowledgement {
-                        response: Some(Response::Result(value.to_vec().into())),
+                        response: Some(Response::Result(value.to_vec())),
                     },
                 )
             }
-            Err(error) => {
-                let error_string = error.to_string();
-                (
-                    self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
-                    (!error_string.is_empty()).then_some(("error", error_string)),
-                    Acknowledgement {
-                        response: Some(Response::Error(error)),
-                    },
-                )
-            }
+            Err(error) => (
+                self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
+                Vec::from_iter((!error.is_empty()).then_some((ATTR_ERROR, error.clone()))),
+                Acknowledgement {
+                    response: Some(Response::Error(error)),
+                },
+            ),
         };
 
         let packet_timeout_timestamp: u64 = refund_info
@@ -1112,19 +1033,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .unwrap_or_default()
             .nanos();
         let packet_timeout_height = match refund_info.src_packet_timeout.block() {
-            Some(timeout_block) => timeout_block.height.to_string(),
-            None => 0_u64.to_string(),
-        };
-
-        let ack_dif = protos::ibc::core::channel::v1::Acknowledgement {
-            response: ack_dif.response.map(|a| match a {
-                Response::Result(res) => {
-                    protos::ibc::core::channel::v1::acknowledgement::Response::Result(res.to_vec())
-                }
-                Response::Error(e) => {
-                    protos::ibc::core::channel::v1::acknowledgement::Response::Error(e)
-                }
-            }),
+            Some(timeout_block) => format!("{}-{}", timeout_block.revision, timeout_block.height),
+            None => "0-0".to_string(),
         };
 
         let diferred_packet_into = protos::diferredack::v1beta1::DiferredPacketInfo {
@@ -1135,7 +1045,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             packet_timeout_timestamp,
             packet_timeout_height,
             packet_data: refund_info.packet_data.to_vec(),
-            sequence: refund_info.packet_sequence,
+            sequence,
         };
 
         let value = MsgWriteDiferredAck {
@@ -1151,6 +1061,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         });
 
         ack_msgs.append(vec![diferred_ack_msg].as_mut());
+        ack_attr.append(vec![("pfm", "pfm_ack".to_string())].as_mut());
 
         Ok(Some((ack_msgs, ack_attr)))
     }

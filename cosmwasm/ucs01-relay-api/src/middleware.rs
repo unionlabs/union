@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary, IbcTimeout};
+use cosmwasm_std::{Addr, Binary, IbcPacket, IbcTimeout};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use unionlabs::{
@@ -52,17 +52,35 @@ pub struct PacketId {
 /// Information about an in flight packet, used to process retries and refunds.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct InFlightPfmPacket {
-    pub nonrefundable: bool,
     pub original_sender_addr: Addr,
     pub packet_data: Binary,
     pub packet_src_channel_id: String,
     pub packet_src_port_id: String,
     pub refund_channel_id: String,
     pub refund_port_id: String,
-    pub refund_id: PacketId,
     pub packet_sequence: u64,
     pub timeout: u64,
     pub src_packet_timeout: IbcTimeout,
+    pub forward_channel_id: String,
+    pub forward_port_id: String,
+}
+
+impl InFlightPfmPacket {
+    pub fn new(original_sender_addr: Addr, original_packet: IbcPacket, timeout: u64, forward_channel_id: String, forward_port_id: String) -> Self {
+        Self {
+            original_sender_addr,
+            packet_data: original_packet.data,
+            packet_src_channel_id: original_packet.src.channel_id,
+            packet_src_port_id: original_packet.src.port_id,
+            refund_channel_id: original_packet.dest.channel_id,
+            refund_port_id: original_packet.dest.port_id,
+            timeout,
+            src_packet_timeout: original_packet.timeout,
+            packet_sequence: original_packet.sequence,
+            forward_channel_id,
+            forward_port_id,
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]

@@ -70,17 +70,17 @@ pub fn reply(
                 serde_json_wasm::from_slice(reply.payload.as_slice()).expect("binary is type");
 
             let refund_packet_key = PfmRefundPacketKey {
-                channel_id: in_flight_packet.clone().refund_channel_id,
-                port_id: in_flight_packet.clone().refund_port_id,
+                channel_id: in_flight_packet.clone().forward_channel_id,
+                port_id: in_flight_packet.clone().forward_port_id,
                 sequence: send_res.sequence,
             };
 
             IN_FLIGHT_PFM_PACKETS
-                .save(deps.storage, refund_packet_key, &in_flight_packet)
+                .save(deps.storage, refund_packet_key.clone(), &in_flight_packet)
                 .expect("infallible update");
 
             Ok(Response::new()
-                .add_attribute("pfm_store_inclusion", format!("{in_flight_packet:?}")))
+                .add_attribute("pfm_store_inclusion", format!("{refund_packet_key:?}")))
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,
