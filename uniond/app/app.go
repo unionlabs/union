@@ -585,6 +585,7 @@ func NewUnionApp(
 		appCodec,
 		keys[datypes.StoreKey],
 		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
 	)
 	daModule := damodule.NewAppModule(app.DaKeeper)
 
