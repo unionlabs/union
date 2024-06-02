@@ -4,7 +4,6 @@ use near_primitives_core::{
     types::{Balance, BlockHeight},
 };
 use near_sdk::AccountId;
-// use unionlabs::tendermint::crypto::public_key::PublicKey;
 
 #[derive(
     PartialEq,
@@ -104,15 +103,3 @@ pub enum ApprovalInner {
     Endorsement(CryptoHash),
     Skip(BlockHeight),
 }
-
-#[derive(
-    PartialEq,
-    Eq,
-    Debug,
-    Clone,
-    borsh::BorshDeserialize,
-    borsh::BorshSerialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-pub struct UpdateState {}

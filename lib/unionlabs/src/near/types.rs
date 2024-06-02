@@ -128,14 +128,6 @@ impl From<BlockHeaderInnerLiteView> for BlockHeaderInnerLite {
     }
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
-pub struct HeaderUpdate {
-    pub new_state: LightClientBlockView,
-    pub trusted_height: BlockHeight,
-    pub prev_state_root_proof: MerklePath,
-    pub prev_state_root: CryptoHash,
-}
-
 #[derive(
     PartialEq,
     Eq,
