@@ -7301,12 +7301,12 @@
         }
       }
     },
-    "/diferredack.v1beta1/params": {
+    "/deferredack.v1beta1/params": {
       "get": {
         "tags": [
           "Query"
         ],
-        "description": "Params defines a gRPC query method that returns the diferredack module's\n parameters.",
+        "description": "Params defines a gRPC query method that returns the deferredack module's\n parameters.",
         "operationId": "Query_Params",
         "responses": {
           "200": {

@@ -139,10 +139,10 @@ import (
 	tfkeeper "union/x/tokenfactory/keeper"
 	tftypes "union/x/tokenfactory/types"
 
-	damodule "union/x/diferredack"
-	dabindings "union/x/diferredack/bindings"
-	dakeeper "union/x/diferredack/keeper"
-	datypes "union/x/diferredack/types"
+	damodule "union/x/deferredack"
+	dabindings "union/x/deferredack/bindings"
+	dakeeper "union/x/deferredack/keeper"
+	datypes "union/x/deferredack/types"
 
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
