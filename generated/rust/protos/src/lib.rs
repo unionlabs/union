@@ -566,12 +566,12 @@ pub mod cosmwasm {
         }
     }
 }
-pub mod diferredack {
-    #[cfg(feature = "diferredack+v1beta1")]
-    // @@protoc_insertion_point(attribute:diferredack.v1beta1)
+pub mod deferredack {
+    #[cfg(feature = "deferredack+v1beta1")]
+    // @@protoc_insertion_point(attribute:deferredack.v1beta1)
     pub mod v1beta1 {
-        include!("diferredack.v1beta1.rs");
-        // @@protoc_insertion_point(diferredack.v1beta1)
+        include!("deferredack.v1beta1.rs");
+        // @@protoc_insertion_point(deferredack.v1beta1)
     }
 }
 pub mod google {

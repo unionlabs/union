@@ -95,10 +95,10 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/diferredack.v1beta1.Query/Params");
+            let path = http::uri::PathAndQuery::from_static("/deferredack.v1beta1.Query/Params");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("diferredack.v1beta1.Query", "Params"));
+                .insert(GrpcMethod::new("deferredack.v1beta1.Query", "Params"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -184,10 +184,10 @@ pub mod msg_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn write_diferred_ack(
+        pub async fn write_deferred_ack(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgWriteDiferredAck>,
-        ) -> std::result::Result<tonic::Response<super::MsgWriteDiferredAckResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgWriteDeferredAck>,
+        ) -> std::result::Result<tonic::Response<super::MsgWriteDeferredAckResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -197,11 +197,11 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/diferredack.v1beta1.Msg/WriteDiferredAck");
+                http::uri::PathAndQuery::from_static("/deferredack.v1beta1.Msg/WriteDeferredAck");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "diferredack.v1beta1.Msg",
-                "WriteDiferredAck",
+                "deferredack.v1beta1.Msg",
+                "WriteDeferredAck",
             ));
             self.inner.unary(req, path, codec).await
         }
