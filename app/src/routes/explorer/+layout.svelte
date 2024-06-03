@@ -1,14 +1,13 @@
 <script lang="ts">
 import { onMount } from "svelte"
+import { page } from "$app/stores"
+import { onNavigate } from "$app/navigation"
 import Menu from "./(components)/menu.svelte"
 import type { LayoutData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { noThrowSync } from "$lib/utilities/index.ts"
 import * as Resizable from "$lib/components/ui/resizable"
 import GripVerticalIcon from "virtual:icons/tabler/grip-vertical"
-import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
-import { page } from "$app/stores"
-import { derived } from "svelte/store"
-import { onNavigate } from "$app/navigation"
 
 export let data: LayoutData
 
@@ -31,11 +30,9 @@ let isCollapsed = false
 let leftPane: Resizable.PaneAPI
 $: [leftSize, rightSize] = [14, 88]
 
-$: if (windowSize?.width < 900) {
-  try {
-    leftPane.collapse()
-    // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
-  } catch {}
+$: {
+  if (windowSize?.width < 900) noThrowSync(() => leftPane?.collapse())
+  else if (windowSize?.width > 1250) noThrowSync(() => leftPane?.expand())
 }
 
 const onLayoutChange: Resizable.PaneGroupProps["onLayoutChange"] = sizes => {

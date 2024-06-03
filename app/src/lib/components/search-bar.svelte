@@ -10,6 +10,7 @@ import { debounce } from "$lib/utilities/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
 import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSign from "virtual:icons/lucide/badge-dollar-sign"
+import AutoExpandedInput from "./auto-expanded-input.svelte"
 
 let commandDialogOpen = false
 let searchInput: string
@@ -44,7 +45,7 @@ const onInputChange = (event: InputEvent) =>
   }, 1_000)(event)
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-[490px]">
+<div class="relative mr-auto flex-1 w-full">
   <Search class="absolute left-2.5 top-3 size-4 text-muted-foreground" />
   <Input
     type="search"

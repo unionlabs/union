@@ -167,7 +167,7 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     'rounded-md border border-secondary border-solid overflow-hidden w-full h-[800px] flex flex-col',
   )}
 >
-  <div class={cn(`h-[${$virtualizer.getTotalSize()}px] min-h-[${$virtualizer.getTotalSize()}px]`)}>
+  <div class={cn(`h-[${$virtualizer.getTotalSize()}px]`)}>
     <Table.Root class={cn('size-full mx-auto rounded-md w-full overflow-auto')}>
       <Table.Header
         class={cn('outline outline-1 outline-secondary sticky top-0 left-0 bottom-0 z-50 h-[20px]')}
@@ -205,7 +205,7 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
            * @TODO
            * this height calculation will need to be carefully tweaked to arrive at the best possible height
            */
-          'overflow-auto h-[calc(800px-20px)] flex-1',
+          'overflow-auto h-[calc(950px-20px)] flex-1',
         )}
       >
         <Table.Body class={'size-full'}>

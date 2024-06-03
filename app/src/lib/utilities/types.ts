@@ -2,6 +2,8 @@ export type NonNullable<T> = T extends null | undefined ? never : T
 
 export type TODO = any
 
+export type MaybePromise<T> = T | Promise<T>
+
 export type Nullable<T> = T | null | undefined
 
 export type LowercaseKeys<T> = {
