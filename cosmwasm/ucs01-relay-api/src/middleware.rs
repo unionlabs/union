@@ -66,7 +66,13 @@ pub struct InFlightPfmPacket {
 }
 
 impl InFlightPfmPacket {
-    pub fn new(original_sender_addr: Addr, original_packet: IbcPacket, timeout: u64, forward_channel_id: String, forward_port_id: String) -> Self {
+    pub fn new(
+        original_sender_addr: Addr,
+        original_packet: IbcPacket,
+        timeout: u64,
+        forward_channel_id: String,
+        forward_port_id: String,
+    ) -> Self {
         Self {
             original_sender_addr,
             packet_data: original_packet.data,

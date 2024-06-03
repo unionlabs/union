@@ -22,18 +22,18 @@ cosmwasm-std      = { version = "2.0.0", features = ["stargate", "cosmwasm_2_0",
 cw-controllers    = { version = "2.0.0" }
 cw-storage-plus   = { version = "2.0.0" }
 cw2               = { version = "2.0.0" }
+diferred-ack-api  = { workspace = true }
 dlmalloc          = { workspace = true, features = ["global"] }
 ethabi            = { workspace = true }
 go-parse-duration = { workspace = true }
 hex               = { workspace = true }
+prost             = { workspace = true }
+protos            = { workspace = true }
 schemars          = { workspace = true }
 semver            = "1"
-serde-json-wasm   = { workspace = true }
 serde             = { workspace = true, features = ["derive"] }
+serde-json-wasm   = { workspace = true }
 sha2              = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
-diferred-ack-api  = { workspace = true }
 ucs01-relay-api   = { workspace = true }
-protos            = { workspace = true }
-prost             = { workspace = true }
