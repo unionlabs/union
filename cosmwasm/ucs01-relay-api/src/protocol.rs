@@ -11,15 +11,6 @@ use crate::{
     types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
 
-// TODO: REMOVE
-/// Used for indexing in flight packets for refunds.
-#[derive(Debug, Clone)]
-pub struct PfmRefundPacketKey {
-    pub channel_id: String,
-    pub port_id: String,
-    pub sequence: u64,
-}
-
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
 pub const TRANSFER_MODULE: &str = "transfer";
 
@@ -203,7 +194,7 @@ pub trait TransferProtocol {
         let ack: GenericAck = Self::Ack::try_from(ibc_packet.acknowledgement.data.clone())?.into();
         let memo: String = packet.extension().clone().into();
 
-        let (ack_msgs, mut ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
+        let (ack_msgs, ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
             ack.clone(),
             ibc_packet.original_packet.clone(),
             packet.sender(),
@@ -246,14 +237,6 @@ pub trait TransferProtocol {
             Event::new(PACKET_EVENT)
                 .add_attributes((!memo.is_empty()).then_some((ATTR_MEMO, &memo)))
         };
-
-        let refund_key = PfmRefundPacketKey {
-            channel_id: ibc_packet.original_packet.src.channel_id,
-            port_id: ibc_packet.original_packet.src.port_id,
-            sequence: ibc_packet.original_packet.sequence,
-        };
-
-        ack_attr.append(vec![("pfm_key", format!("{refund_key:?}"))].as_mut());
 
         Ok(IbcBasicResponse::new()
             .add_event(
@@ -386,6 +369,7 @@ pub trait TransferProtocol {
         ]))
     }
 
+    /// Extracts and processes the forward information from a messages memo. Initiates the forward transfer process.
     fn packet_forward(
         &mut self,
         packet: Self::Packet,
@@ -394,6 +378,9 @@ pub trait TransferProtocol {
         processed: bool,
     ) -> IbcReceiveResponse<Self::CustomMsg>;
 
+    /// Create the IBC transfer message from the provided forward information.
+    ///
+    /// Modifies the payload of the sub message with the ID `IBC_SEND_ID` to contain the `InFlightPfmPacket` serde json encoded struct.
     fn forward_transfer_packet(
         &mut self,
         tokens: Vec<Coin>,
@@ -402,6 +389,9 @@ pub trait TransferProtocol {
         receiver: Addr,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
 
+    /// On packet acknowledgment (be it success, failure, or timeout) check if the packet is a PFM packet.
+    /// If the packet is a PFM packet, overwrite the acknowledgment process to forward the acknowledgment to the original sender.
+    /// Handle and overwrites required for refunding tokens correctly.
     fn pfm_ack(
         &mut self,
         ack: GenericAck,

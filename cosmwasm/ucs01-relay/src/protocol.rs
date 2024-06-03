@@ -640,10 +640,11 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             port_id: ibc_packet.src.port_id,
             sequence,
         };
-        let refund_info = match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key) {
-            Ok(refund_info) => refund_info,
-            Err(_) => return Ok(None),
-        };
+        let refund_info =
+            match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key.clone()) {
+                Ok(refund_info) => refund_info,
+                Err(_) => return Ok(None),
+            };
 
         let (mut ack_msgs, mut ack_attr, ack_dif) = match ack {
             Ok(value) => {
@@ -702,6 +703,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         ack_msgs.append(vec![diferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack_confirm".to_string())].as_mut());
+
+        IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
         Ok(Some((ack_msgs, ack_attr)))
     }
@@ -1000,10 +1003,11 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             port_id: ibc_packet.src.port_id,
             sequence,
         };
-        let refund_info = match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key) {
-            Ok(refund_info) => refund_info,
-            Err(_) => return Ok(None),
-        };
+        let refund_info =
+            match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key.clone()) {
+                Ok(refund_info) => refund_info,
+                Err(_) => return Ok(None),
+            };
 
         let (mut ack_msgs, mut ack_attr, ack_dif) = match ack {
             Ok(value) => {
@@ -1062,6 +1066,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         ack_msgs.append(vec![diferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack".to_string())].as_mut());
+
+        IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
         Ok(Some((ack_msgs, ack_attr)))
     }
