@@ -30,7 +30,10 @@
     "noPropertyAccessFromIndexSignature": true,
     "types": ["node", "bun"],
     "paths": {
-      "#/*": ["src/*"]
+      "#/*": ["src/*"],
+      "~root/*": [
+        "../*"
+      ],
     }
   },
   "include": ["src", "scripts", "test"],

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { page } from "$app/stores"
-import toast from "svelte-french-toast"
+import { toast } from "svelte-sonner"
 import { debounce } from "$lib/utilities"
 import { UnionClient } from "@union/client"
 import type { PageData } from "./$types.ts"
