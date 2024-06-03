@@ -3,7 +3,6 @@ resolver = "2"
 # NOTE: All paths must be listed out (i.e. no globs) since ifd is still broken in nix (still can't import the output of `cargo metadata` :( ). See crane.nix for where this is used.
 members = [
   "cosmwasm/token-factory-api",
-  "cosmwasm/diferred-ack-api",
   "cosmwasm/ucs00-pingpong",
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
@@ -92,7 +91,6 @@ block-message             = { path = "lib/block-message", default-features = fal
 chain-utils               = { path = "lib/chain-utils", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 contracts                 = { path = "generated/rust/contracts", default-features = false }
-diferred-ack-api          = { path = "cosmwasm/diferred-ack-api", default-features = false }
 ethereum-light-client     = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
 gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }

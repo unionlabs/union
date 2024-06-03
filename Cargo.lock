@@ -2042,15 +2042,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "diferred-ack-api"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema 2.0.2",
- "cosmwasm-std 2.0.3",
- "thiserror",
-]
-
-[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7544,7 +7535,6 @@ dependencies = [
  "cw-controllers",
  "cw-storage-plus 2.0.0",
  "cw2 2.0.0",
- "diferred-ack-api",
  "dlmalloc",
  "ethabi",
  "go-parse-duration",
@@ -7567,7 +7557,6 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.3",
- "diferred-ack-api",
  "ethabi",
  "go-parse-duration",
  "prost",

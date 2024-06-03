@@ -9,7 +9,6 @@ workspace = true
 [dependencies]
 cosmwasm-schema   = { version = "2.0.0" }
 cosmwasm-std      = { version = "2.0.0", features = ["stargate"] }
-diferred-ack-api  = { workspace = true }
 ethabi            = { workspace = true }
 go-parse-duration = { workspace = true }
 prost             = { workspace = true }

@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use prost::Message;
 use protos::{
-    diferredack::v1beta1::MsgWriteDiferredAck,
+    deferredack::v1beta1::MsgWriteDeferredAck,
     ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement},
 };
 use sha2::{Digest, Sha256};
@@ -646,7 +646,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                 Err(_) => return Ok(None),
             };
 
-        let (mut ack_msgs, mut ack_attr, ack_dif) = match ack {
+        let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
                 (
@@ -678,7 +678,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             None => "0-0".to_string(),
         };
 
-        let diferred_packet_into = protos::diferredack::v1beta1::DiferredPacketInfo {
+        let deferred_packet_into = protos::deferredack::v1beta1::DeferredPacketInfo {
             refund_channel_id: refund_info.refund_channel_id,
             refund_port_id: refund_info.refund_port_id,
             packet_src_channel_id: refund_info.packet_src_channel_id,
@@ -689,19 +689,19 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             sequence: refund_info.packet_sequence,
         };
 
-        let value = MsgWriteDiferredAck {
+        let value = MsgWriteDeferredAck {
             sender: self.self_addr().to_string(),
-            diferred_packet_info: Some(diferred_packet_into),
-            ack: Some(ack_dif),
+            deferred_packet_info: Some(deferred_packet_into),
+            ack: Some(ack_def),
         }
         .encode_to_vec();
 
-        let diferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
-            type_url: "/diferredack.v1beta1.MsgWriteDiferredAck".to_owned(),
+        let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+            type_url: "/deferredack.v1beta1.MsgWriteDeferredAck".to_owned(),
             value: value.into(),
         });
 
-        ack_msgs.append(vec![diferred_ack_msg].as_mut());
+        ack_msgs.append(vec![deferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack_confirm".to_string())].as_mut());
 
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
@@ -1009,7 +1009,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 Err(_) => return Ok(None),
             };
 
-        let (mut ack_msgs, mut ack_attr, ack_dif) = match ack {
+        let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
                 (
@@ -1041,7 +1041,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             None => "0-0".to_string(),
         };
 
-        let diferred_packet_into = protos::diferredack::v1beta1::DiferredPacketInfo {
+        let deferred_packet_into = protos::deferredack::v1beta1::DeferredPacketInfo {
             refund_channel_id: refund_info.refund_channel_id,
             refund_port_id: refund_info.refund_port_id,
             packet_src_channel_id: refund_info.packet_src_channel_id,
@@ -1052,19 +1052,19 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             sequence,
         };
 
-        let value = MsgWriteDiferredAck {
+        let value = MsgWriteDeferredAck {
             sender: self.self_addr().to_string(),
-            diferred_packet_info: Some(diferred_packet_into),
-            ack: Some(ack_dif),
+            deferred_packet_info: Some(deferred_packet_into),
+            ack: Some(ack_def),
         }
         .encode_to_vec();
 
-        let diferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
-            type_url: "/diferredack.v1beta1.MsgWriteDiferredAck".to_owned(),
+        let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+            type_url: "/deferredack.v1beta1.MsgWriteDeferredAck".to_owned(),
             value: value.into(),
         });
 
-        ack_msgs.append(vec![diferred_ack_msg].as_mut());
+        ack_msgs.append(vec![deferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack".to_string())].as_mut());
 
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
@@ -1171,7 +1171,7 @@ mod tests {
     }
 
     #[test]
-    fn receive_transfer_destination_collision_yields_different_hashes() {
+    fn receive_transfer_destination_collision_yields_defferent_hashes() {
         let source_endpoint_1 = IbcEndpoint {
             port_id: "wasm.0xDEADC0DE".into(),
             channel_id: "channel-1".into(),

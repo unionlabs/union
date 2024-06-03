@@ -22,7 +22,6 @@ cosmwasm-std      = { version = "2.0.0", features = ["stargate", "cosmwasm_2_0",
 cw-controllers    = { version = "2.0.0" }
 cw-storage-plus   = { version = "2.0.0" }
 cw2               = { version = "2.0.0" }
-diferred-ack-api  = { workspace = true }
 dlmalloc          = { workspace = true, features = ["global"] }
 ethabi            = { workspace = true }
 go-parse-duration = { workspace = true }
