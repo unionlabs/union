@@ -270,9 +270,8 @@ export class UnionClient implements IUnionClient {
         sourceChannel,
         unionToEvmAddress(receiver),
         [{ denom: denomAddress, amount }],
-        { revision_number: 9n, revision_height: 10_000_000_000n },
-        // BigInt(Date.now()) + 7n * 24n * 60n * 60n * 1000n // now + 7 days
-        999_999_999_999_999n
+        { revision_number: 9n, revision_height: 9999999999n },
+        0n
       ]
     } as const
     if (!simulate) return await signer.writeContract(writeContractParameters)

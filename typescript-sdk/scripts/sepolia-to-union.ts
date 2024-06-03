@@ -3,8 +3,10 @@ import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { UnionClient } from "#/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, erc20Abi, publicActions, createWalletClient } from "viem"
-
+import { http, erc20Abi, publicActions, createWalletClient, fallback } from "viem"
+import { ucs01RelayAbi } from "#/abi"
+import { unionToEvmAddress } from "#/convert"
+import { CHAINS } from "#/constants/testnet"
 /* `bun scripts/sepolia-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({
@@ -20,7 +22,14 @@ const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 const evmSigner = createWalletClient({
   chain: sepolia,
   account: evmAccount,
-  transport: http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
+  // transport: http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
+  // transport: http(`https://rpc2.sepolia.org`)
+  transport: fallback([
+    http(`https://rpc2.sepolia.org`)
+    // http(
+    //   `https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e/`
+    // )
+  ])
 }).extend(publicActions)
 
 const unionClient = await UnionClient.connectWithSecret({
@@ -44,7 +53,7 @@ const approve = await evmSigner.writeContract({
   functionName: "approve",
   chain: sepolia,
   args: [
-    "0x3d0eb16ad2619666dbde1921282cd885b58eeefe", // spender - SEPOLIA_UCS01_ADDRESS
+    "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb",
     10n // amount
   ]
 })
@@ -56,8 +65,9 @@ const linkFromSepoliaToUnion = await unionClient.transferEvmAsset({
   receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
   denomAddress: LINK_CONTRACT_ADDRESS,
   amount: 1n,
-  sourceChannel: "channel-8",
-  contractAddress: "0x3d0eb16ad2619666dbde1921282cd885b58eeefe", // SEPOLIA_UCS01_ADDRESS
+  sourceChannel: "channel-1",
+  contractAddress: "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb",
   simulate: true
 })
+
 console.log(linkFromSepoliaToUnion)
