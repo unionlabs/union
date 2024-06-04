@@ -1,8 +1,4 @@
 import {
-  readable,
-  derived,
-} from "svelte/store"
-import {
   getClient,
   getAccount,
   getChainId,
@@ -16,6 +12,7 @@ import {
   getConnectorClient
 } from "@wagmi/core"
 import { config } from "./config.ts"
+import { readable, derived } from "svelte/store"
 
 export const evmClient = readable(getClient(config), set => watchClient(config, { onChange: set }))
 export const evmChainId = readable(getChainId(config), set =>
