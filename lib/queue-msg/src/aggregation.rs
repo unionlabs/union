@@ -138,14 +138,16 @@ impl<H, Tail: HListAsTuple> HListAsTuple for HCons<H, Tail> {
 mod tests {
     use std::sync::Arc;
 
-    use enumorph::Enumorph;
     use frunk::HList;
-    use queue_msg_macro::queue_msg;
+    use tracing_subscriber::EnvFilter;
 
     use super::*;
     use crate::{
-        data, fetch, run_to_completion, HandleAggregate, HandleData, HandleEffect, HandleEvent,
-        HandleFetch, HandleWait, InMemoryQueue, QueueError,
+        fetch,
+        optimize::{passes::NormalizeFinal, Pure},
+        run_to_completion,
+        test_utils::{DataA, DataB, DataC, FetchA, FetchB, FetchC, SimpleMessage},
+        InMemoryQueue,
     };
 
     #[test]
@@ -197,143 +199,60 @@ mod tests {
         );
     }
 
-    pub enum SimpleMessageTypes {}
-
-    impl QueueMessageTypes for SimpleMessageTypes {
-        type Event = SimpleEvent;
-        type Data = SimpleData;
-        type Fetch = SimpleFetch;
-        type Effect = SimpleEffect;
-        type Wait = SimpleWait;
-
-        type Aggregate = SimpleAggregate;
-
-        type Store = ();
-    }
-
-    impl HandleEffect<SimpleMessageTypes> for SimpleEffect {
-        async fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
-        }
-    }
-
-    impl HandleEvent<SimpleMessageTypes> for SimpleEvent {
-        fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
-        }
-    }
-
-    impl HandleData<SimpleMessageTypes> for SimpleData {
-        fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessageTypes>, QueueError> {
-            Ok(data(self))
-        }
-    }
-
-    impl HandleFetch<SimpleMessageTypes> for SimpleFetch {
-        async fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessageTypes>, QueueError> {
-            Ok(match self {
-                SimpleFetch::A(_) => data(DataA {}),
-                SimpleFetch::B(_) => data(DataB {}),
-                SimpleFetch::C(_) => data(DataC {}),
-                SimpleFetch::D(_) => data(DataD {}),
-                SimpleFetch::E(_) => data(DataE {}),
-            })
-        }
-    }
-
-    impl HandleWait<SimpleMessageTypes> for SimpleWait {
-        async fn handle(self, _: &()) -> Result<QueueMsg<SimpleMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
-        }
-    }
-
-    impl HandleAggregate<SimpleMessageTypes> for SimpleAggregate {
-        fn handle(
-            self,
-            _: VecDeque<SimpleData>,
-        ) -> Result<QueueMsg<SimpleMessageTypes>, QueueError> {
-            Ok(QueueMsg::Noop)
-        }
-    }
-
-    #[queue_msg]
-    pub struct SimpleEvent {}
-    #[queue_msg]
-    #[derive(Enumorph)]
-    pub enum SimpleData {
-        A(DataA),
-        B(DataB),
-        C(DataC),
-        D(DataD),
-        E(DataE),
-    }
-    #[queue_msg]
-    pub struct DataA {}
-    #[queue_msg]
-    pub struct DataB {}
-    #[queue_msg]
-    pub struct DataC {}
-    #[queue_msg]
-    pub struct DataD {}
-    #[queue_msg]
-    pub struct DataE {}
-
-    #[queue_msg]
-    #[derive(Enumorph)]
-    pub enum SimpleFetch {
-        A(FetchA),
-        B(FetchB),
-        C(FetchC),
-        D(FetchD),
-        E(FetchE),
-    }
-    #[queue_msg]
-    pub struct FetchA {}
-    #[queue_msg]
-    pub struct FetchB {}
-    #[queue_msg]
-    pub struct FetchC {}
-    #[queue_msg]
-    pub struct FetchD {}
-    #[queue_msg]
-    pub struct FetchE {}
-
-    #[queue_msg]
-    pub struct SimpleEffect {}
-    #[queue_msg]
-    pub struct SimpleWait {}
-
-    #[queue_msg]
-    pub struct SimpleAggregate {}
-
     #[tokio::test]
     async fn tuple_aggregate() {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .try_init();
+
         let _: () = run_to_completion::<
             TupleAggregator,
-            SimpleMessageTypes,
+            SimpleMessage,
             (),
-            InMemoryQueue<SimpleMessageTypes>,
-        >(TupleAggregator, Arc::new(()), (), [])
+            InMemoryQueue<SimpleMessage>,
+            NormalizeFinal,
+            Pure<NormalizeFinal>,
+        >(
+            TupleAggregator,
+            Arc::new(()),
+            (),
+            [],
+            NormalizeFinal::default(),
+            Pure(NormalizeFinal::default()),
+        )
         .await;
 
         let _: (DataA, ()) = run_to_completion::<
             TupleAggregator,
-            SimpleMessageTypes,
+            SimpleMessage,
             (DataA, ()),
-            InMemoryQueue<SimpleMessageTypes>,
-        >(TupleAggregator, Arc::new(()), (), [fetch(FetchA {})])
+            InMemoryQueue<SimpleMessage>,
+            NormalizeFinal,
+            Pure<NormalizeFinal>,
+        >(
+            TupleAggregator,
+            Arc::new(()),
+            (),
+            [fetch(FetchA {})],
+            NormalizeFinal::default(),
+            Pure(NormalizeFinal::default()),
+        )
         .await;
 
         let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
             TupleAggregator,
-            SimpleMessageTypes,
+            SimpleMessage,
             (DataC, (DataB, (DataA, ()))),
-            InMemoryQueue<SimpleMessageTypes>,
+            InMemoryQueue<SimpleMessage>,
+            NormalizeFinal,
+            Pure<NormalizeFinal>,
         >(
             TupleAggregator,
             Arc::new(()),
             (),
             [fetch(FetchA {}), fetch(FetchC {}), fetch(FetchB {})],
+            NormalizeFinal::default(),
+            Pure(NormalizeFinal::default()),
         )
         .await;
     }

@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO queue (item, status)\n            VALUES\n              ($1, $2::status) RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        {
+          "Custom": {
+            "name": "status",
+            "kind": {
+              "Enum": [
+                "ready",
+                "done",
+                "optimize",
+                "failed"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f627626afe9341184d8a3b0cb73498147e6e32800bb3537036a313e273f30f1f"
+}
