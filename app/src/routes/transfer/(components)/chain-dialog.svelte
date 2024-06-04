@@ -4,18 +4,19 @@ import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
+import type { LooseAutocomplete } from "$lib/utilities/types.ts"
 
 export let kind: "from" | "to"
 export let dialogOpen = false
 export let chainSearchResults: Array<{ name: string; id: string; icon: string; live: boolean }>
 export let handleChainSearch: (event: InputEvent) => void
-export let handleChainSelect: (name: string, target: "fromChain" | "toChain") => void
-export let queryParams: any
+export let handleChainSelect: (name: string, target: "from-chain-id" | "to-chain-id") => void
+export let queryParams: LooseAutocomplete<{
+  "from-chain-id": string
+  "to-chain-id": string
+}>
 
-$: {
-  if (dialogOpen) document.body.style.overflow = "hidden"
-  else document.body.style.overflow = "auto"
-}
+$: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 </script>
 
 <Dialog.Root
@@ -59,8 +60,9 @@ $: {
           >
             <Button
               disabled={!live}
-              variant={queryParams.from === name.toLowerCase() ? 'secondary' : 'ghost'}
-              on:click={() => handleChainSelect(chainId, kind === 'from' ? 'fromChain' : 'toChain')}
+              variant={queryParams[`${kind}-chain-id`] === chainId ? 'secondary' : 'ghost'}
+              on:click={() =>
+                handleChainSelect(chainId, kind === 'from' ? 'from-chain-id' : 'to-chain-id')}
               class={cn('w-full flex justify-start space-x-4 p-2 pl-3 h-[55px] my-auto rounded-sm')}
             >
               <img src={icon} alt={`${name} logo`} class="size-10 my-auto mr-auto" />

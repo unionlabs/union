@@ -12,7 +12,8 @@ const { values } = parseArgs({
   options: { "private-key": { type: "string" } }
 })
 
-const PRIVATE_KEY = values["private-key"]
+const PRIVATE_KEY =
+  values["private-key"] || "1bdd5c2105f62c51d72c90d9e5ca6854a94337bcbcbb0b959846b85813d69380"
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -30,10 +31,8 @@ const evmSigner = createWalletClient({
   ])
 }).extend(publicActions)
 
-evmSigner.sendTransaction({})
-
 const unionClient = await UnionClient.connectWithSecret({
-  rpcUrl: "https://rpc.testnet.bonlulu.uno",
+  rpcUrl: "https://union-testnet-rpc.polkachu.com",
   bech32Prefix: "union",
   chainId: "union-testnet-8",
   secretType: "key",
@@ -42,25 +41,5 @@ const unionClient = await UnionClient.connectWithSecret({
   evmSigner
 })
 
-const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789" // LINK contract address
-const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
-const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
-
-const approve = await unionClient.approveEvmAssetTransfer({
-  amount: 1n,
-  assetContractAddress: LINK_CONTRACT_ADDRESS
-})
-
-console.log(approve)
-
-const linkFromSepoliaToUnion = await unionClient.transferEvmAsset({
-  account: evmAccount,
-  receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-  denomAddress: LINK_CONTRACT_ADDRESS,
-  amount: 1n,
-  sourceChannel: "channel-1",
-  contractAddress: "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb",
-  simulate: true
-})
-
-console.log(linkFromSepoliaToUnion)
+const balances = await unionClient.getBalances()
+console.info(balances)

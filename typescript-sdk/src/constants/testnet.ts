@@ -1,4 +1,4 @@
-import contracts from '~root/versions/contracts.json'
+import contracts from "~root/versions/contracts.json"
 
 export const CHAINS = {
   sepolia: {

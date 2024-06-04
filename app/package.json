@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "NODE_ENV=development vite",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -37,7 +37,6 @@
     "paneforge": "^0.0.4",
     "svelte-legos": "^0.2.3",
     "svelte-persisted-store": "^0.11.0",
-    "svelte-radix": "^1.1.0",
     "svelte-sonner": "^0.3.24",
     "svelte-ux": "^0.66.3",
     "sveltekit-superforms": "^2.14.0",

@@ -31,9 +31,7 @@
     "types": ["node", "bun"],
     "paths": {
       "#/*": ["src/*"],
-      "~root/*": [
-        "../*"
-      ],
+      "~root/*": ["../*"]
     }
   },
   "include": ["src", "scripts", "test"],

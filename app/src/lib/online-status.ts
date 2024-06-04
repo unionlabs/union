@@ -1,4 +1,4 @@
-import {toast} from "svelte-sonner"
+import { toast } from "svelte-sonner"
 import { readable, type Readable } from "svelte/store"
 import { onlineManager } from "@tanstack/svelte-query"
 
