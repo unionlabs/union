@@ -853,6 +853,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 }
             })?,
             packet.tokens,
+            packet.extension,
         ))
     }
 

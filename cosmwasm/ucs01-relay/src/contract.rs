@@ -8,7 +8,7 @@ use cw2::set_contract_version;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     protocol::{TransferInput, TransferProtocol},
-    types::{NoExtension, TransferToken},
+    types::TransferToken,
 };
 
 use crate::{
@@ -154,7 +154,7 @@ pub fn execute_transfer(
                 channel: channel_info,
             },
         }
-        .send(input, NoExtension),
+        .send(input, msg.memo),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.channel,
             protocol_version: v.into(),

@@ -53,6 +53,7 @@ pub struct Ucs01TransferPacket {
     receiver: HexBinary,
     /// the transferred tokens
     tokens: Vec<TransferToken>,
+    pub memo: String,
 }
 
 impl Ucs01TransferPacket {
@@ -68,11 +69,17 @@ impl Ucs01TransferPacket {
         &self.tokens
     }
 
-    pub fn new(sender: HexBinary, receiver: HexBinary, tokens: Vec<TransferToken>) -> Self {
+    pub fn new(
+        sender: HexBinary,
+        receiver: HexBinary,
+        tokens: Vec<TransferToken>,
+        memo: String,
+    ) -> Self {
         Self {
             sender,
             receiver,
             tokens,
+            memo,
         }
     }
 }
@@ -143,6 +150,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
                             }
                         })
                         .collect(),
+                    memo: String::new(),
                 })
             }
             _ => unreachable!(),
@@ -206,7 +214,7 @@ impl From<NoExtension> for String {
 }
 
 impl TransferPacket for Ucs01TransferPacket {
-    type Extension = NoExtension;
+    type Extension = String;
     type Addr = HexBinary;
 
     fn tokens(&self) -> Vec<TransferToken> {
@@ -222,7 +230,7 @@ impl TransferPacket for Ucs01TransferPacket {
     }
 
     fn extension(&self) -> &Self::Extension {
-        &NoExtension
+        &self.memo
     }
 }
 
@@ -408,6 +416,7 @@ mod tests {
                     amount: Uint128::from(1337u32),
                 },
             ],
+            memo: String::new(),
         };
         assert_eq!(
             packet,
