@@ -1,16 +1,27 @@
 <script lang="ts">
   import { createQuery } from '@tanstack/svelte-query'
-  import { evmBalancesQuery } from '$lib/queries/balance'
+  import { cosmosBalancesQuery, evmBalancesQuery } from '$lib/queries/balance'
+  import { CHAIN_URLS } from '$lib/constants';
+  import { sepoliaStore } from "$lib/wallet/evm/config.ts"
+  import { cosmosStore } from "$lib/wallet/cosmos"
 
-  $: evmBalances = evmBalancesQuery({
-    address: '0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd',
+$: evmBalances = evmBalancesQuery({
     chainId: '11155111',
+    address: $sepoliaStore.address,
     tokenSpecification: 'erc20',
+})
+
+$: cosmosBalances = cosmosBalancesQuery({
+    chainId: 'union-testnet-8',
+      address: $cosmosStore.address
   })
 
-  $: data = $evmBalances?.data || []
+$: data1 = $cosmosBalances?.data || []
+$: data2 = $evmBalances?.data || []
+
 </script>
 
 <main>
-  <pre>{JSON.stringify(data, undefined, 2)}</pre>
+    <pre>{JSON.stringify(data1, undefined, 2)}</pre>
+    <pre>{JSON.stringify(data2, undefined, 2)}</pre>
 </main>

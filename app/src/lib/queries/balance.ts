@@ -1,10 +1,12 @@
 import * as v from "valibot"
 import { KEY } from "$lib/constants/keys.ts"
+import { CHAIN_URLS } from "$lib/constants";
 import { formatUnits, type Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate";
 
 /**
  * TODO:
@@ -95,6 +97,35 @@ export function evmBalancesQuery({
           token.decimals
         )
       }))
+    }
+  })
+}
+
+export function cosmosBalancesQuery({
+  address,
+  chainId
+}: {
+  address: string
+  chainId: string
+}) {
+  return createQuery({
+    queryKey: [address, "balances", chainId],
+    enabled: isValidCosmosAddress(address),
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+        const restUrl = CHAIN_URLS[chainId].REST
+        const response = await fetch(
+            `${restUrl}/cosmos/bank/v1beta1/balances/${address}`,
+        )
+        if (!response.ok) return []
+        return (await response.json()).balances.map((x) => {
+            return {
+                address: x.denom,
+                symbol: x.denom,
+                balance: x.amount,
+                decimals: 0
+            }
+        })
     }
   })
 }
