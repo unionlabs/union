@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
+  "$schema": "https://esm.sh/@biomejs/biome@1.8.0/configuration_schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -171,6 +171,7 @@
       },
       "correctness": {
         "all": true,
+        "noNodejsModules": "off",
         "noUnusedVariables": "off",
         "noUndeclaredVariables": "off"
       },
