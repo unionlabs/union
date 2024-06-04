@@ -158,8 +158,10 @@
       "nursery": {
         "all": true,
         "noConsole": "off",
+        "useTopLevelRegex": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
+        "noUnusedFunctionParameters": "off",
         "noUselessUndefinedInitialization": "off"
       },
       "performance": {

@@ -148,7 +148,7 @@ onMount(() => {
             color: "#0e0f12"
           }
         },
-        max(value: any) {
+        max(_value: any) {
           return 6_000_000
         },
         interval: 1_200_000

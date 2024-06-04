@@ -188,7 +188,7 @@ function swapChainsClick(_event: MouseEvent) {
 
 let recipientInputState: "locked" | "unlocked" | "invalid" = "locked"
 
-const onUnlockClick = (event: MouseEvent) =>
+const onUnlockClick = (_event: MouseEvent) =>
   (recipientInputState = recipientInputState === "locked" ? "unlocked" : "locked")
 
 $: {
