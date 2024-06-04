@@ -1,4 +1,4 @@
-#![feature(trait_alias, min_exhaustive_patterns)]
+#![feature(trait_alias, min_exhaustive_patterns, lazy_cell)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
@@ -77,6 +77,7 @@ use crate::{
 
 pub mod cli;
 pub mod config;
+pub mod metrics;
 
 pub mod queue;
 

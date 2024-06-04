@@ -32,7 +32,10 @@ use tracing::{debug, error, info};
 use unionlabs::traits::{Chain, ClientState, FromStrExact};
 use voyager_message::VoyagerMessageTypes;
 
-use crate::config::{ChainConfig, Config};
+use crate::{
+    config::{ChainConfig, Config},
+    metrics::{register_custom_metrics, QUEUE_PROCESSING_TIME_HISTOGRAM, REGISTRY},
+};
 
 type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
@@ -118,6 +121,8 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
         O: PurePass<T>,
     {
         async move {
+            let timer = QUEUE_PROCESSING_TIME_HISTOGRAM.start_timer();
+
             let res = match self {
                 AnyQueue::InMemory(queue) => queue
                     .process(pre_reenqueue_passes, f)
@@ -130,6 +135,8 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
             };
 
             tracing::trace!("processed");
+
+            timer.observe_duration();
 
             res
         }
@@ -272,6 +279,8 @@ impl Voyager {
     }
 
     pub async fn run(self) -> Result<(), RunError> {
+        register_custom_metrics();
+
         // set up msg server
         let (queue_tx, queue_rx) =
             futures::channel::mpsc::unbounded::<QueueMsg<VoyagerMessageTypes>>();
@@ -280,6 +289,7 @@ impl Voyager {
             .route("/msg", post(msg))
             .route("/msgs", post(msgs))
             .route("/health", get(|| async move { StatusCode::OK }))
+            .route("/metrics", get(metrics))
             .with_state(queue_tx.clone());
 
         // #[axum::debug_handler]
@@ -304,6 +314,15 @@ impl Voyager {
             }
 
             StatusCode::OK
+        }
+
+        pub async fn metrics() -> Result<String, StatusCode> {
+            prometheus::TextEncoder::new()
+                .encode_to_string(&REGISTRY.gather())
+                .map_err(|err| {
+                    tracing::error!("could not gather metrics: {}", err);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })
         }
 
         tokio::spawn(

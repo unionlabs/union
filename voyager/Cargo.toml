@@ -38,6 +38,7 @@ hex-literal               = { workspace = true }
 num-bigint                = { workspace = true }
 pg-queue                  = { workspace = true }
 pin-utils                 = "0.1.0"
+prometheus                = { version = "0.13.4", default-features = false }
 prost                     = { workspace = true }
 protos                    = { workspace = true, features = ["proto_full", "client"] }
 queue-msg                 = { workspace = true }
