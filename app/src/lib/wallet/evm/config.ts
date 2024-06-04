@@ -36,12 +36,17 @@ export const config = createConfig({
   batch: { multicall: true },
   transports: {
     [sepolia.id]: fallback([
-      unstable_connector(injected),
+      unstable_connector(injected, {
+        key: "unstable_connector-injected",
+        retryCount: 3,
+        retryDelay: 100
+      }),
       http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
+      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`),
       http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`),
-      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`)
     ])
   },
+
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,
   storage: createWagmiStorage({
@@ -79,6 +84,15 @@ export const config = createConfig({
     })
   ]
 })
+
+config.subscribe(
+  state => {
+    return state.chainId
+  },
+  chainId => {
+    console.info("[config] chainId", chainId)
+  }
+)
 
 export function createSepoliaStore(
   previousState: ChainWalletStore<"evm"> = {

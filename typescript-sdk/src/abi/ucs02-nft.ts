@@ -1,4 +1,4 @@
-export const ucs02NftAbi = <const>[
+export const ucs02NftAbi = [
   {
     type: "constructor",
     inputs: [],
@@ -1062,4 +1062,4 @@ export const ucs02NftAbi = <const>[
       }
     ]
   }
-]
+] as const

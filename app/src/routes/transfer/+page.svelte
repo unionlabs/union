@@ -1,199 +1,203 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { page } from "$app/stores"
-import { toast } from "svelte-sonner"
-import { debounce } from "$lib/utilities"
-import { UnionClient } from "@union/client"
-import type { PageData } from "./$types.ts"
-import { cn } from "$lib/utilities/shadcn.ts"
-import Timer from "virtual:icons/lucide/timer"
-import Chevron from "./(components)/chevron.svelte"
-import Settings from "virtual:icons/lucide/settings"
-import { dollarize } from "$lib/utilities/format.ts"
-import type { OfflineSigner } from "@leapwallet/types"
-import * as Card from "$lib/components/ui/card/index.ts"
-import { queryParameters } from "sveltekit-search-params"
-import { Input } from "$lib/components/ui/input/index.js"
-import { evmBalancesQuery } from "$lib/queries/balance.ts"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { Button } from "$lib/components/ui/button/index.ts"
-import ChainDialog from "./(components)/chain-dialog.svelte"
-import ChainButton from "./(components)/chain-button.svelte"
-import AssetsDialog from "./(components)/assets-dialog.svelte"
-import SettingsDialog from "./(components)/settings-dialog.svelte"
-import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import RecipientField from "./(components)/recipient-field.svelte"
-import CardSectionHeading from "./(components)/card-section-heading.svelte"
-import { sepoliaStore, config } from "$lib/wallet/evm/config.ts"
-import { getWalletClient } from "@wagmi/core"
-import { createQuery } from "@tanstack/svelte-query"
-import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
-import { isAddress } from "viem"
+  import { onMount } from 'svelte'
+  import { page } from '$app/stores'
+  import { toast } from 'svelte-sonner'
+  import { debounce } from '$lib/utilities'
+  import { UnionClient } from '@union/client'
+  import type { PageData } from './$types.ts'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import Timer from 'virtual:icons/lucide/timer'
+  import Chevron from './(components)/chevron.svelte'
+  import Settings from 'virtual:icons/lucide/settings'
+  import { dollarize } from '$lib/utilities/format.ts'
+  import type { OfflineSigner } from '@leapwallet/types'
+  import * as Card from '$lib/components/ui/card/index.ts'
+  import { queryParameters } from 'sveltekit-search-params'
+  import { Input } from '$lib/components/ui/input/index.js'
+  import { evmBalancesQuery } from '$lib/queries/balance.ts'
+  import { cosmosStore } from '$/lib/wallet/cosmos/config.ts'
+  import { Button } from '$lib/components/ui/button/index.ts'
+  import ChainDialog from './(components)/chain-dialog.svelte'
+  import ChainButton from './(components)/chain-button.svelte'
+  import AssetsDialog from './(components)/assets-dialog.svelte'
+  import SettingsDialog from './(components)/settings-dialog.svelte'
+  import ArrowLeftRight from 'virtual:icons/lucide/arrow-left-right'
+  import RecipientField from './(components)/recipient-field.svelte'
+  import CardSectionHeading from './(components)/card-section-heading.svelte'
+  import { sepoliaStore, config } from '$lib/wallet/evm/config.ts'
+  import { getWalletClient } from '@wagmi/core'
+  import { createQuery } from '@tanstack/svelte-query'
+  import { isValidCosmosAddress } from '$lib/wallet/utilities/validate.ts'
+  import { createWalletClient, isAddress } from 'viem'
+  import { evmAccount } from '$lib/wallet/evm/stores.ts'
+  import { sepolia } from 'viem/chains'
 
-export let data: PageData
-const { chains } = data
+  export let data: PageData
+  const { chains } = data
 
-const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
+  const devBorder = 0 && 'outline outline-[1px] outline-pink-200/40'
 
-const queryParams = queryParameters(
-  {
-    "from-chain-id": {
-      encode: v => v?.toString(),
-      decode: v => v,
-      defaultValue: "11155111"
+  const queryParams = queryParameters(
+    {
+      'from-chain-id': {
+        encode: v => v?.toString(),
+        decode: v => v,
+        defaultValue: '11155111',
+      },
+      'to-chain-id': {
+        encode: v => v?.toString(),
+        decode: v => v,
+        defaultValue: 'union-testnet-8',
+      },
+      recipient: { encode: v => v?.toString(), decode: v => v, defaultValue: '' },
+      'asset-id': { encode: v => v?.toString(), decode: v => v, defaultValue: '' },
     },
-    "to-chain-id": {
-      encode: v => v?.toString(),
-      decode: v => v,
-      defaultValue: "union-testnet-8"
-    },
-    recipient: { encode: v => v?.toString(), decode: v => v, defaultValue: "" },
-    "asset-id": { encode: v => v?.toString(), decode: v => v, defaultValue: "" }
-  },
-  { debounceHistory: 500, showDefaults: true, sort: false }
-)
+    { debounceHistory: 500, showDefaults: true, sort: false },
+  )
 
-let unionClient: UnionClient
-onMount(async () => {
-  const cosmosOfflineSigner = (
-    $cosmosStore.connectedWallet === "keplr"
-      ? window?.keplr?.getOfflineSigner("union-testnet-8", {
-          disableBalanceCheck: false
-        })
-      : window.leap
-        ? window.leap.getOfflineSigner("union-testnet-8", {
-            disableBalanceCheck: false
+  let unionClient: UnionClient
+  onMount(() => {
+    const cosmosOfflineSigner = (
+      $cosmosStore.connectedWallet === 'keplr'
+        ? window?.keplr?.getOfflineSigner('union-testnet-8', {
+            disableBalanceCheck: false,
           })
-        : undefined
-  ) as OfflineSigner
+        : window.leap
+          ? window.leap.getOfflineSigner('union-testnet-8', {
+              disableBalanceCheck: false,
+            })
+          : undefined
+    ) as OfflineSigner
 
-  const evmWalletClient = await getWalletClient(config)
+    const evmWalletClient = createWalletClient({
+      chain: config.chains[0],
+      account: $evmAccount,
+      transport: config._internal.transports['11155111'],
+    })
 
-  unionClient = new UnionClient({
-    cosmosOfflineSigner,
-    evmSigner: evmWalletClient,
-    bech32Prefix: "union",
-    chainId: "union-testnet-8",
-    gas: { denom: "muno", amount: "0.0025" },
-    rpcUrl: "https://rpc.testnet.bonlulu.uno"
+    unionClient = new UnionClient({
+      cosmosOfflineSigner,
+      evmSigner: evmWalletClient,
+      bech32Prefix: 'union',
+      chainId: 'union-testnet-8',
+      gas: { denom: 'muno', amount: '0.0025' },
+      // rpcUrl: 'https://rpc.testnet.bonlulu.uno',
+      rpcUrl: 'https://union-testnet-rpc.polkachu.com',
+    })
   })
-})
 
-let dialogOpenPast = false
-let dialogOpenToken = false
-let dialogOpenToChain = false
-let dialogOpenFromChain = false
-let dialogOpenSettings = false
+  let dialogOpenPast = false
+  let dialogOpenToken = false
+  let dialogOpenToChain = false
+  let dialogOpenFromChain = false
+  let dialogOpenSettings = false
 
-let [chainSearch, chainSearchResults] = ["", chains]
+  let [chainSearch, chainSearchResults] = ['', chains]
 
-function handleChainSearch(event: InputEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  chainSearch = target.value
-  chainSearchResults = chains.filter(chain =>
-    chain.name.toLowerCase().includes(chainSearch.toLowerCase())
-  )
-}
-
-const handleChainSelect = (name: string, target: "from-chain-id" | "to-chain-id") =>
-  debounce(
-    () => [
-      ($queryParams[target] = name),
-      ([dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
-        false,
-        false,
-        false,
-        false
-      ])
-    ],
-    200
-  )()
-
-let selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
-$: selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
-
-let selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
-$: selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
-
-$: unionBalances = createQuery({
-  queryKey: [$cosmosStore.address, "balance", "union-testnet-8"],
-  queryFn: async () => {
-    const balances = await fetch(
-      `https://api.testnet.bonlulu.uno/cosmos/bank/v1beta1/balances/${$cosmosStore.address}`
+  function handleChainSearch(event: InputEvent) {
+    const target = event.target
+    if (!(target instanceof HTMLInputElement)) return
+    chainSearch = target.value
+    chainSearchResults = chains.filter(chain =>
+      chain.name.toLowerCase().includes(chainSearch.toLowerCase()),
     )
-    // const data = await
+  }
+
+  let selectedFromChain = chains.find(chain => chain.id === $queryParams['from-chain-id'])
+  $: selectedFromChain = chains.find(chain => chain.id === $queryParams['from-chain-id'])
+
+  let selectedToChain = chains.find(chain => chain.id === $queryParams['to-chain-id'])
+  $: selectedToChain = chains.find(chain => chain.id === $queryParams['to-chain-id'])
+
+  $: unionBalancesQuery = 
+createQuery({
+  queryKey: [$cosmosStore.address, 'balance', 'union-testnet-8'],
+  queryFn: async () => {
+    const response = await fetch(
+      `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${$cosmosStore.address}`,
+    )
+    if (!response.ok) return []
+    const result = (await response.json()) as {
+      balances: Array<{ amount: string; denom: string }>
+    }
+    return result.balances // mapped to the same format as the evm balances
   },
-  enabled: isValidCosmosAddress($cosmosStore.address)
+  enabled: isValidCosmosAddress($cosmosStore.address),
 })
 
-$: evmBalances = evmBalancesQuery({
-  address: `${$sepoliaStore.address}` as any,
-  chainId: "11155111",
-  tokenSpecification: "erc20"
-})
+  $: unionBalances = $unionBalancesQuery?.data ?? []
 
-$: sepoliaAssets = $evmBalances?.data ?? []
+  $: evmBalances = evmBalancesQuery({
+    address: `${$sepoliaStore.address}` as any,
+    chainId: '11155111',
+    tokenSpecification: 'erc20',
+  })
 
-$: [tokenSearch, assetSearchResults] = ["", sepoliaAssets]
+  $: sepoliaAssets = $evmBalances?.data ?? []
 
-$: console.info(tokenSearch)
+  $: [tokenSearch, assetSearchResults] = [
+    '',
+    $queryParams['from-chain-id'] === '11155111' ? sepoliaAssets : unionBalances,
+  ]
 
-function handleAssetSearch(event: InputEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  tokenSearch = target.value
-  assetSearchResults = sepoliaAssets.filter(asset =>
-    asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase())
-  )
-}
+  function handleAssetSearch(event: InputEvent) {
+    const target = event.target
+    if (!(target instanceof HTMLInputElement)) return
+    tokenSearch = target.value
+    assetSearchResults = sepoliaAssets.filter(asset =>
+      asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase()),
+    )
+  }
 
-// let availableAssets = assets.filter(
-//   asset =>
-//     asset.source.chain === selectedFromChain?.id &&
-//     asset.destination.chain === selectedToChain?.id,
-// )
-// $: availableAssets = assets.filter(
-//   asset =>
-//     asset.source.chain === selectedFromChain?.id &&
-//     asset.destination.chain === selectedToChain?.id,
-// )
+  $: {
+    assetSearchResults =
+      $queryParams['from-chain-id'] === '11155111' ? sepoliaAssets : unionBalances
+  }
 
-// let selectedAsset = assets[0]
+  const handleChainSelect = (name: string, target: 'from-chain-id' | 'to-chain-id') =>
+    debounce(() => {
+      $queryParams[target] = name
+      ;[dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
+        false,
+        false,
+        false,
+        false,
+      ]
+    }, 200)()
 
-function handleAssetSelect(id: string) {
-  $queryParams["asset-id"] = sepoliaAssets.find(asset => asset.symbol === id)?.address ?? ""
-  dialogOpenToken = false
-}
+  function handleAssetSelect(id: string) {
+    $queryParams['asset-id'] = assetSearchResults.find(asset => asset.symbol === id)?.address ?? ''
+    dialogOpenToken = false
+  }
 
-const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
+  const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 
-let amount = ""
-let recipient = $queryParams.recipient || ""
+  let amount = ''
+  let recipient = $queryParams.recipient || ''
 
-$: {
-  amount = amount.replaceAll(amountRegex, "")
-}
+  $: {
+    amount = amount.replaceAll(amountRegex, '')
+  }
 
-function swapChainsClick(_event: MouseEvent) {
-  const [fromChain, toChain] = [$queryParams["from-chain-id"], $queryParams["to-chain-id"]]
-  $queryParams["from-chain-id"] = toChain
-  $queryParams["to-chain-id"] = fromChain
+  function swapChainsClick(_event: MouseEvent) {
+    const [fromChain, toChain] = [$queryParams['from-chain-id'], $queryParams['to-chain-id']]
+    $queryParams['from-chain-id'] = toChain
+    $queryParams['to-chain-id'] = fromChain
 
-  selectedFromChain = data.chains.find(
-    chain => chain.name.toLowerCase() === $queryParams["from-chain-id"].toLowerCase()
-  )
-  selectedToChain = data.chains.find(
-    chain => chain.name.toLowerCase() === $queryParams["to-chain-id"].toLowerCase()
-  )
-}
+    selectedFromChain = data.chains.find(
+      chain => chain.name.toLowerCase() === $queryParams['from-chain-id'].toLowerCase(),
+    )
+    selectedToChain = data.chains.find(
+      chain => chain.name.toLowerCase() === $queryParams['to-chain-id'].toLowerCase(),
+    )
+  }
 
-let buttonText = "Transfer" satisfies
-  | "Transfer"
-  | "Invalid amount"
-  | "Connect Wallet"
-  | "Enter an amount"
-  | "Insufficient balance"
+  let buttonText = 'Transfer' satisfies
+    | 'Transfer'
+    | 'Invalid amount'
+    | 'Connect Wallet'
+    | 'Enter an amount'
+    | 'Insufficient balance'
 </script>
 
 <svelte:head>
@@ -243,7 +247,7 @@ let buttonText = "Transfer" satisfies
       <CardSectionHeading>Asset</CardSectionHeading>
       <Button variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
         <div class="text-2xl font-bold flex-1 text-left">
-          {sepoliaAssets.find(i => i.address === $queryParams['asset-id'])?.symbol ||
+          {assetSearchResults.find(i => i.address === $queryParams['asset-id'])?.symbol ||
             'Select an asset'}
         </div>
         <Chevron />
@@ -273,7 +277,12 @@ let buttonText = "Transfer" satisfies
           event.preventDefault()
           const assetId = $queryParams['asset-id']
           if (!assetId) return toast.error('Please select an asset')
-          if ($queryParams['to-chain-id'] === '111155111') {
+          toast.info(
+            `Sending transaction from ${$queryParams['from-chain-id']} to ${$queryParams['to-chain-id']}`,
+          )
+          if ($queryParams['from-chain-id'] === String(sepolia.id)) {
+            if ($evmAccount.status !== 'connected')
+              return toast.error('Please connect your Sepolia wallet')
             if (!isAddress(assetId)) return toast.error('Invalid address')
 
             const evmClient = await getWalletClient(config)
@@ -284,10 +293,11 @@ let buttonText = "Transfer" satisfies
               bech32Prefix: 'union',
               chainId: 'union-testnet-8',
               gas: { denom: 'muno', amount: '0.0025' },
-              rpcUrl: 'https://rpc.testnet.bonlulu.uno',
+              rpcUrl: 'https://union-testnet-rpc.polkachu.com',
             })
             const approveHash = await client.approveEvmAssetTransfer({
-              assetContractAddress: assetId,
+              account: $evmAccount || evmClient.account,
+              denomAddress: assetId,
               amount: BigInt(amount),
             })
             toast.success(`Approve transaction sent: ${approveHash}`)

@@ -28,11 +28,12 @@ export const evmConnections = readable(getConnections(config), set =>
   watchConnections(config, { onChange: set })
 )
 
-export const connectorClient = derived(evmConnectors, async $connectors => {
-  const connector = $connectors.find(async connector => await connector.isAuthorized())
-  const client = await getConnectorClient(config, { connector })
-  return client
-})
+// export const connectorClient = derived(evmConnectors, async $connectors => {
+//   const connector = $connectors.find(async connector => await connector?.isAuthorized())
+//   if (!connector) return undefined
+//   const client = await getConnectorClient(config, { connector })
+//   return client
+// })
 
 // export const provider = readable<() => Promise<undefined | unknown>>(
 //   async () =>
