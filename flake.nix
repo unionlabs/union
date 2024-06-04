@@ -246,6 +246,7 @@
         ./faucet/faucet.nix
         ./ucli/ucli.nix
         ./zerg/zerg.nix
+        ./99-cometbls/cometbls.nix
         treefmt-nix.flakeModule
       ];
 
@@ -427,6 +428,7 @@
                 uniond = ./uniond/proto;
                 galoisd = ./galoisd/proto;
                 cometbls = inputs.cometbls;
+                cometbls-lc = ./99-cometbls/proto;
                 cosmossdk = inputs.cosmossdk;
               };
 

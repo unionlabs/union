@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package cometbls.v1;
+
+import "params.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "union/cometbls/types";
+
+message GenesisState {
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}

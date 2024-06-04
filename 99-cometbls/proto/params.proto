@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package cometbls.v1;
+
+option go_package = "union/cometbls/types";
+
+message Params {
+  uint64 param = 1;
+}
