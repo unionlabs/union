@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.7.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -158,7 +158,6 @@
       "nursery": {
         "all": true,
         "noConsole": "off",
-        "noNodejsModules": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
         "noUselessUndefinedInitialization": "off"
@@ -240,7 +239,7 @@
       "indentStyle": "space",
       "quoteStyle": "double",
       "bracketSpacing": true,
-      "trailingComma": "none",
+      "trailingCommas": "none",
       "semicolons": "asNeeded",
       "bracketSameLine": false,
       "jsxQuoteStyle": "double",
