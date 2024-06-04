@@ -34,6 +34,7 @@
       ".svelte-kit",
       "node_modules",
       "package-lock.json",
+      "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -79,6 +80,7 @@
       ".svelte-kit",
       "node_modules",
       "package-lock.json",
+      "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -125,6 +127,7 @@
       ".svelte-kit",
       "node_modules",
       "package-lock.json",
+      "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -227,6 +230,7 @@
       ".svelte-kit",
       "node_modules",
       "package-lock.json",
+      "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
     ]
   },

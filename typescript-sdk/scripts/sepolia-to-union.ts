@@ -22,9 +22,9 @@ const evmSigner = createWalletClient({
   account: evmAccount,
   transport: fallback([
     http(`https://rpc2.sepolia.org`),
-      http(
-        `https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e/`
-      ),
+    http(
+      `https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e/`
+    ),
     http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
   ])
 }) //.extend(publicActions)
