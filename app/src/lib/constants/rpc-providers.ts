@@ -1,5 +1,3 @@
-import { readable } from "svelte/store"
-
 export interface CosmosSdkRpcProvider {
   rpc: string
   rest: string
@@ -16,4 +14,3 @@ export const COSMOS_SDK_RPC_PROVIDERS = [
     rest: "https://api.testnet.bonlulu.uno"
   }
 ] as const satisfies Array<CosmosSdkRpcProvider>
-
