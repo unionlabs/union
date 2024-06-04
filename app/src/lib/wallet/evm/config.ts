@@ -43,7 +43,7 @@ export const config = createConfig({
       }),
       http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
       http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`),
-      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`),
+      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`)
     ])
   },
 

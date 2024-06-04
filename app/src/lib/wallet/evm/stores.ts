@@ -8,8 +8,7 @@ import {
   getConnectors,
   getConnections,
   watchConnectors,
-  watchConnections,
-  getConnectorClient
+  watchConnections
 } from "@wagmi/core"
 import { config } from "./config.ts"
 import { readable, derived } from "svelte/store"

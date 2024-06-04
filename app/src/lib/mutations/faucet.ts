@@ -5,7 +5,7 @@ export async function getUnoFromFaucet(address: string) {
     body: JSON.stringify({
       query: /* GraphQL */ `
         mutation GetUno($address: Address!) {
-          union { send(input: { toAddress: $address }) }
+          faucet { send(input: { toAddress: $address }) }
         }
       `,
       variables: { address },

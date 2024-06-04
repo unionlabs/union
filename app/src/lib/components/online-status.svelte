@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { blockHeightQuery } from '$lib/queries/block.ts'
-  import { cn, flyAndScale } from '$lib/utilities/shadcn.ts'
-  import { Button } from '$lib/components/ui/button/index.ts'
-  import * as Tooltip from '$lib/components/ui/tooltip/index.ts'
+import { blockHeightQuery } from "$lib/queries/block.ts"
+import { cn, flyAndScale } from "$lib/utilities/shadcn.ts"
+import { Button } from "$lib/components/ui/button/index.ts"
+import * as Tooltip from "$lib/components/ui/tooltip/index.ts"
 
-  /**
-   * TODO:
-   * - Split checks into two: app status and block height status
-   */
+/**
+ * TODO:
+ * - Split checks into two: app status and block height status
+ */
 
-  $: blockHeightStore = blockHeightQuery()
-  $: blockHeight = $blockHeightStore.data
-  $: appStatus = Number.isSafeInteger(Number(blockHeight)) ? 'online' : 'offline'
+$: blockHeightStore = blockHeightQuery()
+$: blockHeight = $blockHeightStore.data
+$: appStatus = Number.isSafeInteger(Number(blockHeight)) ? "online" : "offline"
 </script>
 
 <Tooltip.Root>
