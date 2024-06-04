@@ -1,4 +1,18 @@
 import {
+  erc20Abi,
+  type Hash,
+  type Address,
+  type Account,
+  type WalletClient,
+  publicActions
+} from "viem"
+import {
+  GasPrice,
+  StargateClient,
+  type DeliverTxResponse,
+  type MsgTransferEncodeObject
+} from "@cosmjs/stargate"
+import {
   type ExecuteResult,
   SigningCosmWasmClient,
   type ExecuteInstruction
@@ -8,22 +22,23 @@ import { ucs01RelayAbi } from "./abi/ucs01-relay.ts"
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 import type { Optional, Coin, ExtractParameters } from "./types.ts"
 import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
-import type { Account, PublicActions, WalletClient, Address, Hash } from "viem"
 import type { MsgTransfer } from "cosmjs-types/ibc/applications/transfer/v1/tx"
 import type { AccountData, OfflineSigner as CosmosOfflineSigner } from "@cosmjs/proto-signing"
-import { GasPrice, type DeliverTxResponse, type MsgTransferEncodeObject } from "@cosmjs/stargate"
 
 type MessageTransfer = Optional<MsgTransfer, "timeoutTimestamp" | "sender">
-type EvmClient = WalletClient & PublicActions
 
 export interface IUnionClient {
   rpcClient(): Promise<Comet38Client>
-  getAccount(): Promise<AccountData>
+  getCosmosSdkAccount(): Promise<AccountData>
   simulateIbcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<number>
   ibcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<DeliverTxResponse>
   cosmwasmMessageExecuteContract(instructions: Array<ExecuteInstruction>): Promise<ExecuteResult>
+  approveEvmAssetTransfer(parameters: {
+    assetContractAddress: Address
+    amount: bigint
+  }): Promise<Hash>
   transferEvmAsset(parameters: {
-    receiver: `union${string}`
+    receiver: string
     denomAddress: Address
     sourceChannel: string
     amount: bigint
@@ -94,25 +109,23 @@ export class UnionClient implements IUnionClient {
   #rpcUrl: string
   public chainId: string
   public bech32Prefix: string
-  #cosmosOfflineSigner: CosmosOfflineSigner
+  #cosmosOfflineSigner: CosmosOfflineSigner | undefined
   #gas?: Coin
   /** EVM */
-
-  // 0x3d0eb16ad2619666dbde1921282cd885b58eeefe
-  #evmSigner?: EvmClient
+  #evmSigner?: WalletClient
   #UCS01_ADDRESS: Address = "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb" satisfies Address
-  #UCS02_ADDRESS: Address = "0xB455b205106c9b72E967399E15EFd8A025FD4A90" satisfies Address
-  #COMETBLS_ADDRESS: Address = "0xf906A05a25bf5b61a5e4Ff24bE9122E2Cea5F1E3" satisfies Address
-  #IBC_HANDLER_ADDRESS: Address = "0x6B6b60a68b8DCbB170F25045974d10098917F816" satisfies Address
+  #UCS02_ADDRESS: Address = "0x9153952f174A1BcD7A9B3818Ff21Ecf918d4Dca9" satisfies Address
+  #COMETBLS_ADDRESS: Address = "0x96979Ed96aE00d724109B5Ad859568e1239C0837" satisfies Address
+  #IBC_HANDLER_ADDRESS: Address = "0xa390514F803a3B318b93Bf6cd4beEB9f8299a0EB" satisfies Address
   #UNION_UCS01_ADDRESS = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
   constructor(arguments_: {
     rpcUrl: string
     chainId: string
     bech32Prefix: string
-    cosmosOfflineSigner: CosmosOfflineSigner
+    cosmosOfflineSigner: CosmosOfflineSigner | undefined
     privateKeyOrMnemonic?: string
     gas?: Coin
-    evmSigner?: EvmClient
+    evmSigner?: WalletClient
   }) {
     this.#rpcUrl = arguments_.rpcUrl
     this.chainId = arguments_.chainId
@@ -129,12 +142,18 @@ export class UnionClient implements IUnionClient {
    */
   public rpcClient = async (): Promise<Comet38Client> => await Comet38Client.connect(this.#rpcUrl)
 
+  public getCosmosSdkOfflineSigner = () =>
+    this.#cosmosOfflineSigner ?? raise("Cosmos signer not found")
+
+  public stargateClient = async (): Promise<StargateClient> =>
+    await StargateClient.connect(this.#rpcUrl)
+
   static async connectWithSecret(
     params: Required<
       Omit<ExtractParameters<typeof UnionClient>, "cosmosOfflineSigner" | "evmSigner">
     > & {
       secretType: "mnemonic" | "key"
-      evmSigner?: EvmClient
+      evmSigner?: WalletClient
     }
   ): Promise<UnionClient> {
     if (!params.privateKeyOrMnemonic) throw new Error("privateKeyOrMnemonic is required")
@@ -157,24 +176,31 @@ export class UnionClient implements IUnionClient {
     return new UnionClient({ ...params, cosmosOfflineSigner })
   }
 
-  async getAccount(): Promise<AccountData> {
-    const [account] = await this.#cosmosOfflineSigner.getAccounts()
+  async getCosmosSdkAccount(): Promise<AccountData> {
+    const [account] = await this.getCosmosSdkOfflineSigner().getAccounts()
     if (!account) throw new Error("Account not found")
     return account
+  }
+
+  public async getCosmosSdkBalances(): Promise<ReadonlyArray<Coin>> {
+    const { address } = await this.getCosmosSdkAccount()
+    const stargateClient = await this.stargateClient()
+    const balances = await stargateClient.getAllBalances(address)
+    return balances
   }
 
   protected getEvmAccount = (): Account =>
     this.#evmSigner?.account ?? raise("EVM account not found")
 
   public signingCosmWasmClient = async () =>
-    await SigningCosmWasmClient.connectWithSigner(this.#rpcUrl, this.#cosmosOfflineSigner, {
+    await SigningCosmWasmClient.connectWithSigner(this.#rpcUrl, this.getCosmosSdkOfflineSigner(), {
       gasPrice: this.#gasPrice()
     })
 
   public async simulateIbcMessageTransfers(
     messageTransfers: Array<MessageTransfer>
   ): Promise<number> {
-    const { address: signerAddress } = await this.getAccount()
+    const { address: signerAddress } = await this.getCosmosSdkAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.simulate(
       signerAddress,
@@ -195,7 +221,7 @@ export class UnionClient implements IUnionClient {
   public async ibcMessageTransfers(
     messageTransfers: Array<MessageTransfer>
   ): Promise<DeliverTxResponse> {
-    const { address: signerAddress } = await this.getAccount()
+    const { address: signerAddress } = await this.getCosmosSdkAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.signAndBroadcast(
       signerAddress,
@@ -216,7 +242,7 @@ export class UnionClient implements IUnionClient {
   public async cosmwasmMessageExecuteContract(
     instructions: Array<ExecuteInstruction>
   ): Promise<ExecuteResult> {
-    const { address: signerAddress, algo, pubkey } = await this.getAccount()
+    const { address: signerAddress, algo, pubkey } = await this.getCosmosSdkAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.executeMultiple(signerAddress, instructions, "auto")
     return response
@@ -235,6 +261,21 @@ export class UnionClient implements IUnionClient {
     return await this.cosmwasmMessageExecuteContract(
       (params as { instructions: Array<ExecuteInstruction> }).instructions
     )
+  }
+
+  public async approveEvmAssetTransfer({
+    assetContractAddress,
+    amount
+  }: { assetContractAddress: Address; amount: bigint }): Promise<Hash> {
+    const signer = this.#evmSigner ?? raise("EVM signer not found")
+    return await signer.writeContract({
+      abi: erc20Abi,
+      account: signer.account ?? raise("EVM account not found"),
+      chain: signer.chain,
+      address: assetContractAddress,
+      functionName: "approve",
+      args: [this.#UCS01_ADDRESS, amount]
+    })
   }
 
   /**
@@ -275,9 +316,7 @@ export class UnionClient implements IUnionClient {
       ]
     } as const
     if (!simulate) return await signer.writeContract(writeContractParameters)
-    const { request } = await signer.simulateContract(writeContractParameters)
+    const { request } = await signer.extend(publicActions).simulateContract(writeContractParameters)
     return await signer.writeContract(request)
   }
 }
-
-// console.log(BigInt(Date.now()) + 7n * 24n * 60n * 60n * 1000n)

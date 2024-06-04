@@ -4,6 +4,14 @@ export function raise(message?: string, opts?: ErrorOptions): never {
 
 export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> => x.catch(() => undefined)
 
+export const noThrowSync = <T>(callback: T): T | undefined => {
+  try {
+    return callback
+  } catch {
+    return undefined
+  }
+}
+
 // remove duplicates from an array of objects by a key
 export const removeArrayDuplicates = <T>(array: Array<T>, key: keyof T): Array<T> =>
   array.reduce(

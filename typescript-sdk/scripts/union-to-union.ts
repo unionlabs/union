@@ -21,7 +21,7 @@ const unionClient = await UnionClient.connectWithSecret({
   rpcUrl: "https://rpc.testnet.bonlulu.uno"
 })
 
-const account = await unionClient.getAccount()
+const account = await unionClient.getCosmosSdkAccount()
 const cwClient = await unionClient.signingCosmWasmClient()
 const sendUnoToUnionAddress = await cwClient.sendTokens(
   account.address,

@@ -1,3 +1,9 @@
+export type LooseAutocomplete<T> = {
+  [K in keyof T]: T[K]
+} & {
+  [K: string]: any
+}
+
 export type NonNullable<T> = T extends null | undefined ? never : T
 
 export type TODO = any

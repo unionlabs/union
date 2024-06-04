@@ -67,7 +67,9 @@ const localStoragePersister = createSyncStoragePersister({
   storage: browser ? window.localStorage : undefined // or window.sessionStorage
 })
 
-onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
+onNavigate(navigation => {
+  console.info("Navigating to", navigation.to?.route.id)
+})
 </script>
 
 <svelte:head>
