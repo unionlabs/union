@@ -48,6 +48,7 @@ members = [
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-verifier",
+  "lib/near-verifier",
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
@@ -108,6 +109,7 @@ linea-verifier            = { path = "lib/linea-verifier", default-features = fa
 linea-zktrie              = { path = "lib/linea-zktrie", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }
 near-light-client         = { path = "near/near-light-client", default-features = false }
+near-verifier             = { path = "lib/near-verifier", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }

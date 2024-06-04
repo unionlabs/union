@@ -5388,6 +5388,7 @@ dependencies = [
  "near-sdk",
  "near-sdk-contract-tools",
  "near-units",
+ "near-verifier",
  "serde",
  "serde_json",
  "tokio",
@@ -5871,6 +5872,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "near-verifier"
+version = "0.1.0"
+dependencies = [
+ "borsh 1.5.1",
+ "ibc-vm-rs",
+ "near-contract-standards",
+ "near-primitives-core 0.21.2",
+ "near-sdk",
+ "near-sdk-contract-tools",
+ "serde",
+ "serde_json",
+ "unionlabs",
 ]
 
 [[package]]

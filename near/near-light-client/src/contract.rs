@@ -10,6 +10,7 @@ use near_sdk::{
 use near_sdk_contract_tools::owner::OwnerExternal;
 #[allow(clippy::wildcard_imports)]
 use near_sdk_contract_tools::Owner;
+use near_verifier::merkle::{self, combine_hash, hash_borsh};
 use unionlabs::{
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
@@ -22,11 +23,7 @@ use unionlabs::{
     },
 };
 
-use crate::{
-    merkle::{self, combine_hash, hash_borsh},
-    state_proof::RawStateProof,
-    ClientState, ConsensusState,
-};
+use crate::{state_proof::RawStateProof, ClientState, ConsensusState};
 
 #[near_bindgen]
 #[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]

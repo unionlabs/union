@@ -1,7 +1,9 @@
 [package]
-edition = "2021"
-name    = "near-light-client"
+name = "near-verifier"
 version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
 
 [dependencies]
 borsh                   = { workspace = true, features = ["borsh-derive"] }
@@ -13,23 +15,7 @@ near-sdk-contract-tools = { workspace = true }
 serde                   = { workspace = true }
 serde_json              = { workspace = true }
 unionlabs               = { workspace = true }
-near-verifier           = { workspace = true }
 
-[dev-dependencies]
-anyhow     = "1.0"
-near-units = "0.2.0"
-tokio      = { version = "1.18.1", features = ["full"] }
 
-[lib]
-crate-type = ["cdylib"]
-
-[lints.clippy]
-missing-panics-doc      = "allow"
-module-name-repetitions = "allow"
-must-use-candidate      = "allow"
-needless-pass-by-value  = "allow"
-pedantic                = "warn"
-wildcard-imports        = "allow"
-
-[features]
-schemars = ["ibc-vm-rs/schemars"]
+[lints]
+workspace = true
