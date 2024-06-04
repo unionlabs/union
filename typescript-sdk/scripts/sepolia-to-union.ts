@@ -3,7 +3,7 @@ import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { UnionClient } from "#/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, publicActions, createWalletClient, fallback } from "viem"
+import { http, publicActions, createWalletClient, fallback, erc20Abi } from "viem"
 
 /* `bun scripts/sepolia-to-union.ts --private-key "..."` */
 
@@ -20,17 +20,14 @@ const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 const evmSigner = createWalletClient({
   chain: sepolia,
   account: evmAccount,
-  // transport: http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
-  // transport: http(`https://rpc2.sepolia.org`)
   transport: fallback([
-    http(`https://rpc2.sepolia.org`)
-    // http(
-    //   `https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e/`
-    // )
+    http(
+      `https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e/`
+    ),
+    http(`https://rpc2.sepolia.org`),
+    http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
   ])
-}).extend(publicActions)
-
-evmSigner.sendTransaction({})
+})//.extend(publicActions)
 
 const unionClient = await UnionClient.connectWithSecret({
   rpcUrl: "https://rpc.testnet.bonlulu.uno",
@@ -47,8 +44,9 @@ const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
 const approve = await unionClient.approveEvmAssetTransfer({
-  amount: 1n,
-  assetContractAddress: LINK_CONTRACT_ADDRESS
+  account: evmAccount,
+  amount: 10n,
+  denomAddress: LINK_CONTRACT_ADDRESS
 })
 
 console.log(approve)

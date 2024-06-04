@@ -38,7 +38,7 @@
     "svelte-legos": "^0.2.3",
     "svelte-persisted-store": "^0.11.0",
     "svelte-sonner": "^0.3.24",
-    "svelte-ux": "^0.66.3",
+    "svelte-ux": "^0.66.4",
     "sveltekit-superforms": "^2.14.0",
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.31.0",

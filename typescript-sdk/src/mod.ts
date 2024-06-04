@@ -34,7 +34,7 @@ export interface IUnionClient {
   ibcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<DeliverTxResponse>
   cosmwasmMessageExecuteContract(instructions: Array<ExecuteInstruction>): Promise<ExecuteResult>
   approveEvmAssetTransfer(parameters: {
-    assetContractAddress: Address
+    denomAddress: Address
     amount: bigint
   }): Promise<Hash>
   transferEvmAsset(parameters: {
@@ -42,7 +42,7 @@ export interface IUnionClient {
     denomAddress: Address
     sourceChannel: string
     amount: bigint
-    account: Account | Address
+    account: Account
     contractAddress?: Address
     simulate?: true
   }): Promise<Hash>
@@ -264,17 +264,24 @@ export class UnionClient implements IUnionClient {
   }
 
   public async approveEvmAssetTransfer({
-    assetContractAddress,
-    amount
-  }: { assetContractAddress: Address; amount: bigint }): Promise<Hash> {
+    account,
+    denomAddress,
+    amount,
+    relayContractAddress = this.#UCS01_ADDRESS
+  }: {
+    account?: Account
+    amount: bigint
+    denomAddress: Address
+    relayContractAddress?: Address
+  }): Promise<Hash> {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
     return await signer.writeContract({
       abi: erc20Abi,
-      account: signer.account ?? raise("EVM account not found"),
+      account: (account || signer.account) ?? raise("EVM account not found"),
       chain: signer.chain,
-      address: assetContractAddress,
+      address: denomAddress,
       functionName: "approve",
-      args: [this.#UCS01_ADDRESS, amount]
+      args: [relayContractAddress, amount]
     })
   }
 
@@ -292,7 +299,7 @@ export class UnionClient implements IUnionClient {
   }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<Hash> {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
     const writeContractParameters = {
-      account,
+      account: (account || signer.account) ?? raise("EVM account not found"),
       abi: ucs01RelayAbi,
       chain: signer.chain,
       /**
