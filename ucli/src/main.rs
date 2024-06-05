@@ -58,6 +58,7 @@ async fn main() {
                             receiver,
                             amount,
                             denom,
+                            memo,
                         } => match config.ethereum {
                             cli::EthereumChainConfig::Mainnet(config) => {
                                 handle_transfer::<Mainnet>(
@@ -67,6 +68,7 @@ async fn main() {
                                     receiver,
                                     amount,
                                     denom,
+                                    memo,
                                 )
                                 .await
                             }
@@ -78,6 +80,7 @@ async fn main() {
                                     receiver,
                                     amount,
                                     denom,
+                                    memo,
                                 )
                                 .await
                             }
@@ -204,6 +207,7 @@ async fn handle_transfer<C: ChainSpec>(
     receiver: String,
     amount: u64,
     denom: String,
+    memo: String,
 ) {
     let signer_middleware = Arc::new(SignerMiddleware::new(
         ethereum.provider.clone(),
@@ -243,6 +247,7 @@ async fn handle_transfer<C: ChainSpec>(
                 amount: amount.into(),
             }]
             .into(),
+            memo,
             Height {
                 revision_number: 0,
                 revision_height: 0,

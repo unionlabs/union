@@ -28,7 +28,7 @@ use queue_msg::{Engine, InMemoryQueue, Queue};
 use tendermint_rpc::Client;
 use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
-use ucs01_relay_api::types::Ucs01TransferPacket;
+use ucs01_relay_api::types::{TransferPacket, Ucs01TransferPacket};
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     ethereum::config::Minimal, events::IbcEvent, google::protobuf::any::Any, traits::Chain,
@@ -295,6 +295,7 @@ impl Context {
                         denom: self.denom_address,
                         amount: transfer.tokens()[0].amount.u128(),
                     }],
+                    transfer.extension().to_owned(),
                     ucs01relay::IbcCoreClientV1HeightData {
                         revision_number: 0,
                         revision_height: 3,
