@@ -63,9 +63,10 @@ export function evmBalancesQuery({
   chainId: string
 } & ({ contractAddresses: Array<string> } | { tokenSpecification: "erc20" | "DEFAULT_TOKENS" })) {
   return createQuery({
-    queryKey: [address, "balances", chainId],
+    queryKey: ["balances", chainId, address],
     enabled: isValidEvmAddress(address),
     refetchOnWindowFocus: false,
+    refetchInterval: 1_000,
     queryFn: async () => {
       const assetsToCheck =
         "contractAddresses" in restParams && Array.isArray(restParams.contractAddresses)
@@ -85,17 +86,14 @@ export function evmBalancesQuery({
         })
       })
       const result = v.safeParse(evmBalancesResponseSchema, await response.json())
-      if (!result.success) return null
+      if (!result.success) return new Error(`Error parsing result ${JSON.stringify(result.issues)}`);
 
       const tokensInfo = await getEvmTokensInfo(
         result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)
       )
       return tokensInfo.map((token, index) => ({
         ...token,
-        balance: formatUnits(
-          BigInt(result.output.result.tokenBalances[index].tokenBalance),
-          token.decimals
-        )
+        balance: BigInt(result.output.result.tokenBalances[index].tokenBalance)
       }))
     }
   })
@@ -109,15 +107,15 @@ export function cosmosBalancesQuery({
   chainId: string
 }) {
   return createQuery({
-    queryKey: [address, "balances", chainId],
+    queryKey: ["balances", chainId, address],
     enabled: isValidCosmosAddress(address),
     refetchOnWindowFocus: false,
     queryFn: async () => {
         const restUrl = CHAIN_URLS[chainId].REST
         const response = await fetch(
             `${restUrl}/cosmos/bank/v1beta1/balances/${address}`,
-        )
-        if (!response.ok) return []
+        {});
+        if (!response.ok) return new Error("invalid response");
         return (await response.json()).balances.map((x) => {
             return {
                 address: x.denom,
