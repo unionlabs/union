@@ -54,6 +54,8 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                         cl.chain_id = ch.id
                     WHERE
                         ch.chain_id = $1
+                    AND
+                        cl.client_id is not NULL
                     "#,
                     chain_id
                 )
