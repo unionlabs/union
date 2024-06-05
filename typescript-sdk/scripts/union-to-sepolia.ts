@@ -31,7 +31,7 @@ const unionClient = await UnionClient.connectWithSecret({
 })
 
 const contractAddress = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
-
+const stamp = timestamp()
 const unionToSepoliaTransactions: Array<ExecuteInstruction> = Array.from(
   { length: TX_COUNT },
   (_, index) => ({
@@ -39,11 +39,11 @@ const unionToSepoliaTransactions: Array<ExecuteInstruction> = Array.from(
     msg: {
       transfer: {
         channel: "channel-0",
-        receiver: "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb".slice(2),
-        memo: `${index} - ${timestamp()} Sending UNO from Union to Sepolia`
+        receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd".slice(2),
+        memo: `${index} - ${stamp} Sending UNO from Union to Sepolia`
       }
     },
-    funds: [{ amount: (index + 1).toString(), denom: `muno` }]
+    funds: [{ amount: (index + 2).toString(), denom: `muno` }]
   })
 )
 
@@ -53,7 +53,7 @@ const transactionResults = await Array.fromAsync(
     unionClient.transferAssets({ kind: "cosmwasm", instructions: [transaction] }),
   { concurrency: 1 }
 )
-
+console.info(stamp)
 consola.info(
   JSON.stringify(
     transactionResults.map(item => item.transactionHash),

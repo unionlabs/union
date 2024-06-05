@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
 import { UnionClient } from "#/mod.ts"
+import { timestamp } from "./logger"
 
 /* `bun scripts/from-osmosis.ts --private-key "..."` */
 
@@ -30,7 +31,7 @@ const osmoFromOsmosisToUnion = await unionClient.transferAssets({
       token: { denom: "uosmo", amount: "1" },
       sender: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
       receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-      memo: "sending OSMO from Osmosis to Union x",
+      memo: `${timestamp()} sending OSMO from Osmosis to Union x`,
       timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
     }
   ]

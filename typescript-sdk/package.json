@@ -20,7 +20,7 @@
     "@cosmjs/encoding": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
     "@cosmjs/tendermint-rpc": "0.32.3",
-    "viem": "^2.13.3"
+    "viem": "^2.13.6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
@@ -29,7 +29,7 @@
     "@scure/base": "^1.1.6",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.3",
-    "@types/node": "^20.14.0",
+    "@types/node": "^20.14.1",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",

@@ -7,9 +7,9 @@ export const consola = createConsola({
   }
 })
 
-export const timestamp = () => {
+export function timestamp() {
   const d = new Date()
   const [date] = d.toISOString().split("T")
   const [time] = d.toTimeString().split(" ")
-  return `${date} ${time}`
+  return `${date}--${time?.replace(/:/g, "-")}`
 }
