@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.7.3/schema.json",
+  "$schema": "https://esm.sh/@biomejs/biome@1.8.0/configuration_schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -158,9 +158,10 @@
       "nursery": {
         "all": true,
         "noConsole": "off",
-        "noNodejsModules": "off",
+        "useTopLevelRegex": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
+        "noUnusedFunctionParameters": "off",
         "noUselessUndefinedInitialization": "off"
       },
       "performance": {
@@ -172,6 +173,7 @@
       },
       "correctness": {
         "all": true,
+        "noNodejsModules": "off",
         "noUnusedVariables": "off",
         "noUndeclaredVariables": "off"
       },
@@ -240,7 +242,7 @@
       "indentStyle": "space",
       "quoteStyle": "double",
       "bracketSpacing": true,
-      "trailingComma": "none",
+      "trailingCommas": "none",
       "semicolons": "asNeeded",
       "bracketSameLine": false,
       "jsxQuoteStyle": "double",

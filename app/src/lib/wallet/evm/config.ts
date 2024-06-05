@@ -144,7 +144,7 @@ export const provider = readable<() => Promise<undefined | unknown>>(
       ?.getProvider(),
   set => {
     watchConnectors(config, {
-      onChange: (connections, previousConnectors) => {
+      onChange: (connections, _previousConnectors) => {
         const connector = connections.find(connector => connector.isAuthorized())
         if (connector) set(() => connector.getProvider({ chainId: getChainId(config) }))
       }

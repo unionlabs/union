@@ -1,5 +1,5 @@
 import { redirect } from "@sveltejs/kit"
-import type { LayoutLoad } from "./$types"
+import type { LayoutLoad } from "./$types.ts"
 import type { SvelteComponent } from "svelte"
 
 import TvIcon from "virtual:icons/lucide/tv"

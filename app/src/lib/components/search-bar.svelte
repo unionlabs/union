@@ -37,9 +37,9 @@ onMount(() => {
   }
 })
 
-const onInputClick = (event: MouseEvent) => (commandDialogOpen = windowSize.width < 720)
+const onInputClick = (_event: MouseEvent) => (commandDialogOpen = windowSize.width < 720)
 const onInputChange = (event: InputEvent) =>
-  debounce((event: InputEvent) => {
+  debounce((_event: InputEvent) => {
     console.log("Searching...", searchInput)
   }, 1_000)(event)
 </script>
