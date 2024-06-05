@@ -145,7 +145,9 @@ contract RelayTests is Test {
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(sender);
-        relay.send(sourceChannel, receiver, localTokens, extension, IBCHeight.zero(), 0);
+        relay.send(
+            sourceChannel, receiver, localTokens, extension, IBCHeight.zero(), 0
+        );
 
         return denomAddress;
     }
@@ -174,7 +176,9 @@ contract RelayTests is Test {
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(receiver);
-        relay.send(sourceChannel, sender, localTokens, extension, IBCHeight.zero(), 0);
+        relay.send(
+            sourceChannel, sender, localTokens, extension, IBCHeight.zero(), 0
+        );
     }
 
     function receiveRemoteToken(
@@ -654,7 +658,12 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            destinationChannel, receiver, localTokens, extension, IBCHeight.zero(), 0
+            destinationChannel,
+            receiver,
+            localTokens,
+            extension,
+            IBCHeight.zero(),
+            0
         );
 
         Token[] memory tokens = new Token[](1);
@@ -787,7 +796,12 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            destinationChannel, receiver, localTokens, extension, IBCHeight.zero(), 0
+            destinationChannel,
+            receiver,
+            localTokens,
+            extension,
+            IBCHeight.zero(),
+            0
         );
 
         // Local tokens must be tracked as outstanding for the channel

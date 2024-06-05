@@ -110,7 +110,7 @@ pub struct PacketForward {
 }
 
 impl PacketForward {
-    /// Effective timeout is equivilant to `timeout * retries`.
+    /// Effective timeout is equivalent to `timeout * retries`.
     ///
     /// If the `timeout` is invalid or cannot be parsed, the default timeout is used.
     /// Timeouts are considered invalid if they are less than or equal to zero.
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn serde_parses_memo() {
         // let memo = "\"balls\": \"string\"";
-        let memo = "{\"forward\": {\"receiver\": \"[eth_addr]\",\"port\": \"[union-eth port]\",\"channel\": \"[unioneth channel]\",\"timeout\": \"1000000\",\"retries\": 0}}";
+        let memo = "{\"forward\": {\"receiver\": \"[eth_addr]\",\"port\": \"[union-eth port]\",\"channel\": \"[union-eth channel]\",\"timeout\": \"1000000\",\"retries\": 0}}";
 
         let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
 

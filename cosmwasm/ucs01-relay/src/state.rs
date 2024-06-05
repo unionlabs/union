@@ -15,7 +15,7 @@ pub const CHANNEL_INFO: Map<&str, ChannelInfo> = Map::new("channel_info");
 pub const CHANNEL_STATE: Map<(&str, &str), ChannelState> = Map::new("channel_state");
 
 /// In flight PFM packets, stored for refund information.
-/// Indexed by `PfmRefuntPacketKey` (channel_id, port_id, sequence).
+/// Indexed by `PfmRefundPacketKey` (channel_id, port_id, sequence).
 pub const IN_FLIGHT_PFM_PACKETS: Map<PfmRefundPacketKey, InFlightPfmPacket> =
     Map::new("in_flight_pfm_packets");
 

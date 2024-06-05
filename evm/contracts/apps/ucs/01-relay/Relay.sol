@@ -157,7 +157,9 @@ library RelayPacketLib {
         pure
         returns (bytes memory)
     {
-        return abi.encode(packet.sender, packet.receiver, packet.tokens, packet.extension);
+        return abi.encode(
+            packet.sender, packet.receiver, packet.tokens, packet.extension
+        );
     }
 
     function decode(bytes calldata stream)

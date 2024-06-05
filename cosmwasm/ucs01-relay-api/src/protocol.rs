@@ -392,6 +392,7 @@ pub trait TransferProtocol {
     /// On packet acknowledgment (be it success, failure, or timeout) check if the packet is a PFM packet.
     /// If the packet is a PFM packet, overwrite the acknowledgment process to forward the acknowledgment to the original sender.
     /// Handle and overwrites required for refunding tokens correctly.
+    #[allow(clippy::type_complexity)]
     fn pfm_ack(
         &mut self,
         ack: GenericAck,

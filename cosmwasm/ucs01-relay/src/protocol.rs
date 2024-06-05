@@ -627,6 +627,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             .add_events(transfer.events))
     }
 
+    #[allow(clippy::type_complexity)]
     fn pfm_ack(
         &mut self,
         ack: GenericAck,
@@ -992,6 +993,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .add_events(transfer.events))
     }
 
+    #[allow(clippy::type_complexity)]
     fn pfm_ack(
         &mut self,
         ack: GenericAck,
@@ -1173,7 +1175,7 @@ mod tests {
     }
 
     #[test]
-    fn receive_transfer_destination_collision_yields_defferent_hashes() {
+    fn receive_transfer_destination_collision_yields_different_hashes() {
         let source_endpoint_1 = IbcEndpoint {
             port_id: "wasm.0xDEADC0DE".into(),
             channel_id: "channel-1".into(),

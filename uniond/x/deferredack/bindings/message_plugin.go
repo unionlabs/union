@@ -85,16 +85,3 @@ func PerformWriteDeferredAck(deferredAckKeeper *deferredackkeeper.Keeper, ctx sd
 
 	return res.Marshal()
 }
-
-// parseAddress parses address from bech32 string and verifies its format.
-func parseAddress(addr string) (sdk.AccAddress, error) {
-	parsed, err := sdk.AccAddressFromBech32(addr)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "address from bech32")
-	}
-	err = sdk.VerifyAddressFormat(parsed)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "verify address format")
-	}
-	return parsed, nil
-}
