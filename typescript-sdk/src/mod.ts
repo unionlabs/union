@@ -4,7 +4,8 @@ import {
   type Address,
   type Account,
   type WalletClient,
-  publicActions
+  publicActions,
+  type TransactionReceipt
 } from "viem"
 import {
   GasPrice,
@@ -24,6 +25,7 @@ import type { Optional, Coin, ExtractParameters } from "./types.ts"
 import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
 import type { MsgTransfer } from "cosmjs-types/ibc/applications/transfer/v1/tx"
 import type { AccountData, OfflineSigner as CosmosOfflineSigner } from "@cosmjs/proto-signing"
+import { waitForTransactionReceipt } from "viem/actions"
 
 type MessageTransfer = Optional<MsgTransfer, "timeoutTimestamp" | "sender">
 
@@ -44,8 +46,9 @@ export interface IUnionClient {
     amount: bigint
     account: Account
     contractAddress?: Address
-    simulate?: true
-  }): Promise<Hash>
+    simulate?: boolean
+    waitForReceipt?: false
+  }): Promise<{ hash: Hash; receipt?: TransactionReceipt }>
   transferAssets<Kind extends "ibc" | "cosmwasm">({
     kind
   }: { kind: Kind } & (Kind extends "ibc"
@@ -295,8 +298,12 @@ export class UnionClient implements IUnionClient {
     sourceChannel,
     amount,
     contractAddress = this.#UCS01_ADDRESS,
-    simulate = true
-  }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<Hash> {
+    simulate = true,
+    waitForReceipt = false
+  }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<{
+    hash: Hash
+    receipt?: TransactionReceipt
+  }> {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
     const writeContractParameters = {
       account: (account || signer.account) ?? raise("EVM account not found"),
@@ -322,8 +329,16 @@ export class UnionClient implements IUnionClient {
         0n
       ]
     } as const
-    if (!simulate) return await signer.writeContract(writeContractParameters)
+    if (!simulate) {
+      const hash = await signer.writeContract(writeContractParameters)
+      if (!waitForReceipt) return { hash }
+      const receipt = await signer.extend(publicActions).waitForTransactionReceipt({ hash })
+      return { hash, receipt }
+    }
     const { request } = await signer.extend(publicActions).simulateContract(writeContractParameters)
-    return await signer.writeContract(request)
+    const hash = await signer.writeContract(request)
+    if (!waitForReceipt) return { hash }
+    const receipt = await signer.extend(publicActions).waitForTransactionReceipt({ hash })
+    return { hash, receipt }
   }
 }

@@ -1,3 +1,27 @@
+export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> => x.catch(() => undefined)
+
+export const noThrowSync = <T>(callback: T): T | undefined => {
+  try {
+    return callback
+  } catch {
+    return undefined
+  }
+}
+
+export const sleep = async (ms: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, ms))
+
+export function throttle(func: Function, limit: number) {
+  let inThrottle: boolean
+  return (...args: Array<any>) => {
+    if (!inThrottle) {
+      func(...args)
+      inThrottle = true
+      setTimeout(() => (inThrottle = false), limit)
+    }
+  }
+}
+
 export function raise(error: unknown): never {
   throw typeof error === "string" ? new Error(error) : error
 }
