@@ -334,14 +334,12 @@ pub struct IbcCoreChannelV1CounterpartyData {
     ::serde::Serialize,
     ::serde::Deserialize,
 )]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct IbcCoreChannelV1PacketData {
     pub sequence: u64,
     pub source_port: ::std::string::String,
     pub source_channel: ::std::string::String,
     pub destination_port: ::std::string::String,
     pub destination_channel: ::std::string::String,
-    #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_bytes))]
     pub data: ::ethers::core::types::Bytes,
     pub timeout_height: IbcCoreClientV1HeightData,
     pub timeout_timestamp: u64,
@@ -359,7 +357,6 @@ pub struct IbcCoreChannelV1PacketData {
     ::serde::Serialize,
     ::serde::Deserialize,
 )]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct IbcCoreClientV1HeightData {
     pub revision_number: u64,
     pub revision_height: u64,

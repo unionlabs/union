@@ -14,10 +14,3 @@ pub mod ibc_handler;
 pub mod ibc_packet;
 pub mod shared_types;
 pub mod ucs01_relay;
-
-#[cfg(feature = "arbitrary")]
-pub(crate) fn arbitrary_bytes(
-    u: &mut arbitrary::Unstructured,
-) -> arbitrary::Result<ethers::core::types::Bytes> {
-    u.arbitrary::<Vec<u8>>().map(Into::into)
-}
