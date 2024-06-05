@@ -1,5 +1,5 @@
 use backon::Retryable;
-use color_eyre::eyre::{bail, Report};
+use color_eyre::eyre::{bail, eyre, Report};
 use futures::{stream, stream::TryStreamExt, TryFutureExt};
 use sqlx::{Acquire, Postgres};
 use tendermint::block::Height;
@@ -12,7 +12,7 @@ use tendermint_rpc::{
 };
 use time::OffsetDateTime;
 use tokio::time::{sleep, Duration};
-use tracing::{debug, info};
+use tracing::{debug, info, info_span, Instrument};
 use url::Url;
 
 use crate::postgres::{self, ChainId};
@@ -65,71 +65,70 @@ impl Config {
         } else {
             fetch_meta(&client, &pool).await?
         };
+        let indexing_span = info_span!("indexer", chain_id = chain_id.canonical);
+        async move {
+            // Determine from which height we should start indexing if we haven't
+            // indexed any blocks yet. If start_height > current_height, we jump to the new start height
+            let mut height: Height = (height.unwrap_or_default().value() as u32)
+                .max(self.start_height.unwrap_or_default())
+                .into();
 
-        // Determine from which height we should start indexing if we haven't
-        // indexed any blocks yet. If start_height > current_height, we jump to the new start height
-        let mut height: Height = (height.unwrap_or_default().value() as u32)
-            .max(self.start_height.unwrap_or_default())
-            .into();
-
-        // Fast sync protocol. We sync up to latest.height - batch-size + 1
-        if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
-            debug!(
-                chain_id.canonical,
-                "syncing with batch size {} up to height {}",
-                Self::BATCH_SIZE,
-                up_to
-            );
-            loop {
-                let batch_end =
-                    std::cmp::min(up_to.value(), height.value() + Self::BATCH_SIZE as u64);
-                if batch_end - height.value() != 20 {
-                    break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
-                }
-
+            // Fast sync protocol. We sync up to latest.height - batch-size + 1
+            if let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
                 debug!(
-                    chain_id.canonical,
-                    "fast syncing for batch: {}..{}", height, batch_end
+                    "syncing with batch size {} up to height {}",
+                    Self::BATCH_SIZE,
+                    up_to
                 );
-                let mut tx = pool.begin().await?;
-                let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
-                tx.commit().await?;
-                info!(
-                    chain_id.canonical,
-                    "indexed blocks {}..{}",
-                    height.value(),
-                    next_height.value()
-                );
-                height = next_height
-            }
-        }
-
-        info!(chain_id.canonical, "syncing block by block");
-        let mut retry_count = 0;
-        loop {
-            debug!("starting regular sync protocol");
-            // Regular sync protocol. This fetches blocks one-by-one.
-            retry_count += 1;
-            let mut tx = pool.begin().await?;
-            match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height).await? {
-                Some(h) => {
-                    info!(chain_id.canonical, "indexed block {}", &height);
-                    height = h;
-                    retry_count = 0;
-                    tx.commit().await?;
-                }
-                None => {
-                    if retry_count > 30 {
-                        bail!("node has stopped providing new blocks")
+                loop {
+                    let batch_end =
+                        std::cmp::min(up_to.value(), height.value() + Self::BATCH_SIZE as u64);
+                    if batch_end - height.value() != 20 {
+                        break; // go back to the should_fast_sync_up_to. If this returns None, we continue to slow sync.
                     }
-                    retry_count += 1;
-                    debug!("caught up indexing, sleeping for 1 second");
-                    sleep(Duration::from_millis(1000)).await;
-                    tx.rollback().await?;
-                    continue;
+
+                    debug!(
+                        "fast syncing for batch: {}..{}", height, batch_end
+                    );
+                    let mut tx = pool.begin().await?;
+                    let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
+                    tx.commit().await?;
+                    info!(
+                        "indexed blocks {}..{}",
+                        height.value(),
+                        next_height.value()
+                    );
+                    height = next_height
                 }
             }
-        }
+
+            info!(chain_id.canonical, "syncing block by block");
+            let mut retry_count = 0;
+            loop {
+                debug!("starting regular sync protocol");
+                // Regular sync protocol. This fetches blocks one-by-one.
+                retry_count += 1;
+                let mut tx = pool.begin().await?;
+                match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height).await? {
+                    Some(h) => {
+                        info!("indexed block {}", &height);
+                        height = h;
+                        retry_count = 0;
+                        tx.commit().await?;
+                    }
+                    None => {
+                        if retry_count > 30 {
+                            bail!("node has stopped providing new blocks")
+                        }
+                        retry_count += 1;
+                        debug!("caught up indexing, sleeping for 1 second");
+                        sleep(Duration::from_millis(1000)).await;
+                        tx.rollback().await?;
+                        continue;
+                    }
+                }
+            }
+        }.instrument(indexing_span).await
     }
 }
 
@@ -385,7 +384,7 @@ async fn fetch_transactions_for_block(
     };
 
     for page in 1..u32::MAX {
-        debug!("fetching page {page} for block {height}");
+        info!("fetching page {page} for block {height}");
         let response = client
             .tx_search(query.clone(), false, page, 100, Order::Ascending)
             .await?;
@@ -393,8 +392,25 @@ async fn fetch_transactions_for_block(
         txs.extend(response.txs);
 
         // We always query for the maximum page size. If we get less items, we know pagination is done
-        if len < 100 {
-            break;
+        let current_count = (page - 1) * 100 + len as u32;
+        let total_count = response.total_count;
+
+        debug!(
+            "fetched page {page} for block {height} (transaction {current_count} of {total_count})"
+        );
+
+        match current_count.cmp(&response.total_count) {
+            std::cmp::Ordering::Less => debug!("fetching next page"),
+            std::cmp::Ordering::Equal => {
+                debug!("fetched all transactions");
+                break;
+            }
+            std::cmp::Ordering::Greater => {
+                debug!("fetched more transactions than expected");
+                return Err(eyre!(
+                    "fetched more transactions ({current_count}) than expected ({total_count})"
+                ));
+            }
         }
 
         // If we deduce the number from expected, we end pagination once we reach expected.
