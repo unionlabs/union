@@ -86,7 +86,7 @@ export function evmBalancesQuery({
         })
       })
       const result = v.safeParse(evmBalancesResponseSchema, await response.json())
-      if (!result.success) return new Error(`Error parsing result ${JSON.stringify(result.issues)}`);
+      if (!result.success) throw new Error(`Error parsing result ${JSON.stringify(result.issues)}`);
 
       const tokensInfo = await getEvmTokensInfo(
         result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)

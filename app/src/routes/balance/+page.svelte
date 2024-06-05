@@ -2,6 +2,7 @@
   import { cosmosBalancesQuery, evmBalancesQuery } from '$lib/queries/balance'
   import { sepoliaStore } from "$lib/wallet/evm/config.ts"
   import { cosmosStore } from "$lib/wallet/cosmos"
+  import { summarizeString } from '$lib/utilities/format'; 
 
   let evmBalances: null | ReturnType<typeof evmBalancesQuery>;
   $: if($sepoliaStore.address) evmBalances = evmBalancesQuery({
@@ -27,7 +28,11 @@
     {:else if $evmBalances.isError}
       {$evmBalances.error.message}
     {:else if $evmBalances.isSuccess}
-      <pre>{JSON.stringify($evmBalances.data, null, 2)}</pre>
+      <div>
+        {#each $evmBalances.data as asset}
+          <div>{summarizeString(asset.symbol, 4)} | {asset.balance}</div>
+        {/each}
+      </div>
     {/if}
   {:else}
     <p>Connect your EVM wallet to continue</p>
