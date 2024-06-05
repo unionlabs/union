@@ -54,6 +54,10 @@ pub fn reply(
             Ok(to_response(Ucs01Protocol::receive_error(err)))
         }
         (IBC_SEND_ID, SubMsgResult::Ok(value)) => {
+            if reply.payload.is_empty() {
+                return Ok(Response::new());
+            }
+
             let msg_response = value
                 .msg_responses
                 .iter()

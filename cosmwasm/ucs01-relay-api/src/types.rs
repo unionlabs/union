@@ -103,6 +103,7 @@ impl TryFrom<Ucs01TransferPacket> for Binary {
                     })
                     .collect(),
             ),
+            Token::String(value.memo),
         ])
         .into())
     }
@@ -120,6 +121,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
                     ParamType::String,
                     ParamType::Uint(128),
                 ]))),
+                ParamType::String,
             ],
             &value,
         )
@@ -130,7 +132,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
         // NOTE: at this point, it is technically impossible to have any other branch than the one we
         // match unless there is a bug in the underlying `ethabi` crate
         match &encoded_packet[..] {
-            [Token::Bytes(sender), Token::Bytes(receiver), Token::Array(tokens)] => {
+            [Token::Bytes(sender), Token::Bytes(receiver), Token::Array(tokens), Token::String(memo)] => {
                 Ok(Ucs01TransferPacket {
                     sender: sender.clone().into(),
                     receiver: receiver.clone().into(),
@@ -150,7 +152,7 @@ impl TryFrom<Binary> for Ucs01TransferPacket {
                             }
                         })
                         .collect(),
-                    memo: String::new(),
+                    memo: memo.clone(),
                 })
             }
             _ => unreachable!(),

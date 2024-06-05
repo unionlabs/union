@@ -798,6 +798,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .deps
             .api
             .addr_humanize(&receiver.clone().into())?;
+        // TODO(aeryz): call `addr_validate` here
         StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
