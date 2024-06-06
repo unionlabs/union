@@ -115,6 +115,7 @@ workspace = true
 "cosmos+vesting+module+v1" = []
 "cosmos+vesting+v1beta1" = ["cosmos+auth+v1beta1", "cosmos+base+v1beta1"]
 "cosmwasm+wasm+v1" = ["cosmos+base+query+v1beta1", "cosmos+base+v1beta1", "google+protobuf"]
+"deferredack+v1beta1" = ["ibc+core+channel+v1"]
 "google+protobuf" = []
 "google+protobuf+compiler" = ["google+protobuf"]
 "ibc+applications+fee+v1" = [
@@ -233,6 +234,7 @@ proto_full = [
   "cosmos+vesting+module+v1",
   "cosmos+vesting+v1beta1",
   "cosmwasm+wasm+v1",
+  "deferredack+v1beta1",
   "google+protobuf",
   "google+protobuf+compiler",
   "ibc+applications+fee+v1",

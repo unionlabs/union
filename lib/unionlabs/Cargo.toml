@@ -61,11 +61,12 @@ serde_json = { workspace = true }
 [features]
 default = ["ethabi", "std", "stargate"]
 
-ethabi = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
-grpc   = ["protos/client"]
-std    = ["ethers-core/std"]
+cosmwasm = []
+ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
+grpc     = ["protos/client"]
+std      = ["ethers-core/std"]
 
 arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
 fuzzing   = ["arbitrary", "serde_json"]
 
-stargate = ["cosmwasm-std/stargate"]
+stargate = ["cosmwasm", "cosmwasm-std/stargate"]

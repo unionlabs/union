@@ -79,6 +79,7 @@ IHAVENOIDEA
 IIBC
 IOSVG
 Infima
+Infof
 Interchain
 Jelena
 Jemalloc
@@ -264,6 +265,7 @@ bhapi
 bigtestnet
 binaryen
 bindgen
+bindingstypes
 bindir
 biomejs
 bitarray
@@ -304,9 +306,12 @@ catmull
 cctp
 cdctypes
 cdylib
+cerr
 chainer
 chainid
 chainsafe
+channelkeeper
+channeltypes
 cheqd
 chevdor
 chrono
@@ -382,7 +387,10 @@ cryptware
 ctxt
 ctypes
 curr
+dabindings
+dakeeper
 dalek
+damodule
 dasharray
 dashmap
 dashoffset
@@ -391,7 +399,11 @@ datadir
 datagram
 datas
 datetime
+datypes
 debouncer
+deferredack
+deferredackkeeper
+deferredacktypes
 delegators
 dels
 denoms
@@ -492,6 +504,7 @@ gopath
 gopls
 goprivate
 goroutines
+gosec
 gotest
 gotools
 govclient
@@ -508,6 +521,7 @@ groomlake
 groth
 groupkeeper
 groupmodule
+grpclog
 hasher
 hasown
 hastscript
@@ -747,6 +761,7 @@ overrrides
 overscan
 oxalica
 oxlint
+packetforwardmiddleware
 pagefind
 paloma
 paneforge
@@ -781,6 +796,7 @@ poisonphang
 polkachu
 polkadot
 popd
+porttypes
 postcss
 postgrespassword
 posthandler
@@ -831,6 +847,7 @@ rabby
 randao
 rawfile
 rclone
+rctx
 rdns
 readarray
 receiveds
@@ -906,6 +923,7 @@ sigint
 sigtypes
 simapp
 simd
+simstate
 simtestutil
 simtypes
 slashingkeeper

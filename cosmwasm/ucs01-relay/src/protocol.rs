@@ -1,22 +1,30 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, HexBinary, IbcEndpoint, IbcOrder,
-    MessageInfo, Uint128, Uint512,
+    wasm_execute, Addr, AnyMsg, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
+    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+};
+use prost::Message;
+use protos::{
+    deferredack::v1beta1::MsgWriteDeferredAck,
+    ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement},
 };
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
-    protocol::TransferProtocol,
+    middleware::{InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError},
+    protocol::{TransferProtocol, ATTR_ERROR, ATTR_SUCCESS, IBC_SEND_ID},
     types::{
-        make_foreign_denom, DenomOrigin, EncodingError, Ics20Ack, Ics20Packet, TransferPacket,
-        TransferToken, Ucs01Ack, Ucs01TransferPacket,
+        make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet,
+        TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
     },
 };
 
 use crate::{
+    contract::execute_transfer,
     error::ContractError,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, TransferMsg},
     state::{
-        ChannelInfo, Hash, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH, HASH_LENGTH, HASH_TO_FOREIGN_DENOM,
+        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH, HASH_LENGTH,
+        HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
     },
 };
 
@@ -494,6 +502,213 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     ) -> Result<Self::Packet, ucs01_relay_api::types::EncodingError> {
         Ics20Packet::try_from(packet)
     }
+
+    fn packet_forward(
+        &mut self,
+        packet: Self::Packet,
+        original_packet: IbcPacket,
+        forward: PacketForward,
+        processed: bool,
+    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+        let mut msgs: Vec<CosmosMsg<Self::CustomMsg>> = Vec::new();
+        // Override the receiving address for intermediate transfers on this chain with the contract address
+        let override_addr = self.self_addr().to_owned();
+
+        // If not already processed by other middleware, receive tokens into the contract address.
+        if !processed {
+            msgs.append(&mut match self.receive_transfer(
+                &override_addr.clone().into_string(),
+                packet.tokens().to_vec(),
+            ) {
+                Ok(msgs) => msgs,
+                Err(error) => {
+                    return Self::receive_error(error);
+                }
+            });
+        }
+
+        // Normalize tokens for transfer
+        let tokens: Vec<Coin> = packet
+            .tokens()
+            .iter()
+            .map(|transfer_token| -> Coin {
+                let transfer_token = self
+                    .normalize_for_ibc_transfer(transfer_token.clone())
+                    .expect("can normalize denom");
+                Coin {
+                    denom: transfer_token.denom,
+                    amount: transfer_token.amount,
+                }
+            })
+            .collect();
+
+        // Forward the packet
+        let forward_response = match self.forward_transfer_packet(
+            tokens,
+            original_packet.clone(),
+            forward,
+            override_addr,
+        ) {
+            Ok(forward_response) => forward_response,
+            Err(e) => {
+                return IbcReceiveResponse::new(
+                    Binary::try_from(Self::ack_failure(e.to_string())).expect("impossible"),
+                )
+                .add_event(Event::new("forward_err").add_attribute("error", e.to_string()))
+            }
+        };
+
+        IbcReceiveResponse::without_ack()
+            .add_messages(msgs)
+            .add_submessages(forward_response.messages)
+            .add_events(forward_response.events)
+    }
+
+    fn forward_transfer_packet(
+        &mut self,
+        tokens: Vec<Coin>,
+        original_packet: IbcPacket,
+        forward: PacketForward,
+        receiver: Addr,
+    ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
+        // Prepare forward message
+        let msg_info = MessageInfo {
+            sender: receiver,
+            funds: tokens,
+        };
+
+        let timeout = forward.get_effective_timeout();
+
+        // TODO: persist full memo
+        let memo = match forward.next {
+            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next }).unwrap(),
+            None => "".to_owned(),
+        };
+
+        let transfer_msg = TransferMsg {
+            channel: forward.channel.clone().value(),
+            receiver: forward.receiver.value(),
+            timeout: Some(timeout),
+            memo,
+        };
+
+        // Send forward message
+        let mut transfer = execute_transfer(
+            self.common.deps.branch(),
+            self.common.env.clone(),
+            msg_info,
+            transfer_msg,
+        )?;
+
+        let in_flight_packet = InFlightPfmPacket::new(
+            self.common.info.sender.clone(),
+            original_packet,
+            timeout,
+            forward.channel.value(),
+            forward.port.value(),
+        );
+
+        if let Some(reply_sub) = transfer
+            .messages
+            .iter_mut()
+            .find(|sub| sub.id == IBC_SEND_ID)
+        {
+            *reply_sub = reply_sub
+                .clone()
+                .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
+        } else {
+            return Err(ContractError::MiddlewareError(
+                MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
+            ));
+        }
+
+        Ok(IbcReceiveResponse::without_ack()
+            .add_submessages(transfer.messages)
+            .add_events(transfer.events))
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn pfm_ack(
+        &mut self,
+        ack: GenericAck,
+        ibc_packet: IbcPacket,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        tokens: Vec<TransferToken>,
+        sequence: u64,
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
+        let refund_key = PfmRefundPacketKey {
+            channel_id: ibc_packet.src.channel_id,
+            port_id: ibc_packet.src.port_id,
+            sequence,
+        };
+        let refund_info =
+            match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key.clone()) {
+                Ok(refund_info) => refund_info,
+                Err(_) => return Ok(None),
+            };
+
+        let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
+            Ok(value) => {
+                let value_string = value.to_string();
+                (
+                    self.send_tokens_success(sender, &String::new(), tokens)?,
+                    Vec::from_iter(
+                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                    ),
+                    Acknowledgement {
+                        response: Some(Response::Result(value.to_vec())),
+                    },
+                )
+            }
+            Err(error) => (
+                self.send_tokens_failure(sender, &String::new(), tokens)?,
+                Vec::from_iter((!error.is_empty()).then_some((ATTR_ERROR, error.clone()))),
+                Acknowledgement {
+                    response: Some(Response::Error(error)),
+                },
+            ),
+        };
+
+        let packet_timeout_timestamp: u64 = refund_info
+            .src_packet_timeout
+            .timestamp()
+            .unwrap_or_default()
+            .nanos();
+        let packet_timeout_height = match refund_info.src_packet_timeout.block() {
+            Some(timeout_block) => format!("{}-{}", timeout_block.revision, timeout_block.height),
+            None => "0-0".to_string(),
+        };
+
+        let deferred_packet_into = protos::deferredack::v1beta1::DeferredPacketInfo {
+            refund_channel_id: refund_info.refund_channel_id,
+            refund_port_id: refund_info.refund_port_id,
+            packet_src_channel_id: refund_info.packet_src_channel_id,
+            packet_src_port_id: refund_info.packet_src_port_id,
+            packet_timeout_timestamp,
+            packet_timeout_height,
+            packet_data: refund_info.packet_data.to_vec(),
+            sequence: refund_info.packet_sequence,
+        };
+
+        let value = MsgWriteDeferredAck {
+            sender: self.self_addr().to_string(),
+            deferred_packet_info: Some(deferred_packet_into),
+            ack: Some(ack_def),
+        }
+        .encode_to_vec();
+
+        let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+            type_url: "/deferredack.v1beta1.MsgWriteDeferredAck".to_owned(),
+            value: value.into(),
+        });
+
+        ack_msgs.append(vec![deferred_ack_msg].as_mut());
+        ack_attr.append(vec![("pfm", "pfm_ack_confirm".to_string())].as_mut());
+
+        IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
+
+        Ok(Some((ack_msgs, ack_attr)))
+    }
 }
 
 pub struct Ucs01Protocol<'a> {
@@ -584,6 +799,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             .deps
             .api
             .addr_humanize(&receiver.clone().into())?;
+        // TODO(aeryz): call `addr_validate` here
         StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
@@ -639,7 +855,225 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 }
             })?,
             packet.tokens,
+            packet.extension,
         ))
+    }
+
+    fn packet_forward(
+        &mut self,
+        packet: Self::Packet,
+        original_packet: IbcPacket,
+        forward: PacketForward,
+        processed: bool,
+    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
+        let mut msgs: Vec<CosmosMsg<Self::CustomMsg>> = Vec::new();
+        // Override the receiving address for intermediate transfers on this chain with the contract address
+        let override_addr = self.self_addr().to_owned();
+        let override_con_addr = match self
+            .common
+            .deps
+            .api
+            .addr_canonicalize(override_addr.as_str())
+        {
+            Ok(addr) => addr,
+            Err(error) => {
+                return Self::receive_error(error);
+            }
+        };
+
+        // If not already processed by other middleware, receive tokens into the contract address.
+        if !processed {
+            msgs.append(&mut match self
+                .receive_transfer(&override_con_addr.into(), packet.tokens().to_vec())
+            {
+                Ok(msgs) => msgs,
+                Err(error) => {
+                    return Self::receive_error(error);
+                }
+            });
+        }
+
+        // Normalize tokens for transfer
+        let tokens: Vec<Coin> = packet
+            .tokens()
+            .iter()
+            .map(|transfer_token| -> Coin {
+                let transfer_token = self
+                    .normalize_for_ibc_transfer(transfer_token.clone())
+                    .expect("can normalize denom");
+                Coin {
+                    denom: transfer_token.denom,
+                    amount: transfer_token.amount,
+                }
+            })
+            .collect();
+
+        // Forward the packet
+        let forward_response = match self.forward_transfer_packet(
+            tokens,
+            original_packet.clone(),
+            forward,
+            override_addr,
+        ) {
+            Ok(forward_response) => forward_response,
+            Err(e) => {
+                return IbcReceiveResponse::new(
+                    Binary::try_from(Self::ack_failure(e.to_string())).expect("impossible"),
+                )
+                .add_event(Event::new("forward_err").add_attribute("error", e.to_string()))
+            }
+        };
+
+        IbcReceiveResponse::without_ack()
+            .add_messages(msgs)
+            .add_submessages(forward_response.messages)
+            .add_events(forward_response.events)
+    }
+
+    fn forward_transfer_packet(
+        &mut self,
+        tokens: Vec<Coin>,
+        original_packet: IbcPacket,
+        forward: PacketForward,
+        receiver: Addr,
+    ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
+        // Prepare forward message
+        let msg_info = MessageInfo {
+            sender: receiver,
+            funds: tokens,
+        };
+
+        let timeout = forward.get_effective_timeout();
+
+        // TODO: persist full memo
+        let memo = match forward.next {
+            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next }).unwrap(),
+            None => "".to_owned(),
+        };
+
+        let transfer_msg = TransferMsg {
+            channel: forward.channel.clone().value(),
+            receiver: forward.receiver.value(),
+            timeout: Some(timeout),
+            memo,
+        };
+
+        // Send forward message
+        let mut transfer = execute_transfer(
+            self.common.deps.branch(),
+            self.common.env.clone(),
+            msg_info,
+            transfer_msg,
+        )?;
+
+        let in_flight_packet = InFlightPfmPacket::new(
+            self.common.info.sender.clone(),
+            original_packet,
+            timeout,
+            forward.channel.value(),
+            forward.port.value(),
+        );
+
+        if let Some(reply_sub) = transfer
+            .messages
+            .iter_mut()
+            .find(|sub| sub.id == IBC_SEND_ID)
+        {
+            *reply_sub = reply_sub
+                .clone()
+                .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
+        } else {
+            return Err(ContractError::MiddlewareError(
+                MiddlewareError::PacketForward(PacketForwardError::NoReplyMessageInStack),
+            ));
+        }
+
+        Ok(IbcReceiveResponse::without_ack()
+            .add_submessages(transfer.messages)
+            .add_events(transfer.events))
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn pfm_ack(
+        &mut self,
+        ack: GenericAck,
+        ibc_packet: IbcPacket,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        tokens: Vec<TransferToken>,
+        sequence: u64,
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
+        let refund_key = PfmRefundPacketKey {
+            channel_id: ibc_packet.src.channel_id,
+            port_id: ibc_packet.src.port_id,
+            sequence,
+        };
+        let refund_info =
+            match IN_FLIGHT_PFM_PACKETS.load(self.common.deps.storage, refund_key.clone()) {
+                Ok(refund_info) => refund_info,
+                Err(_) => return Ok(None),
+            };
+
+        let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
+            Ok(value) => {
+                let value_string = value.to_string();
+                (
+                    self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
+                    Vec::from_iter(
+                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                    ),
+                    Acknowledgement {
+                        response: Some(Response::Result(value.to_vec())),
+                    },
+                )
+            }
+            Err(error) => (
+                self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
+                Vec::from_iter((!error.is_empty()).then_some((ATTR_ERROR, error.clone()))),
+                Acknowledgement {
+                    response: Some(Response::Error(error)),
+                },
+            ),
+        };
+
+        let packet_timeout_timestamp: u64 = refund_info
+            .src_packet_timeout
+            .timestamp()
+            .unwrap_or_default()
+            .nanos();
+        let packet_timeout_height = match refund_info.src_packet_timeout.block() {
+            Some(timeout_block) => format!("{}-{}", timeout_block.revision, timeout_block.height),
+            None => "0-0".to_string(),
+        };
+
+        let deferred_packet_into = protos::deferredack::v1beta1::DeferredPacketInfo {
+            refund_channel_id: refund_info.refund_channel_id,
+            refund_port_id: refund_info.refund_port_id,
+            packet_src_channel_id: refund_info.packet_src_channel_id,
+            packet_src_port_id: refund_info.packet_src_port_id,
+            packet_timeout_timestamp,
+            packet_timeout_height,
+            packet_data: refund_info.packet_data.to_vec(),
+            sequence,
+        };
+
+        let value = MsgWriteDeferredAck {
+            sender: self.self_addr().to_string(),
+            deferred_packet_info: Some(deferred_packet_into),
+            ack: Some(ack_def),
+        }
+        .encode_to_vec();
+
+        let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+            type_url: "/deferredack.v1beta1.MsgWriteDeferredAck".to_owned(),
+            value: value.into(),
+        });
+
+        ack_msgs.append(vec![deferred_ack_msg].as_mut());
+        ack_attr.append(vec![("pfm", "pfm_ack".to_string())].as_mut());
+
+        IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
+
+        Ok(Some((ack_msgs, ack_attr)))
     }
 }
 

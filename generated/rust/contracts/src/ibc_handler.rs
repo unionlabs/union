@@ -1813,16 +1813,13 @@ pub mod ibc_handler {
         ///Calls the contract's `sendPacket` (0x6cf02d3f) function
         pub fn send_packet(
             &self,
-            source_channel: ::std::string::String,
-            timeout_height: IbcCoreClientV1HeightData,
-            timeout_timestamp: u64,
-            data: ::ethers::core::types::Bytes,
+            p0: ::std::string::String,
+            p1: IbcCoreClientV1HeightData,
+            p2: u64,
+            p3: ::ethers::core::types::Bytes,
         ) -> ::ethers::contract::builders::ContractCall<M, u64> {
             self.0
-                .method_hash(
-                    [108, 240, 45, 63],
-                    (source_channel, timeout_height, timeout_timestamp, data),
-                )
+                .method_hash([108, 240, 45, 63], (p0, p1, p2, p3))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `timeoutPacket` (0xaa18c8b1) function

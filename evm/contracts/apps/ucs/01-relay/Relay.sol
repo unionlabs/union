@@ -34,6 +34,7 @@ struct RelayPacket {
     bytes sender;
     bytes receiver;
     Token[] tokens;
+    string extension;
 }
 
 interface IRelay is IIBCModule {
@@ -51,6 +52,7 @@ interface IRelay is IIBCModule {
         string calldata sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
+        string calldata extension,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp
     ) external;
@@ -155,7 +157,9 @@ library RelayPacketLib {
         pure
         returns (bytes memory)
     {
-        return abi.encode(packet.sender, packet.receiver, packet.tokens);
+        return abi.encode(
+            packet.sender, packet.receiver, packet.tokens, packet.extension
+        );
     }
 
     function decode(bytes calldata stream)
@@ -279,6 +283,7 @@ contract UCS01Relay is
         string calldata sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
+        string calldata extension,
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp
     ) external override {
@@ -292,7 +297,8 @@ contract UCS01Relay is
         RelayPacket memory packet = RelayPacket({
             sender: abi.encodePacked(msg.sender),
             receiver: receiver,
-            tokens: normalizedTokens
+            tokens: normalizedTokens,
+            extension: extension
         });
         uint64 packetSequence = ibcHandler.sendPacket(
             sourceChannel, timeoutHeight, timeoutTimestamp, packet.encode()

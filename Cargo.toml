@@ -155,6 +155,7 @@ ethabi                   = { version = "18.0.0", default-features = false }
 frame-support-procedural = { version = "22.0.0", default-features = false }
 frunk                    = { version = "0.4.2", default-features = false }
 futures                  = { version = "0.3.28", default-features = false }
+go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }

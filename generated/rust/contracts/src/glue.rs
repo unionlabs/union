@@ -1557,7 +1557,7 @@ pub mod glue {
         pub header: TendermintTypesHeaderData,
         pub commit: TendermintTypesCommitData,
     }
-    ///`TendermintTypesValidatorData(bytes,(bytes,bytes,bytes),int64,int64)`
+    ///`Data(bytes,(bytes,bytes,bytes),int64,int64)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1568,7 +1568,7 @@ pub mod glue {
         Eq,
         Hash,
     )]
-    pub struct TendermintTypesValidatorData {
+    pub struct Data {
         pub addr: ::ethers::core::types::Bytes,
         pub pub_key: TendermintCryptoPublicKeyData,
         pub voting_power: i64,
@@ -1586,8 +1586,8 @@ pub mod glue {
         Hash,
     )]
     pub struct TendermintTypesValidatorSetData {
-        pub validators: ::std::vec::Vec<TendermintTypesValidatorData>,
-        pub proposer: TendermintTypesValidatorData,
+        pub validators: ::std::vec::Vec<Data>,
+        pub proposer: Data,
         pub total_voting_power: i64,
     }
     ///`TendermintVersionConsensusData(uint64,uint64)`

@@ -1,17 +1,13 @@
-
 [package]
-edition    = { workspace = true }
-name       = "contracts"
-publish    = false
-repository = { workspace = true }
-version    = "0.0.0"
+edition = "2021"
+name    = "contracts"
+version = "0.0.0"
 
-[lints]
-workspace = true
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 arbitrary = { workspace = true, optional = true, features = ["derive"] }
-ethers    = { workspace = true }
+ethers    = { workspace = true, default-features = false, features = ["abigen"] }
 serde     = { workspace = true, features = ["derive"] }
 [features]
 arbitrary = ["dep:arbitrary"]

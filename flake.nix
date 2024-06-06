@@ -528,6 +528,8 @@
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
             RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
+
+            SQLX_OFFLINE = true;
           };
 
           treefmt = {

@@ -1532,8 +1532,6 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelCloseConfirm",
@@ -1552,8 +1550,6 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(name = "ChannelCloseInit", abi = "ChannelCloseInit(string,string)")]
     pub struct ChannelCloseInitFilter {
@@ -1569,8 +1565,6 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenAck",
@@ -1592,8 +1586,6 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenConfirm",
@@ -1615,8 +1607,6 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenInit",
@@ -1638,8 +1628,6 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenTry",

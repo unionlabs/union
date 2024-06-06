@@ -125,7 +125,8 @@ contract RelayTests is Test {
         address sender,
         bytes memory receiver,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public returns (address) {
         address denomAddress = address(new ERC20Denom(denomName));
         IERC20Denom(denomAddress).mint(address(sender), amount);
@@ -144,7 +145,9 @@ contract RelayTests is Test {
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(sender);
-        relay.send(sourceChannel, receiver, localTokens, IBCHeight.zero(), 0);
+        relay.send(
+            sourceChannel, receiver, localTokens, extension, IBCHeight.zero(), 0
+        );
 
         return denomAddress;
     }
@@ -155,7 +158,8 @@ contract RelayTests is Test {
         bytes memory sender,
         address receiver,
         address denomAddress,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.prank(receiver);
         IERC20Denom(denomAddress).approve(address(relay), amount);
@@ -172,7 +176,9 @@ contract RelayTests is Test {
         emit RelayLib.Sent(0, sourceChannel, address(0), "", "", address(0), 0);
 
         vm.prank(receiver);
-        relay.send(sourceChannel, sender, localTokens, IBCHeight.zero(), 0);
+        relay.send(
+            sourceChannel, sender, localTokens, extension, IBCHeight.zero(), 0
+        );
     }
 
     function receiveRemoteToken(
@@ -188,7 +194,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = denomName;
@@ -217,7 +224,8 @@ contract RelayTests is Test {
                     RelayPacket({
                         sender: sender,
                         receiver: abi.encodePacked(receiver),
-                        tokens: tokens
+                        tokens: tokens,
+                        extension: extension
                     })
                     ),
                 timeout_height: IbcCoreClientV1Height.Data({
@@ -560,7 +568,8 @@ contract RelayTests is Test {
         uint64 timeoutRevisionNumber,
         uint64 timeoutRevisionHeight,
         uint64 timeoutTimestamp,
-        address relayer
+        address relayer,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(denom != address(0));
@@ -586,7 +595,8 @@ contract RelayTests is Test {
                     RelayPacket({
                         sender: abi.encodePacked(sender),
                         receiver: abi.encodePacked(sender),
-                        tokens: tokens
+                        tokens: tokens,
+                        extension: extension
                     })
                     ),
                 timeout_height: IbcCoreClientV1Height.Data({
@@ -616,7 +626,8 @@ contract RelayTests is Test {
         bytes memory receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
@@ -647,7 +658,12 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            destinationChannel, receiver, localTokens, IBCHeight.zero(), 0
+            destinationChannel,
+            receiver,
+            localTokens,
+            extension,
+            IBCHeight.zero(),
+            0
         );
 
         Token[] memory tokens = new Token[](1);
@@ -680,7 +696,8 @@ contract RelayTests is Test {
                     RelayPacket({
                         sender: receiver,
                         receiver: abi.encodePacked(sender),
-                        tokens: tokens
+                        tokens: tokens,
+                        extension: extension
                     })
                     ),
                 timeout_height: IbcCoreClientV1Height.Data({
@@ -712,7 +729,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
@@ -735,7 +753,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
     }
 
@@ -747,7 +766,8 @@ contract RelayTests is Test {
         address sender,
         bytes memory receiver,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(amount > 0);
@@ -776,7 +796,12 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            destinationChannel, receiver, localTokens, IBCHeight.zero(), 0
+            destinationChannel,
+            receiver,
+            localTokens,
+            extension,
+            IBCHeight.zero(),
+            0
         );
 
         // Local tokens must be tracked as outstanding for the channel
@@ -796,7 +821,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
@@ -819,7 +845,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         {
@@ -854,6 +881,7 @@ contract RelayTests is Test {
                 destinationChannel,
                 abi.encodePacked(receiver),
                 localTokens,
+                extension,
                 IBCHeight.zero(),
                 0
             );
@@ -878,7 +906,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sequence < 1000000000);
         vm.assume(receiver != address(0));
@@ -902,7 +931,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         receiveRemoteToken(
@@ -918,7 +948,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         {
@@ -952,6 +983,7 @@ contract RelayTests is Test {
                 "channel-2",
                 abi.encodePacked(receiver),
                 localTokens,
+                extension,
                 IBCHeight.zero(),
                 0
             );
@@ -976,7 +1008,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sequence < 1000000000);
         vm.assume(receiver != address(0));
@@ -1000,7 +1033,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         receiveRemoteToken(
@@ -1016,7 +1050,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
     }
 
@@ -1029,7 +1064,8 @@ contract RelayTests is Test {
         bytes memory receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
@@ -1045,7 +1081,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
@@ -1063,7 +1100,8 @@ contract RelayTests is Test {
         bytes memory receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
@@ -1079,7 +1117,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
@@ -1114,7 +1153,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(
             !RelayLib.isFromChannel(
@@ -1142,7 +1182,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         address denomAddress = relay.getDenomAddress(
@@ -1158,7 +1199,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomAddress,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
@@ -1193,7 +1235,8 @@ contract RelayTests is Test {
         bytes memory receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
@@ -1209,7 +1252,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
@@ -1246,7 +1290,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(
             !RelayLib.isFromChannel(
@@ -1274,7 +1319,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         address denomAddress = relay.getDenomAddress(
@@ -1290,7 +1336,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomAddress,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
@@ -1327,7 +1374,8 @@ contract RelayTests is Test {
         bytes memory receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(sender != address(0));
         vm.assume(relayer != address(0));
@@ -1343,7 +1391,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
@@ -1372,7 +1421,8 @@ contract RelayTests is Test {
         address receiver,
         address relayer,
         string memory denomName,
-        uint128 amount
+        uint128 amount,
+        string memory extension
     ) public {
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
@@ -1395,7 +1445,8 @@ contract RelayTests is Test {
             receiver,
             relayer,
             denomName,
-            amount
+            amount,
+            extension
         );
 
         address denomAddress = relay.getDenomAddress(
@@ -1411,7 +1462,8 @@ contract RelayTests is Test {
             sender,
             receiver,
             denomAddress,
-            amount
+            amount,
+            extension
         );
 
         IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();

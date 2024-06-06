@@ -32,7 +32,7 @@ thiserror       = { workspace = true }
 ics008-wasm-client  = { workspace = true }
 ics23               = { workspace = true }
 tendermint-verifier = { workspace = true }
-unionlabs           = { workspace = true }
+unionlabs           = { workspace = true, features = ["cosmwasm"] }
 
 [dev-dependencies]
 base64      = { workspace = true }

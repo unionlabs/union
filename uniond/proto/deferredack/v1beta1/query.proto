@@ -1,0 +1,26 @@
+syntax = "proto3";
+package deferredack.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "deferredack/v1beta1/params.proto";
+
+option go_package = "union/x/deferredack/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params defines a gRPC query method that returns the deferredack module's
+  // parameters.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/deferredack.v1beta1/params";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}

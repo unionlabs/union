@@ -139,6 +139,11 @@ import (
 	tfkeeper "union/x/tokenfactory/keeper"
 	tftypes "union/x/tokenfactory/types"
 
+	damodule "union/x/deferredack"
+	dabindings "union/x/deferredack/bindings"
+	dakeeper "union/x/deferredack/keeper"
+	datypes "union/x/deferredack/types"
+
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"union/docs"
@@ -176,6 +181,7 @@ var (
 		ibcfeetypes.ModuleName:         nil,
 		wasmtypes.ModuleName:           {authtypes.Burner}, // TODO(aeryz): is this necessary?
 		tftypes.ModuleName:             {authtypes.Minter, authtypes.Burner},
+		datypes.ModuleName:             nil,
 	}
 )
 
@@ -236,6 +242,7 @@ type UnionApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	WasmKeeper            wasmkeeper.Keeper
 	TfKeeper              tfkeeper.Keeper
+	DaKeeper              dakeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -297,7 +304,7 @@ func NewUnionApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
+		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey, datypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 
@@ -574,7 +581,16 @@ func NewUnionApp(
 		app.BankKeeper,
 	)
 
+	app.DaKeeper = dakeeper.NewKeeper(
+		appCodec,
+		keys[datypes.StoreKey],
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
+	)
+	daModule := damodule.NewAppModule(app.DaKeeper)
+
 	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&appBankBaseKeeper, &app.TfKeeper)...)
+	wasmOpts = append(wasmOpts, dabindings.RegisterCustomPlugins(&appBankBaseKeeper, &app.DaKeeper)...)
 
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
@@ -727,6 +743,7 @@ func NewUnionApp(
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		icaModule,
 		tfModule,
+		daModule,
 		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
 	)
@@ -782,6 +799,7 @@ func NewUnionApp(
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
+		datypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -809,6 +827,7 @@ func NewUnionApp(
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
+		datypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -841,6 +860,7 @@ func NewUnionApp(
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
+		datypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1129,6 +1149,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(tftypes.ModuleName)
+	paramsKeeper.Subspace(datypes.ModuleName)
 
 	keyTable := ibcclienttypes.ParamKeyTable()
 	keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})

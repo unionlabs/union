@@ -3263,6 +3263,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "go-parse-duration"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "558b88954871f5e5b2af0e62e2e176c8bde7a6c2c4ed41b13d138d96da2e2cbd"
+
+[[package]]
 name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7533,10 +7539,14 @@ dependencies = [
  "cw2 2.0.0",
  "dlmalloc",
  "ethabi",
+ "go-parse-duration",
  "hex",
+ "prost",
+ "protos",
  "schemars",
  "semver",
  "serde",
+ "serde-json-wasm 1.0.1",
  "sha2 0.10.8",
  "thiserror",
  "token-factory-api",
@@ -7550,9 +7560,16 @@ dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.3",
  "ethabi",
+ "go-parse-duration",
+ "prost",
+ "protos",
+ "serde",
+ "serde-json-wasm 1.0.1",
  "serde-utils",
+ "sha2 0.10.8",
  "thiserror",
  "token-factory-api",
+ "unionlabs",
 ]
 
 [[package]]

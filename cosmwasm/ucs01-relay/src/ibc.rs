@@ -5,13 +5,18 @@ use cosmwasm_std::{
     IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg,
     IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Reply, Response, SubMsgResult,
 };
+use prost::Message;
+use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
-use ucs01_relay_api::protocol::TransferProtocol;
+use ucs01_relay_api::{
+    middleware::InFlightPfmPacket,
+    protocol::{TransferProtocol, IBC_SEND_ID},
+};
 
 use crate::{
     error::ContractError,
     protocol::{protocol_ordering, Ics20Protocol, ProtocolCommon, Ucs01Protocol},
-    state::{ChannelInfo, CHANNEL_INFO},
+    state::{ChannelInfo, PfmRefundPacketKey, CHANNEL_INFO, IN_FLIGHT_PFM_PACKETS},
 };
 
 fn to_response<T>(
@@ -36,13 +41,50 @@ fn to_response<T>(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_: DepsMut, _: Env, reply: Reply) -> Result<Response<TokenFactoryMsg>, ContractError> {
+pub fn reply(
+    deps: DepsMut,
+    _: Env,
+    reply: Reply,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match (reply.id, reply.result) {
         (Ics20Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ics20Protocol::receive_error(err)))
         }
         (Ucs01Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ucs01Protocol::receive_error(err)))
+        }
+        (IBC_SEND_ID, SubMsgResult::Ok(value)) => {
+            if reply.payload.is_empty() {
+                return Ok(Response::new());
+            }
+
+            let msg_response = value
+                .msg_responses
+                .iter()
+                .find(|msg_response| {
+                    msg_response
+                        .type_url
+                        .eq("/cosmwasm.wasm.v1.MsgIBCSendResponse")
+                })
+                .expect("type url is correct and exists");
+            let send_res: MsgIbcSendResponse =
+                MsgIbcSendResponse::decode(msg_response.value.as_slice()).expect("is type url");
+
+            let in_flight_packet: InFlightPfmPacket =
+                serde_json_wasm::from_slice(reply.payload.as_slice()).expect("binary is type");
+
+            let refund_packet_key = PfmRefundPacketKey {
+                channel_id: in_flight_packet.clone().forward_channel_id,
+                port_id: in_flight_packet.clone().forward_port_id,
+                sequence: send_res.sequence,
+            };
+
+            IN_FLIGHT_PFM_PACKETS
+                .save(deps.storage, refund_packet_key.clone(), &in_flight_packet)
+                .expect("infallible update");
+
+            Ok(Response::new()
+                .add_attribute("pfm_store_inclusion", format!("{refund_packet_key:?}")))
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,
@@ -138,6 +180,8 @@ pub fn ibc_packet_receive(
         funds: Default::default(),
     };
 
+    let _ = msg.packet.timeout;
+
     match channel_info.protocol_version.as_str() {
         Ics20Protocol::VERSION => Ok(Ics20Protocol {
             common: ProtocolCommon {
@@ -147,7 +191,7 @@ pub fn ibc_packet_receive(
                 channel: channel_info,
             },
         }
-        .receive(msg.packet.data)),
+        .receive(msg.packet)),
         Ucs01Protocol::VERSION => Ok(Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -156,7 +200,7 @@ pub fn ibc_packet_receive(
                 channel: channel_info,
             },
         }
-        .receive(msg.packet.data)),
+        .receive(msg.packet)),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
             protocol_version: v.into(),
@@ -174,7 +218,7 @@ pub fn ibc_packet_ack(
     let channel_info = CHANNEL_INFO.load(deps.storage, &msg.original_packet.src.channel_id)?;
 
     let info = MessageInfo {
-        sender: msg.relayer,
+        sender: msg.clone().relayer,
         funds: Default::default(),
     };
 
@@ -187,7 +231,7 @@ pub fn ibc_packet_ack(
                 channel: channel_info,
             },
         }
-        .send_ack(msg.acknowledgement.data, msg.original_packet.data),
+        .send_ack(msg),
         Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -196,7 +240,7 @@ pub fn ibc_packet_ack(
                 channel: channel_info,
             },
         }
-        .send_ack(msg.acknowledgement.data, msg.original_packet.data),
+        .send_ack(msg),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.original_packet.dest.channel_id,
             protocol_version: v.into(),
@@ -227,7 +271,7 @@ pub fn ibc_packet_timeout(
                 channel: channel_info,
             },
         }
-        .send_timeout(msg.packet.data),
+        .send_timeout(msg.packet),
         Ucs01Protocol::VERSION => Ucs01Protocol {
             common: ProtocolCommon {
                 deps,
@@ -236,7 +280,7 @@ pub fn ibc_packet_timeout(
                 channel: channel_info,
             },
         }
-        .send_timeout(msg.packet.data),
+        .send_timeout(msg.packet),
         v => Err(ContractError::UnknownProtocol {
             channel_id: msg.packet.dest.channel_id,
             protocol_version: v.into(),

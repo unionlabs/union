@@ -2,12 +2,13 @@ use std::fmt::Debug;
 
 use cosmwasm_std::{
     Addr, Attribute, Binary, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
-    IbcOrder, IbcReceiveResponse, Response, SubMsg, Timestamp,
+    IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
 
-use crate::types::{
-    EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken,
+use crate::{
+    middleware::{Memo, PacketForward},
+    types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
@@ -31,6 +32,8 @@ pub const ATTR_VALUE_TRUE: &str = "true";
 pub const ATTR_VALUE_FALSE: &str = "false";
 
 pub const ATTR_ASSETS: &str = "assets";
+
+pub const IBC_SEND_ID: u64 = 10;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ProtocolError {
@@ -160,13 +163,17 @@ pub trait TransferProtocol {
         };
 
         let tokens = packet.tokens();
-        Ok(Response::new()
-            .add_messages(send_msgs)
-            .add_message(IbcMsg::SendPacket {
+        let sub = SubMsg::reply_on_success(
+            IbcMsg::SendPacket {
                 channel_id: self.channel_endpoint().channel_id.clone(),
                 data: packet.try_into()?,
                 timeout: input.current_time.plus_seconds(input.timeout_delta).into(),
-            })
+            },
+            IBC_SEND_ID,
+        );
+        Ok(Response::new()
+            .add_messages(send_msgs)
+            .add_submessage(sub)
             .add_events([
                 transfer_event
                     .add_attributes([
@@ -180,31 +187,53 @@ pub trait TransferProtocol {
 
     fn send_ack(
         &mut self,
-        raw_ack: impl Into<Binary> + Clone,
-        raw_packet: impl Into<Binary>,
+        ibc_packet: IbcPacketAckMsg,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(raw_packet.into())?;
+        let packet = Self::Packet::try_from(ibc_packet.original_packet.data.clone())?;
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
-        let ack = Into::<GenericAck>::into(Self::Ack::try_from(raw_ack.clone().into())?);
-        let (ack_msgs, ack_attr) = match ack {
-            Ok(value) => {
-                let value_string = value.to_string();
-                (
-                    self.send_tokens_success(packet.sender(), packet.receiver(), packet.tokens())?,
-                    (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
-                )
-            }
-            Err(error) => {
-                let error_string = error.to_string();
-                (
-                    self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?,
-                    (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
-                )
+        let ack: GenericAck = Self::Ack::try_from(ibc_packet.acknowledgement.data.clone())?.into();
+        let memo: String = packet.extension().clone().into();
+
+        let (ack_msgs, ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
+            ack.clone(),
+            ibc_packet.original_packet.clone(),
+            packet.sender(),
+            packet.tokens(),
+            ibc_packet.original_packet.sequence,
+        )? {
+            (ack_msgs, ack_attr)
+        } else {
+            match ack {
+                Ok(value) => {
+                    let value_string = value.to_string();
+                    (
+                        self.send_tokens_success(
+                            packet.sender(),
+                            packet.receiver(),
+                            packet.tokens(),
+                        )?,
+                        Vec::from_iter(
+                            (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                        ),
+                    )
+                }
+                Err(error) => {
+                    let error_string = error.to_string();
+                    (
+                        self.send_tokens_failure(
+                            packet.sender(),
+                            packet.receiver(),
+                            packet.tokens(),
+                        )?,
+                        Vec::from_iter(
+                            (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
+                        ),
+                    )
+                }
             }
         };
 
         let packet_event = {
-            let memo = Into::<String>::into(packet.extension().clone());
             Event::new(PACKET_EVENT)
                 .add_attributes((!memo.is_empty()).then_some((ATTR_MEMO, &memo)))
         };
@@ -216,7 +245,7 @@ pub trait TransferProtocol {
                         (ATTR_MODULE, TRANSFER_MODULE),
                         (ATTR_SENDER, packet.sender().to_string().as_str()),
                         (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
-                        (ATTR_ACK, &raw_ack.into().to_string()),
+                        (ATTR_ACK, &ibc_packet.acknowledgement.data.to_string()),
                     ])
                     .add_attributes([tokens_to_attr(packet.tokens())]),
             )
@@ -226,14 +255,24 @@ pub trait TransferProtocol {
 
     fn send_timeout(
         &mut self,
-        raw_packet: impl Into<Binary>,
+        ibc_packet: IbcPacket,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(raw_packet.into())?;
+        let packet = Self::Packet::try_from(ibc_packet.clone().data)?;
         // same branch as failure ack
-        let refund_msgs =
-            self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?;
-
         let memo = Into::<String>::into(packet.extension().clone());
+        let ack = GenericAck::Err("giving up on forwarded packet after timeout".to_owned());
+        let refund_msgs = if let Some((ack_msgs, _)) = self.pfm_ack(
+            ack,
+            ibc_packet.clone(),
+            packet.sender(),
+            packet.tokens(),
+            ibc_packet.sequence,
+        )? {
+            ack_msgs
+        } else {
+            self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?
+        };
+
         let timeout_event = if memo.is_empty() {
             Event::new(PACKET_EVENT)
         } else {
@@ -258,12 +297,9 @@ pub trait TransferProtocol {
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
-    fn receive(
-        &mut self,
-        raw_packet: impl Into<Binary> + Clone,
-    ) -> IbcReceiveResponse<Self::CustomMsg> {
-        let mut handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
-            let packet = Self::Packet::try_from(raw_packet.clone().into())?;
+    fn receive(&mut self, original_packet: IbcPacket) -> IbcReceiveResponse<Self::CustomMsg> {
+        let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
+            let packet = Self::Packet::try_from(original_packet.data.clone())?;
 
             // NOTE: The default message ack is always successful and only
             // overwritten if the submessage execution revert via the reply
@@ -276,6 +312,22 @@ pub trait TransferProtocol {
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
             let memo = Into::<String>::into(packet.extension().clone());
+
+            if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
+                match memo {
+                    Memo::Forward { forward } => {
+                        return Ok(Self::packet_forward(
+                            self,
+                            packet,
+                            original_packet,
+                            forward,
+                            false,
+                        ))
+                    }
+                    Memo::None { .. } => {}
+                };
+            }
+
             let packet_event = if memo.is_empty() {
                 Event::new(PACKET_EVENT)
             } else {
@@ -316,6 +368,39 @@ pub trait TransferProtocol {
             (ATTR_ERROR, &error),
         ]))
     }
+
+    /// Extracts and processes the forward information from a messages memo. Initiates the forward transfer process.
+    fn packet_forward(
+        &mut self,
+        packet: Self::Packet,
+        original_packet: IbcPacket,
+        forward: PacketForward,
+        processed: bool,
+    ) -> IbcReceiveResponse<Self::CustomMsg>;
+
+    /// Create the IBC transfer message from the provided forward information.
+    ///
+    /// Modifies the payload of the sub message with the ID `IBC_SEND_ID` to contain the `InFlightPfmPacket` serde json encoded struct.
+    fn forward_transfer_packet(
+        &mut self,
+        tokens: Vec<Coin>,
+        original_packet: IbcPacket,
+        forward: PacketForward,
+        receiver: Addr,
+    ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
+
+    /// On packet acknowledgment (be it success, failure, or timeout) check if the packet is a PFM packet.
+    /// If the packet is a PFM packet, overwrite the acknowledgment process to forward the acknowledgment to the original sender.
+    /// Handle and overwrites required for refunding tokens correctly.
+    #[allow(clippy::type_complexity)]
+    fn pfm_ack(
+        &mut self,
+        ack: GenericAck,
+        ibc_packet: IbcPacket,
+        sender: &<Self::Packet as TransferPacket>::Addr,
+        tokens: Vec<TransferToken>,
+        sequence: u64,
+    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error>;
 }
 
 #[cfg(test)]

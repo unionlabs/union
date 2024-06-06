@@ -71,6 +71,8 @@ pub enum EthereumTx {
         amount: u64,
         #[arg(long)]
         denom: String,
+        #[arg(long)]
+        memo: String,
     },
 }
 

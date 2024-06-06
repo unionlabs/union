@@ -1333,8 +1333,6 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenAck",
@@ -1375,8 +1373,6 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenInit",
@@ -1396,8 +1392,6 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
-        ::serde::Serialize,
-        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenTry",
