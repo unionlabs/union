@@ -81,7 +81,7 @@ in
       union.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
       print(union.succeed("docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx tokenfactory create-denom bazinga --from valoper-0 --keyring-backend test -y --gas 3000000000"))
-      time.sleep(6)
+
       print(union.succeed("docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tx 4B2B3BF0F4C7316E60BC04FD278BD1298677D490DC80AC8ED41DACB577B072FF --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.'"))
       print(union.succeed("docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.'"))
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query tokenfactory denom-authority-metadata factory/union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m/bazinga --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m\"') == true ]]")
