@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	provergrpc "galois/grpc/api/v3"
 
@@ -13,6 +14,8 @@ import (
 )
 
 func QueryStatsHealth() *cobra.Command {
+	var port int
+
 	var cmd = &cobra.Command{
 		Short: "Service which query circuit statistics and expose a health endpoint based on the results",
 		Use:   "query-stats-health [uri]",
@@ -47,10 +50,10 @@ func QueryStatsHealth() *cobra.Command {
 				}
 			})
 
-			server := &http.Server{Addr: ":9999"}
+			server := &http.Server{Addr: ":" + strconv.Itoa(port)}
 			go func() {
 				if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					log.Fatalf("Could not listen on :9999: %v\n", err)
+					log.Fatalf("Could not listen on :%d: %v\n", port, err)
 				}
 			}()
 
@@ -63,6 +66,8 @@ func QueryStatsHealth() *cobra.Command {
 			return nil
 		}),
 	}
+
+	cmd.Flags().IntVar(&port, "port", 9999, "Port to run the health check server on")
 	cmd.Flags().String(flagTLS, "", "Whether the gRPC endpoint expects TLS.")
 	return cmd
 }
