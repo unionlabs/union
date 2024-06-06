@@ -1,7 +1,8 @@
-import { get } from "svelte/store"
-import { sleep } from "$lib/utilities/index.ts"
-import { persisted } from "svelte-persisted-store"
-import type { ChainWalletStore } from "$lib/wallet/types"
+import {get} from "svelte/store"
+import {sleep} from "$lib/utilities/index.ts"
+import {persisted} from "svelte-persisted-store"
+import type {ChainWalletStore} from "$lib/wallet/types"
+import {keplrChainInfo, leapChainInfo} from "$lib/wallet/cosmos/chain-info.ts";
 
 export const cosmosWalletsInformation = [
   {
@@ -32,7 +33,7 @@ function createCosmosStore(
   }
 ) {
   console.log("[cosmosStore] previousState", previousState)
-  const { subscribe, set, update } = persisted("cosmos-store", previousState, {
+  const {subscribe, set, update} = persisted("cosmos-store", previousState, {
     syncTabs: true,
     storage: "session"
   })
@@ -42,13 +43,28 @@ function createCosmosStore(
     subscribe,
     connect: async (walletId: string) => {
       if (!walletId || (walletId !== "keplr" && walletId !== "leap")) return
-      update(v => ({ ...v, connectionStatus: "connecting", connectedWallet: walletId }))
-      if (!window[walletId]) {
+      update(v => ({...v, connectionStatus: "connecting", connectedWallet: walletId}))
+      const walletApi = window[walletId];
+      if (!walletApi) {
         alert(`Please install ${walletId} wallet`)
-        return update(v => ({ ...v, connectionStatus: "disconnected" }))
+        return update(v => ({...v, connectionStatus: "disconnected"}))
       }
-      await window[walletId]?.enable(["union-testnet-8"])
-      const account = await window[walletId]?.getKey("union-testnet-8")
+      const chainInfoMap = {
+        keplr: keplrChainInfo,
+        leap: leapChainInfo
+      };
+      const chainInfo = chainInfoMap[walletId];
+      if (!chainInfo) {
+        alert('Chain information is missing for the selected wallet.');
+        return update(v => ({...v, connectionStatus: "disconnected"}));
+      }
+      try {
+        await walletApi.experimentalSuggestChain(chainInfo);
+        await walletApi.enable(["union-testnet-8"])
+      } catch (e) {
+        return update(v => ({...v, connectionStatus: "disconnected"}));
+      }
+      const account = await walletApi.getKey("union-testnet-8")
       update(v => ({
         ...v,
         connectionStatus: "connected",
@@ -58,16 +74,16 @@ function createCosmosStore(
       await sleep(2_000)
     },
     disconnect: async () => {
-      const cosmosWalletId = get({ subscribe }).connectedWallet as CosmosWalletId
-      console.log({ cosmosWalletId })
+      const cosmosWalletId = get({subscribe}).connectedWallet as CosmosWalletId
+      console.log({cosmosWalletId})
       console.log("[cosmos] cosmosDisconnectClick", get(cosmosStore))
       if (cosmosWalletId && cosmosWalletId === "keplr" && window[cosmosWalletId]) {
         await window[cosmosWalletId]?.disable("union-testnet-8")
-        update(v => ({ ...v, connectedWallet: "none", connectionStatus: "disconnected" }))
+        update(v => ({...v, connectedWallet: "none", connectionStatus: "disconnected"}))
       }
       if (cosmosWalletId && cosmosWalletId === "leap" && window[cosmosWalletId]) {
         await window[cosmosWalletId]?.disconnect("union-testnet-8")
-        update(v => ({ ...v, connectedWallet: "none", connectionStatus: "disconnected" }))
+        update(v => ({...v, connectedWallet: "none", connectionStatus: "disconnected"}))
       }
     }
   }
@@ -75,3 +91,4 @@ function createCosmosStore(
 
 export const cosmosStore = createCosmosStore()
 // cosmosStore.subscribe(value => localStorage.setItem("cosmos-config", JSON.stringify(value)))
+
