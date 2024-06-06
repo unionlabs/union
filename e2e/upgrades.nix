@@ -49,7 +49,6 @@ in
     name = "upgrade-from-genesis";
 
     testScript = ''
-      import time
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
       # Ensure the union network commits more than one block
@@ -68,7 +67,6 @@ in
     name = "upgrade-with-tokenfactory-state";
 
     testScript = ''
-      import time
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
       # Ensure the union network commits more than one block
