@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync/atomic"
 
 	provergrpc "galois/grpc/api/v3"
 
@@ -19,30 +18,27 @@ func QueryStatsHealth() *cobra.Command {
 		Use:   "query-stats-health [uri]",
 		Args:  cobra.ExactArgs(1),
 		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {
-			var status int32 = 200
 
-			// Function to query stats and update status
-			updateStatus := func() {
+			// Function to query stats and get status
+			getStatus := func() int {
 				res, err := client.QueryStats(ctx, &provergrpc.QueryStatsRequest{})
 				if err != nil {
 					log.Println("Error querying stats:", err)
-					atomic.StoreInt32(&status, 500)
-					return
+					return 500
 				}
 				bz, err := json.Marshal(res)
 				if err != nil {
 					log.Println("Error marshaling response:", err)
-					atomic.StoreInt32(&status, 500)
-					return
+					return 500
 				}
 				fmt.Println(string(bz))
-				atomic.StoreInt32(&status, 200)
+				return 200
 			}
 
 			// HTTP server
 			http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-				updateStatus()
-				if atomic.LoadInt32(&status) == 200 {
+				status := getStatus()
+				if status == 200 {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte("Healthy"))
 				} else {
