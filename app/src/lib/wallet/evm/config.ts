@@ -12,10 +12,18 @@ import {
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage
+  createStorage as createWagmiStorage,
+  getChainId,
+  getClient,
+  getConnections,
+  getConnectors,
+  watchChainId,
+  watchClient,
+  watchConnections,
+  watchConnectors
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
-import { writable } from "svelte/store"
+import { readable, writable } from "svelte/store"
 import { sepolia } from "@wagmi/core/chains"
 import { KEY } from "$lib/constants/keys.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
