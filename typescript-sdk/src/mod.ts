@@ -25,7 +25,6 @@ import type { Optional, Coin, ExtractParameters } from "./types.ts"
 import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
 import type { MsgTransfer } from "cosmjs-types/ibc/applications/transfer/v1/tx"
 import type { AccountData, OfflineSigner as CosmosOfflineSigner } from "@cosmjs/proto-signing"
-import { waitForTransactionReceipt } from "viem/actions"
 
 type MessageTransfer = Optional<MsgTransfer, "timeoutTimestamp" | "sender">
 
