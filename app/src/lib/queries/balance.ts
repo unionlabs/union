@@ -3,7 +3,7 @@ import { KEY } from "$lib/constants/keys.ts"
 import { CHAIN_URLS } from "$lib/constants";
 import type { Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
-import { createQuery } from "@tanstack/svelte-query"
+import { createQueries, createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate";
@@ -122,42 +122,43 @@ const cosmosBalancesResponseSchema = v.object({
 
 export function cosmosBalancesQuery({
   address,
-  chainId
+  chainIds
 }: {
   address: string
-  chainId: string
+  chainIds: Array<string>
 }) {
-  return createQuery({
-    queryKey: ["balances", chainId, address],
-    enabled: isValidCosmosAddress(address),
-    refetchOnWindowFocus: false,
-    queryFn: async () => {
-      const restUrl = CHAIN_URLS[chainId].REST
+  return createQueries({
+    queries: chainIds.map((chainId) => ({
+      queryKey: ["balances", chainId, address],
+      enabled: isValidCosmosAddress(address),
+      refetchOnWindowFocus: false,
+      queryFn: async () => {
+        const restUrl = CHAIN_URLS[chainId].REST
 
-      let json: undefined | unknown;
-      try {
-        const response = await fetch(`${restUrl}/cosmos/bank/v1beta1/balances/${address}`);
+        let json: undefined | unknown;
+        try {
+          const response = await fetch(`${restUrl}/cosmos/bank/v1beta1/balances/${address}`);
 
-        if (!response.ok) return new Error("invalid response");
+          if (!response.ok) return new Error("invalid response");
 
-        json = await response.json()
-      } catch(err) {
-        if (err instanceof Error) {
-          raise(`error fetching balances from /cosmos/bank: ${err.message}`);
-        }
-        raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`);
-      } 
+          json = await response.json()
+        } catch(err) {
+          if (err instanceof Error) {
+            raise(`error fetching balances from /cosmos/bank: ${err.message}`);
+          }
+          raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`);
+        } 
 
-      const result = v.safeParse(cosmosBalancesResponseSchema, json);
+        const result = v.safeParse(cosmosBalancesResponseSchema, json);
 
-      if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
+        if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
 
-      return result.output.balances.map((x) => ({
-        address: x.denom,
-        symbol: x.denom,
-        balance: x.amount,
-        decimals: 0
-      }))
-    }
+        return result.output.balances.map((x) => ({
+          address: x.denom,
+          symbol: x.denom,
+          balance: x.amount,
+          decimals: 0
+        }))
+    }}))
   })
 }

@@ -3,6 +3,7 @@
   import { derived, type Readable } from 'svelte/store';
 
   import { cosmosBalancesQuery, evmBalancesQuery } from '$lib/queries/balance'
+  import { chainsQuery } from '$lib/queries/chains'
   import { sepoliaStore } from "$lib/wallet/evm/config.ts"
   import { cosmosStore } from "$lib/wallet/cosmos"
   import { summarizeString } from '$lib/utilities/format'; 
@@ -17,9 +18,12 @@
 
   let cosmosBalances: null | ReturnType<typeof cosmosBalancesQuery>;
   $: if ($cosmosStore.address) cosmosBalances = cosmosBalancesQuery({
-    chainId: 'union-testnet-8',
+    chainIds: ['union-testnet-8', 'osmo-test-5'],
     address: $cosmosStore.address
   })
+
+
+  let chains = chainsQuery();
 
   let derivedAddress: Readable<null | string> = derived(cosmosStore, ($cosmosStore) => {
     if (!$cosmosStore.rawAddress) return null;
@@ -33,6 +37,7 @@
   <Card.Root class="max-w-lg size-full">
     <Card.Header>
       <Card.Title>Welcome to Union</Card.Title>
+      <pre>{JSON.stringify($chains, null, 2)}</pre>
     </Card.Header>
     <Card.Content class="flex flex-col gap-2">
       <p>Connect an <b>EVM</b> and <b>Cosmos</b> wallet to begin bridging.</p>
@@ -78,6 +83,7 @@
     {/if}
 
     <h2 class="font-bold">Cosmos</h2>
+    <pre>{JSON.stringify($cosmosBalances, null, 2)}</pre>
     {#if $cosmosBalances}
       {#if $cosmosBalances.isLoading}
         Loading...
