@@ -16,7 +16,6 @@
     chainId: 'union-testnet-8',
     address: $cosmosStore.address
   })
-
 </script>
 
 
@@ -26,7 +25,7 @@
     {#if $evmBalances.isLoading}
       Loading...
     {:else if $evmBalances.isError}
-      {$evmBalances.error.message}
+      Error: {$evmBalances.error.message}
     {:else if $evmBalances.isSuccess}
       <div>
         {#each $evmBalances.data as asset}
@@ -37,7 +36,6 @@
   {:else}
     <p>Connect your EVM wallet to continue</p>
   {/if}
-
 </div>
 
 

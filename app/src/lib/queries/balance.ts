@@ -7,6 +7,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate";
+import { raise } from "$lib/utilities/index.ts";
 
 /**
  * TODO:
@@ -66,7 +67,7 @@ export function evmBalancesQuery({
     queryKey: ["balances", chainId, address],
     enabled: isValidEvmAddress(address),
     refetchOnWindowFocus: false,
-    refetchInterval: 1_000,
+    refetchInterval: 10_000,
     queryFn: async () => {
       const assetsToCheck =
         "contractAddresses" in restParams && Array.isArray(restParams.contractAddresses)
@@ -75,18 +76,30 @@ export function evmBalancesQuery({
               ["erc20", "DEFAULT_TOKENS"].includes(restParams.tokenSpecification)
             ? restParams.tokenSpecification // if tokenSpecification is a string, use it
             : "DEFAULT_TOKENS"
-      console.log(address, assetsToCheck)
-      const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`, {
-        method: "POST",
-        body: JSON.stringify({
-          id: 1,
-          jsonrpc: "2.0",
-          method: "alchemy_getTokenBalances",
-          params: [address, assetsToCheck]
-        })
-      })
-      const result = v.safeParse(evmBalancesResponseSchema, await response.json())
-      if (!result.success) throw new Error(`Error parsing result ${JSON.stringify(result.issues)}`);
+
+      let json: undefined | unknown;
+      
+      try { 
+        const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`, {
+          method: "POST",
+          body: JSON.stringify({
+            id: 1,
+            jsonrpc: "2.0",
+            method: "alchemy_getTokenBalances",
+            params: [address, assetsToCheck]
+          })
+        }); 
+        if (!response.ok) raise("error fetching from alchemy: non-200 status");
+        json = await response.json();
+      } catch(err) {
+        if (err instanceof Error) {
+          raise(`error fetching from alchemy: ${err.message}`);
+        }
+        raise(`unknown error while fetching from alchemy: ${JSON.stringify(err)}`);
+      }
+      const result = v.safeParse(evmBalancesResponseSchema, json)
+
+      if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
 
       const tokensInfo = await getEvmTokensInfo(
         result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)
