@@ -1,10 +1,12 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card/index.ts"
+  import { derived, type Readable } from 'svelte/store';
 
   import { cosmosBalancesQuery, evmBalancesQuery } from '$lib/queries/balance'
   import { sepoliaStore } from "$lib/wallet/evm/config.ts"
   import { cosmosStore } from "$lib/wallet/cosmos"
   import { summarizeString } from '$lib/utilities/format'; 
+  import { bech32 } from 'bech32';
 
   let evmBalances: null | ReturnType<typeof evmBalancesQuery>;
   $: if($sepoliaStore.address) evmBalances = evmBalancesQuery({
@@ -18,6 +20,12 @@
     chainId: 'union-testnet-8',
     address: $cosmosStore.address
   })
+
+  let derivedAddress: Readable<null | string> = derived(cosmosStore, ($cosmosStore) => {
+    if (!$cosmosStore.rawAddress) return null;
+    const words = bech32.toWords($cosmosStore.rawAddress);
+    return bech32.encode('union', words)
+  });
 
 </script>
 
@@ -38,7 +46,7 @@
       </div>
 
       <div>
-        {#if $cosmosStore.address }
+        {#if $cosmosStore.address && $cosmosStore.rawAddress }
           ✅ Cosmos wallet <span class="font-mono">{summarizeString($cosmosStore.address, 6)}</span> connected
         {:else}
           Connect cosmos wallet
