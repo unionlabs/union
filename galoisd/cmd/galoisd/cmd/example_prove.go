@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v3"
+	provergrpc "github.com/unionlabs/union/galoisd/grpc/api/v3"
 	"math/big"
 	"strconv"
 	"time"

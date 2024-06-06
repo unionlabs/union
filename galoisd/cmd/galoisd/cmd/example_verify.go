@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v3"
+	provergrpc "github.com/unionlabs/union/galoisd/grpc/api/v3"
 	"log"
 	"math/big"
 	"strconv"

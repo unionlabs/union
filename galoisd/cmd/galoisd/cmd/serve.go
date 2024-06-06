@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	provergrpc "galois/grpc"
-	provergrpcapi "galois/grpc/api/v3"
+	provergrpc "github.com/unionlabs/union/galoisd/grpc"
+	provergrpcapi "github.com/unionlabs/union/galoisd/grpc/api/v3"
 	"net"
 	"os"
 	"time"

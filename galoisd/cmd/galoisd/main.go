@@ -1,8 +1,8 @@
 package main
 
 import (
-	"galois/cmd/galoisd/cmd"
 	"github.com/spf13/cobra"
+	"github.com/unionlabs/union/galoisd/cmd/galoisd/cmd"
 )
 
 func main() {

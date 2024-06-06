@@ -2,8 +2,8 @@ package lightclient
 
 import (
 	"fmt"
-	g2 "galois/pkg/emulated"
-	"galois/pkg/merkle"
+	g2 "github.com/unionlabs/union/galoisd/pkg/emulated"
+	"github.com/unionlabs/union/galoisd/pkg/merkle"
 	"slices"
 
 	"github.com/consensys/gnark/frontend"
