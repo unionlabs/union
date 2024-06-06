@@ -12,5 +12,6 @@ func main() {
 	rootCmd.AddCommand(cmd.ExampleProveCmd())
 	rootCmd.AddCommand(cmd.ExampleVerifyCmd())
 	rootCmd.AddCommand(cmd.QueryStats())
+	rootCmd.AddCommand(cmd.QueryStatsHealth())
 	rootCmd.Execute()
 }
