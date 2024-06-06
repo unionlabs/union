@@ -2,9 +2,11 @@ package types
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"time"
 
 	ics23 "github.com/cosmos/ics23/go"
+	"github.com/holiman/uint256"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -16,9 +18,47 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+
+	backend_opts "github.com/consensys/gnark/backend"
+	backend "github.com/consensys/gnark/backend/groth16"
+	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
+	"github.com/consensys/gnark/frontend"
+
+	"github.com/consensys/gnark-crypto/ecc"
+	lcgadget "github.com/unionlabs/union/galoisd/pkg/lightclient/nonadjacent"
+
+	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
 
 var _ exported.ClientState = (*ClientState)(nil)
+
+type cometblsHashToField struct {
+	data []byte
+}
+
+func (c *cometblsHashToField) Write(p []byte) (n int, err error) {
+	c.data = append(c.data, p...)
+	return len(p), nil
+}
+
+func (c *cometblsHashToField) Sum(b []byte) []byte {
+	e := cometbn254.HashToField(c.data)
+	eB := e.Bytes()
+	return append(b, eB[:]...)
+}
+
+func (c *cometblsHashToField) Reset() {
+	c.data = []byte{}
+}
+
+func (c *cometblsHashToField) Size() int {
+	return fr.Bytes
+}
+
+func (c *cometblsHashToField) BlockSize() int {
+	return fr.Bytes
+}
 
 // NewClientState creates a new ClientState instance
 func NewClientState(
@@ -281,6 +321,46 @@ func (cs *ClientState) verifyHeader(
 	}
 
 	// TODO(aeryz): verify zkp
+
+	var proof backend_bn254.Proof
+	_, err := proof.ReadFrom(bytes.NewReader(header.ZeroKnowledgeProof))
+	if err != nil {
+		panic("cannot load the proof")
+	}
+
+	hasher := sha256.New()
+	var chainId [32]byte = [32]byte{}
+	for i := 0; i < len(cs.ChainId); i++ {
+		chainId[32-len(cs.ChainId)+i] = []byte(cs.ChainId)[i]
+	}
+	hasher.Write(chainId[:])
+	hasher.Write(uint256.NewInt(uint64(header.SignedHeader.Header.Height)).Bytes())
+	hasher.Write(uint256.NewInt(uint64(header.SignedHeader.Header.Time.Second())).Bytes())
+	hasher.Write(uint256.NewInt(uint64(header.SignedHeader.Header.Time.Nanosecond())).Bytes())
+	hasher.Write(header.SignedHeader.Header.ValidatorsHash)
+	hasher.Write(header.SignedHeader.Header.NextValidatorsHash)
+	hasher.Write(header.SignedHeader.Header.AppHash)
+	hasher.Write(consState.NextValidatorsHash)
+	inputsHash := hasher.Sum(nil)
+	inputsHash[0] = 0
+
+	witness := lcgadget.Circuit{
+		InputsHash: inputsHash,
+	}
+
+	publicWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField(), frontend.PublicOnly())
+	if err != nil {
+		panic("invalid zkp")
+	}
+
+	vk := backend_bn254.VerifyingKey{}
+
+	err = backend.Verify(
+		backend.Proof(&proof),
+		backend.VerifyingKey(&vk),
+		publicWitness,
+		backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
+	)
 
 	return nil
 }
