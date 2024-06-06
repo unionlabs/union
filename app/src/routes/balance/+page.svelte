@@ -47,7 +47,11 @@
     {:else if $cosmosBalances.isError}
       {$cosmosBalances.error.message}
     {:else if $cosmosBalances.isSuccess}
-      <pre>{JSON.stringify($cosmosBalances.data)}</pre>
+      <div>
+        {#each $cosmosBalances.data as asset}
+          <div>{summarizeString(asset.symbol, 4)} | {asset.balance}</div>
+        {/each}
+      </div>
     {/if}
   {:else}
     <p>Connect your cosmos wallet to continue</p>

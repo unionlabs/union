@@ -1,7 +1,7 @@
 import * as v from "valibot"
 import { KEY } from "$lib/constants/keys.ts"
 import { CHAIN_URLS } from "$lib/constants";
-import { formatUnits, type Address } from "viem"
+import type { Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
@@ -39,17 +39,17 @@ const evmBalancesResponseSchema = v.object({
   jsonrpc: v.string(),
   id: v.number(),
   result: v.object({
-    address: v.string([v.length(42)]),
+    address: v.pipe(v.string(), v.length(42)),
     tokenBalances: v.array(
       v.object({
-        contractAddress: v.string([v.length(42)]),
+        contractAddress: v.pipe(v.string(), v.length(42)),
         tokenBalance: v.string()
       })
     )
   })
 })
 
-export type EvmBalances = v.Output<typeof evmBalancesResponseSchema>
+export type EvmBalances = v.InferOutput<typeof evmBalancesResponseSchema>
 
 /**
  * @docs https://docs.alchemy.com/reference/alchemy-gettokenbalances
@@ -67,7 +67,7 @@ export function evmBalancesQuery({
     queryKey: ["balances", chainId, address],
     enabled: isValidEvmAddress(address),
     refetchOnWindowFocus: false,
-    refetchInterval: 10_000,
+    refetchInterval: 2_000,
     queryFn: async () => {
       const assetsToCheck =
         "contractAddresses" in restParams && Array.isArray(restParams.contractAddresses)
@@ -76,6 +76,7 @@ export function evmBalancesQuery({
               ["erc20", "DEFAULT_TOKENS"].includes(restParams.tokenSpecification)
             ? restParams.tokenSpecification // if tokenSpecification is a string, use it
             : "DEFAULT_TOKENS"
+
 
       let json: undefined | unknown;
       
@@ -112,6 +113,13 @@ export function evmBalancesQuery({
   })
 }
 
+const cosmosBalancesResponseSchema = v.object({
+  balances: v.array(v.object({
+    denom: v.string(),
+    amount: v.string()
+  }))
+});
+
 export function cosmosBalancesQuery({
   address,
   chainId
@@ -124,19 +132,32 @@ export function cosmosBalancesQuery({
     enabled: isValidCosmosAddress(address),
     refetchOnWindowFocus: false,
     queryFn: async () => {
-        const restUrl = CHAIN_URLS[chainId].REST
-        const response = await fetch(
-            `${restUrl}/cosmos/bank/v1beta1/balances/${address}`,
-        {});
+      const restUrl = CHAIN_URLS[chainId].REST
+
+      let json: undefined | unknown;
+      try {
+        const response = await fetch(`${restUrl}/cosmos/bank/v1beta1/balances/${address}`);
+
         if (!response.ok) return new Error("invalid response");
-        return (await response.json()).balances.map((x) => {
-            return {
-                address: x.denom,
-                symbol: x.denom,
-                balance: x.amount,
-                decimals: 0
-            }
-        })
+
+        json = await response.json()
+      } catch(err) {
+        if (err instanceof Error) {
+          raise(`error fetching balances from /cosmos/bank: ${err.message}`);
+        }
+        raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`);
+      } 
+
+      const result = v.safeParse(cosmosBalancesResponseSchema, json);
+
+      if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
+
+      return result.output.balances.map((x) => ({
+        address: x.denom,
+        symbol: x.denom,
+        balance: x.amount,
+        decimals: 0
+      }))
     }
   })
 }
