@@ -1076,8 +1076,14 @@ unionmodule
 unionmodulekeeper
 unionmoduletypes
 unionp
+unionpub
 unionsimulation
 unionstaking
+uniontestnet
+unionvalcons
+unionvalconspub
+unionvaloper
+unionvaloperpub
 unionvisor
 unittests
 unjail
