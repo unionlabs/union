@@ -26,8 +26,8 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, TransferMsg},
     state::{
-        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH, HASH_LENGTH,
-        HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
+        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_INFO, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH,
+        HASH_LENGTH, HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
     },
 };
 
@@ -172,21 +172,27 @@ trait OnReceive {
         counterparty_endpoint: &IbcEndpoint,
         receiver: &str,
         tokens: Vec<TransferToken>,
-    ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
+    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<TokenFactoryMsg>>), ContractError> {
         tokens
             .into_iter()
             .map(|TransferToken { denom, amount }| {
                 match DenomOrigin::from((denom.as_str(), counterparty_endpoint)) {
                     DenomOrigin::Local { denom } => {
                         self.local_unescrow(&endpoint.channel_id, denom, amount)?;
-                        Ok(vec![BankMsg::Send {
-                            to_address: receiver.to_string(),
-                            amount: vec![Coin {
+                        Ok((
+                            TransferToken {
                                 denom: denom.to_string(),
                                 amount,
-                            }],
-                        }
-                        .into()])
+                            },
+                            vec![BankMsg::Send {
+                                to_address: receiver.to_string(),
+                                amount: vec![Coin {
+                                    denom: denom.to_string(),
+                                    amount,
+                                }],
+                            }
+                            .into()],
+                        ))
                     }
                     DenomOrigin::Remote { denom } => {
                         let foreign_denom = make_foreign_denom(endpoint, denom);
@@ -197,28 +203,34 @@ trait OnReceive {
                         let factory_denom =
                             format!("factory/{}/{}", contract_address, normalized_foreign_denom);
                         let mint = TokenFactoryMsg::MintTokens {
-                            denom: factory_denom,
+                            denom: factory_denom.clone(),
                             amount,
                             mint_to_address: receiver.to_string(),
                         };
-                        Ok(if exists {
-                            vec![mint.into()]
-                        } else {
-                            vec![
-                                register_msg,
-                                TokenFactoryMsg::CreateDenom {
-                                    subdenom: normalized_foreign_denom.clone(),
-                                    metadata: None,
-                                }
-                                .into(),
-                                mint.into(),
-                            ]
-                        })
+                        Ok((
+                            TransferToken {
+                                denom: factory_denom,
+                                amount,
+                            },
+                            if exists {
+                                vec![mint.into()]
+                            } else {
+                                vec![
+                                    register_msg,
+                                    TokenFactoryMsg::CreateDenom {
+                                        subdenom: normalized_foreign_denom.clone(),
+                                        metadata: None,
+                                    }
+                                    .into(),
+                                    mint.into(),
+                                ]
+                            },
+                        ))
                     }
                 }
             })
-            .collect::<Result<Vec<_>, _>>()
-            .map(|x| x.into_iter().flatten().collect())
+            .collect::<Result<(_, Vec<_>), _>>()
+            .map(|(x, y)| (x, y.into_iter().flatten().collect()))
     }
 }
 
@@ -465,8 +477,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         &mut self,
         receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
-    ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, ContractError> {
-        StatefulOnReceive {
+    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), ContractError> {
+        let (tokens, msgs) = StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
         .receive_phase1_transfer(
@@ -475,8 +487,9 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             receiver.as_str(),
             tokens,
-        )
-        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
+        )?;
+
+        Ok((tokens, batch_submessages(self.self_addr(), msgs)?))
     }
     fn normalize_for_ibc_transfer(
         &mut self,
@@ -518,32 +531,26 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         let override_addr = self.self_addr().to_owned();
 
         // If not already processed by other middleware, receive tokens into the contract address.
+        let mut tokens: Vec<Coin> = Vec::new();
         if !processed {
             msgs.append(&mut match self.receive_transfer(
                 &override_addr.clone().into_string(),
                 packet.tokens().to_vec(),
             ) {
-                Ok(msgs) => msgs,
+                Ok((t, msgs)) => {
+                    t.into_iter().for_each(|t| {
+                        tokens.push(Coin {
+                            denom: t.denom,
+                            amount: t.amount,
+                        })
+                    });
+                    msgs
+                }
                 Err(error) => {
                     return Self::receive_error(error);
                 }
             });
         }
-
-        // Normalize tokens for transfer
-        let tokens: Vec<Coin> = packet
-            .tokens()
-            .iter()
-            .map(|transfer_token| -> Coin {
-                let transfer_token = self
-                    .normalize_for_ibc_transfer(transfer_token.clone())
-                    .expect("can normalize denom");
-                Coin {
-                    denom: transfer_token.denom,
-                    amount: transfer_token.amount,
-                }
-            })
-            .collect();
 
         // Forward the packet
         let forward_response = match self.forward_transfer_packet(
@@ -652,10 +659,11 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                 Err(_) => return Ok(None),
             };
 
+        let ack =
+            self.convert_ack_to_foreign_protocol(&refund_info.original_protocol_version, ack)?;
+
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value = self
-                    .convert_foreign_protocol_ack(&refund_info.original_protocol_version, value)?;
                 let value_string = value.to_string();
                 (
                     self.send_tokens_success(sender, &String::new(), tokens)?,
@@ -711,33 +719,30 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         ack_msgs.append(vec![deferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack_confirm".to_string())].as_mut());
+        ack_attr
+            .append(vec![("original_protocol", refund_info.original_protocol_version)].as_mut());
 
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
         Ok(Some((ack_msgs, ack_attr)))
     }
 
-    fn convert_foreign_protocol_ack(
+    fn convert_ack_to_foreign_protocol(
         &self,
         foreign_protocol: &str,
-        ack: Binary,
-    ) -> Result<Binary, ContractError> {
+        ack: GenericAck,
+    ) -> Result<GenericAck, ContractError> {
         match foreign_protocol {
-            Ucs01Protocol::VERSION => {
-                let ack: Ucs01Ack = ack
-                    .clone()
-                    .try_into()
-                    .map_err(|_| ContractError::InvalidAck(ack))?;
-
-                match ack {
-                    Ucs01Ack::Failure => Self::ack_success(),
-                    Ucs01Ack::Success => Self::ack_failure("ucs01 ack failure".to_string()),
-                }
-                .try_into()
-                .map_err(Into::into)
+            Ucs01Protocol::VERSION => Ok(match ack {
+                Ok(_) => Ucs01Protocol::ack_success(),
+                Err(_) => Ucs01Protocol::ack_failure(String::new()),
             }
+            .into()),
             Ics20Protocol::VERSION => Ok(ack),
-            _ => Err(ContractError::InvalidAck(ack)),
+            v => Err(ContractError::UnknownProtocol {
+                channel_id: String::new(),
+                protocol_version: v.to_string(),
+            }),
         }
     }
 }
@@ -824,14 +829,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         &mut self,
         receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
-    ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, ContractError> {
+    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), ContractError> {
         let receiver = self
             .common
             .deps
             .api
             .addr_humanize(&receiver.clone().into())?;
         // TODO(aeryz): call `addr_validate` here
-        StatefulOnReceive {
+        let (tokens, msgs) = StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
         .receive_phase1_transfer(
@@ -840,8 +845,9 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.counterparty_endpoint,
             receiver.as_str(),
             tokens,
-        )
-        .map(|msgs| batch_submessages(self.self_addr(), msgs))?
+        )?;
+
+        Ok((tokens, batch_submessages(self.self_addr(), msgs)?))
     }
 
     fn normalize_for_ibc_transfer(
@@ -913,31 +919,25 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         };
 
         // If not already processed by other middleware, receive tokens into the contract address.
+        let mut tokens: Vec<Coin> = Vec::new();
         if !processed {
             msgs.append(&mut match self
                 .receive_transfer(&override_con_addr.into(), packet.tokens().to_vec())
             {
-                Ok(msgs) => msgs,
+                Ok((t, msgs)) => {
+                    t.into_iter().for_each(|t| {
+                        tokens.push(Coin {
+                            denom: t.denom,
+                            amount: t.amount,
+                        })
+                    });
+                    msgs
+                }
                 Err(error) => {
                     return Self::receive_error(error);
                 }
             });
         }
-
-        // Normalize tokens for transfer
-        let tokens: Vec<Coin> = packet
-            .tokens()
-            .iter()
-            .map(|transfer_token| -> Coin {
-                let transfer_token = self
-                    .normalize_for_ibc_transfer(transfer_token.clone())
-                    .expect("can normalize denom");
-                Coin {
-                    denom: transfer_token.denom,
-                    amount: transfer_token.amount,
-                }
-            })
-            .collect();
 
         // Forward the packet
         let forward_response = match self.forward_transfer_packet(
@@ -1046,11 +1046,12 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 Err(_) => return Ok(None),
             };
 
+        let ack =
+            self.convert_ack_to_foreign_protocol(&refund_info.original_protocol_version, ack)?;
+
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
-                let value = self
-                    .convert_foreign_protocol_ack(&refund_info.original_protocol_version, value)?;
                 (
                     self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
                     Vec::from_iter(
@@ -1105,53 +1106,82 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         ack_msgs.append(vec![deferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack".to_string())].as_mut());
+        ack_attr
+            .append(vec![("original_protocol", refund_info.original_protocol_version)].as_mut());
 
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
         Ok(Some((ack_msgs, ack_attr)))
     }
 
-    fn convert_foreign_protocol_ack(
+    fn convert_ack_to_foreign_protocol(
         &self,
         foreign_protocol: &str,
-        ack: Binary,
-    ) -> Result<Binary, Self::Error> {
+        ack: GenericAck,
+    ) -> Result<GenericAck, Self::Error> {
         match foreign_protocol {
             Ucs01Protocol::VERSION => Ok(ack),
-            Ics20Protocol::VERSION => {
-                let ack: Ics20Ack = ack
-                    .clone()
-                    .try_into()
-                    .map_err(|_| ContractError::InvalidAck(ack))?;
-
-                match ack {
-                    Ics20Ack::Result(_) => Self::ack_success(),
-                    Ics20Ack::Error(_) => Self::ack_failure(String::new()),
-                }
-                .try_into()
-                .map_err(Into::into)
+            Ics20Protocol::VERSION => Ok(match ack {
+                Ok(_) => Ics20Protocol::ack_success(),
+                Err(_) => Ics20Protocol::ack_failure("ucs01 ack failure".to_string()),
             }
-            _ => Err(ContractError::InvalidAck(ack)),
+            .into()),
+            v => Err(ContractError::UnknownProtocol {
+                channel_id: String::new(),
+                protocol_version: v.to_string(),
+            }),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+
     use cosmwasm_std::{
-        testing::mock_dependencies, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint,
-        Uint128,
+        testing::{mock_dependencies, mock_env, mock_info},
+        wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint, Uint128,
     };
     use token_factory_api::TokenFactoryMsg;
-    use ucs01_relay_api::types::TransferToken;
+    use ucs01_relay_api::{protocol::TransferProtocol, types::TransferToken};
 
-    use super::{hash_denom, ForTokens, OnReceive, StatefulOnReceive};
+    use super::{hash_denom, ForTokens, OnReceive, StatefulOnReceive, Ucs01Protocol};
     use crate::{
         error::ContractError,
         msg::ExecuteMsg,
-        protocol::{hash_denom_str, normalize_for_ibc_transfer},
-        state::Hash,
+        protocol::{hash_denom_str, normalize_for_ibc_transfer, Ics20Protocol},
+        state::{ChannelInfo, Hash},
     };
+
+    #[test]
+    fn test_ack() {
+        let mut deps = mock_dependencies();
+        println!(
+            "ACK: {:?}",
+            Ics20Protocol {
+                common: super::ProtocolCommon {
+                    deps: deps.as_mut(),
+                    env: mock_env(),
+                    info: mock_info("", &[]),
+                    channel: ChannelInfo {
+                        endpoint: IbcEndpoint {
+                            port_id: "".to_string(),
+                            channel_id: String::new(),
+                        },
+                        counterparty_endpoint: IbcEndpoint {
+                            port_id: "".to_string(),
+                            channel_id: String::new(),
+                        },
+                        connection_id: "".into(),
+                        protocol_version: "".into(),
+                    },
+                },
+            }
+            .convert_ack_to_foreign_protocol("ucs01-relay-1", Ok(vec![1].into()))
+            .unwrap()
+            .unwrap()
+            .to_string()
+        );
+    }
 
     struct TestOnReceive {
         toggle: bool,
@@ -1202,7 +1232,8 @@ mod tests {
                         amount: Uint128::from(100u128)
                     },],
                 )
-                .unwrap(),
+                .unwrap()
+                .1,
             vec![
                 wasm_execute(
                     Addr::unchecked("0xDEADC0DE"),
@@ -1260,7 +1291,8 @@ mod tests {
                         amount: Uint128::from(100u128),
                     }],
                 )
-                .unwrap()[0]
+                .unwrap()
+                .1[0]
         else {
             panic!("invalid msg");
         };
@@ -1277,7 +1309,8 @@ mod tests {
                         amount: Uint128::from(100u128),
                     }],
                 )
-                .unwrap()[0]
+                .unwrap()
+                .1[0]
         else {
             panic!("invalid msg");
         };
@@ -1305,7 +1338,8 @@ mod tests {
                         amount: Uint128::from(100u128)
                     },],
                 )
-                .unwrap(),
+                .unwrap()
+                .1,
             vec![TokenFactoryMsg::MintTokens {
                 denom: format!(
                     "factory/0xDEADC0DE/{}",
@@ -1338,7 +1372,8 @@ mod tests {
                         amount: Uint128::from(119u128)
                     }],
                 )
-                .unwrap(),
+                .unwrap()
+                .1,
             vec![BankMsg::Send {
                 to_address: "receiver".into(),
                 amount: vec![Coin {
