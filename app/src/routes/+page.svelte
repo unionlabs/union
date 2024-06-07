@@ -37,7 +37,7 @@
   <Card.Root class="max-w-lg size-full">
     <Card.Header>
       <Card.Title>Welcome to Union</Card.Title>
-      <pre>{JSON.stringify($chains, null, 2)}</pre>
+      <!--<pre>{JSON.stringify($chains, null, 2)}</pre>!-->
     </Card.Header>
     <Card.Content class="flex flex-col gap-2">
       <p>Connect an <b>EVM</b> and <b>Cosmos</b> wallet to begin bridging.</p>
@@ -53,6 +53,9 @@
       <div>
         {#if $cosmosStore.address && $cosmosStore.rawAddress }
           ✅ Cosmos wallet <span class="font-mono">{summarizeString($cosmosStore.address, 6)}</span> connected
+          {$derivedAddress}
+
+          0x{  Array.from($cosmosStore.rawAddress).map((i) => i.toString(16).padStart(2, '0')).join('')}
         {:else}
           Connect cosmos wallet
         {/if}
