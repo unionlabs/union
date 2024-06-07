@@ -10,7 +10,10 @@ use protos::{
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
-    middleware::{InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError},
+    middleware::{
+        InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError,
+        PFM_ERROR_EVENT,
+    },
     protocol::{TransferProtocol, ATTR_ERROR, ATTR_SUCCESS, IBC_SEND_ID},
     types::{
         make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet,
@@ -554,7 +557,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                 return IbcReceiveResponse::new(
                     Binary::try_from(Self::ack_failure(e.to_string())).expect("impossible"),
                 )
-                .add_event(Event::new("forward_err").add_attribute("error", e.to_string()))
+                .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
         };
 
@@ -581,7 +584,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         // TODO: persist full memo
         let memo = match forward.next {
-            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next }).unwrap(),
+            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next })
+                .expect("can convert pfm memo to json string"),
             None => "".to_owned(),
         };
 
@@ -920,7 +924,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 return IbcReceiveResponse::new(
                     Binary::try_from(Self::ack_failure(e.to_string())).expect("impossible"),
                 )
-                .add_event(Event::new("forward_err").add_attribute("error", e.to_string()))
+                .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
         };
 
@@ -947,7 +951,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         // TODO: persist full memo
         let memo = match forward.next {
-            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next }).unwrap(),
+            Some(next) => serde_json_wasm::to_string(&Memo::Forward { forward: *next })
+                .expect("can convert pfm memo to json string"),
             None => "".to_owned(),
         };
 
