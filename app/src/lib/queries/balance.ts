@@ -1,16 +1,12 @@
 import * as v from "valibot"
 import { KEY } from "$lib/constants/keys.ts"
-import { CHAIN_URLS } from "$lib/constants"
 import type { Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQueries, createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
-import { isValidCosmosAddress } from "$lib/wallet/utilities/validate"
 import { raise } from "$lib/utilities/index.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
-import type { chainsQuery } from "./chains.ts"
-import type { chainsQueryDocument } from "$lib/graphql/documents/chains.ts"
 
 /**
  * TODO:
