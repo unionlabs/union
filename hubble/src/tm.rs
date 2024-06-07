@@ -156,7 +156,14 @@ where
     let chain_id = postgres::fetch_or_insert_chain_id(pool, chain_id)
         .await?
         .get_inner_logged();
-    let height = sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(pool).await?.map(|block| block.height + 1).map(|h| Height::from(h as u32));
+    let height = sqlx::query!(
+        r#"SELECT MAX(height) height FROM "v0".blocks WHERE chain_id = $1"#,
+        chain_id.db
+    )
+    .fetch_optional(pool)
+    .await?
+    .map(|block| block.height.unwrap_or(0) + 1)
+    .map(|h| Height::from(h as u32));
     Ok((chain_id, height))
 }
 
