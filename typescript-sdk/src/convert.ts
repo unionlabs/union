@@ -2,15 +2,15 @@ import { bech32 } from "@scure/base"
 import { raise } from "./utilities.ts"
 import { fromBech32 } from "@cosmjs/encoding"
 import { getAddress, isHex, isAddress } from "viem"
-import type { UnionAddress, EvmAddress } from "./types.ts"
+import type { Bech32Address, HexAddress } from "./types.ts"
 
-export const isValidEvmAddress = (address: unknown): address is EvmAddress =>
+export const isValidEvmAddress = (address: unknown): address is HexAddress =>
   typeof address === "string" && isAddress(address) && getAddress(address) === address
 
 export function isValidCosmosAddress(
   address: unknown,
   { expectedPrefixes }: { expectedPrefixes: ["union"] } = { expectedPrefixes: ["union"] }
-): address is UnionAddress {
+): address is Bech32Address {
   if (typeof address !== "string") return false
 
   try {
@@ -52,7 +52,7 @@ export function hexStringToUint8Array(hexString: string) {
   return arrayBuffer
 }
 
-export const truncateUnionAddress = (address: string, length = 6) =>
+export const truncateBech32Address = (address: string, length = 6) =>
   length > 0 ? `${address.slice(0, length)}...${address.slice(-length)}` : address
 
 export const truncateEvmAddress = (address: string, length = 6) =>
@@ -61,21 +61,32 @@ export const truncateEvmAddress = (address: string, length = 6) =>
 export const convertByteArrayToHex = (byteArray: Uint8Array): string =>
   byteArray.reduce((hex, byte) => hex + byte.toString(16).padStart(2, "0"), "").toUpperCase()
 
-export function unionToEvmAddress(address: string): EvmAddress {
+/**
+ * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
+ * Previously: unionToEvmAddress
+ */
+export function bech32AddressToHex({ address }: { address: string }): HexAddress {
   if (!isValidCosmosAddress(address)) raise("Invalid Cosmos address")
   const { words } = bech32.decode(address)
   return getAddress(`0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`)
 }
 
-export const evmToCosmosAddress = (address: EvmAddress): UnionAddress => {
+/**
+ * convert an Hex address (evm) to a bech32 address (cosmos, osmosis, union addresses)
+ * Previously: evmToCosmosAddress
+ */
+export function hexAddressToBech32({
+  address,
+  bech32Prefix
+}: { address: HexAddress; bech32Prefix: string }): Bech32Address {
   const words = bech32.toWords(Buffer.from(address.slice(2), "hex"))
-  return bech32.encode("union", words)
+  return bech32.encode(bech32Prefix, words)
 }
 
-export const normalizeToCosmosAddress = (address: string): UnionAddress =>
-  isHex(address) ? evmToCosmosAddress(address) : (address as UnionAddress)
+// export const normalizeToCosmosAddress = (address: string): Bech32Address =>
+//   isHex(address) ? hexAddressToBech32(address) : (address as Bech32Address)
 
-export const normalizeToEvmAddress = (address: string): EvmAddress =>
-  isHex(address) ? address : unionToEvmAddress(address as UnionAddress)
+export const normalizeToEvmAddress = (address: string): HexAddress =>
+  isHex(address) ? address : bech32AddressToHex({ address })
 
 export const munoToUno = (muno: string | number) => (Number(muno) / 1e6).toFixed(6)

@@ -7,13 +7,18 @@
   "scripts": {
     "build": "echo 'No need… jsr.io requires no build step'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "demo": "bun ./scripts/demo.ts",
-    "faucet": "bun ./scripts/faucet.ts",
-    "balance": "bun ./scripts/balance.ts",
-    "transfer": "bun ./scripts/transfer.ts",
+    "publish": "bun ./scripts/publish.ts",
+    "publish:dry-run": "bun ./scripts/publish.ts --dry-run",
+    "demo": "bun ./playground/demo.ts",
+    "faucet": "bun ./playground/faucet.ts",
+    "balance": "bun ./playground/balance.ts",
+    "transfer": "bun ./playground/transfer.ts",
     "test": "vitest --run",
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package"
+  },
+  "imports": {
+    "#*": "./src/*"
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "0.32.3",
@@ -25,7 +30,6 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
     "@cosmjs/amino": "0.32.3",
-    "@cosmjs/proto-signing": "0.32.3",
     "@scure/base": "^1.1.6",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.3",
