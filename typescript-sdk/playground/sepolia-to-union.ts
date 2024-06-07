@@ -56,16 +56,16 @@ const approve = await unionClient.approveEvmAssetTransfer({
   relayContractAddress
 })
 
-console.log(approve)
+console.log({ approve })
 
 const linkFromSepoliaToUnion = await unionClient.transferEvmAsset({
   account: evmAccount,
   receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-  denomAddress: LINK_CONTRACT_ADDRESS,
+  denomAddress: "0xd0081080ae8493cf7340458eaf4412030df5feeb/channel-13/muno",
   amount: 2n,
   sourceChannel: "channel-13",
   simulate: true,
-  relayContractAddress
+  relayContractAddress: "0xd0081080ae8493cf7340458eaf4412030df5feeb"
 })
 
 console.log(linkFromSepoliaToUnion)
