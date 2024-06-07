@@ -83,8 +83,7 @@ pub fn reply(
                 .save(deps.storage, refund_packet_key.clone(), &in_flight_packet)
                 .expect("infallible update");
 
-            Ok(Response::new()
-                .add_attribute("pfm_store_inclusion", format!("{refund_packet_key:?}")))
+            Ok(Response::new().add_event(in_flight_packet.create_hop_event(send_res.sequence)))
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,
