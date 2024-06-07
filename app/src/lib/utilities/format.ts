@@ -66,14 +66,14 @@ export function urlSearchParams(
   )
 }
 
-export function summarizeString(str: string, show: number): string {
-  // Don't summarize short strings
+export function truncate(str: string, show: number): string {
+  // Don't truncate short strings
   if (str.length === 0 || str.length < show * 2 + 2) return str
 
-  // Extract the first 6 characters and the last 6 characters
+  // Extract the first `show` characters and the last `show` characters
   const firstPart: string = str.slice(0, show)
   const lastPart: string = str.slice(-show)
 
-  // Return the summarized string with the ellipsis character in-between
+  // Return the truncated string with the ellipsis character in-between
   return `${firstPart}\u2026${lastPart}`
 }

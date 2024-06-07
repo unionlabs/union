@@ -1,41 +1,38 @@
 <script lang="ts">
-import * as Card from "$lib/components/ui/card/index.ts"
-import { derived, type Readable } from "svelte/store"
-import { rawToBech32, rawToHex } from "$lib/utilities/address"
+  import * as Card from "$lib/components/ui/card/index.ts"
+  import { derived, type Readable } from 'svelte/store';
+  import { rawToBech32, rawToHex } from '$lib/utilities/address';
 
-import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
-import { chainsQuery } from "$lib/queries/chains"
-import { sepoliaStore } from "$lib/wallet/evm/config.ts"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import { summarizeString } from "$lib/utilities/format"
+  import { cosmosBalancesQuery, evmBalancesQuery } from '$lib/queries/balance'
+  import { chainsQuery } from '$lib/queries/chains'
+  import { sepoliaStore } from "$lib/wallet/evm/config.ts"
+  import { cosmosStore } from "$lib/wallet/cosmos"
+  import { truncate } from '$lib/utilities/format'; 
 
-let evmBalances: null | ReturnType<typeof evmBalancesQuery>
-$: if ($sepoliaStore.address)
-  evmBalances = evmBalancesQuery({
-    chainId: "11155111",
-    address: $sepoliaStore.address,
-    tokenSpecification: "erc20"
+  let evmBalances: null | ReturnType<typeof evmBalancesQuery>;
+  $: if($sepoliaStore.address) evmBalances = evmBalancesQuery({
+      chainId: '11155111',
+      address: $sepoliaStore.address,
+      tokenSpecification: 'erc20',
   })
 
-let chains = chainsQuery()
-let cosmosBalances: null | ReturnType<typeof cosmosBalancesQuery>
-let cosmosChains = derived(chains, $chains => {
-  if (!$chains?.isSuccess) {
-    return null
-  }
-  return $chains.data.v0_chains.filter(
-    (c: (typeof $chains.data.v0_chains)[number]) =>
-      c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id
-  )
-})
 
-$: if ($cosmosChains && $cosmosStore.rawAddress)
-  cosmosBalances = cosmosBalancesQuery({
+  let chains = chainsQuery();
+  let cosmosBalances: null | ReturnType<typeof cosmosBalancesQuery>;
+  let cosmosChains = derived(chains, ($chains) =>  {
+    if (!$chains?.isSuccess) {
+      return null
+    }
+    return $chains.data.v0_chains.filter((c: typeof $chains.data.v0_chains[number]) => c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id)
+  });
+
+  $: if ($cosmosChains && $cosmosStore.rawAddress) cosmosBalances = cosmosBalancesQuery({
     // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
     //@ts-ignore
     chains: $cosmosChains,
     address: $cosmosStore.rawAddress
   })
+
 </script>
 
 <main class="flex flex-col items-center w-full p-4 mt-16 gap-6">
@@ -47,7 +44,7 @@ $: if ($cosmosChains && $cosmosStore.rawAddress)
       <p>Connect an <b>EVM</b> and <b>Cosmos</b> wallet to begin bridging.</p>
       <div>
         {#if $sepoliaStore.address }
-          ✅ EVM wallet <span class="font-mono">{summarizeString($sepoliaStore.address, 6)}</span> connected
+          ✅ EVM wallet <span class="font-mono">{truncate($sepoliaStore.address, 6)}</span> connected
         {:else}
           Connect EVM wallet
         {/if}
@@ -55,7 +52,7 @@ $: if ($cosmosChains && $cosmosStore.rawAddress)
 
       <div>
         {#if $cosmosStore.address && $cosmosStore.rawAddress }
-          ✅ Cosmos wallet <span class="font-mono">{summarizeString($cosmosStore.address, 6)}</span> connected
+          ✅ Cosmos wallet <span class="font-mono">{truncate($cosmosStore.address, 6)}</span> connected
           <div class="text-xs font-mono text-muted-foreground">RAW: {rawToHex($cosmosStore.rawAddress)}</div>
         {:else}
           Connect cosmos wallet
@@ -80,7 +77,7 @@ $: if ($cosmosChains && $cosmosStore.rawAddress)
         {:else if $evmBalances.isSuccess}
           <div>
             {#each $evmBalances.data as asset}
-              <div>{summarizeString(asset.symbol, 8)} | {asset.balance}</div>
+              <div>{truncate(asset.symbol, 8)} | {asset.balance}</div>
             {/each}
           </div>
         {/if}
@@ -95,13 +92,13 @@ $: if ($cosmosChains && $cosmosStore.rawAddress)
         <h3 class="font-bold">{$cosmosChains[index].display_name}</h3>
           <div class="text-xs font-mono text-muted-foreground">{rawToBech32($cosmosChains[index].addr_prefix, $cosmosStore.rawAddress)}</div>
           {#if balance.isLoading}
-            <p>Loading</p>
+            <p class="text-muted-foreground">Loading...</p>
           {:else if balance.isError}
-            <p>{balance.error}</p>
+            <p class="text-red-500">{balance.error}</p>
           {:else if balance.isSuccess}
           <div>
             {#each balance.data as asset}
-              <div>{summarizeString(asset.symbol, 8)} | {asset.balance}</div>
+              <div>{truncate(asset.symbol, 8)} | {asset.balance}</div>
             {/each}
           </div>
           {/if}
