@@ -26,12 +26,15 @@
     return $chains.data.v0_chains.filter((c: typeof $chains.data.v0_chains[number]) => c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id)
   });
 
-  $: if ($cosmosChains && $cosmosStore.rawAddress) cosmosBalances = cosmosBalancesQuery({
-    // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
-    //@ts-ignore
-    chains: $cosmosChains,
-    address: $cosmosStore.rawAddress
-  })
+  $: if ($cosmosChains && $cosmosStore.rawAddress?.length && $cosmosStore.rawAddress?.length > 0) {
+    console.log($cosmosChains);
+    cosmosBalances = cosmosBalancesQuery({
+      // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
+      //@ts-ignore
+      chains: $cosmosChains,
+      address: $cosmosStore.rawAddress
+    })
+  }
 
 </script>
 
