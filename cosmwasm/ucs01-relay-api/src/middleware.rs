@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary, IbcPacket, IbcTimeout};
+use cosmwasm_std::{Addr, Binary, Event, IbcPacket, IbcTimeout};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use unionlabs::{
@@ -8,7 +8,18 @@ use unionlabs::{
 
 pub const DEFAULT_PFM_TIMEOUT: &str = "1m";
 pub const DEFAULT_PFM_RETRIES: u8 = 0;
+
 pub const PFM_MODULE_NAME: &str = "packetforwardmiddleware";
+
+pub const PFM_ERROR_EVENT: &str = "packet_forward_error";
+pub const PFM_HOP_EVENT: &str = "packet_forward_hop";
+
+pub const RECV_SEQUENCE_ATTR: &str = "recv_sequence";
+pub const SENT_SEQUENCE_ATTR: &str = "sent_sequence";
+pub const DEST_CHANNEL_ATTR: &str = "dest_channel";
+pub const DEST_PORT_ATTR: &str = "dest_port";
+pub const SRC_CHANNEL_ATTR: &str = "src_channel";
+pub const SRC_PORT_ATTR: &str = "src_port";
 
 #[derive(Error, Debug, PartialEq)]
 pub enum MiddlewareError {
@@ -86,6 +97,16 @@ impl InFlightPfmPacket {
             forward_channel_id,
             forward_port_id,
         }
+    }
+
+    pub fn create_hop_event(&self, sent_sequence: u64) -> Event {
+        Event::new(PFM_HOP_EVENT)
+            .add_attribute(RECV_SEQUENCE_ATTR, self.packet_sequence.to_string())
+            .add_attribute(DEST_CHANNEL_ATTR, self.forward_channel_id.clone())
+            .add_attribute(DEST_PORT_ATTR, self.forward_port_id.clone())
+            .add_attribute(SENT_SEQUENCE_ATTR, sent_sequence.to_string())
+            .add_attribute(SRC_CHANNEL_ATTR, self.packet_src_channel_id.clone())
+            .add_attribute(SRC_PORT_ATTR, self.packet_src_port_id.clone())
     }
 }
 
