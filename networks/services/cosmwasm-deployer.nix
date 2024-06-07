@@ -17,7 +17,7 @@ let
              tx \
              wasm \
              instantiate2 \
-             --no-admin \
+             --admin alice\
              ${builtins.toString code-id} \
              '${builtins.toJSON message}' \
              "${salt}" \
