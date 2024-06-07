@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, createWalletClient, fallback } from "viem"
+import { http, createWalletClient, fallback, getAddress } from "viem"
+import contracts from "~root/versions/contracts.json" with { type: "json" }
 
 /* `bun scripts/sepolia-to-union.ts --private-key "..."` */
 
@@ -17,6 +18,8 @@ if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
+console.info({ address: evmAccount.address })
+
 const evmSigner = createWalletClient({
   chain: sepolia,
   account: evmAccount,
@@ -27,7 +30,7 @@ const evmSigner = createWalletClient({
     ),
     http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
   ])
-}) //.extend(publicActions)
+})
 
 const unionClient = await UnionClient.connectWithSecret({
   rpcUrl: "https://rpc.testnet.bonlulu.uno",
@@ -43,25 +46,26 @@ const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789" // LI
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
+const currentContracts = contracts.find(c => c.latest === true) as (typeof contracts)[0]
+const relayContractAddress = getAddress(currentContracts?.sepolia.UCS01)
+
 const approve = await unionClient.approveEvmAssetTransfer({
   account: evmAccount,
   amount: 10n,
-  denomAddress: LINK_CONTRACT_ADDRESS
+  denomAddress: LINK_CONTRACT_ADDRESS,
+  relayContractAddress
 })
 
 console.log(approve)
 
-const { address: unionAddress } = await unionClient.getCosmosSdkAccount()
-console.info(JSON.stringify({ unionAddress }, undefined, 2))
-
 const linkFromSepoliaToUnion = await unionClient.transferEvmAsset({
   account: evmAccount,
-  receiver: unionAddress,
+  receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
   denomAddress: LINK_CONTRACT_ADDRESS,
   amount: 2n,
-  sourceChannel: "channel-1",
-  contractAddress: "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb",
-  simulate: true
+  sourceChannel: "channel-13",
+  simulate: true,
+  relayContractAddress
 })
 
 console.log(linkFromSepoliaToUnion)

@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, erc20Abi, publicActions, createWalletClient } from "viem"
+import { http, erc20Abi, publicActions, createWalletClient, getAddress } from "viem"
+import contracts from "~root/versions/contracts.json" with { type: "json" }
 
 /* `bun scripts/to-sepolia.ts --private-key "..."` */
 
@@ -37,6 +38,9 @@ const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
+const currentContracts = contracts.find(c => c.latest === true) as (typeof contracts)[0]
+const relayContractAddress = getAddress(currentContracts?.sepolia.UCS01)
+
 const approve = await evmSigner.writeContract({
   account: evmAccount,
   address: LINK_CONTRACT_ADDRESS,
@@ -67,7 +71,7 @@ const osmoFromSepoliaToUnion = await unionClient.transferEvmAsset({
   denomAddress: LINK_CONTRACT_ADDRESS,
   amount: 1n,
   sourceChannel: "channel-8",
-  contractAddress: "0xd0081080ae8493cf7340458eaf4412030df5feeb", // SEPOLIA_UCS01_ADDRESS
+  relayContractAddress,
   simulate: true
 })
 console.log(osmoFromSepoliaToUnion)

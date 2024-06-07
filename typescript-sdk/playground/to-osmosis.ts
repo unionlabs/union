@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 
 /* `bun scripts/to-osmosis.ts --private-key "..."` */
 
@@ -31,7 +31,7 @@ const unoFromUnionToOsmosis = await unionClient.transferAssets({
         transfer: {
           channel: "channel-6",
           receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
-          memo: "sending UNO from Union to Osmosissss"
+          memo: "sending UNO from Union to Osmosis"
         }
       },
       funds: [

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 
 /* `bun scripts/from-osmosis.ts --private-key "..."` */
 
@@ -28,7 +28,7 @@ const sendUnoToUnionAddress = await cwClient.sendTokens(
   "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
   [{ denom: "muno", amount: "100" }],
   "auto",
-  "pepepopo"
+  "memo"
 )
 
 console.log(sendUnoToUnionAddress)

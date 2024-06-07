@@ -3,10 +3,19 @@ import {
   type Hash,
   type Address,
   type Account,
-  type WalletClient,
   publicActions,
+  type WalletClient,
   type TransactionReceipt
 } from "viem"
+import type {
+  Coin,
+  AccountData,
+  Bech32Address,
+  ExtractParameters,
+  MessageTransferWithOptionals,
+  OfflineSigner as CosmosOfflineSigner,
+  Pretty
+} from "./types.ts"
 import {
   GasPrice,
   StargateClient,
@@ -21,18 +30,17 @@ import {
 import { raise } from "./utilities.ts"
 import { ucs01RelayAbi } from "./abi/ucs01-relay.ts"
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
-import type { Optional, Coin, ExtractParameters } from "./types.ts"
-import { hexStringToUint8Array, unionToEvmAddress } from "./convert.ts"
-import type { MsgTransfer } from "cosmjs-types/ibc/applications/transfer/v1/tx"
-import type { AccountData, OfflineSigner as CosmosOfflineSigner } from "@cosmjs/proto-signing"
-
-type MessageTransfer = Optional<MsgTransfer, "timeoutTimestamp" | "sender">
+import { hexStringToUint8Array, bech32AddressToHex } from "./convert.ts"
 
 export interface IUnionClient {
   rpcClient(): Promise<Comet38Client>
   getCosmosSdkAccount(): Promise<AccountData>
-  simulateIbcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<number>
-  ibcMessageTransfers(messageTransfers: Array<MessageTransfer>): Promise<DeliverTxResponse>
+  simulateIbcMessageTransfers(
+    messageTransfers: Array<MessageTransferWithOptionals>
+  ): Promise<number>
+  ibcMessageTransfers(
+    messageTransfers: Array<MessageTransferWithOptionals>
+  ): Promise<DeliverTxResponse>
   cosmwasmMessageExecuteContract(instructions: Array<ExecuteInstruction>): Promise<ExecuteResult>
   approveEvmAssetTransfer(parameters: {
     denomAddress: Address
@@ -44,14 +52,14 @@ export interface IUnionClient {
     sourceChannel: string
     amount: bigint
     account: Account
-    contractAddress?: Address
+    relayContractAddress: Address
     simulate?: boolean
     waitForReceipt?: false
   }): Promise<{ hash: Hash; receipt?: TransactionReceipt }>
   transferAssets<Kind extends "ibc" | "cosmwasm">({
     kind
   }: { kind: Kind } & (Kind extends "ibc"
-    ? { messageTransfers: Array<MessageTransfer> }
+    ? { messageTransfers: Array<MessageTransferWithOptionals> }
     : { instructions: Array<ExecuteInstruction> })): Promise<DeliverTxResponse | ExecuteResult>
 }
 
@@ -115,11 +123,14 @@ export class UnionClient implements IUnionClient {
   #gas?: Coin
   /** EVM */
   #evmSigner?: WalletClient
-  #UCS01_ADDRESS: Address = "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb" satisfies Address
-  #UCS02_ADDRESS: Address = "0x9153952f174A1BcD7A9B3818Ff21Ecf918d4Dca9" satisfies Address
-  #COMETBLS_ADDRESS: Address = "0x96979Ed96aE00d724109B5Ad859568e1239C0837" satisfies Address
-  #IBC_HANDLER_ADDRESS: Address = "0xa390514F803a3B318b93Bf6cd4beEB9f8299a0EB" satisfies Address
-  #UNION_UCS01_ADDRESS = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
+  static #UCS01_ADDRESS: Address = "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb" satisfies Address
+  static #UCS02_ADDRESS: Address = "0x9153952f174A1BcD7A9B3818Ff21Ecf918d4Dca9" satisfies Address
+  static #COMETBLS_ADDRESS: Address = "0x96979Ed96aE00d724109B5Ad859568e1239C0837" satisfies Address
+  static #IBC_HANDLER_ADDRESS: Address =
+    "0xa390514F803a3B318b93Bf6cd4beEB9f8299a0EB" satisfies Address
+  static #UNION_UCS01_ADDRESS =
+    "union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3" satisfies Bech32Address<"union">
+
   constructor(arguments_: {
     rpcUrl: string
     chainId: string
@@ -138,6 +149,16 @@ export class UnionClient implements IUnionClient {
   }
 
   #gasPrice = (gas = this.#gas) => GasPrice.fromString(`${gas?.amount}${gas?.denom}`)
+
+  static getContractAddresses = () => ({
+    sepolia: {
+      UCS01: this.#UCS01_ADDRESS,
+      UCS02: this.#UCS02_ADDRESS,
+      IBCHandler: this.#IBC_HANDLER_ADDRESS,
+      CometblsClient: this.#COMETBLS_ADDRESS
+    },
+    union: { UCS01: this.#UNION_UCS01_ADDRESS }
+  })
 
   /**
    * Connect to the RPC client of the chain.
@@ -200,7 +221,7 @@ export class UnionClient implements IUnionClient {
     })
 
   public async simulateIbcMessageTransfers(
-    messageTransfers: Array<MessageTransfer>
+    messageTransfers: Array<MessageTransferWithOptionals>
   ): Promise<number> {
     const { address: signerAddress } = await this.getCosmosSdkAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
@@ -221,7 +242,7 @@ export class UnionClient implements IUnionClient {
    * Executes `/ibc.applications.transfer.v1.MsgTransfer`, accepts an array of `MessageTransfer`.
    */
   public async ibcMessageTransfers(
-    messageTransfers: Array<MessageTransfer>
+    messageTransfers: Array<MessageTransferWithOptionals>
   ): Promise<DeliverTxResponse> {
     const { address: signerAddress } = await this.getCosmosSdkAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
@@ -252,12 +273,18 @@ export class UnionClient implements IUnionClient {
 
   public async transferAssets<Kind extends "ibc" | "cosmwasm">(
     params: { kind: Kind } & (Kind extends "ibc"
-      ? { messageTransfers: Array<MessageTransfer> }
+      ? {
+          messageTransfers: Array<Pretty<MessageTransferWithOptionals>>
+        }
       : { instructions: Array<ExecuteInstruction> })
   ): Promise<DeliverTxResponse | ExecuteResult> {
     if (params.kind === "ibc") {
       return await this.ibcMessageTransfers(
-        (params as { messageTransfers: Array<MessageTransfer> }).messageTransfers
+        (
+          params as {
+            messageTransfers: Array<MessageTransferWithOptionals>
+          }
+        ).messageTransfers
       )
     }
     return await this.cosmwasmMessageExecuteContract(
@@ -269,12 +296,12 @@ export class UnionClient implements IUnionClient {
     account,
     denomAddress,
     amount,
-    relayContractAddress = this.#UCS01_ADDRESS
+    relayContractAddress
   }: {
     account?: Account
     amount: bigint
     denomAddress: Address
-    relayContractAddress?: Address
+    relayContractAddress: Address
   }): Promise<Hash> {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
     return await signer.writeContract({
@@ -296,7 +323,7 @@ export class UnionClient implements IUnionClient {
     denomAddress,
     sourceChannel,
     amount,
-    contractAddress = this.#UCS01_ADDRESS,
+    relayContractAddress,
     simulate = true,
     waitForReceipt = false
   }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<{
@@ -312,7 +339,7 @@ export class UnionClient implements IUnionClient {
        * @dev `send` function of UCS01 contract: https://github.com/unionlabs/union/blob/1b9e4a6551163e552d85405eb70917fdfdc14b55/evm/contracts/apps/ucs/01-relay/Relay.sol#L50-L56
        */
       functionName: "send",
-      address: contractAddress,
+      address: relayContractAddress,
       /**
        * string calldata sourceChannel,
        * bytes calldata receiver,
@@ -322,7 +349,7 @@ export class UnionClient implements IUnionClient {
        */
       args: [
         sourceChannel,
-        unionToEvmAddress(receiver),
+        bech32AddressToHex({ address: receiver }),
         [{ denom: denomAddress, amount }],
         { revision_number: 9n, revision_height: 9999999999n },
         0n

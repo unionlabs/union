@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { http, publicActions, createWalletClient, fallback } from "viem"
 
@@ -41,5 +41,5 @@ const unionClient = await UnionClient.connectWithSecret({
   evmSigner
 })
 
-const balances = await unionClient.getBalances()
-console.info(balances)
+// const balances = await unionClient.getBalances()
+// console.info(balances)
