@@ -1,7 +1,7 @@
 import { graphql } from "gql.tada"
 
 export const connectionsQuery = graphql(/* GraphQL */ `
-query ConnectionsQuery($limit: Int = 100) {
+query ConnectionsQuery($limit: Int = 100) @cached(ttl: 30) {
   v0_connection_map(order_by: [
     {status: asc}, 
     {from_chain_id: asc}, 
