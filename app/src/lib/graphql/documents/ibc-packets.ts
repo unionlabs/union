@@ -1,7 +1,7 @@
 import { graphql } from "gql.tada"
 
 export const ibcRecvPacketQuery = graphql(/* graphql */ `
-  query IBCRecvPacketQuery($limit: Int = 10) {
+  query IBCRecvPacketQuery($limit: Int = 10) @cached(ttl: 1) {
     v0_recv_packet(limit: $limit, order_by: { time: desc }) {
       chain_id
       block_hash    
