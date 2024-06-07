@@ -74,6 +74,7 @@ pub struct InFlightPfmPacket {
     pub src_packet_timeout: IbcTimeout,
     pub forward_channel_id: String,
     pub forward_port_id: String,
+    pub original_protocol_version: String,
 }
 
 impl InFlightPfmPacket {
@@ -83,6 +84,7 @@ impl InFlightPfmPacket {
         timeout: u64,
         forward_channel_id: String,
         forward_port_id: String,
+        original_protocol_version: String,
     ) -> Self {
         Self {
             original_sender_addr,
@@ -96,6 +98,7 @@ impl InFlightPfmPacket {
             packet_sequence: original_packet.sequence,
             forward_channel_id,
             forward_port_id,
+            original_protocol_version,
         }
     }
 

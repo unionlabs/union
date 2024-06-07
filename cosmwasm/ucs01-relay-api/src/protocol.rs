@@ -401,6 +401,12 @@ pub trait TransferProtocol {
         tokens: Vec<TransferToken>,
         sequence: u64,
     ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error>;
+
+    fn convert_foreign_protocol_ack(
+        &self,
+        foreign_protocol: &str,
+        ack: Binary,
+    ) -> Result<Binary, Self::Error>;
 }
 
 #[cfg(test)]

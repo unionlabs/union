@@ -610,6 +610,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             timeout,
             forward.channel.value(),
             forward.port.value(),
+            Self::VERSION.to_string(),
         );
 
         if let Some(reply_sub) = transfer
@@ -653,6 +654,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
+                let value = self
+                    .convert_foreign_protocol_ack(&refund_info.original_protocol_version, value)?;
                 let value_string = value.to_string();
                 (
                     self.send_tokens_success(sender, &String::new(), tokens)?,
@@ -712,6 +715,30 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
         Ok(Some((ack_msgs, ack_attr)))
+    }
+
+    fn convert_foreign_protocol_ack(
+        &self,
+        foreign_protocol: &str,
+        ack: Binary,
+    ) -> Result<Binary, ContractError> {
+        match foreign_protocol {
+            Ucs01Protocol::VERSION => {
+                let ack: Ucs01Ack = ack
+                    .clone()
+                    .try_into()
+                    .map_err(|_| ContractError::InvalidAck(ack))?;
+
+                match ack {
+                    Ucs01Ack::Failure => Self::ack_success(),
+                    Ucs01Ack::Success => Self::ack_failure("ucs01 ack failure".to_string()),
+                }
+                .try_into()
+                .map_err(Into::into)
+            }
+            Ics20Protocol::VERSION => Ok(ack),
+            _ => Err(ContractError::InvalidAck(ack)),
+        }
     }
 }
 
@@ -977,6 +1004,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             timeout,
             forward.channel.value(),
             forward.port.value(),
+            Self::VERSION.to_string(),
         );
 
         if let Some(reply_sub) = transfer
@@ -1021,6 +1049,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
                 let value_string = value.to_string();
+                let value = self
+                    .convert_foreign_protocol_ack(&refund_info.original_protocol_version, value)?;
                 (
                     self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
                     Vec::from_iter(
@@ -1079,6 +1109,30 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
         Ok(Some((ack_msgs, ack_attr)))
+    }
+
+    fn convert_foreign_protocol_ack(
+        &self,
+        foreign_protocol: &str,
+        ack: Binary,
+    ) -> Result<Binary, Self::Error> {
+        match foreign_protocol {
+            Ucs01Protocol::VERSION => Ok(ack),
+            Ics20Protocol::VERSION => {
+                let ack: Ics20Ack = ack
+                    .clone()
+                    .try_into()
+                    .map_err(|_| ContractError::InvalidAck(ack))?;
+
+                match ack {
+                    Ics20Ack::Result(_) => Self::ack_success(),
+                    Ics20Ack::Error(_) => Self::ack_failure(String::new()),
+                }
+                .try_into()
+                .map_err(Into::into)
+            }
+            _ => Err(ContractError::InvalidAck(ack)),
+        }
     }
 }
 
