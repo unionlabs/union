@@ -14,11 +14,17 @@ export type introspection = {
     "queryType": {
       "name": "query_root"
     },
-    "mutationType": null,
+    "mutationType": {
+      "name": "mutation_root"
+    },
     "subscriptionType": {
       "name": "subscription_root"
     },
     "types": [
+      {
+        "kind": "SCALAR",
+        "name": "Address"
+      },
       {
         "kind": "SCALAR",
         "name": "Boolean"
@@ -106,6 +112,97 @@ export type introspection = {
         "isOneOf": false
       },
       {
+        "kind": "OBJECT",
+        "name": "Configuration",
+        "fields": [
+          {
+            "name": "amountSend",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Long"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "chainId",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "feeAmount",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Long"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "gasLimit",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "UInt64"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "memo",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "prefix",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
         "kind": "SCALAR",
         "name": "Float"
       },
@@ -189,6 +286,34 @@ export type introspection = {
                   "kind": "SCALAR",
                   "name": "Int"
                 }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "SCALAR",
+        "name": "Long"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "SendInput",
+        "inputFields": [
+          {
+            "name": "captchaToken",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "toAddress",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Address"
               }
             }
           }
@@ -353,89 +478,11 @@ export type introspection = {
       },
       {
         "kind": "SCALAR",
-        "name": "bigint"
+        "name": "UInt64"
       },
       {
-        "kind": "INPUT_OBJECT",
-        "name": "bigint_comparison_exp",
-        "inputFields": [
-          {
-            "name": "_eq",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "_gt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "_gte",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "_in",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "bigint"
-                }
-              }
-            }
-          },
-          {
-            "name": "_is_null",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean"
-            }
-          },
-          {
-            "name": "_lt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "_lte",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "_neq",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "_nin",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "bigint"
-                }
-              }
-            }
-          }
-        ],
-        "isOneOf": false
+        "kind": "SCALAR",
+        "name": "Void"
       },
       {
         "kind": "ENUM",
@@ -450,6 +497,52 @@ export type introspection = {
             "isDeprecated": false
           }
         ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "faucetMutation",
+        "fields": [
+          {
+            "name": "send",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Void"
+            },
+            "args": [
+              {
+                "name": "input",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "SendInput"
+                  }
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "faucetQuery",
+        "fields": [
+          {
+            "name": "configuration",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Configuration"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
       },
       {
         "kind": "SCALAR",
@@ -606,6 +699,22 @@ export type introspection = {
         "isOneOf": false
       },
       {
+        "kind": "OBJECT",
+        "name": "mutation_root",
+        "fields": [
+          {
+            "name": "faucet",
+            "type": {
+              "kind": "OBJECT",
+              "name": "faucetMutation"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
         "kind": "SCALAR",
         "name": "numeric"
       },
@@ -726,7 +835,16 @@ export type introspection = {
         "name": "query_root",
         "fields": [
           {
-            "name": "queue",
+            "name": "faucet",
+            "type": {
+              "kind": "OBJECT",
+              "name": "faucetQuery"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "v0_assets",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -735,7 +853,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "queue"
+                    "name": "v0_assets"
                   }
                 }
               }
@@ -749,7 +867,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "queue_select_column"
+                      "name": "v0_assets_select_column"
                     }
                   }
                 }
@@ -776,7 +894,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "queue_order_by"
+                      "name": "v0_assets_order_by"
                     }
                   }
                 }
@@ -785,36 +903,36 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "queue_bool_exp"
+                  "name": "v0_assets_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "queue_by_pk",
+            "name": "v0_assets_by_pk",
             "type": {
               "kind": "OBJECT",
-              "name": "queue"
+              "name": "v0_assets"
             },
             "args": [
               {
-                "name": "created_at",
+                "name": "chain_id",
                 "type": {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "SCALAR",
-                    "name": "timestamptz"
+                    "name": "Int"
                   }
                 }
               },
               {
-                "name": "id",
+                "name": "denom",
                 "type": {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "SCALAR",
-                    "name": "bigint"
+                    "name": "String"
                   }
                 }
               }
@@ -984,66 +1102,6 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_chains_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_chains_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_chains_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_chains_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_chains_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
             "name": "v0_chains_by_pk",
             "type": {
               "kind": "OBJECT",
@@ -1130,67 +1188,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_channel_map_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_channel_map_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_channel_map_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_channel_map_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_channel_map_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_clients",
+            "name": "v0_channels",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -1199,7 +1197,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_clients"
+                    "name": "v0_channels"
                   }
                 }
               }
@@ -1213,7 +1211,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_clients_select_column"
+                      "name": "v0_channels_select_column"
                     }
                   }
                 }
@@ -1240,7 +1238,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_clients_order_by"
+                      "name": "v0_channels_order_by"
                     }
                   }
                 }
@@ -1249,19 +1247,19 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_clients_bool_exp"
+                  "name": "v0_channels_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_clients_aggregate",
+            "name": "v0_channels_aggregate",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
                 "kind": "OBJECT",
-                "name": "v0_clients_aggregate"
+                "name": "v0_channels_aggregate"
               }
             },
             "args": [
@@ -1273,7 +1271,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_clients_select_column"
+                      "name": "v0_channels_select_column"
                     }
                   }
                 }
@@ -1300,7 +1298,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_clients_order_by"
+                      "name": "v0_channels_order_by"
                     }
                   }
                 }
@@ -1309,47 +1307,7 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_clients_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_clients_by_pk",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_clients"
-            },
-            "args": [
-              {
-                "name": "chain_id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              },
-              {
-                "name": "client_id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String"
-                  }
-                }
-              },
-              {
-                "name": "counterparty_chain_id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String"
-                  }
+                  "name": "v0_channels_bool_exp"
                 }
               }
             ],
@@ -1422,67 +1380,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_connection_map_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_connection_map_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_connection_map_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_connection_map_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_connection_map_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_burn",
+            "name": "v0_connections",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -1491,7 +1389,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_cosmos_burn"
+                    "name": "v0_connections"
                   }
                 }
               }
@@ -1505,7 +1403,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_cosmos_burn_select_column"
+                      "name": "v0_connections_select_column"
                     }
                   }
                 }
@@ -1532,7 +1430,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_burn_order_by"
+                      "name": "v0_connections_order_by"
                     }
                   }
                 }
@@ -1541,769 +1439,7 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_burn_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_burn_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_burn_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_burn_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_ack",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_ack"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_ack_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_ack_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_ack_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_channel_open_ack_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_ack_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_ack_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_init",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_init"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_init_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_init_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_init_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_channel_open_init_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_init_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_init_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_transfer",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_transfer"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_transfer_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_transfer_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_transfer_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_transfer_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_transfer_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_transfer_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_wasm_message",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_wasm_message"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_wasm_message_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_wasm_message_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_wasm_message_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_withdraw_rewards",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_withdraw_rewards"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_withdraw_rewards_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_withdraw_rewards_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_withdraw_rewards_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_evm_client_created",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_evm_client_created"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_client_created_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_evm_client_created_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_client_created_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_evm_client_created_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_evm_client_created_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_client_created_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_evm_client_created_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_client_created_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_evm_recv_packet",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_evm_recv_packet"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_recv_packet_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_evm_recv_packet_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_recv_packet_bool_exp"
+                  "name": "v0_connections_bool_exp"
                 }
               }
             ],
@@ -2376,162 +1512,6 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_logs",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_logs"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_logs_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_logs_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_logs_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_logs_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_logs_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_logs_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_logs_by_pk",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs"
-            },
-            "args": [
-              {
-                "name": "block_hash",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String"
-                  }
-                }
-              },
-              {
-                "name": "chain_id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
             "name": "v0_packets",
             "type": {
               "kind": "NON_NULL",
@@ -2598,7 +1578,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_recv_packet",
+            "name": "v0_rpcs",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -2607,7 +1587,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_recv_packet"
+                    "name": "v0_rpcs"
                   }
                 }
               }
@@ -2621,7 +1601,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_recv_packet_select_column"
+                      "name": "v0_rpcs_select_column"
                     }
                   }
                 }
@@ -2648,7 +1628,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_recv_packet_order_by"
+                      "name": "v0_rpcs_order_by"
                     }
                   }
                 }
@@ -2657,67 +1637,37 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
+                  "name": "v0_rpcs_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_recv_packet_aggregate",
+            "name": "v0_rpcs_by_pk",
             "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_recv_packet_aggregate"
-              }
+              "kind": "OBJECT",
+              "name": "v0_rpcs"
             },
             "args": [
               {
-                "name": "distinct_on",
+                "name": "chain_id",
                 "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_recv_packet_select_column"
-                    }
+                    "kind": "SCALAR",
+                    "name": "Int"
                   }
                 }
               },
               {
-                "name": "limit",
+                "name": "url",
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_recv_packet_order_by"
-                    }
+                    "kind": "SCALAR",
+                    "name": "String"
                   }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
                 }
               }
             ],
@@ -2794,411 +1744,10 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "queue",
-        "fields": [
-          {
-            "name": "created_at",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "timestamptz"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "bigint"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "item",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "jsonb"
-              }
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "message",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "parent",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "status"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "queue_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "queue_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "queue_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "queue_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "created_at",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "bigint_comparison_exp"
-            }
-          },
-          {
-            "name": "item",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "message",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "parent",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "bigint_comparison_exp"
-            }
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "status_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "queue_order_by",
-        "inputFields": [
-          {
-            "name": "created_at",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "item",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "message",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "parent",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "queue_select_column",
-        "enumValues": [
-          {
-            "name": "created_at",
-            "isDeprecated": false
-          },
-          {
-            "name": "id",
-            "isDeprecated": false
-          },
-          {
-            "name": "item",
-            "isDeprecated": false
-          },
-          {
-            "name": "message",
-            "isDeprecated": false
-          },
-          {
-            "name": "parent",
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "queue_stream_cursor_input",
-        "inputFields": [
-          {
-            "name": "initial_value",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "INPUT_OBJECT",
-                "name": "queue_stream_cursor_value_input"
-              }
-            }
-          },
-          {
-            "name": "ordering",
-            "type": {
-              "kind": "ENUM",
-              "name": "cursor_ordering"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "queue_stream_cursor_value_input",
-        "inputFields": [
-          {
-            "name": "created_at",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "item",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "message",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "parent",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "SCALAR",
-        "name": "status"
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "status_comparison_exp",
-        "inputFields": [
-          {
-            "name": "_eq",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          },
-          {
-            "name": "_gt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          },
-          {
-            "name": "_gte",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          },
-          {
-            "name": "_in",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "status"
-                }
-              }
-            }
-          },
-          {
-            "name": "_is_null",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean"
-            }
-          },
-          {
-            "name": "_lt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          },
-          {
-            "name": "_lte",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          },
-          {
-            "name": "_neq",
-            "type": {
-              "kind": "SCALAR",
-              "name": "status"
-            }
-          },
-          {
-            "name": "_nin",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "status"
-                }
-              }
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
         "name": "subscription_root",
         "fields": [
           {
-            "name": "queue",
+            "name": "v0_assets",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -3207,7 +1756,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "queue"
+                    "name": "v0_assets"
                   }
                 }
               }
@@ -3221,7 +1770,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "queue_select_column"
+                      "name": "v0_assets_select_column"
                     }
                   }
                 }
@@ -3248,7 +1797,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "queue_order_by"
+                      "name": "v0_assets_order_by"
                     }
                   }
                 }
@@ -3257,36 +1806,36 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "queue_bool_exp"
+                  "name": "v0_assets_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "queue_by_pk",
+            "name": "v0_assets_by_pk",
             "type": {
               "kind": "OBJECT",
-              "name": "queue"
+              "name": "v0_assets"
             },
             "args": [
               {
-                "name": "created_at",
+                "name": "chain_id",
                 "type": {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "SCALAR",
-                    "name": "timestamptz"
+                    "name": "Int"
                   }
                 }
               },
               {
-                "name": "id",
+                "name": "denom",
                 "type": {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "SCALAR",
-                    "name": "bigint"
+                    "name": "String"
                   }
                 }
               }
@@ -3294,7 +1843,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "queue_stream",
+            "name": "v0_assets_stream",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -3303,7 +1852,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "queue"
+                    "name": "v0_assets"
                   }
                 }
               }
@@ -3327,7 +1876,7 @@ export type introspection = {
                     "kind": "LIST",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "queue_stream_cursor_input"
+                      "name": "v0_assets_stream_cursor_input"
                     }
                   }
                 }
@@ -3336,7 +1885,7 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "queue_bool_exp"
+                  "name": "v0_assets_bool_exp"
                 }
               }
             ],
@@ -3554,66 +2103,6 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_chains_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_chains_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_chains_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_chains_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_chains_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
             "name": "v0_chains_by_pk",
             "type": {
               "kind": "OBJECT",
@@ -3628,6 +2117,55 @@ export type introspection = {
                     "kind": "SCALAR",
                     "name": "Int"
                   }
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v0_chains_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_chains"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int"
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_chains_stream_cursor_input"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_chains_bool_exp"
                 }
               }
             ],
@@ -3700,51 +2238,40 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_channel_map_aggregate",
+            "name": "v0_channel_map_stream",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_channel_map_aggregate"
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_channel_map"
+                  }
+                }
               }
             },
             "args": [
               {
-                "name": "distinct_on",
+                "name": "batch_size",
                 "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_channel_map_select_column"
-                    }
+                    "kind": "SCALAR",
+                    "name": "Int"
                   }
                 }
               },
               {
-                "name": "limit",
+                "name": "cursor",
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
+                    "kind": "LIST",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_channel_map_order_by"
+                      "name": "v0_channel_map_stream_cursor_input"
                     }
                   }
                 }
@@ -3760,7 +2287,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_clients",
+            "name": "v0_channels",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -3769,7 +2296,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_clients"
+                    "name": "v0_channels"
                   }
                 }
               }
@@ -3783,7 +2310,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_clients_select_column"
+                      "name": "v0_channels_select_column"
                     }
                   }
                 }
@@ -3810,7 +2337,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_clients_order_by"
+                      "name": "v0_channels_order_by"
                     }
                   }
                 }
@@ -3819,19 +2346,19 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_clients_bool_exp"
+                  "name": "v0_channels_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_clients_aggregate",
+            "name": "v0_channels_aggregate",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
                 "kind": "OBJECT",
-                "name": "v0_clients_aggregate"
+                "name": "v0_channels_aggregate"
               }
             },
             "args": [
@@ -3843,7 +2370,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_clients_select_column"
+                      "name": "v0_channels_select_column"
                     }
                   }
                 }
@@ -3870,7 +2397,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_clients_order_by"
+                      "name": "v0_channels_order_by"
                     }
                   }
                 }
@@ -3879,21 +2406,30 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_clients_bool_exp"
+                  "name": "v0_channels_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_clients_by_pk",
+            "name": "v0_channels_stream",
             "type": {
-              "kind": "OBJECT",
-              "name": "v0_clients"
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_channels"
+                  }
+                }
+              }
             },
             "args": [
               {
-                "name": "chain_id",
+                "name": "batch_size",
                 "type": {
                   "kind": "NON_NULL",
                   "ofType": {
@@ -3903,23 +2439,23 @@ export type introspection = {
                 }
               },
               {
-                "name": "client_id",
+                "name": "cursor",
                 "type": {
                   "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String"
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_channels_stream_cursor_input"
+                    }
                   }
                 }
               },
               {
-                "name": "counterparty_chain_id",
+                "name": "where",
                 "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String"
-                  }
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_channels_bool_exp"
                 }
               }
             ],
@@ -3992,51 +2528,40 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_connection_map_aggregate",
+            "name": "v0_connection_map_stream",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_connection_map_aggregate"
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_connection_map"
+                  }
+                }
               }
             },
             "args": [
               {
-                "name": "distinct_on",
+                "name": "batch_size",
                 "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_connection_map_select_column"
-                    }
+                    "kind": "SCALAR",
+                    "name": "Int"
                   }
                 }
               },
               {
-                "name": "limit",
+                "name": "cursor",
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
+                    "kind": "LIST",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_connection_map_order_by"
+                      "name": "v0_connection_map_stream_cursor_input"
                     }
                   }
                 }
@@ -4052,7 +2577,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_cosmos_burn",
+            "name": "v0_connections",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -4061,7 +2586,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_cosmos_burn"
+                    "name": "v0_connections"
                   }
                 }
               }
@@ -4075,7 +2600,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_cosmos_burn_select_column"
+                      "name": "v0_connections_select_column"
                     }
                   }
                 }
@@ -4102,7 +2627,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_burn_order_by"
+                      "name": "v0_connections_order_by"
                     }
                   }
                 }
@@ -4111,74 +2636,14 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
+                  "name": "v0_connections_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_cosmos_burn_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_burn_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_burn_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_burn_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_burn_stream",
+            "name": "v0_connections_stream",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -4187,7 +2652,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_cosmos_burn"
+                    "name": "v0_connections"
                   }
                 }
               }
@@ -4211,7 +2676,7 @@ export type introspection = {
                     "kind": "LIST",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_burn_stream_cursor_input"
+                      "name": "v0_connections_stream_cursor_input"
                     }
                   }
                 }
@@ -4220,954 +2685,7 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_ack",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_ack"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_ack_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_ack_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_ack_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_channel_open_ack_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_ack_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_ack_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_ack_stream",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_ack"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "batch_size",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              },
-              {
-                "name": "cursor",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "LIST",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_ack_stream_cursor_input"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_init",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_init"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_init_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_init_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_init_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_channel_open_init_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_init_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_init_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_channel_open_init_stream",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_init"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "batch_size",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              },
-              {
-                "name": "cursor",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "LIST",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_channel_open_init_stream_cursor_input"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_transfer",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_transfer"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_transfer_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_transfer_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_transfer_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_cosmos_transfer_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_transfer_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_transfer_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_transfer_stream",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_transfer"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "batch_size",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              },
-              {
-                "name": "cursor",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "LIST",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_transfer_stream_cursor_input"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_wasm_message",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_wasm_message"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_wasm_message_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_wasm_message_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_wasm_message_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_wasm_message_stream",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_wasm_message"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "batch_size",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              },
-              {
-                "name": "cursor",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "LIST",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_wasm_message_stream_cursor_input"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_wasm_message_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_withdraw_rewards",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_withdraw_rewards"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_withdraw_rewards_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_withdraw_rewards_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_withdraw_rewards_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_cosmos_withdraw_rewards_stream",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_withdraw_rewards"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "batch_size",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              },
-              {
-                "name": "cursor",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "LIST",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_cosmos_withdraw_rewards_stream_cursor_input"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_withdraw_rewards_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_evm_client_created",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_evm_client_created"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_client_created_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_evm_client_created_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_client_created_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_evm_client_created_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_evm_client_created_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_client_created_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_evm_client_created_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_client_created_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_evm_recv_packet",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_evm_recv_packet"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_recv_packet_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_evm_recv_packet_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_recv_packet_bool_exp"
+                  "name": "v0_connections_bool_exp"
                 }
               }
             ],
@@ -5289,162 +2807,6 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_logs",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_logs"
-                  }
-                }
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_logs_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_logs_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_logs_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_logs_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_logs_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_logs_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "v0_logs_by_pk",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs"
-            },
-            "args": [
-              {
-                "name": "block_hash",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String"
-                  }
-                }
-              },
-              {
-                "name": "chain_id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int"
-                  }
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
             "name": "v0_packets",
             "type": {
               "kind": "NON_NULL",
@@ -5560,7 +2922,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "v0_recv_packet",
+            "name": "v0_rpcs",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -5569,7 +2931,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_recv_packet"
+                    "name": "v0_rpcs"
                   }
                 }
               }
@@ -5583,7 +2945,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_recv_packet_select_column"
+                      "name": "v0_rpcs_select_column"
                     }
                   }
                 }
@@ -5610,7 +2972,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_recv_packet_order_by"
+                      "name": "v0_rpcs_order_by"
                     }
                   }
                 }
@@ -5619,74 +2981,44 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
+                  "name": "v0_rpcs_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_recv_packet_aggregate",
+            "name": "v0_rpcs_by_pk",
             "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_recv_packet_aggregate"
-              }
+              "kind": "OBJECT",
+              "name": "v0_rpcs"
             },
             "args": [
               {
-                "name": "distinct_on",
+                "name": "chain_id",
                 "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_recv_packet_select_column"
-                    }
+                    "kind": "SCALAR",
+                    "name": "Int"
                   }
                 }
               },
               {
-                "name": "limit",
+                "name": "url",
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_recv_packet_order_by"
-                    }
+                    "kind": "SCALAR",
+                    "name": "String"
                   }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
                 }
               }
             ],
             "isDeprecated": false
           },
           {
-            "name": "v0_recv_packet_stream",
+            "name": "v0_rpcs_stream",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -5695,7 +3027,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_recv_packet"
+                    "name": "v0_rpcs"
                   }
                 }
               }
@@ -5719,7 +3051,7 @@ export type introspection = {
                     "kind": "LIST",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_recv_packet_stream_cursor_input"
+                      "name": "v0_rpcs_stream_cursor_input"
                     }
                   }
                 }
@@ -5728,7 +3060,7 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
+                  "name": "v0_rpcs_bool_exp"
                 }
               }
             ],
@@ -5933,6 +3265,273 @@ export type introspection = {
                   "name": "timestamptz"
                 }
               }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_assets",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display_symbol",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_assets_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_assets_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display_symbol",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v0_assets_select_column",
+        "enumValues": [
+          {
+            "name": "chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "decimals",
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "isDeprecated": false
+          },
+          {
+            "name": "display_symbol",
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_assets_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "display_symbol",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
             }
           }
         ],
@@ -6575,6 +4174,15 @@ export type introspection = {
         "name": "v0_chains",
         "fields": [
           {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "blocks",
             "type": {
               "kind": "NON_NULL",
@@ -6662,6 +4270,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "id",
             "type": {
               "kind": "NON_NULL",
@@ -6674,7 +4291,16 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "logs",
+            "name": "rpc_type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "rpcs",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -6683,7 +4309,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_logs"
+                    "name": "v0_rpcs"
                   }
                 }
               }
@@ -6697,7 +4323,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_logs_select_column"
+                      "name": "v0_rpcs_select_column"
                     }
                   }
                 }
@@ -6724,7 +4350,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "v0_logs_order_by"
+                      "name": "v0_rpcs_order_by"
                     }
                   }
                 }
@@ -6733,67 +4359,7 @@ export type introspection = {
                 "name": "where",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "logs_aggregate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_logs_aggregate"
-              }
-            },
-            "args": [
-              {
-                "name": "distinct_on",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_logs_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "limit",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "offset",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Int"
-                }
-              },
-              {
-                "name": "order_by",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "INPUT_OBJECT",
-                      "name": "v0_logs_order_by"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "where",
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
+                  "name": "v0_rpcs_bool_exp"
                 }
               }
             ],
@@ -6804,186 +4370,6 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "Boolean"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_chains"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_chains_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_chains_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_avg_fields",
-        "fields": [
-          {
-            "name": "id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
             },
             "args": [],
             "isDeprecated": false
@@ -7029,6 +4415,13 @@ export type introspection = {
             }
           },
           {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "blocks",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -7050,6 +4443,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
             "name": "id",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -7057,17 +4457,17 @@ export type introspection = {
             }
           },
           {
-            "name": "logs",
+            "name": "rpc_type",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "v0_logs_bool_exp"
+              "name": "String_comparison_exp"
             }
           },
           {
-            "name": "logs_aggregate",
+            "name": "rpcs",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "v0_logs_aggregate_bool_exp"
+              "name": "v0_rpcs_bool_exp"
             }
           },
           {
@@ -7081,77 +4481,16 @@ export type introspection = {
         "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_chains_max_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "display_name",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_min_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "display_name",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
         "kind": "INPUT_OBJECT",
         "name": "v0_chains_order_by",
         "inputFields": [
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
           {
             "name": "blocks_aggregate",
             "type": {
@@ -7174,6 +4513,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "id",
             "type": {
               "kind": "ENUM",
@@ -7181,10 +4527,17 @@ export type introspection = {
             }
           },
           {
-            "name": "logs_aggregate",
+            "name": "rpc_type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "rpcs_aggregate",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "v0_logs_aggregate_order_by"
+              "name": "v0_rpcs_aggregate_order_by"
             }
           },
           {
@@ -7202,6 +4555,10 @@ export type introspection = {
         "name": "v0_chains_select_column",
         "enumValues": [
           {
+            "name": "addr_prefix",
+            "isDeprecated": false
+          },
+          {
             "name": "chain_id",
             "isDeprecated": false
           },
@@ -7210,7 +4567,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "enabled",
+            "isDeprecated": false
+          },
+          {
             "name": "id",
+            "isDeprecated": false
+          },
+          {
+            "name": "rpc_type",
             "isDeprecated": false
           },
           {
@@ -7220,116 +4585,84 @@ export type introspection = {
         ]
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_chains_stddev_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_chains_stream_cursor_input",
+        "inputFields": [
           {
-            "name": "id",
+            "name": "initial_value",
             "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_chains_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
           }
         ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_chains_stddev_pop_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_chains_stream_cursor_value_input",
+        "inputFields": [
           {
-            "name": "id",
+            "name": "addr_prefix",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_stddev_samp_fields",
-        "fields": [
+              "name": "String"
+            }
+          },
           {
-            "name": "id",
+            "name": "chain_id",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_sum_fields",
-        "fields": [
+              "name": "String"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "enabled",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
           {
             "name": "id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_var_pop_fields",
-        "fields": [
+            }
+          },
           {
-            "name": "id",
+            "name": "rpc_type",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_var_samp_fields",
-        "fields": [
+              "name": "String"
+            }
+          },
           {
-            "name": "id",
+            "name": "testnet",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "name": "Boolean"
+            }
           }
         ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_chains_variance_fields",
-        "fields": [
-          {
-            "name": "id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
         "kind": "OBJECT",
@@ -7457,195 +4790,6 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_channel_map"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_channel_map_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_avg_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
             },
             "args": [],
             "isDeprecated": false
@@ -7790,218 +4934,6 @@ export type introspection = {
           }
         ],
         "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_max_fields",
-        "fields": [
-          {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_min_fields",
-        "fields": [
-          {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
       },
       {
         "kind": "INPUT_OBJECT",
@@ -8159,86 +5091,128 @@ export type introspection = {
         ]
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_stddev_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_channel_map_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_channel_map_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_channel_map_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
           {
             "name": "from_id",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "name": "Int"
+            }
+          },
+          {
+            "name": "from_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
           },
           {
             "name": "to_id",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "name": "Int"
+            }
+          },
+          {
+            "name": "to_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
           }
         ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
         "kind": "OBJECT",
-        "name": "v0_channel_map_stddev_pop_fields",
+        "name": "v0_channels",
         "fields": [
           {
-            "name": "from_id",
+            "name": "destination_chain",
             "type": {
-              "kind": "SCALAR",
-              "name": "Float"
+              "kind": "OBJECT",
+              "name": "v0_chains"
             },
             "args": [],
             "isDeprecated": false
           },
           {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_sum_fields",
-        "fields": [
-          {
-            "name": "from_id",
+            "name": "destination_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
@@ -8247,60 +5221,82 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "to_id",
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
             },
             "args": [],
             "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_var_pop_fields",
-        "fields": [
+          },
           {
-            "name": "from_id",
+            "name": "source_channel_id",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
+              "name": "String"
             },
             "args": [],
             "isDeprecated": false
           },
           {
-            "name": "to_id",
+            "name": "source_connection_id",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_channel_map_var_samp_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
+              "name": "String"
             },
             "args": [],
             "isDeprecated": false
           },
           {
-            "name": "to_id",
+            "name": "source_port_id",
             "type": {
               "kind": "SCALAR",
-              "name": "Float"
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
             },
             "args": [],
             "isDeprecated": false
@@ -8310,81 +5306,13 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_channel_map_variance_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_clients",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "client_id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_chain_id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_clients_aggregate",
+        "name": "v0_channels_aggregate",
         "fields": [
           {
             "name": "aggregate",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_aggregate_fields"
+              "name": "v0_channels_aggregate_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8399,7 +5327,7 @@ export type introspection = {
                   "kind": "NON_NULL",
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "v0_clients"
+                    "name": "v0_channels"
                   }
                 }
               }
@@ -8412,13 +5340,13 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_aggregate_fields",
+        "name": "v0_channels_aggregate_fields",
         "fields": [
           {
             "name": "avg",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_avg_fields"
+              "name": "v0_channels_avg_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8441,7 +5369,7 @@ export type introspection = {
                     "kind": "NON_NULL",
                     "ofType": {
                       "kind": "ENUM",
-                      "name": "v0_clients_select_column"
+                      "name": "v0_channels_select_column"
                     }
                   }
                 }
@@ -8460,7 +5388,7 @@ export type introspection = {
             "name": "max",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_max_fields"
+              "name": "v0_channels_max_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8469,7 +5397,7 @@ export type introspection = {
             "name": "min",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_min_fields"
+              "name": "v0_channels_min_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8478,7 +5406,7 @@ export type introspection = {
             "name": "stddev",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_stddev_fields"
+              "name": "v0_channels_stddev_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8487,7 +5415,7 @@ export type introspection = {
             "name": "stddev_pop",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_stddev_pop_fields"
+              "name": "v0_channels_stddev_pop_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8496,7 +5424,7 @@ export type introspection = {
             "name": "stddev_samp",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_stddev_samp_fields"
+              "name": "v0_channels_stddev_samp_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8505,7 +5433,7 @@ export type introspection = {
             "name": "sum",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_sum_fields"
+              "name": "v0_channels_sum_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8514,7 +5442,7 @@ export type introspection = {
             "name": "var_pop",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_var_pop_fields"
+              "name": "v0_channels_var_pop_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8523,7 +5451,7 @@ export type introspection = {
             "name": "var_samp",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_var_samp_fields"
+              "name": "v0_channels_var_samp_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8532,7 +5460,7 @@ export type introspection = {
             "name": "variance",
             "type": {
               "kind": "OBJECT",
-              "name": "v0_clients_variance_fields"
+              "name": "v0_channels_variance_fields"
             },
             "args": [],
             "isDeprecated": false
@@ -8542,10 +5470,19 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_avg_fields",
+        "name": "v0_channels_avg_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8558,7 +5495,7 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_clients_bool_exp",
+        "name": "v0_channels_bool_exp",
         "inputFields": [
           {
             "name": "_and",
@@ -8568,7 +5505,7 @@ export type introspection = {
                 "kind": "NON_NULL",
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_clients_bool_exp"
+                  "name": "v0_channels_bool_exp"
                 }
               }
             }
@@ -8577,7 +5514,7 @@ export type introspection = {
             "name": "_not",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "v0_clients_bool_exp"
+              "name": "v0_channels_bool_exp"
             }
           },
           {
@@ -8588,27 +5525,83 @@ export type introspection = {
                 "kind": "NON_NULL",
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_clients_bool_exp"
+                  "name": "v0_channels_bool_exp"
                 }
               }
             }
           },
           {
-            "name": "chain_id",
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
+            }
+          },
+          {
+            "name": "destination_chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "Int_comparison_exp"
             }
           },
           {
-            "name": "client_id",
+            "name": "destination_channel_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "counterparty_chain_id",
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "status",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
@@ -8619,10 +5612,10 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_max_fields",
+        "name": "v0_channels_max_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
@@ -8631,7 +5624,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "client_id",
+            "name": "destination_channel_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -8640,7 +5633,61 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "counterparty_chain_id",
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -8653,10 +5700,10 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_min_fields",
+        "name": "v0_channels_min_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
@@ -8665,7 +5712,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "client_id",
+            "name": "destination_channel_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -8674,7 +5721,61 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "counterparty_chain_id",
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -8687,24 +5788,80 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_clients_order_by",
+        "name": "v0_channels_order_by",
         "inputFields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
+          {
+            "name": "destination_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "client_id",
+            "name": "destination_channel_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "counterparty_chain_id",
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "status",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -8715,28 +5872,61 @@ export type introspection = {
       },
       {
         "kind": "ENUM",
-        "name": "v0_clients_select_column",
+        "name": "v0_channels_select_column",
         "enumValues": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
             "isDeprecated": false
           },
           {
-            "name": "client_id",
+            "name": "destination_channel_id",
             "isDeprecated": false
           },
           {
-            "name": "counterparty_chain_id",
+            "name": "destination_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
             "isDeprecated": false
           }
         ]
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_stddev_fields",
+        "name": "v0_channels_stddev_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8749,10 +5939,19 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_stddev_pop_fields",
+        "name": "v0_channels_stddev_pop_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8765,10 +5964,19 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_stddev_samp_fields",
+        "name": "v0_channels_stddev_samp_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8780,11 +5988,114 @@ export type introspection = {
         "interfaces": []
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_channels_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_channels_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_channels_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
         "kind": "OBJECT",
-        "name": "v0_clients_sum_fields",
+        "name": "v0_channels_sum_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
@@ -8797,10 +6108,19 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_var_pop_fields",
+        "name": "v0_channels_var_pop_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8813,10 +6133,19 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_var_samp_fields",
+        "name": "v0_channels_var_samp_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8829,10 +6158,19 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_clients_variance_fields",
+        "name": "v0_channels_variance_fields",
         "fields": [
           {
-            "name": "chain_id",
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Float"
@@ -8924,195 +6262,6 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_connection_map"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_connection_map_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_connection_map_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_avg_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
             },
             "args": [],
             "isDeprecated": false
@@ -9222,182 +6371,6 @@ export type introspection = {
           }
         ],
         "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_max_fields",
-        "fields": [
-          {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_min_fields",
-        "fields": [
-          {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
       },
       {
         "kind": "INPUT_OBJECT",
@@ -9512,1056 +6485,8 @@ export type introspection = {
         ]
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_stddev_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_sum_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_var_pop_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_var_samp_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_connection_map_variance_fields",
-        "fields": [
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_blocks"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "burner",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_burn"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_burn_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_burn_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_avg_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
         "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_burn_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_cosmos_burn_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_burn_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "amount",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "bigint_comparison_exp"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_bool_exp"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "burner",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_max_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "burner",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_min_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "burner",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_burn_order_by",
-        "inputFields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_order_by"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "burner",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_cosmos_burn_select_column",
-        "enumValues": [
-          {
-            "name": "amount",
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "burner",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_stddev_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_burn_stream_cursor_input",
+        "name": "v0_connection_map_stream_cursor_input",
         "inputFields": [
           {
             "name": "initial_value",
@@ -10569,7 +6494,7 @@ export type introspection = {
               "kind": "NON_NULL",
               "ofType": {
                 "kind": "INPUT_OBJECT",
-                "name": "v0_cosmos_burn_stream_cursor_value_input"
+                "name": "v0_connection_map_stream_cursor_value_input"
               }
             }
           },
@@ -10585,76 +6510,69 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_burn_stream_cursor_value_input",
+        "name": "v0_connection_map_stream_cursor_value_input",
         "inputFields": [
           {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "block_hash",
+            "name": "from_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "burner",
+            "name": "from_client_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "chain_id",
+            "name": "from_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "from_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
             }
           },
           {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "denom",
+            "name": "status",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "mode",
+            "name": "to_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "time",
+            "name": "to_client_id",
             "type": {
               "kind": "SCALAR",
-              "name": "timestamptz"
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
             }
           }
         ],
@@ -10662,19 +6580,10 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_cosmos_burn_sum_fields",
+        "name": "v0_connections",
         "fields": [
           {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
+            "name": "destination_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
@@ -10683,170 +6592,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_var_pop_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_var_samp_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_burn_variance_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack",
-        "fields": [
-          {
-            "name": "block",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_blocks"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
+            "name": "destination_client_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -10855,7 +6601,16 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "chain_id",
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
@@ -10864,7 +6619,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "channel_id",
+            "name": "source_client_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -10873,7 +6628,7 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "connection_id",
+            "name": "source_connection_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -10882,315 +6637,10 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "counterparty_channel_id",
+            "name": "status",
             "type": {
               "kind": "SCALAR",
               "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_ack"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_ack_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_ack_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_avg_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
             },
             "args": [],
             "isDeprecated": false
@@ -11200,7 +6650,7 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_ack_bool_exp",
+        "name": "v0_connections_bool_exp",
         "inputFields": [
           {
             "name": "_and",
@@ -11210,7 +6660,7 @@ export type introspection = {
                 "kind": "NON_NULL",
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
+                  "name": "v0_connections_bool_exp"
                 }
               }
             }
@@ -11219,7 +6669,7 @@ export type introspection = {
             "name": "_not",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "v0_cosmos_channel_open_ack_bool_exp"
+              "name": "v0_connections_bool_exp"
             }
           },
           {
@@ -11230,471 +6680,111 @@ export type introspection = {
                 "kind": "NON_NULL",
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_ack_bool_exp"
+                  "name": "v0_connections_bool_exp"
                 }
               }
             }
           },
           {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_bool_exp"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
+            "name": "destination_chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "Int_comparison_exp"
             }
           },
           {
-            "name": "channel_id",
+            "name": "destination_client_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "connection_id",
+            "name": "destination_connection_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "counterparty_channel_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
+            "name": "source_chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "Int_comparison_exp"
             }
           },
           {
-            "name": "index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "port_id",
+            "name": "source_client_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
+            "name": "source_connection_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "transaction_index",
+            "name": "status",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
+              "name": "String_comparison_exp"
             }
           }
         ],
         "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_max_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_min_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
         "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_ack_order_by",
+        "name": "v0_connections_order_by",
         "inputFields": [
           {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_order_by"
-            }
-          },
-          {
-            "name": "block_hash",
+            "name": "destination_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "chain_id",
+            "name": "destination_client_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "channel_id",
+            "name": "destination_connection_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "connection_id",
+            "name": "source_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "counterparty_channel_id",
+            "name": "source_client_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "counterparty_port_id",
+            "name": "source_connection_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
+            "name": "status",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -11705,225 +6795,41 @@ export type introspection = {
       },
       {
         "kind": "ENUM",
-        "name": "v0_cosmos_channel_open_ack_select_column",
+        "name": "v0_connections_select_column",
         "enumValues": [
           {
-            "name": "block_hash",
+            "name": "destination_chain_id",
             "isDeprecated": false
           },
           {
-            "name": "chain_id",
+            "name": "destination_client_id",
             "isDeprecated": false
           },
           {
-            "name": "channel_id",
+            "name": "destination_connection_id",
             "isDeprecated": false
           },
           {
-            "name": "connection_id",
+            "name": "source_chain_id",
             "isDeprecated": false
           },
           {
-            "name": "counterparty_channel_id",
+            "name": "source_client_id",
             "isDeprecated": false
           },
           {
-            "name": "counterparty_port_id",
+            "name": "source_connection_id",
             "isDeprecated": false
           },
           {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
+            "name": "status",
             "isDeprecated": false
           }
         ]
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_stddev_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
         "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_ack_stream_cursor_input",
+        "name": "v0_connections_stream_cursor_input",
         "inputFields": [
           {
             "name": "initial_value",
@@ -11931,7 +6837,7 @@ export type introspection = {
               "kind": "NON_NULL",
               "ofType": {
                 "kind": "INPUT_OBJECT",
-                "name": "v0_cosmos_channel_open_ack_stream_cursor_value_input"
+                "name": "v0_connections_stream_cursor_value_input"
               }
             }
           },
@@ -11947,1527 +6853,52 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_ack_stream_cursor_value_input",
+        "name": "v0_connections_stream_cursor_value_input",
         "inputFields": [
           {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "chain_id",
+            "name": "destination_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
             }
           },
           {
-            "name": "channel_id",
+            "name": "destination_client_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "connection_id",
+            "name": "destination_connection_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "counterparty_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "height",
+            "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
               "name": "Int"
             }
           },
           {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "port_id",
+            "name": "source_client_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "transaction_hash",
+            "name": "source_connection_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_sum_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_var_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_var_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_ack_variance_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init",
-        "fields": [
-          {
-            "name": "block",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_blocks"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "version",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_channel_open_init"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_channel_open_init_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_channel_open_init_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_avg_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_init_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_cosmos_channel_open_init_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_channel_open_init_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_bool_exp"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "version",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_max_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "version",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_min_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "version",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_init_order_by",
-        "inputFields": [
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_order_by"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "version",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_cosmos_channel_open_init_select_column",
-        "enumValues": [
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "channel_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "connection_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "counterparty_port_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "port_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "version",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_stddev_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_init_stream_cursor_input",
-        "inputFields": [
-          {
-            "name": "initial_value",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "INPUT_OBJECT",
-                "name": "v0_cosmos_channel_open_init_stream_cursor_value_input"
-              }
-            }
-          },
-          {
-            "name": "ordering",
-            "type": {
-              "kind": "ENUM",
-              "name": "cursor_ordering"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_channel_open_init_stream_cursor_value_input",
-        "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "counterparty_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "version",
+            "name": "status",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -13475,4220 +6906,6 @@ export type introspection = {
           }
         ],
         "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_sum_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_var_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_var_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_channel_open_init_variance_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_blocks"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "recipient",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sender",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_cosmos_transfer"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_cosmos_transfer_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_cosmos_transfer_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_avg_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_transfer_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_cosmos_transfer_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_transfer_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "amount",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "bigint_comparison_exp"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_bool_exp"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "recipient",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "sender",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_max_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "recipient",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sender",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_min_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "recipient",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sender",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_transfer_order_by",
-        "inputFields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_order_by"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "recipient",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "sender",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_cosmos_transfer_select_column",
-        "enumValues": [
-          {
-            "name": "amount",
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "isDeprecated": false
-          },
-          {
-            "name": "mode",
-            "isDeprecated": false
-          },
-          {
-            "name": "recipient",
-            "isDeprecated": false
-          },
-          {
-            "name": "sender",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_stddev_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_transfer_stream_cursor_input",
-        "inputFields": [
-          {
-            "name": "initial_value",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "INPUT_OBJECT",
-                "name": "v0_cosmos_transfer_stream_cursor_value_input"
-              }
-            }
-          },
-          {
-            "name": "ordering",
-            "type": {
-              "kind": "ENUM",
-              "name": "cursor_ordering"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_transfer_stream_cursor_value_input",
-        "inputFields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "mode",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "recipient",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "sender",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_sum_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_var_pop_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_var_samp_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_transfer_variance_fields",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_wasm_message",
-        "fields": [
-          {
-            "name": "_contract_address",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_blocks"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "module",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_wasm_message_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_wasm_message_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_contract_address",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_cosmos_wasm_message_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_wasm_message_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_bool_exp"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "module",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_wasm_message_order_by",
-        "inputFields": [
-          {
-            "name": "_contract_address",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_order_by"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "module",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_cosmos_wasm_message_select_column",
-        "enumValues": [
-          {
-            "name": "_contract_address",
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "isDeprecated": false
-          },
-          {
-            "name": "module",
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_wasm_message_stream_cursor_input",
-        "inputFields": [
-          {
-            "name": "initial_value",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "INPUT_OBJECT",
-                "name": "v0_cosmos_wasm_message_stream_cursor_value_input"
-              }
-            }
-          },
-          {
-            "name": "ordering",
-            "type": {
-              "kind": "ENUM",
-              "name": "cursor_ordering"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_wasm_message_stream_cursor_value_input",
-        "inputFields": [
-          {
-            "name": "_contract_address",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "module",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_cosmos_withdraw_rewards",
-        "fields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_blocks"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "delegator",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "validator",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_withdraw_rewards_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_withdraw_rewards_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_cosmos_withdraw_rewards_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_cosmos_withdraw_rewards_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "amount",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "bigint_comparison_exp"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_bool_exp"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "delegator",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "validator",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_withdraw_rewards_order_by",
-        "inputFields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "block",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_blocks_order_by"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "delegator",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "validator",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_cosmos_withdraw_rewards_select_column",
-        "enumValues": [
-          {
-            "name": "amount",
-            "isDeprecated": false
-          },
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "delegator",
-            "isDeprecated": false
-          },
-          {
-            "name": "denom",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "index",
-            "isDeprecated": false
-          },
-          {
-            "name": "msg_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "validator",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_withdraw_rewards_stream_cursor_input",
-        "inputFields": [
-          {
-            "name": "initial_value",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "INPUT_OBJECT",
-                "name": "v0_cosmos_withdraw_rewards_stream_cursor_value_input"
-              }
-            }
-          },
-          {
-            "name": "ordering",
-            "type": {
-              "kind": "ENUM",
-              "name": "cursor_ordering"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_cosmos_withdraw_rewards_stream_cursor_value_input",
-        "inputFields": [
-          {
-            "name": "amount",
-            "type": {
-              "kind": "SCALAR",
-              "name": "bigint"
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "delegator",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "denom",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "msg_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "validator",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "log_to_jsonb",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "raw_log",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_evm_client_created"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_evm_client_created_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_evm_client_created_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_avg_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_evm_client_created_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_client_created_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_evm_client_created_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_client_created_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "client_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "log_to_jsonb",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "raw_log",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_max_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_min_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "client_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_evm_client_created_order_by",
-        "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "client_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "log_to_jsonb",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "raw_log",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_evm_client_created_select_column",
-        "enumValues": [
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "client_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "log_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "log_to_jsonb",
-            "isDeprecated": false
-          },
-          {
-            "name": "name",
-            "isDeprecated": false
-          },
-          {
-            "name": "raw_log",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_stddev_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_sum_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_var_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_var_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_client_created_variance_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_evm_recv_packet",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "log_to_jsonb",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "packet",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "raw_log",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "revision_height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "revision_number",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_evm_recv_packet_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_recv_packet_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_evm_recv_packet_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_evm_recv_packet_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "log_to_jsonb",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "packet",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "raw_log",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "revision_height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "revision_number",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "timeout_height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_evm_recv_packet_order_by",
-        "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "log_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "log_to_jsonb",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "name",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "packet",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "raw_log",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "revision_height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "revision_number",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "timeout_height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_evm_recv_packet_select_column",
-        "enumValues": [
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_channel",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_port",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "log_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "log_to_jsonb",
-            "isDeprecated": false
-          },
-          {
-            "name": "name",
-            "isDeprecated": false
-          },
-          {
-            "name": "packet",
-            "isDeprecated": false
-          },
-          {
-            "name": "raw_log",
-            "isDeprecated": false
-          },
-          {
-            "name": "revision_height",
-            "isDeprecated": false
-          },
-          {
-            "name": "revision_number",
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_height",
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "isDeprecated": false
-          }
-        ]
       },
       {
         "kind": "OBJECT",
@@ -18021,1194 +7238,13 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_logs",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "v0_chains"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "jsonb"
-              }
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "timestamptz"
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_logs"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_aggregate_bool_exp",
-        "inputFields": [
-          {
-            "name": "count",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_aggregate_bool_exp_count"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_aggregate_bool_exp_count",
-        "inputFields": [
-          {
-            "name": "arguments",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "ENUM",
-                  "name": "v0_logs_select_column"
-                }
-              }
-            }
-          },
-          {
-            "name": "distinct",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean"
-            }
-          },
-          {
-            "name": "filter",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_bool_exp"
-            }
-          },
-          {
-            "name": "predicate",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "INPUT_OBJECT",
-                "name": "Int_comparison_exp"
-              }
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int"
-              }
-            },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_logs_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_max_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_logs_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_aggregate_order_by",
-        "inputFields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_avg_order_by"
-            }
-          },
-          {
-            "name": "count",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_max_order_by"
-            }
-          },
-          {
-            "name": "min",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_min_order_by"
-            }
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_stddev_order_by"
-            }
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_stddev_pop_order_by"
-            }
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_stddev_samp_order_by"
-            }
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_sum_order_by"
-            }
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_var_pop_order_by"
-            }
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_var_samp_order_by"
-            }
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_variance_order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_avg_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_avg_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_bool_exp",
-        "inputFields": [
-          {
-            "name": "_and",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "_not",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_logs_bool_exp"
-            }
-          },
-          {
-            "name": "_or",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "v0_logs_bool_exp"
-                }
-              }
-            }
-          },
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "chain",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_chains_bool_exp"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_max_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_max_order_by",
-        "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_min_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_min_order_by",
-        "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_order_by",
-        "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "chain",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_chains_order_by"
-            }
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "ENUM",
-        "name": "v0_logs_select_column",
-        "enumValues": [
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          }
-        ]
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_stddev_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_stddev_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_stddev_pop_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_stddev_samp_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_sum_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_sum_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_var_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_var_pop_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_var_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_var_samp_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_logs_variance_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "v0_logs_variance_order_by",
-        "inputFields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          }
-        ],
-        "isOneOf": false
-      },
-      {
-        "kind": "OBJECT",
         "name": "v0_packets",
         "fields": [
           {
-            "name": "destination_block_hash",
+            "name": "destination_chain",
             "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_json",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
+              "kind": "OBJECT",
+              "name": "v0_chains"
             },
             "args": [],
             "isDeprecated": false
@@ -19259,126 +7295,10 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "source_block_hash",
+            "name": "source_chain",
             "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_json",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
+              "kind": "OBJECT",
+              "name": "v0_chains"
             },
             "args": [],
             "isDeprecated": false
@@ -19469,87 +7389,10 @@ export type introspection = {
             }
           },
           {
-            "name": "destination_block_hash",
+            "name": "destination_chain",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_json",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_sequence",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_timeout_timestamp",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "destination_transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
+              "name": "v0_chains_bool_exp"
             }
           },
           {
@@ -19588,94 +7431,10 @@ export type introspection = {
             }
           },
           {
-            "name": "source_block_hash",
+            "name": "source_chain",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_data",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "source_json",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_sequence",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "source_time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "source_timeout_timestamp",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "source_transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_transaction_index",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
+              "name": "v0_chains_bool_exp"
             }
           },
           {
@@ -19721,87 +7480,10 @@ export type introspection = {
         "name": "v0_packets_order_by",
         "inputFields": [
           {
-            "name": "destination_block_hash",
+            "name": "destination_chain",
             "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_json",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_sequence",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_timeout_timestamp",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "destination_transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
             }
           },
           {
@@ -19840,94 +7522,10 @@ export type introspection = {
             }
           },
           {
-            "name": "source_block_hash",
+            "name": "source_chain",
             "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_data",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_json",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_sequence",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_timeout_timestamp",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_transaction_index",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "status",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
             }
           },
           {
@@ -19973,54 +7571,6 @@ export type introspection = {
         "name": "v0_packets_select_column",
         "enumValues": [
           {
-            "name": "destination_block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_channel",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_data",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_height",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_json",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_port",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_sequence",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_time",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_timeout_timestamp",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_transaction_index",
-            "isDeprecated": false
-          },
-          {
             "name": "from_chain_id",
             "isDeprecated": false
           },
@@ -20038,58 +7588,6 @@ export type introspection = {
           },
           {
             "name": "from_port_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_block_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_data",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_height",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_json",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_sequence",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_time",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_timeout_timestamp",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_transaction_index",
-            "isDeprecated": false
-          },
-          {
-            "name": "status",
             "isDeprecated": false
           },
           {
@@ -20143,90 +7641,6 @@ export type introspection = {
         "name": "v0_packets_stream_cursor_value_input",
         "inputFields": [
           {
-            "name": "destination_block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "destination_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "destination_data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "destination_height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "destination_json",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "destination_sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            }
-          },
-          {
-            "name": "destination_time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "destination_timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            }
-          },
-          {
-            "name": "destination_transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "destination_transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
             "name": "from_chain_id",
             "type": {
               "kind": "SCALAR",
@@ -20256,97 +7670,6 @@ export type introspection = {
           },
           {
             "name": "from_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "source_json",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            }
-          },
-          {
-            "name": "source_time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "source_timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            }
-          },
-          {
-            "name": "source_transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "status",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -20392,203 +7715,22 @@ export type introspection = {
       },
       {
         "kind": "OBJECT",
-        "name": "v0_recv_packet",
+        "name": "v0_rpcs",
         "fields": [
           {
-            "name": "block_hash",
+            "name": "chain",
             "type": {
-              "kind": "SCALAR",
-              "name": "String"
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_chains"
+              }
             },
             "args": [],
             "isDeprecated": false
           },
           {
             "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "channel",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_channel_map"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "json",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            },
-            "args": [
-              {
-                "name": "path",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String"
-                }
-              }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_aggregate",
-        "fields": [
-          {
-            "name": "aggregate",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_aggregate_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "v0_recv_packet"
-                  }
-                }
-              }
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_aggregate_fields",
-        "fields": [
-          {
-            "name": "avg",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_avg_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "count",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -20596,150 +7738,38 @@ export type introspection = {
                 "name": "Int"
               }
             },
-            "args": [
-              {
-                "name": "columns",
-                "type": {
-                  "kind": "LIST",
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "ofType": {
-                      "kind": "ENUM",
-                      "name": "v0_recv_packet_select_column"
-                    }
-                  }
-                }
-              },
-              {
-                "name": "distinct",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean"
-                }
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
               }
-            ],
-            "isDeprecated": false
-          },
-          {
-            "name": "max",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_max_fields"
             },
             "args": [],
             "isDeprecated": false
           },
           {
-            "name": "min",
+            "name": "url",
             "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_min_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_stddev_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_stddev_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "stddev_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_stddev_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sum",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_sum_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_pop",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_var_pop_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "var_samp",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_var_samp_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "variance",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_recv_packet_variance_fields"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_avg_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
             },
             "args": [],
             "isDeprecated": false
@@ -20749,7 +7779,105 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_recv_packet_bool_exp",
+        "name": "v0_rpcs_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_rpcs_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_avg_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_bool_exp",
         "inputFields": [
           {
             "name": "_and",
@@ -20759,7 +7887,7 @@ export type introspection = {
                 "kind": "NON_NULL",
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
+                  "name": "v0_rpcs_bool_exp"
                 }
               }
             }
@@ -20768,7 +7896,7 @@ export type introspection = {
             "name": "_not",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "v0_recv_packet_bool_exp"
+              "name": "v0_rpcs_bool_exp"
             }
           },
           {
@@ -20779,16 +7907,16 @@ export type introspection = {
                 "kind": "NON_NULL",
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "v0_recv_packet_bool_exp"
+                  "name": "v0_rpcs_bool_exp"
                 }
               }
             }
           },
           {
-            "name": "block_hash",
+            "name": "chain",
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
+              "name": "v0_chains_bool_exp"
             }
           },
           {
@@ -20799,91 +7927,21 @@ export type introspection = {
             }
           },
           {
-            "name": "channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_channel_map_bool_exp"
-            }
-          },
-          {
-            "name": "data",
+            "name": "description",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "destination_channel",
+            "name": "type",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
           },
           {
-            "name": "destination_port",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "json",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "jsonb_comparison_exp"
-            }
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "timestamptz_comparison_exp"
-            }
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "numeric_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "transaction_index",
+            "name": "url",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
@@ -20893,262 +7951,84 @@ export type introspection = {
         "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_max_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_max_order_by",
+        "inputFields": [
           {
             "name": "chain_id",
             "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           },
           {
-            "name": "data",
+            "name": "description",
             "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           },
           {
-            "name": "destination_channel",
+            "name": "type",
             "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           },
           {
-            "name": "destination_port",
+            "name": "url",
             "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_min_fields",
-        "fields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "data",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "destination_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_recv_packet_order_by",
+        "name": "v0_rpcs_min_order_by",
         "inputFields": [
           {
-            "name": "block_hash",
+            "name": "chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_order_by",
+        "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
             }
           },
           {
@@ -21159,91 +8039,21 @@ export type introspection = {
             }
           },
           {
-            "name": "channel",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_channel_map_order_by"
-            }
-          },
-          {
-            "name": "data",
+            "name": "description",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "destination_channel",
+            "name": "type",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
             }
           },
           {
-            "name": "destination_port",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "json",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "transaction_index",
+            "name": "url",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -21254,198 +8064,71 @@ export type introspection = {
       },
       {
         "kind": "ENUM",
-        "name": "v0_recv_packet_select_column",
+        "name": "v0_rpcs_select_column",
         "enumValues": [
-          {
-            "name": "block_hash",
-            "isDeprecated": false
-          },
           {
             "name": "chain_id",
             "isDeprecated": false
           },
           {
-            "name": "data",
+            "name": "description",
             "isDeprecated": false
           },
           {
-            "name": "destination_channel",
+            "name": "type",
             "isDeprecated": false
           },
           {
-            "name": "destination_port",
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "isDeprecated": false
-          },
-          {
-            "name": "json",
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_channel",
-            "isDeprecated": false
-          },
-          {
-            "name": "source_port",
-            "isDeprecated": false
-          },
-          {
-            "name": "time",
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_hash",
-            "isDeprecated": false
-          },
-          {
-            "name": "transaction_index",
+            "name": "url",
             "isDeprecated": false
           }
         ]
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_stddev_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_stddev_order_by",
+        "inputFields": [
           {
             "name": "chain_id",
             "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_stddev_pop_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_stddev_samp_fields",
-        "fields": [
-          {
-            "name": "chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          }
-        ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_recv_packet_stream_cursor_input",
+        "name": "v0_rpcs_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_stream_cursor_input",
         "inputFields": [
           {
             "name": "initial_value",
@@ -21453,7 +8136,7 @@ export type introspection = {
               "kind": "NON_NULL",
               "ofType": {
                 "kind": "INPUT_OBJECT",
-                "name": "v0_recv_packet_stream_cursor_value_input"
+                "name": "v0_rpcs_stream_cursor_value_input"
               }
             }
           },
@@ -21469,15 +8152,8 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "v0_recv_packet_stream_cursor_value_input",
+        "name": "v0_rpcs_stream_cursor_value_input",
         "inputFields": [
-          {
-            "name": "block_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
           {
             "name": "chain_id",
             "type": {
@@ -21486,84 +8162,21 @@ export type introspection = {
             }
           },
           {
-            "name": "data",
+            "name": "description",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "destination_channel",
+            "name": "type",
             "type": {
               "kind": "SCALAR",
               "name": "String"
             }
           },
           {
-            "name": "destination_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "json",
-            "type": {
-              "kind": "SCALAR",
-              "name": "jsonb"
-            }
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            }
-          },
-          {
-            "name": "source_channel",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "source_port",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "time",
-            "type": {
-              "kind": "SCALAR",
-              "name": "timestamptz"
-            }
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            }
-          },
-          {
-            "name": "transaction_hash",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "transaction_index",
+            "name": "url",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -21573,176 +8186,60 @@ export type introspection = {
         "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_sum_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_sum_order_by",
+        "inputFields": [
           {
             "name": "chain_id",
             "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "numeric"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_var_pop_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_var_pop_order_by",
+        "inputFields": [
           {
             "name": "chain_id",
             "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_var_samp_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_var_samp_order_by",
+        "inputFields": [
           {
             "name": "chain_id",
             "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
-        "kind": "OBJECT",
-        "name": "v0_recv_packet_variance_fields",
-        "fields": [
+        "kind": "INPUT_OBJECT",
+        "name": "v0_rpcs_variance_order_by",
+        "inputFields": [
           {
             "name": "chain_id",
             "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "height",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "sequence",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "timeout_timestamp",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Float"
-            },
-            "args": [],
-            "isDeprecated": false
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
-        "interfaces": []
+        "isOneOf": false
       },
       {
         "kind": "OBJECT",
@@ -21770,6 +8267,15 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
             },
             "args": [],
             "isDeprecated": false
@@ -21874,51 +8380,6 @@ export type introspection = {
           },
           {
             "name": "destination_transaction_index",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "from_port_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -21954,6 +8415,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "source_chain_id",
             "type": {
               "kind": "SCALAR",
@@ -22062,51 +8532,6 @@ export type introspection = {
           },
           {
             "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
-            "name": "to_port_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -22169,6 +8594,13 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
+            }
+          },
+          {
             "name": "destination_chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -22246,41 +8678,6 @@ export type introspection = {
             }
           },
           {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "from_channel_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "from_port_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
             "name": "receiver",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -22299,6 +8696,13 @@ export type introspection = {
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
             }
           },
           {
@@ -22380,41 +8784,6 @@ export type introspection = {
           },
           {
             "name": "status",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "to_channel_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "String_comparison_exp"
-            }
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "Int_comparison_exp"
-            }
-          },
-          {
-            "name": "to_port_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
@@ -22442,6 +8811,13 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
+          {
             "name": "destination_chain_id",
             "type": {
               "kind": "ENUM",
@@ -22519,41 +8895,6 @@ export type introspection = {
             }
           },
           {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "from_channel_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "from_port_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
             "name": "receiver",
             "type": {
               "kind": "ENUM",
@@ -22572,6 +8913,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
             }
           },
           {
@@ -22653,41 +9001,6 @@ export type introspection = {
           },
           {
             "name": "status",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "to_channel_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "ENUM",
-              "name": "order_by"
-            }
-          },
-          {
-            "name": "to_port_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -22753,26 +9066,6 @@ export type introspection = {
             "isDeprecated": false
           },
           {
-            "name": "from_chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "from_channel_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "from_connection_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "from_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "from_port_id",
-            "isDeprecated": false
-          },
-          {
             "name": "receiver",
             "isDeprecated": false
           },
@@ -22830,26 +9123,6 @@ export type introspection = {
           },
           {
             "name": "status",
-            "isDeprecated": false
-          },
-          {
-            "name": "to_chain_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "to_channel_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "to_connection_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "to_id",
-            "isDeprecated": false
-          },
-          {
-            "name": "to_port_id",
             "isDeprecated": false
           }
         ]
@@ -22974,41 +9247,6 @@ export type introspection = {
             }
           },
           {
-            "name": "from_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "from_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "from_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "from_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "from_port_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
             "name": "receiver",
             "type": {
               "kind": "SCALAR",
@@ -23108,41 +9346,6 @@ export type introspection = {
           },
           {
             "name": "status",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "to_chain_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "to_channel_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "to_connection_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "String"
-            }
-          },
-          {
-            "name": "to_id",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int"
-            }
-          },
-          {
-            "name": "to_port_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"

@@ -65,3 +65,15 @@ export function urlSearchParams(
     ) as Record<string, string>
   )
 }
+
+export function truncate(str: string, show: number): string {
+  // Don't truncate short strings
+  if (str.length === 0 || str.length < show * 2 + 2) return str
+
+  // Extract the first `show` characters and the last `show` characters
+  const firstPart: string = str.slice(0, show)
+  const lastPart: string = str.slice(-show)
+
+  // Return the truncated string with the ellipsis character in-between
+  return `${firstPart}\u2026${lastPart}`
+}

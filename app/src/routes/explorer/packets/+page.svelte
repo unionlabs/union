@@ -27,38 +27,38 @@ $: if (packets) {
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {
-    accessorKey: "from_chain_id",
-    header: () => "From Chain",
+    accessorKey: "source_chain_id",
+    header: () => "Source Chain",
     size: 200,
     cell: info => info.getValue()
   },
   {
-    accessorKey: "from_channel_id",
-    header: () => "From Channel",
+    accessorKey: "source_channel_id",
+    header: () => "Source Channel",
     size: 200,
     cell: info => info.getValue()
   },
   {
     accessorKey: "source_port",
-    header: () => "From Port",
+    header: () => "Source Port",
     size: 200,
     cell: info => info.getValue()
   },
   {
-    accessorKey: "to_chain_id",
-    header: () => "To Chain",
+    accessorKey: "destination_chain_id",
+    header: () => "Destination Chain",
     size: 200,
     cell: info => info.getValue()
   },
   {
-    accessorKey: "to_channel_id",
-    header: () => "To Channel",
+    accessorKey: "destination_channel_id",
+    header: () => "Destination Channel",
     size: 200,
     cell: info => info.getValue()
   },
   {
-    accessorKey: "to_port_id",
-    header: () => "To Port",
+    accessorKey: "destination_port_id",
+    header: () => "Destination Port",
     size: 200,
     cell: info => info.getValue()
   },

@@ -28,6 +28,7 @@ function createCosmosStore(
     chain: "cosmos",
     hoverState: "none",
     address: undefined,
+    rawAddress: undefined,
     connectedWallet: "keplr",
     connectionStatus: "disconnected"
   }
@@ -69,6 +70,7 @@ function createCosmosStore(
         ...v,
         connectionStatus: "connected",
         address: account?.bech32Address,
+        rawAddress: account?.address,
         connectedWallet: walletId
       }))
       await sleep(2_000)
