@@ -1017,6 +1017,8 @@ thiserror
 tikv
 timedelta
 timescaledb
+tiny-hderive
+tiny_hderive
 tkey
 tkeys
 tmcfg
