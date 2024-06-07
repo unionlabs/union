@@ -66,7 +66,7 @@
     <Card.Header>
       <Card.Title>Balances</Card.Title>
     </Card.Header>
-    <Card.Content class="flex flex-col gap-2">
+    <Card.Content class="flex flex-col gap-6">
     <div>
       <h2 class="font-bold">Sepolia</h2>
       {#if $evmBalances}
