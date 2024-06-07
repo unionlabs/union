@@ -1,3 +1,4 @@
+
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -1076,8 +1077,14 @@ unionmodule
 unionmodulekeeper
 unionmoduletypes
 unionp
+unionpub
 unionsimulation
 unionstaking
+uniontestnet
+unionvalcons
+unionvalconspub
+unionvaloper
+unionvaloperpub
 unionvisor
 unittests
 unjail
