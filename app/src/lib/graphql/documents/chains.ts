@@ -1,12 +1,16 @@
 import { graphql } from "gql.tada"
 
 export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery {
-  v0_chains {
-    bech32_prefix
-    chain_id
+	v0_chains(where: {enabled: {_eq: true}}, order_by: {display_name: asc}) {
     display_name
+    chain_id
+    enabled
     id
     rpc_type
-    testnet
+    addr_prefix
+    rpcs {
+      url
+      type
+    }
   }
 }`)

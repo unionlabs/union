@@ -8,6 +8,9 @@ import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate";
 import { raise } from "$lib/utilities/index.ts";
+import { rawToBech32 } from "$lib/utilities/address.ts";
+import type { chainsQuery } from "./chains.ts";
+import type { chainsQueryDocument } from "$lib/graphql/documents/chains.ts";
 
 /**
  * TODO:
@@ -122,43 +125,53 @@ const cosmosBalancesResponseSchema = v.object({
 
 export function cosmosBalancesQuery({
   address,
-  chainIds
+  chains
 }: {
-  address: string
-  chainIds: Array<string>
+  address: Uint8Array,
+  chains: Array<{chain_id: string, addr_prefix: string, rpcs: Array<{url:string, type: string}>}>
 }) {
-  return createQueries({
-    queries: chainIds.map((chainId) => ({
-      queryKey: ["balances", chainId, address],
-      enabled: isValidCosmosAddress(address),
-      refetchOnWindowFocus: false,
-      queryFn: async () => {
-        const restUrl = CHAIN_URLS[chainId].REST
+    return createQueries({
+      queries: chains.map((chain) => {
+        const bech32_addr = rawToBech32(chain.addr_prefix, address);
 
-        let json: undefined | unknown;
-        try {
-          const response = await fetch(`${restUrl}/cosmos/bank/v1beta1/balances/${address}`);
+        return {
+          queryKey: ["balances", chain.chain_id, bech32_addr],
+          enabled: true,
+          refetchInterval: 2_000,
+          refetchOnWindowFocus: false,
+          queryFn: async () => {
 
-          if (!response.ok) return new Error("invalid response");
+            let json: undefined | unknown;
+            const rest_rpcs = chain.rpcs.filter(rpc => rpc.type === 'rest');
+            if (rest_rpcs.length === 0) raise(`no rest rpc available for chain ${chain.chain_id}`);
 
-          json = await response.json()
-        } catch(err) {
-          if (err instanceof Error) {
-            raise(`error fetching balances from /cosmos/bank: ${err.message}`);
+            const restUrl = rest_rpcs[0].url;
+
+            try {
+              const response = await fetch(`https://${restUrl}/cosmos/bank/v1beta1/balances/${bech32_addr}`);
+
+              if (!response.ok) return new Error("invalid response");
+
+              json = await response.json()
+            } catch(err) {
+              if (err instanceof Error) {
+                raise(`error fetching balances from /cosmos/bank: ${err.message}`);
+              }
+              raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`);
+            } 
+
+            const result = v.safeParse(cosmosBalancesResponseSchema, json);
+
+            if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
+            return result.output.balances.map((x) => ({
+              address: x.denom,
+              symbol: x.denom,
+              balance: x.amount,
+              decimals: 0
+            }));
           }
-          raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`);
-        } 
+        };
 
-        const result = v.safeParse(cosmosBalancesResponseSchema, json);
-
-        if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
-
-        return result.output.balances.map((x) => ({
-          address: x.denom,
-          symbol: x.denom,
-          balance: x.amount,
-          decimals: 0
-        }))
-    }}))
-  })
-}
+      })
+    }); 
+  }

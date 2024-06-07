@@ -289,6 +289,46 @@ type query_root {
   v0_chains_by_pk(id: Int!): v0_chains
 
   """
+  fetch data from the table: "v0.channels"
+  """
+  v0_channels(
+    """distinct select on columns"""
+    distinct_on: [v0_channels_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_channels_order_by!]
+
+    """filter the rows returned"""
+    where: v0_channels_bool_exp
+  ): [v0_channels!]!
+
+  """
+  fetch aggregated fields from the table: "v0.channels"
+  """
+  v0_channels_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_channels_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_channels_order_by!]
+
+    """filter the rows returned"""
+    where: v0_channels_bool_exp
+  ): v0_channels_aggregate!
+
+  """
   fetch data from the table: "v0.index_status"
   """
   v0_index_status(
@@ -443,6 +483,60 @@ type subscription_root {
     """filter the rows returned"""
     where: v0_chains_bool_exp
   ): [v0_chains!]!
+
+  """
+  fetch data from the table: "v0.channels"
+  """
+  v0_channels(
+    """distinct select on columns"""
+    distinct_on: [v0_channels_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_channels_order_by!]
+
+    """filter the rows returned"""
+    where: v0_channels_bool_exp
+  ): [v0_channels!]!
+
+  """
+  fetch aggregated fields from the table: "v0.channels"
+  """
+  v0_channels_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_channels_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_channels_order_by!]
+
+    """filter the rows returned"""
+    where: v0_channels_bool_exp
+  ): v0_channels_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "v0.channels"
+  """
+  v0_channels_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_channels_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_channels_bool_exp
+  ): [v0_channels!]!
 
   """
   fetch data from the table: "v0.index_status"
@@ -793,6 +887,8 @@ input v0_blocks_variance_order_by {
 columns and relationships of "v0.chains"
 """
 type v0_chains {
+  addr_prefix: String
+
   """An array relationship"""
   blocks(
     """distinct select on columns"""
@@ -812,8 +908,27 @@ type v0_chains {
   ): [v0_blocks!]!
   chain_id: String!
   display_name: String
+  enabled: Boolean
   id: Int!
   rpc_type: String
+
+  """An array relationship"""
+  rpcs(
+    """distinct select on columns"""
+    distinct_on: [v0_rpcs_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_rpcs_order_by!]
+
+    """filter the rows returned"""
+    where: v0_rpcs_bool_exp
+  ): [v0_rpcs!]!
   testnet: Boolean
 }
 
@@ -824,21 +939,27 @@ input v0_chains_bool_exp {
   _and: [v0_chains_bool_exp!]
   _not: v0_chains_bool_exp
   _or: [v0_chains_bool_exp!]
+  addr_prefix: String_comparison_exp
   blocks: v0_blocks_bool_exp
   chain_id: String_comparison_exp
   display_name: String_comparison_exp
+  enabled: Boolean_comparison_exp
   id: Int_comparison_exp
   rpc_type: String_comparison_exp
+  rpcs: v0_rpcs_bool_exp
   testnet: Boolean_comparison_exp
 }
 
 """Ordering options when selecting data from "v0.chains"."""
 input v0_chains_order_by {
+  addr_prefix: order_by
   blocks_aggregate: v0_blocks_aggregate_order_by
   chain_id: order_by
   display_name: order_by
+  enabled: order_by
   id: order_by
   rpc_type: order_by
+  rpcs_aggregate: v0_rpcs_aggregate_order_by
   testnet: order_by
 }
 
@@ -847,10 +968,16 @@ select columns of table "v0.chains"
 """
 enum v0_chains_select_column {
   """column name"""
+  addr_prefix
+
+  """column name"""
   chain_id
 
   """column name"""
   display_name
+
+  """column name"""
+  enabled
 
   """column name"""
   id
@@ -875,11 +1002,223 @@ input v0_chains_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v0_chains_stream_cursor_value_input {
+  addr_prefix: String
   chain_id: String
   display_name: String
+  enabled: Boolean
   id: Int
   rpc_type: String
   testnet: Boolean
+}
+
+"""
+columns and relationships of "v0.channels"
+"""
+type v0_channels {
+  """An object relationship"""
+  destination_chain: v0_chains
+  destination_chain_id: Int
+  destination_channel_id: String
+  destination_connection_id: String
+  destination_port_id: String
+
+  """An object relationship"""
+  source_chain: v0_chains
+  source_chain_id: Int
+  source_channel_id: String
+  source_connection_id: String
+  source_port_id: String
+  status: String
+}
+
+"""
+aggregated selection of "v0.channels"
+"""
+type v0_channels_aggregate {
+  aggregate: v0_channels_aggregate_fields
+  nodes: [v0_channels!]!
+}
+
+"""
+aggregate fields of "v0.channels"
+"""
+type v0_channels_aggregate_fields {
+  avg: v0_channels_avg_fields
+  count(columns: [v0_channels_select_column!], distinct: Boolean): Int!
+  max: v0_channels_max_fields
+  min: v0_channels_min_fields
+  stddev: v0_channels_stddev_fields
+  stddev_pop: v0_channels_stddev_pop_fields
+  stddev_samp: v0_channels_stddev_samp_fields
+  sum: v0_channels_sum_fields
+  var_pop: v0_channels_var_pop_fields
+  var_samp: v0_channels_var_samp_fields
+  variance: v0_channels_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v0_channels_avg_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "v0.channels". All fields are combined with a logical 'AND'.
+"""
+input v0_channels_bool_exp {
+  _and: [v0_channels_bool_exp!]
+  _not: v0_channels_bool_exp
+  _or: [v0_channels_bool_exp!]
+  destination_chain: v0_chains_bool_exp
+  destination_chain_id: Int_comparison_exp
+  destination_channel_id: String_comparison_exp
+  destination_connection_id: String_comparison_exp
+  destination_port_id: String_comparison_exp
+  source_chain: v0_chains_bool_exp
+  source_chain_id: Int_comparison_exp
+  source_channel_id: String_comparison_exp
+  source_connection_id: String_comparison_exp
+  source_port_id: String_comparison_exp
+  status: String_comparison_exp
+}
+
+"""aggregate max on columns"""
+type v0_channels_max_fields {
+  destination_chain_id: Int
+  destination_channel_id: String
+  destination_connection_id: String
+  destination_port_id: String
+  source_chain_id: Int
+  source_channel_id: String
+  source_connection_id: String
+  source_port_id: String
+  status: String
+}
+
+"""aggregate min on columns"""
+type v0_channels_min_fields {
+  destination_chain_id: Int
+  destination_channel_id: String
+  destination_connection_id: String
+  destination_port_id: String
+  source_chain_id: Int
+  source_channel_id: String
+  source_connection_id: String
+  source_port_id: String
+  status: String
+}
+
+"""Ordering options when selecting data from "v0.channels"."""
+input v0_channels_order_by {
+  destination_chain: v0_chains_order_by
+  destination_chain_id: order_by
+  destination_channel_id: order_by
+  destination_connection_id: order_by
+  destination_port_id: order_by
+  source_chain: v0_chains_order_by
+  source_chain_id: order_by
+  source_channel_id: order_by
+  source_connection_id: order_by
+  source_port_id: order_by
+  status: order_by
+}
+
+"""
+select columns of table "v0.channels"
+"""
+enum v0_channels_select_column {
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  destination_channel_id
+
+  """column name"""
+  destination_connection_id
+
+  """column name"""
+  destination_port_id
+
+  """column name"""
+  source_chain_id
+
+  """column name"""
+  source_channel_id
+
+  """column name"""
+  source_connection_id
+
+  """column name"""
+  source_port_id
+
+  """column name"""
+  status
+}
+
+"""aggregate stddev on columns"""
+type v0_channels_stddev_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_channels_stddev_pop_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_channels_stddev_samp_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
+}
+
+"""
+Streaming cursor of the table "v0_channels"
+"""
+input v0_channels_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_channels_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_channels_stream_cursor_value_input {
+  destination_chain_id: Int
+  destination_channel_id: String
+  destination_connection_id: String
+  destination_port_id: String
+  source_chain_id: Int
+  source_channel_id: String
+  source_connection_id: String
+  source_port_id: String
+  status: String
+}
+
+"""aggregate sum on columns"""
+type v0_channels_sum_fields {
+  destination_chain_id: Int
+  source_chain_id: Int
+}
+
+"""aggregate var_pop on columns"""
+type v0_channels_var_pop_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
+}
+
+"""aggregate var_samp on columns"""
+type v0_channels_var_samp_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
+}
+
+"""aggregate variance on columns"""
+type v0_channels_variance_fields {
+  destination_chain_id: Float
+  source_chain_id: Float
 }
 
 """
@@ -976,7 +1315,32 @@ type v0_rpcs {
   chain: v0_chains!
   chain_id: Int!
   description: String
+  type: String!
   url: String!
+}
+
+"""
+order by aggregate values of table "v0.rpcs"
+"""
+input v0_rpcs_aggregate_order_by {
+  avg: v0_rpcs_avg_order_by
+  count: order_by
+  max: v0_rpcs_max_order_by
+  min: v0_rpcs_min_order_by
+  stddev: v0_rpcs_stddev_order_by
+  stddev_pop: v0_rpcs_stddev_pop_order_by
+  stddev_samp: v0_rpcs_stddev_samp_order_by
+  sum: v0_rpcs_sum_order_by
+  var_pop: v0_rpcs_var_pop_order_by
+  var_samp: v0_rpcs_var_samp_order_by
+  variance: v0_rpcs_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_avg_order_by {
+  chain_id: order_by
 }
 
 """
@@ -989,7 +1353,28 @@ input v0_rpcs_bool_exp {
   chain: v0_chains_bool_exp
   chain_id: Int_comparison_exp
   description: String_comparison_exp
+  type: String_comparison_exp
   url: String_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_max_order_by {
+  chain_id: order_by
+  description: order_by
+  type: order_by
+  url: order_by
+}
+
+"""
+order by min() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_min_order_by {
+  chain_id: order_by
+  description: order_by
+  type: order_by
+  url: order_by
 }
 
 """Ordering options when selecting data from "v0.rpcs"."""
@@ -997,6 +1382,7 @@ input v0_rpcs_order_by {
   chain: v0_chains_order_by
   chain_id: order_by
   description: order_by
+  type: order_by
   url: order_by
 }
 
@@ -1011,7 +1397,31 @@ enum v0_rpcs_select_column {
   description
 
   """column name"""
+  type
+
+  """column name"""
   url
+}
+
+"""
+order by stddev() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_stddev_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_stddev_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_stddev_samp_order_by {
+  chain_id: order_by
 }
 
 """
@@ -1029,5 +1439,34 @@ input v0_rpcs_stream_cursor_input {
 input v0_rpcs_stream_cursor_value_input {
   chain_id: Int
   description: String
+  type: String
   url: String
+}
+
+"""
+order by sum() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_sum_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_var_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_var_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+order by variance() on columns of table "v0.rpcs"
+"""
+input v0_rpcs_variance_order_by {
+  chain_id: order_by
 }
