@@ -1,41 +1,43 @@
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card/index.ts"
-  import { derived, type Readable } from 'svelte/store';
-  import { rawToBech32, rawToHex } from '$lib/utilities/address';
+import * as Card from "$lib/components/ui/card/index.ts"
+import { derived, type Readable } from "svelte/store"
+import { rawToBech32, rawToHex } from "$lib/utilities/address"
 
-  import { cosmosBalancesQuery, evmBalancesQuery } from '$lib/queries/balance'
-  import { chainsQuery } from '$lib/queries/chains'
-  import { sepoliaStore } from "$lib/wallet/evm/config.ts"
-  import { cosmosStore } from "$lib/wallet/cosmos"
-  import { truncate } from '$lib/utilities/format'; 
+import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
+import { chainsQuery } from "$lib/queries/chains"
+import { sepoliaStore } from "$lib/wallet/evm/config.ts"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { truncate } from "$lib/utilities/format"
 
-  let evmBalances: null | ReturnType<typeof evmBalancesQuery>;
-  $: if($sepoliaStore.address) evmBalances = evmBalancesQuery({
-      chainId: '11155111',
-      address: $sepoliaStore.address,
-      tokenSpecification: 'erc20',
+let evmBalances: null | ReturnType<typeof evmBalancesQuery>
+$: if ($sepoliaStore.address)
+  evmBalances = evmBalancesQuery({
+    chainId: "11155111",
+    address: $sepoliaStore.address,
+    tokenSpecification: "erc20"
   })
 
-
-  let chains = chainsQuery();
-  let cosmosBalances: null | ReturnType<typeof cosmosBalancesQuery>;
-  let cosmosChains = derived(chains, ($chains) =>  {
-    if (!$chains?.isSuccess) {
-      return null
-    }
-    return $chains.data.v0_chains.filter((c: typeof $chains.data.v0_chains[number]) => c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id)
-  });
-
-  $: if ($cosmosChains && $cosmosStore.rawAddress?.length && $cosmosStore.rawAddress?.length > 0) {
-    console.log($cosmosChains);
-    cosmosBalances = cosmosBalancesQuery({
-      // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
-      //@ts-ignore
-      chains: $cosmosChains,
-      address: $cosmosStore.rawAddress
-    })
+let chains = chainsQuery()
+let cosmosBalances: null | ReturnType<typeof cosmosBalancesQuery>
+let cosmosChains = derived(chains, $chains => {
+  if (!$chains?.isSuccess) {
+    return null
   }
+  return $chains.data.v0_chains.filter(
+    (c: (typeof $chains.data.v0_chains)[number]) =>
+      c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id
+  )
+})
 
+$: if ($cosmosChains && $cosmosStore.rawAddress?.length && $cosmosStore.rawAddress?.length > 0) {
+  console.log($cosmosChains)
+  cosmosBalances = cosmosBalancesQuery({
+    // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
+    //@ts-ignore
+    chains: $cosmosChains,
+    address: $cosmosStore.rawAddress
+  })
+}
 </script>
 
 <main class="flex flex-col items-center w-full p-4 mt-16 gap-6">

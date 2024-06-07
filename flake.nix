@@ -196,6 +196,7 @@
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
+        ./devShell.nix
         ./uniond/uniond.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
@@ -476,66 +477,6 @@
               '';
             });
           };
-
-          devShells.default = pkgs.mkShell {
-            name = "union-devShell";
-            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
-              cargo-fuzz
-              cargo-llvm-cov
-              bacon
-              cargo-nextest
-              jq
-              go-ethereum
-              marksman
-              nil
-              nixfmt
-              nix-tree
-              openssl
-              pkg-config
-              protobuf
-              httpie
-              self'.packages.tdc
-              self'.packages.voy-send-msg
-              yq
-            ]) ++ (with unstablePkgs; [
-              bun # for running TypeScript files on the fly
-              postgresql
-              emmet-language-server
-              nodePackages.graphqurl
-              nodePackages_latest.nodejs
-              nodePackages_latest.svelte-language-server
-              nodePackages_latest."@astrojs/language-server"
-              nodePackages_latest."@tailwindcss/language-server"
-              nodePackages_latest.typescript-language-server
-              nodePackages_latest.vscode-langservers-extracted
-            ])
-              ++ (with goPkgs; [
-              go
-              gopls
-              go-tools
-              gotools
-            ]) ++ (if pkgs.stdenv.isLinux then [
-              pkgs.solc
-              pkgs.foundry-bin
-              goPkgs.sqlx-cli
-              self'.packages.hasura-cli
-            ] else [ ]);
-            nativeBuildInputs = [ config.treefmt.build.wrapper ]
-              ++ lib.attrsets.attrValues config.treefmt.build.programs;
-
-            GOPRIVATE = "github.com/unionlabs/*";
-            PUPPETEER_SKIP_DOWNLOAD = 1; # avoid npm install downloading chromium
-            NODE_OPTIONS = "--no-warnings"; # avoid useless warnings from nodejs
-            ASTRO_TELEMETRY_DISABLED = 1;
-
-            ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
-            ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
-
-            RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
-
-            SQLX_OFFLINE = true;
-          };
-
           treefmt = {
             package = pkgs.treefmt;
             projectRootFile = "flake.nix";
