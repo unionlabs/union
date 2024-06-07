@@ -74,18 +74,13 @@ impl Config {
                 .get_inner_logged();
 
             let current = sqlx::query!(
-                r#"SELECT height 
-            FROM "v0"."logs" 
-            WHERE chain_id = $1 
-            ORDER BY height DESC 
-            NULLS LAST 
-            LIMIT 1"#,
+                r#"SELECT MAX(height) height FROM "v0"."logs" WHERE chain_id = $1"#,
                 chain_id.db
             )
             .fetch_optional(&pool)
             .await?
             .map(|block| {
-                if block.height == 0 {
+                if block.height.unwrap_or(0) == 0 {
                     info!(
                         self.start_height,
                         "no block found, starting at configured start height, or 0 if not defined"
@@ -96,7 +91,7 @@ impl Config {
                         self.start_height,
                         block.height, "block found, starting max(start_height, block_height + 1)"
                     );
-                    (block.height + 1).max(self.start_height.unwrap_or_default())
+                    (block.height.unwrap_or(0) + 1).max(self.start_height.unwrap_or_default())
                 }
             })
             .unwrap_or(self.start_height.unwrap_or_default()) as u64;
