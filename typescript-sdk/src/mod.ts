@@ -1,3 +1,4 @@
+import "./patch.ts"
 import {
   erc20Abi,
   type Hash,
@@ -48,7 +49,7 @@ export interface IUnionClient {
   }): Promise<Hash>
   transferEvmAsset(parameters: {
     receiver: string
-    denomAddress: Address
+    denomAddress?: Address
     sourceChannel: string
     amount: bigint
     account: Account
@@ -265,7 +266,7 @@ export class UnionClient implements IUnionClient {
   public async cosmwasmMessageExecuteContract(
     instructions: Array<ExecuteInstruction>
   ): Promise<ExecuteResult> {
-    const { address: signerAddress, algo, pubkey } = await this.getCosmosSdkAccount()
+    const { address: signerAddress } = await this.getCosmosSdkAccount()
     const cosmwasmClient = await this.signingCosmWasmClient()
     const response = await cosmwasmClient.executeMultiple(signerAddress, instructions, "auto")
     return response
@@ -292,6 +293,11 @@ export class UnionClient implements IUnionClient {
     )
   }
 
+  async #getCurrentHeight() {
+    const client = await this.stargateClient()
+    return client.getHeight()
+  }
+
   public async approveEvmAssetTransfer({
     account,
     denomAddress,
@@ -314,6 +320,20 @@ export class UnionClient implements IUnionClient {
     })
   }
 
+  public async getEvmDenomAddress({
+    relayContractAddress = UnionClient.#UCS01_ADDRESS,
+    sourceChannel = "channel-13"
+  }: { relayContractAddress?: Address; sourceChannel: string }) {
+    const signer = this.#evmSigner?.extend(publicActions) ?? raise("EVM signer not found")
+
+    return await signer.readContract({
+      abi: ucs01RelayAbi,
+      address: UnionClient.#UCS01_ADDRESS,
+      functionName: "getDenomAddress",
+      args: [sourceChannel, `${relayContractAddress}/${sourceChannel}/muno`]
+    })
+  }
+
   /**
    * TODO: Add description
    */
@@ -321,9 +341,9 @@ export class UnionClient implements IUnionClient {
     account,
     receiver,
     denomAddress,
-    sourceChannel,
+    sourceChannel = "channel-13",
     amount,
-    relayContractAddress,
+    relayContractAddress = UnionClient.#UCS01_ADDRESS,
     simulate = true,
     waitForReceipt = false
   }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<{
@@ -331,6 +351,8 @@ export class UnionClient implements IUnionClient {
     receipt?: TransactionReceipt
   }> {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
+    const currentUnionHeight = await this.#getCurrentHeight()
+    const evmDenomAddress = await this.getEvmDenomAddress({ sourceChannel, relayContractAddress })
     const writeContractParameters = {
       account: (account || signer.account) ?? raise("EVM account not found"),
       abi: ucs01RelayAbi,
@@ -350,11 +372,12 @@ export class UnionClient implements IUnionClient {
       args: [
         sourceChannel,
         bech32AddressToHex({ address: receiver }),
-        [{ denom: denomAddress, amount }],
-        { revision_number: 9n, revision_height: 9999999999n },
+        [{ denom: evmDenomAddress, amount }],
+        { revision_number: 9n, revision_height: BigInt(currentUnionHeight) + 100n },
         0n
       ]
     } as const
+    // console.info(JSON.stringify({ writeContractParameters }, undefined, 2))
     if (!simulate) {
       const hash = await signer.writeContract(writeContractParameters)
       if (!waitForReceipt) return { hash }
