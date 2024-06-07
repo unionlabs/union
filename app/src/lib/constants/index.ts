@@ -40,5 +40,5 @@ export const CHAIN = {
 } satisfies Record<Chain, { ID: string; NAME: string }>
 
 export const CHAIN_URLS = {
-    [CHAIN.UNION.ID]: URLS.UNION
+  [CHAIN.UNION.ID]: URLS.UNION
 }

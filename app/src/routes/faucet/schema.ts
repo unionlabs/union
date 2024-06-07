@@ -10,5 +10,3 @@ export type FaucetSchema = typeof faucetFormSchema
 export type FaucetForm = InferOutput<typeof faucetFormSchema>
 
 export type Message = { status: "error" | "success" | "warning"; text: string }
-
-

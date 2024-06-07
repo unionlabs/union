@@ -1,16 +1,16 @@
 import * as v from "valibot"
 import { KEY } from "$lib/constants/keys.ts"
-import { CHAIN_URLS } from "$lib/constants";
+import { CHAIN_URLS } from "$lib/constants"
 import type { Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQueries, createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
-import { isValidCosmosAddress } from "$lib/wallet/utilities/validate";
-import { raise } from "$lib/utilities/index.ts";
-import { rawToBech32 } from "$lib/utilities/address.ts";
-import type { chainsQuery } from "./chains.ts";
-import type { chainsQueryDocument } from "$lib/graphql/documents/chains.ts";
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate"
+import { raise } from "$lib/utilities/index.ts"
+import { rawToBech32 } from "$lib/utilities/address.ts"
+import type { chainsQuery } from "./chains.ts"
+import type { chainsQueryDocument } from "$lib/graphql/documents/chains.ts"
 
 /**
  * TODO:
@@ -80,10 +80,9 @@ export function evmBalancesQuery({
             ? restParams.tokenSpecification // if tokenSpecification is a string, use it
             : "DEFAULT_TOKENS"
 
+      let json: undefined | unknown
 
-      let json: undefined | unknown;
-      
-      try { 
+      try {
         const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`, {
           method: "POST",
           body: JSON.stringify({
@@ -92,18 +91,18 @@ export function evmBalancesQuery({
             method: "alchemy_getTokenBalances",
             params: [address, assetsToCheck]
           })
-        }); 
-        if (!response.ok) raise("error fetching from alchemy: non-200 status");
-        json = await response.json();
-      } catch(err) {
+        })
+        if (!response.ok) raise("error fetching from alchemy: non-200 status")
+        json = await response.json()
+      } catch (err) {
         if (err instanceof Error) {
-          raise(`error fetching from alchemy: ${err.message}`);
+          raise(`error fetching from alchemy: ${err.message}`)
         }
-        raise(`unknown error while fetching from alchemy: ${JSON.stringify(err)}`);
+        raise(`unknown error while fetching from alchemy: ${JSON.stringify(err)}`)
       }
       const result = v.safeParse(evmBalancesResponseSchema, json)
 
-      if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
+      if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
 
       const tokensInfo = await getEvmTokensInfo(
         result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)
@@ -117,61 +116,67 @@ export function evmBalancesQuery({
 }
 
 const cosmosBalancesResponseSchema = v.object({
-  balances: v.array(v.object({
-    denom: v.string(),
-    amount: v.string()
-  }))
-});
+  balances: v.array(
+    v.object({
+      denom: v.string(),
+      amount: v.string()
+    })
+  )
+})
 
 export function cosmosBalancesQuery({
   address,
   chains
 }: {
-  address: Uint8Array,
-  chains: Array<{chain_id: string, addr_prefix: string, rpcs: Array<{url:string, type: string}>}>
+  address: Uint8Array
+  chains: Array<{
+    chain_id: string
+    addr_prefix: string
+    rpcs: Array<{ url: string; type: string }>
+  }>
 }) {
-    return createQueries({
-      queries: chains.map((chain) => {
-        const bech32_addr = rawToBech32(chain.addr_prefix, address);
+  return createQueries({
+    queries: chains.map(chain => {
+      const bech32_addr = rawToBech32(chain.addr_prefix, address)
 
-        return {
-          queryKey: ["balances", chain.chain_id, bech32_addr],
-          enabled: true,
-          refetchInterval: 2_000,
-          refetchOnWindowFocus: false,
-          queryFn: async () => {
+      return {
+        queryKey: ["balances", chain.chain_id, bech32_addr],
+        enabled: true,
+        refetchInterval: 2_000,
+        refetchOnWindowFocus: false,
+        queryFn: async () => {
+          let json: undefined | unknown
+          const rest_rpcs = chain.rpcs.filter(rpc => rpc.type === "rest")
+          if (rest_rpcs.length === 0) raise(`no rest rpc available for chain ${chain.chain_id}`)
 
-            let json: undefined | unknown;
-            const rest_rpcs = chain.rpcs.filter(rpc => rpc.type === 'rest');
-            if (rest_rpcs.length === 0) raise(`no rest rpc available for chain ${chain.chain_id}`);
+          const restUrl = rest_rpcs[0].url
 
-            const restUrl = rest_rpcs[0].url;
+          try {
+            const response = await fetch(
+              `https://${restUrl}/cosmos/bank/v1beta1/balances/${bech32_addr}`
+            )
 
-            try {
-              const response = await fetch(`https://${restUrl}/cosmos/bank/v1beta1/balances/${bech32_addr}`);
+            if (!response.ok) return new Error("invalid response")
 
-              if (!response.ok) return new Error("invalid response");
-
-              json = await response.json()
-            } catch(err) {
-              if (err instanceof Error) {
-                raise(`error fetching balances from /cosmos/bank: ${err.message}`);
-              }
-              raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`);
-            } 
-
-            const result = v.safeParse(cosmosBalancesResponseSchema, json);
-
-            if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`);
-            return result.output.balances.map((x) => ({
-              address: x.denom,
-              symbol: x.denom,
-              balance: x.amount,
-              decimals: 0
-            }));
+            json = await response.json()
+          } catch (err) {
+            if (err instanceof Error) {
+              raise(`error fetching balances from /cosmos/bank: ${err.message}`)
+            }
+            raise(`unknown error while fetching from /cosmos/bank: ${JSON.stringify(err)}`)
           }
-        };
 
-      })
-    }); 
-  }
+          const result = v.safeParse(cosmosBalancesResponseSchema, json)
+
+          if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
+          return result.output.balances.map(x => ({
+            address: x.denom,
+            symbol: x.denom,
+            balance: x.amount,
+            decimals: 0
+          }))
+        }
+      }
+    })
+  })
+}

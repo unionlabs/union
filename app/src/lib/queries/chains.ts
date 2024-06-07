@@ -1,5 +1,5 @@
 import { createQuery } from "@tanstack/svelte-query"
-import { chainsQueryDocument } from '$lib/graphql/documents/chains'
+import { chainsQueryDocument } from "$lib/graphql/documents/chains"
 
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
@@ -12,4 +12,3 @@ export const chainsQuery = () =>
     refetchInterval: 6_000,
     refetchOnWindowFocus: false
   })
-
