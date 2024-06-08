@@ -1,7 +1,7 @@
 import { expect, it, describe } from "vitest"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { unionToEvmAddress, evmToCosmosAddress, hexStringToUint8Array } from "#/convert.ts"
+import { bech32AddressToHex, hexAddressToBech32, hexStringToUint8Array } from "#convert.ts"
 
 const PRIVATE_KEY = "1bdd5c2105f62c51d72c90d9e5ca6854a94337bcbcbb0b959846b85813d69380"
 
@@ -19,12 +19,12 @@ const { address: unionAddress, pubkey: unionPublicKey } = unionAccount
 
 describe("union to evm address converter", () => {
   it("should convert union address to evm address", () => {
-    expect(unionToEvmAddress(unionAddress)).toEqual(evmAddress)
+    expect(bech32AddressToHex({ address: unionAddress })).toEqual(evmAddress)
   })
 })
 
 describe("evm to cosmos address converter", () => {
   it("should convert evm address to cosmos address", () => {
-    expect(evmToCosmosAddress(evmAddress)).toEqual(unionAddress)
+    expect(hexAddressToBech32({ address: evmAddress, bech32Prefix: "union" })).toEqual(unionAddress)
   })
 })

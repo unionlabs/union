@@ -14,8 +14,3 @@ export const CHAIN_MAP: Record<
   9: { name: "scroll", chainId: "534351", ecosystem: "evm" },
   10: { name: "arbitrum", chainId: "421614", ecosystem: "evm" }
 }
-
-type Let = any
-type Const = any
-
-export let VAR = "let" as Const satisfies Let

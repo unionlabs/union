@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 
 /* `bun scripts/from-osmosis.ts --private-key "..."` */
 
@@ -21,14 +21,14 @@ const unionClient = await UnionClient.connectWithSecret({
   rpcUrl: "https://rpc.testnet.bonlulu.uno"
 })
 
-const account = await unionClient.getAccount()
+const account = await unionClient.getCosmosSdkAccount()
 const cwClient = await unionClient.signingCosmWasmClient()
 const sendUnoToUnionAddress = await cwClient.sendTokens(
   account.address,
   "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
   [{ denom: "muno", amount: "100" }],
   "auto",
-  "pepepopo"
+  "memo"
 )
 
 console.log(sendUnoToUnionAddress)

@@ -4,18 +4,16 @@ import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
+import type { LooseAutocomplete } from "$lib/utilities/types.ts"
+import type { Writable } from "svelte/store"
 
 export let kind: "from" | "to"
 export let dialogOpen = false
-export let chainSearchResults: Array<{ name: string; id: string; icon: string; live: boolean }>
-export let handleChainSearch: (event: InputEvent) => void
-export let handleChainSelect: (name: string, target: "fromChain" | "toChain") => void
-export let queryParams: any
+export let onChainSelect: (newSelectedChain: string) => void
+export let chains: Array<{ chain_id: string }>
+export let selectedChain: string
 
-$: {
-  if (dialogOpen) document.body.style.overflow = "hidden"
-  else document.body.style.overflow = "auto"
-}
+$: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 </script>
 
 <Dialog.Root
@@ -36,6 +34,7 @@ $: {
       </Dialog.Title>
     </Dialog.Header>
     <Dialog.Description class="size-full">
+      <!--
       <div class="relative mr-auto flex-1 w-full">
         <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
         <Input
@@ -49,28 +48,26 @@ $: {
           class="w-full bg-current/95 pl-8 self-stretch lowercase focus-visible:ring-0 rounded-none focus-visible:outline-none border-x-0"
         />
       </div>
+      !-->
       <ul class="my-3 space-y-1 px-2">
-        {#each chainSearchResults as { name, id: chainId, icon, live }, index}
+        {#each chains as chain, index}
           <li
             class={cn(
-              live ? 'cursor-pointer' : 'cursor-not-allowed',
               'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
             )}
           >
             <Button
-              disabled={!live}
-              variant={queryParams.from === name.toLowerCase() ? 'secondary' : 'ghost'}
-              on:click={() => handleChainSelect(chainId, kind === 'from' ? 'fromChain' : 'toChain')}
+              variant={selectedChain === chain.chain_id ? 'secondary' : 'ghost'}
+              on:click={() => {onChainSelect(chain.chain_id); dialogOpen = false}}
               class={cn('w-full flex justify-start space-x-4 p-2 pl-3 h-[55px] my-auto rounded-sm')}
             >
-              <img src={icon} alt={`${name} logo`} class="size-10 my-auto mr-auto" />
               <div class="size-full mr-auto flex flex-col items-start">
                 <span
                   class="my-auto text-[22px] font-extrabold mr-auto w-full text-left justify-between"
                 >
                   {name}
                 </span>
-                <span class="text-xs text-muted-foreground">{chainId}</span>
+                <span class="text-xs text-muted-foreground">{chain.chain_id}</span>
               </div>
             </Button>
           </li>

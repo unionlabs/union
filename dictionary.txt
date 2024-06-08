@@ -460,6 +460,7 @@ fastnode
 feegrant
 feegrantkeeper
 feegrantmodule
+feegrants
 fetchurl
 fetchzip
 fields

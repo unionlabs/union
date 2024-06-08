@@ -1,7 +1,7 @@
 import { graphql } from "gql.tada"
 
 export const cosmosTransfersQuery = graphql(/* GraphQL */ `
-  query CosmosUnionTransfersQuery($address: String!, $limit: Int!) {
+  query CosmosUnionTransfersQuery($address: String!, $limit: Int!) @cached(ttl: 1) {
     data: v0_cosmos_transfer(
       limit:  $limit,
       order_by: { height: desc },

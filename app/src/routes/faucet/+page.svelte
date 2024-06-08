@@ -1,10 +1,11 @@
 <script lang="ts">
-import toast from "svelte-french-toast"
+import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { debounce } from "$lib/utilities/index.ts"
 import LockLockedIcon from "virtual:icons/lucide/lock"
 import { valibot } from "sveltekit-superforms/adapters"
 import * as Form from "$lib/components/ui/form/index.ts"
+import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { superForm, defaults } from "sveltekit-superforms"
@@ -18,7 +19,6 @@ import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
 import { Separator } from "$lib/components/ui/separator/index.ts"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-import * as Card from "$lib/components/ui/card/index.ts"
 
 const debounceDelay = 3_500
 let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
@@ -27,7 +27,7 @@ $: {
   if (submissionStatus === "submitting") {
     toast.loading("Submitting faucet request 🚰", {
       duration: debounceDelay - 300,
-      className: "text-sm p-2.5"
+      class: "text-sm p-2.5"
     })
   }
 }
@@ -62,12 +62,12 @@ const superFormResults = superForm(
       debounce(() => {
         if (!event.form.valid) {
           $errors.address = event.form.errors.address
-          return toast.error("No good", { className: "font-mono text-lg" })
+          return toast.error("No good", { class: "font-mono text-lg" })
         }
 
         toast.success("Faucet request submitted 🤌 Check wallet for $U in a few moments", {
           duration: 5_000,
-          className: "text-sm p-2.5"
+          class: "text-sm p-2.5"
         })
       }, debounceDelay)(),
     delayMs: 7_500,
