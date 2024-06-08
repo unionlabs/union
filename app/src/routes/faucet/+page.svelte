@@ -103,7 +103,7 @@ const debouncedSubmit = debounce(() => {
   submissionStatus = "submitted"
 }, debounceDelay)
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
   submissionStatus = "submitting"
   debouncedSubmit()
 }
