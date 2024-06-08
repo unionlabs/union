@@ -29,8 +29,9 @@ import RecipientField from "./(components)/recipient-field.svelte"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import CardSectionHeading from "./(components)/card-section-heading.svelte"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
-    import { derived } from "svelte/store";
-    import { chainsQuery } from "$lib/queries/chains.ts";
+import { derived } from "svelte/store";
+import { chainsQuery } from "$lib/queries/chains.ts";
+    import AlphaNotice from "$lib/components/alpha-notice.svelte";
 
 export let data: PageData
 
@@ -137,10 +138,10 @@ let [chainSearch, chainSearchResults] = ["", chains]
 //   )
 // }
 
-// let selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
-// $: selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
+// queryParams["from-chain-id"]
+// $: selectedFromChkain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
 
-// let selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
+// queryParams["to-chain-id"]
 // $: selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
 
 
@@ -165,15 +166,17 @@ $: sepoliaAssets = $evmBalances?.data ?? []
 // }
 
 const handleChainSelect = (name: string, target: "from-chain-id" | "to-chain-id") =>
-  debounce(() => {
+  {
+    console.log('chain name', name);
     $queryParams[target] = name
+
     ;[dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
       false,
       false,
       false,
       false
     ]
-  }, 200)()
+  }
 
 function handleAssetSelect(id: string) {
   // $queryParams["asset-id"] = assetSearchResults.find(asset => asset.symbol === id)?.address ?? ""
@@ -214,6 +217,7 @@ let buttonText = "Transfer" satisfies
   <title>Union | Send</title>
 </svelte:head>
 
+{#if $chains && $chains.isSuccess }
 <main
   class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
 >
@@ -242,9 +246,7 @@ let buttonText = "Transfer" satisfies
     <Card.Content>
       <div data-transfer-from-section>
         <CardSectionHeading>From</CardSectionHeading>
-        <!--
-        <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain} />
-        !-->
+        <ChainButton bind:selectedChainId={$queryParams["from-chain-id"]} bind:dialogOpen={dialogOpenFromChain} />
 
         <div class="flex flex-col items-center pt-4">
           <Button size="icon" variant="outline" on:click={swapChainsClick}>
@@ -253,9 +255,7 @@ let buttonText = "Transfer" satisfies
         </div>
 
         <CardSectionHeading>To</CardSectionHeading>
-        <!--
-        <ChainButton bind:selectedChain={selectedToChain} bind:dialogOpen={dialogOpenToChain} />
-        !-->
+        <ChainButton bind:selectedChainId={$queryParams["to-chain-id"]} bind:dialogOpen={dialogOpenToChain} />
       </div>
       <!-- asset -->
       <CardSectionHeading>Asset</CardSectionHeading>
@@ -367,28 +367,22 @@ let buttonText = "Transfer" satisfies
 !-->
 
 <!-- from-dialog -->
-<!-- 
 <ChainDialog
   kind="from"
-  {handleChainSearch}
-  {handleChainSelect}
-  {chainSearchResults}
-  queryParams={$queryParams}
+  chains={$chains.data}
+  selectedChain={$queryParams["from-chain-id"]}
+  onChainSelect={(newSelectedChain) => {$queryParams["from-chain-id"] = newSelectedChain}}
   bind:dialogOpen={dialogOpenFromChain}
 />
-!-->
 
 <!-- to-dialog -->
-<!-- 
 <ChainDialog
   kind="to"
-  {handleChainSearch}
-  {handleChainSelect}
-  {chainSearchResults}
-  queryParams={$queryParams}
+  chains={$chains.data}
+  selectedChain={$queryParams["to-chain-id"]}
+  onChainSelect={(newSelectedChain) => {$queryParams["to-chain-id"] = newSelectedChain}}
   bind:dialogOpen={dialogOpenToChain}
 />
-!-->
 
 <!-- token dialog -->
 <!-- 
@@ -399,3 +393,4 @@ let buttonText = "Transfer" satisfies
   bind:dialogOpen={dialogOpenToken}
 />
 !-->
+{/if}
