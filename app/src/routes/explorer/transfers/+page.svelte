@@ -12,7 +12,7 @@
 
   let transfers = createQuery ({
     queryKey: ["transfers"],
-    refetchInterval: 2_000,
+    refetchInterval: 1_000,
     queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
   })
 
