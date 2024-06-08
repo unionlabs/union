@@ -43,7 +43,7 @@ const unionToSepoliaTransactions: Array<ExecuteInstruction> = Array.from(
     contractAddress,
     msg: {
       transfer: {
-        channel: "channel-23",
+        channel: "channel-28",
         receiver: evmAccount.address.slice(2),
         memo: `${index} - ${stamp} Sending UNO from Union to ${evmAccount.address} on Sepolia`
       }
