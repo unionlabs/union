@@ -42,7 +42,7 @@ $: if (
   })
 }
 
-$: if($cosmosStore.connectionStatus === 'disconnected') cosmosBalances = null
+$: if ($cosmosStore.connectionStatus === "disconnected") cosmosBalances = null
 
 </script>
 
