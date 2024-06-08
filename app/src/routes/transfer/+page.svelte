@@ -203,7 +203,7 @@ let buttonText = "Transfer" satisfies
 
 {#if $chains && $chains.isSuccess && $evmBalances && $evmBalances.isSuccess && $cosmosBalances && !($cosmosBalances instanceof Error)}
 <main
-  class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
+  class="overflow-scroll flex flex-col gap-4 items-center size-full px-0 sm:px-3 max-h-full sm:py-8"
 >
   <Card.Root class={cn('max-w-[490px] w-full')}>
     <Card.Header class="flex flex-row w-full items-center gap-x-2">
@@ -316,7 +316,7 @@ let buttonText = "Transfer" satisfies
                   msg: {
                     transfer: {
                       channel: 'channel-0',
-                      receiver: recipient.slice(2),
+                      receiver: $recipient,
                       memo: ``,
                     },
                   },
@@ -332,6 +332,9 @@ let buttonText = "Transfer" satisfies
       </Button>
     </Card.Footer>
   </Card.Root>
+  <div class="text-muted-foreground">
+    Will transfer <b>{amount} {truncate($asset, 6)}</b> from <b>{$fromChain?.display_name}</b> to <b>{truncate($recipient, 6)}</b> on <b>{$toChain?.display_name}</b>. 
+  </div>
 </main>
 
 
