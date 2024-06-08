@@ -30,6 +30,7 @@ import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { chainsQuery } from "$lib/queries/chains.ts"
 import { truncate } from "$lib/utilities/format.ts"
+import { rawToBech32 } from "$lib/utilities/address.ts"
 
 export let data: PageData
 
@@ -69,10 +70,42 @@ $: if (
 // CURRENT FORM STATE
 let fromChainId = writable("union-testnet-8")
 let toChainId = writable("11155111")
-let recipient = writable("")
 let asset = writable("")
 
 let unionClient: UnionClient
+
+let toChain = derived([chains, toChainId], ([$chains, $toChainId]) => {
+  if (!$chains.isSuccess) {
+    return null
+  }
+  return $chains.data.find(chain => chain.chain_id === $toChainId) ?? null
+})
+
+let fromChain = derived([chains, fromChainId], ([$chains, $fromChainId]) => {
+  if (!$chains.isSuccess) {
+    return null
+  }
+  return $chains.data.find(chain => chain.chain_id === $fromChainId) ?? null
+})
+
+let recipient = derived(
+  [toChain, sepoliaStore, cosmosStore],
+  ([$toChain, $sepoliaStore, $cosmosStore]) => {
+    if (!$toChain) {
+      return null
+    }
+
+    if ($toChain.rpc_type === "evm") {
+      return $sepoliaStore.address
+    }
+
+    if ($toChain.rpc_type === "cosmos") {
+      return rawToBech32($toChain.addr_prefix, $cosmosStore.rawAddress)
+    }
+
+    return null
+  }
+)
 
 onMount(() => {
   fromChainId.subscribe(fromChain => {
@@ -173,52 +206,62 @@ let buttonText = "Transfer" satisfies
 
 {#if $chains && $chains.isSuccess && $evmBalances && $evmBalances.isSuccess && $cosmosBalances && !($cosmosBalances instanceof Error)}
 <main
-  class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
+  class="overflow-scroll flex flex-col gap-4 items-center size-full px-0 sm:px-3 max-h-full sm:py-8"
 >
   <Card.Root class={cn('max-w-[490px] w-full')}>
     <Card.Header class="flex flex-row w-full items-center gap-x-2">
       <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
     </Card.Header>
-    <Card.Content>
-      <div data-transfer-from-section>
+    <Card.Content class={cn("flex flex-col gap-4")}>
+      <section>
         <CardSectionHeading>From</CardSectionHeading>
-        <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain} />
+        <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain} >
+          {$fromChain?.display_name}
+        </ChainButton>
 
-        <div class="flex flex-col items-center pt-4">
+
+        <div class="flex flex-col items-center pt-4 -mb-6">
           <Button size="icon" variant="outline" on:click={swapChainsClick}>
             <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
           </Button>
         </div>
 
         <CardSectionHeading>To</CardSectionHeading>
-        <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain} />
-      </div>
-      <!-- asset -->
-      <CardSectionHeading>Asset</CardSectionHeading>
-      <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
-        <div class="flex-1 text-left">{truncate($asset, 12)}</div>
+        <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
+          {$toChain?.display_name}
+        </ChainButton>
+      </section>
+      <section>
+        <CardSectionHeading>Asset</CardSectionHeading>
+        <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
+          <div class="flex-1 text-left">{truncate($asset, 12)}</div>
 
-        <Chevron />
-      </Button>
-      {#if $asset !== "" && sendableBalances !== null && $sendableBalances !== null }
-        <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($asset, 12)}</b> balance on <b>{$fromChainId}</b> is <b>{$sendableBalances.find(b => b.symbol === $asset)?.balance}</b></div>
-      {/if}
+          <Chevron />
+        </Button>
+        {#if $asset !== "" && sendableBalances !== null && $sendableBalances !== null }
+          <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($asset, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is <b>{$sendableBalances.find(b => b.symbol === $asset)?.balance}</b></div>
+        {/if}
+      </section>
 
-      <CardSectionHeading>Amount</CardSectionHeading>
-      <Input
-        minlength={1}
-        maxlength={64}
-        placeholder="0.00"
-        autocorrect="off"
-        autocomplete="off"
-        spellcheck="false"
-        bind:value={amount}
-        autocapitalize="none"
-        pattern="^[0-9]*[.,]?[0-9]*$"
-      />
-      <CardSectionHeading>Recipient</CardSectionHeading>
+      <section>
+        <CardSectionHeading>Amount</CardSectionHeading>
+        <Input
+          minlength={1}
+          maxlength={64}
+          placeholder="0.00"
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          bind:value={amount}
+          autocapitalize="none"
+          pattern="^[0-9]*[.,]?[0-9]*$"
+        />
+      </section>
+      <section>
+        <CardSectionHeading>Recipient</CardSectionHeading>
+        <div class="text-muted-foreground font-mono">{$recipient}</div>
+      </section>
 
-      <!--<RecipientField recipient={$queryParams.recipient} />!-->
     </Card.Content>
     <Card.Footer>
       <Button
@@ -228,6 +271,10 @@ let buttonText = "Transfer" satisfies
           event.preventDefault()
           const assetId = $asset
           if (!assetId) return toast.error('Please select an asset')
+          if (!$fromChainId) return toast.error('Please select a from chain')
+          if (!$toChainId) return toast.error('Please select a to chain')
+          if (!amount) return toast.error('Please select an amount')
+
           toast.info(
             `Sending transaction from ${$fromChainId} to ${$fromChainId}`,
           )
@@ -268,11 +315,11 @@ let buttonText = "Transfer" satisfies
               instructions: [
                 {
                   contractAddress:
-                    'union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7',
+                    'union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3',
                   msg: {
                     transfer: {
-                      channel: 'channel-0',
-                      receiver: recipient.slice(2),
+                      channel: 'channel-28',
+                      receiver: $recipient?.slice(2),
                       memo: ``,
                     },
                   },
@@ -288,6 +335,9 @@ let buttonText = "Transfer" satisfies
       </Button>
     </Card.Footer>
   </Card.Root>
+  <div class="text-muted-foreground">
+    Will transfer <b>{amount} {truncate($asset, 6)}</b> from <b>{$fromChain?.display_name}</b> to <span class="font-bold font-mono">{truncate($recipient, 6)}</span> on <b>{$toChain?.display_name}</b>. 
+  </div>
 </main>
 
 
