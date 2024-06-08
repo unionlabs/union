@@ -29,7 +29,7 @@ import CardSectionHeading from "./(components)/card-section-heading.svelte"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { chainsQuery } from "$lib/queries/chains.ts"
-import { truncate } from "$lib/utilities/format.ts";
+import { truncate } from "$lib/utilities/format.ts"
 
 export let data: PageData
 
@@ -66,23 +66,18 @@ $: if (
   })
 }
 
-
 // CURRENT FORM STATE
-let fromChainId = writable("union-testnet-8");
-let toChainId = writable("11155111");
-let recipient = writable("");
-let asset = writable("");
+let fromChainId = writable("union-testnet-8")
+let toChainId = writable("11155111")
+let recipient = writable("")
+let asset = writable("")
 
 let unionClient: UnionClient
 
-
 onMount(() => {
-
-
-  fromChainId.subscribe((fromChain) => {
-    asset.set("");
-  });
-
+  fromChainId.subscribe(fromChain => {
+    asset.set("")
+  })
 
   const cosmosOfflineSigner = (
     $cosmosStore.connectedWallet === "keplr"
@@ -111,13 +106,12 @@ onMount(() => {
     // rpcUrl: 'https://rpc.testnet.bonlulu.uno',
     rpcUrl: "https://union-testnet-rpc.polkachu.com"
   })
-
 })
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
 let dialogOpenFromChain = false
-   
+
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 
 let amount = ""
@@ -126,36 +120,43 @@ $: {
   amount = amount.replaceAll(amountRegex, "")
 }
 
+let sendableBalances: null | Readable<
+  Array<{ balance: bigint; address: string; symbol: string; decimals: number }>
+> = null
 
-let sendableBalances: null | Readable<Array<{balance: bigint, address: string, symbol: string, decimals: number}>> = null;
+$: if (
+  evmBalances &&
+  cosmosBalances &&
+  evmBalances !== null &&
+  cosmosBalances !== null &&
+  $cosmosChains !== null
+) {
+  sendableBalances = derived(
+    [fromChainId, evmBalances, cosmosBalances],
+    ([$fromChainId, $evmBalances, $cosmosBalances]) => {
+      if ($fromChainId === "11155111") {
+        if (!$evmBalances.isSuccess) {
+          console.error("trying to send from evm but no balances fetched yet")
+          return []
+        }
+        return $evmBalances.data
+      }
 
-
-$:  if (evmBalances && cosmosBalances && evmBalances !== null && cosmosBalances !== null && $cosmosChains !== null) {
- sendableBalances = derived([fromChainId, evmBalances, cosmosBalances], ([$fromChainId, $evmBalances, $cosmosBalances]) => {
-   if ($fromChainId === "11155111") {
-     if (!$evmBalances.isSuccess) {
-       console.error('trying to send from evm but no balances fetched yet');
-       return [];
-     }
-    return $evmBalances.data;
-   }
-
-   const chainIndex = $cosmosChains.findIndex(c => c.chain_id === $fromChainId);
-   const cosmosBalance = $cosmosBalances[chainIndex]
-   if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
-     console.error('trying to send from evm but no balances fetched yet');
-     return [];
-   }
-   return cosmosBalance.data.map((balance) => ({ ...balance, balance: BigInt(balance.balance)}))
- });
-
+      const chainIndex = $cosmosChains.findIndex(c => c.chain_id === $fromChainId)
+      const cosmosBalance = $cosmosBalances[chainIndex]
+      if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
+        console.error("trying to send from evm but no balances fetched yet")
+        return []
+      }
+      return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
+    }
+  )
 }
-
 
 function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$fromChainId, $toChainId]
-  toChainId.set(fromChain);
-  fromChainId.set(toChain);
+  toChainId.set(fromChain)
+  fromChainId.set(toChain)
 }
 
 let buttonText = "Transfer" satisfies
