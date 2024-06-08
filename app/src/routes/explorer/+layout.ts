@@ -24,6 +24,11 @@ export const load = (loadEvent => {
   return {
     tables: [
       {
+        route: "transfers",
+        icon: BlocksIcon,
+        description: "All UCS-01 transfers"
+      },
+      {
         route: "blocks",
         icon: BlocksIcon,
         description: "Blocks from all chains indexed by Hubble"

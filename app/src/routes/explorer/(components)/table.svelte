@@ -9,7 +9,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
-import { writable, type Writable } from "svelte/store"
+import { writable, type Readable } from "svelte/store"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
@@ -18,7 +18,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 export let columns: Array<ColumnDef<any>>
 // https://github.com/TanStack/table/issues/4241
 // @ts-ignore
-export let dataStore: Writable<Array<any>>
+export let dataStore: Readable<Array<any>>
 
 const options = writable<TableOptions<any>>({
   data: $dataStore,
