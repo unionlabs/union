@@ -1,20 +1,16 @@
 <script lang="ts">
   import toast from "svelte-french-toast"
-  import { cn } from "$lib/utilities/shadcn.ts"
   import { debounce } from "$lib/utilities/index.ts"
   import LockLockedIcon from "virtual:icons/lucide/lock"
-  import * as Form from "$lib/components/ui/form/index.ts"
   import { Input } from "$lib/components/ui/input/index.ts"
   import LockOpenIcon from "virtual:icons/lucide/lock-open"
   import { Button } from "$lib/components/ui/button/index.ts"
   import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
   import LoadingIcon from "virtual:icons/lucide/loader-circle"
-  import * as flashModule from "sveltekit-flash-message/client"
   import { unionTransfersQuery } from "$lib/queries/transfers.ts"
   import ExternalLinkIcon from "virtual:icons/lucide/external-link"
-  import { faucetFormSchema, unionAddressRegex } from "./schema.ts"
+  import { unionAddressRegex } from "./schema.ts"
   import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-  import * as Card from "$lib/components/ui/card/index.ts"
   import { Label } from "$lib/components/ui/label";
   import { getUnoFromFaucet } from "$lib/mutations/faucet.ts";
   import { createMutation, createQuery } from "@tanstack/svelte-query";
@@ -43,12 +39,12 @@
   let opacity = 0
   let focused = false
   let input: HTMLInputElement
-  let position = {x: 0, y: 0}
+  let position = { x: 0, y: 0 }
 
   function handleMouseMove(event: MouseEvent) {
     if (!input || focused) return
     const rect = input.getBoundingClientRect()
-    position = {x: event.clientX - rect.left, y: event.clientY - rect.top}
+    position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
   }
 
   const handleFocus = () => ([focused, opacity] = [true, 1])
@@ -101,7 +97,7 @@
       );
 
       if (!response.ok) {
-        return {amount: "0.00", denom: "muno"}
+        return { amount: "0.00", denom: "muno" }
       }
 
       const data = await response.json() as {
@@ -109,7 +105,7 @@
       };
 
       const munoBalance = data.balances.find(balance => balance.denom === 'muno');
-      return munoBalance || {denom: 'muno', amount: '0.00'};
+      return munoBalance || { denom: 'muno', amount: '0.00' };
     },
     enabled: isValidCosmosAddress($cosmosStore.address)
   });
