@@ -30,9 +30,9 @@
     "noPropertyAccessFromIndexSignature": true,
     "types": ["node", "bun"],
     "paths": {
-      "#/*": ["src/*"]
+      "~root/*": ["../*"]
     }
   },
-  "include": ["src", "scripts", "test"],
+  "include": ["src", "scripts", "playground", "test"],
   "files": ["reset.d.ts", "environment.d.ts", "vitest.config.ts"]
 }

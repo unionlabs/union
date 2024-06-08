@@ -91,7 +91,6 @@
     onSuccess: (data) => {
       console.log("Faucet request successful:", data);
     },
-
   })
 
   const debouncedSubmit = debounce(() => {
@@ -133,7 +132,7 @@
     },
     enabled: isValidCosmosAddress($cosmosStore.address)
   });
-
+    
 </script>
 
 <svelte:head>

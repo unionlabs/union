@@ -6,9 +6,9 @@ export const ibcTransfersQuery = graphql(/* GraphQL */ `
     $unionAddress: String
     $nonUnionAddress: String
   ) {
-    v0_cosmos_wasm_ibc_transfer(
+    data: v0_transfers(
       limit: $limit
-      order_by: { height: desc }
+      order_by: { source_time: desc }
       where: {
         _or: [
           {
@@ -26,48 +26,23 @@ export const ibcTransfersQuery = graphql(/* GraphQL */ `
         ]
       }
     ) {
-      height
-      time
-      json
-      memo
-      chain_id
-      transaction_hash
-    }
-  }
-`)
+      source_time
+      source_height
+      source_chain_id
+      source_transaction_hash
+      source_channel
+      source_sequence
+      source_timeout_timestamp
+      source_transaction_index
 
-export const ibcTransfersSubscription = graphql(/* GraphQL */ `
-  subscription IBCTransfersSubscription(
-    $limit: Int! = 100
-    $unionAddress: String
-    $nonUnionAddress: String
-  ) {
-    v0_cosmos_wasm_ibc_transfer(
-      limit: $limit
-      order_by: { height: desc }
-      where: {
-        _or: [
-          {
-            _or: [
-              { sender: { _eq: $unionAddress } }
-              { receiver: { _eq: $unionAddress } }
-            ]
-          }
-          {
-            _or: [
-              { sender: { _eq: $nonUnionAddress } }
-              { receiver: { _eq: $nonUnionAddress } }
-            ]
-          }
-        ]
-      }
-    ) {
-        height
-        time
-        json
-        memo
-        chain_id
-        transaction_hash
+      destination_time
+      destination_height
+      destination_chain_id
+      destination_transaction_hash
+      destination_channel
+      destination_sequence
+      destination_timeout_timestamp
+      destination_transaction_index
     }
   }
 `)

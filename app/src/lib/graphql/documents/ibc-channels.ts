@@ -1,7 +1,7 @@
 import { graphql } from "gql.tada"
 
 export const ibcChannelMapQuery = graphql(/* graphql */ `
-  query IBCChannelMapQuery($limit: Int = 500, $status: String = "CONFIRM") {
+  query IBCChannelMapQuery($limit: Int = 500, $status: String = "CONFIRM") @cached(ttl: 30) {
     data: v0_channel_map(limit: $limit, where: { status: { _eq: $status }}) {
       from_chain_id
       from_channel_id

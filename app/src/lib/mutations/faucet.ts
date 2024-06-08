@@ -7,7 +7,7 @@ export async function getUnoFromFaucet(address: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query: faucetUnoMutation,
+      query: faucetUnoMutation
       variables: { address },
       operationName: "FaucetUnoMutation"
     })

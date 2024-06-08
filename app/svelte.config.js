@@ -1,3 +1,4 @@
+import path from "node:path"
 import preprocess from "svelte-preprocess"
 import childProcess from "node:child_process"
 import adapterStatic from "@sveltejs/adapter-static"
@@ -14,6 +15,15 @@ export default {
       }
     })
   ],
+  vitePlugin: {
+    experimental: {},
+    inspector: {
+      holdMode: true,
+      showToggleButton: "active",
+      toggleKeyCombo: "control-shift",
+      toggleButtonPos: "bottom-right"
+    }
+  },
   kit: {
     // https://kit.svelte.dev/docs/adapter-static
     adapter: adapterStatic({
@@ -28,8 +38,8 @@ export default {
     },
     /** @note `$` is a svelte path alias convention */
     alias: {
-      $: "./src/",
-      $styles: "./src/styles"
+      $: path.resolve("./src/"),
+      $styles: path.resolve("./src/styles")
     }
   }
 }

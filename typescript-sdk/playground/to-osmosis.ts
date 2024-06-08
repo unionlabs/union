@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { UnionClient } from "#/mod.ts"
+import { UnionClient } from "#mod.ts"
 
-/* `bun scripts/to-sepolia.ts --private-key "..."` */
+/* `bun scripts/to-osmosis.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -22,24 +22,27 @@ const unionClient = await UnionClient.connectWithSecret({
 })
 
 const contractAddress = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
-const unoFromUnionToSepolia = await unionClient.transferAssets({
+const unoFromUnionToOsmosis = await unionClient.transferAssets({
   kind: "cosmwasm",
   instructions: [
     {
       contractAddress,
       msg: {
         transfer: {
-          channel: "channel-0",
-          receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd".slice(2),
-          memo: "sending UNO from Union to Sepolia"
+          channel: "channel-6",
+          receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
+          memo: "sending UNO from Union to Osmosis"
         }
       },
       funds: [
-        // denom: `factory/union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
-        { amount: "300", denom: `muno` }
+        {
+          amount: "1",
+          denom: `muno`
+          // denom: `factory/${contractAddress}/0xc5775fca1b3285dc8b749d58b227527211c108b8d3`
+        }
       ]
     }
   ]
 })
 
-console.log(unoFromUnionToSepolia.transactionHash)
+console.log(unoFromUnionToOsmosis.transactionHash)

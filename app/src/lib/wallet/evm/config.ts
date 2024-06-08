@@ -3,31 +3,31 @@ import {
   fallback,
   reconnect,
   serialize,
-  getClient,
   getAccount,
-  getChainId,
-  watchClient,
   deserialize,
   createConfig,
   watchAccount,
-  watchChainId,
-  getConnectors,
-  getConnections,
-  watchConnectors,
-  watchConnections,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage
+  createStorage as createWagmiStorage,
+  getChainId,
+  getClient,
+  getConnections,
+  getConnectors,
+  watchChainId,
+  watchClient,
+  watchConnections,
+  watchConnectors
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
+import { readable, writable } from "svelte/store"
 import { sepolia } from "@wagmi/core/chains"
 import { KEY } from "$lib/constants/keys.ts"
-import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { walletConnect, injected, coinbaseWallet } from "@wagmi/connectors"
+import { walletConnect, injected } from "@wagmi/connectors"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
@@ -44,15 +44,19 @@ export const config = createConfig({
   batch: { multicall: true },
   transports: {
     [sepolia.id]: fallback([
-      unstable_connector(injected),
-      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`),
-      http(`https://sepolia-01.union.build/${KEY.RPC.QUICK_NODE}/`),
-      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`)
+      unstable_connector(injected, {
+        key: "unstable_connector-injected",
+        retryCount: 3,
+        retryDelay: 100
+      }),
+      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
+      http(`https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`),
+      http(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`)
     ])
   },
+
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,
-
   storage: createWagmiStorage({
     serialize,
     deserialize,
@@ -60,6 +64,7 @@ export const config = createConfig({
     storage: typeof window !== "undefined" ? window.sessionStorage : undefined
   }),
   connectors: [
+    injected({ shimDisconnect: true, unstable_shimAsyncInject: 2_500 }),
     walletConnect({
       projectId: KEY.WALLET_CONNECT_PROJECT_ID,
       qrModalOptions: {
@@ -84,16 +89,18 @@ export const config = createConfig({
         url: "https://app.union.build",
         icons: ["/images/icons/union.svg", "/images/logo.png"]
       }
-    }),
-    injected({ shimDisconnect: true, unstable_shimAsyncInject: 2_500 }),
-    coinbaseWallet({
-      darkMode: true,
-      appName: "Union",
-      appLogoUrl: "/images/logo.png",
-      jsonRpcUrl: `https://ethereum-sepolia.core.chainstack.com/${KEY.RPC.CHAINSTACK}`
     })
   ]
 })
+
+config.subscribe(
+  state => {
+    return state.chainId
+  },
+  chainId => {
+    console.info("[config] chainId", chainId)
+  }
+)
 
 export function createSepoliaStore(
   previousState: ChainWalletStore<"evm"> = {

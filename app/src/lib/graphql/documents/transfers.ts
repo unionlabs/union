@@ -1,20 +1,19 @@
 import { graphql } from "gql.tada"
 
-export const transfersQuery = graphql(/* GraphQL */ `
-query PacketsQuery($limit: Int = 100) {
-  v0_packets(limit: $limit, order_by: {destination_time: desc_nulls_last, source_time: desc_nulls_last}) {
-    from_chain_id
-    from_channel_id
-    source_port
-    source_block_hash
-    source_time
-    to_chain_id
-    to_channel_id
-    to_port_id
-    destination_block_hash
-    destination_time
-    source_data
-    status
+export const allTransfersQueryDocument = graphql(/* GraphQL */ `
+  query AllTransfersQuery @cached(ttl: 1) {
+    v0_transfers(limit: 50, order_by: {source_timestamp: desc}) {
+      sender
+      normalized_sender
+      source_chain_id
+      source_channel_id
+      receiver
+      normalized_receiver
+      destination_chain_id
+      destination_channel_id
+      assets
+      source_timestamp
+      destination_timestamp
+    }
   }
-}
 `)

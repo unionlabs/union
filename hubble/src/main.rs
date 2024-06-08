@@ -5,7 +5,7 @@
 use std::time::Duration;
 
 use axum::{routing::get, Router};
-use backon::ExponentialBuilder;
+use backon::{ConstantBuilder, ExponentialBuilder};
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
@@ -109,5 +109,13 @@ pub fn expo_backoff() -> ExponentialBuilder {
     ExponentialBuilder::default()
         .with_min_delay(Duration::from_secs(2))
         .with_max_delay(Duration::from_secs(60))
+        .with_max_times(60)
+        .with_factor(1.25)
+}
+
+/// Our 'new block' backoff we use to check if a new block arrived.
+pub fn new_block_backoff() -> ConstantBuilder {
+    ConstantBuilder::default()
+        .with_delay(Duration::from_millis(500))
         .with_max_times(60)
 }

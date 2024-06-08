@@ -4,12 +4,12 @@ import "$styles/index.css"
 import { onMount } from "svelte"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
-import { Toaster } from "svelte-french-toast"
 import { onNavigate } from "$app/navigation"
 import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
+import { Toaster } from "$lib/components/ui/sonner"
 import Header from "$lib/components/header/header.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import OnlineStatus from "$lib/components/online-status.svelte"
@@ -47,6 +47,7 @@ onMount(() => {
 })
 
 onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
+
 </script>
 
 <svelte:head>

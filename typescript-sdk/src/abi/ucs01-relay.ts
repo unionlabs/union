@@ -1,4 +1,4 @@
-export const ucs01RelayAbi = <const>[
+export const ucs01RelayAbi = [
   {
     type: "constructor",
     inputs: [],
@@ -1122,4 +1122,4 @@ export const ucs01RelayAbi = <const>[
       }
     ]
   }
-]
+] as const
