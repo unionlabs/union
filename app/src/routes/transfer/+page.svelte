@@ -301,7 +301,7 @@ let buttonText = "Transfer" satisfies
             toast.success(`Approve transaction sent: ${approveHash}`)
             const transferHash = await client.transferEvmAsset({
               account: evmClient.account,
-              receiver: recipient,
+              receiver: $recipient,
               denomAddress: assetId,
               amount: BigInt(amount),
               sourceChannel: 'channel-1',

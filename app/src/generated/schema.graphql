@@ -1903,21 +1903,43 @@ input v0_index_status_stream_cursor_value_input {
 columns and relationships of "v0.packets"
 """
 type v0_packets {
+  destination_block_hash: String
+
   """An object relationship"""
   destination_chain: v0_chains
-  from_chain_id: String
-  from_channel_id: String
-  from_connection_id: String
-  from_id: Int
-  from_port_id: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_json(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  source_block_hash: String
 
   """An object relationship"""
   source_chain: v0_chains
-  to_chain_id: String
-  to_channel_id: String
-  to_connection_id: String
-  to_id: Int
-  to_port_id: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_json(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
 }
 
 """
@@ -1927,34 +1949,64 @@ input v0_packets_bool_exp {
   _and: [v0_packets_bool_exp!]
   _not: v0_packets_bool_exp
   _or: [v0_packets_bool_exp!]
+  destination_block_hash: String_comparison_exp
   destination_chain: v0_chains_bool_exp
-  from_chain_id: String_comparison_exp
-  from_channel_id: String_comparison_exp
-  from_connection_id: String_comparison_exp
-  from_id: Int_comparison_exp
-  from_port_id: String_comparison_exp
+  destination_chain_id: Int_comparison_exp
+  destination_channel: String_comparison_exp
+  destination_data: String_comparison_exp
+  destination_height: Int_comparison_exp
+  destination_json: jsonb_comparison_exp
+  destination_port: String_comparison_exp
+  destination_sequence: numeric_comparison_exp
+  destination_time: timestamptz_comparison_exp
+  destination_timeout_timestamp: numeric_comparison_exp
+  destination_transaction_hash: String_comparison_exp
+  destination_transaction_index: String_comparison_exp
+  source_block_hash: String_comparison_exp
   source_chain: v0_chains_bool_exp
-  to_chain_id: String_comparison_exp
-  to_channel_id: String_comparison_exp
-  to_connection_id: String_comparison_exp
-  to_id: Int_comparison_exp
-  to_port_id: String_comparison_exp
+  source_chain_id: Int_comparison_exp
+  source_channel: String_comparison_exp
+  source_data: String_comparison_exp
+  source_height: Int_comparison_exp
+  source_json: jsonb_comparison_exp
+  source_port: String_comparison_exp
+  source_sequence: numeric_comparison_exp
+  source_time: timestamptz_comparison_exp
+  source_timeout_timestamp: numeric_comparison_exp
+  source_transaction_hash: String_comparison_exp
+  source_transaction_index: String_comparison_exp
+  status: String_comparison_exp
 }
 
 """Ordering options when selecting data from "v0.packets"."""
 input v0_packets_order_by {
+  destination_block_hash: order_by
   destination_chain: v0_chains_order_by
-  from_chain_id: order_by
-  from_channel_id: order_by
-  from_connection_id: order_by
-  from_id: order_by
-  from_port_id: order_by
+  destination_chain_id: order_by
+  destination_channel: order_by
+  destination_data: order_by
+  destination_height: order_by
+  destination_json: order_by
+  destination_port: order_by
+  destination_sequence: order_by
+  destination_time: order_by
+  destination_timeout_timestamp: order_by
+  destination_transaction_hash: order_by
+  destination_transaction_index: order_by
+  source_block_hash: order_by
   source_chain: v0_chains_order_by
-  to_chain_id: order_by
-  to_channel_id: order_by
-  to_connection_id: order_by
-  to_id: order_by
-  to_port_id: order_by
+  source_chain_id: order_by
+  source_channel: order_by
+  source_data: order_by
+  source_height: order_by
+  source_json: order_by
+  source_port: order_by
+  source_sequence: order_by
+  source_time: order_by
+  source_timeout_timestamp: order_by
+  source_transaction_hash: order_by
+  source_transaction_index: order_by
+  status: order_by
 }
 
 """
@@ -1962,34 +2014,79 @@ select columns of table "v0.packets"
 """
 enum v0_packets_select_column {
   """column name"""
-  from_chain_id
+  destination_block_hash
 
   """column name"""
-  from_channel_id
+  destination_chain_id
 
   """column name"""
-  from_connection_id
+  destination_channel
 
   """column name"""
-  from_id
+  destination_data
 
   """column name"""
-  from_port_id
+  destination_height
 
   """column name"""
-  to_chain_id
+  destination_json
 
   """column name"""
-  to_channel_id
+  destination_port
 
   """column name"""
-  to_connection_id
+  destination_sequence
 
   """column name"""
-  to_id
+  destination_time
 
   """column name"""
-  to_port_id
+  destination_timeout_timestamp
+
+  """column name"""
+  destination_transaction_hash
+
+  """column name"""
+  destination_transaction_index
+
+  """column name"""
+  source_block_hash
+
+  """column name"""
+  source_chain_id
+
+  """column name"""
+  source_channel
+
+  """column name"""
+  source_data
+
+  """column name"""
+  source_height
+
+  """column name"""
+  source_json
+
+  """column name"""
+  source_port
+
+  """column name"""
+  source_sequence
+
+  """column name"""
+  source_time
+
+  """column name"""
+  source_timeout_timestamp
+
+  """column name"""
+  source_transaction_hash
+
+  """column name"""
+  source_transaction_index
+
+  """column name"""
+  status
 }
 
 """
@@ -2005,16 +2102,31 @@ input v0_packets_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v0_packets_stream_cursor_value_input {
-  from_chain_id: String
-  from_channel_id: String
-  from_connection_id: String
-  from_id: Int
-  from_port_id: String
-  to_chain_id: String
-  to_channel_id: String
-  to_connection_id: String
-  to_id: Int
-  to_port_id: String
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_json: jsonb
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_json: jsonb
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
 }
 
 """Various RPC endpoints for the different networks that Union supports. """
@@ -2188,41 +2300,41 @@ type v0_transfers {
     path: String
   ): jsonb
   destination_block_hash: String
-
-  """An object relationship"""
-  destination_chain: v0_chains
-  destination_chain_id: Int
-  destination_channel: String
+  destination_chain_id: String
+  destination_channel_id: String
+  destination_connection_id: String
   destination_data: String
   destination_height: Int
+  destination_id: Int
   destination_json(
     """JSON select path"""
     path: String
   ): jsonb
   destination_port: String
   destination_sequence: numeric
-  destination_time: timestamptz
   destination_timeout_timestamp: numeric
+  destination_timestamp: timestamptz
   destination_transaction_hash: String
   destination_transaction_index: String
+  normalized_receiver: String
+  normalized_sender: String
   receiver: String
   sender: String
   source_block_hash: String
-
-  """An object relationship"""
-  source_chain: v0_chains
-  source_chain_id: Int
-  source_channel: String
+  source_chain_id: String
+  source_channel_id: String
+  source_connection_id: String
   source_data: String
   source_height: Int
+  source_id: Int
   source_json(
     """JSON select path"""
     path: String
   ): jsonb
   source_port: String
   source_sequence: numeric
-  source_time: timestamptz
   source_timeout_timestamp: numeric
+  source_timestamp: timestamptz
   source_transaction_hash: String
   source_transaction_index: String
   status: String
@@ -2237,31 +2349,35 @@ input v0_transfers_bool_exp {
   _or: [v0_transfers_bool_exp!]
   assets: jsonb_comparison_exp
   destination_block_hash: String_comparison_exp
-  destination_chain: v0_chains_bool_exp
-  destination_chain_id: Int_comparison_exp
-  destination_channel: String_comparison_exp
+  destination_chain_id: String_comparison_exp
+  destination_channel_id: String_comparison_exp
+  destination_connection_id: String_comparison_exp
   destination_data: String_comparison_exp
   destination_height: Int_comparison_exp
+  destination_id: Int_comparison_exp
   destination_json: jsonb_comparison_exp
   destination_port: String_comparison_exp
   destination_sequence: numeric_comparison_exp
-  destination_time: timestamptz_comparison_exp
   destination_timeout_timestamp: numeric_comparison_exp
+  destination_timestamp: timestamptz_comparison_exp
   destination_transaction_hash: String_comparison_exp
   destination_transaction_index: String_comparison_exp
+  normalized_receiver: String_comparison_exp
+  normalized_sender: String_comparison_exp
   receiver: String_comparison_exp
   sender: String_comparison_exp
   source_block_hash: String_comparison_exp
-  source_chain: v0_chains_bool_exp
-  source_chain_id: Int_comparison_exp
-  source_channel: String_comparison_exp
+  source_chain_id: String_comparison_exp
+  source_channel_id: String_comparison_exp
+  source_connection_id: String_comparison_exp
   source_data: String_comparison_exp
   source_height: Int_comparison_exp
+  source_id: Int_comparison_exp
   source_json: jsonb_comparison_exp
   source_port: String_comparison_exp
   source_sequence: numeric_comparison_exp
-  source_time: timestamptz_comparison_exp
   source_timeout_timestamp: numeric_comparison_exp
+  source_timestamp: timestamptz_comparison_exp
   source_transaction_hash: String_comparison_exp
   source_transaction_index: String_comparison_exp
   status: String_comparison_exp
@@ -2271,31 +2387,35 @@ input v0_transfers_bool_exp {
 input v0_transfers_order_by {
   assets: order_by
   destination_block_hash: order_by
-  destination_chain: v0_chains_order_by
   destination_chain_id: order_by
-  destination_channel: order_by
+  destination_channel_id: order_by
+  destination_connection_id: order_by
   destination_data: order_by
   destination_height: order_by
+  destination_id: order_by
   destination_json: order_by
   destination_port: order_by
   destination_sequence: order_by
-  destination_time: order_by
   destination_timeout_timestamp: order_by
+  destination_timestamp: order_by
   destination_transaction_hash: order_by
   destination_transaction_index: order_by
+  normalized_receiver: order_by
+  normalized_sender: order_by
   receiver: order_by
   sender: order_by
   source_block_hash: order_by
-  source_chain: v0_chains_order_by
   source_chain_id: order_by
-  source_channel: order_by
+  source_channel_id: order_by
+  source_connection_id: order_by
   source_data: order_by
   source_height: order_by
+  source_id: order_by
   source_json: order_by
   source_port: order_by
   source_sequence: order_by
-  source_time: order_by
   source_timeout_timestamp: order_by
+  source_timestamp: order_by
   source_transaction_hash: order_by
   source_transaction_index: order_by
   status: order_by
@@ -2315,13 +2435,19 @@ enum v0_transfers_select_column {
   destination_chain_id
 
   """column name"""
-  destination_channel
+  destination_channel_id
+
+  """column name"""
+  destination_connection_id
 
   """column name"""
   destination_data
 
   """column name"""
   destination_height
+
+  """column name"""
+  destination_id
 
   """column name"""
   destination_json
@@ -2333,16 +2459,22 @@ enum v0_transfers_select_column {
   destination_sequence
 
   """column name"""
-  destination_time
+  destination_timeout_timestamp
 
   """column name"""
-  destination_timeout_timestamp
+  destination_timestamp
 
   """column name"""
   destination_transaction_hash
 
   """column name"""
   destination_transaction_index
+
+  """column name"""
+  normalized_receiver
+
+  """column name"""
+  normalized_sender
 
   """column name"""
   receiver
@@ -2357,13 +2489,19 @@ enum v0_transfers_select_column {
   source_chain_id
 
   """column name"""
-  source_channel
+  source_channel_id
+
+  """column name"""
+  source_connection_id
 
   """column name"""
   source_data
 
   """column name"""
   source_height
+
+  """column name"""
+  source_id
 
   """column name"""
   source_json
@@ -2375,10 +2513,10 @@ enum v0_transfers_select_column {
   source_sequence
 
   """column name"""
-  source_time
+  source_timeout_timestamp
 
   """column name"""
-  source_timeout_timestamp
+  source_timestamp
 
   """column name"""
   source_transaction_hash
@@ -2405,29 +2543,35 @@ input v0_transfers_stream_cursor_input {
 input v0_transfers_stream_cursor_value_input {
   assets: jsonb
   destination_block_hash: String
-  destination_chain_id: Int
-  destination_channel: String
+  destination_chain_id: String
+  destination_channel_id: String
+  destination_connection_id: String
   destination_data: String
   destination_height: Int
+  destination_id: Int
   destination_json: jsonb
   destination_port: String
   destination_sequence: numeric
-  destination_time: timestamptz
   destination_timeout_timestamp: numeric
+  destination_timestamp: timestamptz
   destination_transaction_hash: String
   destination_transaction_index: String
+  normalized_receiver: String
+  normalized_sender: String
   receiver: String
   sender: String
   source_block_hash: String
-  source_chain_id: Int
-  source_channel: String
+  source_chain_id: String
+  source_channel_id: String
+  source_connection_id: String
   source_data: String
   source_height: Int
+  source_id: Int
   source_json: jsonb
   source_port: String
   source_sequence: numeric
-  source_time: timestamptz
   source_timeout_timestamp: numeric
+  source_timestamp: timestamptz
   source_transaction_hash: String
   source_transaction_index: String
   status: String
