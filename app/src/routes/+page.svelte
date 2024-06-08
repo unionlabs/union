@@ -43,7 +43,6 @@ $: if (
 }
 
 $: if ($cosmosStore.connectionStatus === "disconnected") cosmosBalances = null
-
 </script>
 
 <main class="flex flex-col items-center w-full p-4 mt-16 gap-6">
