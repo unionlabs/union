@@ -31,7 +31,7 @@ const unoFromUnionToSepolia = await unionClient.transferAssets({
         transfer: {
           channel: "channel-23",
           receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd".slice(2),
-          memo: "sending UNO from Union to Sepolia hahaha"
+          memo: "sending UNO from Union to Sepolia"
         }
       },
       funds: [

@@ -5,13 +5,13 @@ import * as Dialog from "$lib/components/ui/dialog"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
 import type { LooseAutocomplete } from "$lib/utilities/types.ts"
-    import type { Writable } from "svelte/store";
+import type { Writable } from "svelte/store"
 
 export let kind: "from" | "to"
 export let dialogOpen = false
 export let onChainSelect: (newSelectedChain: string) => void
-export let chains: Array<{ chain_id: string;}>
-export let selectedChain: string;
+export let chains: Array<{ chain_id: string }>
+export let selectedChain: string
 
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 </script>

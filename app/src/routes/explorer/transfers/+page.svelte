@@ -1,25 +1,24 @@
 <script lang="ts">
-  import request from "graphql-request"
-  import { allTransfersQueryDocument} from "$lib/graphql/documents/transfers.ts"
-  import { createQuery } from "@tanstack/svelte-query"
-  import { URLS } from "$lib/constants"
-  import Table from "../(components)/table.svelte"
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-  import { derived, writable } from "svelte/store"
-  import CellStatus from "../(components)/cell-status.svelte"
-  import { DurationUnits } from "svelte-ux"
-  import CellDurationText from "../(components)/cell-duration-text.svelte"
+import request from "graphql-request"
+import { allTransfersQueryDocument } from "$lib/graphql/documents/transfers.ts"
+import { createQuery } from "@tanstack/svelte-query"
+import { URLS } from "$lib/constants"
+import Table from "../(components)/table.svelte"
+import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
+import { derived, writable } from "svelte/store"
+import CellStatus from "../(components)/cell-status.svelte"
+import { DurationUnits } from "svelte-ux"
+import CellDurationText from "../(components)/cell-duration-text.svelte"
 
-  let transfers = createQuery ({
-    queryKey: ["transfers"],
-    refetchInterval: 1_000,
-    queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
-  })
+let transfers = createQuery({
+  queryKey: ["transfers"],
+  refetchInterval: 1_000,
+  queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
+})
 
-  let transfersData = derived(transfers, ($transfers) => $transfers.isSuccess ? $transfers.data : []);
+let transfersData = derived(transfers, $transfers => ($transfers.isSuccess ? $transfers.data : []))
 
-
-  const columns: Array<ColumnDef<{ chain_id: string }>> = [
+const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {
     accessorKey: "source_chain_id",
     header: () => "Source Chain",
