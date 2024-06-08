@@ -6,80 +6,90 @@ import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { derived, writable } from "svelte/store"
-import CellStatus from "../(components)/cell-status.svelte"
-import { DurationUnits } from "svelte-ux"
-import CellDurationText from "../(components)/cell-duration-text.svelte"
+import CellOrigin from "../(components)/cell-origin.svelte"
+import CellAssets from "../(components)/cell-assets.svelte"
+import { chainsQuery } from "$lib/queries/chains"
+import { truncate } from "$lib/utilities/format"
 
 let transfers = createQuery({
   queryKey: ["transfers"],
-  refetchInterval: 1_000,
+  refetchInterval: 3_000,
   queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
 })
 
-let transfersData = derived(transfers, $transfers => ($transfers.isSuccess ? $transfers.data : []))
+let chains = chainsQuery()
+
+let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
+  if (!($transfers.isSuccess && $chains.isSuccess)) return []
+  return $transfers.data.map(transfer => {
+    const sourceDisplayName = $chains.data.find(
+      chain => chain.chain_id === transfer.source_chain_id
+    )?.display_name
+    const destinationDisplayName = $chains.data.find(
+      chain => chain.chain_id === transfer.destination_chain_id
+    )?.display_name
+
+    return {
+      source: {
+        name: sourceDisplayName,
+        chain: transfer.source_chain_id,
+        connection: transfer.source_connection_id,
+        channel: transfer.source_channel_id,
+        timestamp: transfer.source_timestamp
+      },
+
+      sender: transfer.sender,
+
+      destination: {
+        name: destinationDisplayName,
+        chain: transfer.destination_chain_id,
+        connection: transfer.destination_connection_id,
+        channel: transfer.destination_channel_id,
+        timestamp: transfer.destination_timestamp
+      },
+
+      receiver: transfer.receiver,
+      assets: transfer.assets
+    }
+  })
+})
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {
-    accessorKey: "source_chain_id",
-    header: () => "Source Chain",
+    accessorKey: "source",
+    header: () => "Source",
     size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellOrigin, { value: info.getValue() })
   },
   {
-    accessorKey: "source_channel_id",
-    header: () => "Source Channel",
+    accessorKey: "destination",
+    header: () => "Destination",
     size: 200,
-    cell: info => info.getValue()
-  },
-  // {
-  //   accessorKey: "source_port",
-  //   header: () => "Source Port",
-  //   size: 200,
-  //   cell: info => info.getValue()
-  // },
-  {
-    accessorKey: "destination_chain_id",
-    header: () => "Destination Chain",
-    size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellOrigin, { value: info.getValue() })
   },
   {
-    accessorKey: "destination_channel_id",
-    header: () => "Destination Channel",
+    accessorKey: "sender",
+    header: () => "Sender",
     size: 200,
-    cell: info => info.getValue()
+    cell: info => truncate(info.getValue(), 8)
+  },
+  {
+    accessorKey: "receiver",
+    header: () => "Receiver",
+    size: 200,
+    cell: info => truncate(info.getValue(), 8)
   },
   {
     accessorKey: "assets",
     header: () => "Assets",
     size: 200,
-    cell: info => JSON.stringify(info.getValue())
-  },
-  {
-    accessorKey: "source_timestamp",
-    header: () => "Source Time",
-    size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
-  },
-  {
-    accessorKey: "destination_timestamp",
-    header: () => "Destination Time",
-    size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    cell: info => flexRender(CellAssets, { value: info.getValue() })
   }
 ]
 </script>
 
-<Table bind:dataStore={transfersData} {columns} />
+{#if $transfers.isLoading}
+  <div>Loading...</div>
+{:else if $transfers.isSuccess}
+  <Table bind:dataStore={transfersData} {columns} />
+{/if}

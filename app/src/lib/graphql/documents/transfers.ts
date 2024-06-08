@@ -6,10 +6,12 @@ export const allTransfersQueryDocument = graphql(/* GraphQL */ `
       sender
       normalized_sender
       source_chain_id
+      source_connection_id
       source_channel_id
       receiver
       normalized_receiver
       destination_chain_id
+      destination_connection_id
       destination_channel_id
       assets
       source_timestamp
