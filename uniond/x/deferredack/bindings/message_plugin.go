@@ -73,10 +73,6 @@ func PerformWriteDeferredAck(deferredAckKeeper *deferredackkeeper.Keeper, ctx sd
 
 	msgWriteDeferredAck := deferredacktypes.NewMsgWriteDeferredAck(writeDeferredAck.DeferredPacketInfo, writeDeferredAck.Ack)
 
-	if err := msgWriteDeferredAck.Ack.ValidateBasic(); err != nil {
-		return nil, errorsmod.Wrap(err, "content of write msg deferred ack is invalid")
-	}
-
 	res, err := msgServer.WriteDeferredAck(ctx, msgWriteDeferredAck)
 
 	if err != nil {

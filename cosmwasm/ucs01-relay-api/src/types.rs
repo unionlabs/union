@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
 use ethabi::{ParamType, Token};
 
-pub type GenericAck = Result<Binary, String>;
+pub type GenericAck = Result<Binary, Binary>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum EncodingError {
@@ -294,8 +294,8 @@ impl TryFrom<Binary> for Ucs01Ack {
 impl From<Ucs01Ack> for GenericAck {
     fn from(value: Ucs01Ack) -> Self {
         match value {
-            Ucs01Ack::Failure => Err(Default::default()),
-            Ucs01Ack::Success => Ok(Default::default()),
+            Ucs01Ack::Failure => Err([0].into()),
+            Ucs01Ack::Success => Ok([1].into()),
         }
     }
 }
@@ -333,7 +333,7 @@ impl From<Ics20Ack> for GenericAck {
     fn from(value: Ics20Ack) -> Self {
         match value {
             Ics20Ack::Result(err) => Ok(err),
-            Ics20Ack::Error(err) => Err(err),
+            Ics20Ack::Error(err) => Err(err.into_bytes().into()),
         }
     }
 }

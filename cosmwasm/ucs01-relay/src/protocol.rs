@@ -671,17 +671,15 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                     Vec::from_iter(
                         (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
                     ),
-                    Acknowledgement {
-                        response: Some(Response::Result(value.to_vec())),
-                    },
+                    value.to_vec(),
                 )
             }
             Err(error) => (
                 self.send_tokens_failure(sender, &String::new(), tokens)?,
-                Vec::from_iter((!error.is_empty()).then_some((ATTR_ERROR, error.clone()))),
-                Acknowledgement {
-                    response: Some(Response::Error(error)),
-                },
+                Vec::from_iter(
+                    (!error.is_empty()).then_some((ATTR_ERROR, error.clone().to_string())),
+                ),
+                error.to_vec(),
             ),
         };
 
@@ -709,7 +707,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         let value = MsgWriteDeferredAck {
             sender: self.self_addr().to_string(),
             deferred_packet_info: Some(deferred_packet_into),
-            ack: Some(ack_def),
+            ack: ack_def,
         }
         .encode_to_vec();
 
@@ -1057,17 +1055,15 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                     Vec::from_iter(
                         (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
                     ),
-                    Acknowledgement {
-                        response: Some(Response::Result(value.to_vec())),
-                    },
+                    value.to_vec(),
                 )
             }
             Err(error) => (
                 self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
-                Vec::from_iter((!error.is_empty()).then_some((ATTR_ERROR, error.clone()))),
-                Acknowledgement {
-                    response: Some(Response::Error(error)),
-                },
+                Vec::from_iter(
+                    (!error.is_empty()).then_some((ATTR_ERROR, error.clone().to_string())),
+                ),
+                error.to_vec(),
             ),
         };
 
@@ -1095,7 +1091,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         let value = MsgWriteDeferredAck {
             sender: self.self_addr().to_string(),
             deferred_packet_info: Some(deferred_packet_into),
-            ack: Some(ack_def),
+            ack: ack_def,
         }
         .encode_to_vec();
 

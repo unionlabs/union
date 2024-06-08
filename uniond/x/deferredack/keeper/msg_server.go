@@ -21,7 +21,9 @@ var _ types.MsgServer = msgServer{}
 func (server msgServer) WriteDeferredAck(goCtx context.Context, req *types.MsgWriteDeferredAck) (*types.MsgWriteDeferredAckResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := server.Keeper.WriteDeferredAck(ctx, req.DeferredPacketInfo, *req.Ack)
+	ack := types.Acknowledgement(req.Ack)
+
+	err := server.Keeper.WriteDeferredAck(ctx, req.DeferredPacketInfo, ack)
 
 	if err != nil {
 		return nil, err

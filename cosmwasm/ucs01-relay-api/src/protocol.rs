@@ -260,7 +260,11 @@ pub trait TransferProtocol {
         let packet = Self::Packet::try_from(ibc_packet.clone().data)?;
         // same branch as failure ack
         let memo = Into::<String>::into(packet.extension().clone());
-        let ack = GenericAck::Err("giving up on forwarded packet after timeout".to_owned());
+        let ack = GenericAck::Err(
+            b"giving up on forwarded packet after timeout"
+                .to_vec()
+                .into(),
+        );
         let refund_msgs = if let Some((ack_msgs, _)) = self.pfm_ack(
             ack,
             ibc_packet.clone(),
