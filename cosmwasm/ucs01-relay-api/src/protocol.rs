@@ -291,6 +291,7 @@ pub trait TransferProtocol {
             .add_messages(refund_msgs))
     }
 
+    #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
         receiver: &<Self::Packet as TransferPacket>::Addr,

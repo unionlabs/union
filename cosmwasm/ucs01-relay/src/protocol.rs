@@ -473,6 +473,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         )
     }
 
+    #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
         receiver: &<Self::Packet as TransferPacket>::Addr,
@@ -823,6 +824,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         )
     }
 
+    #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
         receiver: &<Self::Packet as TransferPacket>::Addr,
