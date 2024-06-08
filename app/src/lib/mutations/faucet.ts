@@ -1,28 +1,33 @@
+import { createMutation, useQueryClient } from "@tanstack/svelte-query"
+import { faucetUnoMutation } from "$lib/graphql/documents/faucet.ts"
+import { URLS } from "$lib/constants"
+
 export async function getUnoFromFaucet(address: string) {
   const response = await fetch("https://graphql.union.build/v1/graphql", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query: /* GraphQL */ `
-        mutation GetUno($address: Address!) {
-          union { send(input: { toAddress: $address }) }
-        }
-      `,
+      query: faucetUnoMutation,
       variables: { address },
-      operationName: "GetUno"
+      operationName: "FaucetUnoMutation"
     })
   })
 
-  if (!response.ok) return { error: await response.text(), status: response.status }
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error("Fetch error:", errorText)
+    return { error: errorText, status: response.status }
+  }
 
   const responseJson = (await response.json()) as {
-    data?: { union: { send: string } }
+    data?: { faucet: { send: string } }
     errors?: Array<{ message: string }>
   }
-  if ("errors" in responseJson) {
-    const [error] = responseJson.errors || []
-    console.error(error)
-    return { error: error.message, status: response.status }
+
+  if (responseJson.errors && responseJson.errors.length > 0) {
+    const errorMessage = responseJson.errors.map(e => e.message).join("; ")
+    console.error("GraphQL error:", errorMessage)
+    return { error: errorMessage, status: response.status }
   }
 
   return { data: responseJson.data, status: response.status }
