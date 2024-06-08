@@ -1142,7 +1142,7 @@ mod tests {
     use token_factory_api::TokenFactoryMsg;
     use ucs01_relay_api::{protocol::TransferProtocol, types::TransferToken};
 
-    use super::{hash_denom, ForTokens, OnReceive, StatefulOnReceive, Ucs01Protocol};
+    use super::{hash_denom, ForTokens, OnReceive, StatefulOnReceive};
     use crate::{
         error::ContractError,
         msg::ExecuteMsg,
