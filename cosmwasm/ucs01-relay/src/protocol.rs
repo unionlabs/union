@@ -26,8 +26,8 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, TransferMsg},
     state::{
-        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_INFO, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH,
-        HASH_LENGTH, HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
+        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH, HASH_LENGTH,
+        HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
     },
 };
 
