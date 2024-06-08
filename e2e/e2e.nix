@@ -21,8 +21,8 @@
             inputs.arion.nixosModules.arion
           ];
           virtualisation = {
-            diskSize = 8 * 1024;
-            memorySize = 4 * 1024;
+            diskSize = 16 * 1024;
+            memorySize = 8 * 1024;
             arion = {
               backend = "docker";
               projects.devnet-eth.settings = networks.modules.devnet-eth;

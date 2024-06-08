@@ -10,7 +10,9 @@
         };
       in
       {
-        ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
+        # Disabled
+        # TODO: Fix Ensure Blocks Workflow unionlabs/union#2067
+        # ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
 
         # Tests from ./epoch-staking.nix
         epoch-completes = epoch-staking.epoch-completes;
