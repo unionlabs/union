@@ -1,137 +1,138 @@
 <script lang="ts">
-  import toast from "svelte-french-toast"
-  import { debounce } from "$lib/utilities/index.ts"
-  import LockLockedIcon from "virtual:icons/lucide/lock"
-  import { Input } from "$lib/components/ui/input/index.ts"
-  import LockOpenIcon from "virtual:icons/lucide/lock-open"
-  import { Button } from "$lib/components/ui/button/index.ts"
-  import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-  import LoadingIcon from "virtual:icons/lucide/loader-circle"
-  import { unionTransfersQuery } from "$lib/queries/transfers.ts"
-  import ExternalLinkIcon from "virtual:icons/lucide/external-link"
-  import { unionAddressRegex } from "./schema.ts"
-  import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-  import { Label } from "$lib/components/ui/label";
-  import { getUnoFromFaucet } from "$lib/mutations/faucet.ts";
-  import { createMutation, createQuery } from "@tanstack/svelte-query";
-  import * as Form from "$lib/components/ui/form/index.ts"
-  import * as Card from "$lib/components/ui/card/index.ts"
+import toast from "svelte-french-toast"
+import { debounce } from "$lib/utilities/index.ts"
+import LockLockedIcon from "virtual:icons/lucide/lock"
+import { Input } from "$lib/components/ui/input/index.ts"
+import LockOpenIcon from "virtual:icons/lucide/lock-open"
+import { Button } from "$lib/components/ui/button/index.ts"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
+import LoadingIcon from "virtual:icons/lucide/loader-circle"
+import { unionTransfersQuery } from "$lib/queries/transfers.ts"
+import ExternalLinkIcon from "virtual:icons/lucide/external-link"
+import { unionAddressRegex } from "./schema.ts"
+import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+import { Label } from "$lib/components/ui/label"
+import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
+import { createMutation, createQuery } from "@tanstack/svelte-query"
+import * as Form from "$lib/components/ui/form/index.ts"
+import * as Card from "$lib/components/ui/card/index.ts"
 
-  interface Balance {
-    amount: string;
-    denom: string;
+interface Balance {
+  amount: string
+  denom: string
+}
+
+let userInput = false
+let address: string = $cosmosStore.address ?? ""
+
+$: if (!userInput && $cosmosStore.address !== address) {
+  address = $cosmosStore.address ?? ""
+}
+
+const handleInput = (event: Event) => {
+  address = (event.target as HTMLInputElement).value
+  userInput = true
+}
+
+const resetInput = () => {
+  userInput = false
+  address = $cosmosStore.address ?? ""
+}
+
+const debounceDelay = 3_500
+let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
+let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
+const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+
+$: {
+  if (submissionStatus === "submitting") {
+    toast.loading("Submitting faucet request 🚰", {
+      duration: debounceDelay - 300,
+      className: "text-sm p-2.5"
+    })
   }
+}
 
-  let userInput = false;
-  let address: string = $cosmosStore.address ?? '';
+let opacity = 0
 
-  $: if (!userInput && ($cosmosStore.address !== address)) {
-    address = $cosmosStore.address ?? '';
+let focused = false
+let input: HTMLInputElement
+let position = { x: 0, y: 0 }
+
+function handleMouseMove(event: MouseEvent) {
+  if (!input || focused) return
+  const rect = input.getBoundingClientRect()
+  position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+}
+
+const handleFocus = () => ([focused, opacity] = [true, 1])
+const handleBlur = () => ([focused, opacity] = [false, 0])
+const handleMouseEnter = () => (opacity = 1)
+const handleMouseLeave = () => (opacity = 0)
+
+$: unionTransfers = unionTransfersQuery({
+  address: address,
+  include: ["RECEIVED"],
+  refetchInterval: 5_000,
+  enabled: !!address && isValidCosmosAddress(address)
+})
+
+$: newTransfers =
+  $unionTransfers?.data.filter(transfer => Date.parse(transfer.timestamp) > Date.now() - 60_000) ??
+  []
+
+const mutation = createMutation({
+  mutationKey: ["faucetRequest"],
+  mutationFn: async () => getUnoFromFaucet(address),
+  onError: error => {
+    console.error("Error during the faucet request:", error)
+    submissionStatus = "error"
+  },
+  onSuccess: data => {
+    console.log("Faucet request successful:", data)
   }
+})
 
-  const handleInput = (event: Event) => {
-    address = (event.target as HTMLInputElement).value;
-    userInput = true;
+const debouncedSubmit = debounce(() => {
+  if (!isValidCosmosAddress(address)) {
+    toast.error("Invalid address")
+    return
   }
+  $mutation.mutate()
+  console.log("here")
+  submissionStatus = "submitted"
+}, debounceDelay)
 
-  const resetInput = () => {
-    userInput = false;
-    address = $cosmosStore.address ?? '';
-  }
+const handleSubmit = async () => {
+  submissionStatus = "submitting"
+  debouncedSubmit()
+}
 
-  const debounceDelay = 3_500
-  let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
-  let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
-  const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+$: if ($mutation.status === "success") toast.success("Success!")
 
-  $: {
-    if (submissionStatus === "submitting") {
-      toast.loading("Submitting faucet request 🚰", {
-        duration: debounceDelay - 300,
-        className: "text-sm p-2.5"
-      })
+$: console.log(submissionStatus)
+
+$: unionBalancesQuery = createQuery<Balance>({
+  queryKey: [$cosmosStore.address, "balance", "union-testnet-8"],
+  refetchInterval: 5000,
+  queryFn: async () => {
+    const response = await fetch(
+      `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${$cosmosStore.address}`
+    )
+
+    if (!response.ok) {
+      return { amount: "0.00", denom: "muno" }
     }
-  }
 
-  let opacity = 0
-
-  let focused = false
-  let input: HTMLInputElement
-  let position = { x: 0, y: 0 }
-
-  function handleMouseMove(event: MouseEvent) {
-    if (!input || focused) return
-    const rect = input.getBoundingClientRect()
-    position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-  }
-
-  const handleFocus = () => ([focused, opacity] = [true, 1])
-  const handleBlur = () => ([focused, opacity] = [false, 0])
-  const handleMouseEnter = () => (opacity = 1)
-  const handleMouseLeave = () => (opacity = 0)
-
-  $: unionTransfers = unionTransfersQuery({
-    address: address,
-    include: ["RECEIVED"],
-    refetchInterval: 5_000,
-    enabled: !!address && isValidCosmosAddress(address)
-  })
-
-  $: newTransfers = $unionTransfers?.data.filter(transfer => Date.parse(transfer.timestamp) > Date.now() - 60_000) ?? []
-
-  const mutation = createMutation({
-    mutationKey: ['faucetRequest'],
-    mutationFn: async () => getUnoFromFaucet(address),
-    onError: (error) => {
-      console.error("Error during the faucet request:", error);
-      submissionStatus = 'error'
-    },
-    onSuccess: (data) => {
-      console.log("Faucet request successful:", data);
-    },
-  })
-
-  const debouncedSubmit = debounce(() => {
-    if (!isValidCosmosAddress(address)) {
-      toast.error('Invalid address');
-      return;
+    const data = (await response.json()) as {
+      balances: Array<{ amount: string; denom: string }>
     }
-    $mutation.mutate();
-    console.log('here')
-    submissionStatus = 'submitted'
-  }, debounceDelay);
 
-  const handleSubmit = async () => {
-    submissionStatus = 'submitting'
-    debouncedSubmit();
-  };
-
-  $: if ($mutation.status === 'success') toast.success('Success!')
-
-  $: console.log(submissionStatus)
-
-  $: unionBalancesQuery = createQuery<Balance>({
-    queryKey: [$cosmosStore.address, "balance", "union-testnet-8"],
-    refetchInterval: 5000,
-    queryFn: async () => {
-      const response = await fetch(
-        `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${$cosmosStore.address}`
-      );
-
-      if (!response.ok) {
-        return { amount: "0.00", denom: "muno" }
-      }
-
-      const data = await response.json() as {
-        balances: Array<{ amount: string; denom: string }>
-      };
-
-      const munoBalance = data.balances.find(balance => balance.denom === 'muno');
-      return munoBalance || { denom: 'muno', amount: '0.00' };
-    },
-    enabled: isValidCosmosAddress($cosmosStore.address)
-  });
-
+    const munoBalance = data.balances.find(balance => balance.denom === "muno")
+    return munoBalance || { denom: "muno", amount: "0.00" }
+  },
+  enabled: isValidCosmosAddress($cosmosStore.address)
+})
 </script>
 
 <svelte:head>
