@@ -279,7 +279,7 @@ async fn fetch_and_insert_blocks(
                     .block_results(header.height)
                     .inspect_err(|e| debug!(?e, ?header.height, "error fetching block results"))
             })
-            .retry(&crate::expo_backoff())
+            .retry(&crate::new_block_backoff())
             .await?;
             let txs = (|| {
                 debug!(
