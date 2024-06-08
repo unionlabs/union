@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte"
+import { type Readable } from "svelte/store"
 import { toast } from "svelte-sonner"
 import { sepolia } from "viem/chains"
 import { debounce } from "$lib/utilities"
@@ -137,8 +138,8 @@ $: {
 }
 
 
-// @ts-ignore
-let sendableBalances = null;
+let sendableBalances: null | Readable<Array<{balance: bigint, address: string, symbol: string, decimals: number}>> = null;
+
 $:  if (evmBalances !== null && cosmosBalances !== null && $cosmosChains !== null) {
  sendableBalances = derived([queryParams, evmBalances, cosmosBalances], ([$queryParams, $evmBalances, $cosmosBalances]) => {
    const fromChain = $queryParams["from-chain-id"];
@@ -152,11 +153,11 @@ $:  if (evmBalances !== null && cosmosBalances !== null && $cosmosChains !== nul
 
    const chainIndex = $cosmosChains.findIndex(c => c.chain_id === fromChain);
    const cosmosBalance = $cosmosBalances[chainIndex]
-   if (!cosmosBalance.isSuccess) {
+   if (!cosmosBalance.isSuccess || cosmosBalance.data instanceof Error) {
      alert('trying to send from evm but no balances fetched yet');
      return [];
    }
-   return cosmosBalance.data
+   return cosmosBalance.data.map((balance) => ({ ...balance, balance: BigInt(balance.balance)}))
 
  });
 }
