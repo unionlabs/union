@@ -242,7 +242,6 @@ pub trait TransferProtocol {
             .add_event(
                 packet_event
                     .add_attributes([
-                        ("this_module_version", Self::VERSION),
                         (ATTR_MODULE, TRANSFER_MODULE),
                         (ATTR_SENDER, packet.sender().to_string().as_str()),
                         (ATTR_RECEIVER, packet.receiver().to_string().as_str()),

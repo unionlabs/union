@@ -719,8 +719,6 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         ack_msgs.append(vec![deferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack_confirm".to_string())].as_mut());
-        ack_attr
-            .append(vec![("original_protocol", refund_info.original_protocol_version)].as_mut());
 
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
@@ -735,7 +733,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         match foreign_protocol {
             Ucs01Protocol::VERSION => Ok(match ack {
                 Ok(_) => Ucs01Protocol::ack_success(),
-                Err(_) => Ucs01Protocol::ack_failure(String::new()),
+                Err(e) => Ucs01Protocol::ack_failure(e),
             }
             .into()),
             Ics20Protocol::VERSION => Ok(ack),
@@ -1106,8 +1104,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         ack_msgs.append(vec![deferred_ack_msg].as_mut());
         ack_attr.append(vec![("pfm", "pfm_ack".to_string())].as_mut());
-        ack_attr
-            .append(vec![("original_protocol", refund_info.original_protocol_version)].as_mut());
 
         IN_FLIGHT_PFM_PACKETS.remove(self.common.deps.storage, refund_key);
 
