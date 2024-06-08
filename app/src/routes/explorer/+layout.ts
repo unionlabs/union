@@ -19,14 +19,19 @@ export interface Table {
 
 export const load = (loadEvent => {
   // Redirect if the user is visiting /explorer
-  if (loadEvent.url.pathname === "/explorer") throw redirect(302, "/explorer/blocks")
+  if (loadEvent.url.pathname === "/explorer") throw redirect(302, "/explorer/transfers")
 
   return {
     tables: [
       {
         route: "transfers",
-        icon: BlocksIcon,
+        icon: RocketIcon,
         description: "All UCS-01 transfers"
+      },
+      {
+        route: "user-transfers",
+        icon: RocketIcon,
+        description: "Your UCS-01 transfers"
       },
       {
         route: "blocks",
@@ -41,11 +46,6 @@ export const load = (loadEvent => {
       },
       { route: "channels", icon: TvIcon, description: "Open IBC Channels" },
       { route: "packets", icon: SendHorizontalIcon, description: "Packets sent through Union" },
-      {
-        route: "voyager-queue",
-        icon: RocketIcon,
-        description: "Voyager Relayer VM Operations Queue"
-      },
       {
         route: "index-status",
         icon: DatabaseIcon,
