@@ -22,7 +22,26 @@
     denom: string;
   }
 
-  $: address = $cosmosStore.address ?? ''
+  let userInput = false;
+  let address: string = $cosmosStore.address ?? '';
+
+  $: if (!userInput && ($cosmosStore.address !== address)) {
+    address = $cosmosStore.address ?? '';
+  }
+
+  const handleInput = (event: Event) => {
+    address = (event.target as HTMLInputElement).value;
+    userInput = true;
+  }
+
+  const resetInput = () => {
+    userInput = false;
+    address = $cosmosStore.address ?? '';
+  }
+
+  const handleInputCommit = () => {
+    userInput = false;
+  }
 
   const debounceDelay = 3_500
   let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
@@ -71,7 +90,8 @@
     },
     onSuccess: (data) => {
       console.log("Faucet request successful:", data);
-    }
+    },
+
   })
 
   const debouncedSubmit = debounce(() => {
@@ -81,6 +101,7 @@
     }
     submissionStatus = 'submitting'
     $mutation.mutate();
+    console.log('here')
     submissionStatus = 'submitted'
   }, debounceDelay);
 
@@ -88,6 +109,7 @@
     debouncedSubmit();
   };
 
+  $: console.log($mutation)
   $: if ($mutation.status === 'success') toast.success('Success!')
 
   $: unionBalancesQuery = createQuery<Balance>({
@@ -128,33 +150,50 @@
         <div class="relative flex flex-col gap-4">
           <div class="grid w-full items-center gap-2 mb-4">
             <Label for="address">Address</Label>
-            <div class="flex items-center gap-2 ">
-              <div class="relative w-full">
-                <Input
-                  autocapitalize="none"
-                  autocomplete="off"
-                  autocorrect="off" bind:value={address}
-                  disabled={inputState === 'locked'}
-                  id="address"
-                  on:blur={handleBlur}
-                  on:focus={handleFocus}
-                  on:mouseenter={handleMouseEnter}
-                  on:mouseleave={handleMouseLeave}
-                  on:mousemove={handleMouseMove}
-                  pattern={unionAddressRegex.source}
-                  placeholder="union14ea6..."
-                  required={true}
-                  spellcheck="false"
-                  type="text"
-                />
-                <input
-                  aria-hidden="true"
-                  bind:this={input}
-                  class="pointer-events-none absolute left-0 top-0 z-10 h-10 sm:h-11 w-full cursor-default rounded-md border border-[#8678F9] bg-[transparent] p-3.5 opacity-0 transition-opacity duration-500 placeholder:select-none"
-                  disabled
-                  name="style-input-mask"
-                  style={`opacity: ${opacity};mask-image: radial-gradient(30% 30px at ${position.x}px ${position.y}px, black 80%, transparent);`}
-                />
+            <div class="flex items-start gap-2 ">
+              <div class="w-full">
+                <div class="relative w-full mb-2">
+                  <Input
+                    autocapitalize="none"
+                    autocomplete="off"
+                    autocorrect="off"
+                    bind:value={address}
+                    disabled={inputState === 'locked'}
+                    id="address"
+                    on:blur={handleInputCommit}
+                    on:focus={handleFocus}
+                    on:input={handleInput}
+                    on:mouseenter={handleMouseEnter}
+                    on:mouseleave={handleMouseLeave}
+                    on:mousemove={handleMouseMove}
+                    pattern={unionAddressRegex.source}
+                    placeholder="union14ea6..."
+                    required={true}
+                    spellcheck="false"
+                    type="text"
+                  />
+                  <input
+                    aria-hidden="true"
+                    bind:this={input}
+                    class="pointer-events-none absolute left-0 top-0 z-10 h-10 sm:h-11 w-full cursor-default rounded-md border border-[#8678F9] bg-[transparent] p-3.5 opacity-0 transition-opacity duration-500 placeholder:select-none"
+                    disabled
+                    name="style-input-mask"
+                    style={`opacity: ${opacity};mask-image: radial-gradient(30% 30px at ${position.x}px ${position.y}px, black 80%, transparent);`}
+                  />
+                </div>
+                <div class="flex justify-between px-1">
+                  {#if $unionBalancesQuery.data}
+                    <p class="text-xs text-muted-foreground">
+                      Balance: {parseInt($unionBalancesQuery.data.amount) / 1000000}</p>
+                  {:else}
+                    <p class="text-xs text-muted-foreground">Balance: <span class="font-bold">0</span></p>
+                  {/if}
+                  {#if userInput}
+                    <button type="button" on:click={resetInput}
+                            class="text-xs text-muted-foreground hover:text-primary transition">Reset
+                    </button>
+                  {/if}
+                </div>
               </div>
               <Button aria-label="Toggle address lock" class="px-3" on:click={onLockClick}
                       variant="ghost">
@@ -165,12 +204,6 @@
                 {/if}
               </Button>
             </div>
-            {#if $unionBalancesQuery.data}
-              <p class="text-xs text-muted-foreground">
-                Balance: {parseInt($unionBalancesQuery.data.amount) / 1000000}</p>
-            {:else}
-              <p class="text-xs text-muted-foreground">Balance: <span class="font-bold">0</span></p>
-            {/if}
           </div>
           <div class="flex flex-col gap-4 sm:flex-row">
             <Button class="w-full sm:w-fit" type="submit">
