@@ -14,6 +14,7 @@ import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
 import Table from "../(components)/table.svelte"
+    import { truncate } from "$lib/utilities/format";
 
 $: cosmosBlocks = createQuery({
   queryKey: ["cosmos-blocks"],
@@ -73,8 +74,8 @@ const columns = [
     size: 200,
     cell: info =>
       flexRender(CellText, {
-        class: "p-0 m-0 font-mono",
-        value: info.getValue()
+        class: "p-0 m-0 font-mono text-muted-foreground",
+        value: truncate(info.getValue(), 12)
       })
   }
 ] as Array<ColumnDef<CosmosBlock>>

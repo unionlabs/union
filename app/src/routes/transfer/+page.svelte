@@ -333,7 +333,7 @@ let buttonText = "Transfer" satisfies
     </Card.Footer>
   </Card.Root>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($asset, 6)}</b> from <b>{$fromChain?.display_name}</b> to <b>{truncate($recipient, 6)}</b> on <b>{$toChain?.display_name}</b>. 
+    Will transfer <b>{amount} {truncate($asset, 6)}</b> from <b>{$fromChain?.display_name}</b> to <span class="font-bold font-mono">{truncate($recipient, 6)}</span> on <b>{$toChain?.display_name}</b>. 
   </div>
 </main>
 
