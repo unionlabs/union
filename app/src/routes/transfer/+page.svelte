@@ -23,15 +23,12 @@ import ChainDialog from "./(components)/chain-dialog.svelte"
 import ChainButton from "./(components)/chain-button.svelte"
 import AssetsDialog from "./(components)/assets-dialog.svelte"
 import { sepoliaStore, config } from "$lib/wallet/evm/config.ts"
-import SettingsDialog from "./(components)/settings-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import RecipientField from "./(components)/recipient-field.svelte"
-import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import CardSectionHeading from "./(components)/card-section-heading.svelte"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store";
 import { chainsQuery } from "$lib/queries/chains.ts";
-    import AlphaNotice from "$lib/components/alpha-notice.svelte";
 
 export let data: PageData
 
@@ -224,24 +221,6 @@ let buttonText = "Transfer" satisfies
   <Card.Root class={cn('max-w-[490px] w-full')}>
     <Card.Header class="flex flex-row w-full items-center gap-x-2">
       <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
-      <Button
-        size="icon"
-        type="button"
-        variant="ghost"
-        title="Ongoing transactions"
-        on:click={() => (dialogOpenPast = !dialogOpenPast)}
-        class="size-8  text-foreground p-0 outline-1 outline-accent/80 outline"
-      >
-        <Timer class="size-5" />
-      </Button>
-      <Button
-        size="icon"
-        variant="ghost"
-        on:click={() => (dialogOpenSettings = !dialogOpenSettings)}
-        class="size-8 bg-card text-foreground p-0 outline-1 outline-accent/80 outline"
-      >
-        <Settings class="size-5" />
-      </Button>
     </Card.Header>
     <Card.Content>
       <div data-transfer-from-section>
@@ -356,15 +335,6 @@ let buttonText = "Transfer" satisfies
   </Card.Root>
 </main>
 
-<!-- settings dialog -->
-<!-- 
-<SettingsDialog dialogOpen={dialogOpenSettings} title="Preferences" />
-!-->
-
-<!-- past dialog -->
-<!-- 
-<SettingsDialog dialogOpen={dialogOpenPast} title="Past" />
-!-->
 
 <!-- from-dialog -->
 <ChainDialog
