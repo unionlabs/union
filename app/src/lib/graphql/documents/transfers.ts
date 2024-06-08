@@ -20,7 +20,7 @@ export const allTransfersQueryDocument = graphql(/* GraphQL */ `
   }
 `)
 
-export const userTransfersQueryDocument = graphql(/* Graphql */`
+export const userTransfersQueryDocument = graphql(/* Graphql */ `
   query UserTransfersQuery($addr1: String!, $addr2: String!) @cached(ttl: 1) {
     v0_transfers(limit: 500, order_by: {source_timestamp: desc}, where: 
   {_or: [

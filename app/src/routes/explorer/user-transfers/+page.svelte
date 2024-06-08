@@ -10,27 +10,28 @@ import CellOrigin from "../(components)/cell-origin.svelte"
 import CellAssets from "../(components)/cell-assets.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { truncate } from "$lib/utilities/format"
-    import { cosmosStore } from "$lib/wallet/cosmos";
-    import { rawToHex } from "$lib/utilities/address";
-    import { sepoliaStore } from "$lib/wallet/evm";
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { rawToHex } from "$lib/utilities/address"
+import { sepoliaStore } from "$lib/wallet/evm"
 
 let transfers = createQuery({
   queryKey: ["transfers"],
   refetchInterval: 3_000,
   queryFn: async () => {
-
-    const cosmosAddr = $cosmosStore?.rawAddress;
-    const evmAddr = $sepoliaStore?.address;
+    const cosmosAddr = $cosmosStore?.rawAddress
+    const evmAddr = $sepoliaStore?.address
     if (cosmosAddr === undefined || evmAddr === undefined) {
-      return [];
+      return []
     }
-  
-    return (await request(URLS.GRAPHQL, userTransfersQueryDocument, {
-      addr1: rawToHex(cosmosAddr).slice(2), // remove 0x
-      addr2: evmAddr.slice(2) // remove 0x
-    })).v0_transfers;
+
+    return (
+      await request(URLS.GRAPHQL, userTransfersQueryDocument, {
+        addr1: rawToHex(cosmosAddr).slice(2), // remove 0x
+        addr2: evmAddr.slice(2) // remove 0x
+      })
+    ).v0_transfers
   }
-});
+})
 
 let chains = chainsQuery()
 
