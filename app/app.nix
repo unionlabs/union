@@ -9,7 +9,7 @@
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-QtMDHSOkC3oE6ZawULPoira1i0dZ8U+SDYzIv1mcTvo=";
+          npmDepsHash = "sha256-q+bFxbO7i4XlIBEzPLLeYqh/maDOPhFHVzpsynxFN2s=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--legacy-peer-deps" ];

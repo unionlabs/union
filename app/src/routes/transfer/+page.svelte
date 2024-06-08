@@ -1,16 +1,9 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { toast } from "svelte-sonner"
-import { sepolia } from "viem/chains"
-import { debounce } from "$lib/utilities"
+import { derived } from "svelte/store"
 import { UnionClient } from "@union/client"
-import type { PageData } from "./$types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { getWalletClient } from "@wagmi/core"
-import Timer from "virtual:icons/lucide/timer"
-import Chevron from "./(components)/chevron.svelte"
-import Settings from "virtual:icons/lucide/settings"
-import { createQuery } from "@tanstack/svelte-query"
+import { chainsQuery } from "$lib/queries/chains.ts"
 import { createWalletClient, isAddress } from "viem"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
 import type { OfflineSigner } from "@leapwallet/types"
@@ -21,16 +14,11 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import ChainDialog from "./(components)/chain-dialog.svelte"
 import ChainButton from "./(components)/chain-button.svelte"
-import AssetsDialog from "./(components)/assets-dialog.svelte"
 import { sepoliaStore, config } from "$lib/wallet/evm/config.ts"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import RecipientField from "./(components)/recipient-field.svelte"
 import CardSectionHeading from "./(components)/card-section-heading.svelte"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
-import { derived } from "svelte/store"
-import { chainsQuery } from "$lib/queries/chains.ts"
-
-export let data: PageData
 
 let evmBalances: null | ReturnType<typeof evmBalancesQuery>
 $: if ($sepoliaStore.address)
@@ -184,12 +172,6 @@ let buttonText = "Transfer" satisfies
       <CardSectionHeading>Asset</CardSectionHeading>
       <Button variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
 
-        <!--
-        <div class="text-2xl font-bold flex-1 text-left">
-          {assetSearchResults.find(i => i.address === $queryParams['asset-id'])?.symbol ||
-            'Select an asset'}
-        </div>
-        !-->
         <Chevron />
       </Button>
 
@@ -214,63 +196,63 @@ let buttonText = "Transfer" satisfies
         type="button"
         disabled={false}
         on:click={async event => {
-          event.preventDefault()
-          const assetId = $queryParams['asset-id']
-          if (!assetId) return toast.error('Please select an asset')
-          toast.info(
-            `Sending transaction from ${$queryParams['from-chain-id']} to ${$queryParams['to-chain-id']}`,
-          )
-          if ($queryParams['from-chain-id'] === String(sepolia.id)) {
-            if ($evmAccount.status !== 'connected')
-              return toast.error('Please connect your Sepolia wallet')
-            if (!isAddress(assetId)) return toast.error('Invalid address')
+        //   event.preventDefault()
+        //   const assetId = $queryParams['asset-id']
+        //   if (!assetId) return toast.error('Please select an asset')
+        //   toast.info(
+        //     `Sending transaction from ${$queryParams['from-chain-id']} to ${$queryParams['to-chain-id']}`,
+        //   )
+        //   if ($queryParams['from-chain-id'] === String(sepolia.id)) {
+        //     if ($evmAccount.status !== 'connected')
+        //       return toast.error('Please connect your Sepolia wallet')
+        //     if (!isAddress(assetId)) return toast.error('Invalid address')
 
-            const evmClient = await getWalletClient(config)
-            const client = new UnionClient({
-              // @ts-ignore
-              cosmosOfflineSigner: undefined,
-              evmSigner: evmClient,
-              bech32Prefix: 'union',
-              chainId: 'union-testnet-8',
-              gas: { denom: 'muno', amount: '0.0025' },
-              rpcUrl: 'https://union-testnet-rpc.polkachu.com',
-            })
-            const approveHash = await client.approveEvmAssetTransfer({
-              account: $evmAccount || evmClient.account,
-              denomAddress: assetId,
-              amount: BigInt(amount),
-            })
-            toast.success(`Approve transaction sent: ${approveHash}`)
-            const transferHash = await client.transferEvmAsset({
-              account: evmClient.account,
-              receiver: recipient,
-              denomAddress: assetId,
-              amount: BigInt(amount),
-              sourceChannel: 'channel-1',
-              simulate: true,
-              contractAddress: '0xD0081080Ae8493cf7340458Eaf4412030df5FEEb',
-            })
-            toast.success(`Transfer transaction sent: ${transferHash}`)
-          } else {
-            const transferHash = await unionClient.transferAssets({
-              kind: 'cosmwasm',
-              instructions: [
-                {
-                  contractAddress:
-                    'union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7',
-                  msg: {
-                    transfer: {
-                      channel: 'channel-0',
-                      receiver: recipient.slice(2),
-                      memo: ``,
-                    },
-                  },
-                  funds: [{ denom: assetId, amount }],
-                },
-              ],
-            })
-            toast.success(`Transfer transaction sent: ${transferHash}`)
-          }
+        //     const evmClient = await getWalletClient(config)
+        //     const client = new UnionClient({
+        //       // @ts-ignore
+        //       cosmosOfflineSigner: undefined,
+        //       evmSigner: evmClient,
+        //       bech32Prefix: 'union',
+        //       chainId: 'union-testnet-8',
+        //       gas: { denom: 'muno', amount: '0.0025' },
+        //       rpcUrl: 'https://union-testnet-rpc.polkachu.com',
+        //     })
+        //     const approveHash = await client.approveEvmAssetTransfer({
+        //       account: $evmAccount || evmClient.account,
+        //       denomAddress: assetId,
+        //       amount: BigInt(amount),
+        //     })
+        //     toast.success(`Approve transaction sent: ${approveHash}`)
+        //     const transferHash = await client.transferEvmAsset({
+        //       account: evmClient.account,
+        //       receiver: recipient,
+        //       denomAddress: assetId,
+        //       amount: BigInt(amount),
+        //       sourceChannel: 'channel-1',
+        //       simulate: true,
+        //       contractAddress: '0xD0081080Ae8493cf7340458Eaf4412030df5FEEb',
+        //     })
+        //     toast.success(`Transfer transaction sent: ${transferHash}`)
+        //   } else {
+        //     const transferHash = await unionClient.transferAssets({
+        //       kind: 'cosmwasm',
+        //       instructions: [
+        //         {
+        //           contractAddress:
+        //             'union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7',
+        //           msg: {
+        //             transfer: {
+        //               channel: 'channel-0',
+        //               receiver: recipient.slice(2),
+        //               memo: ``,
+        //             },
+        //           },
+        //           funds: [{ denom: assetId, amount }],
+        //         },
+        //       ],
+        //     })
+        //     toast.success(`Transfer transaction sent: ${transferHash}`)
+        //   }
         }}
       >
         {buttonText}

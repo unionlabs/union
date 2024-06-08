@@ -1,8 +1,5 @@
 import Icons from "unplugin-icons/vite"
-import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
-import { visualizer } from "rollup-plugin-visualizer"
-import TurboConsole from "unplugin-turbo-console/vite"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
 import { partytownVite } from "@builder.io/partytown/utils"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
@@ -17,7 +14,6 @@ export default defineConfig(config => {
 
   const plugins = [
     purgeCss(),
-    TurboConsole(), // has to be before sveltekit
     sveltekit(),
     partytownVite({
       debug: NODE_ENV === "development",
@@ -25,9 +21,6 @@ export default defineConfig(config => {
     }),
     Icons({ compiler: "svelte", autoInstall: true })
   ] satisfies Array<PluginOption>
-
-  if (INSPECT === "true") plugins.push(Inspect())
-  if (VISUALIZE === "true") plugins.push(visualizer({ filename: `stats/${Date.now()}_stats.html` }))
 
   return {
     plugins,
