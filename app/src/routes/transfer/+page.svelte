@@ -27,11 +27,10 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import RecipientField from "./(components)/recipient-field.svelte"
 import CardSectionHeading from "./(components)/card-section-heading.svelte"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
-import { derived } from "svelte/store";
-import { chainsQuery } from "$lib/queries/chains.ts";
+import { derived } from "svelte/store"
+import { chainsQuery } from "$lib/queries/chains.ts"
 
 export let data: PageData
-
 
 let evmBalances: null | ReturnType<typeof evmBalancesQuery>
 $: if ($sepoliaStore.address)
@@ -66,8 +65,6 @@ $: if (
     address: $cosmosStore.rawAddress
   })
 }
-
-
 
 const queryParams = queryParameters(
   {
@@ -118,62 +115,9 @@ onMount(() => {
   })
 })
 
-let dialogOpenPast = false
 let dialogOpenToken = false
 let dialogOpenToChain = false
 let dialogOpenFromChain = false
-let dialogOpenSettings = false
-
-let [chainSearch, chainSearchResults] = ["", chains]
-
-// function handleChainSearch(event: InputEvent) {
-//   const target = event.target
-//   if (!(target instanceof HTMLInputElement)) return
-//   chainSearch = target.value
-//   chainSearchResults = chains.filter(chain =>
-//     chain.name.toLowerCase().includes(chainSearch.toLowerCase())
-//   )
-// }
-
-// queryParams["from-chain-id"]
-// $: selectedFromChkain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
-
-// queryParams["to-chain-id"]
-// $: selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
-
-
-$: sepoliaAssets = $evmBalances?.data ?? []
-
-// $: [tokenSearch, assetSearchResults] = [
-//   "",
-//   $queryParams["from-chain-id"] === "11155111" ? sepoliaAssets : unionBalances
-// ]
-
-// function handleAssetSearch(event: InputEvent) {
-//   const target = event.target
-//   if (!(target instanceof HTMLInputElement)) return
-//   tokenSearch = target.value
-//   assetSearchResults = sepoliaAssets.filter(asset =>
-//     asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase())
-//   )
-// }
-
-// $: {
-//   assetSearchResults = $queryParams["from-chain-id"] === "11155111" ? sepoliaAssets : unionBalances
-// }
-
-const handleChainSelect = (name: string, target: "from-chain-id" | "to-chain-id") =>
-  {
-    console.log('chain name', name);
-    $queryParams[target] = name
-
-    ;[dialogOpenFromChain, dialogOpenToChain, dialogOpenToken, dialogOpenSettings] = [
-      false,
-      false,
-      false,
-      false
-    ]
-  }
 
 function handleAssetSelect(id: string) {
   // $queryParams["asset-id"] = assetSearchResults.find(asset => asset.symbol === id)?.address ?? ""
@@ -214,7 +158,7 @@ let buttonText = "Transfer" satisfies
   <title>Union | Send</title>
 </svelte:head>
 
-{#if $chains && $chains.isSuccess }
+{#if $chains && $chains.isSuccess && $evmBalances && $evmBalances.isSuccess && $cosmosBalances && !($cosmosBalances instanceof Error)}
 <main
   class="overflow-scroll flex justify-center size-full items-start px-0 sm:px-3 max-h-full sm:py-8"
 >
