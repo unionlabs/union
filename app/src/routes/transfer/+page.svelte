@@ -30,6 +30,7 @@ import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { chainsQuery } from "$lib/queries/chains.ts"
 import { truncate } from "$lib/utilities/format.ts";
+    import { rawToBech32 } from "$lib/utilities/address.ts";
 
 export let data: PageData
 
@@ -70,7 +71,6 @@ $: if (
 // CURRENT FORM STATE
 let fromChainId = writable("union-testnet-8");
 let toChainId = writable("11155111");
-let recipient = writable("");
 let asset = writable("");
 
 let unionClient: UnionClient
@@ -89,6 +89,22 @@ let fromChain = derived([chains, fromChainId], ([$chains, $fromChainId]) => {
   }
   return $chains.data.find((chain) => chain.chain_id === $fromChainId) ?? null;
 });
+
+let recipient = derived([toChain, sepoliaStore, cosmosStore], ([$toChain, $sepoliaStore, $cosmosStore]) => {
+  if (!$toChain) {
+    return null;
+  }
+
+  if ($toChain.rpc_type === "evm") {
+    return $sepoliaStore.address
+  }
+
+  if ($toChain.rpc_type === "cosmos") {
+    return rawToBech32($toChain.addr_prefix, $cosmosStore.rawAddress);
+  }
+
+  return null;
+}); 
 
 
 onMount(() => {
@@ -193,15 +209,15 @@ let buttonText = "Transfer" satisfies
     <Card.Header class="flex flex-row w-full items-center gap-x-2">
       <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
     </Card.Header>
-    <Card.Content>
-      <div data-transfer-from-section>
+    <Card.Content class={cn("flex flex-col gap-4")}>
+      <section>
         <CardSectionHeading>From</CardSectionHeading>
         <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain} >
           {$fromChain?.display_name}
         </ChainButton>
 
 
-        <div class="flex flex-col items-center pt-4">
+        <div class="flex flex-col items-center pt-4 -mb-6">
           <Button size="icon" variant="outline" on:click={swapChainsClick}>
             <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
           </Button>
@@ -211,31 +227,37 @@ let buttonText = "Transfer" satisfies
         <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
           {$toChain?.display_name}
         </ChainButton>
-      </div>
-      <!-- asset -->
-      <CardSectionHeading>Asset</CardSectionHeading>
-      <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
-        <div class="flex-1 text-left">{truncate($asset, 12)}</div>
+      </section>
+      <section>
+        <CardSectionHeading>Asset</CardSectionHeading>
+        <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
+          <div class="flex-1 text-left">{truncate($asset, 12)}</div>
 
-        <Chevron />
-      </Button>
-      {#if $asset !== "" && sendableBalances !== null && $sendableBalances !== null }
-        <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($asset, 12)}</b> balance on <b>{$fromChainId}</b> is <b>{$sendableBalances.find(b => b.symbol === $asset)?.balance}</b></div>
-      {/if}
+          <Chevron />
+        </Button>
+        {#if $asset !== "" && sendableBalances !== null && $sendableBalances !== null }
+          <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($asset, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is <b>{$sendableBalances.find(b => b.symbol === $asset)?.balance}</b></div>
+        {/if}
+      </section>
 
-      <CardSectionHeading>Amount</CardSectionHeading>
-      <Input
-        minlength={1}
-        maxlength={64}
-        placeholder="0.00"
-        autocorrect="off"
-        autocomplete="off"
-        spellcheck="false"
-        bind:value={amount}
-        autocapitalize="none"
-        pattern="^[0-9]*[.,]?[0-9]*$"
-      />
-      <CardSectionHeading>Recipient</CardSectionHeading>
+      <section>
+        <CardSectionHeading>Amount</CardSectionHeading>
+        <Input
+          minlength={1}
+          maxlength={64}
+          placeholder="0.00"
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          bind:value={amount}
+          autocapitalize="none"
+          pattern="^[0-9]*[.,]?[0-9]*$"
+        />
+      </section>
+      <section>
+        <CardSectionHeading>Recipient</CardSectionHeading>
+        <div class="text-muted-foreground font-mono">{$recipient}</div>
+      </section>
 
     </Card.Content>
     <Card.Footer>
