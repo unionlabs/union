@@ -16,10 +16,11 @@ import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
-import { QueryClient, MutationCache, notifyManager } from "@tanstack/svelte-query"
+import { notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
+import {createQueryClient} from "$lib/graphql/client.ts";
 
+const { queryClient, localStoragePersister } = createQueryClient();
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
@@ -43,28 +44,6 @@ onMount(() => {
 
   if (window?.keplr) cosmosStore.connect("keplr")
   else if (window?.leap) cosmosStore.connect("leap")
-})
-
-const queryClient: QueryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      enabled: browser,
-      gcTime: 1_000 * 60 * 60 * 24, // 24 hours
-      refetchOnReconnect: () => !queryClient.isMutating()
-    }
-  },
-  mutationCache: new MutationCache({
-    onSettled: () => {
-      if (queryClient.isMutating() === 1) {
-        return queryClient.invalidateQueries()
-      }
-    }
-  })
-})
-
-const localStoragePersister = createSyncStoragePersister({
-  key: "SVELTE_QUERY",
-  storage: browser ? window.localStorage : undefined // or window.sessionStorage
 })
 
 onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
