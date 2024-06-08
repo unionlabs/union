@@ -41,6 +41,8 @@ $: if (
     address: $cosmosStore.rawAddress
   })
 }
+
+$: if ($cosmosStore.connectionStatus === "disconnected") cosmosBalances = null
 </script>
 
 <main class="flex flex-col items-center w-full p-4 mt-16 gap-6">
@@ -98,7 +100,11 @@ $: if (
       {#each $cosmosBalances as balance, index}
         <div>
         <h3 class="font-bold">{$cosmosChains[index].display_name}</h3>
-          <div class="text-xs font-mono text-muted-foreground">{rawToBech32($cosmosChains[index].addr_prefix, $cosmosStore.rawAddress)}</div>
+          {#if $cosmosChains[index]?.addr_prefix && $cosmosStore.rawAddress && $cosmosStore.rawAddress.length > 0}
+            <div class="text-xs font-mono text-muted-foreground">
+              {rawToBech32($cosmosChains[index].addr_prefix, $cosmosStore.rawAddress)}
+            </div>
+          {/if}
           {#if balance.isLoading}
             <p class="text-muted-foreground">Loading...</p>
           {:else if balance.isError}

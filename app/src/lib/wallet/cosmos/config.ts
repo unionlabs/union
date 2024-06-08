@@ -78,13 +78,19 @@ function createCosmosStore(
     disconnect: async () => {
       const cosmosWalletId = get({ subscribe }).connectedWallet as CosmosWalletId
       console.log("[cosmos] cosmosDisconnectClick", get(cosmosStore))
-      if (cosmosWalletId && cosmosWalletId === "keplr" && window[cosmosWalletId]) {
-        await window[cosmosWalletId]?.disable("union-testnet-8")
-        update(v => ({ ...v, connectedWallet: "none", connectionStatus: "disconnected" }))
-      }
-      if (cosmosWalletId && cosmosWalletId === "leap" && window[cosmosWalletId]) {
-        await window[cosmosWalletId]?.disconnect("union-testnet-8")
-        update(v => ({ ...v, connectedWallet: "none", connectionStatus: "disconnected" }))
+      if (cosmosWalletId && window[cosmosWalletId]) {
+        if (cosmosWalletId === "keplr") {
+          await window[cosmosWalletId]?.disable("union-testnet-8")
+        } else if (cosmosWalletId === "leap") {
+          await window[cosmosWalletId]?.disconnect("union-testnet-8")
+        }
+        update(v => ({
+          ...v,
+          connectedWallet: "none",
+          connectionStatus: "disconnected",
+          address: undefined,
+          rawAddress: undefined
+        }))
       }
     }
   }
