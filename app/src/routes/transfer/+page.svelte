@@ -315,11 +315,11 @@ let buttonText = "Transfer" satisfies
               instructions: [
                 {
                   contractAddress:
-                    'union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7',
+                    'union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3',
                   msg: {
                     transfer: {
-                      channel: 'channel-0',
-                      receiver: $recipient,
+                      channel: 'channel-28',
+                      receiver: $recipient?.slice(2),
                       memo: ``,
                     },
                   },
