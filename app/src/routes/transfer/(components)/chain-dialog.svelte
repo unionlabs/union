@@ -58,7 +58,7 @@ $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
           >
             <Button
               variant={selectedChain === chain.chain_id ? 'secondary' : 'ghost'}
-              on:click={() => onChainSelect(chain.chain_id)}
+              on:click={() => {onChainSelect(chain.chain_id); dialogOpen = false}}
               class={cn('w-full flex justify-start space-x-4 p-2 pl-3 h-[55px] my-auto rounded-sm')}
             >
               <div class="size-full mr-auto flex flex-col items-start">
