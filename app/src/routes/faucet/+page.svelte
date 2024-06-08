@@ -14,6 +14,8 @@
   import { Label } from "$lib/components/ui/label";
   import { getUnoFromFaucet } from "$lib/mutations/faucet.ts";
   import { createMutation, createQuery } from "@tanstack/svelte-query";
+  import * as Form from "$lib/components/ui/form/index.ts"
+  import * as Card from "$lib/components/ui/card/index.ts"
 
   interface Balance {
     amount: string;
@@ -119,7 +121,7 @@
 <main class="flex justify-center items-start max-h-full px-0 sm:px-3 py-8">
   <Card.Root class="max-w-[475px] w-full">
     <Card.Header>
-      <Card.Title tag="h1" class="font-bold text-2xl">Faucet</Card.Title>
+      <Card.Title class="font-bold text-2xl" tag="h1">Faucet</Card.Title>
     </Card.Header>
     <Card.Content>
       <form class="space-y-8" on:submit|preventDefault={handleSubmit}>
@@ -129,33 +131,33 @@
             <div class="flex items-center gap-2 ">
               <div class="relative w-full">
                 <Input
-                  bind:value={address}
-                  disabled={inputState === 'locked'}
-                  type="text" id="address"
-                  placeholder="union14ea6..."
-                  required={true}
-                  autocorrect="off"
-                  autocomplete="off"
-                  spellcheck="false"
                   autocapitalize="none"
+                  autocomplete="off"
+                  autocorrect="off" bind:value={address}
+                  disabled={inputState === 'locked'}
+                  id="address"
                   on:blur={handleBlur}
                   on:focus={handleFocus}
-                  on:mousemove={handleMouseMove}
-                  on:mouseleave={handleMouseLeave}
                   on:mouseenter={handleMouseEnter}
+                  on:mouseleave={handleMouseLeave}
+                  on:mousemove={handleMouseMove}
                   pattern={unionAddressRegex.source}
+                  placeholder="union14ea6..."
+                  required={true}
+                  spellcheck="false"
+                  type="text"
                 />
                 <input
-                  disabled
-                  bind:this={input}
                   aria-hidden="true"
+                  bind:this={input}
+                  class="pointer-events-none absolute left-0 top-0 z-10 h-10 sm:h-11 w-full cursor-default rounded-md border border-[#8678F9] bg-[transparent] p-3.5 opacity-0 transition-opacity duration-500 placeholder:select-none"
+                  disabled
                   name="style-input-mask"
                   style={`opacity: ${opacity};mask-image: radial-gradient(30% 30px at ${position.x}px ${position.y}px, black 80%, transparent);`}
-                  class="pointer-events-none absolute left-0 top-0 z-10 h-10 sm:h-11 w-full cursor-default rounded-md border border-[#8678F9] bg-[transparent] p-3.5 opacity-0 transition-opacity duration-500 placeholder:select-none"
                 />
               </div>
-              <Button on:click={onLockClick} variant="ghost" aria-label="Toggle address lock"
-                      class="px-3">
+              <Button aria-label="Toggle address lock" class="px-3" on:click={onLockClick}
+                      variant="ghost">
                 {#if inputState === 'locked'}
                   <LockLockedIcon size="medium"/>
                 {:else}
@@ -171,14 +173,15 @@
             {/if}
           </div>
           <div class="flex flex-col gap-4 sm:flex-row">
-            <Button type="submit" class="w-full sm:w-fit">
+            <Button class="w-full sm:w-fit" type="submit">
               Submit
               {#if submissionStatus === 'submitting'}
                 <LoadingIcon/>
               {/if}
             </Button>
-            <a href="https://git-faucets.web.val.run" target="_blank" rel="noopener noreferrer"
-               class="flex items-center gap-x-2 font-bold text-xs">
+            <a class="flex items-center gap-x-2 font-bold text-xs" href="https://git-faucets.web.val.run"
+               rel="noopener noreferrer"
+               target="_blank">
               Faucets for other assets & chains
               <ExternalLinkIcon size="small"/>
             </a>
