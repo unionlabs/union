@@ -16,7 +16,7 @@ export let selectedChainId: string
   <div class="flex items-center space-x-1.5 flex-1">
     <div class="flex flex-col items-start">
       <div class="font-bold text-md mr-auto w-full text-left">
-        {selectedChainId}
+        <slot/>
       </div>
     </div>
   </div>

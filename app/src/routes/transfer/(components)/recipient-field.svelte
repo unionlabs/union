@@ -9,42 +9,17 @@ import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.ts"
 import Button from "$lib/components/ui/button/button.svelte"
 import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/validate.ts"
+import type { Writable } from "svelte/store";
 
-const queryParams = queryParameters({
-  "to-chain-id": {
-    encode: v => v?.toString(),
-    decode: (v: string | null) => (typeof v === "string" ? v : null)
-  },
-  recipient: {
-    encode: v => v?.toString(),
-    decode: (v: string | null) => (typeof v === "string" ? v : null)
-  }
-})
-
-export let recipient: string = $queryParams["recipient"]
-$: $queryParams.recipient = recipient
+export let recipient: Writable<string>;
 
 let recipientInputState: "locked" | "unlocked" | "invalid" = "unlocked"
 
 const recipientAddressByChainId = (chainId?: string | null) => {
   if (!chainId) return ""
   if (chainId === "11155111") return $sepoliaStore.address
-  return $cosmosStore.address
+  return $cosmosStore.rawAddress
 }
-
-onMount(() => {
-  recipient = recipientAddressByChainId($queryParams["to-chain-id"]) || recipient
-})
-
-$: {
-  if (isValidEvmAddress(recipient) || isValidCosmosAddress(recipient)) {
-    recipientInputState = "locked"
-  } else recipientInputState = "unlocked"
-}
-
-queryParams.subscribe(newQueryParams => {
-  recipient = recipientAddressByChainId(newQueryParams["to-chain-id"]) || recipient
-})
 
 const onUnlockClick = (_event: MouseEvent) => {
   if (recipientInputState === "locked") {

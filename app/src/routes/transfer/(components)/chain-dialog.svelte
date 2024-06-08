@@ -10,7 +10,7 @@ import type { Writable } from "svelte/store"
 export let kind: "from" | "to"
 export let dialogOpen = false
 export let onChainSelect: (newSelectedChain: string) => void
-export let chains: Array<{ chain_id: string }>
+export let chains: Array<{ chain_id: string, display_name: string }>
 export let selectedChain: string
 
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
@@ -49,26 +49,24 @@ $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
         />
       </div>
       !-->
-      <ul class="my-3 space-y-1 px-2">
+      <ul class="flex flex-col">
         {#each chains as chain, index}
           <li
             class={cn(
-              'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
+              'dark:text-accent-foreground flex flex-col',
             )}
           >
             <Button
               variant={selectedChain === chain.chain_id ? 'secondary' : 'ghost'}
               on:click={() => {onChainSelect(chain.chain_id); dialogOpen = false}}
-              class={cn('w-full flex justify-start space-x-4 p-2 pl-3 h-[55px] my-auto rounded-sm')}
+              class={cn('size-full px-4 py-2 w-full rounded-none flex flex-col items-start')}
             >
-              <div class="size-full mr-auto flex flex-col items-start">
-                <span
-                  class="my-auto text-[22px] font-extrabold mr-auto w-full text-left justify-between"
+                <div
+                  class="text-lg font-bold"
                 >
-                  {name}
-                </span>
-                <span class="text-xs text-muted-foreground">{chain.chain_id}</span>
-              </div>
+                  {chain.display_name}
+                </div>
+                <div class="text-xs text-muted-foreground">{chain.chain_id}</div>
             </Button>
           </li>
         {/each}
