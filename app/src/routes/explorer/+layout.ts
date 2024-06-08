@@ -29,6 +29,11 @@ export const load = (loadEvent => {
         description: "All UCS-01 transfers"
       },
       {
+        route: "user-transfers",
+        icon: RocketIcon,
+        description: "Your UCS-01 transfers"
+      },
+      {
         route: "blocks",
         icon: BlocksIcon,
         description: "Blocks from all chains indexed by Hubble"
