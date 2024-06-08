@@ -34,7 +34,6 @@ $: if (
   $cosmosStore.rawAddress?.length !== undefined &&
   $cosmosStore.rawAddress?.length > 0
 ) {
-  console.log($cosmosChains)
   cosmosBalances = cosmosBalancesQuery({
     // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
     //@ts-ignore

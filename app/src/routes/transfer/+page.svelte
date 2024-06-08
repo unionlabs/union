@@ -66,8 +66,6 @@ $: if (
     chains: $cosmosChains,
     address: $cosmosStore.rawAddress
   })
-
-
 }
 
 const queryParams = queryParameters(
@@ -89,7 +87,16 @@ const queryParams = queryParameters(
 )
 
 let unionClient: UnionClient
+
+let prevFromChain = $queryParams["from-chain-id"];
 onMount(() => {
+  queryParams.subscribe((params) => {
+    if (prevFromChain !== params["from-chain-id"]) {
+      prevFromChain = params["from-chain-id"];
+      params["asset"] = "";
+    }
+  });
+
   const cosmosOfflineSigner = (
     $cosmosStore.connectedWallet === "keplr"
       ? window?.keplr?.getOfflineSigner("union-testnet-8", {
@@ -117,6 +124,7 @@ onMount(() => {
     // rpcUrl: 'https://rpc.testnet.bonlulu.uno',
     rpcUrl: "https://union-testnet-rpc.polkachu.com"
   })
+
 })
 
 let dialogOpenToken = false
@@ -134,6 +142,8 @@ $: {
 
 
 let sendableBalances: null | Readable<Array<{balance: bigint, address: string, symbol: string, decimals: number}>> = null;
+
+let subscribed = false;
 
 $:  if (queryParams && evmBalances && cosmosBalances && evmBalances !== null && cosmosBalances !== null && $cosmosChains !== null) {
  sendableBalances = derived([queryParams, evmBalances, cosmosBalances], ([$queryParams, $evmBalances, $cosmosBalances]) => {
@@ -155,6 +165,8 @@ $:  if (queryParams && evmBalances && cosmosBalances && evmBalances !== null && 
    return cosmosBalance.data.map((balance) => ({ ...balance, balance: BigInt(balance.balance)}))
 
  });
+
+
 }
 
 
