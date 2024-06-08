@@ -64,6 +64,8 @@ $: if (
     chains: $cosmosChains,
     address: $cosmosStore.rawAddress
   })
+
+
 }
 
 const queryParams = queryParameters(
@@ -124,6 +126,7 @@ function handleAssetSelect(id: string) {
   // dialogOpenToken = false
 }
 
+   
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 
 let amount = ""
@@ -132,6 +135,32 @@ let recipient = $queryParams.recipient || ""
 $: {
   amount = amount.replaceAll(amountRegex, "")
 }
+
+
+// @ts-ignore
+let sendableBalances = null;
+$:  if (evmBalances !== null && cosmosBalances !== null && $cosmosChains !== null) {
+ sendableBalances = derived([queryParams, evmBalances, cosmosBalances], ([$queryParams, $evmBalances, $cosmosBalances]) => {
+   const fromChain = $queryParams["from-chain-id"];
+   if (fromChain === "11155111") {
+     if (!$evmBalances.isSuccess) {
+       alert('trying to send from evm but no balances fetched yet');
+       return [];
+     }
+    return $evmBalances.data;
+   }
+
+   const chainIndex = $cosmosChains.findIndex(c => c.chain_id === fromChain);
+   const cosmosBalance = $cosmosBalances[chainIndex]
+   if (!cosmosBalance.isSuccess) {
+     alert('trying to send from evm but no balances fetched yet');
+     return [];
+   }
+   return cosmosBalance.data
+
+ });
+}
+
 
 function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$queryParams["from-chain-id"], $queryParams["to-chain-id"]]
@@ -182,6 +211,9 @@ let buttonText = "Transfer" satisfies
       </div>
       <!-- asset -->
       <CardSectionHeading>Asset</CardSectionHeading>
+      {#if sendableBalances !== null}
+        <div>{JSON.stringify($sendableBalances)}</div>
+      {/if}
       <Button variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
 
         <!--
