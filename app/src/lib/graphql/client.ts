@@ -1,6 +1,6 @@
-import {MutationCache, QueryClient} from "@tanstack/svelte-query"
-import {createSyncStoragePersister} from "@tanstack/query-sync-storage-persister"
-import {browser} from "$app/environment"
+import { MutationCache, QueryClient } from "@tanstack/svelte-query"
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
+import { browser } from "$app/environment"
 
 export function createQueryClient() {
   const queryClient: QueryClient = new QueryClient({
@@ -25,5 +25,5 @@ export function createQueryClient() {
     storage: typeof window !== "undefined" ? window.localStorage : undefined // Use local storage if in browser
   })
 
-  return {queryClient, localStoragePersister}
+  return { queryClient, localStoragePersister }
 }
