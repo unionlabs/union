@@ -30,6 +30,7 @@ import CardSectionHeading from "./(components)/card-section-heading.svelte"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { chainsQuery } from "$lib/queries/chains.ts"
+    import { truncate } from "$lib/utilities/format.ts";
 
 export let data: PageData
 
@@ -82,7 +83,7 @@ const queryParams = queryParameters(
       defaultValue: "11155111"
     },
     recipient: { encode: v => v?.toString(), decode: v => v, defaultValue: "" },
-    "asset-id": { encode: v => v?.toString(), decode: v => v, defaultValue: "" }
+    "asset": { encode: v => v?.toString(), decode: v => v, defaultValue: "" }
   },
   { debounceHistory: 500, showDefaults: true, sort: false }
 )
@@ -121,12 +122,6 @@ onMount(() => {
 let dialogOpenToken = false
 let dialogOpenToChain = false
 let dialogOpenFromChain = false
-
-function handleAssetSelect(id: string) {
-  // $queryParams["asset-id"] = assetSearchResults.find(asset => asset.symbol === id)?.address ?? ""
-  // dialogOpenToken = false
-}
-
    
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 
@@ -140,7 +135,7 @@ $: {
 
 let sendableBalances: null | Readable<Array<{balance: bigint, address: string, symbol: string, decimals: number}>> = null;
 
-$:  if (evmBalances !== null && cosmosBalances !== null && $cosmosChains !== null) {
+$:  if (queryParams && evmBalances && cosmosBalances && evmBalances !== null && cosmosBalances !== null && $cosmosChains !== null) {
  sendableBalances = derived([queryParams, evmBalances, cosmosBalances], ([$queryParams, $evmBalances, $cosmosBalances]) => {
    const fromChain = $queryParams["from-chain-id"];
    if (fromChain === "11155111") {
@@ -167,13 +162,6 @@ function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$queryParams["from-chain-id"], $queryParams["to-chain-id"]]
   $queryParams["from-chain-id"] = toChain
   $queryParams["to-chain-id"] = fromChain
-
-  // selectedFromChain = data.chains.find(
-  //   chain => chain.name.toLowerCase() === $queryParams["from-chain-id"].toLowerCase()
-  // )
-  // selectedToChain = data.chains.find(
-  //   chain => chain.name.toLowerCase() === $queryParams["to-chain-id"].toLowerCase()
-  // )
 }
 
 let buttonText = "Transfer" satisfies
@@ -215,14 +203,9 @@ let buttonText = "Transfer" satisfies
       {#if sendableBalances !== null}
         <div>{JSON.stringify($sendableBalances)}</div>
       {/if}
-      <Button variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
+      <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
+        <div class="flex-1 text-left">{truncate($queryParams['asset'], 12)}</div>
 
-        <!--
-        <div class="text-2xl font-bold flex-1 text-left">
-          {assetSearchResults.find(i => i.address === $queryParams['asset-id'])?.symbol ||
-            'Select an asset'}
-        </div>
-        !-->
         <Chevron />
       </Button>
 
@@ -248,7 +231,7 @@ let buttonText = "Transfer" satisfies
         disabled={false}
         on:click={async event => {
           event.preventDefault()
-          const assetId = $queryParams['asset-id']
+          const assetId = $queryParams['asset']
           if (!assetId) return toast.error('Please select an asset')
           toast.info(
             `Sending transaction from ${$queryParams['from-chain-id']} to ${$queryParams['to-chain-id']}`,
@@ -331,13 +314,12 @@ let buttonText = "Transfer" satisfies
   bind:dialogOpen={dialogOpenToChain}
 />
 
-<!-- token dialog -->
-<!-- 
-<AssetsDialog
-  {handleAssetSearch}
-  {handleAssetSelect}
-  {assetSearchResults}
-  bind:dialogOpen={dialogOpenToken}
-/>
-!-->
+  <!-- token dialog -->
+  {#if $sendableBalances}
+    <AssetsDialog
+      assets={$sendableBalances}
+      onAssetSelect={(newSelectedAsset) => {$queryParams["asset"] = newSelectedAsset}}
+      bind:dialogOpen={dialogOpenToken}
+    />
+  {/if}
 {/if}

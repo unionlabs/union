@@ -5,17 +5,16 @@ import * as Dialog from "$lib/components/ui/dialog"
 import type { Asset } from "$lib/constants/assets.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
-import { truncate } from "svelte-ux"
+import { truncate } from "$lib/utilities/format"
 
 export let dialogOpen = false
-export let assetSearchResults: Array<{
+export let assets: Array<{
   address: string
   balance: string
   decimals: number
   symbol: string
 }>
-export let handleAssetSelect: (asset: string) => void
-export let handleAssetSearch: (event: InputEvent) => void
+export let onAssetSelect: (asset: string) => void
 </script>
 
 <Dialog.Root
@@ -31,21 +30,8 @@ export let handleAssetSearch: (event: InputEvent) => void
       <Dialog.Title class="font-extrabold text-2xl pl-3 -mt-2">Select a token</Dialog.Title>
     </Dialog.Header>
     <Dialog.Description class="size-full">
-      <div class="relative mr-auto flex-1 w-full">
-        <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-        <Input
-          type="search"
-          pattern="[a-z]"
-          autocorrect="off"
-          spellcheck="false"
-          placeholder="OSMO…"
-          autocapitalize="off"
-          on:input={handleAssetSearch}
-          class="w-full rounded-none bg-current/95 pl-8 self-stretch lowercase border-x-0 focus-visible:ring-0"
-        />
-      </div>
       <ul class="my-3 mx-2 space-y-1">
-        {#each assetSearchResults as { address, symbol, decimals, balance }, index}
+        {#each assets as { address, symbol, decimals, balance }, index}
           <li
             class={cn(
               'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
@@ -54,16 +40,12 @@ export let handleAssetSearch: (event: InputEvent) => void
             <Button
               variant="ghost"
               class={cn(
-                'w-full flex justify-start space-x-4 p-2 rounded-none pl-3 h-[55px] my-auto',
+                'w-full flex justify-start space-x-4 p-2 rounded-none pl-3',
               )}
-              on:click={() => handleAssetSelect(symbol)}
+              on:click={() => {onAssetSelect(symbol); dialogOpen = false }}
             >
-              <div class="size-full mr-auto flex flex-col items-start">
-                <span
-                  class="my-auto text-md font-extrabold mr-auto w-full text-left justify-between text-foreground"
-                >
-                  {symbol}
-                </span>
+              <div class="size-full flex flex-col items-start">
+                  {truncate(symbol, 12)}
               </div>
               <p class="mb-auto text-lg font-black">{balance}</p>
             </Button>
