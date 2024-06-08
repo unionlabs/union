@@ -23,13 +23,12 @@ let cosmosChains = derived(chains, $chains => {
   if (!$chains?.isSuccess) {
     return null
   }
-  return $chains.data.v0_chains.filter(
-    (c: (typeof $chains.data.v0_chains)[number]) =>
+  return $chains.data.filter(
+    (c: (typeof $chains.data)[number]) =>
       c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id
   )
 })
 
-// ts bug, length can be undefined
 $: if (
   $cosmosChains &&
   $cosmosStore.rawAddress?.length !== undefined &&
@@ -107,9 +106,11 @@ $: if (
             <p class="text-red-500">{balance.error}</p>
           {:else if balance.isSuccess}
           <div>
-            {#each balance.data as asset}
-              <div>{truncate(asset.symbol, 8)} | {asset.balance}</div>
-            {/each}
+            {#if !(balance.data instanceof Error)}
+              {#each balance.data as asset}
+                <div>{truncate(asset.symbol, 8)} | {asset.balance}</div>
+              {/each}
+            {/if}
           </div>
           {/if}
         </div>
@@ -119,11 +120,6 @@ $: if (
     {/if}
     </Card.Content>
   </Card.Root>
-
-
-
-
-  
 </main>
 
 
