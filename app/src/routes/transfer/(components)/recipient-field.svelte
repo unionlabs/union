@@ -9,9 +9,9 @@ import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.ts"
 import Button from "$lib/components/ui/button/button.svelte"
 import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/validate.ts"
-import type { Writable } from "svelte/store";
+import type { Writable } from "svelte/store"
 
-export let recipient: Writable<string>;
+export let recipient: Writable<string>
 
 let recipientInputState: "locked" | "unlocked" | "invalid" = "unlocked"
 

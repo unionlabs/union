@@ -10,7 +10,7 @@ import type { Writable } from "svelte/store"
 export let kind: "from" | "to"
 export let dialogOpen = false
 export let onChainSelect: (newSelectedChain: string) => void
-export let chains: Array<{ chain_id: string, display_name: string }>
+export let chains: Array<{ chain_id: string; display_name: string }>
 export let selectedChain: string
 
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"

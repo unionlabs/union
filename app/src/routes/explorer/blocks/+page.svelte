@@ -14,7 +14,7 @@ import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
 
 import Table from "../(components)/table.svelte"
-    import { truncate } from "$lib/utilities/format";
+import { truncate } from "$lib/utilities/format"
 
 $: cosmosBlocks = createQuery({
   queryKey: ["cosmos-blocks"],
