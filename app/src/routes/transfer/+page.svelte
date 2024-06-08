@@ -17,7 +17,6 @@ import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { queryParameters } from "sveltekit-search-params"
 import { Input } from "$lib/components/ui/input/index.js"
-import { evmBalancesQuery } from "$lib/queries/balance.ts"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import ChainDialog from "./(components)/chain-dialog.svelte"
@@ -29,23 +28,60 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import RecipientField from "./(components)/recipient-field.svelte"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import CardSectionHeading from "./(components)/card-section-heading.svelte"
+import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
+    import { derived } from "svelte/store";
+    import { chainsQuery } from "$lib/queries/chains.ts";
 
 export let data: PageData
-const { chains } = data
 
-const devBorder = 0 && "outline outline-[1px] outline-pink-200/40"
+
+let evmBalances: null | ReturnType<typeof evmBalancesQuery>
+$: if ($sepoliaStore.address)
+  evmBalances = evmBalancesQuery({
+    chainId: "11155111",
+    address: $sepoliaStore.address,
+    tokenSpecification: "erc20"
+  })
+
+let chains = chainsQuery()
+let cosmosBalances: null | ReturnType<typeof cosmosBalancesQuery>
+let cosmosChains = derived(chains, $chains => {
+  if (!$chains?.isSuccess) {
+    return null
+  }
+  return $chains.data.filter(
+    (c: (typeof $chains.data)[number]) =>
+      c.rpc_type === "cosmos" && c.addr_prefix !== null && c.rpcs && c.chain_id
+  )
+})
+
+$: if (
+  $cosmosChains &&
+  $cosmosStore.rawAddress?.length !== undefined &&
+  $cosmosStore.rawAddress?.length > 0
+) {
+  console.log($cosmosChains)
+  cosmosBalances = cosmosBalancesQuery({
+    // https://stackoverflow.com/questions/77206461/type-guard-function-is-not-narrowing-the-type-in-array-filter
+    //@ts-ignore
+    chains: $cosmosChains,
+    address: $cosmosStore.rawAddress
+  })
+}
+
+
 
 const queryParams = queryParameters(
   {
     "from-chain-id": {
       encode: v => v?.toString(),
       decode: v => v,
-      defaultValue: "11155111"
+      defaultValue: "union-testnet-8"
     },
     "to-chain-id": {
       encode: v => v?.toString(),
       decode: v => v,
-      defaultValue: "union-testnet-8"
+      defaultValue: "11155111"
     },
     recipient: { encode: v => v?.toString(), decode: v => v, defaultValue: "" },
     "asset-id": { encode: v => v?.toString(), decode: v => v, defaultValue: "" }
@@ -92,63 +128,41 @@ let dialogOpenSettings = false
 
 let [chainSearch, chainSearchResults] = ["", chains]
 
-function handleChainSearch(event: InputEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  chainSearch = target.value
-  chainSearchResults = chains.filter(chain =>
-    chain.name.toLowerCase().includes(chainSearch.toLowerCase())
-  )
-}
+// function handleChainSearch(event: InputEvent) {
+//   const target = event.target
+//   if (!(target instanceof HTMLInputElement)) return
+//   chainSearch = target.value
+//   chainSearchResults = chains.filter(chain =>
+//     chain.name.toLowerCase().includes(chainSearch.toLowerCase())
+//   )
+// }
 
-let selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
-$: selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
+// let selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
+// $: selectedFromChain = chains.find(chain => chain.id === $queryParams["from-chain-id"])
 
-let selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
-$: selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
+// let selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
+// $: selectedToChain = chains.find(chain => chain.id === $queryParams["to-chain-id"])
 
-$: unionBalancesQuery = createQuery({
-  queryKey: [$cosmosStore.address, "balance", "union-testnet-8"],
-  queryFn: async () => {
-    const response = await fetch(
-      `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${$cosmosStore.address}`
-    )
-    if (!response.ok) return []
-    const result = (await response.json()) as {
-      balances: Array<{ amount: string; denom: string }>
-    }
-    return result.balances // mapped to the same format as the evm balances
-  },
-  enabled: isValidCosmosAddress($cosmosStore.address)
-})
-
-$: unionBalances = $unionBalancesQuery?.data ?? []
-
-$: evmBalances = evmBalancesQuery({
-  address: `${$sepoliaStore.address}` as any,
-  chainId: "11155111",
-  tokenSpecification: "erc20"
-})
 
 $: sepoliaAssets = $evmBalances?.data ?? []
 
-$: [tokenSearch, assetSearchResults] = [
-  "",
-  $queryParams["from-chain-id"] === "11155111" ? sepoliaAssets : unionBalances
-]
+// $: [tokenSearch, assetSearchResults] = [
+//   "",
+//   $queryParams["from-chain-id"] === "11155111" ? sepoliaAssets : unionBalances
+// ]
 
-function handleAssetSearch(event: InputEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  tokenSearch = target.value
-  assetSearchResults = sepoliaAssets.filter(asset =>
-    asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase())
-  )
-}
+// function handleAssetSearch(event: InputEvent) {
+//   const target = event.target
+//   if (!(target instanceof HTMLInputElement)) return
+//   tokenSearch = target.value
+//   assetSearchResults = sepoliaAssets.filter(asset =>
+//     asset.symbol.toLowerCase().includes(tokenSearch.toLowerCase())
+//   )
+// }
 
-$: {
-  assetSearchResults = $queryParams["from-chain-id"] === "11155111" ? sepoliaAssets : unionBalances
-}
+// $: {
+//   assetSearchResults = $queryParams["from-chain-id"] === "11155111" ? sepoliaAssets : unionBalances
+// }
 
 const handleChainSelect = (name: string, target: "from-chain-id" | "to-chain-id") =>
   debounce(() => {
@@ -162,8 +176,8 @@ const handleChainSelect = (name: string, target: "from-chain-id" | "to-chain-id"
   }, 200)()
 
 function handleAssetSelect(id: string) {
-  $queryParams["asset-id"] = assetSearchResults.find(asset => asset.symbol === id)?.address ?? ""
-  dialogOpenToken = false
+  // $queryParams["asset-id"] = assetSearchResults.find(asset => asset.symbol === id)?.address ?? ""
+  // dialogOpenToken = false
 }
 
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
@@ -180,12 +194,12 @@ function swapChainsClick(_event: MouseEvent) {
   $queryParams["from-chain-id"] = toChain
   $queryParams["to-chain-id"] = fromChain
 
-  selectedFromChain = data.chains.find(
-    chain => chain.name.toLowerCase() === $queryParams["from-chain-id"].toLowerCase()
-  )
-  selectedToChain = data.chains.find(
-    chain => chain.name.toLowerCase() === $queryParams["to-chain-id"].toLowerCase()
-  )
+  // selectedFromChain = data.chains.find(
+  //   chain => chain.name.toLowerCase() === $queryParams["from-chain-id"].toLowerCase()
+  // )
+  // selectedToChain = data.chains.find(
+  //   chain => chain.name.toLowerCase() === $queryParams["to-chain-id"].toLowerCase()
+  // )
 }
 
 let buttonText = "Transfer" satisfies
@@ -228,7 +242,9 @@ let buttonText = "Transfer" satisfies
     <Card.Content>
       <div data-transfer-from-section>
         <CardSectionHeading>From</CardSectionHeading>
+        <!--
         <ChainButton bind:selectedChain={selectedFromChain} bind:dialogOpen={dialogOpenFromChain} />
+        !-->
 
         <div class="flex flex-col items-center pt-4">
           <Button size="icon" variant="outline" on:click={swapChainsClick}>
@@ -237,15 +253,20 @@ let buttonText = "Transfer" satisfies
         </div>
 
         <CardSectionHeading>To</CardSectionHeading>
+        <!--
         <ChainButton bind:selectedChain={selectedToChain} bind:dialogOpen={dialogOpenToChain} />
+        !-->
       </div>
       <!-- asset -->
       <CardSectionHeading>Asset</CardSectionHeading>
       <Button variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
+
+        <!--
         <div class="text-2xl font-bold flex-1 text-left">
           {assetSearchResults.find(i => i.address === $queryParams['asset-id'])?.symbol ||
             'Select an asset'}
         </div>
+        !-->
         <Chevron />
       </Button>
 
@@ -336,12 +357,17 @@ let buttonText = "Transfer" satisfies
 </main>
 
 <!-- settings dialog -->
+<!-- 
 <SettingsDialog dialogOpen={dialogOpenSettings} title="Preferences" />
+!-->
 
 <!-- past dialog -->
+<!-- 
 <SettingsDialog dialogOpen={dialogOpenPast} title="Past" />
+!-->
 
 <!-- from-dialog -->
+<!-- 
 <ChainDialog
   kind="from"
   {handleChainSearch}
@@ -350,8 +376,10 @@ let buttonText = "Transfer" satisfies
   queryParams={$queryParams}
   bind:dialogOpen={dialogOpenFromChain}
 />
+!-->
 
 <!-- to-dialog -->
+<!-- 
 <ChainDialog
   kind="to"
   {handleChainSearch}
@@ -360,11 +388,14 @@ let buttonText = "Transfer" satisfies
   queryParams={$queryParams}
   bind:dialogOpen={dialogOpenToChain}
 />
+!-->
 
 <!-- token dialog -->
+<!-- 
 <AssetsDialog
   {handleAssetSearch}
   {handleAssetSelect}
   {assetSearchResults}
   bind:dialogOpen={dialogOpenToken}
 />
+!-->
