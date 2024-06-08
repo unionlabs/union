@@ -291,11 +291,12 @@ pub trait TransferProtocol {
             .add_messages(refund_msgs))
     }
 
+    #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
         receiver: &<Self::Packet as TransferPacket>::Addr,
         tokens: Vec<TransferToken>,
-    ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
+    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), Self::Error>;
 
     fn receive(&mut self, original_packet: IbcPacket) -> IbcReceiveResponse<Self::CustomMsg> {
         let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
@@ -308,6 +309,7 @@ pub trait TransferProtocol {
             // to be overwritten.
             let transfer_msgs = self
                 .receive_transfer(packet.receiver(), packet.tokens())?
+                .1
                 .into_iter()
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
@@ -316,13 +318,7 @@ pub trait TransferProtocol {
             if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
                 match memo {
                     Memo::Forward { forward } => {
-                        return Ok(Self::packet_forward(
-                            self,
-                            packet,
-                            original_packet,
-                            forward,
-                            false,
-                        ))
+                        return Ok(self.packet_forward(packet, original_packet, forward, false))
                     }
                     Memo::None { .. } => {}
                 };
@@ -401,6 +397,12 @@ pub trait TransferProtocol {
         tokens: Vec<TransferToken>,
         sequence: u64,
     ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error>;
+
+    fn convert_ack_to_foreign_protocol(
+        &self,
+        foreign_protocol: &str,
+        ack: GenericAck,
+    ) -> Result<GenericAck, Self::Error>;
 }
 
 #[cfg(test)]
