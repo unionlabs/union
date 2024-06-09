@@ -27,7 +27,7 @@ const osmoFromOsmosisToUnion = await unionClient.transferAssets({
   messageTransfers: [
     {
       sourcePort: "transfer",
-      sourceChannel: "channel-7775",
+      sourceChannel: "channel-8075",
       token: { denom: "uosmo", amount: "1" },
       sender: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
       receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",

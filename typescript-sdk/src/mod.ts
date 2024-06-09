@@ -377,7 +377,6 @@ export class UnionClient implements IUnionClient {
         0n
       ]
     } as const
-    // console.info(JSON.stringify({ writeContractParameters }, undefined, 2))
     if (!simulate) {
       const hash = await signer.writeContract(writeContractParameters)
       if (!waitForReceipt) return { hash }
@@ -389,5 +388,37 @@ export class UnionClient implements IUnionClient {
     if (!waitForReceipt) return { hash }
     const receipt = await signer.extend(publicActions).waitForTransactionReceipt({ hash })
     return { hash, receipt }
+  }
+
+  public async transferAsset({
+    sourceChain,
+    targetChain,
+    account,
+    receiver,
+    denomAddress,
+    amount,
+    sourceChannel,
+    relayContractAddress
+  }: {
+    sourceChain: "union-testnet-8" | "11155111"
+    targetChain: "union-testnet-8" | "11155111"
+    account?: Account
+    receiver: string
+    denomAddress: Address
+    amount: bigint
+    sourceChannel: string
+    relayContractAddress: Address
+  }) {
+
+    if (sourceChain === "11155111") {
+      return await this.transferEvmAsset({
+        account,
+        receiver,
+        denomAddress,
+        sourceChannel,
+        amount,
+        relayContractAddress
+      })
+    }
   }
 }
