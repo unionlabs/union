@@ -1,12 +1,10 @@
 <script lang="ts">
-import toast from "svelte-french-toast"
 import { debounce } from "$lib/utilities/index.ts"
 import LockLockedIcon from "virtual:icons/lucide/lock"
 import { Input } from "$lib/components/ui/input/index.ts"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Button } from "$lib/components/ui/button/index.ts"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import LoadingIcon from "virtual:icons/lucide/loader-circle"
 import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { unionAddressRegex } from "./schema.ts"
@@ -14,6 +12,8 @@ import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import { Label } from "$lib/components/ui/label"
 import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import { createMutation, createQuery } from "@tanstack/svelte-query"
+import { toast } from "svelte-sonner"
+import SpinnerSVG from "$lib/components/SpinnerSVG.svelte"
 import * as Form from "$lib/components/ui/form/index.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
 
@@ -43,15 +43,6 @@ const debounceDelay = 3_500
 let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
 let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
 const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
-
-$: {
-  if (submissionStatus === "submitting") {
-    toast.loading("Submitting faucet request 🚰", {
-      duration: debounceDelay - 300,
-      className: "text-sm p-2.5"
-    })
-  }
-}
 
 let opacity = 0
 
@@ -87,8 +78,10 @@ const mutation = createMutation({
   onError: error => {
     console.error("Error during the faucet request:", error)
     submissionStatus = "error"
+    toast.error("Faucet request failed.")
   },
   onSuccess: data => {
+    toast.success("Faucet request successful!")
     console.log("Faucet request successful:", data)
   }
 })
@@ -99,18 +92,15 @@ const debouncedSubmit = debounce(() => {
     return
   }
   $mutation.mutate()
-  console.log("here")
   submissionStatus = "submitted"
+  toast.error("Faucet request submitted!")
 }, debounceDelay)
 
 const handleSubmit = () => {
   submissionStatus = "submitting"
+  toast.loading("Submitting faucet request..")
   debouncedSubmit()
 }
-
-$: if ($mutation.status === "success") toast.success("Success!")
-
-$: console.log(submissionStatus)
 
 $: unionBalancesQuery = createQuery<Balance>({
   queryKey: [$cosmosStore.address, "balance", "union-testnet-8"],
@@ -159,7 +149,7 @@ $: unionBalancesQuery = createQuery<Balance>({
                     bind:value={address}
                     disabled={inputState === 'locked'}
                     id="address"
-                    on:blur={handleBlur()}
+                    on:blur={handleBlur}
                     on:focus={handleFocus}
                     on:input={handleInput}
                     on:mouseenter={handleMouseEnter}
@@ -208,7 +198,9 @@ $: unionBalancesQuery = createQuery<Balance>({
             <Button class="w-full sm:w-fit" type="submit">
               Submit
               {#if submissionStatus === 'submitting'}
-                <LoadingIcon/>
+              <span class="ml-2">
+                <SpinnerSVG className="w-4 h-4"/>
+              </span>
               {/if}
             </Button>
             <a class="flex items-center gap-x-2 font-bold text-xs" href="https://git-faucets.web.val.run"
