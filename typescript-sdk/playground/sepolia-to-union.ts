@@ -79,15 +79,14 @@ const client = createUnionClient({
 })
 
 const transfer = await client.transferAsset({
-  sourceChainId: "11115511",
-  destinationChainId: "union-testnet-8",
-  evmAccount,
+  network: "evm",
+  path: ["11155111", "union-testnet-8"],
+  evmSigner: evmAccount,
   receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
   sourceChannel: CHANNEL,
   amount: 1n,
   denomAddress: USDC_CONTRACT_ADDRESS,
-  relayContractAddress,
-  simulate: true
+  relayContractAddress
 })
 
 console.info(transfer)

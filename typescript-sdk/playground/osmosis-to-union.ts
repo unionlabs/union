@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
 import { UnionClient } from "#mod.ts"
-import { timestamp, } from "../scripts/logger.ts"
+import { timestamp } from "../scripts/logger.ts"
 
 /* `bun scripts/from-osmosis.ts --private-key "..."` */
 
