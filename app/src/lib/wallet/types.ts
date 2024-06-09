@@ -1,5 +1,15 @@
+import type { ChainId } from "$lib/constants/chains"
 import type { State } from "@wagmi/core"
 import type { Address as HexAddress } from "viem"
+
+export interface Asset {
+  decimals: number
+  symbol: string
+  address: string
+  name: string
+  chainId: ChainId
+  logoURI: string
+}
 
 /**
  * Represents a hexadecimal address with a "0x" prefix.

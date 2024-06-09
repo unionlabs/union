@@ -25,10 +25,10 @@ const account = await unionClient.getCosmosSdkAccount()
 const cwClient = await unionClient.signingCosmWasmClient()
 const sendUnoToUnionAddress = await cwClient.sendTokens(
   account.address,
-  "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
-  [{ denom: "muno", amount: "100" }],
+  "union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3",
+  [{ denom: "muno", amount: "25000000" }],
   "auto",
   "memo"
 )
-
-console.log(sendUnoToUnionAddress)
+// 0xa833b03d8ed1228c4791cbfab22b3ed57954429f
+console.log(sendUnoToUnionAddress.transactionHash)

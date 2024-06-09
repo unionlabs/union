@@ -23,6 +23,7 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "0.32.3",
     "@cosmjs/encoding": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
     "@cosmjs/stargate": "0.32.3",
     "@cosmjs/tendermint-rpc": "0.32.3",
     "viem": "^2.13.7"
@@ -37,7 +38,7 @@
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "patch-package": "^8.0.0",
-    "tsx": "^4.14.0",
+    "tsx": "^4.15.1",
     "typescript": "^5.4.5",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^1.6.0"

@@ -49,7 +49,7 @@ export interface IUnionClient {
   }): Promise<Hash>
   transferEvmAsset(parameters: {
     receiver: string
-    denomAddress?: Address
+    denomAddress: Address
     sourceChannel: string
     amount: bigint
     account: Account
@@ -321,16 +321,17 @@ export class UnionClient implements IUnionClient {
   }
 
   public async getEvmDenomAddress({
-    relayContractAddress = UnionClient.#UCS01_ADDRESS,
-    sourceChannel = "channel-13"
-  }: { relayContractAddress?: Address; sourceChannel: string }) {
+    denom,
+    relayContractAddress,
+    sourceChannel
+  }: { denom: string; relayContractAddress: Address; sourceChannel: string }) {
     const signer = this.#evmSigner?.extend(publicActions) ?? raise("EVM signer not found")
 
     return await signer.readContract({
       abi: ucs01RelayAbi,
-      address: UnionClient.#UCS01_ADDRESS,
+      address: relayContractAddress,
       functionName: "getDenomAddress",
-      args: [sourceChannel, `${relayContractAddress}/${sourceChannel}/muno`]
+      args: [sourceChannel, `${relayContractAddress}/${sourceChannel}/${denom}`]
     })
   }
 
@@ -340,10 +341,10 @@ export class UnionClient implements IUnionClient {
   public async transferEvmAsset({
     account,
     receiver,
-    denomAddress,
-    sourceChannel = "channel-13",
+    sourceChannel,
     amount,
-    relayContractAddress = UnionClient.#UCS01_ADDRESS,
+    denomAddress,
+    relayContractAddress,
     simulate = true,
     waitForReceipt = false
   }: Parameters<IUnionClient["transferEvmAsset"]>[0]): Promise<{
@@ -352,7 +353,6 @@ export class UnionClient implements IUnionClient {
   }> {
     const signer = this.#evmSigner ?? raise("EVM signer not found")
     const currentUnionHeight = await this.#getCurrentHeight()
-    const evmDenomAddress = await this.getEvmDenomAddress({ sourceChannel, relayContractAddress })
     const writeContractParameters = {
       account: (account || signer.account) ?? raise("EVM account not found"),
       abi: ucs01RelayAbi,
@@ -372,7 +372,7 @@ export class UnionClient implements IUnionClient {
       args: [
         sourceChannel,
         bech32AddressToHex({ address: receiver }),
-        [{ denom: evmDenomAddress, amount }],
+        [{ denom: denomAddress, amount }],
         { revision_number: 9n, revision_height: BigInt(currentUnionHeight) + 100n },
         0n
       ]
@@ -388,37 +388,5 @@ export class UnionClient implements IUnionClient {
     if (!waitForReceipt) return { hash }
     const receipt = await signer.extend(publicActions).waitForTransactionReceipt({ hash })
     return { hash, receipt }
-  }
-
-  public async transferAsset({
-    sourceChain,
-    targetChain,
-    account,
-    receiver,
-    denomAddress,
-    amount,
-    sourceChannel,
-    relayContractAddress
-  }: {
-    sourceChain: "union-testnet-8" | "11155111"
-    targetChain: "union-testnet-8" | "11155111"
-    account?: Account
-    receiver: string
-    denomAddress: Address
-    amount: bigint
-    sourceChannel: string
-    relayContractAddress: Address
-  }) {
-
-    if (sourceChain === "11155111") {
-      return await this.transferEvmAsset({
-        account,
-        receiver,
-        denomAddress,
-        sourceChannel,
-        amount,
-        relayContractAddress
-      })
-    }
   }
 }

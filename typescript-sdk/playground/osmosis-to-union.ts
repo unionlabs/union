@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
 import { UnionClient } from "#mod.ts"
-import { timestamp } from "../scripts/logger.ts"
+import { timestamp, } from "../scripts/logger.ts"
 
 /* `bun scripts/from-osmosis.ts --private-key "..."` */
 
@@ -19,9 +19,10 @@ const unionClient = await UnionClient.connectWithSecret({
   chainId: "osmo-test-5",
   privateKeyOrMnemonic: PRIVATE_KEY,
   gas: { amount: "0.0025", denom: "uosmo" },
-  rpcUrl: "https://rpc.testnet.osmosis.zone:443"
+  rpcUrl: "https://rpc.osmo.test.yieldpay.finance"
 })
 
+const stamp = timestamp()
 const osmoFromOsmosisToUnion = await unionClient.transferAssets({
   kind: "ibc",
   messageTransfers: [

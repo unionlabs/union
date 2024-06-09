@@ -140,3 +140,9 @@ export type Pretty<T> = {
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
 export type ExtractParameters<T> = T extends new (..._args: infer P) => any ? P[0] : never
+
+export type NoRepetition<U extends string, ResultT extends Array<any> = []> =
+  | ResultT
+  | {
+      [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
+    }[U]

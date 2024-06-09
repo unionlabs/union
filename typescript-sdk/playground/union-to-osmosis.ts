@@ -21,7 +21,7 @@ const unionClient = await UnionClient.connectWithSecret({
   gas: { amount: "0.0025", denom: "muno" }
 })
 
-const contractAddress = "union124t57vjgsyknnhmr3fpkmyvw2543448kpt2xhk5p5hxtmjjsrmzsjyc4n7"
+const contractAddress = "union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3"
 const unoFromUnionToOsmosis = await unionClient.transferAssets({
   kind: "cosmwasm",
   instructions: [
@@ -29,7 +29,7 @@ const unoFromUnionToOsmosis = await unionClient.transferAssets({
       contractAddress,
       msg: {
         transfer: {
-          channel: "channel-6",
+          channel: "channel-27",
           receiver: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
           memo: "sending UNO from Union to Osmosis"
         }

@@ -1,9 +1,22 @@
+export const chainIds = [
+  "union-testnet-8",
+  "11155111",
+  "osmo-test-5",
+  "534352",
+  "elgafar-1",
+  "mocha-4",
+  "80085",
+  "421614",
+  "534351"
+] as const
+export type ChainId = (typeof chainIds)[number]
+
 /**
  * Chain mapping from hubble indexer
  */
-export const CHAIN_MAP: Record<
+export const chainMap: Record<
   number,
-  { name: string; chainId: string; ecosystem: "evm" | "cosmos" }
+  { name: string; chainId: ChainId; ecosystem: "evm" | "cosmos" }
 > = {
   1: { name: "sepolia", chainId: "11155111", ecosystem: "evm" },
   5: { name: "stargaze", chainId: "elgafar-1", ecosystem: "cosmos" },
