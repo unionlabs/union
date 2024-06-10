@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use unionlabs::hash::H160;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -9,12 +10,13 @@ pub struct Config {
     pub osmosis: chain_utils::cosmos::Config,
     pub union_contract: String,
     pub osmosis_contract: String,
-    pub ethereum_contract: String,
+    pub ethereum_contract: H160,
     pub channel: String,
-    pub port: String,
+    pub counterparty_channel: String,
     pub amount: String,
     pub datadog_data: DatadogData,
     pub connections: Vec<ConnectionPair>,
+    pub ethereum_priv_key: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

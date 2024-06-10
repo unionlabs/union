@@ -59,7 +59,6 @@ pub async fn send_log_to_datadog(
     let client = Client::new();
     let url = host.to_owned() + "/input" + "?dd-api-key=" + api_key;
 
-    // println!("Sending Log: {:?}", log);
     let response = client.post(&url).json(log).send().await?;
 
     println!("Response: {:?}", response.text().await?);
