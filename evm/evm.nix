@@ -154,8 +154,14 @@
         {
           network = "devnet";
           rpc-url = "http://localhost:8545";
-          private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
+          private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
           extra-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
+        }
+        {
+          # for use with the local berachain devnet from berachain/beacon-kit
+          network = "berachain-devnet";
+          rpc-url = "http://localhost:8545";
+          private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
         }
         {
           network = "testnet";
@@ -173,17 +179,15 @@
           network = "arbitrum-testnet";
           rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
           private-key = ''"$1"'';
-          extra-args = "";
         }
         {
           network = "berachain-testnet";
           rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
           private-key = ''"$1"'';
-          extra-args = "";
         }
       ];
 
-      eth-deploy = { rpc-url, private-key, extra-args, ... }: pkgs.writeShellApplication {
+      eth-deploy = { rpc-url, private-key, extra-args ? "", ... }: pkgs.writeShellApplication {
         name = "eth-deploy";
         runtimeInputs = [ self'.packages.forge ];
         text = ''
