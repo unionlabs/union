@@ -306,17 +306,6 @@ pub trait TransferProtocol {
         let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
             let packet = Self::Packet::try_from(original_packet.data.clone())?;
 
-            // NOTE: The default message ack is always successful and only
-            // overwritten if the submessage execution revert via the reply
-            // handler. The caller must ensure that the protocol is called in
-            // the reply handler via the `receive_error` for the acknowledgement
-            // to be overwritten.
-            let transfer_msgs = self
-                .receive_transfer(packet.receiver(), packet.tokens())?
-                .1
-                .into_iter()
-                .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
-
             let memo = Into::<String>::into(packet.extension().clone());
 
             if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
@@ -327,6 +316,17 @@ pub trait TransferProtocol {
                     Memo::None { .. } => {}
                 };
             }
+
+            // NOTE: The default message ack is always successful and only
+            // overwritten if the submessage execution revert via the reply
+            // handler. The caller must ensure that the protocol is called in
+            // the reply handler via the `receive_error` for the acknowledgement
+            // to be overwritten.
+            let transfer_msgs = self
+                .receive_transfer(packet.receiver(), packet.tokens())?
+                .1
+                .into_iter()
+                .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
 
             let packet_event = if memo.is_empty() {
                 Event::new(PACKET_EVENT)
