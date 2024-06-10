@@ -15,7 +15,7 @@ import { rawToHex } from "$lib/utilities/address"
 import { sepoliaStore } from "$lib/wallet/evm"
 
 let transfers = createQuery({
-  queryKey: ["transfers"],
+  queryKey: ["user-transfers"],
   refetchInterval: 3_000,
   queryFn: async () => {
     const cosmosAddr = $cosmosStore?.rawAddress
@@ -104,8 +104,13 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-{#if $transfers.isLoading}
-  <div>Loading...</div>
-{:else if $transfers.isSuccess}
-  <Table bind:dataStore={transfersData} {columns} />
+{#if !$cosmosStore?.rawAddress || !$sepoliaStore.address}
+  <div>Connect your wallets to continue</div>
+
+{:else}
+  {#if $transfers.isLoading}
+    <div>Loading...</div>
+  {:else if $transfers.isSuccess}
+    <Table bind:dataStore={transfersData} {columns} />
+  {/if}
 {/if}

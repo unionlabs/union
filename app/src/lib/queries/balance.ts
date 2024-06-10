@@ -1,6 +1,5 @@
 import * as v from "valibot"
 import { KEY } from "$lib/constants/keys.ts"
-import type { Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQueries, createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
@@ -59,7 +58,7 @@ export function evmBalancesQuery({
   chainId,
   ...restParams
 }: {
-  address: Address
+  address: string
   chainId: string
 } & ({ contractAddresses: Array<string> } | { tokenSpecification: "erc20" | "DEFAULT_TOKENS" })) {
   return createQuery({
@@ -131,14 +130,16 @@ export function cosmosBalancesQuery({
     rpcs: Array<{ url: string; type: string }>
   }>
 }) {
+  console.log(address)
   return createQueries({
     queries: chains.map(chain => {
       const bech32_addr = rawToBech32(chain.addr_prefix, address)
+      console.log(bech32_addr)
 
       return {
         queryKey: ["balances", chain.chain_id, bech32_addr],
         enabled: true,
-        refetchInterval: 2_000,
+        refetchInterval: 20_000,
         refetchOnWindowFocus: false,
         queryFn: async () => {
           let json: undefined | unknown
@@ -152,7 +153,7 @@ export function cosmosBalancesQuery({
               `https://${restUrl}/cosmos/bank/v1beta1/balances/${bech32_addr}`
             )
 
-            if (!response.ok) return new Error("invalid response")
+            if (!response.ok) throw new Error("invalid response")
 
             json = await response.json()
           } catch (err) {
