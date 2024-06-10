@@ -1,11 +1,11 @@
 <script lang="ts">
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
-import type { Chain, UserAddresses } from '$lib/types';
-export let userAddr: UserAddresses;
-export let chains: Array<Chain>;
-import { truncate } from '$lib/utilities/format';
+import type { Chain, UserAddresses } from "$lib/types"
+export let userAddr: UserAddresses
+export let chains: Array<Chain>
+import { truncate } from "$lib/utilities/format"
 import { rawToBech32, rawToHex } from "$lib/utilities/address"
-    import { onMount } from "svelte";
+import { onMount } from "svelte"
 
 let evmBalances = evmBalancesQuery({
   chainId: "11155111",
@@ -13,15 +13,15 @@ let evmBalances = evmBalancesQuery({
   tokenSpecification: "erc20"
 })
 
-let cosmosChains = chains.filter((c) => c.rpc_type === "cosmos");
+let cosmosChains = chains.filter(c => c.rpc_type === "cosmos")
 
 let cosmosBalances = cosmosBalancesQuery({
   chains: cosmosChains,
-  address: userAddr.cosmos.bytes,
-});
+  address: userAddr.cosmos.bytes
+})
 onMount(() => {
-  console.log(userAddr);
-});
+  console.log(userAddr)
+})
 </script>
 
 <div>

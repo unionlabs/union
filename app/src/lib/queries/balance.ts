@@ -1,6 +1,5 @@
 import * as v from "valibot"
 import { KEY } from "$lib/constants/keys.ts"
-import type { Address } from "viem"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQueries, createQuery } from "@tanstack/svelte-query"
 import type { ChainId } from "$/lib/constants/assets.ts"
@@ -131,12 +130,11 @@ export function cosmosBalancesQuery({
     rpcs: Array<{ url: string; type: string }>
   }>
 }) {
-
-  console.log(address);
+  console.log(address)
   return createQueries({
     queries: chains.map(chain => {
       const bech32_addr = rawToBech32(chain.addr_prefix, address)
-    console.log(bech32_addr);
+      console.log(bech32_addr)
 
       return {
         queryKey: ["balances", chain.chain_id, bech32_addr],
