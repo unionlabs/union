@@ -8,6 +8,7 @@ import { chainsQuery } from "$lib/queries/chains"
 import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { truncate } from "$lib/utilities/format"
+import WalletGate from "$lib/components/wallet-gate.svelte";
 
 let evmBalances: null | ReturnType<typeof evmBalancesQuery>
 $: if ($sepoliaStore.address)
@@ -51,23 +52,11 @@ $: if ($cosmosStore.connectionStatus === "disconnected") cosmosBalances = null
       <Card.Title>Welcome to Union</Card.Title>
     </Card.Header>
     <Card.Content class="flex flex-col gap-2">
-      <p>Connect an <b>EVM</b> and <b>Cosmos</b> wallet to begin bridging.</p>
-      <div>
-        {#if $sepoliaStore.address }
-          ✅ EVM wallet <span class="font-mono">{truncate($sepoliaStore.address, 6)}</span> connected
-        {:else}
-          Connect EVM wallet
-        {/if}
-      </div>
-
-      <div>
-        {#if $cosmosStore.address && $cosmosStore.rawAddress }
-          ✅ Cosmos wallet <span class="font-mono">{truncate($cosmosStore.address, 6)}</span> connected
-          <div class="text-xs font-mono text-muted-foreground">RAW: {rawToHex($cosmosStore.rawAddress)}</div>
-        {:else}
-          Connect cosmos wallet
-        {/if}
-      </div>
+      <WalletGate let:userAddr>
+        Welcome to Union
+        <div>Cosmos: {userAddr.cosmos.canonical}</div>
+        <div>EVM: {userAddr.evm.canonical}</div>
+      </WalletGate>
     </Card.Content>
   </Card.Root>
 
