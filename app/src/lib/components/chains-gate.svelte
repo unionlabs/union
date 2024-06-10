@@ -1,18 +1,9 @@
 <script lang="ts">
 import { chainsQuery } from "$lib/queries/chains";
 import { type Readable, derived } from "svelte/store";
+import type { Chain } from '$lib/types';
 let chains = chainsQuery();
 
-type Chain = {
-  chain_id: string,
-  display_name: string,
-  rpc_type: "evm" | "cosmos",
-  rpcs: Array<{
-    type: string,
-    url: string
-  }>,
-  addr_prefix: string
-};
 const EMPTY_CHAINS: Array<Chain> = [];
 
 let checkedChains: Readable<Array<Chain>> = derived(chains, ($chains) => {

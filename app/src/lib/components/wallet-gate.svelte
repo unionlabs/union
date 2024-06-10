@@ -3,25 +3,19 @@ import { rawToHex } from "$lib/utilities/address";
 import { cosmosStore } from "$lib/wallet/cosmos";
 import { sepoliaStore } from "$lib/wallet/evm";
 import { derived, type Readable } from "svelte/store";
-
-type UserAddresses = {
-    cosmos: {
-      canonical: string,
-      normalized: string,
-      bytes: Uint8Array
-    },
-    evm: {
-      canonical: string,
-      normalized: string,
-    }
-  }; 
+import type { UserAddresses } from '$lib/types';
 
 let userAddr: Readable<UserAddresses | null> = derived([cosmosStore, sepoliaStore], ([$cosmosStore, $sepoliaStore]) => {
   if (!($cosmosStore?.rawAddress && $cosmosStore?.address && $sepoliaStore?.address  )) return null;
+
+  // sometimes rawAddress is truthy but does not yield a raw hex addr
+  const cosmos_normalized = rawToHex($cosmosStore.rawAddress);
+  if (!cosmos_normalized) return null;
+
   return {
     cosmos: {
       canonical: $cosmosStore.address,
-      normalized: rawToHex($cosmosStore.rawAddress),
+      normalized: cosmos_normalized,
       bytes: $cosmosStore.rawAddress
     },
     evm: {
