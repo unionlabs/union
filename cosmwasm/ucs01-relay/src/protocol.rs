@@ -729,7 +729,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         match foreign_protocol {
             Ucs01Protocol::VERSION => Ok(match ack {
                 Ok(_) => Ucs01Protocol::ack_success(),
-                Err(e) => Ucs01Protocol::ack_failure(e),
+                Err(e) => Ucs01Protocol::ack_failure(e.to_string()),
             }
             .into()),
             Ics20Protocol::VERSION => Ok(ack),
