@@ -1,5 +1,5 @@
 use core::future::Future;
-use std::{ collections::HashMap, fs::{ File, OpenOptions }, pin::Pin, sync::Arc };
+use std::{ collections::HashMap, pin::Pin, sync::Arc };
 
 use bech32::FromBase32;
 use chain_utils::{ cosmos_sdk::CosmosSdkChainExt, ethereum::{ EthereumChain, IBCHandlerEvents } };
@@ -35,8 +35,8 @@ use unionlabs::{
 };
 
 use crate::{
-    config::{ ChainId, Config, DatadogData, PacketStatus },
-    datadog::{ log_builder, send_log_to_datadog },
+    config::{ ChainId, Config, /*DatadogData*/ PacketStatus },
+    // datadog::{ log_builder, send_log_to_datadog },
     sql_helper::{ delete_packet_status, get_packet_statuses, insert_or_update_packet_status },
 };
 
@@ -44,16 +44,14 @@ pub type IbcEvent = unionlabs::events::IbcEvent<ClientId, String, ClientId>;
 
 #[derive(Clone)]
 pub struct Context {
-    pub output_file: String,
     pub transfer_test_config: Config,
-    pub writer: Arc<Mutex<File>>,
     pub union: Option<chain_utils::union::Union>,
     pub osmosis: Option<chain_utils::cosmos::Cosmos>,
     pub ethereum: Option<chain_utils::ethereum::Ethereum<Minimal>>,
     pub ethereum_config: Option<EthereumConfig>,
     pub union_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
     pub osmosis_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
-    pub datadog_data: DatadogData,
+    // pub datadog_data: DatadogData,
     pub packet_statuses: Arc<Mutex<HashMap<u64, PacketStatus>>>,
     pub pool: sqlx::Pool<sqlx::Postgres>,
 }
@@ -223,11 +221,7 @@ impl ChainListener for chain_utils::ethereum::Ethereum<Minimal> {
 }
 
 impl Context {
-    pub async fn new(
-        transfer_test_config: Config,
-        output: String,
-        pool: sqlx::Pool<sqlx::Postgres>
-    ) -> Context {
+    pub async fn new(transfer_test_config: Config, pool: sqlx::Pool<sqlx::Postgres>) -> Context {
         let mut union = None;
         let mut osmosis = None;
         let mut ethereum = None;
@@ -324,20 +318,16 @@ impl Context {
             }
         }
 
-        let writer = OpenOptions::new().create(true).append(true).open(output.clone()).unwrap();
-
-        let datadog_data = transfer_test_config.datadog_data.clone();
+        // let datadog_data = transfer_test_config.datadog_data.clone();
         Context {
-            output_file: output,
             transfer_test_config,
-            writer: Arc::new(Mutex::new(writer)),
             union: union,
             osmosis: osmosis,
             ethereum: ethereum,
             ethereum_config: ethereum_config,
             union_txs: Arc::new(Mutex::new(HashMap::new())),
             osmosis_txs: Arc::new(Mutex::new(HashMap::new())),
-            datadog_data,
+            // datadog_data,
             packet_statuses: Arc::new(Mutex::new(HashMap::new())),
             pool,
         }
@@ -538,6 +528,7 @@ impl Context {
                                 amount: pub_amount,
                             },
                         ].into(),
+                        "".to_string(),
                         (Height {
                             revision_number: 0,
                             revision_height: 0,
@@ -664,7 +655,7 @@ impl Context {
     ) {
         let source_chain_id: i32 = ChainId::from_str(source_chain_name).unwrap() as i32;
         let target_chain_id = ChainId::from_str(target_chain_name).unwrap() as i32;
-        let datadog_data = self.datadog_data.clone();
+        // let datadog_data = self.datadog_data.clone();
         let mut interval = interval(Duration::from_secs(expect_full_circle));
         loop {
             interval.tick().await;
@@ -748,26 +739,26 @@ impl Context {
                         issue,
                         time_passed
                     );
-                    let log_info = log_builder(
-                        format!(
-                            "Incomplete packet sequence {} from chain {} -> {}: {}. After: {} seconds. Packet: {:?}",
-                            status.sequence_number,
-                            ChainId::from_i32(&status.source_chain_id),
-                            ChainId::from_i32(&status.target_chain_id),
-                            issue,
-                            time_passed,
-                            status
-                        ),
-                        None,
-                        None,
-                        None,
-                        Some("error".to_string())
-                    );
-                    send_log_to_datadog(
-                        &datadog_data.datadog_api_key,
-                        &log_info,
-                        &datadog_data.datadog_log_host
-                    ).await.unwrap();
+                    // let log_info = log_builder(
+                    //     format!(
+                    //         "Incomplete packet sequence {} from chain {} -> {}: {}. After: {} seconds. Packet: {:?}",
+                    //         status.sequence_number,
+                    //         ChainId::from_i32(&status.source_chain_id),
+                    //         ChainId::from_i32(&status.target_chain_id),
+                    //         issue,
+                    //         time_passed,
+                    //         status
+                    //     ),
+                    //     None,
+                    //     None,
+                    //     None,
+                    //     Some("error".to_string())
+                    // );
+                    // send_log_to_datadog(
+                    //     &datadog_data.datadog_api_key,
+                    //     &log_info,
+                    //     &datadog_data.datadog_log_host
+                    // ).await.unwrap();
                     can_be_removed = true; // already sent that as an error.
                 }
 
@@ -874,7 +865,7 @@ impl Context {
                             IBCPacketEvents::WriteAcknowledgementFilter(event) => {
                                 Some(
                                     IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                                        packet_sequence: event.sequence.try_into().unwrap(),
+                                        packet_sequence: event.packet.sequence.try_into().unwrap(),
                                         packet_src_port: "RANDOM_VALUE"
                                             .to_string()
                                             .parse()
@@ -883,8 +874,10 @@ impl Context {
                                             .to_string()
                                             .parse()
                                             .unwrap(),
-                                        packet_dst_port: event.destination_port.parse().unwrap(),
-                                        packet_dst_channel: event.destination_channel
+                                        packet_dst_port: event.packet.destination_port
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_channel: event.packet.destination_channel
                                             .parse()
                                             .unwrap(),
                                         packet_timeout_height: Height {

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 use sqlx::FromRow;
 use unionlabs::hash::H160;
 
@@ -14,18 +14,19 @@ pub struct Config {
     pub channel: String,
     pub counterparty_channel: String,
     pub amount: String,
-    pub datadog_data: DatadogData,
+    pub db_url: String,
+    // pub datadog_data: DatadogData,
     pub connections: Vec<ConnectionPair>,
     pub ethereum_priv_key: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DatadogData {
-    pub datadog_api_key: String,
-    pub datadog_log_host: String,
-    pub datadog_validate_host: String,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[serde(deny_unknown_fields)]
+// pub struct DatadogData {
+//     pub datadog_api_key: String,
+//     pub datadog_log_host: String,
+//     pub datadog_validate_host: String,
+// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

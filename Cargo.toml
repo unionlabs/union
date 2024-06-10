@@ -67,7 +67,7 @@ members = [
   "voyager",
   "zerg",
   "lib/linea-zktrie",
-  "transfer-test-service",
+  "sentinel",
 ]
 
 [workspace.package]

@@ -2,19 +2,16 @@ use std::fs::read_to_string;
 
 use clap::Parser;
 use config::Config;
-use context::{Context, IbcTransfer, TransferDirection};
+use context::{ Context, IbcTransfer, TransferDirection };
 use sqlx::PgPool;
 
 pub mod config;
 pub mod context;
-pub mod datadog;
+// pub mod datadog;
 pub mod sql_helper;
 use std::ffi::OsString;
 
-use tokio::{
-    signal,
-    time::{interval, Duration},
-};
+use tokio::{ signal, time::{ interval, Duration } };
 
 use crate::sql_helper::create_table_if_not_exists; //, events::{ EventType } };
 
@@ -22,12 +19,7 @@ use crate::sql_helper::create_table_if_not_exists; //, events::{ EventType } };
 #[derive(Debug, Parser, Clone)]
 pub struct AppArgs {
     /// The path to the configuration file.
-    #[arg(
-        long,
-        short = 'c',
-        global = true,
-        default_value = "transfer-test-service-config.json"
-    )]
+    #[arg(long, short = 'c', global = true, default_value = "sentinel-config.json")]
     pub config: OsString,
 
     /// The database URL
@@ -44,19 +36,21 @@ pub struct AppArgs {
 async fn main() {
     tracing_subscriber::fmt::init();
     let args = AppArgs::parse();
+    println!("args.config: {:?}", args.config);
+    tracing::debug!("args.config: {:?}", args.config);
+    let transfer_test_config: Config = serde_json
+        ::from_str(&read_to_string(args.config).unwrap())
+        .unwrap();
+    tracing::debug!("All json: {}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
 
-    let pool: sqlx::Pool<sqlx::Postgres> = PgPool::connect(&args.database_url).await.unwrap();
+    let pool: sqlx::Pool<sqlx::Postgres> = PgPool::connect(
+        &transfer_test_config.db_url
+    ).await.unwrap();
 
+    tracing::debug!("Pool created? {:?}", pool);
     create_table_if_not_exists(&pool).await.unwrap();
-    let transfer_test_config: Config =
-        serde_json::from_str(&read_to_string(args.config).unwrap()).unwrap();
-
-    tracing::debug!(
-        "{}",
-        serde_json::to_string_pretty(&transfer_test_config).unwrap()
-    );
-    let output = "transfer-test-service.csv";
-    let context = Context::new(transfer_test_config.clone(), output.to_string(), pool).await;
+    tracing::debug!("{}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
+    let context = Context::new(transfer_test_config.clone(), pool).await;
 
     // Task to handle listening for events
     for connection in &transfer_test_config.connections {
@@ -64,9 +58,7 @@ async fn main() {
         let source_chain = connection.source_chain.clone();
         let target_chain = connection.target_chain.clone();
         tokio::spawn(async move {
-            context_clone
-                .listen(source_chain.as_str(), target_chain.as_str())
-                .await;
+            context_clone.listen(source_chain.as_str(), target_chain.as_str()).await;
         });
     }
 
@@ -112,21 +104,20 @@ async fn main() {
                             amount: transfer_test_config_clone.amount.clone(),
                         }
                     }
-                    ("ethereum", "union") => TransferDirection::FromEth {
-                        source_chain: source_chain.clone(),
-                        target_chain: target_chain.clone(),
-                        channel: transfer_test_config_clone.channel.clone(),
-                        contract: transfer_test_config_clone
-                            .ethereum_contract
-                            .to_string()
-                            .clone(),
-                        receiver_addr: transfer_test_config_clone
-                            .ethereum_contract
-                            .to_string()
-                            .clone(),
-                        is_receiver_bech32: true,
-                        amount: transfer_test_config_clone.amount.clone(),
-                    },
+                    ("ethereum", "union") =>
+                        TransferDirection::FromEth {
+                            source_chain: source_chain.clone(),
+                            target_chain: target_chain.clone(),
+                            channel: transfer_test_config_clone.channel.clone(),
+                            contract: transfer_test_config_clone.ethereum_contract
+                                .to_string()
+                                .clone(),
+                            receiver_addr: transfer_test_config_clone.ethereum_contract
+                                .to_string()
+                                .clone(),
+                            is_receiver_bech32: true,
+                            amount: transfer_test_config_clone.amount.clone(),
+                        },
                     _ => {
                         tracing::error!(
                             "Unsupported connection: {} -> {}",
@@ -149,13 +140,11 @@ async fn main() {
         let expect_full_circle = connection.expect_full_circle as u64;
         let context_clone = context.clone();
 
-        context_clone
-            .check_packet_sequences(
-                source_chain.as_str(),
-                target_chain.as_str(),
-                expect_full_circle,
-            )
-            .await;
+        context_clone.check_packet_sequences(
+            source_chain.as_str(),
+            target_chain.as_str(),
+            expect_full_circle
+        ).await;
     }
 
     signal::ctrl_c().await.unwrap();

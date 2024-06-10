@@ -1,7 +1,7 @@
 [package]
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "transfer-test-service"
+name         = "sentinel"
 publish      = false
 repository   = { workspace = true }
 version      = "0.1.0"
@@ -22,7 +22,7 @@ ethers             = { workspace = true, features = ["rustls", "ws"] }
 futures            = { workspace = true }
 hex                = { version = "0.4.3", default-features = false }
 queue-msg          = { workspace = true }
-reqwest            = { version = "0.11", features = ["json"] }
+reqwest            = { workspace = true, features = ["json"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
