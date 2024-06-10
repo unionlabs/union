@@ -3,10 +3,7 @@ use cosmwasm_std::{
     IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use prost::Message;
-use protos::{
-    deferredack::v1beta1::MsgWriteDeferredAck,
-    ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement},
-};
+use protos::deferredack::v1beta1::MsgWriteDeferredAck;
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
