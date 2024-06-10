@@ -332,8 +332,8 @@ impl TryFrom<Binary> for Ics20Ack {
 impl From<Ics20Ack> for GenericAck {
     fn from(value: Ics20Ack) -> Self {
         match value {
-            Ics20Ack::Result(err) => Ok(err),
-            Ics20Ack::Error(err) => Err(err.into_bytes().into()),
+            Ics20Ack::Result(_) => Ok(value.try_into().unwrap()),
+            Ics20Ack::Error(_) => Err(value.try_into().unwrap()),
         }
     }
 }
