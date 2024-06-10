@@ -1,8 +1,6 @@
 package types
 
 import (
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-
 	"union/x/deferredack/types"
 )
 
@@ -19,5 +17,5 @@ type DeferredAckMsg struct {
 // but this admin can be changed using the ChangeAdmin binding.
 type WriteDeferredAck struct {
 	DeferredPacketInfo types.DeferredPacketInfo `json:"deferred_packet_info"`
-	Ack                channeltypes.Acknowledgement
+	Ack                types.Acknowledgement
 }

@@ -20,7 +20,7 @@ message MsgWriteDeferredAck {
 
   string                                               sender             = 1 [ (gogoproto.moretags) = "yaml:\"sender\"" ];
   DeferredPacketInfo                                   deferredPacketInfo = 2;
-  ibc.core.channel.v1.Acknowledgement                  ack                = 3;
+  bytes ack                = 3;
 }
 
 message MsgWriteDeferredAckResponse {

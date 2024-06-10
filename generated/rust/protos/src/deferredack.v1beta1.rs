@@ -28,32 +28,6 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("deferredack.v1beta1.{}", Self::NAME)
     }
 }
-/// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
-impl ::prost::Name for QueryParamsRequest {
-    const NAME: &'static str = "QueryParamsRequest";
-    const PACKAGE: &'static str = "deferredack.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("deferredack.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for QueryParamsResponse {
-    const NAME: &'static str = "QueryParamsResponse";
-    const PACKAGE: &'static str = "deferredack.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("deferredack.v1beta1.{}", Self::NAME)
-    }
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgWriteDeferredAck {
@@ -61,8 +35,8 @@ pub struct MsgWriteDeferredAck {
     pub sender: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub deferred_packet_info: ::core::option::Option<DeferredPacketInfo>,
-    #[prost(message, optional, tag = "3")]
-    pub ack: ::core::option::Option<super::super::ibc::core::channel::v1::Acknowledgement>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub ack: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for MsgWriteDeferredAck {
     const NAME: &'static str = "MsgWriteDeferredAck";
@@ -103,6 +77,32 @@ pub struct DeferredPacketInfo {
 }
 impl ::prost::Name for DeferredPacketInfo {
     const NAME: &'static str = "DeferredPacketInfo";
+    const PACKAGE: &'static str = "deferredack.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("deferredack.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsRequest {}
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "deferredack.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("deferredack.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
     const PACKAGE: &'static str = "deferredack.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("deferredack.v1beta1.{}", Self::NAME)

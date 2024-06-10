@@ -40,7 +40,7 @@ func NewKeeper(
 	}
 }
 
-func (k *Keeper) WriteDeferredAck(ctx sdk.Context, deferredPacketInfo *types.DeferredPacketInfo, ack channeltypes.Acknowledgement) error {
+func (k *Keeper) WriteDeferredAck(ctx sdk.Context, deferredPacketInfo *types.DeferredPacketInfo, ack types.Acknowledgement) error {
 	_, chanCap, err := k.channelKeeper.LookupModuleByChannel(ctx, deferredPacketInfo.RefundPortId, deferredPacketInfo.RefundChannelId)
 
 	if err != nil {
