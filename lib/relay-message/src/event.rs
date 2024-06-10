@@ -66,9 +66,11 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
         match self {
             Event::Ibc(ibc_event) => {
                 let event_name = ibc_event.event.name();
+
                 match ibc_event.event {
                     unionlabs::events::IbcEvent::CreateClient(e) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             client_id = %e.client_id,
                             client_type = %e.client_type,
@@ -98,6 +100,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                     unionlabs::events::IbcEvent::ConnectionOpenInit(init) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %init.connection_id,
                             client_id = %init.client_id,
@@ -134,6 +137,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %try_.connection_id,
                             counterparty_connection_id = %try_.counterparty_connection_id,
@@ -162,6 +166,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenAck(ack) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %ack.connection_id,
                             counterparty_connection_id = %ack.counterparty_connection_id,
@@ -190,6 +195,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %confirm.connection_id,
                             counterparty_connection_id = %confirm.counterparty_connection_id,
@@ -202,6 +208,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                     unionlabs::events::IbcEvent::ChannelOpenInit(init) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             port_id = %init.port_id,
                             channel_id = %init.channel_id,
@@ -245,6 +252,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ChannelOpenTry(try_) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             port_id = %try_.port_id,
                             channel_id = %try_.channel_id,
@@ -289,6 +297,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ChannelOpenAck(ack) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             port_id = %ack.port_id,
                             channel_id = %ack.channel_id,
@@ -332,6 +341,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ChannelOpenConfirm(confirm) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             port_id = %confirm.port_id,
                             channel_id = %confirm.channel_id,
@@ -421,6 +431,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::RecvPacket(recv) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %recv.packet_timeout_height,
                             timeout_timestamp = %recv.packet_timeout_timestamp,
@@ -437,6 +448,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::AcknowledgePacket(ack) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %ack.packet_timeout_height,
                             timeout_timestamp = %ack.packet_timeout_timestamp,
@@ -453,6 +465,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::TimeoutPacket(timeout) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %timeout.packet_timeout_height,
                             timeout_timestamp = %timeout.packet_timeout_timestamp,
@@ -469,6 +482,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::WriteAcknowledgement(write_ack) => {
                         tracing::info!(
+                            height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %write_ack.packet_timeout_height,
                             timeout_timestamp = %write_ack.packet_timeout_timestamp,

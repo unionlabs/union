@@ -28,12 +28,16 @@ impl From<Header> for protos::ibc::lightclients::tendermint::v1::Header {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromHeaderError {
-    MissingField(MissingField),
-    SignedHeader(TryFromSignedHeaderError),
-    ValidatorSet(TryFromValidatorSetError),
-    TrustedValidators(TryFromValidatorSetError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid signed header")]
+    SignedHeader(#[source] TryFromSignedHeaderError),
+    #[error("invalid validator set")]
+    ValidatorSet(#[source] TryFromValidatorSetError),
+    #[error("invalid trusted validators")]
+    TrustedValidators(#[source] TryFromValidatorSetError),
 }
 
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::Header> for Header {

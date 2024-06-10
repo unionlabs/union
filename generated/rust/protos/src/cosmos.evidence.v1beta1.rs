@@ -9,7 +9,7 @@ pub struct Equivocation {
     pub height: i64,
     /// time is the equivocation time.
     #[prost(message, optional, tag = "2")]
-    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// power is the equivocation validator power.
     #[prost(int64, tag = "3")]
     pub power: i64,
@@ -30,7 +30,7 @@ impl ::prost::Name for Equivocation {
 pub struct GenesisState {
     /// evidence defines all the evidence at genesis.
     #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub evidence: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
 impl ::prost::Name for GenesisState {
     const NAME: &'static str = "GenesisState";
@@ -67,7 +67,7 @@ impl ::prost::Name for QueryEvidenceRequest {
 pub struct QueryEvidenceResponse {
     /// evidence returns the requested evidence.
     #[prost(message, optional, tag = "1")]
-    pub evidence: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub evidence: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for QueryEvidenceResponse {
     const NAME: &'static str = "QueryEvidenceResponse";
@@ -99,7 +99,7 @@ impl ::prost::Name for QueryAllEvidenceRequest {
 pub struct QueryAllEvidenceResponse {
     /// evidence returns all evidences.
     #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub evidence: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
@@ -121,7 +121,7 @@ pub struct MsgSubmitEvidence {
     pub submitter: ::prost::alloc::string::String,
     /// evidence defines the evidence of misbehavior.
     #[prost(message, optional, tag = "2")]
-    pub evidence: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub evidence: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for MsgSubmitEvidence {
     const NAME: &'static str = "MsgSubmitEvidence";

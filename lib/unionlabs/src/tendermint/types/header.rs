@@ -19,7 +19,6 @@ use crate::{
     tendermint::types::block_id::TryFromEthAbiBlockIdError,
 };
 
-// REVIEW: Are all hashes here hex_upper_unprefixed?
 #[model(proto(raw(protos::tendermint::types::Header), into, from))]
 pub struct Header {
     /// basic block info
@@ -98,55 +97,55 @@ impl Header {
             leaf_hash(header.last_block_id?.encode_to_vec()),
             leaf_hash(
                 BytesValue {
-                    value: header.last_commit_hash,
+                    value: header.last_commit_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.data_hash,
+                    value: header.data_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.validators_hash,
+                    value: header.validators_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.next_validators_hash,
+                    value: header.next_validators_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.consensus_hash,
+                    value: header.consensus_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.app_hash,
+                    value: header.app_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.last_results_hash,
+                    value: header.last_results_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.evidence_hash,
+                    value: header.evidence_hash.into(),
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.proposer_address,
+                    value: header.proposer_address.into(),
                 }
                 .encode_to_vec(),
             ),
@@ -195,21 +194,34 @@ impl From<Header> for protos::tendermint::types::Header {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromHeaderError {
-    MissingField(MissingField),
-    LastBlockId(TryFromBlockIdError),
-    Height(BoundedIntError<i64>),
-    Timestamp(TryFromTimestampError),
-    LastCommitHash(InvalidLength),
-    DataHash(InvalidLength),
-    ValidatorsHash(InvalidLength),
-    NextValidatorsHash(InvalidLength),
-    ConsensusHash(InvalidLength),
-    AppHash(InvalidLength),
-    LastResultsHash(InvalidLength),
-    EvidenceHash(InvalidLength),
-    ProposerAddress(InvalidLength),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid last block id")]
+    LastBlockId(#[source] TryFromBlockIdError),
+    #[error("invalid height")]
+    Height(#[source] BoundedIntError<i64>),
+    #[error("invalid timestamp")]
+    Timestamp(#[source] TryFromTimestampError),
+    #[error("invalid last commit hash")]
+    LastCommitHash(#[source] InvalidLength),
+    #[error("invalid data hash")]
+    DataHash(#[source] InvalidLength),
+    #[error("invalid validators hash")]
+    ValidatorsHash(#[source] InvalidLength),
+    #[error("invalid next validators hash")]
+    NextValidatorsHash(#[source] InvalidLength),
+    #[error("invalid consensus hash")]
+    ConsensusHash(#[source] InvalidLength),
+    #[error("invalid app hash")]
+    AppHash(#[source] InvalidLength),
+    #[error("invalid last results hash")]
+    LastResultsHash(#[source] InvalidLength),
+    #[error("invalid evidence hash")]
+    EvidenceHash(#[source] InvalidLength),
+    #[error("invalid proposer address")]
+    ProposerAddress(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::tendermint::types::Header> for Header {

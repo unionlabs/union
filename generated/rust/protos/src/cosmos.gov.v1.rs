@@ -48,7 +48,7 @@ pub struct Proposal {
     pub id: u64,
     /// messages are the arbitrary messages to be executed if the proposal passes.
     #[prost(message, repeated, tag = "2")]
-    pub messages: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub messages: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// status defines the proposal status.
     #[prost(enumeration = "ProposalStatus", tag = "3")]
     pub status: i32,
@@ -59,19 +59,19 @@ pub struct Proposal {
     pub final_tally_result: ::core::option::Option<TallyResult>,
     /// submit_time is the time of proposal submission.
     #[prost(message, optional, tag = "5")]
-    pub submit_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub submit_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// deposit_end_time is the end time for deposition.
     #[prost(message, optional, tag = "6")]
-    pub deposit_end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub deposit_end_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// total_deposit is the total deposit on the proposal.
     #[prost(message, repeated, tag = "7")]
     pub total_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
     /// voting_start_time is the starting time to vote on a proposal.
     #[prost(message, optional, tag = "8")]
-    pub voting_start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub voting_start_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// voting_end_time is the end time of voting on a proposal.
     #[prost(message, optional, tag = "9")]
-    pub voting_end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub voting_end_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// metadata is any arbitrary metadata attached to the proposal.
     /// the recommended format of the metadata is to be found here:
     /// <https://docs.cosmos.network/v0.47/modules/gov#proposal-3>
@@ -170,7 +170,7 @@ pub struct DepositParams {
     /// Maximum period for Atom holders to deposit on a proposal. Initial value: 2
     /// months.
     #[prost(message, optional, tag = "2")]
-    pub max_deposit_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
+    pub max_deposit_period: ::core::option::Option<::pbjson_types::Duration>,
 }
 impl ::prost::Name for DepositParams {
     const NAME: &'static str = "DepositParams";
@@ -185,7 +185,7 @@ impl ::prost::Name for DepositParams {
 pub struct VotingParams {
     /// Duration of the voting period.
     #[prost(message, optional, tag = "1")]
-    pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
+    pub voting_period: ::core::option::Option<::pbjson_types::Duration>,
 }
 impl ::prost::Name for VotingParams {
     const NAME: &'static str = "VotingParams";
@@ -229,10 +229,10 @@ pub struct Params {
     /// Maximum period for Atom holders to deposit on a proposal. Initial value: 2
     /// months.
     #[prost(message, optional, tag = "2")]
-    pub max_deposit_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
+    pub max_deposit_period: ::core::option::Option<::pbjson_types::Duration>,
     /// Duration of the voting period.
     #[prost(message, optional, tag = "3")]
-    pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
+    pub voting_period: ::core::option::Option<::pbjson_types::Duration>,
     ///   Minimum percentage of total stake needed to vote for a result to be
     ///   considered valid.
     #[prost(string, tag = "4")]
@@ -262,8 +262,7 @@ pub struct Params {
     ///
     /// Since: cosmos-sdk 0.50
     #[prost(message, optional, tag = "10")]
-    pub expedited_voting_period:
-        ::core::option::Option<super::super::super::google::protobuf::Duration>,
+    pub expedited_voting_period: ::core::option::Option<::pbjson_types::Duration>,
     /// Minimum proportion of Yes votes for proposal to pass. Default value: 0.67.
     ///
     /// Since: cosmos-sdk 0.50
@@ -760,7 +759,7 @@ impl ::prost::Name for QueryTallyResultResponse {
 pub struct MsgSubmitProposal {
     /// messages are the arbitrary messages to be executed if proposal passes.
     #[prost(message, repeated, tag = "1")]
-    pub messages: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+    pub messages: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// initial_deposit is the deposit value that must be paid at proposal submission.
     #[prost(message, repeated, tag = "2")]
     pub initial_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
@@ -815,7 +814,7 @@ impl ::prost::Name for MsgSubmitProposalResponse {
 pub struct MsgExecLegacyContent {
     /// content is the proposal's content.
     #[prost(message, optional, tag = "1")]
-    pub content: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub content: ::core::option::Option<::pbjson_types::Any>,
     /// authority must be the gov module address.
     #[prost(string, tag = "2")]
     pub authority: ::prost::alloc::string::String,
@@ -1008,7 +1007,7 @@ pub struct MsgCancelProposalResponse {
     pub proposal_id: u64,
     /// canceled_time is the time when proposal is canceled.
     #[prost(message, optional, tag = "2")]
-    pub canceled_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub canceled_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// canceled_height defines the block height at which the proposal is canceled.
     #[prost(uint64, tag = "3")]
     pub canceled_height: u64,

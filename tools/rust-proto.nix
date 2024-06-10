@@ -28,6 +28,9 @@
               tonic = { workspace = true; features = [ "codegen" "prost" "gzip" "transport" ]; optional = true; };
               schemars = { workspace = true; optional = true; };
               serde-utils = { workspace = true; };
+              chrono = { workspace = true; features = [ "alloc" ]; };
+              # https://github.com/influxdata/pbjson/pull/118
+              pbjson-types = { git = "https://github.com/recoord/pbjson"; rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"; };
             };
             features = {
               default = [ "proto_full" "std" ];
@@ -68,6 +71,24 @@
             google.src
             "${proto.gogoproto}"
           ];
+          # inject https://github.com/cometbft/cometbft/blob/main/proto/cometbft/crypto/v1/keys.proto#L17
+          # note that this may cause issues if we decode proto bytes from another chain with this key type, since we use field identifier 3 for bn254 signatures.
+          # and yes prost is incredibly cursed. we have to annotate the field that uses the generated oneof `Sum` type with the additional enum tag for some reason? no clue why this information has to be duplicated.
+          # ask me how much time i wasted figuring this out
+          fixup-script = ''
+            sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 4")\]/' "./src/tendermint.crypto.rs"
+            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>),/Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "4")\]Bls12_381(::prost::alloc::vec::Vec<u8>),/' "./src/tendermint.crypto.rs"
+
+            # required until https://github.com/tokio-rs/prost/issues/507 is fixed
+            sed -i 's/pub sum: ::core::option::Option<public_key::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<public_key::Sum>,/' "./src/tendermint.crypto.rs"
+            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.crypto.rs"
+
+            # i can't figure out how to add attributes to the variants directly, possibly related to the issue linked above
+            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Bls12_381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12_381")\]Bls12_381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+          '';
         };
         uniond = rec {
           src = "${proto.uniond}";
@@ -87,6 +108,9 @@
             src
           ];
           additional-filter = "-path '*google/protobuf/*.proto'";
+          fixup-script = ''
+            echo "pub use pbjson_types::*;" >> "./src/google.protobuf.rs"
+          '';
         };
         ibc-proto = rec {
           src = "${proto.ibc-go}/proto";
@@ -145,22 +169,25 @@
           # something like:
           # { derive = ["Eq", "PartialOrd", "Ord"] }
           # { cfg_attr = [{ feature = "std"; } {serde = ["default"]} ]}
-          attrs = {
-            # ord = ''#[derive(Eq, PartialOrd, Ord)]'';
-            # eq = ''#[derive(Eq)]'';
+          # ord = ''#[derive(Eq, PartialOrd, Ord)]'';
+          # eq = ''#[derive(Eq)]'';
 
-            # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
+          # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
 
-            serde = ''#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]'';
-            serde_default = ''#[cfg_attr(feature = "serde", serde(default))]'';
-            serde_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]'';
-            serde_inner_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]'';
+          serde = ''#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]'';
+          serde_default = ''#[cfg_attr(feature = "serde", serde(default))]'';
+          # serde_flatten = ''#[cfg_attr(feature = "serde", serde(flatten))]'';
+          serde_string = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]'';
+          serde_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]'';
+          serde_base64_opt_default = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]'';
+          serde_inner_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]'';
+          serde_hex_upper_unprefixed = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]'';
 
-            # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
-            # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
-          };
+          # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
+          # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
+          serde_alias = alias: ''#[serde(alias = "${alias}")]'';
         in
-        with attrs; {
+        {
           type_attribute = {
             ".google.protobuf.Any" = [ serde ];
             ".google.protobuf.Timestamp" = [ serde ];
@@ -195,6 +222,38 @@
             ".cosmos.base.v1beta1" = [ serde ];
             ".cosmos.base.query.v1beta1" = [ serde ];
             ".cosmos.bank.v1beta1" = [ serde ];
+
+            ".tendermint.types.SignedHeader" = [ serde ];
+            ".tendermint.types.Vote" = [ serde ];
+            ".tendermint.types.Validator" = [ serde ];
+            ".tendermint.types.ValidatorSet" = [ serde ];
+            ".tendermint.types.Header" = [ serde ];
+            ".tendermint.types.Commit" = [ serde ];
+            ".tendermint.types.CommitSig" = [ serde ];
+            ".tendermint.types.BlockID" = [ serde ];
+            ".tendermint.types.PartSetHeader" = [ serde ];
+            ".tendermint.types.Block" = [ serde ];
+            ".tendermint.types.Evidence" = [ serde ];
+            ".tendermint.types.Data" = [ serde ];
+            ".tendermint.types.EvidenceList" = [ serde ];
+            ".tendermint.types.LightClientAttackEvidence" = [ serde ];
+            ".tendermint.types.DuplicateVoteEvidence" = [ serde ];
+            ".tendermint.types.LightBlock" = [ serde ];
+
+            ".tendermint.version.Consensus" = [ serde ];
+
+            ".tendermint.abci.ResponseQuery" = [ serde ];
+
+            ".tendermint.crypto.PublicKey" = [ serde ];
+            # ".tendermint.crypto.PublicKey.sum" = [ serde ];
+            ".tendermint.crypto.ProofOps" = [ serde ];
+            ".tendermint.crypto.ProofOp" = [ serde ];
+
+            ".tendermint.p2p.DefaultNodeInfo" = [ serde ];
+            ".tendermint.p2p.DefaultNodeInfoOther" = [ serde ];
+            ".tendermint.p2p.ProtocolVersion" = [ serde ];
+
+            # ".tendermint.types.Validator" = [ serde ];
           };
 
           field_attribute = {
@@ -263,6 +322,56 @@
             ".cosmos.ics23.v1.ExistenceProof.leaf" = [ serde_default ];
 
             ".cosmos.ics23.v1.NonExistenceProof.value" = [ serde_base64 ];
+
+            ".tendermint.types.Header.last_commit_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.data_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.validators_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.next_validators_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.consensus_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.app_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.last_results_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.evidence_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.proposer_address" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Header.height" = [ serde_string ];
+
+            # this type is so cursed
+            ".tendermint.types.BlockID.hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.BlockID.part_set_header" = [ (serde_alias "parts") ];
+
+            ".tendermint.types.PartSetHeader.hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Commit.height" = [ serde_string ];
+            ".tendermint.types.CommitSig.signature" = [ serde_base64_opt_default ];
+            ".tendermint.types.CommitSig.validator_address" = [ serde_hex_upper_unprefixed ];
+
+            ".tendermint.version.Consensus.block" = [ serde_string ];
+            ".tendermint.version.Consensus.app" = [ serde_default ];
+
+            ".tendermint.abci.ResponseQuery.index" = [ serde_string ];
+            ".tendermint.abci.ResponseQuery.height" = [ serde_string ];
+            ".tendermint.abci.ResponseQuery.key" = [ serde_base64_opt_default ];
+            ".tendermint.abci.ResponseQuery.value" = [ serde_base64_opt_default ];
+            ".tendermint.abci.ResponseQuery.proof_ops" = [ (serde_alias "proofOps") ];
+
+            ".tendermint.crypto.ProofOp.key" = [ serde_base64 ];
+            ".tendermint.crypto.ProofOp.data" = [ serde_base64 ];
+
+            ".tendermint.p2p.DefaultNodeInfo.channels" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.p2p.DefaultNodeInfo.default_node_id" = [ (serde_alias "id") ];
+
+            ".tendermint.p2p.ProtocolVersion.p2p" = [ serde_string ];
+            ".tendermint.p2p.ProtocolVersion.block" = [ serde_string ];
+            ".tendermint.p2p.ProtocolVersion.app" = [ serde_string ];
+
+            ".tendermint.types.Validator.address" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Validator.voting_power" = [ serde_string ];
+            ".tendermint.types.Validator.proposer_priority" = [ serde_string ];
+
+            ".tendermint.types.Data.txs" = [ serde_inner_base64 ];
+            # ".tendermint.crypto.PublicKey.sum" = [ serde_flatten ];
+          };
+
+          enum_attribute = {
+            ".tendermint.crypto.PublicKey.sum.Ed25519" = [ (serde_alias "tendermint/PubKeyEd25519") ];
           };
         };
 
@@ -324,6 +433,8 @@
           done
 
           protoc "''${protos[@]}" \
+            --prost_opt=compile_well_known_types \
+            --prost_opt=extern_path=.google.protobuf=::pbjson_types \
             --prost_out=./src \
             --prost_opt=enable_type_names=true,compile_well_known_types=true,${fold-opts prost-opts} \
             --tonic_out=./src \

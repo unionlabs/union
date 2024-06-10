@@ -145,7 +145,7 @@ pub struct ModuleConfig {
     /// config is the config object for the module. Module config messages should
     /// define a ModuleDescriptor using the cosmos.app.v1alpha1.is_module extension.
     #[prost(message, optional, tag = "2")]
-    pub config: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub config: ::core::option::Option<::pbjson_types::Any>,
     /// golang_bindings specifies explicit interface to implementation type bindings which
     /// depinject uses to resolve interface inputs to provider functions.  The scope of this
     /// field's configuration is module specific.

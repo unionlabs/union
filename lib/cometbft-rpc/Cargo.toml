@@ -1,0 +1,25 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "cometbft-rpc"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+hex.workspace       = true
+jsonrpsee           = { version = "0.22.3", features = ["tracing", "ws-client"] }
+macros              = { workspace = true }
+protos.workspace    = true
+serde               = { workspace = true, features = ["derive"] }
+serde-utils         = { workspace = true }
+thiserror.workspace = true
+tracing-subscriber  = { workspace = true, features = ["env-filter", "fmt"] }
+tracing.workspace   = true
+unionlabs           = { workspace = true }
+
+[dev-dependencies]
+serde_json = "1.0.114"
+tokio      = { workspace = true, features = ["macros"] }

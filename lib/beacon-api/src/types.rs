@@ -26,6 +26,7 @@ pub struct BeaconHeaderData {
     pub header: BeaconHeaderSignature,
 }
 
+// REVIEW: This is just SignedBeaconHeader?
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderSignature {
     pub message: BeaconBlockHeader,
@@ -228,7 +229,8 @@ pub struct Spec {
     pub deneb_fork_version: Version,
     #[serde(with = "::serde_utils::string")]
     pub deneb_fork_epoch: u64,
-    // SECONDS_PER_SLOT: 12,
+    #[serde(with = "::serde_utils::string")]
+    pub seconds_per_slot: u64,
     // SECONDS_PER_ETH1_BLOCK: 14,
     // MIN_VALIDATOR_WITHDRAWABILITY_DELAY: 256,
     // SHARD_COMMITTEE_PERIOD: 256,
@@ -253,7 +255,8 @@ pub struct Spec {
     // MAX_EFFECTIVE_BALANCE: 32000000000,
     // EFFECTIVE_BALANCE_INCREMENT: 1000000000,
     // MIN_ATTESTATION_INCLUSION_DELAY: 1,
-    // SLOTS_PER_EPOCH: 32,
+    #[serde(with = "::serde_utils::string")]
+    pub slots_per_epoch: u64,
     // MIN_SEED_LOOKAHEAD: 1,
     // MAX_SEED_LOOKAHEAD: 4,
     // EPOCHS_PER_ETH1_VOTING_PERIOD: 64,

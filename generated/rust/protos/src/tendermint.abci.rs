@@ -100,7 +100,7 @@ impl ::prost::Name for RequestInfo {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
     #[prost(message, optional, tag = "1")]
-    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -245,7 +245,7 @@ pub struct RequestPrepareProposal {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the validator proposing the block.
@@ -274,7 +274,7 @@ pub struct RequestProcessProposal {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the original proposer of the block.
@@ -300,7 +300,7 @@ pub struct RequestExtendVote {
     pub height: i64,
     /// info of the block that this vote may be referring to
     #[prost(message, optional, tag = "3")]
-    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "5")]
@@ -357,7 +357,7 @@ pub struct RequestFinalizeBlock {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// proposer_address is the address of the public key of the original proposer of the block.
@@ -503,6 +503,7 @@ impl ::prost::Name for ResponseInitChain {
         ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseQuery {
@@ -517,14 +518,19 @@ pub struct ResponseQuery {
     #[prost(string, tag = "4")]
     pub info: ::prost::alloc::string::String,
     #[prost(int64, tag = "5")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub index: i64,
     #[prost(bytes = "vec", tag = "6")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "7")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "8")]
+    #[serde(alias = "proofOps")]
     pub proof_ops: ::core::option::Option<super::crypto::ProofOps>,
     #[prost(int64, tag = "9")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(string, tag = "10")]
     pub codespace: ::prost::alloc::string::String,
@@ -1094,7 +1100,7 @@ pub struct Misbehavior {
     pub height: i64,
     /// The corresponding time where the offense occurred
     #[prost(message, optional, tag = "4")]
-    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
     /// <https://github.com/tendermint/tendermint/issues/4581>

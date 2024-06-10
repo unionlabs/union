@@ -25,8 +25,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, get_proof, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
-        EthereumSignersConfig, ReadWrite, Readonly,
+        self, get_proof, Ethereum, EthereumChain, EthereumConsensusChain, EthereumInitError,
+        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
     union::Union,
@@ -143,6 +143,16 @@ impl Arbitrum {
 }
 
 impl EthereumChain for Arbitrum {
+    fn provider(&self) -> Arc<Provider<Ws>> {
+        self.provider.clone()
+    }
+
+    fn ibc_handler_address(&self) -> H160 {
+        self.ibc_handler_address
+    }
+}
+
+impl EthereumConsensusChain for Arbitrum {
     async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
         // read `_latestConfirmed` at l1.execution_height(beacon_slot), then from there filter for `NodeConfirmed`
         let latest_confirmed = self.latest_confirmed_at_beacon_slot(slot).await;
@@ -179,14 +189,6 @@ impl EthereumChain for Arbitrum {
             .unwrap();
 
         block.number.unwrap().0[0]
-    }
-
-    fn provider(&self) -> Arc<Provider<Ws>> {
-        self.provider.clone()
-    }
-
-    fn ibc_handler_address(&self) -> H160 {
-        self.ibc_handler_address
     }
 
     async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {

@@ -9,6 +9,7 @@ workspace = true
 [dependencies]
 base64          = { workspace = true, features = ["alloc"] }
 bitvec          = { workspace = true, features = ["alloc"] }
+chrono          = { workspace = true, features = ["alloc"] }
 hex             = { workspace = true, features = ["alloc", "std"] }
 primitive-types = { workspace = true, features = ["serde_no_std"] }
 serde           = { workspace = true, features = ["derive"] }

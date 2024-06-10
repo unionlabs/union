@@ -38,6 +38,9 @@ pub fn keccak256(bytes: impl AsRef<[u8]>) -> H256 {
     Keccak256::new().chain_update(bytes).finalize().into()
 }
 
+/// The slot of the `mapping(bytes32 => bytes32) public commitments` mapping in the `IBCStore` contract.
+pub const IBC_HANDLER_COMMITMENTS_SLOT: U256 = U256::from_limbs([0, 0, 0, 0]);
+
 /// Calculates the slot for a `path` at saved in the commitment map in `slot`
 ///
 /// key: `keccak256(keccak256(abi.encode_packed(path)) || slot)`

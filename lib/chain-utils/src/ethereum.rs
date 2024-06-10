@@ -25,7 +25,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, EthAbi},
-    ethereum::config::ChainSpec,
+    ethereum::{config::ChainSpec, IBC_HANDLER_COMMITMENTS_SLOT},
     hash::{H160, H256},
     ibc::{
         core::client::height::{Height, IsHeight},
@@ -45,28 +45,27 @@ use unionlabs::{
     uint::U256,
 };
 
-/// The slot of the `mapping(bytes32 => bytes32) public commitments` mapping in the `IBCStore` contract.
-pub const IBC_HANDLER_COMMITMENTS_SLOT: U256 = U256::from_limbs([0, 0, 0, 0]);
-
 use crate::{private_key::PrivateKey, Pool};
 
 pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
 // NOTE: ClientType bound is temporary until I figure out a better way to deal with client types
-/// An Ethereum-based chain. This can be any chain that is based off of and settles on Ethereum (i.e. Ethereum mainnet/ Sepolia, L2s such as Scroll).
-pub trait EthereumChain:
-    Chain<IbcStateEncoding = EthAbi, StateProof = StorageProof, ClientType = String>
-{
-    /// Fetch the execution height associated with the given beacon slot. For [`Ethereum`], this will simply be the execution block number, but for L2s this will fetch the settled height at the L1 block number.
-    fn execution_height_of_beacon_slot(&self, slot: u64) -> impl Future<Output = u64>;
-
+/// A chain running the EVM and our solidity IBC stack. This can be any Ethereum L1 or L2, or a chain running the EVM in a different environment (such as Berachain).
+pub trait EthereumChain: Chain<IbcStateEncoding = EthAbi, ClientType = String> {
     /// The provider connected to this chain's [JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/).
     fn provider(&self) -> Arc<Provider<Ws>>;
 
     /// The address of the [`IBCHandler`] smart contract deployed natively on this chain.
     fn ibc_handler_address(&self) -> H160;
+}
 
+/// An Ethereum-based chain. This can be any chain that is based off of and settles on Ethereum (i.e. Ethereum mainnet/ Sepolia, L2s such as Scroll).
+pub trait EthereumConsensusChain: EthereumChain<StateProof = StorageProof> {
+    /// Fetch the execution height associated with the given beacon slot. For [`Ethereum`], this will simply be the execution block number, but for L2s this will fetch the settled height at the L1 block number.
+    fn execution_height_of_beacon_slot(&self, slot: u64) -> impl Future<Output = u64>;
+
+    // NOTE: This is a stopgap solution until we stop using ethers and write our own eth rpc library
     fn get_proof(
         &self,
         address: H160,
@@ -86,19 +85,21 @@ pub trait EthereumChainExt: EthereumChain {
 impl<T: EthereumChain> EthereumChainExt for T {}
 
 impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
-    async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
-        self.beacon_api_client
-            .execution_height(beacon_api::client::BlockId::Slot(slot))
-            .await
-            .unwrap()
-    }
-
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }
 
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
+    }
+}
+
+impl<C: ChainSpec, S: EthereumSignersConfig> EthereumConsensusChain for Ethereum<C, S> {
+    async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
+        self.beacon_api_client
+            .execution_height(beacon_api::client::BlockId::Slot(slot))
+            .await
+            .unwrap()
     }
 
     async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
@@ -400,7 +401,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
                 revision_number: 0,
                 revision_height: 0,
             },
-            ibc_commitment_slot: U256::from(0),
+            ibc_commitment_slot: IBC_HANDLER_COMMITMENTS_SLOT,
             ibc_contract_address: self.ibc_handler_address,
         }
     }
@@ -447,8 +448,18 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
         ethereum::consensus_state::ConsensusState {
             slot: bootstrap.header.beacon.slot,
             state_root: bootstrap.header.execution.state_root,
-            // TODO: Should this shouldn't be the default but fetched via eth_getProof
-            storage_root: H256::default(),
+            storage_root: self
+                .provider
+                .get_proof(
+                    ethers::types::H160::from(self.ibc_handler_address.0),
+                    vec![],
+                    Some(bootstrap.header.execution.block_number.into()),
+                )
+                .await
+                .unwrap()
+                .storage_hash
+                .0
+                .into(),
             timestamp,
             current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
             next_sync_committee: light_client_update
@@ -873,6 +884,7 @@ fn eth_chain_type() {
     );
 }
 
+// TODO: Remove this in favor of the one in unionlabs
 pub fn commitment_key<Hc: Chain, Tr: Chain>(path: impl IbcPath<Hc, Tr>) -> H256 {
     keccak256(
         keccak256(path.to_string())

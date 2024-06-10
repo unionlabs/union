@@ -70,7 +70,13 @@ pub enum IbcClientError<T: IbcClient> {
     ClientSpecific(T::Error),
     #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
     InvalidClientMessage(Vec<u8>),
+    #[error("consensus state not found at height `{0}`")]
+    ConsensusStateNotFound(Height),
 }
+
+pub type WasmClientStateOf<T> = wasm::client_state::ClientState<<T as IbcClient>::ClientState>;
+pub type WasmConsensusStateOf<T> =
+    wasm::consensus_state::ConsensusState<<T as IbcClient>::ConsensusState>;
 
 pub trait IbcClient: Sized {
     type Error: std::error::Error + PartialEq + Into<IbcClientError<Self>>;

@@ -356,7 +356,7 @@ where
     }
 }
 
-fn mk_valset(
+pub(crate) fn mk_valset(
     validators: Vec<Validator>,
     proposer_address: H160,
 ) -> unionlabs::tendermint::types::validator_set::ValidatorSet {

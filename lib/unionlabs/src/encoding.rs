@@ -8,6 +8,9 @@ impl Encoding for EthAbi {}
 pub enum Proto {}
 impl Encoding for Proto {}
 
+pub enum Ssz {}
+impl Encoding for Ssz {}
+
 pub trait Encode<Enc: Encoding>: Sized {
     fn encode(self) -> Vec<u8>;
 }

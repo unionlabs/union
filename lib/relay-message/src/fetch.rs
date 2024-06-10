@@ -5,7 +5,8 @@ use futures::Future;
 use macros::apply;
 use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMessageTypes, QueueMsg};
 use unionlabs::{
-    ics24::{self},
+    ics24,
+    never::Never,
     traits::{ChainIdOf, ClientIdOf, HeightOf},
     QueryHeight,
 };
@@ -59,6 +60,12 @@ impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
 
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
     fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayMessageTypes>>;
+}
+
+impl<Hc: ChainExt> DoFetch<Hc> for Never {
+    async fn do_fetch(_: &Hc, this: Self) -> QueueMsg<RelayMessageTypes> {
+        match this {}
+    }
 }
 
 #[queue_msg]

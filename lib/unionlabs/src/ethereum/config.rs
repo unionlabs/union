@@ -73,6 +73,14 @@ pub enum AnyChainSpec<T: ChainSpecParameterizable> {
     Minimal(T::Inner<Minimal>),
 }
 
+// https://github.com/rust-lang/rust/issues/35853#issuecomment-415993963
+macro_rules! with_dollar_sign {
+    ($($body:tt)*) => {
+        macro_rules! __with_dollar_sign { $($body)* }
+        __with_dollar_sign!($);
+    }
+}
+
 macro_rules! consts_traits {
     ($($CONST:ident $(,)?),+) => {
         $(
@@ -82,42 +90,39 @@ macro_rules! consts_traits {
                 // types unconditionally
                 type $CONST: Unsigned + NonZero + Debug + Clone + PartialEq + Send + Sync + Unpin;
             }
-
-            impl $CONST for Minimal {
-                type $CONST = typenum::U<{ preset::MINIMAL.$CONST }>;
-            }
-
-            impl $CONST for Mainnet {
-                type $CONST = typenum::U<{ preset::MAINNET.$CONST }>;
-            }
         )+
 
         pub trait ChainSpec: 'static + crate::MaybeArbitrary + FromStrExact + Debug + Clone + PartialEq + Default + Send + Sync + Unpin + $($CONST+)+ {
             const PRESET: preset::Preset;
-            const PRESET_BASE_KIND: PresetBaseKind;
+            // const PRESET_BASE_KIND: PresetBaseKind;
 
             type PERIOD: 'static + Unsigned;
         }
 
-        impl ChainSpec for Minimal {
-            // TODO: please save me
-            const PRESET: preset::Preset = preset::MINIMAL;
-            const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Minimal;
+        with_dollar_sign! {
+            ($d:tt) => {
+                // TODO: Keep an eye on this issue https://github.com/rust-lang/rust/issues/98291, as it might resolve an issue with macro_export-ing this macro (currently it is only available in this crate)
+                macro_rules! mk_chain_spec {
+                    ($d T:ident is $d preset:path) => {
+                        $(
+                            impl $d crate::ethereum::config:: $CONST for $d T {
+                                #[allow(non_camel_case_types)]
+                                type $CONST = $d crate::typenum::U<{ $d preset.$CONST }>;
+                            }
+                        )*
 
-            type PERIOD = typenum::Prod<
-                <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
-                <Self as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH,
-            >;
-        }
+                        impl $d crate::ethereum::config::ChainSpec for $d T {
+                            const PRESET: $d crate::ethereum::config::preset::Preset = $d preset;
+                            // const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Mainnet;
 
-        impl ChainSpec for Mainnet {
-            const PRESET: preset::Preset = preset::MAINNET;
-            const PRESET_BASE_KIND: PresetBaseKind = PresetBaseKind::Mainnet;
-
-            type PERIOD = typenum::Prod<
-                <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
-                <Self as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH,
-            >;
+                            type PERIOD = $d crate::typenum::Prod<
+                                <Self as $d crate::ethereum::config::EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
+                                <Self as $d crate::ethereum::config::SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH,
+                            >;
+                        }
+                    };
+                }
+            }
         }
     };
 }
@@ -150,6 +155,11 @@ consts_traits![
     MIN_SYNC_COMMITTEE_PARTICIPANTS,
     UPDATE_TIMEOUT,
 ];
+
+self::mk_chain_spec!(Minimal is preset::MINIMAL);
+self::mk_chain_spec!(Mainnet is preset::MAINNET);
+
+pub(crate) use mk_chain_spec;
 
 /// Values that are constant across all configurations.
 pub mod consts {

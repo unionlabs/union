@@ -77,14 +77,22 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
                 &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.app_hash,
-                &path,
+                &path
+                    .key_path
+                    .into_iter()
+                    .map(|x| x.into_bytes())
+                    .collect::<Vec<_>>(),
                 value,
             ),
             StorageState::Empty => ics23::ibc_api::verify_non_membership(
                 &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.app_hash,
-                &path,
+                &path
+                    .key_path
+                    .into_iter()
+                    .map(|x| x.into_bytes())
+                    .collect::<Vec<_>>(),
             ),
         }
         .map_err(Error::VerifyMembership)
@@ -115,7 +123,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
         let trusted_timestamp = consensus_state.data.timestamp;
         // Normalized to nanoseconds to follow tendermint convention
-        let untrusted_timestamp = header.signed_header.time.unix_nanos();
+        let untrusted_timestamp = header.signed_header.time.as_unix_nanos();
 
         if untrusted_timestamp <= trusted_timestamp {
             return Err(InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent {
@@ -204,7 +212,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
         consensus_state.data.next_validators_hash = header.signed_header.next_validators_hash;
         // Normalized to nanoseconds to follow tendermint convention
-        consensus_state.data.timestamp = header.signed_header.time.unix_nanos();
+        consensus_state.data.timestamp = header.signed_header.time.as_unix_nanos();
 
         save_client_state::<Self>(deps.branch(), client_state);
         save_consensus_state_metadata(
@@ -231,7 +239,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     ) -> Result<bool, IbcClientError<Self>> {
         let height = height_from_header(&header);
 
-        let expected_timestamp: u64 = header.signed_header.time.unix_nanos();
+        let expected_timestamp: u64 = header.signed_header.time.as_unix_nanos();
 
         // If there is already a header at this height, it should be exactly the same as the header that
         // we saved previously. If this is not the case, either the client is broken or the chain is

@@ -31,6 +31,7 @@ pub struct ClientState {
     pub slots_per_epoch: u64,
     pub epochs_per_sync_committee_period: u64,
     pub trust_level: Fraction,
+    /// The trusting period of this client, *normalized to nanoseconds* in order to be compatible with ibc-go.
     pub trusting_period: u64,
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...

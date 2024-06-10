@@ -28,7 +28,7 @@
       "ibc_commitment_slot": "0"
     },
     "ethereum-devnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
@@ -52,6 +52,19 @@
       ],
       "eth_rpc_api": "ws://localhost:8546",
       "eth_beacon_rpc_api": "http://localhost:9596"
+    },
+    "berachain-devnet": {
+      "enabled": true,
+      "chain_type": "berachain",
+      "ibc_commitment_slot": "0",
+      "ibc_handler_address": "0x9664d804589c1c9f573288edc2b9027661d624fa",
+      "signers": [
+        {
+          "raw": "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306"
+        }
+      ],
+      "eth_rpc_api": "ws://localhost:8546",
+      "ws_url": "ws://localhost:26657/websocket"
     },
     "sepolia": {
       "enabled": false,
@@ -103,9 +116,9 @@
         }
       ],
       "fee_denom": "muno",
-      "ws_url": "ws://localhost:26657/websocket",
+      "ws_url": "ws://localhost:36657/websocket",
       "prover_endpoint": "http://localhost:9999",
-      "grpc_url": "http://localhost:9090"
+      "grpc_url": "http://localhost:19090"
     },
     "union-testnet": {
       "chain_type": "union",

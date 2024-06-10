@@ -17,8 +17,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware,
-        EthereumSignersConfig, ReadWrite, Readonly,
+        self, Ethereum, EthereumChain, EthereumConsensusChain, EthereumInitError,
+        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
     },
     private_key::PrivateKey,
     union::Union,
@@ -82,18 +82,20 @@ pub struct Config {
 }
 
 impl EthereumChain for Scroll {
-    async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
-        self.batch_index_of_beacon_slot(slot)
-            .then(|bi| self.scroll_height_of_batch_index(bi))
-            .await
-    }
-
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }
 
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
+    }
+}
+
+impl EthereumConsensusChain for Scroll {
+    async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
+        self.batch_index_of_beacon_slot(slot)
+            .then(|bi| self.scroll_height_of_batch_index(bi))
+            .await
     }
 
     async fn get_proof(

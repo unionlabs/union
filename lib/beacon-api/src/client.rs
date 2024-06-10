@@ -38,7 +38,17 @@ impl<C: ChainSpec> BeaconApiClient<C> {
 
         let spec = this.spec().await.unwrap();
 
-        assert_eq!(spec.data.preset_base, C::PRESET_BASE_KIND);
+        assert_eq!(
+            spec.data.seconds_per_slot,
+            C::SECONDS_PER_SLOT::U64,
+            "incorrect chain spec?"
+        );
+
+        assert_eq!(
+            spec.data.slots_per_epoch,
+            C::SLOTS_PER_EPOCH::U64,
+            "incorrect chain spec?"
+        );
 
         this
     }

@@ -1,8 +1,10 @@
+#![allow(clippy::type_complexity)] // we use some funky functions in this file
+
 use std::collections::BTreeMap;
 
 use unionlabs::{
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::{H160, H512},
+    hash::H160,
     ibc::lightclients::tendermint::fraction::Fraction,
     tendermint::{
         crypto::public_key::PublicKey,
@@ -28,7 +30,7 @@ pub fn verify<V: HostFns>(
     trusting_period: Duration,
     now: Timestamp,
     max_clock_drift: Duration,
-    trust_level: Fraction,
+    trust_level: &Fraction,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
     // check adjacency in terms of block(header) height
@@ -85,7 +87,7 @@ pub fn verify_non_adjacent<V: HostFns>(
     trusting_period: Duration,
     now: Timestamp,
     max_clock_drift: Duration,
-    trust_level: Fraction,
+    trust_level: &Fraction,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
     // We only want this check to be done when the headers are not adjacent
@@ -205,16 +207,17 @@ pub fn verify_commit_light<V: HostFns>(
         .ok_or(Error::IntegerOverflow)?
         / 3;
 
-    let filter_commit = |commit_sig: &CommitSig| -> Option<(H160, Timestamp, H512)> {
-        match commit_sig {
-            CommitSig::Commit {
-                validator_address,
-                timestamp,
-                signature,
-            } => Some((*validator_address, *timestamp, *signature)),
-            _ => None,
-        }
-    };
+    let filter_commit =
+        |commit_sig: &CommitSig| -> Result<Option<(H160, Timestamp, Vec<u8>)>, Error> {
+            match commit_sig {
+                CommitSig::Commit {
+                    validator_address,
+                    timestamp,
+                    signature,
+                } => Ok(Some((*validator_address, *timestamp, signature.clone()))),
+                _ => Ok(None),
+            }
+        };
 
     if should_batch_verify(commit.signatures.len()) {
         verify_commit_batch(
@@ -273,7 +276,7 @@ pub fn verify_commit_light_trusting<V: HostFns>(
     chain_id: &str,
     vals: &ValidatorSet,
     commit: &Commit,
-    trust_level: Fraction,
+    trust_level: &Fraction,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
     // SAFETY: as u64 is safe here since we do `abs` which makes it always positive
@@ -285,16 +288,17 @@ pub fn verify_commit_light_trusting<V: HostFns>(
     let voting_power_needed = total_voting_power_mul_by_numerator / trust_level.denominator;
 
     // only use the commit signatures
-    let filter_commit = |commit_sig: &CommitSig| -> Option<(H160, Timestamp, H512)> {
-        match commit_sig {
-            CommitSig::Commit {
-                validator_address,
-                timestamp,
-                signature,
-            } => Some((*validator_address, *timestamp, *signature)),
-            _ => None,
-        }
-    };
+    let filter_commit =
+        |commit_sig: &CommitSig| -> Result<Option<(H160, Timestamp, Vec<u8>)>, Error> {
+            match commit_sig {
+                CommitSig::Commit {
+                    validator_address,
+                    timestamp,
+                    signature,
+                } => Ok(Some((*validator_address, *timestamp, signature.clone()))),
+                _ => Ok(None),
+            }
+        };
 
     // attempt to batch verify commit. As the validator set doesn't necessarily
     // correspond with the validator set that signed the block we need to look
@@ -327,7 +331,7 @@ fn verify_commit_single<V: HostFns>(
     vals: &ValidatorSet,
     commit: &Commit,
     voting_power_needed: u64,
-    filter_commit: fn(&CommitSig) -> Option<(H160, Timestamp, H512)>,
+    filter_commit: fn(&CommitSig) -> Result<Option<(H160, Timestamp, Vec<u8>)>, Error>,
     lookup_by_index: bool,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
@@ -356,7 +360,7 @@ fn verify_commit_batch<V: HostFns>(
     vals: &ValidatorSet,
     commit: &Commit,
     voting_power_needed: u64,
-    filter_commit: fn(&CommitSig) -> Option<(H160, Timestamp, H512)>,
+    filter_commit: fn(&CommitSig) -> Result<Option<(H160, Timestamp, Vec<u8>)>, Error>,
     lookup_by_index: bool,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
@@ -390,12 +394,12 @@ fn verify_commit_batch<V: HostFns>(
     }
 }
 
-fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, H512) -> Result<(), Error>>(
+fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, Vec<u8>) -> Result<(), Error>>(
     chain_id: &str,
     vals: &ValidatorSet,
     commit: &Commit,
     voting_power_needed: u64,
-    filter_commit: fn(&CommitSig) -> Option<(H160, Timestamp, H512)>,
+    filter_commit: fn(&CommitSig) -> Result<Option<(H160, Timestamp, Vec<u8>)>, Error>,
     lookup_by_index: bool,
     mut signature_handle: F,
 ) -> Result<(), Error> {
@@ -403,7 +407,7 @@ fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, H512) -> Result<(), Error>>(
     let mut seen_vals: BTreeMap<usize, usize> = BTreeMap::new();
 
     for (i, commit_sig) in commit.signatures.iter().enumerate() {
-        let Some((validator_address, timestamp, signature)) = filter_commit(commit_sig) else {
+        let Some((validator_address, timestamp, signature)) = filter_commit(commit_sig)? else {
             continue;
         };
 
@@ -427,7 +431,7 @@ fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, H512) -> Result<(), Error>>(
             val
         };
 
-        let vote_sign_bytes = canonical_vote(commit, commit_sig, &timestamp, chain_id);
+        let vote_sign_bytes = canonical_vote(commit, commit_sig, &timestamp, chain_id)?;
 
         signature_handle(&val.pub_key, vote_sign_bytes, signature)?;
 
@@ -466,10 +470,15 @@ fn verify_new_headers_and_vals(
         .header
         .calculate_merkle_root()
         .ok_or(Error::InvalidHeader)?;
-    if untrusted_header_hash != untrusted_header.commit.block_id.hash {
+    let commit_hash = untrusted_header
+        .commit
+        .block_id
+        .hash
+        .ok_or(Error::MissingBlockIdHash)?;
+    if untrusted_header_hash != commit_hash {
         return Err(Error::SignedHeaderCommitHashMismatch {
             sh_hash: untrusted_header_hash,
-            commit_hash: untrusted_header.commit.block_id.hash,
+            commit_hash,
         });
     }
 
@@ -511,8 +520,12 @@ fn verify_new_headers_and_vals(
         });
     }
 
-    if untrusted_header.header.validators_hash != validators_hash(untrusted_vals) {
-        return Err(Error::UntrustedValidatorSetMismatch);
+    let untrusted_validators_hash = validators_hash(untrusted_vals);
+    if untrusted_header.header.validators_hash != untrusted_validators_hash {
+        return Err(Error::UntrustedValidatorSetMismatch {
+            expected: untrusted_header.header.validators_hash,
+            found: untrusted_validators_hash,
+        });
     }
 
     Ok(())
@@ -584,7 +597,7 @@ mod tests {
             Duration::new(315576000000, 0).unwrap(),
             update_header.signed_header.header.time,
             Duration::new(100_000_000, 0).unwrap(),
-            Fraction {
+            &Fraction {
                 numerator: 1,
                 denominator: const { option_unwrap!(NonZeroU64::new(3)) },
             },

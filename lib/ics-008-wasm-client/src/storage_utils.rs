@@ -11,10 +11,10 @@ use protos::{
 use unionlabs::{
     encoding::{Decode, Encode, EncodeAs, Proto},
     google::protobuf::any::Any,
-    ibc::{core::client::height::Height, lightclients::wasm},
+    ibc::core::client::height::Height,
 };
 
-use crate::{DecodeError, IbcClient, IbcClientError};
+use crate::{DecodeError, IbcClient, IbcClientError, WasmClientStateOf, WasmConsensusStateOf};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -50,7 +50,7 @@ pub fn consensus_db_key(height: &Height) -> String {
 ///     - data: Contract defined raw bytes, which we use as protobuf encoded concrete client state.
 pub fn read_client_state<T>(
     deps: Deps<T::CustomQuery>,
-) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
+) -> Result<WasmClientStateOf<T>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -65,10 +65,11 @@ where
 /// - value: (PROTO_ENCODED_WASM_CLIENT_STATE)
 ///     - timestamp: Time of this consensus state.
 ///     - data: Contract defined raw bytes, which we use as protobuf encoded concrete consensus state.
+// REVIEW: Is the Option in this return type ever used? or should we just return an error if not found?
 pub fn read_consensus_state<T>(
     deps: Deps<T::CustomQuery>,
     height: &Height,
-) -> Result<Option<wasm::consensus_state::ConsensusState<T::ConsensusState>>, IbcClientError<T>>
+) -> Result<Option<WasmConsensusStateOf<T>>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -77,7 +78,7 @@ where
 
 pub fn save_client_state<T: IbcClient>(
     deps: DepsMut<T::CustomQuery>,
-    wasm_client_state: wasm::client_state::ClientState<T::ClientState>,
+    wasm_client_state: WasmClientStateOf<T>,
 ) {
     let any_state = Any(wasm_client_state);
     deps.storage.set(
@@ -92,7 +93,7 @@ pub fn save_proto_client_state<T: IbcClient>(
 ) {
     let any_state = ProtoAny {
         type_url: <ProtoClientState as ::prost::Name>::type_url(),
-        value: proto_wasm_state.encode_to_vec(),
+        value: proto_wasm_state.encode_to_vec().into(),
     };
 
     deps.storage.set(
@@ -104,7 +105,7 @@ pub fn save_proto_client_state<T: IbcClient>(
 /// Update the client state on the host store.
 pub fn update_client_state<T: IbcClient>(
     deps: DepsMut<T::CustomQuery>,
-    mut wasm_client_state: wasm::client_state::ClientState<T::ClientState>,
+    mut wasm_client_state: WasmClientStateOf<T>,
     latest_height: u64,
 ) {
     // TODO: this may be wrong, why reuse the same revision number, must be passed?
@@ -118,7 +119,7 @@ pub fn update_client_state<T: IbcClient>(
 
 pub fn save_consensus_state<T: IbcClient>(
     deps: DepsMut<T::CustomQuery>,
-    wasm_consensus_state: wasm::consensus_state::ConsensusState<T::ConsensusState>,
+    wasm_consensus_state: WasmConsensusStateOf<T>,
     height: &Height,
 ) {
     deps.storage.set(
@@ -134,7 +135,7 @@ pub fn save_proto_consensus_state<T: IbcClient>(
 ) {
     let any_state = ProtoAny {
         type_url: <ProtoConsensusState as ::prost::Name>::type_url(),
-        value: proto_wasm_state.encode_to_vec(),
+        value: proto_wasm_state.encode_to_vec().into(),
     };
 
     deps.storage.set(
@@ -146,7 +147,7 @@ pub fn save_proto_consensus_state<T: IbcClient>(
 /// Reads the client state from the subject's (this client) store
 pub fn read_subject_client_state<T>(
     deps: Deps<T::CustomQuery>,
-) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
+) -> Result<WasmClientStateOf<T>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -156,7 +157,7 @@ where
 /// Reads the client state from the substitute's (other client) store
 pub fn read_substitute_client_state<T>(
     deps: Deps<T::CustomQuery>,
-) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
+) -> Result<WasmClientStateOf<T>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -165,7 +166,7 @@ where
 
 pub fn save_subject_client_state<T>(
     deps: DepsMut<T::CustomQuery>,
-    wasm_client_state: wasm::client_state::ClientState<T::ClientState>,
+    wasm_client_state: WasmClientStateOf<T>,
 ) where
     T: IbcClient,
 {
@@ -179,7 +180,7 @@ pub fn save_subject_client_state<T>(
 pub fn read_subject_consensus_state<T>(
     deps: Deps<T::CustomQuery>,
     height: &Height,
-) -> Result<Option<wasm::consensus_state::ConsensusState<T::ConsensusState>>, IbcClientError<T>>
+) -> Result<Option<WasmConsensusStateOf<T>>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -189,7 +190,7 @@ where
 pub fn read_substitute_consensus_state<T>(
     deps: Deps<T::CustomQuery>,
     height: &Height,
-) -> Result<Option<wasm::consensus_state::ConsensusState<T::ConsensusState>>, IbcClientError<T>>
+) -> Result<Option<WasmConsensusStateOf<T>>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -198,7 +199,7 @@ where
 
 pub fn save_subject_consensus_state<T>(
     deps: DepsMut<T::CustomQuery>,
-    wasm_consensus_state: wasm::consensus_state::ConsensusState<T::ConsensusState>,
+    wasm_consensus_state: WasmConsensusStateOf<T>,
     height: &Height,
 ) where
     T: IbcClient,
@@ -212,7 +213,7 @@ pub fn save_subject_consensus_state<T>(
 fn read_prefixed_client_state<T>(
     deps: Deps<T::CustomQuery>,
     prefix: &str,
-) -> Result<wasm::client_state::ClientState<T::ClientState>, IbcClientError<T>>
+) -> Result<WasmClientStateOf<T>, IbcClientError<T>>
 where
     T: IbcClient,
 {
@@ -231,7 +232,7 @@ fn read_prefixed_consensus_state<T>(
     deps: Deps<T::CustomQuery>,
     height: &Height,
     prefix: &str,
-) -> Result<Option<wasm::consensus_state::ConsensusState<T::ConsensusState>>, IbcClientError<T>>
+) -> Result<Option<WasmConsensusStateOf<T>>, IbcClientError<T>>
 where
     T: IbcClient,
 {

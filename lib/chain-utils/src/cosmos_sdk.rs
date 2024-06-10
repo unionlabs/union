@@ -14,10 +14,13 @@ use crate::{
     Pool,
 };
 
-pub trait CosmosSdkChain: Chain {
+pub trait CosmosSdkChainRpcs: Chain {
     fn grpc_url(&self) -> String;
-    fn fee_denom(&self) -> String;
     fn tm_client(&self) -> &WebSocketClient;
+}
+
+pub trait CosmosSdkChain: CosmosSdkChainRpcs {
+    fn fee_denom(&self) -> String;
     fn signers(&self) -> &Pool<CosmosSigner>;
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>>;
 }
@@ -157,7 +160,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 signer_infos: [tx::v1beta1::SignerInfo {
                     public_key: Some(protos::google::protobuf::Any {
                         type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                        value: signer.public_key().encode_to_vec(),
+                        value: signer.public_key().encode_to_vec().into(),
                     }),
                     mode_info: Some(tx::v1beta1::ModeInfo {
                         sum: Some(tx::v1beta1::mode_info::Sum::Single(

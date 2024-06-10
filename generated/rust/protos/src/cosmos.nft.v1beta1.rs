@@ -89,7 +89,7 @@ pub struct Class {
     pub uri_hash: ::prost::alloc::string::String,
     /// data is the app specific metadata of the NFT class. Optional
     #[prost(message, optional, tag = "7")]
-    pub data: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub data: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for Class {
     const NAME: &'static str = "Class";
@@ -116,7 +116,7 @@ pub struct Nft {
     pub uri_hash: ::prost::alloc::string::String,
     /// data is an app specific data of the NFT. Optional
     #[prost(message, optional, tag = "10")]
-    pub data: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    pub data: ::core::option::Option<::pbjson_types::Any>,
 }
 impl ::prost::Name for Nft {
     const NAME: &'static str = "NFT";

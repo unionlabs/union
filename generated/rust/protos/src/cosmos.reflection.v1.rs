@@ -16,7 +16,7 @@ impl ::prost::Name for FileDescriptorsRequest {
 pub struct FileDescriptorsResponse {
     /// files is the file descriptors.
     #[prost(message, repeated, tag = "1")]
-    pub files: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::FileDescriptorProto>,
+    pub files: ::prost::alloc::vec::Vec<::pbjson_types::FileDescriptorProto>,
 }
 impl ::prost::Name for FileDescriptorsResponse {
     const NAME: &'static str = "FileDescriptorsResponse";

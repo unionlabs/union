@@ -107,6 +107,27 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub excess_blob_gas: u64,
 }
 
+// TODO: Ssz encoding doesn't need to take ownership, impl for &T as well as T
+// TODO: Impl this via #[model]
+impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> crate::encoding::Decode<crate::encoding::Ssz>
+    for ExecutionPayloadHeader<C>
+{
+    type Error = ssz::decode::DecodeError;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        <Self as ssz::Ssz>::from_ssz_bytes(bytes)
+    }
+}
+
+// TODO: Impl this via #[model]
+impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> crate::encoding::Encode<crate::encoding::Ssz>
+    for ExecutionPayloadHeader<C>
+{
+    fn encode(self) -> Vec<u8> {
+        self.as_ssz_bytes()
+    }
+}
+
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader<C>>
     for protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader
 {
@@ -133,19 +154,30 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromExecutionPayloadHeaderError {
-    ParentHash(InvalidLength),
-    FeeRecipient(InvalidLength),
-    StateRoot(InvalidLength),
-    ReceiptsRoot(InvalidLength),
-    LogsBloom(InvalidLength),
-    PrevRandao(InvalidLength),
-    ExtraData(InvalidLength),
-    BaseFeePerGas(InvalidLength),
-    BlockHash(InvalidLength),
-    TransactionsRoot(InvalidLength),
-    WithdrawalsRoot(InvalidLength),
+    #[error("invalid parent hash")]
+    ParentHash(#[source] InvalidLength),
+    #[error("invalid fee recipient")]
+    FeeRecipient(#[source] InvalidLength),
+    #[error("invalid state root")]
+    StateRoot(#[source] InvalidLength),
+    #[error("invalid receipts root")]
+    ReceiptsRoot(#[source] InvalidLength),
+    #[error("invalid logs bloom")]
+    LogsBloom(#[source] InvalidLength),
+    #[error("invalid prev randao")]
+    PrevRandao(#[source] InvalidLength),
+    #[error("invalid extra data")]
+    ExtraData(#[source] InvalidLength),
+    #[error("invalid base fee per gas")]
+    BaseFeePerGas(#[source] InvalidLength),
+    #[error("invalid block hash")]
+    BlockHash(#[source] InvalidLength),
+    #[error("invalid transactions root")]
+    TransactionsRoot(#[source] InvalidLength),
+    #[error("invalid withdrawals root")]
+    WithdrawalsRoot(#[source] InvalidLength),
 }
 
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>

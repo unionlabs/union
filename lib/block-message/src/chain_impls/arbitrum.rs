@@ -1,9 +1,12 @@
 use std::collections::VecDeque;
 
-use chain_utils::arbitrum::{Arbitrum, ARBITRUM_REVISION_NUMBER};
+use chain_utils::{
+    arbitrum::{Arbitrum, ARBITRUM_REVISION_NUMBER},
+    ethereum::EthereumConsensusChain,
+};
 use enumorph::Enumorph;
 use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, QueueMsg};
-use unionlabs::{ethereum::config::Mainnet, traits::Chain};
+use unionlabs::{ibc::core::client::height::IsHeight, traits::Chain};
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
@@ -48,7 +51,7 @@ where
 {
     async fn do_fetch(c: &Arbitrum, msg: Self) -> QueueMsg<BlockMessageTypes> {
         match msg {
-            ArbitrumFetch::FetchEvents(FetchEvents {
+            Self::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
             }) => fetch(id(
@@ -58,13 +61,21 @@ where
                     to_slot: to_height.revision_height,
                 }),
             )),
-            ArbitrumFetch::FetchGetLogs(get_logs) => {
+            Self::FetchGetLogs(get_logs) => {
                 fetch_get_logs(c, get_logs, ARBITRUM_REVISION_NUMBER).await
             }
-            ArbitrumFetch::FetchBeaconBlockRange(beacon_block_range) => {
+            Self::FetchBeaconBlockRange(beacon_block_range) => {
                 fetch_beacon_block_range(c, beacon_block_range, &c.l1.beacon_api_client).await
             }
-            ArbitrumFetch::FetchChannel(channel) => fetch_channel(c, channel).await,
+            Self::FetchChannel(FetchChannel { height, path }) => {
+                fetch_channel(
+                    c,
+                    path,
+                    c.execution_height_of_beacon_slot(height.revision_height())
+                        .await,
+                )
+                .await
+            }
         }
     }
 }
@@ -72,7 +83,7 @@ where
 #[queue_msg]
 #[derive(Enumorph)]
 pub enum ArbitrumFetch {
-    FetchEvents(FetchEvents<Mainnet>),
+    FetchEvents(FetchEvents<Arbitrum>),
     FetchGetLogs(FetchGetLogs),
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 

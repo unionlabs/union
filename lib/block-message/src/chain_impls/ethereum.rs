@@ -2,7 +2,8 @@ use std::{collections::VecDeque, marker::PhantomData};
 
 use beacon_api::client::BeaconApiClient;
 use chain_utils::ethereum::{
-    Ethereum, EthereumChain, IBCHandlerEvents, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
+    Ethereum, EthereumChain, EthereumConsensusChain, IBCHandlerEvents, IbcHandlerExt,
+    ETHEREUM_REVISION_NUMBER,
 };
 use contracts::{
     ibc_channel_handshake::IBCChannelHandshakeEvents,
@@ -23,6 +24,7 @@ use queue_msg::{
     conc, data, fetch, noop, queue_msg, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
+use tracing::{debug, info};
 use unionlabs::{
     ethereum::config::ChainSpec,
     events::{
@@ -86,7 +88,7 @@ where
 {
     async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<BlockMessageTypes> {
         match msg {
-            EthereumFetch::FetchEvents(FetchEvents {
+            Self::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
             }) => fetch(id(
@@ -96,13 +98,21 @@ where
                     to_slot: to_height.revision_height,
                 }),
             )),
-            EthereumFetch::FetchGetLogs(get_logs) => {
+            Self::FetchGetLogs(get_logs) => {
                 fetch_get_logs(c, get_logs, ETHEREUM_REVISION_NUMBER).await
             }
-            EthereumFetch::FetchBeaconBlockRange(beacon_block_range) => {
+            Self::FetchBeaconBlockRange(beacon_block_range) => {
                 fetch_beacon_block_range(c, beacon_block_range, &c.beacon_api_client).await
             }
-            EthereumFetch::FetchChannel(channel) => fetch_channel(c, channel).await,
+            Self::FetchChannel(FetchChannel { height, path }) => {
+                fetch_channel(
+                    c,
+                    path,
+                    c.execution_height_of_beacon_slot(height.revision_height())
+                        .await,
+                )
+                .await
+            }
         }
     }
 }
@@ -113,17 +123,18 @@ pub(crate) async fn fetch_get_logs<Hc>(
     revision_number: u64,
 ) -> QueueMsg<BlockMessageTypes>
 where
-    Hc: EthereumChainExt<
-        Height = Height,
-        Aggregate: From<AggregateWithChannel<Hc>>,
-        Fetch: From<FetchChannel<Hc>>,
-    >,
+    Hc: EthereumConsensusChain
+        + EthereumChainExt<
+            Height = Height,
+            Aggregate: From<AggregateWithChannel<Hc>>,
+            Fetch: From<FetchChannel<Hc>>,
+        >,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
-    tracing::debug!(%from_slot, %to_slot, "fetching logs in beacon block range");
+    debug!(%from_slot, %to_slot, "fetching logs in beacon block range");
 
     let event_height = Height {
         revision_number,
@@ -134,10 +145,10 @@ where
     let to_block = c.execution_height_of_beacon_slot(to_slot).await;
 
     if from_block == to_block {
-        tracing::debug!(%from_block, %to_block, %from_slot, %to_slot, "beacon block range is empty");
+        debug!(%from_block, %to_block, %from_slot, %to_slot, "beacon block range is empty");
         noop()
     } else {
-        tracing::debug!(%from_block, %to_block, "fetching block range");
+        debug!(%from_block, %to_block, "fetching block range");
         // REVIEW: Surely transactions and events can be fetched in parallel?
         conc(
             futures::stream::iter(
@@ -158,12 +169,17 @@ where
                     .expect("log should have transaction_hash")
                     .into();
 
-                tracing::debug!(?log, "raw log");
+                debug!(?log, "raw log");
 
                 match IBCHandlerEvents::decode_log(&log.into()) {
                     Ok(event) => {
-                        tracing::debug!(?event, "found IBCHandler event");
-                        Some(mk_aggregate_event(c, event, event_height, tx_hash).await)
+                        debug!(?event, "found IBCHandler event");
+                        Some(
+                            mk_aggregate_event(c, event, event_height, tx_hash, |event_height| {
+                                c.execution_height_of_beacon_slot(event_height.revision_height())
+                            })
+                            .await,
+                        )
                     }
                     Err(e) => {
                         tracing::warn!("could not decode evm event {}", e);
@@ -188,7 +204,7 @@ where
 
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
 {
-    tracing::debug!(%from_slot, %to_slot, "fetching beacon block range");
+    debug!(%from_slot, %to_slot, "fetching beacon block range");
 
     assert!(from_slot < to_slot);
 
@@ -201,7 +217,8 @@ where
         // attempt to shrink from..to
         // note that this is *exclusive* on `to`
         for slot in (from_slot + 1)..to_slot {
-            tracing::info!("querying slot {slot}");
+            info!(%slot, "querying slot");
+
             match beacon_api_client
                 .block(beacon_api::client::BlockId::Slot(slot))
                 .await
@@ -211,7 +228,7 @@ where
                     error,
                     status_code,
                 })) => {
-                    tracing::info!(%message, %error, %status_code, "beacon block not found for slot {slot}");
+                    info!(%slot, %message, %error, %status_code, "beacon block not found for slot");
                     continue;
                 }
                 Err(err) => {
@@ -248,14 +265,15 @@ where
 
 pub(crate) async fn fetch_channel<Hc>(
     c: &Hc,
-    FetchChannel { height, path }: FetchChannel<Hc>,
+    path: ChannelEndPath,
+    execution_height: u64,
 ) -> QueueMsg<BlockMessageTypes>
 where
     Hc: EthereumChainExt<Data: From<ChannelData<Hc>>>,
 
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
 {
-    tracing::debug!(%height, %path, "fetching channel");
+    debug!(%execution_height, %path, "fetching channel");
 
     data(id(
         c.chain_id(),
@@ -263,10 +281,7 @@ where
             channel: c
                 .ibc_handler()
                 .get_channel(path.port_id.to_string(), path.channel_id.to_string())
-                .block(
-                    c.execution_height_of_beacon_slot(height.revision_height())
-                        .await,
-                )
+                .block(execution_height)
                 .await
                 .unwrap()
                 .try_into()
@@ -276,11 +291,13 @@ where
     ))
 }
 
-pub async fn mk_aggregate_event<Hc>(
+pub async fn mk_aggregate_event<Hc, F, Fut>(
     c: &Hc,
     event: IBCHandlerEvents,
     event_height: Hc::Height,
     tx_hash: H256,
+    // normalize the height from the "public facing" height to the execution height of this chain.
+    normalize_height: F,
 ) -> QueueMsg<BlockMessageTypes>
 where
     Hc: EthereumChainExt<Aggregate: From<AggregateWithChannel<Hc>>, Fetch: From<FetchChannel<Hc>>>,
@@ -288,6 +305,9 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Hc, Aggregate<Hc>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
     AnyChainIdentified<AnyData>: From<Identified<Hc, Data<Hc>>>,
+
+    F: FnOnce(Hc::Height) -> Fut,
+    Fut: futures::Future<Output = u64>,
 {
     match event {
         IBCHandlerEvents::PacketEvent(IBCPacketEvents::AcknowledgePacketFilter(raw_event)) => {
@@ -463,8 +483,7 @@ where
                         .unwrap()
                         .try_into()
                         .unwrap(),
-                    c.execution_height_of_beacon_slot(event_height.revision_height())
-                        .await,
+                    normalize_height(event_height).await,
                 )
                 .await;
 
@@ -587,7 +606,7 @@ where
 #[queue_msg]
 #[derive(Enumorph)]
 pub enum EthereumFetch<C: ChainSpec> {
-    FetchEvents(FetchEvents<C>),
+    FetchEvents(FetchEvents<Ethereum<C>>),
     FetchGetLogs(FetchGetLogs),
     FetchBeaconBlockRange(FetchBeaconBlockRange),
 
@@ -595,9 +614,9 @@ pub enum EthereumFetch<C: ChainSpec> {
 }
 
 #[queue_msg]
-pub struct FetchEvents<C: ChainSpec> {
-    pub from_height: HeightOf<Ethereum<C>>,
-    pub to_height: HeightOf<Ethereum<C>>,
+pub struct FetchEvents<Hc: ChainExt> {
+    pub from_height: HeightOf<Hc>,
+    pub to_height: HeightOf<Hc>,
 }
 
 #[queue_msg]
@@ -615,7 +634,8 @@ pub struct FetchBeaconBlockRange {
 }
 
 #[queue_msg]
-pub struct FetchChannel<Hc: EthereumChainExt> {
+// TODO: Move to Data?
+pub struct FetchChannel<Hc: ChainExt> {
     pub height: Hc::Height,
     pub path: ChannelEndPath,
 }
@@ -647,7 +667,7 @@ where
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum AggregateWithChannel<Hc: ChainExt + EthereumChain> {
+pub enum AggregateWithChannel<Hc: ChainExt> {
     PacketAcknowledgement(EventInfo<Hc, AcknowledgePacketFilter>),
     WriteAcknowledgement(EventInfo<Hc, WriteAcknowledgementFilter>),
     SendPacket(EventInfo<Hc, SendPacketFilter>),
@@ -664,13 +684,14 @@ pub enum AggregateWithChannel<Hc: ChainExt + EthereumChain> {
         deserialize = "T: serde::de::DeserializeOwned"
     )
 )]
-pub struct EventInfo<Hc: ChainExt + EthereumChain, T> {
+// REVIEW: Use something like derivative/ derive_where/ educe
+pub struct EventInfo<Hc: ChainExt, T> {
     height: Hc::Height,
     tx_hash: H256,
     raw_event: T,
 }
 
-impl<Hc: ChainExt + EthereumChain, T: PartialEq> PartialEq for EventInfo<Hc, T> {
+impl<Hc: ChainExt, T: PartialEq> PartialEq for EventInfo<Hc, T> {
     fn eq(&self, other: &Self) -> bool {
         self.height == other.height
             && self.tx_hash == other.tx_hash
@@ -678,7 +699,7 @@ impl<Hc: ChainExt + EthereumChain, T: PartialEq> PartialEq for EventInfo<Hc, T> 
     }
 }
 
-impl<Hc: ChainExt + EthereumChain, T: Clone> Clone for EventInfo<Hc, T> {
+impl<Hc: ChainExt, T: Clone> Clone for EventInfo<Hc, T> {
     fn clone(&self) -> Self {
         Self {
             height: self.height,
@@ -823,10 +844,10 @@ const _: () = {
 };
 
 #[queue_msg]
-pub struct ChannelData<#[cover] Hc: EthereumChainExt> {
+pub struct ChannelData<#[cover] Hc: ChainExt> {
     pub channel: Channel,
 }
 
 #[queue_msg]
 // REVIEW: Use something other than string here?
-pub struct ConnectionData<Hc: EthereumChainExt>(pub ConnectionEnd<ClientIdOf<Hc>, String, String>);
+pub struct ConnectionData<Hc: ChainExt>(pub ConnectionEnd<ClientIdOf<Hc>, String, String>);

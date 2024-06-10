@@ -4,8 +4,8 @@
 use std::{collections::VecDeque, fmt::Debug, future::Future, marker::PhantomData};
 
 use chain_utils::{
-    arbitrum::Arbitrum, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union,
-    wasm::Wasm, Chains,
+    arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll,
+    union::Union, wasm::Wasm, Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{seq, QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
@@ -235,6 +235,11 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
     /// The solidity client on Arbitrum tracking the state of Wasm<Union>.
     UnionOnArbitrum(lc!(Wasm<Union> => Arbitrum)),
 
+    /// The 08-wasm client tracking the state of Berachain.
+    BerachainOnUnion(lc!(Berachain => Wasm<Union>)),
+    /// The solidity client on Berachain tracking the state of Wasm<Union>.
+    UnionOnBerachain(lc!(Wasm<Union> => Berachain)),
+
     /// The native tendermint client on Union tracking the state of Wasm<Cosmos>.
     WasmCosmosOnUnion(lc!(Wasm<Cosmos> => Union)),
     /// The 08-wasm client on Cosmos tracking the state of Union.
@@ -259,7 +264,7 @@ impl<T: AnyLightClient> AnyLightClientIdentified<T> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, enumorph::Enumorph)]
 #[serde(bound(serialize = "", deserialize = ""), untagged, deny_unknown_fields)]
 #[allow(clippy::large_enum_variant)]
 enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
@@ -283,6 +288,8 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
     ArbitrumOnUnion(Inner<Wasm<Union>, Arbitrum, lc!(Arbitrum => Wasm<Union>)>),
     UnionOnArbitrum(Inner<Arbitrum, Wasm<Union>, lc!(Wasm<Union> => Arbitrum)>),
 
+    BerachainOnUnion(Inner<Wasm<Union>, Berachain, lc!(Berachain => Wasm<Union>)>),
+    UnionOnBerachain(Inner<Berachain, Wasm<Union>, lc!(Wasm<Union> => Berachain)>),
     WasmCosmosOnUnion(Inner<Union, Wasm<Cosmos>, lc!(Wasm<Cosmos> => Union)>),
     UnionOnWasmCosmos(Inner<Wasm<Cosmos>, Union, lc!(Union => Wasm<Cosmos>)>),
 
@@ -294,32 +301,8 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
 
 impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIdentifiedSerde<T> {
     fn from(value: AnyLightClientIdentified<T>) -> Self {
-        match value {
-            AnyLightClientIdentified::EthereumMainnetOnUnion(t) => {
-                Self::EthereumMainnetOnUnion(Inner::new(t))
-            }
-            AnyLightClientIdentified::UnionOnEthereumMainnet(t) => {
-                Self::UnionOnEthereumMainnet(Inner::new(t))
-            }
-            AnyLightClientIdentified::EthereumMinimalOnUnion(t) => {
-                Self::EthereumMinimalOnUnion(Inner::new(t))
-            }
-            AnyLightClientIdentified::UnionOnEthereumMinimal(t) => {
-                Self::UnionOnEthereumMinimal(Inner::new(t))
-            }
-            AnyLightClientIdentified::ScrollOnUnion(t) => Self::ScrollOnUnion(Inner::new(t)),
-            AnyLightClientIdentified::UnionOnScroll(t) => Self::UnionOnScroll(Inner::new(t)),
-            AnyLightClientIdentified::ArbitrumOnUnion(t) => Self::ArbitrumOnUnion(Inner::new(t)),
-            AnyLightClientIdentified::UnionOnArbitrum(t) => Self::UnionOnArbitrum(Inner::new(t)),
-            AnyLightClientIdentified::WasmCosmosOnUnion(t) => {
-                Self::WasmCosmosOnUnion(Inner::new(t))
-            }
-            AnyLightClientIdentified::UnionOnWasmCosmos(t) => {
-                Self::UnionOnWasmCosmos(Inner::new(t))
-            }
-            AnyLightClientIdentified::CosmosOnUnion(t) => Self::CosmosOnUnion(Inner::new(t)),
-            AnyLightClientIdentified::UnionOnCosmos(t) => Self::UnionOnCosmos(Inner::new(t)),
-            AnyLightClientIdentified::CosmosOnCosmos(t) => Self::CosmosOnCosmos(Inner::new(t)),
+        any_lc! {
+            |value| Inner::new(value).into()
         }
     }
 }
@@ -333,20 +316,28 @@ impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClien
             AnyLightClientIdentifiedSerde::UnionOnEthereumMainnet(t) => {
                 Self::UnionOnEthereumMainnet(t.inner)
             }
+
             AnyLightClientIdentifiedSerde::EthereumMinimalOnUnion(t) => {
                 Self::EthereumMinimalOnUnion(t.inner)
             }
             AnyLightClientIdentifiedSerde::UnionOnEthereumMinimal(t) => {
                 Self::UnionOnEthereumMinimal(t.inner)
             }
+
             AnyLightClientIdentifiedSerde::ScrollOnUnion(t) => Self::ScrollOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnScroll(t) => Self::UnionOnScroll(t.inner),
+
             AnyLightClientIdentifiedSerde::ArbitrumOnUnion(t) => Self::ArbitrumOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnArbitrum(t) => Self::UnionOnArbitrum(t.inner),
+
+            AnyLightClientIdentifiedSerde::BerachainOnUnion(t) => Self::BerachainOnUnion(t.inner),
+            AnyLightClientIdentifiedSerde::UnionOnBerachain(t) => Self::UnionOnBerachain(t.inner),
             AnyLightClientIdentifiedSerde::WasmCosmosOnUnion(t) => Self::WasmCosmosOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnWasmCosmos(t) => Self::UnionOnWasmCosmos(t.inner),
+
             AnyLightClientIdentifiedSerde::CosmosOnCosmos(t) => Self::CosmosOnCosmos(t.inner),
             AnyLightClientIdentifiedSerde::CosmosOnUnion(t) => Self::CosmosOnUnion(t.inner),
+
             AnyLightClientIdentifiedSerde::UnionOnCosmos(t) => Self::UnionOnCosmos(t.inner),
         }
     }
@@ -550,6 +541,22 @@ macro_rules! any_lc {
                 $expr
             }
 
+            AnyLightClientIdentified::BerachainOnUnion($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::berachain::Berachain;
+
+                $expr
+            }
+            AnyLightClientIdentified::UnionOnBerachain($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::berachain::Berachain;
+                #[allow(dead_code)]
+                type Tr = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+
+                $expr
+            }
             AnyLightClientIdentified::WasmCosmosOnUnion($msg) => {
                 #[allow(dead_code)]
                 type Hc = chain_utils::union::Union;

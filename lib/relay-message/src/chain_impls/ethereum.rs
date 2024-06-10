@@ -2,8 +2,8 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync
 
 use chain_utils::{
     ethereum::{
-        Ethereum, EthereumChain, EthereumChainExt as _, EthereumSignerMiddleware, IbcHandlerErrors,
-        IbcHandlerExt, ETHEREUM_REVISION_NUMBER, IBC_HANDLER_COMMITMENTS_SLOT,
+        Ethereum, EthereumChain, EthereumChainExt as _, EthereumConsensusChain,
+        EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
     },
     Pool,
 };
@@ -33,6 +33,7 @@ use unionlabs::{
     ethereum::{
         beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
         config::ChainSpec,
+        IBC_HANDLER_COMMITMENTS_SLOT,
     },
     hash::{H160, H256},
     ibc::{
@@ -427,18 +428,16 @@ where
     async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> QueueMsg<RelayMessageTypes> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
-            EthereumFetchMsg::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
-                Data::specific(FinalityUpdate {
-                    finality_update: ethereum
-                        .beacon_api_client
-                        .finality_update()
-                        .await
-                        .unwrap()
-                        .data,
-                    __marker: PhantomData,
-                })
-            }
-            EthereumFetchMsg::FetchLightClientUpdates(FetchLightClientUpdates {
+            Self::FetchFinalityUpdate(FetchFinalityUpdate {}) => Data::specific(FinalityUpdate {
+                finality_update: ethereum
+                    .beacon_api_client
+                    .finality_update()
+                    .await
+                    .unwrap()
+                    .data,
+                __marker: PhantomData,
+            }),
+            Self::FetchLightClientUpdates(FetchLightClientUpdates {
                 trusted_period,
                 target_period,
             }) => Data::specific(LightClientUpdates {
@@ -453,7 +452,7 @@ where
                     .collect(),
                 __marker: PhantomData,
             }),
-            EthereumFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
+            Self::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
                 Data::specific(LightClientUpdate {
                     update: ethereum
                         .beacon_api_client
@@ -469,19 +468,17 @@ where
                     __marker: PhantomData,
                 })
             }
-            EthereumFetchMsg::FetchBootstrap(FetchBootstrap { slot }) => {
-                Data::specific(BootstrapData {
-                    slot,
-                    bootstrap: ethereum
-                        .beacon_api_client
-                        .bootstrap_for_slot(slot)
-                        .await
-                        .unwrap()
-                        .data,
-                    __marker: PhantomData,
-                })
-            }
-            EthereumFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
+            Self::FetchBootstrap(FetchBootstrap { slot }) => Data::specific(BootstrapData {
+                slot,
+                bootstrap: ethereum
+                    .beacon_api_client
+                    .bootstrap_for_slot(slot)
+                    .await
+                    .unwrap()
+                    .data,
+                __marker: PhantomData,
+            }),
+            Self::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
                 let execution_height = ethereum
                     .beacon_api_client
                     .execution_height(beacon_api::client::BlockId::Slot(slot))
@@ -514,16 +511,12 @@ where
                     __marker: PhantomData,
                 })
             }
-            EthereumFetchMsg::FetchBeaconGenesis(_) => Data::specific(BeaconGenesisData {
+            Self::FetchBeaconGenesis(_) => Data::specific(BeaconGenesisData {
                 genesis: ethereum.beacon_api_client.genesis().await.unwrap().data,
                 __marker: PhantomData,
             }),
-            EthereumFetchMsg::FetchGetProof(get_proof) => {
-                fetch_get_proof(ethereum, get_proof).await
-            }
-            EthereumFetchMsg::FetchIbcState(ibc_state) => {
-                fetch_ibc_state(ethereum, ibc_state).await
-            }
+            Self::FetchGetProof(get_proof) => fetch_get_proof(ethereum, get_proof).await,
+            Self::FetchIbcState(ibc_state) => fetch_ibc_state(ethereum, ibc_state).await,
         };
 
         data(id::<Ethereum<C>, Tr, _>(ethereum.chain_id, msg))
@@ -532,11 +525,13 @@ where
 
 pub async fn fetch_get_proof<Hc, Tr>(c: &Hc, get_proof: GetProof<Hc, Tr>) -> Data<Hc, Tr>
 where
-    Hc: ChainExt + EthereumChain,
+    Hc: ChainExt + EthereumConsensusChain,
     Tr: ChainExt,
 {
     let path = get_proof.path.to_string();
 
+    // TODO: Use unionlabs::slot here
+    // or ibc_commitment_key?
     let location = keccak256(
         keccak256(path.as_bytes())
             .into_iter()
@@ -640,7 +635,8 @@ where
     Hc: ChainExt<
             StoredClientState<Tr>: Decode<Hc::IbcStateEncoding>,
             StoredConsensusState<Tr>: Decode<Hc::IbcStateEncoding>,
-        > + EthereumChain,
+        > + EthereumChain
+        + EthereumConsensusChain,
     Tr: ChainExt,
 {
     let execution_height = c
@@ -721,10 +717,6 @@ where
                     .collect::<Vec<_>>(),
             );
 
-            let execution_height = c
-                .execution_height_of_beacon_slot(height.revision_height())
-                .await;
-
             let state = c
                 .provider()
                 .get_storage_at(
@@ -750,6 +742,7 @@ where
             height,
             path,
         }),
+        // REVIEW: Can we use ibc_handler().ibc_state_read() here?
         Path::NextSequenceAck(path) => {
             let path_str = path.to_string();
 
@@ -759,10 +752,6 @@ where
                     .chain(AbiEncode::encode(IBC_HANDLER_COMMITMENTS_SLOT))
                     .collect::<Vec<_>>(),
             );
-
-            let execution_height = c
-                .execution_height_of_beacon_slot(height.revision_height())
-                .await;
 
             let state = c
                 .provider()

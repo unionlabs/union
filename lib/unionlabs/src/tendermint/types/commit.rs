@@ -69,13 +69,18 @@ impl TryFrom<contracts::glue::TendermintTypesCommitData> for Commit {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromCommitError {
-    Height(BoundedIntError<i64>),
-    Round(BoundedIntError<i32>),
-    MissingField(MissingField),
-    BlockId(TryFromBlockIdError),
-    Signatures(TryFromCommitSigError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid height")]
+    Height(#[source] BoundedIntError<i64>),
+    #[error("invalid round")]
+    Round(#[source] BoundedIntError<i32>),
+    #[error("invalid block id")]
+    BlockId(#[source] TryFromBlockIdError),
+    #[error("invalid signatures")]
+    Signatures(#[source] TryFromCommitSigError),
 }
 
 impl TryFrom<protos::tendermint::types::Commit> for Commit {

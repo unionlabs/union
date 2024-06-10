@@ -607,6 +607,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "berachain-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "bytes",
+ "cosmwasm-std 1.5.2",
+ "ethereum-light-client",
+ "ethereum-verifier",
+ "hex",
+ "hex-literal",
+ "ics008-wasm-client",
+ "ics23",
+ "lazy_static",
+ "prost",
+ "protos",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3",
+ "tendermint-light-client",
+ "tendermint-verifier",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "bip32"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -944,6 +973,7 @@ dependencies = [
  "beacon-api",
  "bip32",
  "chrono",
+ "cometbft-rpc",
  "contracts",
  "crossbeam-queue",
  "dashmap",
@@ -1141,6 +1171,24 @@ name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
+
+[[package]]
+name = "cometbft-rpc"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "jsonrpsee",
+ "macros",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
 
 [[package]]
 name = "cometbls-groth16-verifier"
@@ -4390,6 +4438,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "multimap"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
+
+[[package]]
 name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4703,6 +4757,40 @@ name = "path-slash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e91099d4268b0e11973f036e885d652fb0b21fedcf69738c627f94db6a44f42"
+
+[[package]]
+name = "pbjson"
+version = "0.6.0"
+source = "git+https://github.com/recoord/pbjson?rev=2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe#2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"
+dependencies = [
+ "base64 0.21.7",
+ "serde",
+]
+
+[[package]]
+name = "pbjson-build"
+version = "0.6.2"
+source = "git+https://github.com/recoord/pbjson?rev=2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe#2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"
+dependencies = [
+ "heck 0.4.1",
+ "itertools 0.11.0",
+ "prost",
+ "prost-types",
+]
+
+[[package]]
+name = "pbjson-types"
+version = "0.6.0"
+source = "git+https://github.com/recoord/pbjson?rev=2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe#2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"
+dependencies = [
+ "bytes",
+ "chrono",
+ "pbjson",
+ "pbjson-build",
+ "prost",
+ "prost-build",
+ "serde",
+]
 
 [[package]]
 name = "pbkdf2"
@@ -5129,6 +5217,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-build"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c55e02e35260070b6f716a2423c2ff1c3bb1642ddca6f99e1f26d06268a0e2d2"
+dependencies = [
+ "bytes",
+ "heck 0.4.1",
+ "itertools 0.11.0",
+ "log",
+ "multimap",
+ "once_cell",
+ "petgraph",
+ "prettyplease",
+ "prost",
+ "prost-types",
+ "regex",
+ "syn 2.0.60",
+ "tempfile",
+ "which",
+]
+
+[[package]]
 name = "prost-derive"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5160,7 +5270,9 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 name = "protos"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "ethers",
+ "pbjson-types",
  "prost",
  "schemars",
  "serde",
@@ -6070,6 +6182,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
  "bitvec",
+ "chrono",
  "hex",
  "primitive-types",
  "serde",
@@ -7880,7 +7993,6 @@ dependencies = [
  "ethers-contract-derive",
  "ethers-core",
  "frame-support-procedural",
- "frunk",
  "generic-array 0.14.7",
  "hex",
  "hex-literal",
@@ -8228,6 +8340,18 @@ name = "webpki-roots"
 version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
+
+[[package]]
+name = "which"
+version = "4.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
+dependencies = [
+ "either",
+ "home",
+ "once_cell",
+ "rustix 0.38.32",
+]
 
 [[package]]
 name = "whoami"

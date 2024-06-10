@@ -17,6 +17,7 @@ unionlabs   = { workspace = true, features = ["default"] }
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 chrono                   = { workspace = true, features = ["alloc"] }
+cometbft-rpc             = { workspace = true }
 crossbeam-queue          = { workspace = true, features = ["std"] }
 dashmap                  = { workspace = true }
 enumorph                 = { workspace = true }

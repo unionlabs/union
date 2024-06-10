@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     encoding::Proto,
-    events::TryFromTendermintEventError,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -19,7 +18,11 @@ use unionlabs::{
     WasmClientType,
 };
 
-use crate::{cosmos_sdk::CosmosSdkChain, private_key::PrivateKey, Pool};
+use crate::{
+    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs},
+    private_key::PrivateKey,
+    Pool,
+};
 
 #[derive(Debug, Clone)]
 pub struct Union {
@@ -246,23 +249,9 @@ impl Union {
 
 pub type UnionClientId = ClientId;
 
-#[derive(Debug)]
-pub enum UnionEventSourceError {
-    TryFromTendermintEvent(TryFromTendermintEventError),
-    Subscription(tendermint_rpc::Error),
-}
-
 impl CosmosSdkChain for Union {
-    fn grpc_url(&self) -> String {
-        self.grpc_url.clone()
-    }
-
     fn fee_denom(&self) -> String {
         self.fee_denom.clone()
-    }
-
-    fn tm_client(&self) -> &WebSocketClient {
-        &self.tm_client
     }
 
     fn signers(&self) -> &Pool<CosmosSigner> {
@@ -271,5 +260,15 @@ impl CosmosSdkChain for Union {
 
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
         &self.checksum_cache
+    }
+}
+
+impl CosmosSdkChainRpcs for Union {
+    fn grpc_url(&self) -> String {
+        self.grpc_url.clone()
+    }
+
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
     }
 }

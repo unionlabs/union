@@ -1,17 +1,19 @@
 use macros::model;
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{errors::InvalidLength, hash::H256, tendermint::types::block_id::maybe_empty_h256};
 
 #[derive(Default)]
 #[model(proto(raw(protos::tendermint::types::PartSetHeader), into, from))]
 pub struct PartSetHeader {
     pub total: u32,
-    pub hash: H256,
+    /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.
+    pub hash: Option<H256>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromPartSetHeaderError {
-    Hash(InvalidLength),
+    #[error("invalid hash")]
+    Hash(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::tendermint::types::PartSetHeader> for PartSetHeader {
@@ -20,10 +22,7 @@ impl TryFrom<protos::tendermint::types::PartSetHeader> for PartSetHeader {
     fn try_from(value: protos::tendermint::types::PartSetHeader) -> Result<Self, Self::Error> {
         Ok(Self {
             total: value.total,
-            hash: value
-                .hash
-                .try_into()
-                .map_err(TryFromPartSetHeaderError::Hash)?,
+            hash: maybe_empty_h256(&value.hash).map_err(TryFromPartSetHeaderError::Hash)?,
         })
     }
 }
@@ -32,7 +31,7 @@ impl From<PartSetHeader> for protos::tendermint::types::PartSetHeader {
     fn from(value: PartSetHeader) -> Self {
         Self {
             total: value.total,
-            hash: value.hash.into(),
+            hash: value.hash.map(Into::into).unwrap_or_default(),
         }
     }
 }
@@ -42,7 +41,7 @@ impl From<PartSetHeader> for contracts::glue::TendermintTypesPartSetHeaderData {
     fn from(value: PartSetHeader) -> Self {
         Self {
             total: value.total,
-            hash: value.hash.into_bytes().into(),
+            hash: value.hash.map(Into::into).unwrap_or_default(),
         }
     }
 }
@@ -62,11 +61,7 @@ impl TryFrom<contracts::glue::TendermintTypesPartSetHeaderData> for PartSetHeade
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             total: value.total,
-            hash: value
-                .hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiPartSetHeaderError::Hash)?,
+            hash: maybe_empty_h256(&value.hash).map_err(TryFromEthAbiPartSetHeaderError::Hash)?,
         })
     }
 }

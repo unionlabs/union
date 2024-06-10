@@ -1,4 +1,5 @@
 use unionlabs::{
+    errors::InvalidLength,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256},
     tendermint::types::block_id::BlockId,
@@ -8,6 +9,7 @@ use unionlabs::{
 pub enum Error {
     #[error("integer overflow")]
     IntegerOverflow,
+    // TODO: More descriptive message and name
     #[error("invalid header")]
     InvalidHeader,
     #[error("headers must be non-adjacent")]
@@ -39,7 +41,7 @@ pub enum Error {
         trusted_header_timestamp: Timestamp,
     },
     #[error("expected the untrusted validator set to match the validators hash")]
-    UntrustedValidatorSetMismatch,
+    UntrustedValidatorSetMismatch { expected: H256, found: H256 },
     #[error("invalid index ({index}) while getting a validator with len ({val_len})")]
     InvalidIndexInValidatorSet { index: usize, val_len: usize },
     #[error("double vote from ({0})")]
@@ -73,4 +75,10 @@ pub enum Error {
     NegativeVotingPower(i64),
     #[error("signature count ({count}) is below the batch verify threshold ({threshold})")]
     SignatureCountBelowBatchVerifyThreshold { threshold: usize, count: usize },
+    #[error("missing block id hash")]
+    MissingBlockIdHash,
+    #[error("missing part set header hash")]
+    MissingPartSetHeaderHash,
+    #[error("invalid signature length")]
+    InvalidSignatureLength(#[source] InvalidLength),
 }

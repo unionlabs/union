@@ -31,6 +31,11 @@ type NegativeNanos = BoundedI32<DURATION_MIN_NANOS, 0>;
 type PositiveSeconds = BoundedI64<1, DURATION_MAX_SECONDS>;
 type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 
+type DurationInner = BoundedI128<
+    { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },
+    { (DURATION_MAX_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MAX_NANOS as i128 },
+>;
+
 /// # Seconds
 ///
 /// > Signed seconds of the span of time. Must be from -315,576,000,000
@@ -48,12 +53,7 @@ type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 #[model(proto(raw(protos::google::protobuf::Duration), into, from), no_serde)]
 #[derive(PartialOrd, Ord, Eq, Copy)]
 #[debug("Duration({})", self)]
-pub struct Duration(
-    BoundedI128<
-        { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },
-        { (DURATION_MAX_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MAX_NANOS as i128 },
-    >,
-);
+pub struct Duration(DurationInner);
 
 impl Neg for Duration {
     type Output = Self;
@@ -248,6 +248,7 @@ impl Duration {
         }
     }
 
+    /// Return the seconds portion of this [`Duration`].
     #[must_use]
     pub const fn seconds(&self) -> BoundedI64<DURATION_MIN_SECONDS, DURATION_MAX_SECONDS> {
         let value = self.0.inner() / NANOS_PER_SECOND as i128;
@@ -268,6 +269,7 @@ impl Duration {
         }
     }
 
+    /// Return the nanosecond portion of this [`Duration`].
     #[must_use]
     pub const fn nanos(&self) -> BoundedI32<DURATION_MIN_NANOS, DURATION_MAX_NANOS> {
         let value = self.0.inner() % NANOS_PER_SECOND as i128;
@@ -283,6 +285,12 @@ impl Duration {
                 unreachable!()
             }
         }
+    }
+
+    /// Return this [`Duration`] with full nanosecond precision.
+    #[must_use]
+    pub const fn as_nanos(&self) -> DurationInner {
+        self.0
     }
 }
 

@@ -165,6 +165,28 @@ pub mod base64_opt {
     }
 }
 
+pub mod base64_opt_default {
+    use alloc::{string::String, vec::Vec};
+
+    use base64::prelude::*;
+    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(
+        #[allow(clippy::ptr_arg)] // required by serde
+        bytes: &Vec<u8>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        BASE64_STANDARD.encode(bytes).serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+        Option::<String>::deserialize(deserializer)?
+            .map(|x| BASE64_STANDARD.decode(x).map_err(de::Error::custom))
+            .transpose()
+            .map(|x| x.unwrap_or_default())
+    }
+}
+
 // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=8b514073821e558a5ce862f64361492e
 // will optimize this later
 pub mod fixed_size_array {
@@ -302,6 +324,33 @@ pub mod hex_upper_unprefixed {
         T: TryFrom<Vec<u8>, Error: Debug + 'static>,
     {
         let s = String::deserialize(deserializer)?;
+        let bz = hex::decode(s).map_err(de::Error::custom)?;
+        bz.try_into()
+            .map_err(|y: <T as TryFrom<Vec<u8>>>::Error| de::Error::custom(format!("{y:?}")))
+    }
+}
+
+pub mod hex_allow_unprefixed {
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        crate::hex_string::serialize(data, serializer)
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let s = s.strip_prefix("0x").unwrap_or(&s);
+
         let bz = hex::decode(s).map_err(de::Error::custom)?;
         bz.try_into()
             .map_err(|y: <T as TryFrom<Vec<u8>>>::Error| de::Error::custom(format!("{y:?}")))
@@ -514,12 +563,71 @@ pub mod bitvec_string {
     }
 }
 
+// This is used for the very strange representation of nil protobuf timestamps in cometbft json responses
+#[allow(non_snake_case)]
+pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
+    use alloc::{format, string::String};
+    use core::fmt::Debug;
+
+    use chrono::{DateTime, SecondsFormat, Utc};
+    use serde::{de::Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Clone,
+        DateTime<Utc>: TryFrom<T, Error: Debug>,
+    {
+        match data {
+            Some(data) => {
+                serializer.collect_str(
+                    &<DateTime<Utc>>::try_from(data.clone())
+                        .map_err(|err| {
+                            serde::ser::Error::custom(format!(
+                                "unable to convert to datetime: {err:?}"
+                            ))
+                        })?
+                        .to_rfc3339_opts(
+                            SecondsFormat::Nanos,
+                            // use_z
+                            true,
+                        ),
+                )
+            }
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<DateTime<Utc>, Error: Debug>,
+    {
+        String::deserialize(deserializer).and_then(|s| {
+            if s == "0001-01-01T00:00:00Z" {
+                Ok(None)
+            } else {
+                let datetime = DateTime::parse_from_rfc3339(&s).map_err(|err| {
+                    serde::de::Error::custom(format!("unable to parse data: {err:?}"))
+                })?;
+
+                Ok(Some(T::try_from(datetime.into()).map_err(|err| {
+                    serde::de::Error::custom(format!(
+                        "unable to convert data from rfc3339 datetime: {err:?}"
+                    ))
+                })?))
+            }
+        })
+    }
+}
+
 pub mod fmt {
     use core::{
         fmt::{self, Write},
         marker::PhantomData,
     };
 
+    use base64::Engine;
     use bitvec::{order::BitOrder, store::BitStore, view::AsBits};
 
     use crate::to_hex;
@@ -528,6 +636,13 @@ pub mod fmt {
     impl<T: AsRef<[u8]>> fmt::Debug for DebugAsHex<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             write!(f, "{}", to_hex(&self.0))
+        }
+    }
+
+    pub struct DebugAsBase64<T>(pub T);
+    impl<T: AsRef<[u8]>> fmt::Debug for DebugAsBase64<T> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", base64::prelude::BASE64_STANDARD.encode(&self.0))
         }
     }
 

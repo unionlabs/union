@@ -7,6 +7,7 @@ use crate::bls::BlsPublicKey;
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
     #[error("error while running `fast_aggregate_verify` query ({0})")]
+    // REVIEW: Why not put the StdError in this directly?
     FastAggregateVerify(String),
     #[error("error while running `aggregate_public_keys` query ({0})")]
     AggregatePublicKeys(String),

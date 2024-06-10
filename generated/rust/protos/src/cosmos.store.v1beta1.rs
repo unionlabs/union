@@ -58,7 +58,7 @@ pub struct CommitInfo {
     #[prost(message, repeated, tag = "2")]
     pub store_infos: ::prost::alloc::vec::Vec<StoreInfo>,
     #[prost(message, optional, tag = "3")]
-    pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for CommitInfo {
     const NAME: &'static str = "CommitInfo";

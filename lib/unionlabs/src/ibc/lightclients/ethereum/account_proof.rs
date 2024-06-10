@@ -14,10 +14,12 @@ pub struct AccountProof {
     pub proof: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromAccountProofError {
-    ContractAddress(InvalidLength),
-    StorageRoot(InvalidLength),
+    #[error("invalid contract address")]
+    ContractAddress(#[source] InvalidLength),
+    #[error("invalid storage root")]
+    StorageRoot(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::AccountProof> for AccountProof {

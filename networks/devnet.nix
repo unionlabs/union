@@ -61,6 +61,7 @@
           self'.packages.ethereum-light-client-mainnet
           self'.packages.scroll-light-client
           self'.packages.arbitrum-light-client
+          self'.packages.berachain-light-client
         ];
         cosmwasmContracts = [
           {
@@ -385,7 +386,6 @@
 
         # FIXME: This shouldn't be defined in this file
         devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
-
           { name = "genesis.json"; path = "${./genesis/devnet-eth/genesis.json}"; }
           { name = "dev-key0.prv"; path = "${./genesis/devnet-eth/dev-key0.prv}"; }
           { name = "dev-key1.prv"; path = "${./genesis/devnet-eth/dev-key1.prv}"; }

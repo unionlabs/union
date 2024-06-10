@@ -1,10 +1,12 @@
 macro_rules! hex_string_array_wrapper {
     (
         $(
+            $(#[doc = $doc:literal])*
             pub struct $Struct:ident(pub [u8; $N:expr]);
         )+
     ) => {
         $(
+            $(#[doc = $doc])*
             #[derive(
                 Copy,
                 Clone,
@@ -79,6 +81,21 @@ macro_rules! hex_string_array_wrapper {
                         .map_err(|invalid| crate::errors::InvalidLength {
                             expected: crate::errors::ExpectedLength::Exact($N),
                             found: invalid.len(),
+                        })
+                }
+            }
+
+            impl TryFrom<&Vec<u8>> for $Struct {
+                type Error = crate::errors::InvalidLength;
+
+                fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
+                    value
+                        .as_slice()
+                        .try_into()
+                        .map(Self)
+                        .map_err(|_| crate::errors::InvalidLength {
+                            expected: crate::errors::ExpectedLength::Exact($N),
+                            found: value.len(),
                         })
                 }
             }
@@ -382,7 +399,7 @@ macro_rules! result_unwrap {
 
         match $expr {
             Ok(ok) => ok,
-            Err(err) => panic!("called `Result::unwrap()` on an `Err` value"),
+            Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
         }
     }};
 }

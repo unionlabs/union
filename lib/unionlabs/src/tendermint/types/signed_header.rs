@@ -54,11 +54,14 @@ impl TryFrom<contracts::glue::TendermintTypesSignedHeaderData> for SignedHeader 
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromSignedHeaderError {
-    MissingField(MissingField),
-    Header(TryFromHeaderError),
-    Commit(TryFromCommitError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid header")]
+    Header(#[source] TryFromHeaderError),
+    #[error("invalid commit")]
+    Commit(#[source] TryFromCommitError),
 }
 
 impl TryFrom<protos::tendermint::types::SignedHeader> for SignedHeader {
