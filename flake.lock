@@ -620,6 +620,7 @@
         "v0_21_0": "v0_21_0",
         "v0_22_0": "v0_22_0",
         "v0_23_0": "v0_23_0",
+        "v0_24_0": "v0_24_0",
         "wasmd": "wasmd",
         "wasmvm": "wasmvm",
         "wasmvm-1_5_0": "wasmvm-1_5_0",
@@ -748,6 +749,23 @@
       "original": {
         "owner": "unionlabs",
         "ref": "release-v0.23.0",
+        "repo": "union",
+        "type": "github"
+      }
+    },
+    "v0_24_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1717944860,
+        "narHash": "sha256-n5+x1idAu8D4rQSicZD6yPtCGzqvUTPpJr25eEvBYx0=",
+        "owner": "unionlabs",
+        "repo": "union",
+        "rev": "b873056108b059c3d9759aff69782a3ae4e04b45",
+        "type": "github"
+      },
+      "original": {
+        "owner": "unionlabs",
+        "ref": "release-v0.24.0",
         "repo": "union",
         "type": "github"
       }
