@@ -114,7 +114,7 @@ const cosmosSigner = await DirectSecp256k1Wallet.fromKey(
 
 const client = createUnionClient({
   cosmosRpcUrl: "https://rpc.testnet.bonlulu.uno",
-  evmRpcUrl: ""
+  cosmosSigner
 })
 
 const hash = await client.transferAsset({

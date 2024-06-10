@@ -1,4 +1,5 @@
 import "./patch.ts"
+export * from "./client.ts"
 import {
   erc20Abi,
   type Hash,

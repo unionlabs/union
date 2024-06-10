@@ -74,8 +74,7 @@ const relayContractAddress = getAddress(currentContracts?.sepolia.UCS01)
 
 const client = createUnionClient({
   evmAccount,
-  evmRpcUrl: "https://rpc2.sepolia.org",
-  cosmosRpcUrl: "https://rpc.testnet.bonlulu.uno"
+  evmRpcUrl: "https://rpc2.sepolia.org"
 })
 
 const transfer = await client.transferAsset({

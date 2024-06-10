@@ -41,6 +41,7 @@
     "hubble/hasura/**",
     "site/src/lib/abi/**",
     "typescript-sdk/scripts/**",
+    "typescript-sdk/playground/**",
     "e2e/upgrades.nix",
     "yarn.lock",
     "bun.lockb",
