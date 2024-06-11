@@ -3,6 +3,7 @@ use std::sync::Arc;
 use prost::{Message, Name};
 use sha2::Digest;
 use tendermint_rpc::{Client, WebSocketClient};
+use tracing::{error, info};
 use unionlabs::{
     cosmos::auth::base_account::BaseAccount, google::protobuf::any::Any, hash::H256,
     ibc::core::client::height::IsHeight, id::ConnectionId, parse_wasm_client_type,
@@ -27,7 +28,7 @@ pub trait CosmosSdkChain: CosmosSdkChainRpcs {
 
 #[allow(async_fn_in_trait)]
 pub trait CosmosSdkChainExt: CosmosSdkChain {
-    async fn client_type_of_checksum(&self, checksum: H256) -> WasmClientType {
+    async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
         if let Some(ty) = self.checksum_cache().get(&checksum) {
             tracing::debug!(
                 checksum = %checksum.to_string_unprefixed(),
@@ -35,10 +36,10 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 "cache hit for checksum"
             );
 
-            return *ty;
+            return Some(*ty);
         };
 
-        tracing::info!(
+        info!(
             checksum = %checksum.to_string_unprefixed(),
             "cache miss for checksum"
         );
@@ -56,17 +57,29 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         .into_inner()
         .data;
 
-        let ty = parse_wasm_client_type(bz).unwrap().unwrap();
+        match parse_wasm_client_type(bz) {
+            Ok(Some(ty)) => {
+                info!(
+                    checksum = %checksum.to_string_unprefixed(),
+                    ?ty,
+                    "parsed checksum"
+                );
 
-        tracing::info!(
-            checksum = %checksum.to_string_unprefixed(),
-            ?ty,
-            "parsed checksum"
-        );
+                self.checksum_cache().insert(checksum, ty);
 
-        self.checksum_cache().insert(checksum, ty);
+                Some(ty)
+            }
+            Ok(None) => None,
+            Err(err) => {
+                error!(
+                    checksum = %checksum.to_string_unprefixed(),
+                    %err,
+                    "unable to parse wasm client type"
+                );
 
-        ty
+                None
+            }
+        }
     }
 
     async fn checksum_of_client_id(&self, client_id: Self::ClientId) -> H256 {
@@ -214,7 +227,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .await
             .is_ok()
         {
-            tracing::info!(%tx_hash, "tx already included");
+            info!(%tx_hash, "tx already included");
             return Ok(hex::decode(tx_hash).unwrap().try_into().unwrap());
         }
 
@@ -233,7 +246,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 
         tracing::debug!(%tx_hash);
 
-        tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
+        info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
 
         if response.code.is_err() {
             let value = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
