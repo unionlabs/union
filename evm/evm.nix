@@ -124,6 +124,7 @@
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
+        ast = true
 
         [profile.script]
         src = "scripts"
@@ -136,7 +137,6 @@
         [profile.test]
         test = "tests/src"
         optimizer = false
-        ast = true
       '';
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
@@ -336,18 +336,18 @@
               ${contracts}/out/IBCPacket.sol/IBCPacket.json \
               ${contracts}/out/IBCConnection.sol/IBCConnection.json \
               ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json 
+              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json
 
             jq --compact-output --slurp 'map(.abi) | add' \
               ${contracts}/out/Relay.sol/IRelay.json \
               ${contracts}/out/Relay.sol/UCS01Relay.json \
               ${contracts}/out/Relay.sol/RelayLib.json \
-              ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json 
+              ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
 
             jq --compact-output --slurp 'map(.abi) | add' \
               ${contracts}/out/NFT.sol/NFTLib.json \
               ${contracts}/out/NFT.sol/NFTPacketLib.json \
-              ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json 
+              ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
           '';
 
 
@@ -361,7 +361,7 @@
         };
 
         evm-contracts-addresses = pkgs.writeShellApplication {
-          name = "eth-contracts-addresses";
+          name = "evm-contracts-addresses";
           runtimeInputs = [ self'.packages.forge pkgs.jq ];
           text = ''
             ${ensureAtRepositoryRoot}
@@ -371,6 +371,25 @@
             cp --no-preserve=mode -r ${evmSources}/* .
 
             DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:GetDeployed -vvv
+
+            rm -rf "$OUT"
+            popd
+          '';
+        };
+
+        evm-upgrade-ucs01 = pkgs.writeShellApplication {
+          name = "evm-upgrade-ucs01";
+          runtimeInputs = [ self'.packages.forge pkgs.jq ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+            OUT="$(mktemp -d)"
+            pushd "$OUT"
+            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+            cp --no-preserve=mode -r ${evmSources}/* .
+
+            DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:UpgradeUCS01 -vvvvv \
+              --rpc-url https://sepolia.drpc.org \
+              --broadcast
 
             rm -rf "$OUT"
             popd

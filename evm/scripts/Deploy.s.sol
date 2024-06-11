@@ -270,3 +270,35 @@ contract GetDeployed is Script {
         console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
     }
 }
+
+contract UpgradeUCS01 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployed(string memory salt) internal returns (address) {
+        return CREATE3.getDeployed(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
+
+        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
+
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+        UCS01Relay(ucs01).upgradeToAndCall(
+            address(new UCS01Relay()), new bytes(0)
+        );
+        vm.stopBroadcast();
+    }
+}
