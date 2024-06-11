@@ -535,6 +535,7 @@ healthcheck
 healthz
 heredocs
 herumi
+hexdump
 hexlify
 hideable
 hlist

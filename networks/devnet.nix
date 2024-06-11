@@ -102,6 +102,7 @@
           }
         ];
         portIncrease = 0;
+        has08Wasm = true;
       };
 
       devnet-stargaze = mkCosmosDevnet {
@@ -210,6 +211,8 @@
               --grpc.address 0.0.0.0:9090
           '';
       };
+
+      allCosmosDevnets = [ devnet-union devnet-osmosis devnet-simd devnet-stargaze ];
 
       services = {
         devnet-union = devnet-union.services;
@@ -399,7 +402,8 @@
       // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"));
+      // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"))
+      // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
 
       _module.args.networks.modules = modules;
     };

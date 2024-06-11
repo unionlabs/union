@@ -15,6 +15,7 @@
 , startCommandOverwrite ? null
 , extraPackages ? [ ]
 , sdkVersion ? 50
+, has08Wasm ? false
 }:
 assert (builtins.isString chainId);
 assert (builtins.isString chainName);
@@ -26,6 +27,7 @@ assert (pkgs.lib.assertOneOf
   "sdkVersion"
   sdkVersion
   [ 47 50 ]);
+assert (builtins.isBool has08Wasm);
 let
   devKeyMnemonics = {
     alice = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
@@ -37,6 +39,12 @@ let
   };
 
   nodeBin = pkgs.lib.getExe node;
+
+  genScriptForEachVal = f:
+    ''
+      ${builtins.concatStringsSep "\n" (builtins.genList f validatorCount)}
+    '';
+
 
   mkNodeMnemonic = idx:
     assert (builtins.isInt idx);
@@ -656,9 +664,10 @@ let
     cp --no-preserve=mode -r ${genesisHome}/* .
 
     mkdir ./config/gentx
-    ${builtins.concatStringsSep "\n" (builtins.genList (idx: ''
+
+    ${genScriptForEachVal (idx: ''
       cp ${mkValGentx idx} ./config/gentx/valgentx-${toString idx}.json
-    '') validatorCount)}
+    '')}
 
     echo "collecting"
     # collect-gentxs was moved to a subcommand of genesis in sdk v50
@@ -764,9 +773,56 @@ let
         };
       };
     };
+
+  upload-wasm-light-client =
+    let
+      rpc_endpoint = "http://localhost:${toString (26657 + portIncrease)}";
+      # re-bind this so we can get proper syntax highlighting in the text arg
+      writeShellApplication = pkgs.writeShellApplicationWithArgs;
+    in
+    writeShellApplication {
+      name = "devnet-${chainName}-upload-wasm-light-client";
+      runtimeInputs = [ node ];
+      arguments = [
+        {
+          arg = "wasm_blob";
+          type = "arg";
+          help = "Path to the wasm blob to upload";
+          required = true;
+        }
+      ];
+      text =
+        ''
+          prop_id=$(("0x$(curl --silent "${rpc_endpoint}"'/abci_query?path="store/gov/key"&data=0x03' | jq '.result.response.value' -r | base64 --decode | hexdump -v -e '/1 "%02x"')"))
+
+          echo "prop_id: $prop_id"
+
+          ${nodeBin} tx ibc-wasm store-code "$argc_wasm_blob" --title "$argc_wasm_blob" --summary "$argc_wasm_blob" --deposit 100000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
+
+          until ${nodeBin} query gov proposal "$prop_id" --node "${rpc_endpoint}"; do echo "prop $prop_id not up yet"; sleep 1; done
+
+          sleep 7
+
+          ${nodeBin} tx gov deposit "$prop_id" 1000000000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
+
+          sleep 7
+
+          ${genScriptForEachVal (idx: 
+            ''
+            ${nodeBin} tx gov vote "$prop_id" yes --from valoper-${toString idx} --home ${devnet-home} --keyring-backend test -y --gas auto --gas-adjustment 2 --node "${rpc_endpoint}"
+            ''
+          )}
+
+          echo "contract uploaded, checksum: $(sha256sum "$argc_wasm_blob" | cut -d " " -f 1)"
+        '';
+    };
 in
 {
   inherit devnet-home;
+  scripts =
+    if has08Wasm then {
+      "devnet-${chainName}-upload-wasm-light-client" = upload-wasm-light-client;
+    } else { };
   services = builtins.listToAttrs
     (builtins.genList
       (id: {
