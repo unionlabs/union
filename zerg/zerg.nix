@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, writeShellApplicationWithArgs, ... }:
+  perSystem = { self', pkgs, system, config, crane, stdenv, ... }:
     let
       uniond = pkgs.lib.getExe self'.packages.uniond;
 
@@ -19,7 +19,7 @@
       packages = {
         zerg = zerg.packages.zerg;
 
-        generate-testnet-accounts = writeShellApplicationWithArgs {
+        generate-testnet-accounts = pkgs.writeShellApplicationWithArgs {
           name = "generate-testnet-accounts";
           runtimeInputs = [ pkgs.jq uniond ];
           arguments = [

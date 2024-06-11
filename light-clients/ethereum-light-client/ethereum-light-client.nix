@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { crane, lib, dbg, pkgs, writeShellApplicationWithArgs, ensure-wasm-client-type, mkCi, ... }:
+  perSystem = { crane, lib, dbg, pkgs, ensure-wasm-client-type, mkCi, ... }:
     let
       mkEthLc = chain-spec: crane.buildWasmContract {
         crateDirFromRoot = "light-clients/ethereum-light-client";
@@ -17,7 +17,7 @@
       minimal = mkEthLc "Minimal";
       mainnet = mkEthLc "Mainnet";
 
-      gen-eth-lc-update-test-data = mkCi false (writeShellApplicationWithArgs {
+      gen-eth-lc-update-test-data = mkCi false (pkgs.writeShellApplicationWithArgs {
         name = "parse-test-data";
         runtimeInputs = [ pkgs.jq ];
         arguments = [
@@ -77,7 +77,7 @@
       # NOTE(aeryz): This script currently act as a convenient way to call `eth_getProof`. When we add query
       # client state capability to `ucli`, we will extend this to also query a given client and construct the
       # full test data. 
-      fetch-membership-data = mkCi false (writeShellApplicationWithArgs {
+      fetch-membership-data = mkCi false (pkgs.writeShellApplicationWithArgs {
         name = "fetch-membership-data";
         runtimeInputs = [ pkgs.jq ];
         arguments = [{

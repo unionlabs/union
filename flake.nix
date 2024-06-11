@@ -304,11 +304,6 @@
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
 
-              writeShellApplicationWithArgs =
-                import ./tools/writeShellApplicationWithArgs.nix {
-                  inherit pkgs;
-                };
-
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
                 (with inputs; [
                   rust-overlay.overlays.default
@@ -340,6 +335,12 @@
                         ];
                       });
                     };
+
+                    writeShellApplicationWithArgs =
+                      import ./tools/writeShellApplicationWithArgs.nix {
+                        pkgs = super;
+                      };
+
                     devnet-utils = self'.packages.devnet-utils;
                     # this pr (https://github.com/numtide/treefmt/pull/250) was merged one day after v0.6.1 was cut, so in order to use the --hidden flag we need to build latest
                     # expression taken from here https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/treefmt/default.nix
