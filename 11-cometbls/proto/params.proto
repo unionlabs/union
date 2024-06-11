@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package cometbls.v1;
+
+option go_package = "github.com/unionlabs/union/11-cometbls/types";
+
+message Params {
+  bytes verifying_key = 1;
+}

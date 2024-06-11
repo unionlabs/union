@@ -227,6 +227,7 @@
         ./devShell.nix
         ./uniond/uniond.nix
         ./galoisd/galoisd.nix
+        ./11-cometbls/cometbls.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
         ./lib/ics23/ics23.nix
@@ -483,6 +484,7 @@
                 uniond = ./uniond/proto;
                 galoisd = ./galoisd/proto;
                 cometbls = inputs.cometbls;
+                cometbls-lc = ./11-cometbls/proto;
                 cosmossdk = inputs.cosmossdk;
               };
 
