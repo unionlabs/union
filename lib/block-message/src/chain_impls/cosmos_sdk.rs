@@ -6,9 +6,10 @@ use futures::FutureExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, queue_msg, QueueMsg,
+    conc, data, fetch, noop, queue_msg, QueueMsg,
 };
 use tendermint_rpc::Client;
+use tracing::{info, warn};
 use unionlabs::{
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -81,7 +82,7 @@ where
     async fn do_fetch(c: &C, this: Self) -> QueueMsg<BlockMessageTypes> {
         match this {
             CosmosSdkFetch::FetchTransactions(FetchTransactions { height, page }) => {
-                tracing::info!(%height, %page, "fetching block");
+                info!(%height, %page, "fetching block");
 
                 let response = c
                     .tm_client()
@@ -254,9 +255,18 @@ where
                         client_type: match client_id.to_string().rsplit_once('-').unwrap().0 {
                             "07-tendermint" => unionlabs::ClientType::Tendermint,
                             "08-wasm" => unionlabs::ClientType::Wasm(
-                                c.checksum_of_client_id(client_id)
+                                match c
+                                    .checksum_of_client_id(client_id.clone())
                                     .then(|checksum| c.client_type_of_checksum(checksum))
-                                    .await,
+                                    .await
+                                {
+                                    Some(ty) => ty,
+                                    None => {
+                                        warn!(%client_id, "unknown client type for 08-wasm client");
+                                        // this early return is kind of dirty but it works
+                                        return noop();
+                                    }
+                                },
                             ),
                             ty => panic!("unsupported client type {ty}"),
                         },
