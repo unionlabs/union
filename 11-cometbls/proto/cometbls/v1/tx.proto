@@ -6,7 +6,7 @@ option go_package = "github.com/unionlabs/union/11-cometbls/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/msg/v1/msg.proto";
-import "params.proto";
+import "cometbls/v1/params.proto";
 
 // Msg defines the 11-cometbls Msg service.
 service Msg {
