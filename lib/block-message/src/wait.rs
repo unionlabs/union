@@ -3,6 +3,7 @@ use macros::apply;
 use queue_msg::{
     data, defer_absolute, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
 };
+use tracing::{debug, instrument};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
 use crate::{
@@ -33,7 +34,7 @@ where
                     "chain_height: {chain_height}, height: {height}",
                 );
 
-                tracing::debug!("latest height is {chain_height}, waiting for {height}");
+                debug!("latest height is {chain_height}, waiting for {height}");
 
                 if chain_height.revision_height() >= height.revision_height() {
                     data(Identified::<C, _>::new(
@@ -56,7 +57,7 @@ where
 }
 
 impl HandleWait<BlockMessageTypes> for AnyChainIdentified<AnyWait> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(self, store: &Chains) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
         let wait = self;
 

@@ -8,6 +8,7 @@ use ethers::{
 };
 use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 use unionlabs::{
     encoding::EthAbi,
     ethereum::config::Mainnet,
@@ -96,7 +97,6 @@ impl Arbitrum {
         let provider = Provider::new(Ws::connect(config.l2_eth_rpc_api.clone()).await?);
 
         let chain_id = provider.get_chainid().await?;
-        tracing::info!(?chain_id);
 
         Ok(Self {
             chain_id: U256(chain_id),
@@ -136,7 +136,7 @@ impl Arbitrum {
                 .array_slice::<24, 8>(),
         );
 
-        tracing::debug!("l1_height {l1_height} is _latestConfirmed {latest_confirmed}");
+        debug!("l1_height {l1_height} is _latestConfirmed {latest_confirmed}");
 
         latest_confirmed
     }
@@ -179,7 +179,7 @@ impl EthereumConsensusChain for Arbitrum {
         let event: NodeConfirmed =
             NodeConfirmed::decode_log(&ethers::abi::RawLog::from(event)).unwrap();
 
-        tracing::debug!("_latestConfirmed {latest_confirmed}: {event}");
+        debug!("_latestConfirmed {latest_confirmed}: {event}");
 
         let block = self
             .provider

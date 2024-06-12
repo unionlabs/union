@@ -6,6 +6,7 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     fetch, queue_msg, HandleAggregate, QueueError, QueueMessageTypes, QueueMsg,
 };
+use tracing::instrument;
 use unionlabs::ibc::core::client::height::IsHeight;
 
 use crate::{
@@ -25,7 +26,7 @@ pub enum Aggregate<C: ChainExt> {
 }
 
 impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         data: VecDeque<<BlockMessageTypes as QueueMessageTypes>::Data>,

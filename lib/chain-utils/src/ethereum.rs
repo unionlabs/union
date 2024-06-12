@@ -22,6 +22,7 @@ use ethers::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::Future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tracing::debug;
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, EthAbi},
@@ -428,7 +429,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
         let light_client_update = {
             let current_period = beacon_height.revision_height.div(C::PERIOD::U64);
 
-            tracing::info!(%current_period);
+            debug!(%current_period);
 
             let light_client_updates = self
                 .beacon_api_client
@@ -561,14 +562,6 @@ pub trait IbcHandlerExt<M: Middleware> {
         client_id: ClientIdOf<Hc>,
         execution_block_number: u64,
     ) -> impl Future<Output = ClientState>;
-
-    // fn eth_call<Call>(
-    //     &self,
-    //     call: Call,
-    //     at_execution_height: u64,
-    // ) -> impl Future<Output = Result<Call::Return, ContractError<M>>> + Send
-    // where
-    //     Call: EthCallExt + 'static;
 }
 
 impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {

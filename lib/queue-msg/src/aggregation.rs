@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, ops::ControlFlow};
 
 use frunk::{HCons, HList, HNil};
+use tracing::error;
 
 use crate::{QueueMessageTypes, QueueMsg};
 
@@ -55,7 +56,7 @@ where
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         match pluck::<T, U>(vec) {
             ControlFlow::Continue(invalid) => {
-                tracing::error!(?invalid, "type didn't match");
+                error!(?invalid, "type didn't match");
 
                 Err(invalid)
             }

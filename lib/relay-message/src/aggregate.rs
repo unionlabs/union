@@ -8,6 +8,7 @@ use queue_msg::{
     conc, defer_relative, effect, fetch, noop, queue_msg, seq, wait, HandleAggregate, QueueError,
     QueueMessageTypes, QueueMsg,
 };
+use tracing::{debug, info, instrument};
 use unionlabs::{
     events::{
         ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
@@ -109,7 +110,7 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleAggregate<RelayMessageTypes> for AnyLightClientIdentified<AnyAggregate> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         data: VecDeque<<RelayMessageTypes as QueueMessageTypes>::Data>,
@@ -851,12 +852,10 @@ where
 impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateUpdateClient<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-    identified!(LatestHeight<Tr, Hc>): IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
     type AggregatedData = HList![
-        // identified!(LatestHeight<Tr, Hc>),
         Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>
     ];
 
@@ -1027,7 +1026,6 @@ where
         }]: Self::AggregatedData,
     ) -> QueueMsg<RelayMessageTypes> {
         assert_eq!(this_chain_id, self_chain_id);
-        // assert_eq!(client_id, trusted_client_state_client_id);
 
         match msg_to_aggregate {
             AggregateMsgAfterUpdate::ConnectionOpenTry(AggregateMsgConnectionOpenTry {
@@ -1039,7 +1037,8 @@ where
                 assert_eq!(
                     consensus_state_height.revision_number(),
                     event_height.revision_number(),
-                    "{consensus_state_height}, {event_height}",
+                    "consensus state height `{consensus_state_height}` and event height \
+                    `{event_height}` have different revision numbers",
                 );
 
                 assert!(
@@ -1124,7 +1123,8 @@ where
                 assert_eq!(
                     consensus_state_height.revision_number(),
                     event_height.revision_number(),
-                    "{consensus_state_height}, {event_height}",
+                    "consensus state height `{consensus_state_height}` and event height \
+                    `{event_height}` have different revision numbers",
                 );
 
                 assert!(
@@ -1209,7 +1209,8 @@ where
                 assert_eq!(
                     consensus_state_height.revision_number(),
                     event_height.revision_number(),
-                    "{consensus_state_height}, {event_height}",
+                    "consensus state height `{consensus_state_height}` and event height \
+                    `{event_height}` have different revision numbers",
                 );
 
                 assert!(
@@ -1260,7 +1261,8 @@ where
                 assert_eq!(
                     consensus_state_height.revision_number(),
                     event_height.revision_number(),
-                    "{consensus_state_height}, {event_height}",
+                    "consensus state height `{consensus_state_height}` and event height \
+                    `{event_height}` have different revision numbers",
                 );
 
                 assert!(
@@ -1547,69 +1549,65 @@ where
                     },
                 ),
             ),
-            AggregateMsgAfterUpdate::TimeoutPacket(AggregateMsgTimeout {
-                // client_id,
-                // counterparty_client_id,
-                // counterparty_chain_id,
-                packet,
-                __marker,
-            }) => aggregate(
-                [
-                    // NOTE: Use this when we support ordered packets
-                    //     aggregate(
-                    //     // fetch the packet nonexistence proof from the counterparty
-                    //     [fetch(id(
-                    //         this_chain_id.clone(),
-                    //         FetchState::<Hc, Tr> {
-                    //             at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
-                    //             path: NextSequenceRecvPath {
-                    //                 port_id: packet.destination_port.clone(),
-                    //                 channel_id: packet.destination_channel.clone(),
-                    //             }
-                    //             .into(),
-                    //         },
-                    //     ))],
-                    //     [],
-                    //     id(
-                    //         this_chain_id.clone(),
-                    //         AggregateFetchReceiptPathProofFromChannelAndPort::<Hc, Tr> {
-                    //             port_id: packet.destination_port.clone(),
-                    //             channel_id: packet.destination_channel.clone(),
-                    //             __marker: PhantomData,
-                    //         },
-                    //     ),
-                    // )
-                    fetch(id(
-                        this_chain_id.clone(),
-                        FetchProof::<Hc, Tr> {
-                            at: trusted_client_state_fetched_at_height,
-                            path: ReceiptPath {
-                                port_id: packet.destination_port.clone(),
-                                channel_id: packet.destination_channel.clone(),
-                                sequence: packet.sequence,
-                            }
-                            .into(),
-                        },
-                    )),
-                    fetch(id(
-                        this_chain_id,
-                        FetchState::<Hc, Tr> {
-                            at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
-                            path: ReceiptPath {
-                                port_id: packet.destination_port.clone(),
-                                channel_id: packet.destination_channel.clone(),
-                                sequence: packet.sequence,
-                            }
-                            .into(),
-                        },
-                    )),
-                ],
-                [],
-                id(
-                    trusted_client_state.chain_id(),
-                    AggregateMsgTimeout::<Tr, Hc> { packet, __marker },
-                ),
-            ),
+            AggregateMsgAfterUpdate::TimeoutPacket(AggregateMsgTimeout { packet, __marker }) => {
+                aggregate(
+                    [
+                        // NOTE: Use this when we support ordered packets
+                        //     aggregate(
+                        //     // fetch the packet nonexistence proof from the counterparty
+                        //     [fetch(id(
+                        //         this_chain_id.clone(),
+                        //         FetchState::<Hc, Tr> {
+                        //             at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
+                        //             path: NextSequenceRecvPath {
+                        //                 port_id: packet.destination_port.clone(),
+                        //                 channel_id: packet.destination_channel.clone(),
+                        //             }
+                        //             .into(),
+                        //         },
+                        //     ))],
+                        //     [],
+                        //     id(
+                        //         this_chain_id.clone(),
+                        //         AggregateFetchReceiptPathProofFromChannelAndPort::<Hc, Tr> {
+                        //             port_id: packet.destination_port.clone(),
+                        //             channel_id: packet.destination_channel.clone(),
+                        //             __marker: PhantomData,
+                        //         },
+                        //     ),
+                        // )
+                        fetch(id(
+                            this_chain_id.clone(),
+                            FetchProof::<Hc, Tr> {
+                                at: trusted_client_state_fetched_at_height,
+                                path: ReceiptPath {
+                                    port_id: packet.destination_port.clone(),
+                                    channel_id: packet.destination_channel.clone(),
+                                    sequence: packet.sequence,
+                                }
+                                .into(),
+                            },
+                        )),
+                        fetch(id(
+                            this_chain_id,
+                            FetchState::<Hc, Tr> {
+                                at: QueryHeight::Specific(trusted_client_state_fetched_at_height),
+                                path: ReceiptPath {
+                                    port_id: packet.destination_port.clone(),
+                                    channel_id: packet.destination_channel.clone(),
+                                    sequence: packet.sequence,
+                                }
+                                .into(),
+                            },
+                        )),
+                    ],
+                    [],
+                    id(
+                        trusted_client_state.chain_id(),
+                        AggregateMsgTimeout::<Tr, Hc> { packet, __marker },
+                    ),
+                )
+            }
         }
     }
 }
@@ -2231,7 +2229,7 @@ where
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, commitment_proof_chain_id);
 
-        tracing::debug!("aggregate recv_packet");
+        debug!("aggregate recv_packet");
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
@@ -2310,7 +2308,7 @@ where
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(commitment_proof_chain_id, this_chain_id);
 
-        tracing::debug!("aggregate ack_packet");
+        debug!("aggregate ack_packet");
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
@@ -2388,7 +2386,7 @@ where
         assert_eq!(proof_unreceived_height, packet_receipt_height);
 
         if packet_receipt {
-            tracing::info!(
+            info!(
                 sequence = %packet.sequence,
                 source_port = %packet.source_port,
                 source_channel = %packet.source_channel,

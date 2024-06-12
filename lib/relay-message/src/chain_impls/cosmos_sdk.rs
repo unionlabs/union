@@ -3,7 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
 use prost::Message;
 use queue_msg::{data, fetch, seq, wait, QueueMsg};
-use tracing::debug;
+use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
@@ -76,7 +76,7 @@ where
 
             let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
 
-            tracing::info!(%tx_hash, msgs = %msg_names, "cosmos tx");
+            info!(%tx_hash, msgs = %msg_names, "cosmos tx");
 
             Ok(())
         })

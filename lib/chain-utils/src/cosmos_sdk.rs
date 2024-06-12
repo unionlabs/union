@@ -3,7 +3,7 @@ use std::sync::Arc;
 use prost::{Message, Name};
 use sha2::Digest;
 use tendermint_rpc::{Client, WebSocketClient};
-use tracing::{error, info};
+use tracing::{debug, error, info, warn};
 use unionlabs::{
     cosmos::auth::base_account::BaseAccount, google::protobuf::any::Any, hash::H256,
     ibc::core::client::height::IsHeight, id::ConnectionId, parse_wasm_client_type,
@@ -30,7 +30,7 @@ pub trait CosmosSdkChain: CosmosSdkChainRpcs {
 pub trait CosmosSdkChainExt: CosmosSdkChain {
     async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
         if let Some(ty) = self.checksum_cache().get(&checksum) {
-            tracing::debug!(
+            debug!(
                 checksum = %checksum.to_string_unprefixed(),
                 ty = ?*ty,
                 "cache hit for checksum"
@@ -129,7 +129,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
     }
 
     async fn account_info(&self, account: &str) -> BaseAccount {
-        tracing::debug!(%account, "fetching account");
+        debug!(%account, "fetching account");
         let Any(account) =
             protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(self.grpc_url())
                 .await
@@ -244,7 +244,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             "tx hash calculated incorrectly"
         );
 
-        tracing::debug!(%tx_hash);
+        debug!(%tx_hash);
 
         info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
 
@@ -254,7 +254,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 response.code.value(),
             );
 
-            tracing::error!("cosmos tx failed: {}", value);
+            error!("cosmos tx failed: {}", value);
 
             // TODO: Return an error here
             return Ok(tx_hash_normalized);
@@ -273,12 +273,12 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 
             let tx_inclusion = self.tm_client().tx(tx_hash.parse().unwrap(), false).await;
 
-            tracing::debug!(?tx_inclusion);
+            debug!(?tx_inclusion);
 
             match tx_inclusion {
                 Ok(_) => break Ok(tx_hash_normalized),
                 Err(err) if i > 5 => {
-                    tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
+                    warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
                 }
                 Err(_) => {

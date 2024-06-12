@@ -8,6 +8,7 @@ use crossbeam_queue::ArrayQueue;
 use enumorph::Enumorph;
 use futures::Future;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 use unionlabs::{
     ethereum::config::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
     hash::H160,
@@ -66,7 +67,7 @@ impl<T: Clone> Pool<T> {
                 None => {
                     const RETRY_SECONDS: u64 = 3;
 
-                    tracing::warn!(
+                    warn!(
                         "high traffic in pool of {}, ran out of items! trying again in {RETRY_SECONDS} seconds",
                         std::any::type_name::<T>()
                     );
@@ -105,7 +106,7 @@ pub trait GetChain<C: Chain> {
         match self.get_chain(chain_id) {
             Some(chain) => Ok(f(chain)),
             None => {
-                tracing::warn!(%chain_id, chain_type = %<C as Chain>::ChainType::EXPECTING, "chain not found");
+                warn!(%chain_id, chain_type = %<C as Chain>::ChainType::EXPECTING, "chain not found");
                 Err(ChainNotFoundError {
                     chain_id: chain_id.clone(),
                 })

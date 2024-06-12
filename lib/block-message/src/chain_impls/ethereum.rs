@@ -24,7 +24,7 @@ use queue_msg::{
     conc, data, fetch, noop, queue_msg, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use unionlabs::{
     ethereum::config::ChainSpec,
     events::{
@@ -182,7 +182,7 @@ where
                         )
                     }
                     Err(e) => {
-                        tracing::warn!("could not decode evm event {}", e);
+                        warn!("could not decode evm event {}", e);
                         None
                     }
                 }

@@ -24,7 +24,7 @@ use futures::{
 pub use queue_msg_macro::queue_msg;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
-use tracing::{debug, info, info_span, trace, Instrument};
+use tracing::{debug, error, info, info_span, trace, warn, Instrument};
 use unionlabs::{never::Never, MaybeArbitrary};
 
 use crate::{
@@ -307,7 +307,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                 } => {
                     // if we haven't hit the timeout yet, handle the msg
                     if now() > timeout_timestamp {
-                        tracing::warn!("message expired");
+                        warn!("message expired");
 
                         Ok(None)
                     } else {
@@ -349,7 +349,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                             if remaining > 0 {
                                 let retries_left = remaining - 1;
 
-                                tracing::warn!(
+                                warn!(
                                     retries_left,
                                     ?err,
                                     "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
@@ -360,7 +360,7 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                                     retry(retries_left, *msg),
                                 ])))
                             } else {
-                                tracing::error!("msg failed after all retries");
+                                error!("msg failed after all retries");
                                 Err(err)
                             }
                         }
@@ -980,7 +980,7 @@ impl<T: QueueMessageTypes> Engine<T> {
                     }
                     Ok(msg) => (None, Ok(msg.into_iter().collect())),
                     Err(QueueError::Fatal(fatal)) => {
-                        tracing::error!(error = %fatal.to_string(), "unrecoverable error");
+                        error!(error = %fatal.to_string(), "unrecoverable error");
                         (None, Err(fatal.to_string()))
                     }
                     Err(QueueError::Retry(retry)) => panic!("{retry:?}"),

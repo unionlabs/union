@@ -6,6 +6,7 @@ use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use futures::{FutureExt, TryFutureExt};
 use scroll_api::ScrollClient;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 use unionlabs::{
     ethereum::config::Mainnet,
     google::protobuf::any::Any,
@@ -146,7 +147,6 @@ impl Scroll {
         let provider = Provider::new(Ws::connect(config.scroll_eth_rpc_api.clone()).await?);
 
         let chain_id = provider.get_chainid().await?;
-        tracing::info!(?chain_id);
 
         Ok(Self {
             chain_id: U256(chain_id),
@@ -196,7 +196,7 @@ impl Scroll {
             .try_into()
             .unwrap();
 
-        tracing::debug!("execution height {execution_height} is batch index {batch_index}");
+        debug!("execution height {execution_height} is batch index {batch_index}");
 
         batch_index
     }
@@ -204,10 +204,9 @@ impl Scroll {
     pub async fn scroll_height_of_batch_index(&self, batch_index: u64) -> u64 {
         let batch = self.scroll_api_client.batch(batch_index).await.batch;
 
-        tracing::debug!(
+        debug!(
             "batch index {batch_index} is scroll height range {}..={}",
-            batch.start_block_number,
-            batch.end_block_number
+            batch.start_block_number, batch.end_block_number
         );
 
         batch.end_block_number
