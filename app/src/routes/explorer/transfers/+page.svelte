@@ -35,7 +35,8 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
         chain: transfer.source_chain_id,
         connection: transfer.source_connection_id,
         channel: transfer.source_channel_id,
-        timestamp: transfer.source_timestamp
+        timestamp: transfer.source_timestamp,
+        transaction_hash: transfer.source_transaction_hash
       },
 
       sender: transfer.sender,
@@ -45,7 +46,8 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
         chain: transfer.destination_chain_id,
         connection: transfer.destination_connection_id,
         channel: transfer.destination_channel_id,
-        timestamp: transfer.destination_timestamp
+        timestamp: transfer.destination_timestamp,
+        transaction_hash: transfer.destination_transaction_hash
       },
 
       receiver: transfer.receiver,
