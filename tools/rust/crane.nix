@@ -283,6 +283,9 @@
                   # the leading space is important here!
                   " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
                 RUSTFLAGS = rustflags;
+                meta = {
+                  mainProgram = crateInfo.pname;
+                };
               } // (lib.optionalAttrs (cargoBuildInstallPhase != null) ({
                 installPhaseCommand = cargoBuildInstallPhase;
               })) // (lib.optionalAttrs (cargoBuildCheckPhase != null) ({
