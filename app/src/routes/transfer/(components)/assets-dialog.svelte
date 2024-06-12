@@ -10,7 +10,7 @@ import { truncate } from "$lib/utilities/format"
 export let dialogOpen = false
 export let assets: Array<{
   address: string
-  balance: string
+  balance: bigint
   decimals: number
   symbol: string
 }>

@@ -9,13 +9,15 @@ export let value: {
   connection: unknown
   channel: unknown
   timestamp: unknown
+  transaction_hash: string | null
 }
 </script>
 
-<div  class={cn("flex flex-col text-xs")} {...$$restProps}>
-  <div class="text-md font-semibold">{value.name}</div>
-  <div class="text-muted-foreground">{value.chain}</div>
-  <div class="text-muted-foreground">{value.connection}</div>
-  <div class="text-muted-foreground">{value.channel}</div>
-  <div class="text-muted-foreground">{#if value.timestamp && value.timestamp !== undefined}<Duration totalUnits={3} variant="short" minUnits={DurationUnits.Second} start={value.timestamp}/>{:else}in transit{/if}</div>
+<div  class={cn("flex flex-col text-xs text-muted-foreground")} {...$$restProps}>
+  <div class="text-md font-semibold text-foreground">{value.name}</div>
+  <div>{value.chain}</div>
+  <div>{value.connection}</div>
+  <div>{value.channel}</div>
+  <div>{#if value.timestamp && value.timestamp !== undefined}<Duration totalUnits={3} variant="short" minUnits={DurationUnits.Second} start={value.timestamp}/>{:else}in transit{/if}</div>
+  {#if value.transaction_hash !== null}<div>{value.transaction_hash}</div>{/if}
 </div>
