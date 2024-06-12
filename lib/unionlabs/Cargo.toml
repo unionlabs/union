@@ -15,6 +15,7 @@ workspace = true
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
+bnum                     = { version = "0.11.0", features = ["serde"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
 contracts                = { workspace = true, optional = true }
@@ -65,7 +66,8 @@ ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
 grpc     = ["protos/client"]
 std      = ["ethers-core/std"]
 
-arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
-fuzzing   = ["arbitrary", "serde_json"]
+arbitrary  = ["dep:arbitrary", "primitive-types/arbitrary"]
+fuzzing    = ["arbitrary", "test_utils"]
+test_utils = ["serde_json"]
 
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

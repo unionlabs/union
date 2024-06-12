@@ -1,13 +1,30 @@
 use std::sync::Arc;
 
 use prost::{Message, Name};
+use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{Client, WebSocketClient};
 use tracing::{debug, error, info, warn};
 use unionlabs::{
-    cosmos::auth::base_account::BaseAccount, google::protobuf::any::Any, hash::H256,
-    ibc::core::client::height::IsHeight, id::ConnectionId, parse_wasm_client_type,
-    signer::CosmosSigner, traits::Chain, MaybeRecoverableError, WasmClientType,
+    cosmos::{
+        auth::base_account::BaseAccount,
+        base::coin::Coin,
+        crypto::{secp256k1, AnyPubKey},
+        tx::{
+            auth_info::AuthInfo, fee::Fee, mode_info::ModeInfo, sign_doc::SignDoc,
+            signer_info::SignerInfo, signing::sign_info::SignMode, tx::Tx, tx_body::TxBody,
+            tx_raw::TxRaw,
+        },
+    },
+    encoding::{EncodeAs, Proto},
+    google::protobuf::any::Any,
+    hash::H256,
+    ibc::core::client::height::IsHeight,
+    id::ConnectionId,
+    parse_wasm_client_type,
+    signer::CosmosSigner,
+    traits::Chain,
+    MaybeRecoverableError, WasmClientType,
 };
 
 use crate::{
@@ -15,13 +32,40 @@ use crate::{
     Pool,
 };
 
+// TODO: Look into how to support `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GasConfig {
+    #[serde(with = "::serde_utils::string")]
+    pub gas_price: f64,
+    pub gas_denom: String,
+    #[serde(with = "::serde_utils::string")]
+    pub gas_multiplier: f64,
+    pub max_gas: u64,
+}
+
+impl GasConfig {
+    pub fn max_fee(&self) -> Fee {
+        let gas_limit = u128_mul_f64(self.max_gas.into(), self.gas_price);
+
+        Fee {
+            amount: vec![Coin {
+                amount: gas_limit,
+                denom: self.gas_denom.clone(),
+            }],
+            gas_limit: gas_limit.try_into().unwrap_or(u64::MAX),
+            payer: String::new(),
+            granter: String::new(),
+        }
+    }
+}
+
 pub trait CosmosSdkChainRpcs: Chain {
     fn grpc_url(&self) -> String;
     fn tm_client(&self) -> &WebSocketClient;
 }
 
 pub trait CosmosSdkChain: CosmosSdkChainRpcs {
-    fn fee_denom(&self) -> String;
+    fn gas_config(&self) -> &GasConfig;
     fn signers(&self) -> &Pool<CosmosSigner>;
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>>;
 }
@@ -97,11 +141,11 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         .client_state
         .unwrap();
 
-        // NOTE: We only need the checksum, so we don't need to decode the inner state
         assert!(
             client_state.type_url == protos::ibc::lightclients::wasm::v1::ClientState::type_url()
         );
 
+        // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
         protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)
             .unwrap()
             .checksum
@@ -148,6 +192,9 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         account
     }
 
+    /// - simulate tx
+    /// - submit tx
+    /// - wait for inclusion
     async fn broadcast_tx_commit(
         &self,
         signer: CosmosSigner,
@@ -157,63 +204,95 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 
         let account = self.account_info(&signer.to_string()).await;
 
-        #[allow(deprecated)]
-        // TODO: types in unionlabs for these types
-        let sign_doc = tx::v1beta1::SignDoc {
-            body_bytes: tx::v1beta1::TxBody {
-                messages: messages.clone().into_iter().collect(),
-                // TODO(benluelo): What do we want to use as our memo?
-                memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
-                timeout_height: 123_123_123,
-                extension_options: vec![],
-                non_critical_extension_options: vec![],
-            }
-            .encode_to_vec(),
-            auth_info_bytes: tx::v1beta1::AuthInfo {
-                signer_infos: [tx::v1beta1::SignerInfo {
-                    public_key: Some(protos::google::protobuf::Any {
-                        type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                        value: signer.public_key().encode_to_vec().into(),
-                    }),
-                    mode_info: Some(tx::v1beta1::ModeInfo {
-                        sum: Some(tx::v1beta1::mode_info::Sum::Single(
-                            tx::v1beta1::mode_info::Single {
-                                mode: tx::signing::v1beta1::SignMode::Direct.into(),
-                            },
-                        )),
-                    }),
-                    sequence: account.sequence,
-                }]
-                .to_vec(),
-                fee: Some(tx::v1beta1::Fee {
-                    amount: vec![protos::cosmos::base::v1beta1::Coin {
-                        // TODO: This needs to be configurable
-                        denom: self.fee_denom(),
-                        amount: "150000".to_string(),
-                    }],
-                    gas_limit: 60_000_000,
-                    payer: String::new(),
-                    granter: String::new(),
-                }),
-                tip: None,
-            }
-            .encode_to_vec(),
-            chain_id: self.chain_id().to_string(),
-            account_number: account.account_number,
+        let mut client = tx::v1beta1::service_client::ServiceClient::connect(self.grpc_url())
+            .await
+            .unwrap();
+
+        let tx_body = TxBody {
+            messages: messages.clone().into_iter().collect(),
+            // TODO(benluelo): What do we want to use as our memo?
+            memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+            timeout_height: 0,
+            extension_options: vec![],
+            non_critical_extension_options: vec![],
         };
 
-        let signature = signer
-            .try_sign(&sign_doc.encode_to_vec())
+        let mut auth_info = AuthInfo {
+            signer_infos: [SignerInfo {
+                public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
+                    key: signer.public_key(),
+                })),
+                mode_info: ModeInfo::Single {
+                    mode: SignMode::Direct,
+                },
+                sequence: account.sequence,
+            }]
+            .to_vec(),
+            fee: self.gas_config().max_fee().clone(),
+        };
+
+        let simulation_signature = signer
+            .try_sign(
+                &SignDoc {
+                    body_bytes: tx_body.clone().encode_as::<Proto>(),
+                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
+                    chain_id: self.chain_id().to_string(),
+                    account_number: account.account_number,
+                }
+                .encode_as::<Proto>(),
+            )
             .expect("signing failed")
             .to_vec();
 
-        let tx_raw = tx::v1beta1::TxRaw {
-            body_bytes: sign_doc.body_bytes,
-            auth_info_bytes: sign_doc.auth_info_bytes,
-            signatures: [signature].to_vec(),
-        };
+        let simulation_gas_info = client
+            .simulate(tx::v1beta1::SimulateRequest {
+                tx_bytes: Tx {
+                    body: tx_body.clone(),
+                    auth_info: auth_info.clone(),
+                    signatures: [simulation_signature.clone()].to_vec(),
+                }
+                .encode_as::<Proto>(),
+                ..Default::default()
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .gas_info
+            .expect("gas info should be present");
 
-        let tx_raw_bytes = tx_raw.encode_to_vec();
+        info!(
+            gas_used = %simulation_gas_info.gas_used,
+            gas_wanted = %simulation_gas_info.gas_wanted,
+            "tx simulation successful"
+        );
+
+        auth_info.fee.amount.iter_mut().for_each(|coin| {
+            // lol
+            let amount = u128_mul_f64(coin.amount, self.gas_config().gas_multiplier);
+
+            coin.amount = amount;
+        });
+
+        // re-sign the new auth info with the simulated gas
+        let signature = signer
+            .try_sign(
+                &SignDoc {
+                    body_bytes: tx_body.clone().encode_as::<Proto>(),
+                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
+                    chain_id: self.chain_id().to_string(),
+                    account_number: account.account_number,
+                }
+                .encode_as::<Proto>(),
+            )
+            .expect("signing failed")
+            .to_vec();
+
+        let tx_raw_bytes = TxRaw {
+            body_bytes: tx_body.clone().encode_as::<Proto>(),
+            auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
+            signatures: [signature].to_vec(),
+        }
+        .encode_as::<Proto>();
 
         let tx_hash_normalized: H256 = sha2::Sha256::new()
             .chain_update(&tx_raw_bytes)
@@ -289,6 +368,46 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             }
         }
     }
+
+    fn sign_doc(
+        &self,
+        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        signer: &CosmosSigner,
+        account: &BaseAccount,
+        fee: Fee,
+    ) -> (TxBody, AuthInfo) {
+        (
+            TxBody {
+                messages: messages.clone().into_iter().collect(),
+                // TODO(benluelo): What do we want to use as our memo?
+                memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+                timeout_height: 0,
+                extension_options: vec![],
+                non_critical_extension_options: vec![],
+            },
+            AuthInfo {
+                signer_infos: [SignerInfo {
+                    public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
+                        key: signer.public_key(),
+                    })),
+                    mode_info: ModeInfo::Single {
+                        mode: SignMode::Direct,
+                    },
+                    sequence: account.sequence,
+                }]
+                .to_vec(),
+                fee,
+            },
+        )
+    }
+}
+
+fn u128_mul_f64(u: u128, f: f64) -> u128 {
+    (num_rational::BigRational::from_integer(u.into())
+        * num_rational::BigRational::from_float(f).expect("gas multiplier is finite"))
+    .to_integer()
+    .try_into()
+    .expect("gas multiplier * amount overflow")
 }
 
 impl<T: CosmosSdkChain> CosmosSdkChainExt for T {}

@@ -30,7 +30,7 @@ use unionlabs::{
 };
 
 use crate::{
-    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs},
+    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
     private_key::PrivateKey,
     Pool,
 };
@@ -39,10 +39,10 @@ use crate::{
 pub struct Cosmos {
     pub chain_id: String,
     pub signers: Pool<CosmosSigner>,
-    pub fee_denom: String,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
     pub grpc_url: String,
+    pub gas_config: GasConfig,
 
     pub checksum_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
 }
@@ -50,14 +50,14 @@ pub struct Cosmos {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
-    pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub grpc_url: String,
+    pub gas_config: GasConfig,
 }
 
 impl CosmosSdkChain for Cosmos {
-    fn fee_denom(&self) -> String {
-        self.fee_denom.clone()
+    fn gas_config(&self) -> &GasConfig {
+        &self.gas_config
     }
 
     fn signers(&self) -> &Pool<CosmosSigner> {
@@ -315,8 +315,8 @@ impl Cosmos {
             chain_id,
             chain_revision,
             grpc_url: config.grpc_url,
-            fee_denom: config.fee_denom,
             checksum_cache: Arc::new(dashmap::DashMap::default()),
+            gas_config: config.gas_config,
         })
     }
 

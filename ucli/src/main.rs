@@ -146,10 +146,10 @@ async fn main() {
                     cli::UnionQuery::AccountInfo { address } => {
                         let info = Union::new(chain_utils::union::Config {
                             signers: config.union.signers,
-                            fee_denom: config.union.fee_denom,
                             ws_url: config.union.ws_url,
                             prover_endpoint: config.union.prover_endpoint,
                             grpc_url: config.union.grpc_url,
+                            gas_config: config.union.gas_config,
                         })
                         .await
                         .unwrap()
