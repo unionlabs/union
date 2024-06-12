@@ -1,7 +1,7 @@
 <script lang="ts">
-import ChainsGate from '$lib/components/chains-gate.svelte'
-import WalletGate from '$lib/components/wallet-gate.svelte';
-import TransferForm from './(components)/transfer-form.svelte';
+import ChainsGate from "$lib/components/chains-gate.svelte"
+import WalletGate from "$lib/components/wallet-gate.svelte"
+import TransferForm from "./(components)/transfer-form.svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
 </script>

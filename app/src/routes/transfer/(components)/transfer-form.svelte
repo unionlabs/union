@@ -37,12 +37,11 @@ let toChainId = writable("11155111")
 let asset = writable("")
 
 let amount = ""
-
+const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 $: {
   amount = amount.replaceAll(amountRegex, "")
 }
 
-const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
