@@ -487,6 +487,7 @@
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+              clang
               cargo-fuzz
               cargo-llvm-cov
               bacon
@@ -541,6 +542,7 @@
             RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
 
             SQLX_OFFLINE = true;
+            LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
           };
 
           treefmt = {
