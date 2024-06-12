@@ -16,7 +16,7 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     data, defer_relative, effect, fetch, queue_msg, wait, QueueMsg,
 };
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, info_span, trace, Instrument};
 use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
@@ -155,9 +155,17 @@ where
                 __marker: _,
             }) => fetch_untrusted_validators(hc, height).await,
             Self::FetchProveRequest(FetchProveRequest { request }) => {
+                let span = info_span!(
+                    "fetching prove request",
+                    untrusted_height = %request.untrusted_header.height,
+                );
+
+                info!("submitting prove request");
+
                 let response = union_prover_api_client::UnionProverApiClient::connect(
                     hc.inner().prover_endpoint.clone(),
                 )
+                .instrument(span.clone())
                 .await
                 .unwrap()
                 .poll(protos::union::galois::api::v3::PollRequest::from(
@@ -165,10 +173,15 @@ where
                         request: request.clone(),
                     },
                 ))
+                .instrument(span)
                 .await
                 .map(|x| x.into_inner().try_into().unwrap());
 
+                info!("submitted prove request");
+
                 let retry = || {
+                    info!("proof pending, retrying in 3 seconds");
+
                     seq([
                         // REVIEW: How long should we wait between polls?
                         defer_relative(3),
@@ -187,13 +200,17 @@ where
                         error!(%message, "prove request failed");
                         panic!()
                     }
-                    Ok(PollResponse::Done(ProveRequestDone { response })) => data(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        Data::specific(ProveResponse {
-                            prove_response: response,
-                            __marker: PhantomData,
-                        }),
-                    )),
+                    Ok(PollResponse::Done(ProveRequestDone { response })) => {
+                        info!("proof generated");
+
+                        data(id::<Hc, Tr, _>(
+                            hc.chain_id(),
+                            Data::specific(ProveResponse {
+                                prove_response: response,
+                                __marker: PhantomData,
+                            }),
+                        ))
+                    }
                 }
             }
             Self::AbciQuery(FetchAbciQuery { path, height, ty }) => {
