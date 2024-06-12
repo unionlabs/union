@@ -82,7 +82,7 @@ where
     async fn do_fetch(c: &C, this: Self) -> QueueMsg<BlockMessageTypes> {
         match this {
             CosmosSdkFetch::FetchTransactions(FetchTransactions { height, page }) => {
-                info!(%height, %page, "fetching block");
+                info!(%height, %page, "fetching events in block");
 
                 let response = c
                     .tm_client()
