@@ -19,17 +19,17 @@ import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import CardSectionHeading from "./card-section-heading.svelte"
+import { config } from "$lib/wallet/evm/config.ts"
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
-import type { Chain, UserAddresses } from "$lib/types.ts";
-import TooltipContent from "$lib/components/ui/tooltip/tooltip-content.svelte";
+import type { Chain, UserAddresses } from "$lib/types.ts"
 
-export let chains: Chain[];
-export let userAddr: UserAddresses;
+export let chains: Array<Chain>
+export let userAddr: UserAddresses
 
-let cosmosChains = chains.filter((c) => c.rpc_type === "cosmos")
+let cosmosChains = chains.filter(c => c.rpc_type === "cosmos")
 
 // CURRENT FORM STATE
 let fromChainId = writable("union-testnet-8")
@@ -41,7 +41,6 @@ const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 $: {
   amount = amount.replaceAll(amountRegex, "")
 }
-
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
@@ -58,25 +57,28 @@ let cosmosBalances = cosmosBalancesQuery({
   address: userAddr.cosmos.bytes
 })
 
-let unionClient: UnionClient;
+let unionClient: UnionClient
 
-let toChain = derived(toChainId, ($toChainId) => 
-  chains.find(chain => chain.chain_id === $toChainId) ?? null
+let toChain = derived(
+  toChainId,
+  $toChainId => chains.find(chain => chain.chain_id === $toChainId) ?? null
 )
 
-let fromChain = derived(fromChainId, ($fromChainId) => 
-  chains.find(chain => chain.chain_id === $fromChainId) ?? null
+let fromChain = derived(
+  fromChainId,
+  $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
-let recipient = derived(
-  toChain, ($toChain) => {
-    switch ($toChain?.rpc_type) {
-      case "evm": return userAddr.evm.canonical;
-      case "cosmos": return rawToBech32($toChain.addr_prefix, userAddr.cosmos.bytes);
-      default: return null;
-    }
+let recipient = derived(toChain, $toChain => {
+  switch ($toChain?.rpc_type) {
+    case "evm":
+      return userAddr.evm.canonical
+    case "cosmos":
+      return rawToBech32($toChain.addr_prefix, userAddr.cosmos.bytes)
+    default:
+      return null
   }
-)
+})
 
 onMount(() => {
   fromChainId.subscribe(fromChain => {
@@ -112,13 +114,13 @@ onMount(() => {
   })
 })
 
-
-let sendableBalances = derived([fromChainId, evmBalances, cosmosBalances],
+let sendableBalances = derived(
+  [fromChainId, evmBalances, cosmosBalances],
   ([$fromChainId, $evmBalances, $cosmosBalances]) => {
     if ($fromChainId === "11155111") {
       if (!$evmBalances.isSuccess) {
         console.log("trying to send from evm but no balances fetched yet")
-        return null;
+        return null
       }
       return $evmBalances.data
     }
@@ -127,7 +129,7 @@ let sendableBalances = derived([fromChainId, evmBalances, cosmosBalances],
     const cosmosBalance = $cosmosBalances[chainIndex]
     if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
       console.log("trying to send from cosmos but no balances fetched yet")
-      return null;
+      return null
     }
     return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
   }
@@ -145,7 +147,6 @@ let buttonText = "Transfer" satisfies
   | "Connect Wallet"
   | "Enter an amount"
   | "Insufficient balance"
-
 </script>
 
 <Card.Content class={cn("flex flex-col gap-4")}>
