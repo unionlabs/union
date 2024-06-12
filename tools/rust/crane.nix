@@ -123,7 +123,7 @@
             )
             "cannot set both buildStdTarget (${toString buildStdTarget}) and cargoBuildRustToolchain (${toString cargoBuildRustToolchain})";
           let
-            pnameSuffix' = "${pnameSuffix}-dev";
+            pnameSuffix' = "${pnameSuffix}${lib.optionalString dev "-dev"}";
             cratePname = "${crateInfo.pname}${pnameSuffix'}";
 
             cargoBuildRustToolchain' =
