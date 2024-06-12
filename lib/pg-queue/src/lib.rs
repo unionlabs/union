@@ -144,7 +144,7 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
             Some(row) => {
                 let span = info_span!("processing item", id = row.id);
 
-                tracing::trace!(%row.item);
+                trace!(%row.item);
 
                 // really don't feel like defining a new error type right now
                 let json = de(&row.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;

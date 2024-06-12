@@ -6,6 +6,7 @@ use queue_msg::{
     data, defer_absolute, fetch, noop, now, queue_msg, seq, wait, HandleWait, QueueError,
     QueueMessageTypes, QueueMsg,
 };
+use tracing::{debug, instrument};
 use unionlabs::{
     ibc::core::client::height::{Height, IsHeight},
     ics24::ClientStatePath,
@@ -30,7 +31,7 @@ pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleWait<RelayMessageTypes> for AnyLightClientIdentified<AnyWait> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
         store: &<RelayMessageTypes as QueueMessageTypes>::Store,
@@ -132,7 +133,7 @@ where
                     Hc::query_unfinalized_trusted_client_state(c, client_id.clone()).await;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
-                    tracing::debug!(
+                    debug!(
                         "client height reached ({} >= {})",
                         trusted_client_state.height(),
                         height

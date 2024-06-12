@@ -4,6 +4,7 @@ use std::{fmt::Display, marker::PhantomData};
 
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tracing::{debug, info, trace};
 use unionlabs::{
     ethereum::{
         beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
@@ -117,7 +118,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
             .execution_payload
             .block_number;
 
-        tracing::debug!("beacon height {block_id} is execution height {height}");
+        debug!("beacon height {block_id} is execution height {height}");
 
         Ok(height)
     }
@@ -134,7 +135,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
             / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
             * (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64);
 
-        tracing::info!("fetching bootstrap at {}", floored_slot);
+        info!("fetching bootstrap at {}", floored_slot);
 
         loop {
             let header_response = self
@@ -197,7 +198,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
     async fn get_json<T: DeserializeOwned>(&self, path: impl Into<String>) -> Result<T> {
         let url = format!("{}{}", self.base_url, path.into());
 
-        tracing::debug!(%url, "get_json");
+        debug!(%url, "get_json");
 
         let res = self.client.get(url).send().await?;
 
@@ -205,7 +206,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
             StatusCode::OK => {
                 let bytes = res.bytes().await?;
 
-                tracing::trace!(response = %String::from_utf8_lossy(&bytes), "get_json");
+                trace!(response = %String::from_utf8_lossy(&bytes), "get_json");
 
                 Ok(serde_json::from_slice(&bytes).map_err(Error::Json)?)
             }

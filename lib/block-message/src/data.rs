@@ -1,5 +1,6 @@
 use macros::apply;
 use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMessageTypes, QueueMsg};
+use tracing::instrument;
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
 use crate::{any_enum, AnyChainIdentified, BlockMessageTypes, ChainExt};
@@ -17,7 +18,7 @@ pub enum Data<C: ChainExt> {
 
 // Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
 impl HandleData<BlockMessageTypes> for AnyChainIdentified<AnyData> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         _store: &<BlockMessageTypes as QueueMessageTypes>::Store,

@@ -16,6 +16,7 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     data, defer_relative, effect, fetch, queue_msg, wait, QueueMsg,
 };
+use tracing::{debug, error, trace};
 use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
@@ -183,7 +184,7 @@ where
                     Err(status) if status.message() == "busy_building" => retry(),
                     Err(err) => panic!("prove request failed: {:?}", err),
                     Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
-                        tracing::error!(%message, "prove request failed");
+                        error!(%message, "prove request failed");
                         panic!()
                     }
                     Ok(PollResponse::Done(ProveRequestDone { response })) => data(id::<Hc, Tr, _>(
@@ -393,93 +394,98 @@ where
         assert_eq!(req.update_from, trusted_validators_height);
         assert_eq!(untrusted_commit_height, untrusted_validators_height);
 
-        let make_validators_commit = |mut validators: Vec<
-            unionlabs::tendermint::types::validator::Validator,
-        >| {
-            // Validators must be sorted to match the root, by token then address
-            validators.sort_by(|a, b| {
-                // TODO: Double check how these comparisons are supposed to work
-                #[allow(clippy::collapsible_else_if)]
-                if a.voting_power == b.voting_power {
-                    if a.address < b.address {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                } else {
-                    if a.voting_power > b.voting_power {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                }
-            });
-
-            // The bitmap is a public input of the circuit, it must fit in Fr (scalar field) bn254
-            let mut bitmap = BigUint::default();
-            // REVIEW: This will over-allocate for the trusted validators; should be benchmarked
-            let mut signatures = Vec::<Vec<u8>>::with_capacity(validators.len());
-
-            let validators_map = validators
-                .iter()
-                .enumerate()
-                .map(|(i, v)| (v.address, i))
-                .collect::<HashMap<_, _>>();
-
-            // For each validator signature, we search for the actual validator
-            // in the set and set it's signed bit to 1. We then push the
-            // signature only if the validator signed. It's possible that we
-            // don't find a validator for a given signature as the validator set
-            // may have drifted (trusted validator set).
-            for sig in signed_header.commit.signatures.iter() {
-                match sig {
-                    CommitSig::Absent => {
-                        tracing::debug!("Validator did not sign: {:?}", sig);
-                    }
-                    CommitSig::Commit {
-                        validator_address,
-                        timestamp: _,
-                        signature,
-                    } => {
-                        if let Some(validator_index) =
-                            validators_map.get(&validator_address.0.to_vec().try_into().unwrap())
-                        {
-                            bitmap.set_bit(*validator_index as u64, true);
-                            signatures.push(signature.clone());
-                            tracing::debug!(
-                                "Validator {:?} at index {} signed",
-                                validator_address,
-                                validator_index
-                            );
+        let make_validators_commit =
+            |mut validators: Vec<unionlabs::tendermint::types::validator::Validator>| {
+                // Validators must be sorted to match the root, by token then address
+                validators.sort_by(|a, b| {
+                    // TODO: Double check how these comparisons are supposed to work
+                    #[allow(clippy::collapsible_else_if)]
+                    if a.voting_power == b.voting_power {
+                        if a.address < b.address {
+                            std::cmp::Ordering::Less
                         } else {
-                            tracing::warn!("Validator set drifted? Could not find validator for signature {:?}", validator_address);
+                            std::cmp::Ordering::Greater
+                        }
+                    } else {
+                        if a.voting_power > b.voting_power {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
                         }
                     }
-                    CommitSig::Nil { .. } => {
-                        tracing::warn!("Validator commit is nil: {:?}", sig);
+                });
+
+                // The bitmap is a public input of the circuit, it must fit in Fr (scalar field) bn254
+                let mut bitmap = BigUint::default();
+                // REVIEW: This will over-allocate for the trusted validators; should be benchmarked
+                let mut signatures = Vec::<Vec<u8>>::with_capacity(validators.len());
+
+                let validators_map = validators
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| (v.address, i))
+                    .collect::<HashMap<_, _>>();
+
+                // For each validator signature, we search for the actual validator
+                // in the set and set it's signed bit to 1. We then push the
+                // signature only if the validator signed. It's possible that we
+                // don't find a validator for a given signature as the validator set
+                // may have drifted (trusted validator set).
+                for sig in signed_header.commit.signatures.iter() {
+                    match sig {
+                        CommitSig::Absent => {
+                            debug!("validator did not sign");
+                        }
+                        CommitSig::Commit {
+                            validator_address,
+                            timestamp: _,
+                            signature,
+                        } => {
+                            if let Some(validator_index) = validators_map.get(validator_address) {
+                                bitmap.set_bit(*validator_index as u64, true);
+                                signatures.push(signature.clone());
+                                trace!(
+                                    %validator_address,
+                                    %validator_index,
+                                    "validator signed"
+                                );
+                            } else {
+                                trace!(
+                                    %validator_address,
+                                    "validator set drifted, could not find validator signature"
+                                );
+                            }
+                        }
+                        CommitSig::Nil {
+                            validator_address, ..
+                        } => {
+                            trace!(
+                                %validator_address,
+                                "validator commit is nil"
+                            );
+                        }
                     }
                 }
-            }
 
-            let simple_validators = validators
-                .iter()
-                .map(|v| {
-                    let PublicKey::Bn254(ref key) = v.pub_key else {
-                        panic!("must be bn254")
-                    };
-                    SimpleValidator {
-                        pub_key: PublicKey::Bn254(key.to_vec()),
-                        voting_power: v.voting_power.into(),
-                    }
-                })
-                .collect::<Vec<_>>();
+                let simple_validators = validators
+                    .iter()
+                    .map(|v| {
+                        let PublicKey::Bn254(ref key) = v.pub_key else {
+                            panic!("must be bn254")
+                        };
+                        SimpleValidator {
+                            pub_key: PublicKey::Bn254(key.to_vec()),
+                            voting_power: v.voting_power.into(),
+                        }
+                    })
+                    .collect::<Vec<_>>();
 
-            ValidatorSetCommit {
-                validators: simple_validators,
-                signatures,
-                bitmap: bitmap.to_bytes_be(),
-            }
-        };
+                ValidatorSetCommit {
+                    validators: simple_validators,
+                    signatures,
+                    bitmap: bitmap.to_bytes_be(),
+                }
+            };
 
         let trusted_validators_commit = make_validators_commit(trusted_validators);
         let untrusted_validators_commit = make_validators_commit(untrusted_validators);

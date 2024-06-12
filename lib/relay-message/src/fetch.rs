@@ -4,6 +4,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMessageTypes, QueueMsg};
+use tracing::instrument;
 use unionlabs::{
     ics24,
     never::Never,
@@ -40,7 +41,7 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
         store: &<RelayMessageTypes as QueueMessageTypes>::Store,

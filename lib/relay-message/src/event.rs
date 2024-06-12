@@ -6,6 +6,7 @@ use queue_msg::{
     aggregate, conc, fetch, noop, queue_msg, wait, HandleEvent, QueueError, QueueMessageTypes,
     QueueMsg,
 };
+use tracing::{info, instrument};
 use unionlabs::{
     events::UpdateClient,
     hash::H256,
@@ -39,7 +40,7 @@ pub enum Event<Hc: ChainExt, Tr: ChainExt> {
 }
 
 impl HandleEvent<RelayMessageTypes> for AnyLightClientIdentified<AnyEvent> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
         store: &<RelayMessageTypes as QueueMessageTypes>::Store,
@@ -69,7 +70,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                 match ibc_event.event {
                     unionlabs::events::IbcEvent::CreateClient(e) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             client_id = %e.client_id,
@@ -90,7 +91,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             .collect::<Vec<_>>()
                             .join(",");
 
-                        tracing::info!(event = %event_name, %client_id, %client_type, %consensus_heights);
+                        info!(event = %event_name, %client_id, %client_type, %consensus_heights);
 
                         noop()
                     }
@@ -99,7 +100,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     unionlabs::events::IbcEvent::SubmitEvidence(_) => unimplemented!(),
 
                     unionlabs::events::IbcEvent::ConnectionOpenInit(init) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %init.connection_id,
@@ -136,7 +137,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ])
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %try_.connection_id,
@@ -165,7 +166,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         )
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenAck(ack) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %ack.connection_id,
@@ -194,7 +195,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         )
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             connection_id = %confirm.connection_id,
@@ -207,7 +208,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
 
                     unionlabs::events::IbcEvent::ChannelOpenInit(init) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             port_id = %init.port_id,
@@ -251,7 +252,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         )
                     }
                     unionlabs::events::IbcEvent::ChannelOpenTry(try_) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             port_id = %try_.port_id,
@@ -296,7 +297,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         )
                     }
                     unionlabs::events::IbcEvent::ChannelOpenAck(ack) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             port_id = %ack.port_id,
@@ -340,7 +341,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         )
                     }
                     unionlabs::events::IbcEvent::ChannelOpenConfirm(confirm) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             port_id = %confirm.port_id,
@@ -353,7 +354,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         noop()
                     }
                     unionlabs::events::IbcEvent::SendPacket(send) => {
-                        tracing::info!(
+                        info!(
                             event = %event_name,
                             timeout_height = %send.packet_timeout_height,
                             timeout_timestamp = %send.packet_timeout_timestamp,
@@ -430,7 +431,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ])
                     }
                     unionlabs::events::IbcEvent::RecvPacket(recv) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %recv.packet_timeout_height,
@@ -447,7 +448,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         noop()
                     }
                     unionlabs::events::IbcEvent::AcknowledgePacket(ack) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %ack.packet_timeout_height,
@@ -464,7 +465,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         noop()
                     }
                     unionlabs::events::IbcEvent::TimeoutPacket(timeout) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %timeout.packet_timeout_height,
@@ -481,7 +482,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         noop()
                     }
                     unionlabs::events::IbcEvent::WriteAcknowledgement(write_ack) => {
-                        tracing::info!(
+                        info!(
                             height = %ibc_event.height,
                             event = %event_name,
                             timeout_height = %write_ack.packet_timeout_height,

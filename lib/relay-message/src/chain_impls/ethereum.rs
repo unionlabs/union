@@ -27,6 +27,7 @@ use queue_msg::{
     data, effect, fetch, queue_msg, void, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info};
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, Encode, EncodeAs, EthAbi},
@@ -253,7 +254,7 @@ where
                         ok.await.unwrap().unwrap();
                     }
 
-                    Err(why) => tracing::info!(
+                    Err(why) => info!(
                         "error registering client type, it is likely already registered: {:?}",
                         why
                     ),
@@ -290,36 +291,36 @@ where
 
         let msg = if legacy { msg.legacy() } else { msg };
 
-        tracing::debug!(msg = %msg.function.name, "submitting evm tx");
+        debug!(msg = %msg.function.name, "submitting evm tx");
 
         match msg.estimate_gas().await {
             Ok(estimated_gas) => {
-                tracing::debug!(%estimated_gas, "gas estimation");
+                debug!(%estimated_gas, "gas estimation");
 
                 // TODO: config
                 let msg = msg.gas(estimated_gas + (estimated_gas / 10));
                 let result = msg.send().await;
                 match result {
                     Ok(ok) => {
-                        tracing::info!(
+                        info!(
                             tx_hash = %H256::from(ok.tx_hash()),
                             msg = %msg.function.name,
                             "evm tx"
                         );
                         let tx_rcp: TransactionReceipt =
                             ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
-                        tracing::info!(
+                        info!(
                             tx_hash = %H256::from(tx_rcp.transaction_hash),
                             "evm transaction submitted"
                         );
                         Ok(())
                     }
                     Err(ContractError::Revert(revert)) => {
-                        tracing::error!(?revert, "evm transaction failed");
+                        error!(?revert, "evm transaction failed");
                         let err =
                             <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
                                 .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
-                        tracing::error!(?revert, ?err, "evm transaction failed");
+                        error!(?revert, ?err, "evm transaction failed");
                         Ok(())
                     }
                     _ => {
@@ -328,10 +329,10 @@ where
                 }
             }
             Err(ContractError::Revert(revert)) => {
-                tracing::error!(?revert, "evm transaction failed");
+                error!(?revert, "evm transaction failed");
                 let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
                     .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
-                tracing::error!(?revert, ?err, "evm estimation failed");
+                error!(?revert, ?err, "evm estimation failed");
                 Ok(())
             }
             _ => {
@@ -1270,6 +1271,7 @@ where
             |(mut vec, mut trusted_slot), update| {
                 let old_trusted_slot = trusted_slot;
 
+                // REVIEW: Assert that this is greater (i.e. increasing)?
                 trusted_slot = update.attested_header.beacon.slot;
 
                 vec.push_back(make_create_update::<C, Tr>(
@@ -1293,7 +1295,7 @@ where
         let does_not_have_finality_update =
             last_update_block_number >= req.update_to.revision_height;
 
-        tracing::debug!(last_update_block_number, req.update_to.revision_height);
+        debug!(last_update_block_number, req.update_to.revision_height);
 
         let finality_update_msg = if does_not_have_finality_update {
             // do nothing

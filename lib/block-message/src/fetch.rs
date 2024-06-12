@@ -6,6 +6,7 @@ use macros::apply;
 use queue_msg::{
     aggregate, conc, fetch, queue_msg, wait, HandleFetch, QueueError, QueueMessageTypes, QueueMsg,
 };
+use tracing::instrument;
 use unionlabs::ibc::core::client::height::IsHeight;
 
 use crate::{
@@ -27,7 +28,7 @@ pub enum Fetch<C: ChainExt> {
 }
 
 impl HandleFetch<BlockMessageTypes> for AnyChainIdentified<AnyFetch> {
-    #[tracing::instrument(skip_all, fields(chain_id = %self.chain_id()))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
         store: &<BlockMessageTypes as QueueMessageTypes>::Store,

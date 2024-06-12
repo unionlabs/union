@@ -16,6 +16,7 @@ use relay_message::{
     use_aggregate::IsAggregateData,
     ChainExt, DoFetchProof, DoFetchState, Identified, RelayMessageTypes,
 };
+use tracing::info;
 use unionlabs::{
     bounded::BoundedI64,
     ibc::core::{channel, client::height::Height},
@@ -407,7 +408,7 @@ where
         QueryHeight::Specific(height) => height,
     };
 
-    tracing::info!("latest height is {height}");
+    info!("latest height is {height}");
 
     let msgs = [
         Hc::state(&c, height, path.clone()),

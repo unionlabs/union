@@ -28,7 +28,7 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 use unionlabs::traits::{Chain, ClientState, FromStrExact};
 use voyager_message::VoyagerMessageTypes;
 
@@ -100,7 +100,7 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
                     .map_err(AnyQueueError::PgQueue)?,
             };
 
-            tracing::trace!("queued");
+            trace!("queued");
 
             Ok(())
         }
@@ -129,7 +129,7 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
                     .map_err(AnyQueueError::PgQueue),
             };
 
-            tracing::trace!("processed");
+            trace!("processed");
 
             res
         }
