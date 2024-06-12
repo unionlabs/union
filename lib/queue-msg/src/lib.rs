@@ -139,6 +139,16 @@ pub enum QueueMsg<T: QueueMessageTypes> {
     },
     /// Handle the contained message, voiding any returned `Data` messages that it returns.
     Void(Box<Self>),
+    /// Race a list of messages. The head of the list is handled, and if it returns no new messages,
+    /// then the rest of the list is dropped; otherwise, the new message is pushed to the back of the
+    /// list (similar to [`Self::Concurrent`]).
+    ///
+    /// ```txt
+    /// [A B C]
+    /// D = handle(A)
+    /// if D.is_none() noop else race([B C D])
+    /// ```
+    Race(VecDeque<Self>),
     Noop,
 }
 
@@ -241,6 +251,12 @@ pub fn aggregate<T: QueueMessageTypes>(
 #[must_use = "constructing an instruction has no effect"]
 pub fn void<T: QueueMessageTypes>(t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Void(Box::new(t.into()))
+}
+
+#[inline]
+#[must_use = "constructing an instruction has no effect"]
+pub fn race<T: QueueMessageTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
+    QueueMsg::Race(ts.into_iter().collect())
 }
 
 #[inline]
@@ -411,6 +427,22 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
                         msg => void(msg),
                     }))
                 }
+                QueueMsg::Race(mut msgs) => match msgs.pop_front() {
+                    Some(msg) => {
+                        match msg.handle(store, depth + 1).await? {
+                            Some(msg) => {
+                                msgs.push_back(msg);
+                                Ok(Some(race(msgs)))
+                            }
+                            // head won, drop the rest of the messages
+                            None => {
+                                info!("race won, dropping other messages");
+                                Ok(None)
+                            }
+                        }
+                    }
+                    None => Ok(None),
+                },
                 QueueMsg::Noop => Ok(None),
             }
         };
@@ -421,7 +453,6 @@ impl<T: QueueMessageTypes> QueueMsg<T> {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::optimize::{
         passes::{ExtractData, FlattenConc, FlattenSeq},

@@ -12,7 +12,6 @@ use unionlabs::{
     hash::H256,
     ibc::core::channel::packet::Packet,
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath},
-    id::ConnectionId,
     traits::{ClientIdOf, ClientTypeOf, HeightOf},
     QueryHeight,
 };
@@ -381,10 +380,25 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                                             .into(),
                                         },
                                     )),
-                                    fetch_client_state_from_connection(
-                                        &hc,
-                                        ibc_event.height,
-                                        send.connection_id.clone(),
+                                    aggregate(
+                                        [fetch(id(
+                                            hc.chain_id(),
+                                            FetchState::<Hc, Tr> {
+                                                at: QueryHeight::Specific(ibc_event.height),
+                                                path: ConnectionPath {
+                                                    connection_id: send.connection_id.clone(),
+                                                }
+                                                .into(),
+                                            },
+                                        ))],
+                                        [],
+                                        id(
+                                            hc.chain_id(),
+                                            AggregateClientStateFromConnection::<Hc, Tr> {
+                                                at: ibc_event.height,
+                                                __marker: PhantomData,
+                                            },
+                                        ),
                                     ),
                                 ],
                                 [],
@@ -549,34 +563,6 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
             },
         }
     }
-}
-
-fn fetch_client_state_from_connection<Hc: ChainExt, Tr: ChainExt>(
-    hc: &Hc,
-    height: Hc::Height,
-    connection_id: ConnectionId,
-) -> QueueMsg<RelayMessageTypes>
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
-{
-    aggregate(
-        [fetch(id(
-            hc.chain_id(),
-            FetchState::<Hc, Tr> {
-                at: QueryHeight::Specific(height),
-                path: ConnectionPath { connection_id }.into(),
-            },
-        ))],
-        [],
-        id(
-            hc.chain_id(),
-            AggregateClientStateFromConnection::<Hc, Tr> {
-                at: height,
-                __marker: PhantomData,
-            },
-        ),
-    )
 }
 
 #[queue_msg]

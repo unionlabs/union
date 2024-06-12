@@ -81,6 +81,9 @@ impl FromQueueMsg<RelayMessageTypes> for VoyagerMessageTypes {
                 data: data.into_iter().map(VoyagerData::Relay).collect(),
                 receiver: VoyagerAggregate::Relay(receiver),
             },
+            QueueMsg::Race(seq) => {
+                QueueMsg::Race(seq.into_iter().map(Self::from_queue_msg).collect())
+            }
             QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
             QueueMsg::Noop => noop(),
         }
@@ -124,6 +127,9 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
                 data: data.into_iter().map(VoyagerData::Block).collect(),
                 receiver: VoyagerAggregate::Block(receiver),
             },
+            QueueMsg::Race(seq) => {
+                QueueMsg::Race(seq.into_iter().map(Self::from_queue_msg).collect())
+            }
             QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
             QueueMsg::Noop => noop(),
         }

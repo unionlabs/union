@@ -1,9 +1,9 @@
 use tracing::debug;
 
 use crate::{
-    conc,
+    conc, noop,
     optimize::{OptimizationResult, Pass, Pure, PurePass},
-    repeat, retry, seq, QueueMessageTypes, QueueMsg,
+    race, repeat, retry, seq, QueueMessageTypes, QueueMsg,
 };
 
 /// Combination of passes over the queue to normalize the internal structure. See the documentation
@@ -228,6 +228,9 @@ impl<T: QueueMessageTypes> PurePass<T> for FlattenSeq {
                         data,
                         receiver,
                     }],
+                    QueueMsg::Race(msgs) => {
+                        vec![QueueMsg::Race(msgs.into_iter().map(flatten_seq).collect())]
+                    }
                     _ => [msg].into(),
                 }
             }
@@ -282,6 +285,17 @@ impl<T: QueueMessageTypes> PurePass<T> for FlattenConc {
                         data,
                         receiver,
                     }],
+                    QueueMsg::Race(msgs) => {
+                        vec![race(msgs.into_iter().map(|msg| {
+                            let mut msgs = go(msg);
+
+                            match msgs.len() {
+                                0 => noop(),
+                                1 => msgs.pop().unwrap(),
+                                _ => conc(msgs),
+                            }
+                        }))]
+                    }
                     _ => [msg].into(),
                 }
             }
@@ -304,7 +318,7 @@ impl<T: QueueMessageTypes> PurePass<T> for FlattenConc {
 mod tests {
     use super::*;
     use crate::{
-        aggregate, data, defer_relative, effect, event, fetch, noop,
+        aggregate, data, defer_relative, effect, event, fetch, noop, race,
         test_utils::{
             AggregatePrintAbc, DataA, DataB, DataC, FetchA, PrintAbc, SimpleEvent, SimpleMessage,
         },
@@ -424,5 +438,46 @@ mod tests {
         let optimized = NormalizeFinal::default().run_pass_pure(msgs);
         assert_eq!(optimized.ready, expected_output);
         assert_eq!(optimized.optimize_further, []);
+    }
+
+    #[test]
+    fn race_opt() {
+        let msgs = vec![race::<SimpleMessage>([
+            seq([event(SimpleEvent {}), event(SimpleEvent {})]),
+            conc([
+                event(SimpleEvent {}),
+                conc([event(SimpleEvent {}), event(SimpleEvent {})]),
+            ]),
+        ])];
+
+        let expected_output = vec![(
+            vec![0],
+            race::<SimpleMessage>([
+                seq([event(SimpleEvent {}), event(SimpleEvent {})]),
+                conc([
+                    event(SimpleEvent {}),
+                    event(SimpleEvent {}),
+                    event(SimpleEvent {}),
+                ]),
+            ]),
+        )];
+
+        let optimized = Normalize::default().run_pass_pure(msgs.clone());
+
+        assert_eq!(optimized.optimize_further, expected_output);
+        assert_eq!(optimized.ready, []);
+    }
+
+    #[test]
+    fn race_opt_noop() {
+        let msgs = vec![race::<SimpleMessage>([seq([]), conc([])])];
+
+        // an empty seq optimizes to an empty seq, but an empty conc optimizes to noop
+        let expected_output = vec![(vec![0], race::<SimpleMessage>([seq([]), noop()]))];
+
+        let optimized = Normalize::default().run_pass_pure(msgs.clone());
+
+        assert_eq!(optimized.optimize_further, expected_output);
+        assert_eq!(optimized.ready, []);
     }
 }
