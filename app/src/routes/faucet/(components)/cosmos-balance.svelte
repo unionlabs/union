@@ -1,0 +1,32 @@
+<script lang="ts">
+import type { Chain, UserAddresses } from "$lib/types.ts"
+import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance.ts"
+import type { ChainId } from "$lib/constants/assets.ts"
+import { truncate } from "$lib/utilities/format.ts"
+
+export let userAddr: UserAddresses
+export let chains: Array<Chain>
+export let chainId: ChainId
+export let symbol: boolean
+
+let cosmosChains = chains.filter(c => c.chain_id === chainId)
+
+let cosmosBalances = cosmosBalancesQuery({
+  chains: cosmosChains,
+  address: userAddr.cosmos.bytes
+})
+</script>
+
+{#each $cosmosBalances as balance, index}
+  {#if balance.isLoading}
+    <span class="text-muted-foreground">Loading...</span>
+  {:else if balance.isError}
+    <span class="text-red-500">{balance.error}</span>
+  {:else if balance.isSuccess}
+    {#if !(balance.data instanceof Error)}
+      {#each balance.data as asset}
+        <span>{asset.balance} {symbol ? ` ${truncate(asset.symbol, 8)}` : ''}</span>
+      {/each}
+    {/if}
+  {/if}
+{/each}

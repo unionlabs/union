@@ -16,6 +16,11 @@ import { toast } from "svelte-sonner"
 import SpinnerSVG from "$lib/components/SpinnerSVG.svelte"
 import * as Form from "$lib/components/ui/form/index.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
+import { cosmosBalancesQuery } from "$lib/queries/balance.ts"
+import WalletGate from "$lib/components/wallet-gate.svelte"
+import ChainsGate from "$lib/components/chains-gate.svelte"
+import BalancesOverview from "$lib/components/balances-overview.svelte"
+import CosmosBalance from "./(components)/cosmos-balance.svelte"
 
 interface Balance {
   amount: string
@@ -50,16 +55,16 @@ let focused = false
 let input: HTMLInputElement
 let position = { x: 0, y: 0 }
 
+const handleFocus = () => ([focused, opacity] = [true, 1])
+const handleBlur = () => ([focused, opacity] = [false, 0])
+const handleMouseEnter = () => (opacity = 1)
+const handleMouseLeave = () => (opacity = 0)
+
 function handleMouseMove(event: MouseEvent) {
   if (!input || focused) return
   const rect = input.getBoundingClientRect()
   position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
 }
-
-const handleFocus = () => ([focused, opacity] = [true, 1])
-const handleBlur = () => ([focused, opacity] = [false, 0])
-const handleMouseEnter = () => (opacity = 1)
-const handleMouseLeave = () => (opacity = 0)
 
 $: unionTransfers = unionTransfersQuery({
   address: address,
@@ -101,28 +106,6 @@ const handleSubmit = () => {
   toast.loading("Submitting faucet request..")
   debouncedSubmit()
 }
-
-$: unionBalancesQuery = createQuery<Balance>({
-  queryKey: [$cosmosStore.address, "balance", "union-testnet-8"],
-  refetchInterval: 5000,
-  queryFn: async () => {
-    const response = await fetch(
-      `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${$cosmosStore.address}`
-    )
-
-    if (!response.ok) {
-      return { amount: "0.00", denom: "muno" }
-    }
-
-    const data = (await response.json()) as {
-      balances: Array<{ amount: string; denom: string }>
-    }
-
-    const munoBalance = data.balances.find(balance => balance.denom === "muno")
-    return munoBalance || { denom: "muno", amount: "0.00" }
-  },
-  enabled: isValidCosmosAddress($cosmosStore.address)
-})
 </script>
 
 <svelte:head>
@@ -171,18 +154,25 @@ $: unionBalancesQuery = createQuery<Balance>({
                   />
                 </div>
                 <div class="flex justify-between px-1">
-                  {#if $unionBalancesQuery.data}
-                    <p class="text-xs text-muted-foreground">
-                      Balance: {parseInt($unionBalancesQuery.data.amount) / 1000000}</p>
-                  {:else}
-                    <p class="text-xs text-muted-foreground">Balance: <span class="font-bold">0</span></p>
-                  {/if}
+                  <p class="text-xs">
+                    <ChainsGate let:chains>
+                      <WalletGate let:userAddr>
+                        <span class="text-muted-foreground">Balance: </span>
+                        <CosmosBalance chainId={"union-testnet-8"} {chains} symbol {userAddr}/>
+                      </WalletGate>
+                    </ChainsGate>
+                  </p>
                   {#if userInput}
-                    <button type="button" on:click={resetInput}
-                            class="text-xs text-muted-foreground hover:text-primary transition">Reset
+                    <button
+                      type="button"
+                      on:click={resetInput}
+                      class="text-xs text-muted-foreground hover:text-primary transition"
+                    >
+                      Reset
                     </button>
                   {/if}
                 </div>
+
               </div>
               <Button aria-label="Toggle address lock" class="px-3" on:click={onLockClick}
                       variant="ghost">
@@ -203,7 +193,7 @@ $: unionBalancesQuery = createQuery<Balance>({
               </span>
               {/if}
             </Button>
-            <a class="flex items-center gap-x-2 font-bold text-xs" href="https://git-faucets.web.val.run"
+            <a class="flex items-center gap-x-2 font-m text-xs hover:underline" href="https://git-faucets.web.val.run"
                rel="noopener noreferrer"
                target="_blank">
               Faucets for other assets & chains
