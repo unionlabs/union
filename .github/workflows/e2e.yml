@@ -11,9 +11,10 @@ on:
 
 jobs:
   build:
-    uses: unionlabs/workflows/.github/workflows/build.yml@ca612e4fe5ca83f84030064b3f271ae02db1bc86
+    uses: unionlabs/workflows/.github/workflows/build.yml@a67ed3efa69ef8bed6519c7dcbeb5cd7a1491548
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GH_NIX_TOKEN }}
+      org_token: ${{ secrets.GH_NIX_TOKEN }}
     with:
       filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux") and (.attr == "virtualisation-works" or .attr == "ensure-blocks" or .attr == "sepolia-runs" or .attr == "union-runs" or .attr == "epoch-completes" or .attr == "forced-set-rotation" or .attr == "upgrade-from-genesis" or .attr == "upgrade-with-tokenfactory-state"))'
