@@ -80,6 +80,11 @@
           default = "json";
           example = "text";
         };
+        stack-size = mkOption {
+          type = types.nullOr types.number;
+          default = null;
+          example = 20971520;
+        };
       };
 
       config =
@@ -129,7 +134,7 @@
               ExecStart = ''
                 ${pkgs.lib.getExe cfg.package} \
                   --config-file-path ${configJson} \
-                  -l ${cfg.log-format} \
+                  -l ${cfg.log-format} ${pkgs.lib.optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"} \
                   relay
               '';
               Restart = mkForce "always";
