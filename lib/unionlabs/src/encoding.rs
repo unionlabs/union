@@ -11,6 +11,9 @@ impl Encoding for Proto {}
 pub enum Ssz {}
 impl Encoding for Ssz {}
 
+pub enum Binary {}
+impl Encoding for Binary {}
+
 pub trait Encode<Enc: Encoding>: Sized {
     fn encode(self) -> Vec<u8>;
 }
