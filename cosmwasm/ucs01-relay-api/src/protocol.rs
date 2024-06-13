@@ -245,7 +245,10 @@ pub trait TransferProtocol {
                         (ATTR_MODULE, TRANSFER_MODULE),
                         (ATTR_SENDER, packet.sender().to_string().as_str()),
                         (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
-                        (ATTR_ACK, &ibc_packet.acknowledgement.data.to_string()),
+                        (
+                            ATTR_ACK,
+                            serde_utils::to_hex(ibc_packet.acknowledgement.data).as_str(),
+                        ),
                     ])
                     .add_attributes([tokens_to_attr(packet.tokens())]),
             )

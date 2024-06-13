@@ -91,7 +91,7 @@ pub fn execute(
                 HASH_TO_FOREIGN_DENOM.save(
                     deps.storage,
                     (local_endpoint.into(), normalized_hash),
-                    &denom.to_string(),
+                    &denom,
                 )?;
                 Ok(Response::default())
             }

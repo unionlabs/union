@@ -144,7 +144,7 @@ fn normalize_for_ibc_transfer(
         None => token.denom,
     };
     Ok(TransferToken {
-        denom: normalized_denom.to_string(),
+        denom: normalized_denom,
         amount: token.amount,
     })
 }
@@ -532,10 +532,9 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         // If not already processed by other middleware, receive tokens into the contract address.
         let mut tokens: Vec<Coin> = Vec::new();
         if !processed {
-            msgs.append(&mut match self.receive_transfer(
-                &override_addr.clone().into_string(),
-                packet.tokens().to_vec(),
-            ) {
+            msgs.append(&mut match self
+                .receive_transfer(&override_addr.to_string(), packet.tokens().to_vec())
+            {
                 Ok((t, msgs)) => {
                     t.into_iter().for_each(|t| {
                         tokens.push(Coin {

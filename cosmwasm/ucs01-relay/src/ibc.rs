@@ -141,7 +141,7 @@ pub(crate) fn enforce_order_and_version(
         if version != channel.version {
             return Err(ContractError::ProtocolMismatch {
                 channel_id: channel.endpoint.channel_id.clone(),
-                protocol_version: channel.version.to_string(),
+                protocol_version: channel.version.clone(),
                 counterparty_protocol_version: version.to_string(),
             });
         }
