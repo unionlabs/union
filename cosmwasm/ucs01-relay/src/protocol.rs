@@ -421,7 +421,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     }
 
     fn ack_success() -> Self::Ack {
-        Ics20Ack::Result(vec![1].into())
+        Ics20Ack::Result(vec![1])
     }
 
     fn ack_failure(error: String) -> Self::Ack {
@@ -661,7 +661,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value_string = value.to_string();
+                let value_string = serde_utils::to_hex(value.clone());
                 (
                     self.send_tokens_success(sender, &String::new(), tokens)?,
                     Vec::from_iter(
@@ -673,7 +673,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             Err(error) => (
                 self.send_tokens_failure(sender, &String::new(), tokens)?,
                 Vec::from_iter(
-                    (!error.is_empty()).then_some((ATTR_ERROR, error.clone().to_string())),
+                    (!error.is_empty()).then_some((ATTR_ERROR, serde_utils::to_hex(error.clone()))),
                 ),
                 error.to_vec(),
             ),
@@ -1043,7 +1043,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value_string = value.to_string();
+                let value_string = serde_utils::to_hex(value.clone());
                 (
                     self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
                     Vec::from_iter(
@@ -1055,7 +1055,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             Err(error) => (
                 self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
                 Vec::from_iter(
-                    (!error.is_empty()).then_some((ATTR_ERROR, error.clone().to_string())),
+                    (!error.is_empty()).then_some((ATTR_ERROR, serde_utils::to_hex(error.clone()))),
                 ),
                 error.to_vec(),
             ),
@@ -1164,10 +1164,9 @@ mod tests {
                     },
                 },
             }
-            .convert_ack_to_foreign_protocol("ucs01-relay-1", Ok(vec![1].into()))
+            .convert_ack_to_foreign_protocol("ucs01-relay-1", Ok(vec![1]))
             .unwrap()
             .unwrap()
-            .to_string()
         );
     }
 

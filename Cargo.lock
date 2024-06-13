@@ -7884,6 +7884,7 @@ dependencies = [
  "semver",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde-utils",
  "sha2 0.10.8",
  "thiserror",
  "token-factory-api",

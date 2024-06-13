@@ -1,9 +1,9 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
+use cosmwasm_std::{Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
 use ethabi::{ParamType, Token};
 use unionlabs::encoding::{self, Decode, Encode};
 
-pub type GenericAck = Result<Binary, Binary>;
+pub type GenericAck = Result<Vec<u8>, Vec<u8>>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum EncodingError {
@@ -296,7 +296,7 @@ impl From<Ucs01Ack> for GenericAck {
 /// Standard ICS20 acknowledgement https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/core/channel/v1/channel.proto#L141-L147
 #[cw_serde]
 pub enum Ics20Ack {
-    Result(Binary),
+    Result(Vec<u8>),
     Error(String),
 }
 
@@ -323,8 +323,8 @@ impl Decode<encoding::Binary> for Ics20Ack {
 impl From<Ics20Ack> for GenericAck {
     fn from(value: Ics20Ack) -> Self {
         match value {
-            Ics20Ack::Result(_) => Ok(value.encode().into()),
-            Ics20Ack::Error(_) => Err(value.encode().into()),
+            Ics20Ack::Result(_) => Ok(value.encode()),
+            Ics20Ack::Error(_) => Err(value.encode()),
         }
     }
 }
@@ -385,7 +385,7 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Binary, IbcEndpoint, Uint128};
+    use cosmwasm_std::{IbcEndpoint, Uint128};
     use unionlabs::encoding::{Decode, Encode};
 
     use super::{Ics20Packet, TransferToken, Ucs01Ack, Ucs01TransferPacket};
@@ -414,7 +414,7 @@ mod tests {
         };
         assert_eq!(
             packet,
-            Ucs01TransferPacket::decode(Binary::from(packet.clone().encode()).as_slice()).unwrap()
+            Ucs01TransferPacket::decode(packet.clone().encode().as_slice()).unwrap()
         );
     }
 
@@ -422,11 +422,11 @@ mod tests {
     fn ucs01_ack_encode_decode_iso() {
         assert_eq!(
             Ucs01Ack::Success,
-            Ucs01Ack::decode(Binary::from(Ucs01Ack::Success.encode()).as_slice()).unwrap()
+            Ucs01Ack::decode(Ucs01Ack::Success.encode().as_slice()).unwrap()
         );
         assert_eq!(
             Ucs01Ack::Failure,
-            Ucs01Ack::decode(Binary::from(Ucs01Ack::Failure.encode()).as_slice()).unwrap()
+            Ucs01Ack::decode(Ucs01Ack::Failure.encode().as_slice()).unwrap()
         );
     }
 
@@ -441,7 +441,7 @@ mod tests {
         };
         assert_eq!(
             packet,
-            Ics20Packet::decode(Binary::from(packet.clone().encode()).as_slice()).unwrap()
+            Ics20Packet::decode(packet.clone().encode().as_slice()).unwrap()
         );
     }
 
@@ -449,13 +449,11 @@ mod tests {
     fn ics20_ack_encode_decode_iso() {
         assert_eq!(
             Ics20Ack::Result(b"blabla".into()),
-            Ics20Ack::decode(Binary::from(Ics20Ack::Result(b"blabla".into()).encode()).as_slice())
-                .unwrap()
+            Ics20Ack::decode(Ics20Ack::Result(b"blabla".into()).encode().as_slice()).unwrap()
         );
         assert_eq!(
             Ics20Ack::Error("ok".into()),
-            Ics20Ack::decode(Binary::from(Ics20Ack::Error("ok".into()).encode()).as_slice())
-                .unwrap()
+            Ics20Ack::decode(Ics20Ack::Error("ok".into()).encode().as_slice()).unwrap()
         );
     }
 

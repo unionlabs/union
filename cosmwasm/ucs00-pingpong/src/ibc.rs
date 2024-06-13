@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, entry_point, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg,
+    attr, entry_point, DepsMut, Env, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg,
     IbcChannelConnectMsg, IbcChannelOpenMsg, IbcOrder, IbcPacket, IbcPacketAckMsg,
     IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, Reply, Response, StdError,
 };
@@ -9,11 +9,11 @@ use crate::{msg::UCS00PingPong, state::CONFIG, ContractError};
 pub const PROTOCOL_VERSION: &str = "ucs00-pingpong-1";
 pub const PROTOCOL_ORDERING: IbcOrder = IbcOrder::Unordered;
 
-fn ack_success() -> Binary {
+fn ack_success() -> Vec<u8> {
     [1].into()
 }
 
-fn ack_fail() -> Binary {
+fn ack_fail() -> Vec<u8> {
     [0].into()
 }
 

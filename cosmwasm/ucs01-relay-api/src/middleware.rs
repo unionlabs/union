@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary, Event, IbcPacket, IbcTimeout};
+use cosmwasm_std::{Addr, Event, IbcPacket, IbcTimeout};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use unionlabs::{
@@ -64,7 +64,7 @@ pub struct PacketId {
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct InFlightPfmPacket {
     pub original_sender_addr: Addr,
-    pub packet_data: Binary,
+    pub packet_data: Vec<u8>,
     pub packet_src_channel_id: String,
     pub packet_src_port_id: String,
     pub refund_channel_id: String,
@@ -88,7 +88,7 @@ impl InFlightPfmPacket {
     ) -> Self {
         Self {
             original_sender_addr,
-            packet_data: original_packet.data,
+            packet_data: original_packet.data.into(),
             packet_src_channel_id: original_packet.src.channel_id,
             packet_src_port_id: original_packet.src.port_id,
             refund_channel_id: original_packet.dest.channel_id,

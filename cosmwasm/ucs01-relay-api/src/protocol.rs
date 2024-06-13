@@ -206,7 +206,7 @@ pub trait TransferProtocol {
         } else {
             match ack {
                 Ok(value) => {
-                    let value_string = value.to_string();
+                    let value_string = serde_utils::to_hex(value);
                     (
                         self.send_tokens_success(
                             packet.sender(),
@@ -219,7 +219,7 @@ pub trait TransferProtocol {
                     )
                 }
                 Err(error) => {
-                    let error_string = error.to_string();
+                    let error_string = serde_utils::to_hex(error);
                     (
                         self.send_tokens_failure(
                             packet.sender(),
@@ -261,11 +261,7 @@ pub trait TransferProtocol {
         let packet = Self::Packet::decode(ibc_packet.clone().data.as_slice())?;
         // same branch as failure ack
         let memo = Into::<String>::into(packet.extension().clone());
-        let ack = GenericAck::Err(
-            b"giving up on forwarded packet after timeout"
-                .to_vec()
-                .into(),
-        );
+        let ack = GenericAck::Err(b"giving up on forwarded packet after timeout".to_vec());
         let refund_msgs = if let Some((ack_msgs, _)) = self.pfm_ack(
             ack,
             ibc_packet.clone(),

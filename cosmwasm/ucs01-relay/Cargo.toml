@@ -32,6 +32,7 @@ schemars          = { workspace = true }
 semver            = "1"
 serde             = { workspace = true, features = ["derive"] }
 serde-json-wasm   = { workspace = true }
+serde-utils       = { workspace = true }
 sha2              = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
