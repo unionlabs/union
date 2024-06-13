@@ -139,8 +139,8 @@ export default (<Config>{
         "9xl": "96rem"
       }),
       fontFamily: _ => ({
-        sans: ["geist-sans", ...defaultTheme.fontFamily.sans],
-        mono: ["geist-mono", ...defaultTheme.fontFamily.mono]
+        sans: ["quattro-sans", ...defaultTheme.fontFamily.sans],
+        mono: ["quattro-mono", ...defaultTheme.fontFamily.mono]
       }),
       animation: _ => ({
         wiggle: "wiggle 1s ease-in-out infinite",
