@@ -17,6 +17,7 @@ use ucs01_relay_api::{
         TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
     },
 };
+use unionlabs::encoding::Encode;
 
 use crate::{
     contract::execute_transfer,
@@ -559,9 +560,9 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         ) {
             Ok(forward_response) => forward_response,
             Err(e) => {
-                return IbcReceiveResponse::new(
-                    Binary::try_from(Self::ack_failure(e.to_string())).expect("impossible"),
-                )
+                return IbcReceiveResponse::new(Binary::from(
+                    Self::ack_failure(e.to_string()).encode(),
+                ))
                 .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
         };
@@ -943,9 +944,9 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         ) {
             Ok(forward_response) => forward_response,
             Err(e) => {
-                return IbcReceiveResponse::new(
-                    Binary::try_from(Self::ack_failure(e.to_string())).expect("impossible"),
-                )
+                return IbcReceiveResponse::new(Binary::from(
+                    Self::ack_failure(e.to_string()).encode(),
+                ))
                 .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
         };

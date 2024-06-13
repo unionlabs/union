@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    Addr, Attribute, Binary, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
-    IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
+    Addr, Attribute, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
+    IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
+use unionlabs::encoding::{self, Decode, Encode};
 
 use crate::{
     middleware::{Memo, PacketForward},
@@ -82,12 +83,12 @@ pub trait TransferProtocol {
     /// Must be unique per Protocol
     const RECEIVE_REPLY_ID: u64;
 
-    type Packet: TryFrom<Binary, Error = EncodingError>
-        + TryInto<Binary, Error = EncodingError>
+    type Packet: Decode<encoding::Binary, Error = EncodingError>
+        + Encode<encoding::Binary>
         + TransferPacket;
 
-    type Ack: TryFrom<Binary, Error = EncodingError>
-        + TryInto<Binary, Error = EncodingError>
+    type Ack: Decode<encoding::Binary, Error = EncodingError>
+        + Encode<encoding::Binary>
         + Into<GenericAck>;
 
     type CustomMsg;
@@ -166,7 +167,7 @@ pub trait TransferProtocol {
         let sub = SubMsg::reply_on_success(
             IbcMsg::SendPacket {
                 channel_id: self.channel_endpoint().channel_id.clone(),
-                data: packet.try_into()?,
+                data: packet.encode().into(),
                 timeout: input.current_time.plus_seconds(input.timeout_delta).into(),
             },
             IBC_SEND_ID,
@@ -189,9 +190,9 @@ pub trait TransferProtocol {
         &mut self,
         ibc_packet: IbcPacketAckMsg,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(ibc_packet.original_packet.data.clone())?;
+        let packet = Self::Packet::decode(ibc_packet.original_packet.data.as_slice())?;
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
-        let ack: GenericAck = Self::Ack::try_from(ibc_packet.acknowledgement.data.clone())?.into();
+        let ack: GenericAck = Self::Ack::decode(ibc_packet.acknowledgement.data.as_slice())?.into();
         let memo: String = packet.extension().clone().into();
 
         let (ack_msgs, ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
@@ -257,7 +258,7 @@ pub trait TransferProtocol {
         &mut self,
         ibc_packet: IbcPacket,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::try_from(ibc_packet.clone().data)?;
+        let packet = Self::Packet::decode(ibc_packet.clone().data.as_slice())?;
         // same branch as failure ack
         let memo = Into::<String>::into(packet.extension().clone());
         let ack = GenericAck::Err(
@@ -304,7 +305,7 @@ pub trait TransferProtocol {
 
     fn receive(&mut self, original_packet: IbcPacket) -> IbcReceiveResponse<Self::CustomMsg> {
         let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
-            let packet = Self::Packet::try_from(original_packet.data.clone())?;
+            let packet = Self::Packet::decode(original_packet.data.as_slice())?;
 
             let memo = Into::<String>::into(packet.extension().clone());
 
@@ -334,7 +335,7 @@ pub trait TransferProtocol {
                 Event::new(PACKET_EVENT).add_attribute(ATTR_MEMO, &memo)
             };
 
-            Ok(IbcReceiveResponse::new(Self::ack_success().try_into()?)
+            Ok(IbcReceiveResponse::new(Self::ack_success().encode())
                 .add_event(
                     packet_event
                         .add_attributes([
@@ -357,16 +358,13 @@ pub trait TransferProtocol {
 
     fn receive_error(error: impl Debug) -> IbcReceiveResponse<Self::CustomMsg> {
         let error = format!("{:?}", error);
-        IbcReceiveResponse::new(
-            Self::ack_failure(error.clone())
-                .try_into()
-                .expect("impossible"),
+        IbcReceiveResponse::new(Self::ack_failure(error.clone()).encode()).add_event(
+            Event::new(PACKET_EVENT).add_attributes([
+                (ATTR_MODULE, TRANSFER_MODULE),
+                (ATTR_SUCCESS, ATTR_VALUE_FALSE),
+                (ATTR_ERROR, &error),
+            ]),
         )
-        .add_event(Event::new(PACKET_EVENT).add_attributes([
-            (ATTR_MODULE, TRANSFER_MODULE),
-            (ATTR_SUCCESS, ATTR_VALUE_FALSE),
-            (ATTR_ERROR, &error),
-        ]))
     }
 
     /// Extracts and processes the forward information from a messages memo. Initiates the forward transfer process.

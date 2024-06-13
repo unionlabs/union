@@ -7888,6 +7888,7 @@ dependencies = [
  "thiserror",
  "token-factory-api",
  "ucs01-relay-api",
+ "unionlabs",
 ]
 
 [[package]]
