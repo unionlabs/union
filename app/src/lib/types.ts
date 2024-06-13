@@ -18,5 +18,6 @@ export type Chain = {
     type: string
     url: string
   }>
+  ucs1_configurations: Record<string, { contract_address: string, channel_id: string}>,
   addr_prefix: string
 }

@@ -84,54 +84,30 @@ const transfer = async () => {
   const assetId = $asset
   if (!assetId) return toast.error('Please select an asset')
   if (!$fromChainId) return toast.error('Please select a from chain')
+  if (!$fromChain) return toast.error("can't find chain in config");
+  if (!$toChain) return toast.error("can't find chain in config");
   if (!$toChainId) return toast.error('Please select a to chain')
   if (!amount) return toast.error('Please select an amount')
   if (!$recipient) return toast.error('Invalid recipient')
 
-  toast.info(
-    `Sending transaction from ${$fromChainId} to ${$fromChainId}`,
-  )
-  if ($fromChainId === String(sepolia.id)) {
-    if ($evmAccount.status !== 'connected')
-      return toast.error('Please connect your Sepolia wallet')
-    if (!isAddress(assetId)) return toast.error('Invalid address')
 
+  const ucs1_configuration = $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null;
+
+  if (ucs1_configuration === null) {
+    return toast.error(`No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`);
+  }
+
+  if ($fromChain.rpc_type === 'cosmos') {
     const evmClient = await getWalletClient(config)
-    const client = new UnionClient({
-      // @ts-ignore
-      cosmosOfflineSigner: undefined,
-      evmSigner: evmClient,
-      bech32Prefix: 'union',
-      chainId: 'union-testnet-8',
-      gas: { denom: 'muno', amount: '0.0025' },
-      rpcUrl: 'https://union-testnet-rpc.polkachu.com',
-    })
-    const approveHash = await client.approveEvmAssetTransfer({
-      account: $evmAccount || evmClient.account,
-      denomAddress: assetId,
-      amount: BigInt(amount),
-    })
-    toast.success(`Approve transaction sent: ${approveHash}`)
-    const transferHash = await client.transferEvmAsset({
-      account: evmClient.account,
-      receiver: $recipient,
-      denomAddress: assetId,
-      amount: BigInt(amount),
-      sourceChannel: 'channel-1',
-      simulate: true,
-      contractAddress: '0xD0081080Ae8493cf7340458Eaf4412030df5FEEb',
-    })
-    toast.success(`Transfer transaction sent: ${transferHash}`)
-  } else {
+
     const transferHash = await unionClient.transferAssets({
       kind: 'cosmwasm',
       instructions: [
         {
-          contractAddress:
-            'union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3',
+          contractAddress: ucs1_configuration.contract_address,
           msg: {
             transfer: {
-              channel: 'channel-28',
+              channel: ucs1_configuration.channel_id,
               receiver: $recipient?.slice(2),
               memo: ``,
             },
@@ -141,7 +117,66 @@ const transfer = async () => {
       ],
     })
     toast.success(`Transfer transaction sent: ${transferHash}`)
+  } else if ($fromChain.rpc_type === 'evm') {
+
+  } else {
+    console.error('invalid rpc type');
   }
+
+  // toast.info(
+  //   `Sending transaction from ${$fromChainId} to ${$fromChainId}`,
+  // )
+  // if ($fromChainId === String(sepolia.id)) {
+  //   if ($evmAccount.status !== 'connected')
+  //     return toast.error('Please connect your Sepolia wallet')
+  //   if (!isAddress(assetId)) return toast.error('Invalid address')
+
+  //   const evmClient = await getWalletClient(config)
+  //   const client = new UnionClient({
+  //     // @ts-ignore
+  //     cosmosOfflineSigner: undefined,
+  //     evmSigner: evmClient,
+  //     bech32Prefix: 'union',
+  //     chainId: 'union-testnet-8',
+  //     gas: { denom: 'muno', amount: '0.0025' },
+  //     rpcUrl: 'https://union-testnet-rpc.polkachu.com',
+  //   })
+  //   const approveHash = await client.approveEvmAssetTransfer({
+  //     account: $evmAccount || evmClient.account,
+  //     denomAddress: assetId,
+  //     amount: BigInt(amount),
+  //   })
+  //   toast.success(`Approve transaction sent: ${approveHash}`)
+  //   const transferHash = await client.transferEvmAsset({
+  //     account: evmClient.account,
+  //     receiver: $recipient,
+  //     denomAddress: assetId,
+  //     amount: BigInt(amount),
+  //     sourceChannel: 'channel-1',
+  //     simulate: true,
+  //     contractAddress: '0xD0081080Ae8493cf7340458Eaf4412030df5FEEb',
+  //   })
+  //   toast.success(`Transfer transaction sent: ${transferHash}`)
+  // } else {
+  //   const transferHash = await unionClient.transferAssets({
+  //     kind: 'cosmwasm',
+  //     instructions: [
+  //       {
+  //         contractAddress:
+  //           'union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3',
+  //         msg: {
+  //           transfer: {
+  //             channel: 'channel-28',
+  //             receiver: $recipient?.slice(2),
+  //             memo: ``,
+  //           },
+  //         },
+  //         funds: [{ denom: assetId, amount }],
+  //       },
+  //     ],
+  //   })
+  //   toast.success(`Transfer transaction sent: ${transferHash}`)
+  // }
 };
 onMount(() => {
   fromChainId.subscribe(fromChain => {
