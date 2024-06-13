@@ -2,7 +2,6 @@ package cometbls
 
 import (
 	"strings"
-	"time"
 
 	ics23 "github.com/cosmos/ics23/go"
 
@@ -95,7 +94,7 @@ func (cs ClientState) Status(
 		return exported.Expired
 	}
 
-	if cs.IsExpired(time.UnixMilli(int64(consState.Timestamp)), ctx.BlockTime()) {
+	if cs.IsExpired(consState.Timestamp, uint64(ctx.BlockTime().UnixNano())) {
 		return exported.Expired
 	}
 
@@ -104,8 +103,8 @@ func (cs ClientState) Status(
 
 // IsExpired returns whether or not the client has passed the trusting period since the last
 // update (in which case no headers are considered valid).
-func (cs ClientState) IsExpired(latestTimestamp, now time.Time) bool {
-	return uint64(latestTimestamp.UnixMilli())+cs.TrustingPeriod > uint64(now.UnixMilli())
+func (cs ClientState) IsExpired(latestTimestamp, now uint64) bool {
+	return latestTimestamp+cs.TrustingPeriod > now
 }
 
 // Validate performs a basic validation of the client state fields.

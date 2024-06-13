@@ -3,7 +3,6 @@ package cometbls
 import (
 	"bytes"
 	"crypto/sha256"
-	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -241,7 +240,7 @@ func (cs ClientState) pruneOldestConsensusState(ctx sdk.Context, cdc codec.Binar
 			panic(errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "failed to retrieve consensus state at height: %s", height))
 		}
 
-		if cs.IsExpired(time.UnixMilli(int64(consState.Timestamp)), ctx.BlockTime()) {
+		if cs.IsExpired(consState.Timestamp, uint64(ctx.BlockTime().UnixNano())) {
 			pruneHeight = height
 		}
 

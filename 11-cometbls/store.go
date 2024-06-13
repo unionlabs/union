@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"strings"
-	"time"
 
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
@@ -289,7 +288,7 @@ func PruneAllExpiredConsensusStates(
 			return true
 		}
 
-		if clientState.IsExpired(time.UnixMilli(int64(consState.Timestamp)), ctx.BlockTime()) {
+		if clientState.IsExpired(consState.Timestamp, uint64(ctx.BlockTime().UnixNano())) {
 			heights = append(heights, height)
 		}
 
