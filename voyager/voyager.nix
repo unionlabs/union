@@ -1,23 +1,33 @@
 { self, ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, ... }:
+  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, mkCi, ... }:
     let
-      voyager = crane.buildWorkspaceMember {
+      attrs = {
         crateDirFromRoot = "voyager";
         extraEnv = {
           SQLX_OFFLINE = "1";
         };
       };
+
+      voyager = crane.buildWorkspaceMember attrs;
+      voyager-dev = pkgs.lib.warn
+        "voyager-dev is not intended to be used in production"
+        crane.buildWorkspaceMember
+        (attrs // {
+          dev = true;
+        });
     in
     {
       packages = voyager.packages // {
-        voy-send-msg = pkgs.writeShellApplication {
-          name = "voy-send-msg";
-          runtimeInputs = [ pkgs.curl ];
-          text = ''
-            set -e
-            curl localhost:65534/msg -H "content-type: application/json" -d "$@"
-          '';
-        };
+        voy-send-msg = pkgs.writeShellApplication
+          {
+            name = "voy-send-msg";
+            runtimeInputs = [ pkgs.curl ];
+            text = ''
+              set -e
+              curl localhost:65534/msg -H "content-type: application/json" -d "$@"
+            '';
+          };
+        voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
       };
       checks = voyager.checks;
     };
@@ -70,6 +80,11 @@
           default = "json";
           example = "text";
         };
+        stack-size = mkOption {
+          type = types.nullOr types.number;
+          default = null;
+          example = 20971520;
+        };
       };
 
       config =
@@ -119,7 +134,7 @@
               ExecStart = ''
                 ${pkgs.lib.getExe cfg.package} \
                   --config-file-path ${configJson} \
-                  -l ${cfg.log-format} \
+                  -l ${cfg.log-format} ${pkgs.lib.optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"} \
                   relay
               '';
               Restart = mkForce "always";

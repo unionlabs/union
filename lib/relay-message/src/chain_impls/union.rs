@@ -16,7 +16,7 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     data, defer_relative, effect, fetch, queue_msg, wait, QueueMsg,
 };
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
@@ -155,50 +155,75 @@ where
                 __marker: _,
             }) => fetch_untrusted_validators(hc, height).await,
             Self::FetchProveRequest(FetchProveRequest { request }) => {
-                let response = union_prover_api_client::UnionProverApiClient::connect(
-                    hc.inner().prover_endpoint.clone(),
-                )
-                .await
-                .unwrap()
-                .poll(protos::union::galois::api::v3::PollRequest::from(
-                    PollRequest {
-                        request: request.clone(),
-                    },
-                ))
-                .await
-                .map(|x| x.into_inner().try_into().unwrap());
-
-                let retry = || {
-                    seq([
-                        // REVIEW: How long should we wait between polls?
-                        defer_relative(3),
-                        fetch(id::<Hc, Tr, _>(
-                            hc.chain_id(),
-                            Fetch::specific(FetchProveRequest { request }),
-                        )),
-                    ])
-                };
-
-                match response {
-                    Ok(PollResponse::Pending) => retry(),
-                    Err(status) if status.message() == "busy_building" => retry(),
-                    Err(err) => panic!("prove request failed: {:?}", err),
-                    Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
-                        error!(%message, "prove request failed");
-                        panic!()
-                    }
-                    Ok(PollResponse::Done(ProveRequestDone { response })) => data(id::<Hc, Tr, _>(
-                        hc.chain_id(),
-                        Data::specific(ProveResponse {
-                            prove_response: response,
-                            __marker: PhantomData,
-                        }),
-                    )),
-                }
+                fetch_prove_request::<Hc, Tr>(hc, request).await
             }
             Self::AbciQuery(FetchAbciQuery { path, height, ty }) => {
                 fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await
             }
+        }
+    }
+}
+
+#[instrument(
+    skip_all,
+    fields(height = %request.vote.height)
+)]
+async fn fetch_prove_request<Hc, Tr>(hc: &Hc, request: ProveRequest) -> QueueMsg<RelayMessageTypes>
+where
+    Hc: Wraps<Union>
+        + CosmosSdkChain
+        + ChainExt<Data<Tr> = UnionDataMsg<Hc, Tr>, Fetch<Tr> = UnionFetch<Hc, Tr>>,
+    Tr: ChainExt,
+
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+{
+    info!("submitting prove request");
+
+    let response =
+        union_prover_api_client::UnionProverApiClient::connect(hc.inner().prover_endpoint.clone())
+            .await
+            .unwrap()
+            .poll(protos::union::galois::api::v3::PollRequest::from(
+                PollRequest {
+                    request: request.clone(),
+                },
+            ))
+            .await
+            .map(|x| x.into_inner().try_into().unwrap());
+
+    info!("submitted prove request");
+
+    let retry = || {
+        info!("proof pending, retrying in 3 seconds");
+
+        seq([
+            // REVIEW: How long should we wait between polls?
+            defer_relative(3),
+            fetch(id::<Hc, Tr, _>(
+                hc.chain_id(),
+                Fetch::specific(FetchProveRequest { request }),
+            )),
+        ])
+    };
+    match response {
+        Ok(PollResponse::Pending) => retry(),
+        Err(status) if status.message() == "busy_building" => retry(),
+        Err(err) => panic!("prove request failed: {:?}", err),
+        Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
+            error!(%message, "prove request failed");
+            panic!()
+        }
+        Ok(PollResponse::Done(ProveRequestDone { response })) => {
+            info!("proof generated");
+
+            data(id::<Hc, Tr, _>(
+                hc.chain_id(),
+                Data::specific(ProveResponse {
+                    prove_response: response,
+                    __marker: PhantomData,
+                }),
+            ))
         }
     }
 }

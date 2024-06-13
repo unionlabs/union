@@ -291,36 +291,52 @@ where
 
         let msg = if legacy { msg.legacy() } else { msg };
 
-        debug!(msg = %msg.function.name, "submitting evm tx");
+        let msg_name = msg.function.name.clone();
+
+        info!(msg = %msg_name, "submitting evm tx");
 
         match msg.estimate_gas().await {
             Ok(estimated_gas) => {
-                debug!(%estimated_gas, "gas estimation");
+                debug!(
+                    %estimated_gas,
+                    msg = %msg_name,
+                    "gas estimation"
+                );
 
                 // TODO: config
-                let msg = msg.gas(estimated_gas + (estimated_gas / 10));
+                let msg = msg.gas(estimated_gas + (estimated_gas / 2));
                 let result = msg.send().await;
                 match result {
                     Ok(ok) => {
                         info!(
+                            msg = %msg_name,
                             tx_hash = %H256::from(ok.tx_hash()),
-                            msg = %msg.function.name,
                             "evm tx"
                         );
+
                         let tx_rcp: TransactionReceipt =
                             ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+
                         info!(
+                            msg = %msg_name,
                             tx_hash = %H256::from(tx_rcp.transaction_hash),
                             "evm transaction submitted"
                         );
+
                         Ok(())
                     }
                     Err(ContractError::Revert(revert)) => {
-                        error!(?revert, "evm transaction failed");
+                        error!(msg = %msg_name, ?revert, "evm transaction failed");
                         let err =
                             <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
                                 .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
-                        error!(?revert, ?err, "evm transaction failed");
+                        error!(
+                            msg = %msg_name,
+                            ?revert,
+                            ?err,
+                            "evm transaction failed"
+                        );
+
                         Ok(())
                     }
                     _ => {
@@ -329,10 +345,22 @@ where
                 }
             }
             Err(ContractError::Revert(revert)) => {
-                error!(?revert, "evm transaction failed");
+                error!(
+                    msg = %msg_name,
+                    ?revert,
+                    "evm transaction failed"
+                );
+
                 let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
                     .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
-                error!(?revert, ?err, "evm estimation failed");
+
+                error!(
+                    msg = %msg_name,
+                    ?revert,
+                    ?err,
+                    "evm estimation failed"
+                );
+
                 Ok(())
             }
             _ => {

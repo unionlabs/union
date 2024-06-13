@@ -5,7 +5,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, defer_relative, effect, fetch, noop, queue_msg, seq, wait, HandleAggregate, QueueError,
+    defer_relative, effect, fetch, noop, queue_msg, race, seq, wait, HandleAggregate, QueueError,
     QueueMessageTypes, QueueMsg,
 };
 use tracing::{debug, info, instrument};
@@ -99,6 +99,7 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
     WaitForTrustedHeight(AggregateWaitForTrustedHeight<Hc, Tr>),
     WaitForNextConnectionSequence(AggregateWaitForNextConnectionSequence<Hc, Tr>),
     WaitForNextClientSequence(AggregateWaitForNextClientSequence<Hc, Tr>),
+    WaitForPacketReceipt(AggregateWaitForPacketReceipt<Hc, Tr>),
 
     FetchCounterpartyStateproof(AggregateFetchCounterpartyStateProof<Hc, Tr>),
 
@@ -139,11 +140,18 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         // state
         Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
         Identified<Tr, Hc, IbcState<ClientStatePath<Tr::ClientId>, Tr, Hc>>: IsAggregateData,
+
         Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
+
         Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
+
         Identified<Hc, Tr, IbcState<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
+
         Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
+
         Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
+
+        Identified<Hc, Tr, IbcState<ReceiptPath, Hc, Tr>>: IsAggregateData,
         Identified<Tr, Hc, IbcState<ReceiptPath, Tr, Hc>>: IsAggregateData,
 
         // proof
@@ -231,6 +239,7 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
             Aggregate::WaitForConnectionOpen(agg) => do_aggregate(id(chain_id, agg), data),
             Aggregate::WaitForNextConnectionSequence(agg) => do_aggregate(id(chain_id, agg), data),
             Aggregate::WaitForNextClientSequence(agg) => do_aggregate(id(chain_id, agg), data),
+            Aggregate::WaitForPacketReceipt(agg) => do_aggregate(id(chain_id, agg), data),
         }
     }
 }
@@ -350,6 +359,11 @@ pub struct AggregatePacketTimeout<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> 
 }
 
 #[queue_msg]
+pub struct AggregateWaitForPacketReceipt<#[cover] Hc: ChainExt, #[cover] Tr: ChainExt> {
+    pub packet: Packet,
+}
+
+#[queue_msg]
 pub struct AggregateFetchCounterpartyStateProof<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_client_id: ClientIdOf<Tr>,
     pub fetch: FetchProof<Tr, Hc>,
@@ -400,9 +414,6 @@ pub struct AggregateMsgCreateClient<Hc: ChainExt, #[cover] Tr: ChainExt> {
     pub config: <Hc as ChainExt>::Config,
 }
 
-#[queue_msg]
-pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
-
 /// Messages that will be re-queued after an update.
 #[queue_msg]
 pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
@@ -418,6 +429,9 @@ pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     AckPacket(AggregateMsgAckPacket<Hc, Tr>),
     TimeoutPacket(AggregateMsgTimeout<Tr, Hc>),
 }
+
+#[queue_msg]
+pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateChannelHandshakeMsgAfterUpdate<Hc, Tr>)
 where
@@ -603,7 +617,9 @@ impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<ClientIdOf<Hc>>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
+
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
+
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Hc, Tr>)>,
 
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -662,8 +678,30 @@ where
             }),
         );
 
-        conc(
+        race(
             [
+                Some(aggregate(
+                    [fetch(id::<Tr, Hc, _>(
+                        counterparty_chain_id.clone(),
+                        FetchState::<Tr, Hc> {
+                            at: QueryHeight::Latest,
+                            path: ReceiptPath {
+                                port_id: packet.destination_port.clone(),
+                                channel_id: packet.destination_channel.clone(),
+                                sequence: packet.sequence,
+                            }
+                            .into(),
+                        },
+                    ))],
+                    [],
+                    id(
+                        counterparty_chain_id.clone(),
+                        AggregateWaitForPacketReceipt::<Tr, Hc> {
+                            packet: packet.clone(),
+                            __marker: PhantomData,
+                        },
+                    ),
+                )),
                 (packet.timeout_height != Height::default()).then(|| {
                     aggregate(
                         [
@@ -2394,6 +2432,7 @@ where
                 destination_channel = %packet.destination_channel,
                 "packet received, cancelling timeout"
             );
+
             noop()
         } else {
             seq([
@@ -2423,6 +2462,65 @@ where
     }
 }
 
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForPacketReceipt<Hc, Tr>)
+where
+    Identified<Hc, Tr, IbcState<ReceiptPath, Hc, Tr>>: IsAggregateData,
+
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
+{
+    type AggregatedData = HList![
+        Identified<Hc, Tr, IbcState<ReceiptPath, Hc, Tr>>,
+    ];
+
+    fn aggregate(
+        Identified {
+            chain_id: this_chain_id,
+            t: AggregateWaitForPacketReceipt { packet, __marker },
+            __marker: _,
+        }: Self,
+        hlist_pat![Identified {
+            chain_id: _,
+            t: IbcState {
+                state: packet_receipt,
+                height: _packet_receipt_height,
+                path: packet_receipt_path,
+            },
+            __marker: _,
+        },]: Self::AggregatedData,
+    ) -> QueueMsg<RelayMessageTypes> {
+        if packet_receipt {
+            info!(
+                sequence = %packet.sequence,
+                source_port = %packet.source_port,
+                source_channel = %packet.source_channel,
+                destination_port = %packet.destination_port,
+                destination_channel = %packet.destination_channel,
+                "packet received"
+            );
+
+            noop()
+        } else {
+            seq([
+                defer_relative(3),
+                aggregate(
+                    [fetch(id(
+                        this_chain_id.clone(),
+                        FetchState {
+                            at: QueryHeight::Latest,
+                            path: packet_receipt_path.into(),
+                        },
+                    ))],
+                    [],
+                    id(
+                        this_chain_id.clone(),
+                        AggregateWaitForPacketReceipt { packet, __marker },
+                    ),
+                ),
+            ])
+        }
+    }
+}
 impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateFetchCounterpartyStateProof<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,

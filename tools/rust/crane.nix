@@ -111,7 +111,11 @@
           pnameSuffix ? ""
           # extra environment variables to pass to the derivation.
         , extraEnv ? { }
+          # if true, build without -j1 nd --release.
+        , dev ? false
         }:
+          assert builtins.isAttrs extraEnv;
+          assert builtins.isBool dev;
           assert lib.assertMsg
             (
               (buildStdTarget != null -> cargoBuildRustToolchain == null)
@@ -119,7 +123,8 @@
             )
             "cannot set both buildStdTarget (${toString buildStdTarget}) and cargoBuildRustToolchain (${toString cargoBuildRustToolchain})";
           let
-            cratePname = "${crateInfo.pname}${pnameSuffix}";
+            pnameSuffix' = "${pnameSuffix}${lib.optionalString dev "-dev"}";
+            cratePname = "${crateInfo.pname}${pnameSuffix'}";
 
             cargoBuildRustToolchain' =
               if (cargoBuildRustToolchain == null)
@@ -239,6 +244,7 @@
 
               doCheck = cargoBuildCheckPhase != null;
               PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+              CARGO_PROFILE = if dev then "dev" else "release";
             };
 
             artifacts = craneLib.buildDepsOnly crateAttrs;
@@ -271,12 +277,15 @@
           {
             packages.${cratePname} = cargoBuild.buildPackage (
               crateAttrs // {
-                inherit pnameSuffix;
-                cargoExtraArgs = "-j1 ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
+                pnameSuffix = pnameSuffix';
+                cargoExtraArgs = "${lib.optionalString (!dev) "-j1"} ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!
                   " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
                 RUSTFLAGS = rustflags;
+                meta = {
+                  mainProgram = crateInfo.pname;
+                };
               } // (lib.optionalAttrs (cargoBuildInstallPhase != null) ({
                 installPhaseCommand = cargoBuildInstallPhase;
               })) // (lib.optionalAttrs (cargoBuildCheckPhase != null) ({

@@ -12,7 +12,6 @@ use unionlabs::{
     hash::H256,
     ibc::core::channel::packet::Packet,
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath},
-    id::ConnectionId,
     traits::{ClientIdOf, ClientTypeOf, HeightOf},
     QueryHeight,
 };
@@ -71,8 +70,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 match ibc_event.event {
                     unionlabs::events::IbcEvent::CreateClient(e) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             client_id = %e.client_id,
                             client_type = %e.client_type,
                             consensus_height = %e.consensus_height
@@ -101,8 +102,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                     unionlabs::events::IbcEvent::ConnectionOpenInit(init) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %init.connection_id,
                             client_id = %init.client_id,
                             counterparty_client_id = %init.counterparty_client_id
@@ -138,8 +141,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %try_.connection_id,
                             counterparty_connection_id = %try_.counterparty_connection_id,
                             client_id = %try_.client_id,
@@ -167,8 +172,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenAck(ack) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %ack.connection_id,
                             counterparty_connection_id = %ack.counterparty_connection_id,
                             client_id = %ack.client_id,
@@ -196,8 +203,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %confirm.connection_id,
                             counterparty_connection_id = %confirm.counterparty_connection_id,
                             client_id = %confirm.client_id,
@@ -209,8 +218,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 
                     unionlabs::events::IbcEvent::ChannelOpenInit(init) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             port_id = %init.port_id,
                             channel_id = %init.channel_id,
                             counterparty_port_id = %init.counterparty_port_id,
@@ -253,8 +264,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ChannelOpenTry(try_) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             port_id = %try_.port_id,
                             channel_id = %try_.channel_id,
                             counterparty_port_id = %try_.counterparty_port_id,
@@ -298,8 +311,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ChannelOpenAck(ack) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             port_id = %ack.port_id,
                             channel_id = %ack.channel_id,
                             counterparty_port_id = %ack.counterparty_port_id,
@@ -342,8 +357,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::ChannelOpenConfirm(confirm) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             port_id = %confirm.port_id,
                             channel_id = %confirm.channel_id,
                             counterparty_port_id = %confirm.counterparty_port_id,
@@ -356,6 +373,9 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     unionlabs::events::IbcEvent::SendPacket(send) => {
                         info!(
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %send.packet_timeout_height,
                             timeout_timestamp = %send.packet_timeout_timestamp,
                             sequence = %send.packet_sequence,
@@ -381,10 +401,25 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                                             .into(),
                                         },
                                     )),
-                                    fetch_client_state_from_connection(
-                                        &hc,
-                                        ibc_event.height,
-                                        send.connection_id.clone(),
+                                    aggregate(
+                                        [fetch(id(
+                                            hc.chain_id(),
+                                            FetchState::<Hc, Tr> {
+                                                at: QueryHeight::Specific(ibc_event.height),
+                                                path: ConnectionPath {
+                                                    connection_id: send.connection_id.clone(),
+                                                }
+                                                .into(),
+                                            },
+                                        ))],
+                                        [],
+                                        id(
+                                            hc.chain_id(),
+                                            AggregateClientStateFromConnection::<Hc, Tr> {
+                                                at: ibc_event.height,
+                                                __marker: PhantomData,
+                                            },
+                                        ),
                                     ),
                                 ],
                                 [],
@@ -432,8 +467,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::RecvPacket(recv) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %recv.packet_timeout_height,
                             timeout_timestamp = %recv.packet_timeout_timestamp,
                             sequence = %recv.packet_sequence,
@@ -449,8 +486,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::AcknowledgePacket(ack) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %ack.packet_timeout_height,
                             timeout_timestamp = %ack.packet_timeout_timestamp,
                             sequence = %ack.packet_sequence,
@@ -466,8 +505,9 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::TimeoutPacket(timeout) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
                             timeout_height = %timeout.packet_timeout_height,
                             timeout_timestamp = %timeout.packet_timeout_timestamp,
                             sequence = %timeout.packet_sequence,
@@ -483,8 +523,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     }
                     unionlabs::events::IbcEvent::WriteAcknowledgement(write_ack) => {
                         info!(
-                            height = %ibc_event.height,
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %write_ack.packet_timeout_height,
                             timeout_timestamp = %write_ack.packet_timeout_timestamp,
                             sequence = %write_ack.packet_sequence,
@@ -549,34 +591,6 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
             },
         }
     }
-}
-
-fn fetch_client_state_from_connection<Hc: ChainExt, Tr: ChainExt>(
-    hc: &Hc,
-    height: Hc::Height,
-    connection_id: ConnectionId,
-) -> QueueMsg<RelayMessageTypes>
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
-{
-    aggregate(
-        [fetch(id(
-            hc.chain_id(),
-            FetchState::<Hc, Tr> {
-                at: QueryHeight::Specific(height),
-                path: ConnectionPath { connection_id }.into(),
-            },
-        ))],
-        [],
-        id(
-            hc.chain_id(),
-            AggregateClientStateFromConnection::<Hc, Tr> {
-                at: height,
-                __marker: PhantomData,
-            },
-        ),
-    )
 }
 
 #[queue_msg]
