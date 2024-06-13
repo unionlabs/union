@@ -12,5 +12,12 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
       url
       type
     }
+    ucs1_configurations {
+      channel_id
+      contract_address
+      destination_chain {
+        chain_id
+      }
+    }
   }
 }`)
