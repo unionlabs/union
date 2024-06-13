@@ -1,16 +1,21 @@
 use prost::Message;
-use protos::{google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer};
-use serde::{Deserialize, Serialize};
+use protos::{ google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer };
+use serde::{ Deserialize, Serialize };
 use sqlx::FromRow;
-use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
+use ucs01_relay::msg::{ ExecuteMsg, TransferMsg };
 use unionlabs::{
-    cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    encoding::Proto, google::protobuf::any, hash::H160,
+    cosmos::base::coin::Coin,
+    cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
+    encoding::Proto,
+    google::protobuf::any,
+    hash::H160,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Protocol {
-    Ucs01 { contract: String },
+    Ucs01 {
+        contract: String,
+    },
     Ics20,
 }
 
@@ -21,7 +26,7 @@ impl Protocol {
         channel: &str,
         denom: &str,
         amount: &str,
-        receiver: &str,
+        receiver: &str
     ) -> Any {
         match self {
             Protocol::Ucs01 { contract } => {
@@ -42,8 +47,7 @@ impl Protocol {
                         denom: denom.to_string(),
                         amount: amount.to_string(),
                     }],
-                })
-                .into()
+                }).into()
             }
             Protocol::Ics20 => {
                 let msg = MsgTransfer {
@@ -53,8 +57,7 @@ impl Protocol {
                         (Coin {
                             denom: denom.to_string(),
                             amount: amount.parse().unwrap(),
-                        })
-                        .into(),
+                        }).into()
                     ),
                     sender: signer.to_string(),
                     receiver: receiver.to_string(),
@@ -173,7 +176,7 @@ impl PacketStatus {
         source_chain_name: &str,
         target_chain_name: &str,
         protocol: &str,
-        sequence_number: i64,
+        sequence_number: i64
     ) -> Self {
         let source_chain_id = ChainId::from_str(source_chain_name).unwrap() as i32;
         let target_chain_id: i32 = ChainId::from_str(target_chain_name).unwrap() as i32;

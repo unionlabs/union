@@ -1,60 +1,54 @@
 use core::future::Future;
-use std::{any::Any, collections::HashMap, pin::Pin, sync::Arc};
+use std::{ any::Any, collections::HashMap, pin::Pin, sync::Arc };
 
 use bech32::FromBase32;
 use chain_utils::{
     cosmos_sdk::CosmosSdkChainExt,
-    ethereum::{EthereumChain, IBCHandlerEvents},
+    ethereum::{ EthereumChain, IBCHandlerEvents },
     private_key::PrivateKey,
 };
 use chrono::Utc;
-use contracts::{
-    erc20,
-    ibc_packet::IBCPacketEvents,
-    ucs01_relay::{LocalToken, UCS01Relay},
-};
+use contracts::{ erc20, ibc_packet::IBCPacketEvents, ucs01_relay::{ LocalToken, UCS01Relay } };
 use ethers::{
     abi::RawLog,
     contract::EthLogDecode,
-    core::k256::ecdsa::{self, SigningKey},
-    middleware::{NonceManagerMiddleware, SignerMiddleware},
-    providers::{Middleware, Provider, Ws},
+    core::k256::ecdsa::{ self, SigningKey },
+    middleware::{ NonceManagerMiddleware, SignerMiddleware },
+    providers::{ Middleware, Provider, Ws },
     signers::LocalWallet,
-    types::{Address, Filter, H160},
+    types::{ Address, Filter },
     utils::secret_key_to_address,
 };
+
 use futures::StreamExt;
-use hex::{decode as hex_decode, encode as hex_encode};
-use protos::ibc::{applications::transfer::v1::MsgTransfer, core::channel};
-use serde_json::{from_value, to_value};
-use tendermint_rpc::{
-    event::{Event, EventData},
-    SubscriptionClient, WebSocketClient,
-};
-use tokio::{
-    sync::Mutex,
-    time::{interval, Duration},
-};
-use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
-use ucs01_relay_api::types::{Ics20Ack, Ucs01Ack};
+use hex::{ decode as hex_decode, encode as hex_encode };
+use protos::ibc::{ applications::transfer::v1::MsgTransfer, core::channel };
+use serde_json::{ from_value, to_value };
+use tendermint_rpc::{ event::{ Event, EventData }, SubscriptionClient, WebSocketClient };
+use tokio::{ sync::Mutex, time::{ interval, Duration } };
+use ucs01_relay::msg::{ ExecuteMsg, TransferMsg };
+use ucs01_relay_api::types::{ Ics20Ack, Ucs01Ack };
 use unionlabs::{
     cosmos::base::coin::Coin,
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     encoding::Proto,
-    ethereum::config::Minimal,
-    events::{AcknowledgePacket, RecvPacket, SendPacket, WriteAcknowledgement},
+    ethereum::config::{ Mainnet, Minimal },
+    events::{ AcknowledgePacket, RecvPacket, SendPacket, WriteAcknowledgement },
     ibc::core::client::height::Height,
     id::ClientId,
-    tendermint::abci::{event::Event as TendermintEvent, event_attribute::EventAttribute},
+    tendermint::abci::{ event::Event as TendermintEvent, event_attribute::EventAttribute },
     uint::U256,
     validated::ValidateT,
+    hash::{ H160, H256 },
 };
 
 use crate::{
-    config::{Chain, ChainConfig, ChainId, Config, CosmosConfig, PacketStatus, Protocol},
+    config::{ Chain, ChainConfig, ChainId, Config, CosmosConfig, PacketStatus, Protocol },
     // datadog::{ log_builder, send_log_to_datadog },
     sql_helper::{
-        delete_packet_status, get_packet_status, get_packet_statuses,
+        delete_packet_status,
+        get_packet_status,
+        get_packet_statuses,
         insert_or_update_packet_status,
     },
 };
@@ -66,26 +60,27 @@ pub struct Context {
     pub transfer_test_config: Config,
     pub union: Option<chain_utils::union::Union>,
     pub osmosis: Option<chain_utils::cosmos::Cosmos>,
-    pub ethereum: Option<chain_utils::ethereum::Ethereum<Minimal>>,
+    pub ethereum: Option<chain_utils::ethereum::Ethereum<Mainnet>>,
     pub ethereum_config: Option<EthereumConfig>,
     pub union_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
     pub osmosis_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
     // pub datadog_data: DatadogData,
-    pub packet_statuses: Arc<Mutex<HashMap<u64, PacketStatus>>>,
+    // pub packet_statuses: Arc<Mutex<HashMap<u64, PacketStatus>>>,
     pub pool: sqlx::Pool<sqlx::Postgres>,
 }
 
 #[derive(Clone, Debug)]
 pub struct EthereumConfig {
     // pub chain_id: u64,
-    pub address: Address,
+    pub address: H160,
     // pub signer_middleware: Arc<
     //     SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>
     // >,
     // pub contract_address: Address,
     pub relay: UCS01Relay<SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>>,
-    pub erc_contract:
-        erc20::ERC20<SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>>,
+    pub erc_contract: erc20::ERC20<
+        SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>
+    >,
     pub denom_address: ethers::types::H160,
 }
 
@@ -102,9 +97,7 @@ pub trait IbcTransferMain {
 
 impl<T: CosmosIbcTransfer> IbcTransferMain for CosmosConfig<T> {
     async fn send_ibc_transfer(&self, amount: &str, receiver: &str) {
-        self.chain_config
-            .send_ibc_transfer(&self.protocol, amount, receiver)
-            .await;
+        self.chain_config.send_ibc_transfer(&self.protocol, amount, receiver).await;
     }
 
     fn receiver(&self) -> String {
@@ -112,67 +105,100 @@ impl<T: CosmosIbcTransfer> IbcTransferMain for CosmosConfig<T> {
     }
 }
 
+// TODO(caglankaan): this function is the worst thing I've ever seen, fix it asap
 impl IbcTransferMain
-    for ChainConfig<
-        (
-            PrivateKey<ecdsa::SigningKey>,
-            chain_utils::ethereum::Ethereum<Minimal>,
-        ),
-        H160,
-    >
-{
+for ChainConfig<(PrivateKey<ecdsa::SigningKey>, chain_utils::ethereum::Ethereum<Mainnet>), H160> {
     // TODO(aeryz): do most of these right at the beginning in the config phase
     async fn send_ibc_transfer(&self, amount: &str, receiver: &str) {
-        let denom = format!(
-            "{}/{}/muno",
-            self.address.to_string().to_lowercase(),
-            self.counterparty_channel,
+        let provider: Arc<Provider<Ws>> = self.chain_config.1.provider().clone();
+
+        let private_key_hex: &str =
+            "227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e";
+        let private_key_bytes = hex_decode(private_key_hex).expect("Invalid private key hex");
+        let private_key = SigningKey::from_slice(&private_key_bytes).expect(
+            "Invalid private key bytes"
+        );
+        let address: ethers::types::H160 = secret_key_to_address(&private_key);
+        // self.address = address;
+        let chain_id = provider.get_chainid().await.expect("Failed to get chain ID").as_u64();
+        let wallet = LocalWallet::new_with_signer(private_key, address, chain_id);
+        // let wallet = LocalWallet::new_with_signer(
+        //     self.chain_config.0.clone().value(),
+        //     self.address,
+        //     self.chain_config.1.chain_id.try_into().unwrap()
+        // );
+        let signer_middleware = Arc::new(
+            SignerMiddleware::new(
+                NonceManagerMiddleware::new(provider.clone(), address),
+                wallet.clone()
+            )
         );
 
-        let provider: Arc<Provider<Ws>> = self.chain_config.1.provider().clone();
-        let wallet = LocalWallet::new_with_signer(
-            self.chain_config.0.clone().value(),
-            self.address,
-            self.chain_config.1.chain_id.try_into().unwrap(),
+        let denom: String = format!(
+            "{}/{}/muno",
+            "0xd0081080ae8493cf7340458eaf4412030df5feeb".to_string().to_lowercase(), // address of ucs01 contract
+            self.counterparty_channel
         );
-        let signer_middleware = Arc::new(SignerMiddleware::new(
-            NonceManagerMiddleware::new(provider.clone(), self.address),
-            wallet.clone(),
-        ));
-        let relay = UCS01Relay::new(self.address, signer_middleware.clone());
+        tracing::info!("Receiver: {}", receiver);
+        tracing::info!("denom: {}", denom);
+        let relay_addr: Address = "0xd0081080ae8493cf7340458eaf4412030df5feeb" // address of ucs01 contract
+            .to_string()
+            .parse()
+            .expect("Invalid contract address");
+        let relay = UCS01Relay::new(relay_addr, signer_middleware.clone());
         let denom_address = relay
             .get_denom_address(self.counterparty_channel.clone(), denom.clone())
-            .call()
-            .await
+            .call().await
             .unwrap();
-        println!("denom address: {}", denom_address);
+        tracing::info!("denom address: {}", denom_address);
 
-        relay
-            .send(
-                self.channel.clone(),
-                hex_decode(receiver).unwrap().into(),
-                [LocalToken {
-                    denom: denom_address,
-                    amount: amount.parse().unwrap(),
-                }]
-                .into(),
-                Default::default(),
-                Height {
-                    revision_number: 0,
-                    revision_height: u32::MAX as u64,
+        let (_hrp, data, _variant) = bech32::decode(&receiver).expect("Invalid Bech32 address");
+
+        let bytes = Vec::<u8>::from_base32(&data).expect("Invalid base32 data");
+        let receiver = hex::encode(bytes);
+
+        let _tx_rcp: Option<ethers::types::TransactionReceipt> = match
+            relay
+                .send(
+                    self.channel.clone(),
+                    hex_decode(receiver).unwrap().into(),
+                    [
+                        LocalToken {
+                            denom: denom_address,
+                            amount: amount.parse().unwrap(),
+                        },
+                    ].into(),
+                    Default::default(),
+                    (Height {
+                        revision_number: 0,
+                        revision_height: 0,
+                    }).into(),
+                    u64::MAX
+                )
+                .send().await
+        {
+            Ok(response) =>
+                match response.await {
+                    Ok(receipt) => receipt,
+                    Err(e) => {
+                        tracing::error!("Transaction failed: {:?}", e);
+                        return;
+                    }
                 }
-                .into(),
-                u64::MAX,
-            )
-            .send()
-            .await
-            .unwrap()
-            .await
-            .unwrap()
-            .unwrap();
+            Err(e) => {
+                tracing::error!("Failed to send transaction: {:?}", e);
+                return;
+            }
+        };
+        tracing::info!("Transaction sent successfully. Tx: {:?}", _tx_rcp);
+
+        // .unwrap().await
+        // .unwrap()
+        // .unwrap();
     }
 
     fn receiver(&self) -> String {
+        // hex_encode(self.address)
         self.address.to_string()
     }
 }
@@ -185,22 +211,30 @@ pub trait CosmosIbcTransfer {
 
 impl CosmosIbcTransfer for ChainConfig<chain_utils::union::Union, String> {
     async fn send_ibc_transfer(&self, protocol: &Protocol, amount: &str, receiver: &str) {
-        self.chain_config
-            .signers
-            .with(|signer| async move {
-                let msg = protocol.transfer_message(
-                    &signer.to_string(),
-                    &self.channel,
-                    &self.chain_config.fee_denom,
-                    amount,
-                    receiver,
-                );
-                self.chain_config
-                    .broadcast_tx_commit(signer, [msg])
-                    .await
-                    .unwrap();
-            })
-            .await;
+        let receiver = if receiver.starts_with("0x") { &receiver[2..] } else { receiver };
+
+        self.chain_config.signers.with(|signer| async move {
+            let msg = protocol.transfer_message(
+                &signer.to_string(),
+                &self.channel,
+                &self.chain_config.fee_denom,
+                amount,
+                &receiver
+            );
+            tracing::info!(
+                "--send_ibc_transfer-- Sending IBC transfer from {} to {}.",
+                self.address,
+                receiver
+            );
+            match self.chain_config.broadcast_tx_commit(signer, [msg]).await {
+                Ok(tx_hash) => {
+                    tracing::info!("Transaction sent successfully. Hash: {:?}", tx_hash);
+                }
+                Err(e) => {
+                    tracing::error!("Failed to submit tx!{:?}", e.to_string());
+                }
+            }
+        }).await;
     }
 
     fn receiver(&self) -> String {
@@ -210,23 +244,19 @@ impl CosmosIbcTransfer for ChainConfig<chain_utils::union::Union, String> {
 
 impl CosmosIbcTransfer for ChainConfig<chain_utils::cosmos::Cosmos, String> {
     async fn send_ibc_transfer(&self, protocol: &Protocol, amount: &str, receiver: &str) {
-        self.chain_config
-            .signers
-            .with(|signer| async move {
-                let msg = protocol.transfer_message(
-                    &signer.to_string(),
-                    &self.channel,
-                    &self.chain_config.fee_denom,
-                    amount,
-                    receiver,
-                );
+        self.chain_config.signers.with(|signer| async move {
+            let msg = protocol.transfer_message(
+                &signer.to_string(),
+                &self.channel,
+                &self.chain_config.fee_denom,
+                amount,
+                receiver
+            );
 
-                self.chain_config
-                    .broadcast_tx_commit(signer, [msg])
-                    .await
-                    .unwrap();
-            })
-            .await;
+            tracing::info!("Sending IBC transfer from {} to {}.", self.address, receiver);
+
+            self.chain_config.broadcast_tx_commit(signer, [msg]).await.unwrap();
+        }).await;
     }
 
     fn receiver(&self) -> String {
@@ -258,33 +288,29 @@ impl TendermintClient for chain_utils::union::Union {
     }
 }
 
-impl EthereumClient for chain_utils::ethereum::Ethereum<Minimal> {}
+impl EthereumClient for chain_utils::ethereum::Ethereum<Mainnet> {}
 
 pub trait ChainListener: Sync + Send {
     fn listen<'a>(
         &'a self,
         context: &'a Context,
         source_chain: &'a str,
-        target_chain: &'a str,
+        target_chain: &'a str
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
 }
 
-impl<T> ChainListener for T
-where
-    T: TendermintClient + Sync + Send + 'static,
-{
+impl<T> ChainListener for T where T: TendermintClient + Sync + Send + 'static {
     fn listen<'a>(
         &'a self,
         context: &'a Context,
         source_chain: &'a str,
-        target_chain: &'a str,
+        target_chain: &'a str
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         Box::pin(async move {
             tracing::info!("Listening for events on {}.", source_chain);
             let mut subs = self
                 .tm_client()
-                .subscribe(tendermint_rpc::query::EventType::Tx.into())
-                .await
+                .subscribe(tendermint_rpc::query::EventType::Tx.into()).await
                 .unwrap();
             loop {
                 tokio::select! {
@@ -305,12 +331,12 @@ where
     }
 }
 
-impl ChainListener for chain_utils::ethereum::Ethereum<Minimal> {
+impl ChainListener for chain_utils::ethereum::Ethereum<Mainnet> {
     fn listen<'a>(
         &'a self,
         context: &'a Context,
         source_chain: &'a str,
-        target_chain: &'a str,
+        target_chain: &'a str
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         tracing::info!("Listening for events on {:?}.", source_chain);
         Box::pin(async move {
@@ -322,13 +348,14 @@ impl ChainListener for chain_utils::ethereum::Ethereum<Minimal> {
                 // Update the filter to fetch logs from the latest block processed + 1
                 let filter = Filter::new()
                     .address(ethers::types::H160::from(self.ibc_handler_address()))
-                    .from_block(latest_block)
-                    .to_block(latest_block);
+                    .from_block(latest_block - 3)
+                    .to_block(latest_block - 1); //TODO(caglankaan): How can we make here subscribe like instead of latest_block
 
                 let logs = provider.get_logs(&filter).await.unwrap();
 
                 let logs_clone = logs.clone(); // Clone logs for processing
-                futures::stream::iter(logs_clone)
+                futures::stream
+                    ::iter(logs_clone)
                     .filter_map(|log| async move {
                         let raw_log = RawLog {
                             topics: log.topics.clone(),
@@ -338,11 +365,12 @@ impl ChainListener for chain_utils::ethereum::Ethereum<Minimal> {
                         Some(raw_log)
                     })
                     .for_each_concurrent(None, |raw_log| async move {
-                        context
-                            .handle_ethereum_log_event(raw_log, source_chain, target_chain)
-                            .await;
-                    })
-                    .await;
+                        context.handle_ethereum_log_event(
+                            raw_log,
+                            source_chain,
+                            target_chain
+                        ).await;
+                    }).await;
 
                 // Update the latest block to the most recent block fetched
                 if let Some(last_log) = logs.last() {
@@ -362,67 +390,60 @@ impl ChainListener for chain_utils::ethereum::Ethereum<Minimal> {
 
 impl Context {
     pub async fn new(transfer_test_config: Config, pool: sqlx::Pool<sqlx::Postgres>) -> Context {
-        let mut union = None;
+        let mut union = Some(
+            chain_utils::union::Union
+                ::new(transfer_test_config.clone().union.chain_config.chain_config).await
+                .unwrap()
+        );
+        tracing::debug!("Created Union instance.");
         let mut osmosis = None;
         let mut ethereum = None;
         let mut ethereum_config = None;
 
         for connection in &transfer_test_config.connections {
-            match connection.source_chain.as_str() {
-                "union" if union.is_none() => {
-                    union = Some(
-                        chain_utils::union::Union::new(
-                            transfer_test_config.clone().union.chain_config.chain_config,
-                        )
-                        .await
-                        .unwrap(),
-                    );
-                    tracing::debug!("Created Union instance.");
-                }
-                "osmosis" if osmosis.is_none() => {
+            match (connection.source_chain.as_str(), connection.target_chain.as_str()) {
+                ("osmosis", _) | (_, "osmosis") if osmosis.is_none() => {
                     osmosis = Some(
-                        chain_utils::cosmos::Cosmos::new(
-                            transfer_test_config
-                                .clone()
-                                .osmosis
-                                .chain_config
-                                .chain_config,
-                        )
-                        .await
-                        .unwrap(),
+                        chain_utils::cosmos::Cosmos
+                            ::new(
+                                transfer_test_config.clone().osmosis.chain_config.chain_config
+                            ).await
+                            .unwrap()
                     );
                     tracing::debug!("Created Osmosis instance.");
                 }
-                "ethereum" if ethereum.is_none() => {
+                ("ethereum", _) | (_, "ethereum") if ethereum.is_none() => {
                     ethereum = Some(
-                        chain_utils::ethereum::Ethereum::new(
-                            transfer_test_config.clone().ethereum.chain_config,
-                        )
-                        .await
-                        .unwrap(),
+                        chain_utils::ethereum::Ethereum
+                            ::new(transfer_test_config.clone().ethereum.chain_config).await
+                            .unwrap()
                     );
                     tracing::info!("Created Ethereum instance.");
                     // Initialize Ethereum-specific configurations
                     let provider: Arc<Provider<Ws>> = ethereum.as_ref().unwrap().provider().clone();
-                    let private_key_hex: &str = "&transfer_test_config.ethereum_priv_key";
+                    let private_key_hex: &str =
+                        "227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"; // TODO(caglankaan): Get this from config
                     let private_key_bytes =
                         hex_decode(private_key_hex).expect("Invalid private key hex");
-                    let private_key = SigningKey::from_slice(&private_key_bytes)
-                        .expect("Invalid private key bytes");
+                    let private_key = SigningKey::from_slice(&private_key_bytes).expect(
+                        "Invalid private key bytes"
+                    );
                     let address = secret_key_to_address(&private_key);
+
+                    tracing::info!("What is address here: {:?}", address);
+
                     let chain_id = provider
-                        .get_chainid()
-                        .await
+                        .get_chainid().await
                         .expect("Failed to get chain ID")
                         .as_u64();
                     let wallet = LocalWallet::new_with_signer(private_key, address, chain_id);
-                    let signer_middleware = Arc::new(SignerMiddleware::new(
-                        NonceManagerMiddleware::new(provider.clone(), address),
-                        wallet.clone(),
-                    ));
-                    let contract_address: Address = transfer_test_config
-                        .ethereum
-                        .address
+                    let signer_middleware = Arc::new(
+                        SignerMiddleware::new(
+                            NonceManagerMiddleware::new(provider.clone(), address),
+                            wallet.clone()
+                        )
+                    );
+                    let contract_address: Address = transfer_test_config.ethereum.address
                         .to_string()
                         .parse()
                         .expect("Invalid contract address");
@@ -430,66 +451,50 @@ impl Context {
 
                     let denom = format!(
                         "{}/{}/{}",
-                        transfer_test_config
-                            .ethereum
-                            .address
-                            .to_string()
-                            .to_lowercase(),
+                        transfer_test_config.ethereum.address.to_string().to_lowercase(),
                         transfer_test_config.ethereum.counterparty_channel,
-                        transfer_test_config
-                            .union
-                            .chain_config
-                            .chain_config
-                            .fee_denom
+                        transfer_test_config.union.chain_config.chain_config.fee_denom
                     );
 
-                    let denom_address = relay
-                        .get_denom_address(
-                            transfer_test_config.ethereum.counterparty_channel.clone(),
-                            denom.clone(),
-                        )
-                        .call()
-                        .await
-                        .unwrap();
-                    tracing::info!("Corresponding ERC20 address: {}", denom_address);
+                    // let denom_address = relay
+                    //     .get_denom_address(
+                    //         transfer_test_config.ethereum.counterparty_channel.clone(),
+                    //         denom.clone()
+                    //     )
+                    //     .call().await
+                    //     .unwrap();
+                    // tracing::info!("Corresponding ERC20 address: {}", denom_address);
 
-                    let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+                    // let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
-                    erc_contract
-                        .approve(contract_address, (U256::MAX / U256::from(2)).into())
-                        .send()
-                        .await
-                        .unwrap()
-                        .await
-                        .unwrap()
-                        .unwrap();
+                    // erc_contract
+                    //     .approve(contract_address, (U256::MAX / U256::from(2)).into())
+                    //     .send().await
+                    //     .unwrap().await
+                    //     .unwrap()
+                    //     .unwrap();
 
-                    ethereum_config = Some(EthereumConfig {
-                        // chain_id,
-                        address,
-                        // signer_middleware,
-                        // contract_address,
-                        relay,
-                        erc_contract,
-                        denom_address,
-                    });
+                    // ethereum_config = Some(EthereumConfig {
+                    //     address,
+                    //     relay,
+                    //     erc_contract,
+                    //     denom_address,
+                    // });
                     tracing::debug!("Created Ethereum config.");
                 }
                 _ => {}
             }
         }
 
-        // let datadog_data = transfer_test_config.datadog_data.clone();
         Context {
             transfer_test_config,
-            union: union,
-            osmosis: osmosis,
-            ethereum: ethereum,
-            ethereum_config: ethereum_config,
+            union,
+            osmosis,
+            ethereum,
+            ethereum_config,
             union_txs: Arc::new(Mutex::new(HashMap::new())),
             osmosis_txs: Arc::new(Mutex::new(HashMap::new())),
-            // datadog_data,
-            packet_statuses: Arc::new(Mutex::new(HashMap::new())),
+            // packet_statuses: Arc::new(Mutex::new(HashMap::new())),
             pool,
         }
     }
@@ -497,23 +502,21 @@ impl Context {
     async fn handle_ethereum_log_event(&self, log: RawLog, source_chain: &str, target_chain: &str) {
         let ibc_event = self.ibchandler_events_to_ibc_event(log).await;
         if let Some(ibc_event) = ibc_event {
-            self.handle_ibc_event(ibc_event, source_chain, target_chain)
-                .await;
+            self.handle_ibc_event(ibc_event, source_chain, target_chain).await;
         }
     }
     async fn handle_tendermint_tx_event(
         &self,
         event: Event,
         source_chain: &str,
-        target_chain: &str,
+        target_chain: &str
     ) {
         match event.data {
             EventData::Tx { tx_result, .. } => {
                 for event in tx_result.result.events {
                     let Some(my_event) = IbcEvent::try_from_tendermint_event(TendermintEvent {
                         ty: event.kind,
-                        attributes: event
-                            .attributes
+                        attributes: event.attributes
                             .into_iter()
                             .map(|attr| EventAttribute {
                                 key: attr.key,
@@ -525,8 +528,7 @@ impl Context {
                         continue;
                     };
                     let ibc_event = my_event.unwrap();
-                    self.handle_ibc_event(ibc_event, source_chain, target_chain)
-                        .await;
+                    self.handle_ibc_event(ibc_event, source_chain, target_chain).await;
                 }
             }
             _ => {
@@ -544,7 +546,7 @@ impl Context {
             _ => None,
         };
         if let Some(sequence) = packet_sequence {
-            let mut packet_statuses = self.packet_statuses.lock().await;
+            // let mut packet_statuses = self.packet_statuses.lock().await;
             let mut sequences_to_remove: Vec<u64> = Vec::new();
 
             let protocol = if source_chain == "osmosis" || target_chain == "osmosis" {
@@ -552,22 +554,28 @@ impl Context {
             } else {
                 "Ucs01"
             };
+            let source_chain_id: i32 = ChainId::from_str(source_chain).unwrap() as i32;
+            let target_chain_id = ChainId::from_str(target_chain).unwrap() as i32;
 
-            let status = packet_statuses.entry(sequence.get()).or_insert_with(|| {
-                PacketStatus::new(
-                    source_chain,
-                    target_chain,
-                    protocol,
-                    sequence.get().try_into().unwrap(),
-                )
-            });
+            let mut status = match
+                get_packet_status(&self.pool, source_chain_id, target_chain_id, 13).await
+            {
+                Ok(Some(status)) => status,
+                Ok(None) | Err(_) =>
+                    PacketStatus::new(
+                        source_chain,
+                        target_chain,
+                        protocol,
+                        sequence.get().try_into().unwrap()
+                    ),
+            };
 
             let mut should_insert_or_update = true;
 
             match ibc_event {
                 IbcEvent::SendPacket(ref e) => {
                     status.send_packet = Some(
-                        to_value(IbcEvent::SendPacket(e.clone())).expect("Serialization failed"),
+                        to_value(IbcEvent::SendPacket(e.clone())).expect("Serialization failed")
                     );
                     status.last_update = chrono::Utc::now();
                     tracing::info!(
@@ -580,8 +588,7 @@ impl Context {
                 IbcEvent::RecvPacket(ref e) => {
                     if status.send_packet.is_some() {
                         status.recv_packet = Some(
-                            to_value(IbcEvent::RecvPacket(e.clone()))
-                                .expect("Serialization failed"),
+                            to_value(IbcEvent::RecvPacket(e.clone())).expect("Serialization failed")
                         );
                         tracing::info!(
                             "RecvPacket event. Sequence: {}. Direction: {}->{}",
@@ -597,17 +604,21 @@ impl Context {
                             target_chain
                         );
                         should_insert_or_update = false;
+                        self.remove_packet_status(&status, true).await;
                     }
                 }
                 IbcEvent::WriteAcknowledgement(ref e) => {
                     if status.recv_packet.is_some() {
-                        if self.write_handler_packet_ack_hex_controller(
-                            e.packet_ack_hex.clone(),
-                            &status.protocol,
-                        ) {
+                        if
+                            self.write_handler_packet_ack_hex_controller(
+                                e.packet_ack_hex.clone(),
+                                &status.protocol
+                            )
+                        {
                             status.write_ack = Some(
-                                to_value(IbcEvent::WriteAcknowledgement(e.clone()))
-                                    .expect("Serialization failed"),
+                                to_value(IbcEvent::WriteAcknowledgement(e.clone())).expect(
+                                    "Serialization failed"
+                                )
                             );
                             tracing::info!(
                                 "WriteAcknowledgement event. Sequence: {}. Direction: {}->{}",
@@ -620,7 +631,7 @@ impl Context {
                                 "WriteAcknowledgement indicates failure. Sequence: {}.",
                                 sequence
                             );
-                            self.remove_packet_status(sequence.into(), &status).await;
+                            self.remove_packet_status(&status, true).await;
                             should_insert_or_update = false;
                         }
                     } else {
@@ -629,27 +640,38 @@ impl Context {
                             sequence
                         );
                         should_insert_or_update = false;
+                        self.remove_packet_status(&status, true).await;
                     }
                 }
                 IbcEvent::AcknowledgePacket(ref e) => {
-                    status.acknowledge_packet = Some(
-                        to_value(IbcEvent::AcknowledgePacket(e.clone()))
-                            .expect("Serialization failed"),
-                    );
-                    tracing::info!(
-                        "AcknowledgePacket event. Sequence: {}. Direction: {}->{}",
-                        sequence,
-                        source_chain,
-                        target_chain
-                    );
+                    if status.write_ack.is_some() {
+                        status.acknowledge_packet = Some(
+                            to_value(IbcEvent::AcknowledgePacket(e.clone())).expect(
+                                "Serialization failed"
+                            )
+                        );
+                        tracing::info!(
+                            "AcknowledgePacket event. Sequence: {}. Direction: {}->{}",
+                            sequence,
+                            source_chain,
+                            target_chain
+                        );
 
-                    self.remove_packet_status(sequence.into(), &status).await;
-                    tracing::info!(
-                        "Packet status with sequence number {} deleted successfully. {} => {}",
-                        status.sequence_number,
-                        status.source_chain_id,
-                        status.target_chain_id
-                    );
+                        self.remove_packet_status(&status, false).await;
+                        tracing::info!(
+                            "Packet status with sequence number {} deleted successfully. {} => {}",
+                            status.sequence_number,
+                            status.source_chain_id,
+                            status.target_chain_id
+                        );
+                    } else {
+                        tracing::warn!(
+                            "AcknowledgePacket without WriteAcknowledgement. Sequence: {}.",
+                            sequence
+                        );
+                        should_insert_or_update = false;
+                        self.remove_packet_status(&status, false).await;
+                    }
                 }
                 _ => {
                     should_insert_or_update = false;
@@ -657,24 +679,24 @@ impl Context {
             }
 
             if should_insert_or_update {
-                insert_or_update_packet_status(&self.pool, status.clone())
-                    .await
-                    .unwrap();
+                insert_or_update_packet_status(&self.pool, status.clone()).await.unwrap();
             }
         }
     }
 
-    async fn remove_packet_status(&self, sequence: u64, status: &PacketStatus) {
-        delete_packet_status(
-            &self.pool,
-            status.source_chain_id,
-            status.target_chain_id,
+    async fn remove_packet_status(&self, status: &PacketStatus, reverse: bool) {
+        let from = if reverse { status.target_chain_id } else { status.source_chain_id };
+        let to = if reverse { status.source_chain_id } else { status.target_chain_id };
+        tracing::info!(
+            "Removing packet status with sequence number {} from {} to {}. Reverse: {}",
             status.sequence_number,
-        )
-        .await
-        .unwrap();
-        let mut packet_statuses = self.packet_statuses.lock().await;
-        packet_statuses.remove(&sequence);
+            from,
+            to,
+            reverse
+        );
+        delete_packet_status(&self.pool, from, to, status.sequence_number).await.unwrap();
+        // let mut packet_statuses = self.packet_statuses.lock().await;
+        // packet_statuses.remove(&sequence);
     }
 
     pub fn get_chain_listener(&self, chain_id: &ChainId) -> Option<&dyn ChainListener> {
@@ -861,7 +883,7 @@ impl Context {
         &self,
         source_chain_name: &str,
         target_chain_name: &str,
-        expect_full_circle: u64,
+        expect_full_circle: u64
     ) {
         let source_chain_id: i32 = ChainId::from_str(source_chain_name).unwrap() as i32;
         let target_chain_id = ChainId::from_str(target_chain_name).unwrap() as i32;
@@ -870,10 +892,12 @@ impl Context {
         loop {
             interval.tick().await;
 
-            let statuses = get_packet_statuses(&self.pool, source_chain_id, target_chain_id)
-                .await
-                .unwrap();
-            let mut packet_statuses = self.packet_statuses.lock().await;
+            let statuses = get_packet_statuses(
+                &self.pool,
+                source_chain_id,
+                target_chain_id
+            ).await.unwrap();
+            // let mut packet_statuses = self.packet_statuses.lock().await;
 
             for status in statuses {
                 tracing::info!(
@@ -892,13 +916,16 @@ impl Context {
                 }
 
                 let mut can_be_removed = false;
+                // let mut reverse = false;
                 let mut issue = String::new();
                 match status.recv_packet {
                     None => {
                         issue = "RecvPacket is missing".to_string();
+                        // reverse = true;
                     }
                     Some(serde_json::Value::Null) => {
                         issue = "RecvPacket is null".to_string();
+                        // reverse = true;
                     }
                     _ => {}
                 }
@@ -910,54 +937,37 @@ impl Context {
                     match status.write_ack {
                         None => {
                             issue = "WriteAcknowledgement is missing".to_string();
+                            // reverse = true;
                         }
                         Some(serde_json::Value::Null) => {
                             issue = "WriteAcknowledgement is null".to_string();
+                            // reverse = true;
                         }
                         _ => {
-                            if let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) =
-                                from_value::<IbcEvent>(status.write_ack.clone().unwrap())
+                            if
+                                let Ok(IbcEvent::WriteAcknowledgement(ref ack_event)) =
+                                    from_value::<IbcEvent>(status.write_ack.clone().unwrap())
                             {
                                 let encoded_ack_hex = hex_encode(&ack_event.packet_ack_hex);
 
-                                if !self.write_handler_packet_ack_hex_controller(
-                                    ack_event.packet_ack_hex.clone(),
-                                    &status.protocol,
-                                ) {
+                                if
+                                    !self.write_handler_packet_ack_hex_controller(
+                                        ack_event.packet_ack_hex.clone(),
+                                        &status.protocol
+                                    )
+                                {
                                     tracing::warn!(
                                         "WriteAcknowledgement indicates failure ({}).",
                                         encoded_ack_hex
                                     );
-                                    issue = format!(
-                                        "WriteAcknowledgement indicates failure ({}).",
-                                        encoded_ack_hex
-                                    );
+                                    issue =
+                                        format!("WriteAcknowledgement indicates failure ({}).", encoded_ack_hex);
+                                    // reverse = true;
                                 }
                             }
                         }
                     };
                 }
-
-                // If issue is still empty string here, then the WriteAcknowledgement is present and valid.
-                // We can check the WriteAcknowledgement and AcknowledgePacket fields.
-
-                // if issue.is_empty() {
-                //     match status.acknowledge_packet {
-                //         None => {
-                //             issue = "AcknowledgePacket is missing".to_string();
-                //         }
-                //         Some(serde_json::Value::Null) => {
-                //             issue = "AcknowledgePacket is null".to_string();
-                //         }
-                //         _ => {
-                //             tracing::info!(
-                //                 "Acknowledgementta geliyo, ee  o zaman silebiliriz?: {:?}",
-                //                 status.sequence_number
-                //             );
-                //             can_be_removed = true;
-                //         }
-                //     };
-                // }
 
                 if issue.is_empty() {
                     match status.acknowledge_packet {
@@ -983,8 +993,7 @@ impl Context {
                 }
 
                 if can_be_removed {
-                    self.remove_packet_status(status.sequence_number as u64, &status)
-                        .await;
+                    self.remove_packet_status(&status, false).await;
                     tracing::info!(
                         "Packet status with sequence number {} removed. {} => {}",
                         status.sequence_number,
@@ -999,8 +1008,10 @@ impl Context {
     fn write_handler_packet_ack_hex_controller(&self, ack_hex: Vec<u8>, protocol: &str) -> bool {
         match protocol {
             "Ucs01" => {
-                return (Ucs01Ack::try_from(cosmwasm_std::Binary::from(ack_hex)).unwrap()
-                    == Ucs01Ack::Success);
+                return (
+                    Ucs01Ack::try_from(cosmwasm_std::Binary::from(ack_hex)).unwrap() ==
+                    Ucs01Ack::Success
+                );
             }
             "Ics20" => {
                 let val = Ics20Ack::try_from(cosmwasm_std::Binary::from(ack_hex)).unwrap();
@@ -1026,85 +1037,123 @@ impl Context {
             Ok(event) => {
                 // Handle the decoded event similarly to Tendermint events
                 let ibc_event: Option<IbcEvent> = match event {
-                    IBCHandlerEvents::PacketEvent(packet_event) => match packet_event {
-                        IBCPacketEvents::SendPacketFilter(event) => {
-                            Some(IbcEvent::SendPacket(SendPacket {
-                                packet_sequence: event.sequence.try_into().unwrap(),
-                                packet_src_port: event.source_port.parse().unwrap(),
-                                packet_src_channel: event.source_channel.parse().unwrap(),
-                                packet_dst_port: "RANDOM_VALUE".to_string().parse().unwrap(),
-                                packet_dst_channel: "RANDOM_VALUE".to_string().parse().unwrap(),
-                                packet_timeout_height: event.timeout_height.into(),
-                                packet_timeout_timestamp: event.timeout_timestamp,
-                                packet_data_hex: hex_encode(event.data).into(),
-                                packet_channel_ordering:
-                                    unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
-                                connection_id: "connection-0".to_string().validate().unwrap(),
-                            }))
+                    IBCHandlerEvents::PacketEvent(packet_event) =>
+                        match packet_event {
+                            IBCPacketEvents::SendPacketFilter(event) => {
+                                Some(
+                                    IbcEvent::SendPacket(SendPacket {
+                                        packet_sequence: event.sequence.try_into().unwrap(),
+                                        packet_src_port: event.source_port.parse().unwrap(),
+                                        packet_src_channel: event.source_channel.parse().unwrap(),
+                                        packet_dst_port: "RANDOM_VALUE"
+                                            .to_string()
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_channel: "RANDOM_VALUE"
+                                            .to_string()
+                                            .parse()
+                                            .unwrap(),
+                                        packet_timeout_height: event.timeout_height.into(),
+                                        packet_timeout_timestamp: event.timeout_timestamp,
+                                        packet_data_hex: hex_encode(event.data).into(),
+                                        packet_channel_ordering: unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
+                                        connection_id: "connection-0"
+                                            .to_string()
+                                            .validate()
+                                            .unwrap(),
+                                    })
+                                )
+                            }
+                            IBCPacketEvents::RecvPacketFilter(event) => {
+                                Some(
+                                    IbcEvent::RecvPacket(RecvPacket {
+                                        packet_sequence: event.packet.sequence.try_into().unwrap(),
+                                        packet_src_port: event.packet.source_port.parse().unwrap(),
+                                        packet_src_channel: event.packet.source_channel
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_port: event.packet.destination_port
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_channel: event.packet.destination_channel
+                                            .parse()
+                                            .unwrap(),
+                                        packet_timeout_height: event.packet.timeout_height.into(),
+                                        packet_timeout_timestamp: event.packet.timeout_timestamp,
+                                        packet_data_hex: hex_encode(event.packet.data).into(),
+                                        packet_channel_ordering: unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
+                                        connection_id: "connection-0"
+                                            .to_string()
+                                            .validate()
+                                            .unwrap(),
+                                    })
+                                )
+                            }
+                            IBCPacketEvents::AcknowledgePacketFilter(event) => {
+                                Some(
+                                    IbcEvent::AcknowledgePacket(AcknowledgePacket {
+                                        packet_sequence: event.packet.sequence.try_into().unwrap(),
+                                        packet_src_port: "RANDOM_VALUE"
+                                            .to_string()
+                                            .parse()
+                                            .unwrap(),
+                                        packet_src_channel: "RANDOM_VALUE"
+                                            .to_string()
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_port: event.packet.destination_port
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_channel: event.packet.destination_channel
+                                            .parse()
+                                            .unwrap(),
+                                        packet_timeout_height: event.packet.timeout_height.into(),
+                                        packet_timeout_timestamp: event.packet.timeout_timestamp,
+                                        packet_channel_ordering: unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
+                                        connection_id: "connection-0"
+                                            .to_string()
+                                            .validate()
+                                            .unwrap(),
+                                    })
+                                )
+                            }
+                            IBCPacketEvents::WriteAcknowledgementFilter(event) => {
+                                Some(
+                                    IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+                                        packet_sequence: event.packet.sequence.try_into().unwrap(),
+                                        packet_src_port: "RANDOM_VALUE"
+                                            .to_string()
+                                            .parse()
+                                            .unwrap(),
+                                        packet_src_channel: "RANDOM_VALUE"
+                                            .to_string()
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_port: event.packet.destination_port
+                                            .parse()
+                                            .unwrap(),
+                                        packet_dst_channel: event.packet.destination_channel
+                                            .parse()
+                                            .unwrap(),
+                                        packet_timeout_height: Height {
+                                            revision_number: 0,
+                                            revision_height: 0,
+                                        },
+                                        packet_ack_hex: hex_encode(event.acknowledgement).into(),
+                                        packet_data_hex: hex_encode("RANDOM_VALUE").into(),
+                                        packet_timeout_timestamp: 0,
+                                        connection_id: "connection-0"
+                                            .to_string()
+                                            .validate()
+                                            .unwrap(),
+                                    })
+                                )
+                            }
+                            _ => {
+                                tracing::warn!("Unhandled packet event type.");
+                                None
+                            }
                         }
-                        IBCPacketEvents::RecvPacketFilter(event) => {
-                            Some(IbcEvent::RecvPacket(RecvPacket {
-                                packet_sequence: event.packet.sequence.try_into().unwrap(),
-                                packet_src_port: event.packet.source_port.parse().unwrap(),
-                                packet_src_channel: event.packet.source_channel.parse().unwrap(),
-                                packet_dst_port: event.packet.destination_port.parse().unwrap(),
-                                packet_dst_channel: event
-                                    .packet
-                                    .destination_channel
-                                    .parse()
-                                    .unwrap(),
-                                packet_timeout_height: event.packet.timeout_height.into(),
-                                packet_timeout_timestamp: event.packet.timeout_timestamp,
-                                packet_data_hex: hex_encode(event.packet.data).into(),
-                                packet_channel_ordering:
-                                    unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
-                                connection_id: "connection-0".to_string().validate().unwrap(),
-                            }))
-                        }
-                        IBCPacketEvents::AcknowledgePacketFilter(event) => {
-                            Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                                packet_sequence: event.packet.sequence.try_into().unwrap(),
-                                packet_src_port: "RANDOM_VALUE".to_string().parse().unwrap(),
-                                packet_src_channel: "RANDOM_VALUE".to_string().parse().unwrap(),
-                                packet_dst_port: event.packet.destination_port.parse().unwrap(),
-                                packet_dst_channel: event
-                                    .packet
-                                    .destination_channel
-                                    .parse()
-                                    .unwrap(),
-                                packet_timeout_height: event.packet.timeout_height.into(),
-                                packet_timeout_timestamp: event.packet.timeout_timestamp,
-                                packet_channel_ordering:
-                                    unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
-                                connection_id: "connection-0".to_string().validate().unwrap(),
-                            }))
-                        }
-                        IBCPacketEvents::WriteAcknowledgementFilter(event) => {
-                            Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                                packet_sequence: event.packet.sequence.try_into().unwrap(),
-                                packet_src_port: "RANDOM_VALUE".to_string().parse().unwrap(),
-                                packet_src_channel: "RANDOM_VALUE".to_string().parse().unwrap(),
-                                packet_dst_port: event.packet.destination_port.parse().unwrap(),
-                                packet_dst_channel: event
-                                    .packet
-                                    .destination_channel
-                                    .parse()
-                                    .unwrap(),
-                                packet_timeout_height: Height {
-                                    revision_number: 0,
-                                    revision_height: 0,
-                                },
-                                packet_ack_hex: hex_encode(event.acknowledgement).into(),
-                                packet_data_hex: hex_encode("RANDOM_VALUE").into(),
-                                packet_timeout_timestamp: 0,
-                                connection_id: "connection-0".to_string().validate().unwrap(),
-                            }))
-                        }
-                        _ => {
-                            tracing::warn!("Unhandled packet event type.");
-                            None
-                        }
-                    },
                     _ => {
                         // tracing::warn!("Unhandled event type.");
                         None
@@ -1123,12 +1172,14 @@ impl Context {
 
 impl<S: IbcTransferMain, D: IbcTransferMain> IbcTransfer<S, D> for Context {
     async fn send_ibc_transfer(&self, direction: TransferDirection<S, D>) {
-        direction
-            .source_chain
-            .send_ibc_transfer(
-                &self.transfer_test_config.amount,
-                &direction.destination_chain.receiver(),
-            )
-            .await;
+        tracing::info!(
+            "Sending IBC transfer from {} to {}.",
+            direction.source_chain.receiver(),
+            direction.destination_chain.receiver()
+        );
+        direction.source_chain.send_ibc_transfer(
+            &self.transfer_test_config.amount,
+            &direction.destination_chain.receiver()
+        ).await;
     }
 }

@@ -4,7 +4,7 @@ use crate::config::PacketStatus;
 
 pub async fn insert_or_update_packet_status(
     pool: &PgPool,
-    packet_status: PacketStatus
+    packet_status: PacketStatus,
 ) -> Result<(), sqlx::Error> {
     sqlx
         ::query(
@@ -34,9 +34,8 @@ pub async fn insert_or_update_packet_status(
     Ok(())
 }
 pub async fn create_table_if_not_exists(pool: &PgPool) -> Result<(), sqlx::Error> {
-    sqlx
-        ::query(
-            r#"
+    sqlx::query(
+        r#"
         CREATE TABLE IF NOT EXISTS packet_statuses (
             source_chain_id INT NOT NULL,
             target_chain_id INT NOT NULL,
@@ -49,27 +48,28 @@ pub async fn create_table_if_not_exists(pool: &PgPool) -> Result<(), sqlx::Error
             last_update TIMESTAMPTZ,
             PRIMARY KEY (source_chain_id, target_chain_id, sequence_number)
         );
-        "#
-        )
-        .execute(pool).await?;
+        "#,
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
 pub async fn get_packet_statuses(
     pool: &PgPool,
     source_chain_id: i32,
-    target_chain_id: i32
+    target_chain_id: i32,
 ) -> Result<Vec<PacketStatus>, sqlx::Error> {
-    let statuses = sqlx
-        ::query_as::<_, PacketStatus>(
-            r#"
+    let statuses = sqlx::query_as::<_, PacketStatus>(
+        r#"
         SELECT * FROM packet_statuses
         WHERE source_chain_id = $1 AND target_chain_id = $2
-        "#
-        )
-        .bind(source_chain_id)
-        .bind(target_chain_id)
-        .fetch_all(pool).await?;
+        "#,
+    )
+    .bind(source_chain_id)
+    .bind(target_chain_id)
+    .fetch_all(pool)
+    .await?;
 
     Ok(statuses)
 }
@@ -78,34 +78,34 @@ pub async fn get_packet_status(
     pool: &PgPool,
     source_chain_id: i32,
     target_chain_id: i32,
-    sequence_number: i64
+    sequence_number: i64,
 ) -> Result<Option<PacketStatus>, sqlx::Error> {
-    let status = sqlx
-        ::query_as::<_, PacketStatus>(
-            r#"
+    let status = sqlx::query_as::<_, PacketStatus>(
+        r#"
         SELECT * FROM packet_statuses
         WHERE source_chain_id = $1 AND target_chain_id = $2 AND sequence_number = $3
-        "#
-        )
-        .bind(source_chain_id)
-        .bind(target_chain_id)
-        .bind(sequence_number)
-        .fetch_optional(pool).await?;
+        "#,
+    )
+    .bind(source_chain_id)
+    .bind(target_chain_id)
+    .bind(sequence_number)
+    .fetch_optional(pool)
+    .await?;
 
     Ok(status)
 }
 
 pub async fn table_exists(pool: &PgPool, table_name: &str) -> Result<bool, sqlx::Error> {
-    let result: (i64,) = sqlx
-        ::query_as(
-            r#"
+    let result: (i64,) = sqlx::query_as(
+        r#"
         SELECT COUNT(*)
         FROM information_schema.tables
         WHERE table_schema = 'public' AND table_name = $1
-        "#
-        )
-        .bind(table_name)
-        .fetch_one(pool).await?;
+        "#,
+    )
+    .bind(table_name)
+    .fetch_one(pool)
+    .await?;
 
     Ok(result.0 > 0)
 }
@@ -114,19 +114,19 @@ pub async fn delete_packet_status(
     pool: &PgPool,
     source_chain_id: i32,
     target_chain_id: i32,
-    sequence_number: i64
+    sequence_number: i64,
 ) -> Result<(), sqlx::Error> {
-    sqlx
-        ::query(
-            r#"
+    sqlx::query(
+        r#"
         DELETE FROM packet_statuses
         WHERE source_chain_id = $1 AND target_chain_id = $2 AND sequence_number = $3
-        "#
-        )
-        .bind(source_chain_id)
-        .bind(target_chain_id)
-        .bind(sequence_number)
-        .execute(pool).await?;
+        "#,
+    )
+    .bind(source_chain_id)
+    .bind(target_chain_id)
+    .bind(sequence_number)
+    .execute(pool)
+    .await?;
 
     Ok(())
 }

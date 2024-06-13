@@ -1,19 +1,19 @@
 { self, ... }: {
   perSystem = { self', pkgs, system, config, crane, stdenv, dbg, ... }:
-  let 
-    sentinel = crane.buildWorkspaceMember {
+    let
+      sentinel = crane.buildWorkspaceMember {
         crateDirFromRoot = "sentinel";
         extraEnv = {
           SQLX_OFFLINE = "1";
         };
       };
     in
-  {
-    packages = sentinel.packages;
+    {
+      packages = sentinel.packages;
 
-  };
+    };
   flake.nixosModules.sentinel = { lib, pkgs, config, ... }:
-  with lib;
+    with lib;
     let
       cfg = config.services.sentinel;
     in
