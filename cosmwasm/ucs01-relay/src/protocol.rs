@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, AnyMsg, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
+    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
     IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use prost::Message;
@@ -560,10 +560,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         ) {
             Ok(forward_response) => forward_response,
             Err(e) => {
-                return IbcReceiveResponse::new(Binary::from(
-                    Self::ack_failure(e.to_string()).encode(),
-                ))
-                .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
+                return IbcReceiveResponse::new(Self::ack_failure(e.to_string()).encode())
+                    .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
         };
 
@@ -944,10 +942,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         ) {
             Ok(forward_response) => forward_response,
             Err(e) => {
-                return IbcReceiveResponse::new(Binary::from(
-                    Self::ack_failure(e.to_string()).encode(),
-                ))
-                .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
+                return IbcReceiveResponse::new(Self::ack_failure(e.to_string()).encode())
+                    .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
         };
 

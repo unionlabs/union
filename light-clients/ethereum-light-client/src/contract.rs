@@ -29,7 +29,7 @@ pub fn instantiate(
     save_proto_consensus_state::<EthereumLightClient>(
         deps.branch(),
         ProtoConsensusState {
-            data: msg.consensus_state.into(),
+            data: msg.consensus_state,
         },
         &Height {
             revision_number: 0,
@@ -39,8 +39,8 @@ pub fn instantiate(
     save_proto_client_state::<EthereumLightClient>(
         deps,
         ProtoClientState {
-            data: msg.client_state.into(),
-            checksum: msg.checksum.into(),
+            data: msg.client_state,
+            checksum: msg.checksum,
             latest_height: Some(
                 Height {
                     revision_number: 0,

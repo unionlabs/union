@@ -38,6 +38,7 @@ macro_rules! define_cosmwasm_light_client_contract {
             ics008_wasm_client::IbcClientError<$light_client>,
         > {
             <$light_client as ics008_wasm_client::IbcClient>::query(deps, env, msg)
+                .map(cosmwasm_std::Binary::from)
         }
 
         unionlabs::export_wasm_client_type!($client_type);

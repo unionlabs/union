@@ -31,15 +31,15 @@ pub fn instantiate(
     save_proto_consensus_state::<BerachainLightClient>(
         deps.branch(),
         ProtoConsensusState {
-            data: msg.consensus_state.into(),
+            data: msg.consensus_state,
         },
         &client_state.latest_height,
     );
     save_proto_client_state::<BerachainLightClient>(
         deps,
         ProtoClientState {
-            data: msg.client_state.into(),
-            checksum: msg.checksum.into(),
+            data: msg.client_state,
+            checksum: msg.checksum,
             latest_height: Some(client_state.latest_height.into()),
         },
     );
