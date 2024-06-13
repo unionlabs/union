@@ -49,7 +49,7 @@ export const config = createConfig({
         retryCount: 3,
         retryDelay: 100
       }),
-      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
+      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`)
     ])
   },
 

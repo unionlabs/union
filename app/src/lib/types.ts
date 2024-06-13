@@ -1,4 +1,4 @@
-import type { Address } from 'viem';
+import type { Address } from "viem"
 
 export type UserAddresses = {
   cosmos: {
@@ -22,6 +22,6 @@ export type Chain = {
     type: string
     url: string
   }>
-  ucs1_configurations: Record<string, { contract_address: string, channel_id: string}>,
+  ucs1_configurations: Record<string, { contract_address: string; channel_id: string }>
   addr_prefix: string
 }

@@ -24,9 +24,9 @@ import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
-import { ucs01abi } from '$lib/abi/ucs-01.ts'
+import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
-import type { Address } from "viem";
+import type { Address } from "viem"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -71,32 +71,35 @@ let fromChain = derived(
   $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
-let asset = derived([assetSymbol, fromChain, cosmosBalances, evmBalances], ([$assetSymbol, $fromChain, $cosmosBalances, $evmBalances]) => {
-  if ($assetSymbol === "" || $fromChain === null) return null;
-  if ($fromChain.rpc_type === "cosmos") {
-    const chainIndex = cosmosChains.findIndex(c => c.chain_id === $fromChainId)
-    const cosmosBalance = $cosmosBalances[chainIndex];
-    if (!cosmosBalance.isSuccess) {
-      return null;
+let asset = derived(
+  [assetSymbol, fromChain, cosmosBalances, evmBalances],
+  ([$assetSymbol, $fromChain, $cosmosBalances, $evmBalances]) => {
+    if ($assetSymbol === "" || $fromChain === null) return null
+    if ($fromChain.rpc_type === "cosmos") {
+      const chainIndex = cosmosChains.findIndex(c => c.chain_id === $fromChainId)
+      const cosmosBalance = $cosmosBalances[chainIndex]
+      if (!cosmosBalance.isSuccess) {
+        return null
+      }
+      let balance = cosmosBalance.data.find(balance => balance.symbol === $assetSymbol)
+      if (!balance) {
+        return null
+      }
+      return balance
     }
-    let balance = cosmosBalance.data.find((balance) => balance.symbol === $assetSymbol);
-    if (!balance) {
-      return null;
+    if ($fromChain.rpc_type === "evm") {
+      if (!$evmBalances.isSuccess) {
+        return null
+      }
+      let balance = $evmBalances.data.find(balance => balance.symbol === $assetSymbol)
+      if (!balance) {
+        return null
+      }
+      return balance
     }
-    return balance;
-  } 
-  if ($fromChain.rpc_type === "evm") {
-    if (!$evmBalances.isSuccess) {
-      return null;
-    }
-    let balance = $evmBalances.data.find((balance) => balance.symbol === $assetSymbol);
-    if (!balance) {
-      return null;
-    }
-    return balance;
+    return null
   }
-  return null;
-})
+)
 
 let recipient = derived(toChain, $toChain => {
   switch ($toChain?.rpc_type) {
@@ -110,27 +113,29 @@ let recipient = derived(toChain, $toChain => {
 })
 
 const transfer = async () => {
-  if (!$assetSymbol) return toast.error('Please select an asset')
-  if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`);
-  if (!$fromChainId) return toast.error('Please select a from chain')
-  if (!$fromChain) return toast.error("can't find chain in config");
-  if (!$toChain) return toast.error("can't find chain in config");
-  if (!$toChainId) return toast.error('Please select a to chain')
-  if (!amount) return toast.error('Please select an amount')
-  if (!$recipient) return toast.error('Invalid recipient')
+  if (!$assetSymbol) return toast.error("Please select an asset")
+  if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
+  if (!$fromChainId) return toast.error("Please select a from chain")
+  if (!$fromChain) return toast.error("can't find chain in config")
+  if (!$toChain) return toast.error("can't find chain in config")
+  if (!$toChainId) return toast.error("Please select a to chain")
+  if (!amount) return toast.error("Please select an amount")
+  if (!$recipient) return toast.error("Invalid recipient")
 
-
-  const ucs1_configuration = $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null;
+  const ucs1_configuration =
+    $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null
 
   if (ucs1_configuration === null) {
-    return toast.error(`No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`);
+    return toast.error(
+      `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
+    )
   }
 
-  if ($fromChain.rpc_type === 'cosmos') {
+  if ($fromChain.rpc_type === "cosmos") {
     const evmClient = await getWalletClient(config)
-    const rpcUrl = $fromChain.rpcs.find((rpc) => rpc.type === 'rpc')?.url;
+    const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
-    if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`);
+    if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
 
     const cosmosOfflineSigner = (
       $cosmosStore.connectedWallet === "keplr"
@@ -143,7 +148,7 @@ const transfer = async () => {
             })
           : undefined
     ) as OfflineSigner
-    
+
     let cosmosClient = new UnionClient({
       cosmosOfflineSigner,
       evmSigner: undefined,
@@ -154,7 +159,7 @@ const transfer = async () => {
     })
 
     const transferHash = await cosmosClient.transferAssets({
-      kind: 'cosmwasm',
+      kind: "cosmwasm",
       instructions: [
         {
           contractAddress: ucs1_configuration.contract_address,
@@ -162,41 +167,40 @@ const transfer = async () => {
             transfer: {
               channel: ucs1_configuration.channel_id,
               receiver: $recipient?.slice(2),
-              memo: ``,
-            },
+              memo: ``
+            }
           },
-          funds: [{ denom: $assetSymbol, amount }],
-        },
-      ],
+          funds: [{ denom: $assetSymbol, amount }]
+        }
+      ]
     })
     toast.success(`Transfer transaction sent: ${transferHash}`)
-  } else if ($fromChain.rpc_type === 'evm') {
-
+  } else if ($fromChain.rpc_type === "evm") {
     const publicClient = createPublicClient({
       chain: sepolia,
       transport: http()
-    });
+    })
 
     const walletClient = createWalletClient({
       chain: sepolia,
       // @ts-ignore
       transport: custom(window.ethereum)
-    });
+    })
 
-    const ucs01address = ucs1_configuration.contract_address as Address;
+    const ucs01address = ucs1_configuration.contract_address as Address
 
-    toast.info('submitting approval');
+    toast.info("submitting approval")
     const approveContractSimulation = await walletClient.writeContract({
       account: userAddr.evm.canonical,
       abi: erc20Abi,
       address: $asset.address as Address,
       functionName: "approve",
       args: [ucs01address, BigInt(amount)]
-    });
+    })
 
-    toast.info('Submitting approval');
-    
-    toast.info('Simulating UCS01 contract call');
+    toast.info("Submitting approval")
+
+    toast.info("Simulating UCS01 contract call")
     const { request } = await publicClient.simulateContract({
       abi: ucs01abi,
       account: userAddr.evm.canonical,
@@ -210,16 +214,14 @@ const transfer = async () => {
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
         0n
       ]
-    });
+    })
 
-    toast.info('Submitting UCS01 contract call');
-    await walletClient.writeContract(request);
-
+    toast.info("Submitting UCS01 contract call")
+    await walletClient.writeContract(request)
   } else {
-    console.error('invalid rpc type');
+    console.error("invalid rpc type")
   }
-
-};
+}
 onMount(() => {
   fromChainId.subscribe(fromChain => {
     assetSymbol.set("")

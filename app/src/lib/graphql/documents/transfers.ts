@@ -48,8 +48,7 @@ export const userTransfersQueryDocument = graphql(/* Graphql */ `
   }
 `)
 
-
-export const transfersBySourceHashQueryDocument = graphql(/* GraphQL */`
+export const transfersBySourceHashQueryDocument = graphql(/* GraphQL */ `
 query TransfersBySourceHash($source_transaction_hash: String!) {
   v0_transfers(where: {source_transaction_hash: {_eq: $source_transaction_hash}}) {
     sender
@@ -74,4 +73,3 @@ query TransfersBySourceHash($source_transaction_hash: String!) {
   }
 }
 `)
-
