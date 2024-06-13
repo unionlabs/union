@@ -1,4 +1,4 @@
-package types
+package cometbls
 
 import (
 	errorsmod "cosmossdk.io/errors"
@@ -13,6 +13,9 @@ import (
 
 var _ exported.ConsensusState = (*ConsensusState)(nil)
 
+// SentinelRoot is used as a stand-in root value for the consensus state set at the upgrade height
+const SentinelRoot = "sentinel_root"
+
 // NewConsensusState creates a new ConsensusState instance.
 func NewConsensusState(
 	timestamp uint64, root commitmenttypes.MerkleRoot, nextValsHash tmbytes.HexBytes,
@@ -26,7 +29,7 @@ func NewConsensusState(
 
 // ClientType returns Tendermint
 func (ConsensusState) ClientType() string {
-	// TODO(aeryz): global const
+	// TODO(aeryz): global
 	return "11-cometbls"
 }
 

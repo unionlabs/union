@@ -1,12 +1,7 @@
-package types
+package cometbls
 
 import (
 	errorsmod "cosmossdk.io/errors"
-)
-
-const (
-	// TODO(aeryz): define it in somewhere else
-	ModuleName = "11-cometbls"
 )
 
 // IBC tendermint client sentinel errors
