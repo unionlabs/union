@@ -6,6 +6,8 @@ import type { ChainId } from "$/lib/constants/assets.ts"
 import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
 import { raise } from "$lib/utilities/index.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
+import { DecodeLogDataMismatch, type Address } from "viem"
+import { setLoggingEnabled } from "viem/actions"
 
 /**
  * TODO:
@@ -58,15 +60,16 @@ export function evmBalancesQuery({
   chainId,
   ...restParams
 }: {
-  address: string
+  address: Address
   chainId: string
 } & ({ contractAddresses: Array<string> } | { tokenSpecification: "erc20" | "DEFAULT_TOKENS" })) {
   return createQuery({
     queryKey: ["balances", chainId, address],
     enabled: isValidEvmAddress(address),
     refetchOnWindowFocus: false,
-    refetchInterval: 2_000,
+    refetchInterval: 200_000,
     queryFn: async () => {
+      DecodeLogDataMismatch
       const assetsToCheck =
         "contractAddresses" in restParams && Array.isArray(restParams.contractAddresses)
           ? restParams.contractAddresses // if contractAddresses is an array, use it
@@ -104,7 +107,8 @@ export function evmBalancesQuery({
       )
       return tokensInfo.map((token, index) => ({
         ...token,
-        balance: BigInt(result.output.result.tokenBalances[index].tokenBalance)
+        balance: BigInt(result.output.result.tokenBalances[index].tokenBalance),
+        address: token.address as Address
       }))
     }
   })
@@ -139,7 +143,7 @@ export function cosmosBalancesQuery({
       return {
         queryKey: ["balances", chain.chain_id, bech32_addr],
         enabled: true,
-        refetchInterval: 20_000,
+        refetchInterval: 200_000,
         refetchOnWindowFocus: false,
         queryFn: async () => {
           let json: undefined | unknown

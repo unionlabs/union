@@ -1,12 +1,16 @@
+import type { Address } from 'viem';
+
 export type UserAddresses = {
   cosmos: {
     canonical: string
     normalized: string
     bytes: Uint8Array
+    normalized_prefixed: Address
   }
   evm: {
-    canonical: string
+    canonical: Address
     normalized: string
+    normalized_prefixed: Address
   }
 }
 
