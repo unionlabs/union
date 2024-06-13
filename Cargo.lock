@@ -6083,6 +6083,8 @@ dependencies = [
  "ethers",
  "futures",
  "hex",
+ "prost",
+ "protos",
  "queue-msg",
  "reqwest",
  "serde",
