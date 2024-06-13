@@ -24,8 +24,7 @@ func NewMisbehaviour(clientID string, header1, header2 *Header) *Misbehaviour {
 
 // ClientType is Tendermint light client
 func (Misbehaviour) ClientType() string {
-	// TODO(aeryz): global
-	return "11-cometbls"
+	return ClientType
 }
 
 // GetTime returns the timestamp at which misbehaviour occurred. It uses the

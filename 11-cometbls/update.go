@@ -146,8 +146,6 @@ func (cs *ClientState) verifyHeader(
 		)
 	}
 
-	// TODO(aeryz): verify zkp
-
 	var proof backend_bn254.Proof
 	_, err := proof.ReadFrom(bytes.NewReader(header.ZeroKnowledgeProof))
 	if err != nil {

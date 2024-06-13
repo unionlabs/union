@@ -29,8 +29,7 @@ func NewConsensusState(
 
 // ClientType returns Tendermint
 func (ConsensusState) ClientType() string {
-	// TODO(aeryz): global
-	return "11-cometbls"
+	return ClientType
 }
 
 // GetRoot returns the commitment Root for the specific

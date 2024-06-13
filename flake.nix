@@ -227,7 +227,6 @@
         ./devShell.nix
         ./uniond/uniond.nix
         ./galoisd/galoisd.nix
-        ./11-cometbls/cometbls.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
         ./lib/ics23/ics23.nix

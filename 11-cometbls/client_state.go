@@ -45,8 +45,7 @@ func (cs ClientState) GetChainID() string {
 
 // ClientType is tendermint.
 func (ClientState) ClientType() string {
-	// TODO(aeryz): global
-	return "11-cometbls"
+	return ClientType
 }
 
 // GetLatestHeight returns latest block height.
