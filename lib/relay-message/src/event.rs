@@ -73,6 +73,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             client_id = %e.client_id,
                             client_type = %e.client_type,
                             consensus_height = %e.consensus_height
@@ -104,6 +105,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %init.connection_id,
                             client_id = %init.client_id,
                             counterparty_client_id = %init.counterparty_client_id
@@ -142,6 +144,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %try_.connection_id,
                             counterparty_connection_id = %try_.counterparty_connection_id,
                             client_id = %try_.client_id,
@@ -172,6 +175,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %ack.connection_id,
                             counterparty_connection_id = %ack.counterparty_connection_id,
                             client_id = %ack.client_id,
@@ -202,6 +206,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             connection_id = %confirm.connection_id,
                             counterparty_connection_id = %confirm.counterparty_connection_id,
                             client_id = %confirm.client_id,
@@ -216,6 +221,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             port_id = %init.port_id,
                             channel_id = %init.channel_id,
                             counterparty_port_id = %init.counterparty_port_id,
@@ -261,6 +267,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             port_id = %try_.port_id,
                             channel_id = %try_.channel_id,
                             counterparty_port_id = %try_.counterparty_port_id,
@@ -307,6 +314,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             port_id = %ack.port_id,
                             channel_id = %ack.channel_id,
                             counterparty_port_id = %ack.counterparty_port_id,
@@ -352,6 +360,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             port_id = %confirm.port_id,
                             channel_id = %confirm.channel_id,
                             counterparty_port_id = %confirm.counterparty_port_id,
@@ -364,6 +373,9 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     unionlabs::events::IbcEvent::SendPacket(send) => {
                         info!(
                             event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %send.packet_timeout_height,
                             timeout_timestamp = %send.packet_timeout_timestamp,
                             sequence = %send.packet_sequence,
@@ -458,6 +470,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %recv.packet_timeout_height,
                             timeout_timestamp = %recv.packet_timeout_timestamp,
                             sequence = %recv.packet_sequence,
@@ -476,6 +489,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %ack.packet_timeout_height,
                             timeout_timestamp = %ack.packet_timeout_timestamp,
                             sequence = %ack.packet_sequence,
@@ -512,6 +526,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             event = %event_name,
                             height = %ibc_event.height,
                             tx_hash = %ibc_event.tx_hash,
+
                             timeout_height = %write_ack.packet_timeout_height,
                             timeout_timestamp = %write_ack.packet_timeout_timestamp,
                             sequence = %write_ack.packet_sequence,
