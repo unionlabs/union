@@ -7,7 +7,6 @@ import { isValidEvmAddress } from "$lib/wallet/utilities/validate"
 import { raise } from "$lib/utilities/index.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import { DecodeLogDataMismatch, type Address } from "viem"
-import { setLoggingEnabled } from "viem/actions"
 
 /**
  * TODO:
