@@ -26,10 +26,7 @@
         "name": "@0no-co/graphqlsp",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://graphql.union.build/v1/graphql",
-          "headers": {
-            "X-Hasura-Role": "app"
-          }
+          "url": "https://noble-pika-27.hasura.app/v1/graphql"
         }
       }
     ]

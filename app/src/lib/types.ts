@@ -1,12 +1,16 @@
+import type { Address } from "viem"
+
 export type UserAddresses = {
   cosmos: {
     canonical: string
     normalized: string
     bytes: Uint8Array
+    normalized_prefixed: Address
   }
   evm: {
-    canonical: string
+    canonical: Address
     normalized: string
+    normalized_prefixed: Address
   }
 }
 
@@ -18,5 +22,6 @@ export type Chain = {
     type: string
     url: string
   }>
+  ucs1_configurations: Record<string, { contract_address: string; channel_id: string }>
   addr_prefix: string
 }

@@ -7,7 +7,7 @@ import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { getWalletClient } from "@wagmi/core"
 import Chevron from "./chevron.svelte"
-import { createWalletClient, isAddress } from "viem"
+import { erc20Abi, createWalletClient, createPublicClient, isAddress, http, custom } from "viem"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -24,7 +24,9 @@ import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
+import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
+import type { Address } from "viem"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -34,7 +36,7 @@ let cosmosChains = chains.filter(c => c.rpc_type === "cosmos")
 // CURRENT FORM STATE
 let fromChainId = writable("union-testnet-8")
 let toChainId = writable("11155111")
-let asset = writable("")
+let assetSymbol = writable("")
 
 let amount = ""
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
@@ -69,6 +71,36 @@ let fromChain = derived(
   $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
+let asset = derived(
+  [assetSymbol, fromChain, cosmosBalances, evmBalances],
+  ([$assetSymbol, $fromChain, $cosmosBalances, $evmBalances]) => {
+    if ($assetSymbol === "" || $fromChain === null) return null
+    if ($fromChain.rpc_type === "cosmos") {
+      const chainIndex = cosmosChains.findIndex(c => c.chain_id === $fromChainId)
+      const cosmosBalance = $cosmosBalances[chainIndex]
+      if (!cosmosBalance.isSuccess) {
+        return null
+      }
+      let balance = cosmosBalance.data.find(balance => balance.symbol === $assetSymbol)
+      if (!balance) {
+        return null
+      }
+      return balance
+    }
+    if ($fromChain.rpc_type === "evm") {
+      if (!$evmBalances.isSuccess) {
+        return null
+      }
+      let balance = $evmBalances.data.find(balance => balance.symbol === $assetSymbol)
+      if (!balance) {
+        return null
+      }
+      return balance
+    }
+    return null
+  }
+)
+
 let recipient = derived(toChain, $toChain => {
   switch ($toChain?.rpc_type) {
     case "evm":
@@ -80,37 +112,119 @@ let recipient = derived(toChain, $toChain => {
   }
 })
 
-onMount(() => {
-  fromChainId.subscribe(fromChain => {
-    asset.set("")
-  })
+const transfer = async () => {
+  if (!$assetSymbol) return toast.error("Please select an asset")
+  if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
+  if (!$fromChainId) return toast.error("Please select a from chain")
+  if (!$fromChain) return toast.error("can't find chain in config")
+  if (!$toChain) return toast.error("can't find chain in config")
+  if (!$toChainId) return toast.error("Please select a to chain")
+  if (!amount) return toast.error("Please select an amount")
+  if (!$recipient) return toast.error("Invalid recipient")
 
-  const cosmosOfflineSigner = (
-    $cosmosStore.connectedWallet === "keplr"
-      ? window?.keplr?.getOfflineSigner("union-testnet-8", {
-          disableBalanceCheck: false
-        })
-      : window.leap
-        ? window.leap.getOfflineSigner("union-testnet-8", {
+  const ucs1_configuration =
+    $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null
+
+  if (ucs1_configuration === null) {
+    return toast.error(
+      `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
+    )
+  }
+
+  if ($fromChain.rpc_type === "cosmos") {
+    const evmClient = await getWalletClient(config)
+    const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
+
+    if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
+
+    const cosmosOfflineSigner = (
+      $cosmosStore.connectedWallet === "keplr"
+        ? window?.keplr?.getOfflineSigner($fromChainId, {
             disableBalanceCheck: false
           })
-        : undefined
-  ) as OfflineSigner
+        : window.leap
+          ? window.leap.getOfflineSigner($fromChainId, {
+              disableBalanceCheck: false
+            })
+          : undefined
+    ) as OfflineSigner
 
-  const evmWalletClient = createWalletClient({
-    chain: config.chains[0],
-    account: `0x${userAddr.evm.normalized}`,
-    transport: config._internal.transports["11155111"]
-  })
+    let cosmosClient = new UnionClient({
+      cosmosOfflineSigner,
+      evmSigner: undefined,
+      bech32Prefix: $fromChain.addr_prefix,
+      chainId: $fromChain.chain_id,
+      gas: { denom: $assetSymbol, amount: "0.0025" },
+      rpcUrl: `https://${rpcUrl}`
+    })
 
-  unionClient = new UnionClient({
-    cosmosOfflineSigner,
-    evmSigner: evmWalletClient,
-    bech32Prefix: "union",
-    chainId: "union-testnet-8",
-    gas: { denom: "muno", amount: "0.0025" },
-    // rpcUrl: 'https://rpc.testnet.bonlulu.uno',
-    rpcUrl: "https://union-testnet-rpc.polkachu.com"
+    const transferHash = await cosmosClient.transferAssets({
+      kind: "cosmwasm",
+      instructions: [
+        {
+          contractAddress: ucs1_configuration.contract_address,
+          msg: {
+            transfer: {
+              channel: ucs1_configuration.channel_id,
+              receiver: $recipient?.slice(2),
+              memo: ``
+            }
+          },
+          funds: [{ denom: $assetSymbol, amount }]
+        }
+      ]
+    })
+    toast.success(`Transfer transaction sent: ${transferHash}`)
+  } else if ($fromChain.rpc_type === "evm") {
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http()
+    })
+
+    const walletClient = createWalletClient({
+      chain: sepolia,
+      // @ts-ignore
+      transport: custom(window.ethereum)
+    })
+
+    const ucs01address = ucs1_configuration.contract_address as Address
+
+    toast.info("submitting approval")
+    const approveContractSimulation = await walletClient.writeContract({
+      account: userAddr.evm.canonical,
+      abi: erc20Abi,
+      address: $asset.address as Address,
+      functionName: "approve",
+      args: [ucs01address, BigInt(amount)]
+    })
+
+    toast.info("Submitting approval")
+
+    toast.info("Simulating UCS01 contract call")
+    const { request } = await publicClient.simulateContract({
+      abi: ucs01abi,
+      account: userAddr.evm.canonical,
+      functionName: "send",
+      address: ucs01address,
+      args: [
+        ucs1_configuration.channel_id,
+        userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
+        [{ denom: $asset.address.toLowerCase() as Address, amount: BigInt(amount) }],
+        "", // memo
+        { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+        0n
+      ]
+    })
+
+    toast.info("Submitting UCS01 contract call")
+    await walletClient.writeContract(request)
+  } else {
+    console.error("invalid rpc type")
+  }
+}
+onMount(() => {
+  fromChainId.subscribe(fromChain => {
+    assetSymbol.set("")
   })
 })
 
@@ -176,13 +290,13 @@ let buttonText = "Transfer" satisfies
     You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
   {:else}
   <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
-    <div class="flex-1 text-left">{truncate($asset, 12)}</div>
+    <div class="flex-1 text-left">{truncate($assetSymbol, 12)}</div>
 
     <Chevron />
   </Button>
   {/if}
-  {#if $asset !== "" && $sendableBalances !== null }
-    <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($asset, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is <b>{$sendableBalances.find(b => b.symbol === $asset)?.balance}</b></div>
+  {#if $assetSymbol !== "" && $sendableBalances !== null }
+    <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b></div>
   {/if}
 </section>
 
@@ -208,76 +322,16 @@ let buttonText = "Transfer" satisfies
 <Card.Footer class="flex flex-col gap-4 items-start">
   <Button
     type="button"
-    disabled={!$fromChainId || !$asset || !$toChainId || !amount || !$recipient}
-    on:click={async event => {
+    disabled={!$fromChainId || !$assetSymbol || !$toChainId || !amount || !$recipient}
+    on:click={async (event) => {
       event.preventDefault()
-      const assetId = $asset
-      if (!assetId) return toast.error('Please select an asset')
-      if (!$fromChainId) return toast.error('Please select a from chain')
-      if (!$toChainId) return toast.error('Please select a to chain')
-      if (!amount) return toast.error('Please select an amount')
-      if (!$recipient) return toast.error('Invalid recipient')
-
-      toast.info(
-        `Sending transaction from ${$fromChainId} to ${$fromChainId}`,
-      )
-      if ($fromChainId === String(sepolia.id)) {
-        if ($evmAccount.status !== 'connected')
-          return toast.error('Please connect your Sepolia wallet')
-        if (!isAddress(assetId)) return toast.error('Invalid address')
-
-        const evmClient = await getWalletClient(config)
-        const client = new UnionClient({
-          // @ts-ignore
-          cosmosOfflineSigner: undefined,
-          evmSigner: evmClient,
-          bech32Prefix: 'union',
-          chainId: 'union-testnet-8',
-          gas: { denom: 'muno', amount: '0.0025' },
-          rpcUrl: 'https://union-testnet-rpc.polkachu.com',
-        })
-        const approveHash = await client.approveEvmAssetTransfer({
-          account: $evmAccount || evmClient.account,
-          denomAddress: assetId,
-          amount: BigInt(amount),
-        })
-        toast.success(`Approve transaction sent: ${approveHash}`)
-        const transferHash = await client.transferEvmAsset({
-          account: evmClient.account,
-          receiver: $recipient,
-          denomAddress: assetId,
-          amount: BigInt(amount),
-          sourceChannel: 'channel-1',
-          simulate: true,
-          contractAddress: '0xD0081080Ae8493cf7340458Eaf4412030df5FEEb',
-        })
-        toast.success(`Transfer transaction sent: ${transferHash}`)
-      } else {
-        const transferHash = await unionClient.transferAssets({
-          kind: 'cosmwasm',
-          instructions: [
-            {
-              contractAddress:
-                'union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3',
-              msg: {
-                transfer: {
-                  channel: 'channel-28',
-                  receiver: $recipient?.slice(2),
-                  memo: ``,
-                },
-              },
-              funds: [{ denom: assetId, amount }],
-            },
-          ],
-        })
-        toast.success(`Transfer transaction sent: ${transferHash}`)
-      }
-    }}
+      transfer();
+      }}
   >
     {buttonText}
   </Button>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($asset, 6)}</b> from <b>{$fromChain?.display_name}</b> to <span class="font-bold font-mono">{truncate($recipient, 6)}</span> on <b>{$toChain?.display_name}</b>. 
+    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{truncate($recipient, 6)}</span>{/if} on <b>{$toChain?.display_name}</b>. 
   </div>
 </Card.Footer>
 <ChainDialog
@@ -299,7 +353,7 @@ let buttonText = "Transfer" satisfies
 {#if $sendableBalances !== null}
   <AssetsDialog
     assets={$sendableBalances}
-    onAssetSelect={(newSelectedAsset) => {asset.set(newSelectedAsset)}}
+    onAssetSelect={(newSelectedAsset) => {assetSymbol.set(newSelectedAsset)}}
     bind:dialogOpen={dialogOpenToken}
   />
 {/if}

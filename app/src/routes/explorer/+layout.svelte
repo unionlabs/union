@@ -54,7 +54,7 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
   document.cookie = `PaneForge:collapsed=${false}`
 }
 
-let explorerRoute = $page.route.id?.split("/").at(-1)
+let explorerRoute = $page.route.id?.split("/").at(2)
 $: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute)[0].description
 onNavigate(navigation => {
   if (navigation.to?.route.id?.split("/").at(1) === "explorer") {

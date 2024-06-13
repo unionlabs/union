@@ -136,6 +136,8 @@ type faucetQuery {
   configuration: Configuration!
 }
 
+scalar json
+
 scalar jsonb
 
 input jsonb_cast_exp {
@@ -452,6 +454,49 @@ type query_root {
   v0_rpcs_by_pk(chain_id: Int!, url: String!): v0_rpcs
 
   """
+  fetch data from the table: "v0.traces"
+  """
+  v0_traces(
+    """distinct select on columns"""
+    distinct_on: [v0_traces_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_traces_order_by!]
+
+    """filter the rows returned"""
+    where: v0_traces_bool_exp
+  ): [v0_traces!]!
+
+  """
+  fetch data from the table: "v0.transactions"
+  """
+  v0_transactions(
+    """distinct select on columns"""
+    distinct_on: [v0_transactions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transactions_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transactions_bool_exp
+  ): [v0_transactions!]!
+
+  """fetch data from the table: "v0.transactions" using primary key columns"""
+  v0_transactions_by_pk(chain_id: Int!, hash: String!): v0_transactions
+
+  """
   fetch data from the table: "v0.transfers"
   """
   v0_transfers(
@@ -470,6 +515,35 @@ type query_root {
     """filter the rows returned"""
     where: v0_transfers_bool_exp
   ): [v0_transfers!]!
+
+  """
+  fetch data from the table: "v0.ucs1_configuration"
+  """
+  v0_ucs1_configuration(
+    """distinct select on columns"""
+    distinct_on: [v0_ucs1_configuration_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_ucs1_configuration_order_by!]
+
+    """filter the rows returned"""
+    where: v0_ucs1_configuration_bool_exp
+  ): [v0_ucs1_configuration!]!
+
+  """
+  fetch data from the table: "v0.ucs1_configuration" using primary key columns
+  """
+  v0_ucs1_configuration_by_pk(destination_chain_id: Int!, source_chain_id: Int!): v0_ucs1_configuration
+}
+
+input status_v0_transactions_args {
+  hasura_session: json
 }
 
 type subscription_root {
@@ -846,6 +920,77 @@ type subscription_root {
   ): [v0_rpcs!]!
 
   """
+  fetch data from the table: "v0.traces"
+  """
+  v0_traces(
+    """distinct select on columns"""
+    distinct_on: [v0_traces_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_traces_order_by!]
+
+    """filter the rows returned"""
+    where: v0_traces_bool_exp
+  ): [v0_traces!]!
+
+  """
+  fetch data from the table in a streaming manner: "v0.traces"
+  """
+  v0_traces_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_traces_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_traces_bool_exp
+  ): [v0_traces!]!
+
+  """
+  fetch data from the table: "v0.transactions"
+  """
+  v0_transactions(
+    """distinct select on columns"""
+    distinct_on: [v0_transactions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transactions_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transactions_bool_exp
+  ): [v0_transactions!]!
+
+  """fetch data from the table: "v0.transactions" using primary key columns"""
+  v0_transactions_by_pk(chain_id: Int!, hash: String!): v0_transactions
+
+  """
+  fetch data from the table in a streaming manner: "v0.transactions"
+  """
+  v0_transactions_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_transactions_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_transactions_bool_exp
+  ): [v0_transactions!]!
+
+  """
   fetch data from the table: "v0.transfers"
   """
   v0_transfers(
@@ -878,6 +1023,45 @@ type subscription_root {
     """filter the rows returned"""
     where: v0_transfers_bool_exp
   ): [v0_transfers!]!
+
+  """
+  fetch data from the table: "v0.ucs1_configuration"
+  """
+  v0_ucs1_configuration(
+    """distinct select on columns"""
+    distinct_on: [v0_ucs1_configuration_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_ucs1_configuration_order_by!]
+
+    """filter the rows returned"""
+    where: v0_ucs1_configuration_bool_exp
+  ): [v0_ucs1_configuration!]!
+
+  """
+  fetch data from the table: "v0.ucs1_configuration" using primary key columns
+  """
+  v0_ucs1_configuration_by_pk(destination_chain_id: Int!, source_chain_id: Int!): v0_ucs1_configuration
+
+  """
+  fetch data from the table in a streaming manner: "v0.ucs1_configuration"
+  """
+  v0_ucs1_configuration_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_ucs1_configuration_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_ucs1_configuration_bool_exp
+  ): [v0_ucs1_configuration!]!
 }
 
 scalar timestamptz
@@ -985,6 +1169,24 @@ type v0_blocks {
   hash: String!
   height: Int!
   time: timestamptz!
+
+  """An array relationship"""
+  transactions(
+    """distinct select on columns"""
+    distinct_on: [v0_transactions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transactions_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transactions_bool_exp
+  ): [v0_transactions!]!
 }
 
 """
@@ -1025,6 +1227,7 @@ input v0_blocks_bool_exp {
   hash: String_comparison_exp
   height: Int_comparison_exp
   time: timestamptz_comparison_exp
+  transactions: v0_transactions_bool_exp
 }
 
 """
@@ -1055,6 +1258,7 @@ input v0_blocks_order_by {
   hash: order_by
   height: order_by
   time: order_by
+  transactions_aggregate: v0_transactions_aggregate_order_by
 }
 
 """
@@ -1200,6 +1404,42 @@ type v0_chains {
     where: v0_rpcs_bool_exp
   ): [v0_rpcs!]!
   testnet: Boolean
+
+  """An array relationship"""
+  transactions(
+    """distinct select on columns"""
+    distinct_on: [v0_transactions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transactions_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transactions_bool_exp
+  ): [v0_transactions!]!
+
+  """An array relationship"""
+  ucs1_configurations(
+    """distinct select on columns"""
+    distinct_on: [v0_ucs1_configuration_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_ucs1_configuration_order_by!]
+
+    """filter the rows returned"""
+    where: v0_ucs1_configuration_bool_exp
+  ): [v0_ucs1_configuration!]!
 }
 
 """
@@ -1218,6 +1458,8 @@ input v0_chains_bool_exp {
   rpc_type: String_comparison_exp
   rpcs: v0_rpcs_bool_exp
   testnet: Boolean_comparison_exp
+  transactions: v0_transactions_bool_exp
+  ucs1_configurations: v0_ucs1_configuration_bool_exp
 }
 
 """Ordering options when selecting data from "v0.chains"."""
@@ -1231,6 +1473,8 @@ input v0_chains_order_by {
   rpc_type: order_by
   rpcs_aggregate: v0_rpcs_aggregate_order_by
   testnet: order_by
+  transactions_aggregate: v0_transactions_aggregate_order_by
+  ucs1_configurations_aggregate: v0_ucs1_configuration_aggregate_order_by
 }
 
 """
@@ -2135,6 +2379,7 @@ type v0_rpcs {
   chain: v0_chains!
   chain_id: Int!
   description: String
+  enabled: Boolean!
   type: String!
   url: String!
 }
@@ -2173,6 +2418,7 @@ input v0_rpcs_bool_exp {
   chain: v0_chains_bool_exp
   chain_id: Int_comparison_exp
   description: String_comparison_exp
+  enabled: Boolean_comparison_exp
   type: String_comparison_exp
   url: String_comparison_exp
 }
@@ -2202,6 +2448,7 @@ input v0_rpcs_order_by {
   chain: v0_chains_order_by
   chain_id: order_by
   description: order_by
+  enabled: order_by
   type: order_by
   url: order_by
 }
@@ -2215,6 +2462,9 @@ enum v0_rpcs_select_column {
 
   """column name"""
   description
+
+  """column name"""
+  enabled
 
   """column name"""
   type
@@ -2259,6 +2509,7 @@ input v0_rpcs_stream_cursor_input {
 input v0_rpcs_stream_cursor_value_input {
   chain_id: Int
   description: String
+  enabled: Boolean
   type: String
   url: String
 }
@@ -2289,6 +2540,406 @@ order by variance() on columns of table "v0.rpcs"
 """
 input v0_rpcs_variance_order_by {
   chain_id: order_by
+}
+
+"""
+columns and relationships of "v0.traces"
+"""
+type v0_traces {
+  """An object relationship"""
+  chain: v0_chains
+  chain_id: Int
+  data(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  initiating_transaction_hash: String
+  timestamp: timestamptz
+  transaction_hash: String
+
+  """An object relationship"""
+  transfer: v0_transfers
+  type: String
+}
+
+"""
+order by aggregate values of table "v0.traces"
+"""
+input v0_traces_aggregate_order_by {
+  avg: v0_traces_avg_order_by
+  count: order_by
+  max: v0_traces_max_order_by
+  min: v0_traces_min_order_by
+  stddev: v0_traces_stddev_order_by
+  stddev_pop: v0_traces_stddev_pop_order_by
+  stddev_samp: v0_traces_stddev_samp_order_by
+  sum: v0_traces_sum_order_by
+  var_pop: v0_traces_var_pop_order_by
+  var_samp: v0_traces_var_samp_order_by
+  variance: v0_traces_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.traces"
+"""
+input v0_traces_avg_order_by {
+  chain_id: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.traces". All fields are combined with a logical 'AND'.
+"""
+input v0_traces_bool_exp {
+  _and: [v0_traces_bool_exp!]
+  _not: v0_traces_bool_exp
+  _or: [v0_traces_bool_exp!]
+  chain: v0_chains_bool_exp
+  chain_id: Int_comparison_exp
+  data: jsonb_comparison_exp
+  initiating_transaction_hash: String_comparison_exp
+  timestamp: timestamptz_comparison_exp
+  transaction_hash: String_comparison_exp
+  transfer: v0_transfers_bool_exp
+  type: String_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.traces"
+"""
+input v0_traces_max_order_by {
+  chain_id: order_by
+  initiating_transaction_hash: order_by
+  timestamp: order_by
+  transaction_hash: order_by
+  type: order_by
+}
+
+"""
+order by min() on columns of table "v0.traces"
+"""
+input v0_traces_min_order_by {
+  chain_id: order_by
+  initiating_transaction_hash: order_by
+  timestamp: order_by
+  transaction_hash: order_by
+  type: order_by
+}
+
+"""Ordering options when selecting data from "v0.traces"."""
+input v0_traces_order_by {
+  chain: v0_chains_order_by
+  chain_id: order_by
+  data: order_by
+  initiating_transaction_hash: order_by
+  timestamp: order_by
+  transaction_hash: order_by
+  transfer: v0_transfers_order_by
+  type: order_by
+}
+
+"""
+select columns of table "v0.traces"
+"""
+enum v0_traces_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  data
+
+  """column name"""
+  initiating_transaction_hash
+
+  """column name"""
+  timestamp
+
+  """column name"""
+  transaction_hash
+
+  """column name"""
+  type
+}
+
+"""
+order by stddev() on columns of table "v0.traces"
+"""
+input v0_traces_stddev_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.traces"
+"""
+input v0_traces_stddev_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.traces"
+"""
+input v0_traces_stddev_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+Streaming cursor of the table "v0_traces"
+"""
+input v0_traces_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_traces_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_traces_stream_cursor_value_input {
+  chain_id: Int
+  data: jsonb
+  initiating_transaction_hash: String
+  timestamp: timestamptz
+  transaction_hash: String
+  type: String
+}
+
+"""
+order by sum() on columns of table "v0.traces"
+"""
+input v0_traces_sum_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.traces"
+"""
+input v0_traces_var_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.traces"
+"""
+input v0_traces_var_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+order by variance() on columns of table "v0.traces"
+"""
+input v0_traces_variance_order_by {
+  chain_id: order_by
+}
+
+"""
+columns and relationships of "v0.transactions"
+"""
+type v0_transactions {
+  """An object relationship"""
+  block: v0_blocks
+  block_hash: String!
+
+  """An object relationship"""
+  chain: v0_chains!
+  chain_id: Int!
+  data(
+    """JSON select path"""
+    path: String
+  ): jsonb!
+  hash: String!
+  height: Int!
+  index: Int!
+
+  """SUCCESS if the transaction succeeded, FAILED otherwise."""
+  status(
+    """
+    input parameters for computed field "status" defined on table "v0.transactions"
+    """
+    args: status_v0_transactions_args!
+  ): String
+}
+
+"""
+order by aggregate values of table "v0.transactions"
+"""
+input v0_transactions_aggregate_order_by {
+  avg: v0_transactions_avg_order_by
+  count: order_by
+  max: v0_transactions_max_order_by
+  min: v0_transactions_min_order_by
+  stddev: v0_transactions_stddev_order_by
+  stddev_pop: v0_transactions_stddev_pop_order_by
+  stddev_samp: v0_transactions_stddev_samp_order_by
+  sum: v0_transactions_sum_order_by
+  var_pop: v0_transactions_var_pop_order_by
+  var_samp: v0_transactions_var_samp_order_by
+  variance: v0_transactions_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.transactions"
+"""
+input v0_transactions_avg_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.transactions". All fields are combined with a logical 'AND'.
+"""
+input v0_transactions_bool_exp {
+  _and: [v0_transactions_bool_exp!]
+  _not: v0_transactions_bool_exp
+  _or: [v0_transactions_bool_exp!]
+  block: v0_blocks_bool_exp
+  block_hash: String_comparison_exp
+  chain: v0_chains_bool_exp
+  chain_id: Int_comparison_exp
+  data: jsonb_comparison_exp
+  hash: String_comparison_exp
+  height: Int_comparison_exp
+  index: Int_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.transactions"
+"""
+input v0_transactions_max_order_by {
+  block_hash: order_by
+  chain_id: order_by
+  hash: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+order by min() on columns of table "v0.transactions"
+"""
+input v0_transactions_min_order_by {
+  block_hash: order_by
+  chain_id: order_by
+  hash: order_by
+  height: order_by
+  index: order_by
+}
+
+"""Ordering options when selecting data from "v0.transactions"."""
+input v0_transactions_order_by {
+  block: v0_blocks_order_by
+  block_hash: order_by
+  chain: v0_chains_order_by
+  chain_id: order_by
+  data: order_by
+  hash: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+select columns of table "v0.transactions"
+"""
+enum v0_transactions_select_column {
+  """column name"""
+  block_hash
+
+  """column name"""
+  chain_id
+
+  """column name"""
+  data
+
+  """column name"""
+  hash
+
+  """column name"""
+  height
+
+  """column name"""
+  index
+}
+
+"""
+order by stddev() on columns of table "v0.transactions"
+"""
+input v0_transactions_stddev_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.transactions"
+"""
+input v0_transactions_stddev_pop_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.transactions"
+"""
+input v0_transactions_stddev_samp_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+Streaming cursor of the table "v0_transactions"
+"""
+input v0_transactions_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_transactions_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_transactions_stream_cursor_value_input {
+  block_hash: String
+  chain_id: Int
+  data: jsonb
+  hash: String
+  height: Int
+  index: Int
+}
+
+"""
+order by sum() on columns of table "v0.transactions"
+"""
+input v0_transactions_sum_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.transactions"
+"""
+input v0_transactions_var_pop_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.transactions"
+"""
+input v0_transactions_var_samp_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
+}
+
+"""
+order by variance() on columns of table "v0.transactions"
+"""
+input v0_transactions_variance_order_by {
+  chain_id: order_by
+  height: order_by
+  index: order_by
 }
 
 """
@@ -2338,6 +2989,24 @@ type v0_transfers {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+
+  """An array relationship"""
+  traces(
+    """distinct select on columns"""
+    distinct_on: [v0_traces_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_traces_order_by!]
+
+    """filter the rows returned"""
+    where: v0_traces_bool_exp
+  ): [v0_traces!]!
 }
 
 """
@@ -2381,6 +3050,7 @@ input v0_transfers_bool_exp {
   source_transaction_hash: String_comparison_exp
   source_transaction_index: String_comparison_exp
   status: String_comparison_exp
+  traces: v0_traces_bool_exp
 }
 
 """Ordering options when selecting data from "v0.transfers"."""
@@ -2419,6 +3089,7 @@ input v0_transfers_order_by {
   source_transaction_hash: order_by
   source_transaction_index: order_by
   status: order_by
+  traces_aggregate: v0_traces_aggregate_order_by
 }
 
 """
@@ -2575,4 +3246,191 @@ input v0_transfers_stream_cursor_value_input {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+}
+
+"""
+columns and relationships of "v0.ucs1_configuration"
+"""
+type v0_ucs1_configuration {
+  channel_id: String!
+  connection_id: String!
+  contract_address: String!
+
+  """An object relationship"""
+  destination_chain: v0_chains!
+  destination_chain_id: Int!
+
+  """An object relationship"""
+  source_chain: v0_chains!
+  source_chain_id: Int!
+}
+
+"""
+order by aggregate values of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_aggregate_order_by {
+  avg: v0_ucs1_configuration_avg_order_by
+  count: order_by
+  max: v0_ucs1_configuration_max_order_by
+  min: v0_ucs1_configuration_min_order_by
+  stddev: v0_ucs1_configuration_stddev_order_by
+  stddev_pop: v0_ucs1_configuration_stddev_pop_order_by
+  stddev_samp: v0_ucs1_configuration_stddev_samp_order_by
+  sum: v0_ucs1_configuration_sum_order_by
+  var_pop: v0_ucs1_configuration_var_pop_order_by
+  var_samp: v0_ucs1_configuration_var_samp_order_by
+  variance: v0_ucs1_configuration_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_avg_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.ucs1_configuration". All fields are combined with a logical 'AND'.
+"""
+input v0_ucs1_configuration_bool_exp {
+  _and: [v0_ucs1_configuration_bool_exp!]
+  _not: v0_ucs1_configuration_bool_exp
+  _or: [v0_ucs1_configuration_bool_exp!]
+  channel_id: String_comparison_exp
+  connection_id: String_comparison_exp
+  contract_address: String_comparison_exp
+  destination_chain: v0_chains_bool_exp
+  destination_chain_id: Int_comparison_exp
+  source_chain: v0_chains_bool_exp
+  source_chain_id: Int_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_max_order_by {
+  channel_id: order_by
+  connection_id: order_by
+  contract_address: order_by
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+order by min() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_min_order_by {
+  channel_id: order_by
+  connection_id: order_by
+  contract_address: order_by
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""Ordering options when selecting data from "v0.ucs1_configuration"."""
+input v0_ucs1_configuration_order_by {
+  channel_id: order_by
+  connection_id: order_by
+  contract_address: order_by
+  destination_chain: v0_chains_order_by
+  destination_chain_id: order_by
+  source_chain: v0_chains_order_by
+  source_chain_id: order_by
+}
+
+"""
+select columns of table "v0.ucs1_configuration"
+"""
+enum v0_ucs1_configuration_select_column {
+  """column name"""
+  channel_id
+
+  """column name"""
+  connection_id
+
+  """column name"""
+  contract_address
+
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  source_chain_id
+}
+
+"""
+order by stddev() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_stddev_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_stddev_pop_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_stddev_samp_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+Streaming cursor of the table "v0_ucs1_configuration"
+"""
+input v0_ucs1_configuration_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_ucs1_configuration_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_ucs1_configuration_stream_cursor_value_input {
+  channel_id: String
+  connection_id: String
+  contract_address: String
+  destination_chain_id: Int
+  source_chain_id: Int
+}
+
+"""
+order by sum() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_sum_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_var_pop_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_var_samp_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
+}
+
+"""
+order by variance() on columns of table "v0.ucs1_configuration"
+"""
+input v0_ucs1_configuration_variance_order_by {
+  destination_chain_id: order_by
+  source_chain_id: order_by
 }

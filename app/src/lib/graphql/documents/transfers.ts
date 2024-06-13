@@ -47,3 +47,29 @@ export const userTransfersQueryDocument = graphql(/* Graphql */ `
     }
   }
 `)
+
+export const transfersBySourceHashQueryDocument = graphql(/* GraphQL */ `
+query TransfersBySourceHash($source_transaction_hash: String!) {
+  v0_transfers(where: {source_transaction_hash: {_eq: $source_transaction_hash}}) {
+    sender
+    normalized_sender
+    source_chain_id
+    source_connection_id
+    source_channel_id
+    receiver
+    normalized_receiver
+    destination_chain_id
+    destination_connection_id
+    destination_channel_id
+    assets
+    source_timestamp
+    destination_timestamp
+    traces(order_by: {timestamp: asc}) {
+      timestamp
+      chain_id
+      type
+      transaction_hash
+    }
+  }
+}
+`)
