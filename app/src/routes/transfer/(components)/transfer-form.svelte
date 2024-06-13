@@ -99,8 +99,32 @@ const transfer = async () => {
 
   if ($fromChain.rpc_type === 'cosmos') {
     const evmClient = await getWalletClient(config)
+    const rpcUrl = $fromChain.rpcs.find((rpc) => rpc.type === 'rpc')?.url;
 
-    const transferHash = await unionClient.transferAssets({
+    if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`);
+
+    const cosmosOfflineSigner = (
+      $cosmosStore.connectedWallet === "keplr"
+        ? window?.keplr?.getOfflineSigner($fromChainId, {
+            disableBalanceCheck: false
+          })
+        : window.leap
+          ? window.leap.getOfflineSigner($fromChainId, {
+              disableBalanceCheck: false
+            })
+          : undefined
+    ) as OfflineSigner
+    
+    let cosmosClient = new UnionClient({
+      cosmosOfflineSigner,
+      evmSigner: undefined,
+      bech32Prefix: $fromChain.addr_prefix,
+      chainId: $fromChain.chain_id,
+      gas: { denom: assetId, amount: "0.0025" },
+      rpcUrl: `https://${rpcUrl}`
+    })
+
+    const transferHash = await cosmosClient.transferAssets({
       kind: 'cosmwasm',
       instructions: [
         {
@@ -118,6 +142,16 @@ const transfer = async () => {
     })
     toast.success(`Transfer transaction sent: ${transferHash}`)
   } else if ($fromChain.rpc_type === 'evm') {
+    const evmClient = await getWalletClient(config)
+    const client = new UnionClient({
+      // @ts-ignore
+      cosmosOfflineSigner: undefined,
+      evmSigner: evmClient,
+      bech32Prefix: 'union',
+      chainId: 'union-testnet-8',
+      gas: { denom: 'muno', amount: '0.0025' },
+      rpcUrl: 'https://union-testnet-rpc.polkachu.com',
+    })
 
   } else {
     console.error('invalid rpc type');
@@ -131,16 +165,16 @@ const transfer = async () => {
   //     return toast.error('Please connect your Sepolia wallet')
   //   if (!isAddress(assetId)) return toast.error('Invalid address')
 
-  //   const evmClient = await getWalletClient(config)
-  //   const client = new UnionClient({
-  //     // @ts-ignore
-  //     cosmosOfflineSigner: undefined,
-  //     evmSigner: evmClient,
-  //     bech32Prefix: 'union',
-  //     chainId: 'union-testnet-8',
-  //     gas: { denom: 'muno', amount: '0.0025' },
-  //     rpcUrl: 'https://union-testnet-rpc.polkachu.com',
-  //   })
+    // const evmClient = await getWalletClient(config)
+    // const client = new UnionClient({
+    //   // @ts-ignore
+    //   cosmosOfflineSigner: undefined,
+    //   evmSigner: evmClient,
+    //   bech32Prefix: 'union',
+    //   chainId: 'union-testnet-8',
+    //   gas: { denom: 'muno', amount: '0.0025' },
+    //   rpcUrl: 'https://union-testnet-rpc.polkachu.com',
+    // })
   //   const approveHash = await client.approveEvmAssetTransfer({
   //     account: $evmAccount || evmClient.account,
   //     denomAddress: assetId,
@@ -182,34 +216,12 @@ onMount(() => {
   fromChainId.subscribe(fromChain => {
     asset.set("")
   })
-
-  const cosmosOfflineSigner = (
-    $cosmosStore.connectedWallet === "keplr"
-      ? window?.keplr?.getOfflineSigner("union-testnet-8", {
-          disableBalanceCheck: false
-        })
-      : window.leap
-        ? window.leap.getOfflineSigner("union-testnet-8", {
-            disableBalanceCheck: false
-          })
-        : undefined
-  ) as OfflineSigner
-
   const evmWalletClient = createWalletClient({
     chain: config.chains[0],
     account: `0x${userAddr.evm.normalized}`,
     transport: config._internal.transports["11155111"]
   })
 
-  unionClient = new UnionClient({
-    cosmosOfflineSigner,
-    evmSigner: evmWalletClient,
-    bech32Prefix: "union",
-    chainId: "union-testnet-8",
-    gas: { denom: "muno", amount: "0.0025" },
-    // rpcUrl: 'https://rpc.testnet.bonlulu.uno',
-    rpcUrl: "https://union-testnet-rpc.polkachu.com"
-  })
 })
 
 let sendableBalances = derived(

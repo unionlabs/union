@@ -53,6 +53,9 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 
 {#if $chains.isLoading}
   Loading chains...
+{:else if $chains.isError}
+  Error loading chains.
 {:else if $chains.isSuccess}
   <slot chains={$checkedChains}/>
+
 {/if}
