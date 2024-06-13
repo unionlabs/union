@@ -9,9 +9,9 @@ import { Card, CardGrid } from "@astrojs/starlight/components";
 
 These endpoints may be helpful while joining the network and ensuring the correctness of your node.
 
-<Card title="gRPC">
+<Card title="RPC">
   <ul>
-    {endpoints.grpc.map(endpoint => (
+    {endpoints.rpc.map(endpoint => (
       <li>
         <a href={endpoint} target="_blank" rel="noopener noreferrer">
           {endpoint}
@@ -21,9 +21,9 @@ These endpoints may be helpful while joining the network and ensuring the correc
   </ul>
 </Card>
 
-<Card title="RPC">
+<Card title="gRPC">
   <ul>
-    {endpoints.rpc.map(endpoint => (
+    {endpoints.grpc.map(endpoint => (
       <li>
         <a href={endpoint} target="_blank" rel="noopener noreferrer">
           {endpoint}

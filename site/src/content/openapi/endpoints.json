@@ -1,13 +1,6 @@
 {
-  "grpc": [
-    "https://grpc.testnet.bonlulu.uno",
-    "https://grpc.testnet.val.poisonphang.com",
-    "https://union-testnet-grpc.polkachu.com:24690",
-    "https://grpc-testnet-union.nodeist.net",
-    "https://grpc-t.union.nodestake.org:443",
-    "https://services.staketab.org:9450"
-  ],
   "rpc": [
+    "https://rpc.testnet-8.union.build",
     "https://rpc.testnet.bonlulu.uno",
     "https://rpc.testnet.val.poisonphang.com",
     "https://union-testnet-rpc.polkachu.com",
@@ -15,7 +8,17 @@
     "https://rpc-t.union.nodestake.org",
     "https://union-testnet-rpc.staketab.org"
   ],
+  "grpc": [
+    "https://grpc.testnet-8.union.build",
+    "https://grpc.testnet.bonlulu.uno",
+    "https://grpc.testnet.val.poisonphang.com",
+    "https://union-testnet-grpc.polkachu.com:24690",
+    "https://grpc-testnet-union.nodeist.net",
+    "https://grpc-t.union.nodestake.org:443",
+    "https://services.staketab.org:9450"
+  ],
   "rest": [
+    "https://rest.testnet-8.union.build",
     "https://api.testnet.bonlulu.uno",
     "https://api.testnet.val.poisonphang.com",
     "https://union-testnet-api.polkachu.com",
