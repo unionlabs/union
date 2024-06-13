@@ -44,8 +44,7 @@ pub enum ProtocolError {
     Unauthorized,
 }
 
-#[allow(type_alias_bounds)]
-pub type PacketExtensionOf<T: TransferProtocol> = <T::Packet as TransferPacket>::Extension;
+pub type PacketExtensionOf<T> = <<T as TransferProtocol>::Packet as TransferPacket>::Extension;
 
 pub struct TransferInput {
     pub current_time: Timestamp,
