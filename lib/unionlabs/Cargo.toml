@@ -53,10 +53,10 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 uint                     = "*"
 wasmparser               = { version = "0.113" }
 
-borsh                = { workspace = true, features = ["borsh-derive"] }
+borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"
-near-primitives-core = { version = "0.21" }
-near-sdk             = { workspace = true }
+near-primitives-core = { version = "0.21", optional = true }
+near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
@@ -69,11 +69,12 @@ default = ["ethabi", "std", "stargate"]
 cosmwasm = []
 ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
 grpc     = ["protos/client"]
+near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["ethers-core/std"]
 
 arbitrary  = ["dep:arbitrary", "primitive-types/arbitrary"]
 fuzzing    = ["arbitrary"]
 test_utils = []
 
-stargate = ["cosmwasm", "cosmwasm-std/stargate"]
 schemars = ["dep:schemars"]
+stargate = ["cosmwasm", "cosmwasm-std/stargate"]

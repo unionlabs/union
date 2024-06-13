@@ -528,7 +528,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     state: channel::state::State::Tryopen,
                     ordering: Order::Unordered,
                     counterparty: channel::counterparty::Counterparty {
-                        // TODO(aeryz): make port id a validater type
+                        // TODO(aeryz): make port id a validator type
                         port_id: port_id.clone(),
                         channel_id: channel_id.clone().to_string(),
                     },
@@ -744,7 +744,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     state: channel::state::State::Open,
                     ordering: Order::Unordered,
                     counterparty: channel::counterparty::Counterparty {
-                        // TODO(aeryz): make port id a validater type
+                        // TODO(aeryz): make port id a validator type
                         port_id: port_id.clone(),
                         channel_id: channel_id.clone().to_string(),
                     },

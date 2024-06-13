@@ -32,6 +32,7 @@ pub mod google;
 
 pub mod cosmwasm;
 
+#[cfg(feature = "near")]
 pub mod near;
 
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).

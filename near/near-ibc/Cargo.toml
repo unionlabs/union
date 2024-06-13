@@ -15,7 +15,7 @@ schemars                = { workspace = true, features = ["derive"], optional = 
 serde.workspace         = true
 serde_json.workspace    = true
 thiserror.workspace     = true
-unionlabs               = { workspace = true }
+unionlabs               = { workspace = true, features = ["near"] }
 
 [lib]
 crate-type = ["cdylib"]
