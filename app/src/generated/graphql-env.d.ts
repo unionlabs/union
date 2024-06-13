@@ -1678,6 +1678,72 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "v0_traces",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_traces"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_traces_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_traces_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
             "name": "v0_transactions",
             "type": {
               "kind": "NON_NULL",
@@ -3271,6 +3337,121 @@ export type introspection = {
                 "type": {
                   "kind": "INPUT_OBJECT",
                   "name": "v0_rpcs_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v0_traces",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_traces"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_traces_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_traces_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v0_traces_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_traces"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int"
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_traces_stream_cursor_input"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
                 }
               }
             ],
@@ -9017,6 +9198,18 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "type",
             "type": {
               "kind": "NON_NULL",
@@ -9200,6 +9393,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
             "name": "type",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -9312,6 +9512,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "type",
             "type": {
               "kind": "ENUM",
@@ -9338,6 +9545,10 @@ export type introspection = {
           },
           {
             "name": "description",
+            "isDeprecated": false
+          },
+          {
+            "name": "enabled",
             "isDeprecated": false
           },
           {
@@ -9435,6 +9646,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
             "name": "type",
             "type": {
               "kind": "SCALAR",
@@ -9496,6 +9714,635 @@ export type introspection = {
       {
         "kind": "INPUT_OBJECT",
         "name": "v0_rpcs_variance_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_traces",
+        "fields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_transfers"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_avg_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp"
+            }
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_transfers_bool_exp"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_max_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_min_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_order_by",
+        "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_transfers_order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v0_traces_select_column",
+        "enumValues": [
+          {
+            "name": "chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "data",
+            "isDeprecated": false
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "type",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_traces_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "initiating_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_sum_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_traces_variance_order_by",
         "inputFields": [
           {
             "name": "chain_id",
@@ -10622,6 +11469,72 @@ export type introspection = {
             },
             "args": [],
             "isDeprecated": false
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_traces"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_traces_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_traces_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
           }
         ],
         "interfaces": []
@@ -10900,6 +11813,13 @@ export type introspection = {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
             }
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_bool_exp"
+            }
           }
         ],
         "isOneOf": false
@@ -11144,6 +12064,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "traces_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_aggregate_order_by"
             }
           }
         ],
