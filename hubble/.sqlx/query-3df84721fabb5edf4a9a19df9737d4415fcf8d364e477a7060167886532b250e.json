@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT DISTINCT revision_height FROM v0.lightclient_updates_mat\n        WHERE counterparty_chain_id = $1\n        AND revision_height > coalesce((\n            SELECT MAX(consensus_height) from v0.consensus_heights\n            WHERE chain_id = $1\n        ), 0)\n        ORDER BY revision_height ASC\n        LIMIT 200\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "revision_height",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "3df84721fabb5edf4a9a19df9737d4415fcf8d364e477a7060167886532b250e"
+}

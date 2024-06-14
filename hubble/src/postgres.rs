@@ -376,7 +376,7 @@ pub async fn get_batch_of_unmapped_execution_heights<'a, A: Acquire<'a, Database
     let mut conn = db.acquire().await?;
     let heights = sqlx::query!(
         "
-        SELECT revision_height FROM v0.lightclient_updates
+        SELECT DISTINCT revision_height FROM v0.lightclient_updates_mat
         WHERE counterparty_chain_id = $1
         AND revision_height > coalesce((
             SELECT MAX(consensus_height) from v0.consensus_heights

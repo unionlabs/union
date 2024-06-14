@@ -1,7 +1,7 @@
 use backon::{ExponentialBuilder, Retryable};
 use color_eyre::{eyre::eyre, Result};
 use futures::{stream::FuturesOrdered, TryStreamExt};
-use tracing::{debug, info, info_span, Instrument};
+use tracing::{debug, info};
 
 use crate::postgres::ChainId;
 
@@ -44,6 +44,7 @@ pub struct Indexer {
 impl Indexer {
     pub async fn index(&self) -> Result<()> {
         loop {
+            info!("fixing next batch of unmapped_execution_heights");
             debug!("getting unmapped consensus heights");
             let consensus_heights =
                 crate::postgres::get_batch_of_unmapped_execution_heights(&self.pool, self.chain_id)
