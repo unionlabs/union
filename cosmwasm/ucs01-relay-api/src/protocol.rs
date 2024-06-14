@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    Addr, Attribute, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg, IbcOrder,
-    IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
+    Addr, Attribute, Binary, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
+    IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
 use unionlabs::encoding::{self, Decode, DecodeErrorOf, Encode};
@@ -208,7 +208,7 @@ pub trait TransferProtocol {
         } else {
             match ack {
                 Ok(value) => {
-                    let value_string = serde_utils::to_hex(value);
+                    let value_string = Binary::from(value).to_base64();
                     (
                         self.send_tokens_success(
                             packet.sender(),
@@ -221,7 +221,7 @@ pub trait TransferProtocol {
                     )
                 }
                 Err(error) => {
-                    let error_string = serde_utils::to_hex(error);
+                    let error_string = Binary::from(error).to_base64();
                     (
                         self.send_tokens_failure(
                             packet.sender(),

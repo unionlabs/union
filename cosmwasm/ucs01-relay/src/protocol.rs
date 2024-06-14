@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, AnyMsg, BankMsg, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
+    wasm_execute, Addr, AnyMsg, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
     IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use prost::Message;
@@ -663,7 +663,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value_string = serde_utils::to_hex(value.clone());
+                let value_string = Binary::from(value.clone()).to_base64();
                 (
                     self.send_tokens_success(sender, &String::new(), tokens)?,
                     Vec::from_iter(
@@ -675,7 +675,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             Err(error) => (
                 self.send_tokens_failure(sender, &String::new(), tokens)?,
                 Vec::from_iter(
-                    (!error.is_empty()).then_some((ATTR_ERROR, serde_utils::to_hex(error.clone()))),
+                    (!error.is_empty())
+                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_base64())),
                 ),
                 error.to_vec(),
             ),
@@ -1046,7 +1047,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value_string = serde_utils::to_hex(value.clone());
+                let value_string = Binary::from(value.clone()).to_base64();
                 (
                     self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
                     Vec::from_iter(
@@ -1058,7 +1059,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             Err(error) => (
                 self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
                 Vec::from_iter(
-                    (!error.is_empty()).then_some((ATTR_ERROR, serde_utils::to_hex(error.clone()))),
+                    (!error.is_empty())
+                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_base64())),
                 ),
                 error.to_vec(),
             ),
