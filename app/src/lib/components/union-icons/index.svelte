@@ -1,15 +1,15 @@
 <script lang="ts">
 import ColorBlocks from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorChannel from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorConnection from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorExplorer from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorFaucet from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorIndex from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorQueue from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorSearch from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorTransfers from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorUserTransfers from "$lib/components/union-icons/color/icon-blocks-color.svelte"
-import ColorWallet from "$lib/components/union-icons/color/icon-blocks-color.svelte"
+import ColorChannel from "$lib/components/union-icons/color/icon-channel.svelte"
+import ColorConnection from "$lib/components/union-icons/color/icon-connection-color.svelte"
+import ColorExplorer from "$lib/components/union-icons/color/icon-explorer-color.svelte"
+import ColorFaucet from "$lib/components/union-icons/color/icon-faucet-color.svelte"
+import ColorIndex from "$lib/components/union-icons/color/icon-index.svelte"
+import ColorQueue from "$lib/components/union-icons/color/icon-queue.svelte"
+import ColorSearch from "$lib/components/union-icons/color/icon-search-color.svelte"
+import ColorTransfers from "$lib/components/union-icons/color/icon-transfers-color.svelte"
+import ColorUserTransfers from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
+import ColorWallet from "$lib/components/union-icons/color/icon-wallet-color.svelte"
 
 import MonoBlocks from "$lib/components/union-icons/mono/icon-blocks-mono.svelte"
 import MonoChannel from "$lib/components/union-icons/mono/icon-channel-mono.svelte"
@@ -141,7 +141,7 @@ let icons = [
 
 let className: string | undefined = undefined
 export let theme: "color" | "mono" | "inverse" = "color"
-export let name: IconName = "blocks"
+export let name: IconName | undefined
 
 export { className as class }
 
