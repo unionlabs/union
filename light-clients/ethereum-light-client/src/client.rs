@@ -20,7 +20,7 @@ use ics008_wasm_client::{
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{Decode, DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
     ethereum::{ibc_commitment_key, keccak256},
     google::protobuf::any::Any,
@@ -523,7 +523,7 @@ pub fn canonicalize_stored_value(
     let canonical_value = match path {
         // proto(any<cometbls>) -> ethabi(cometbls)
         Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
+            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(raw_value.as_ref())
                 .map_err(CanonicalizeStoredValueError::CometblsClientStateDecode)?
                 .0
                 .encode_as::<EthAbi>()
@@ -531,7 +531,7 @@ pub fn canonicalize_stored_value(
         // proto(any<wasm<cometbls>>) -> ethabi(cometbls)
         Path::ClientConsensusState(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode(raw_value.as_ref())
+        >::decode_as::<Proto>(raw_value.as_ref())
         .map_err(CanonicalizeStoredValueError::CometblsConsensusStateDecode)?
         .0
         .data

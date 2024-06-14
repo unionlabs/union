@@ -406,7 +406,10 @@ fn verify_existence_proof(
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs::{cosmos::ics23::commitment_proof::CommitmentProof, encoding::Decode};
+    use unionlabs::{
+        cosmos::ics23::commitment_proof::CommitmentProof,
+        encoding::{DecodeAs, Proto},
+    };
 
     use super::*;
     use crate::proof_specs::TENDERMINT_PROOF_SPEC;
@@ -417,7 +420,8 @@ mod tests {
         key: &[u8],
         value: &[u8],
     ) -> Result<(), VerifyMembershipError> {
-        let CommitmentProof::Exist(commitment_proof) = CommitmentProof::decode(proof).unwrap()
+        let CommitmentProof::Exist(commitment_proof) =
+            CommitmentProof::decode_as::<Proto>(proof).unwrap()
         else {
             panic!("unexpected proof type");
         };
@@ -430,7 +434,8 @@ mod tests {
         root: &[u8],
         key: &[u8],
     ) -> Result<(), VerifyMembershipError> {
-        let CommitmentProof::Nonexist(commitment_proof) = CommitmentProof::decode(proof).unwrap()
+        let CommitmentProof::Nonexist(commitment_proof) =
+            CommitmentProof::decode_as::<Proto>(proof).unwrap()
         else {
             panic!("unexpected proof type");
         };

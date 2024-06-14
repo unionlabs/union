@@ -11,7 +11,7 @@ use ics008_wasm_client::{
 };
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
-    encoding::{Decode, Proto},
+    encoding::{DecodeAs, Proto},
     ensure,
     ibc::{
         core::{
@@ -70,7 +70,8 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
 
-        let merkle_proof = MerkleProof::decode(proof.as_ref()).map_err(Error::MerkleProofDecode)?;
+        let merkle_proof =
+            MerkleProof::decode_as::<Proto>(proof.as_ref()).map_err(Error::MerkleProofDecode)?;
 
         match value {
             StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
@@ -450,7 +451,7 @@ mod tests {
         },
         FROZEN_HEIGHT,
     };
-    use unionlabs::{encoding::Encode, google::protobuf::any::Any};
+    use unionlabs::{encoding::EncodeAs, google::protobuf::any::Any};
 
     use super::*;
 
@@ -473,7 +474,7 @@ mod tests {
     ) {
         deps.storage.set(
             format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-            &Any(subject_client_state.clone()).encode(),
+            &Any(subject_client_state.clone()).encode_as::<Proto>(),
         );
         deps.storage.set(
             format!(
@@ -481,11 +482,11 @@ mod tests {
                 consensus_db_key(&INITIAL_CONSENSUS_STATE_HEIGHT)
             )
             .as_bytes(),
-            &Any(subject_consensus_state.clone()).encode(),
+            &Any(subject_consensus_state.clone()).encode_as::<Proto>(),
         );
         deps.storage.set(
             format!("{SUBSTITUTE_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-            &Any(substitute_client_state.clone()).encode(),
+            &Any(substitute_client_state.clone()).encode_as::<Proto>(),
         );
         deps.storage.set(
             format!(
@@ -493,7 +494,7 @@ mod tests {
                 consensus_db_key(&INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
             )
             .as_bytes(),
-            &Any(substitute_consensus_state.clone()).encode(),
+            &Any(substitute_consensus_state.clone()).encode_as::<Proto>(),
         );
     }
 

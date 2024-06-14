@@ -65,6 +65,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     MiddlewareError(#[from] MiddlewareError),
+
+    #[error("unable to decode json value")]
+    SerdeJson(#[from] serde_json_wasm::de::Error),
 }
 
 impl From<FromUtf8Error> for ContractError {
