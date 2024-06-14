@@ -6,6 +6,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
 import * as Card from "$lib/components/ui/card/index.ts"
+import { truncate } from "$lib/utilities/format"
 
 const source = $page.params.source
 
@@ -35,61 +36,56 @@ let transfers = createQuery({
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col gap-8 max-w-5xl self-center mt-4">
-    <Card.Header class="font-bold text-center">
+  <Card.Root class="flex flex-col divide-y max-w-5xl self-center mt-4">
+    <Card.Header class="font-bold text-center text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
     <Card.Content class="flex flex-col gap-8">
-    <section class="flex">
-      <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-gunship text-xl text-foreground">Source</h2>
-        <p class="text-sm font-bold">{transfer.source_chain?.display_name}</p>
-        <p class="text-xs">{transfer.source_chain_id}</p>
-        <p class="text-xs">{transfer.source_connection_id}</p>
-        <p class="text-xs">{transfer.source_channel_id}</p>
-      </div>
-      <div class="flex items-center justify-center px-8">
-        <MoveRightIcon/>
-      </div>
-      <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-gunship text-xl text-foreground">Destination</h2>
-        <p class="text-sm font-bold">{transfer.destination_chain?.display_name}</p>
-        <p class="text-xs">{transfer.destination_chain_id}</p>
-        <p class="text-xs">{transfer.destination_connection_id}</p>
-        <p class="text-xs">{transfer.destination_channel_id}</p>
-      </div>
-    </section>
-    <section class="flex">
-      <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-gunship text-xl text-foreground">Sender</h2>
-        <p class="text-sm">{transfer.sender}</p>
-        <p class="text-xs">{transfer.normalized_sender}</p>
-      </div>
-      <div class="flex items-center justify-center px-8">
-        <MoveRightIcon/>
-      </div>
-      <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-gunship text-xl text-foreground">Receiver</h2>
-        <p class="text-sm">{transfer.receiver}</p>
-        <p class="text-xs">{transfer.normalized_receiver}</p>
-      </div>
-    </section>
-    <section>
-      <h2 class="font-gunship text-xl text-foreground">Assets</h2>
+
+    <section class="mt-6">
       {#if transfer.assets}
-        <ul class="text-muted-foreground">
+        <ul class="text-foreground text-center font-bold text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
-            <li>{value.amount} {denom}</li>
+            <li>{value.amount} {truncate(denom, 4)}</li>
           {/each}
         </ul>
       {:else}
         No assets in transfer
       {/if}
     </section>
-    <section class="flex flex-col gap-4">
-      <h2 class="font-gunship text-xl text-foreground">Trace</h2>
-
-      <div class="flex flex-col gap-4">
+    
+    <section class="flex">
+      <div class="flex-1 lex-col text-muted-foreground">
+        <h2 class="font-gunship text-2xl text-foreground">{transfer.source_chain?.display_name}</h2>
+        <p class="text-sm">{transfer.source_chain_id}</p>
+        <p class="text-sm">{transfer.source_connection_id}</p>
+        <p class="text-sm">{transfer.source_channel_id}</p>
+      </div>
+      <div class="flex items-center justify-center px-8">
+        <MoveRightIcon class="size-8"/>
+      </div>
+      <div class="flex-1 text-right flex-col text-muted-foreground">
+        <h2 class="font-gunship text-2xl text-foreground">{transfer.destination_chain?.display_name}</h2>
+        <p class="text-sm">{transfer.destination_chain_id}</p>
+        <p class="text-sm">{transfer.destination_connection_id}</p>
+        <p class="text-sm">{transfer.destination_channel_id}</p>
+      </div>
+    </section>
+    <section class="flex gap-8">
+      <div class=" lex-col text-muted-foreground">
+        <h2 class=" text-md text-foreground uppercase font-bold">Sender</h2>
+        <p class="text-sm">{transfer.sender}</p>
+        <p class="text-[10px]">normalized: {transfer.normalized_sender}</p>
+      </div>
+      <div class="flex-1 text-right flex-col text-muted-foreground">
+        <h2 class="text-md text-foreground uppercase font-bold">Receiver</h2>
+        <p class="text-sm">{transfer.receiver}</p>
+        <p class="text-[10px]">normalized: {transfer.normalized_receiver}</p>
+      </div>
+    </section>
+    </Card.Content>
+    <Card.Footer>
+      <div class="flex flex-col gap-4 mt-6">
         {#each transfer.traces as trace}
           <div>
             <h3 class="text-md font-bold capitalize">{trace.type}</h3>
@@ -99,8 +95,7 @@ let transfers = createQuery({
           </div>
         {/each}
       </div>
-    </section>
-    </Card.Content>
+    </Card.Footer>
   </Card.Root>
   {/each}
 {/if}
