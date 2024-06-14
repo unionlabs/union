@@ -5,6 +5,7 @@ import { transfersBySourceHashQueryDocument } from "$lib/graphql/documents/trans
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
+import * as Card from "$lib/components/ui/card/index.ts"
 
 const source = $page.params.source
 
@@ -34,19 +35,23 @@ let transfers = createQuery({
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <main class="flex flex-col gap-8">
+  <Card.Root class="flex flex-col gap-8 max-w-5xl self-center mt-4">
+    <Card.Header class="font-bold text-center">
+      TRANSFER {transfer.source_transaction_hash}
+    </Card.Header>
+    <Card.Content class="flex flex-col gap-8">
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-gunship text-2xl text-foreground">{transfer.source_chain?.display_name}</h2>
+        <h2 class="font-gunship text-xl text-foreground">{transfer.source_chain?.display_name}</h2>
         <p>{transfer.source_chain_id}</p>
         <p>{transfer.source_connection_id}</p>
         <p>{transfer.source_channel_id}</p>
       </div>
-      <div class="flex items-center justify-center">
+      <div class="flex items-center justify-center px-8">
         <MoveRightIcon/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-gunship text-2xl text-foreground">{transfer.destination_chain?.display_name}</h2>
+        <h2 class="font-gunship text-xl text-foreground">{transfer.destination_chain?.display_name}</h2>
         <p>{transfer.destination_chain_id}</p>
         <p>{transfer.destination_connection_id}</p>
         <p>{transfer.destination_channel_id}</p>
@@ -54,25 +59,27 @@ let transfers = createQuery({
     </section>
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-gunship text-2xl text-foreground">Sender</h2>
+        <h2 class="font-gunship text-xl text-foreground">Sender</h2>
         <p>{transfer.sender}</p>
         <p class="text-xs">{transfer.normalized_sender}</p>
       </div>
-      <div class="flex items-center justify-center">
+      <div class="flex items-center justify-center px-8">
         <MoveRightIcon/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-gunship text-2xl text-foreground">Receiver</h2>
+        <h2 class="font-gunship text-xl text-foreground">Receiver</h2>
         <p>{transfer.receiver}</p>
         <p class="text-xs">{transfer.normalized_receiver}</p>
       </div>
     </section>
     <section>
-      <h2 class="font-gunship text-2xl text-foreground">Assets</h2>
+      <h2 class="font-gunship text-xl text-foreground">Assets</h2>
       {#if transfer.assets}
-        {#each Object.entries(transfer.assets) as [denom, value]}
-          {value.amount} {denom}
-        {/each}
+        <ul class="text-muted-foreground">
+          {#each Object.entries(transfer.assets) as [denom, value]}
+            <li>{value.amount} {denom}</li>
+          {/each}
+        </ul>
       {:else}
         No assets in transfer
       {/if}
@@ -91,7 +98,8 @@ let transfers = createQuery({
         {/each}
       </div>
     </section>
-  </main>
+    </Card.Content>
+  </Card.Root>
   {/each}
 {/if}
 

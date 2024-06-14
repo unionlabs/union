@@ -107,7 +107,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3;
   </Resizable.PaneGroup>
   {:else}
   <div class="flex flex-col flex-1">
-    <a class="font-bold text-xl p-4 flex flex-row gap-2 items-center" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/>Back to <span class="capitalize">{$page.route.id?.split("/")[2]}</span></a>
+    <a class="font-bold text-xl p-4 flex flex-row gap-2 items-center" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="capitalize">{$page.route.id?.split("/")[2]}</span></a>
     <slot/>
   </div>
   {/if}
