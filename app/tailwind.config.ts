@@ -139,6 +139,7 @@ export default (<Config>{
         "9xl": "96rem"
       }),
       fontFamily: _ => ({
+        gunship: ["gunship", ...defaultTheme.fontFamily.sans],
         sans: ["quattro-sans", ...defaultTheme.fontFamily.sans],
         mono: ["quattro-mono", ...defaultTheme.fontFamily.mono]
       }),

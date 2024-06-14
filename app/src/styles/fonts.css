@@ -62,3 +62,11 @@
   src: url("/fonts/quattro-sans/iAWriterQuattroS-Bold.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "gunship";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/gunship/gunship.woff2") format("woff2");
+}
+
