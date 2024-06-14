@@ -1,9 +1,5 @@
 <script lang="ts">
-import type { Props } from "$lib/components/ui/button"
-
-type $$Props = Props
-
-let className: $$Props["class"] = undefined
+let className: string | undefined = undefined
 export { className as class }
 </script>
 
