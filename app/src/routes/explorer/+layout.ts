@@ -3,12 +3,12 @@ import type { LayoutLoad } from "./$types.ts"
 import type { SvelteComponent } from "svelte"
 
 //import UserTransfersIcon from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
-import SendHorizontalIcon from "virtual:icons/lucide/send-horizontal"
 import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
 import BlocksIcon from "$lib/components/union-icons/color/icon-blocks-color.svelte"
 import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
-import ChannelsIcon from "$lib/components/union-icons/color/icon-channel.svelte"
-import IndexIcon from "$lib/components/union-icons/color/icon-index.svelte"
+import ChannelsIcon from "$lib/components/union-icons/color/icon-channel-color.svelte"
+import IndexIcon from "$lib/components/union-icons/color/icon-index-color.svelte"
+import PacketIcon from "$lib/components/union-icons/color/icon-packet-color.svelte"
 
 const tables = ["blocks", "packets", "channels", "connections"] as const
 
@@ -46,7 +46,7 @@ export const load = (loadEvent => {
           "IBC Connections based on on-chain handshake events. Status is only 'CONFIRM' if we have indexed the entire four-way handshake."
       },
       { route: "channels", icon: ChannelsIcon, description: "Open IBC Channels" },
-      { route: "packets", icon: SendHorizontalIcon, description: "Packets sent through Union" },
+      { route: "packets", icon: PacketIcon, description: "Packets sent through Union" },
       {
         route: "index-status",
         icon: IndexIcon,
