@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use cosmwasm_std::{to_json_vec, Deps, DepsMut, Env, StdError};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, StdError};
 use frame_support_procedural::{DebugNoBound, PartialEqNoBound};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Encoding, Proto},
@@ -97,7 +97,7 @@ pub trait IbcClient: Sized {
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         msg: SudoMsg,
-    ) -> Result<Vec<u8>, IbcClientError<Self>> {
+    ) -> Result<Binary, IbcClientError<Self>> {
         match msg {
             SudoMsg::VerifyMembership {
                 height,
@@ -106,14 +106,14 @@ pub trait IbcClient: Sized {
                 proof,
                 path,
                 value,
-            } => to_json_vec(&Self::verify_membership(
+            } => to_json_binary(&Self::verify_membership(
                 deps.as_ref(),
                 height,
                 delay_time_period,
                 delay_block_period,
-                proof,
+                proof.into(),
                 path,
-                StorageState::Occupied(value),
+                StorageState::Occupied(value.into()),
             )?),
             SudoMsg::VerifyNonMembership {
                 height,
@@ -121,18 +121,18 @@ pub trait IbcClient: Sized {
                 delay_block_period,
                 proof,
                 path,
-            } => to_json_vec(&Self::verify_membership(
+            } => to_json_binary(&Self::verify_membership(
                 deps.as_ref(),
                 height,
                 delay_time_period,
                 delay_block_period,
-                proof,
+                proof.into(),
                 path,
                 StorageState::Empty,
             )?),
             SudoMsg::UpdateState { client_message } => {
                 if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message) {
-                    to_json_vec(&UpdateStateResult {
+                    to_json_binary(&UpdateStateResult {
                         heights: Self::update_state(deps, env, header)?,
                     })
                 } else {
@@ -142,8 +142,8 @@ pub trait IbcClient: Sized {
                 }
             }
             SudoMsg::UpdateStateOnMisbehaviour { client_message } => {
-                Self::update_state_on_misbehaviour(deps, env, client_message)?;
-                to_json_vec(&EmptyResult {})
+                Self::update_state_on_misbehaviour(deps, env, client_message.into())?;
+                to_json_binary(&EmptyResult {})
             }
             SudoMsg::VerifyUpgradeAndUpdateState {
                 upgrade_client_state,
@@ -159,15 +159,15 @@ pub trait IbcClient: Sized {
                         upgrade_consensus_state.as_slice(),
                     )
                     .map_err(DecodeError::ConsensusState)?,
-                    proof_upgrade_client,
-                    proof_upgrade_consensus_state,
+                    proof_upgrade_client.into(),
+                    proof_upgrade_consensus_state.into(),
                 )?;
 
-                to_json_vec(&EmptyResult {})
+                to_json_binary(&EmptyResult {})
             }
             SudoMsg::MigrateClientStore {} => {
                 Self::migrate_client_store(deps)?;
-                to_json_vec(&EmptyResult {})
+                to_json_binary(&EmptyResult {})
             }
         }
         .map_err(Into::into)
@@ -177,44 +177,44 @@ pub trait IbcClient: Sized {
         deps: Deps<Self::CustomQuery>,
         env: Env,
         msg: QueryMsg,
-    ) -> Result<Vec<u8>, IbcClientError<Self>> {
+    ) -> Result<Binary, IbcClientError<Self>> {
         match msg {
             QueryMsg::Status {} => {
-                to_json_vec(&Into::<StatusResult>::into(Self::status(deps, &env)?))
+                to_json_binary(&Into::<StatusResult>::into(Self::status(deps, &env)?))
             }
-            QueryMsg::ExportMetadata {} => to_json_vec(&ExportMetadataResult {
+            QueryMsg::ExportMetadata {} => to_json_binary(&ExportMetadataResult {
                 genesis_metadata: Self::export_metadata(deps, &env)?,
             }),
             QueryMsg::VerifyClientMessage { client_message } => {
                 if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message) {
-                    to_json_vec(&Self::verify_header(deps, env, header)?)
+                    to_json_binary(&Self::verify_header(deps, env, header)?)
                 } else if let Ok(misbehaviour) =
                     Self::Misbehaviour::decode_as::<Self::Encoding>(&client_message)
                 {
-                    to_json_vec(&Self::verify_misbehaviour(deps, env, misbehaviour)?)
+                    to_json_binary(&Self::verify_misbehaviour(deps, env, misbehaviour)?)
                 } else {
-                    return Err(IbcClientError::InvalidClientMessage(client_message));
+                    return Err(IbcClientError::InvalidClientMessage(client_message.into()));
                 }
             }
             QueryMsg::CheckForMisbehaviour { client_message } => {
                 if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message) {
-                    to_json_vec(&CheckForMisbehaviourResult {
+                    to_json_binary(&CheckForMisbehaviourResult {
                         found_misbehaviour: Self::check_for_misbehaviour_on_header(deps, header)?,
                     })
                 } else if let Ok(misbehaviour) =
                     Self::Misbehaviour::decode_as::<Self::Encoding>(&client_message)
                 {
-                    to_json_vec(&CheckForMisbehaviourResult {
+                    to_json_binary(&CheckForMisbehaviourResult {
                         found_misbehaviour: Self::check_for_misbehaviour_on_misbehaviour(
                             deps,
                             misbehaviour,
                         )?,
                     })
                 } else {
-                    return Err(IbcClientError::InvalidClientMessage(client_message));
+                    return Err(IbcClientError::InvalidClientMessage(client_message.into()));
                 }
             }
-            QueryMsg::TimestampAtHeight { height } => to_json_vec(&TimestampAtHeightResult {
+            QueryMsg::TimestampAtHeight { height } => to_json_binary(&TimestampAtHeightResult {
                 timestamp: Self::timestamp_at_height(deps, height)?,
             }),
         }

@@ -27,7 +27,7 @@ pub fn instantiate(
     save_proto_consensus_state::<ScrollLightClient>(
         deps.branch(),
         ProtoConsensusState {
-            data: msg.consensus_state,
+            data: msg.consensus_state.into(),
         },
         &Height {
             revision_number: 0,
@@ -37,8 +37,8 @@ pub fn instantiate(
     save_proto_client_state::<ScrollLightClient>(
         deps,
         ProtoClientState {
-            data: msg.client_state,
-            checksum: msg.checksum,
+            data: msg.client_state.into(),
+            checksum: msg.checksum.into(),
             latest_height: Some(
                 Height {
                     revision_number: 0,

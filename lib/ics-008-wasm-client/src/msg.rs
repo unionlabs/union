@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use cosmwasm_std::Binary;
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::{
     client::{genesis_metadata::GenesisMetadata, height::Height},
@@ -8,14 +9,14 @@ use unionlabs::ibc::core::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InstantiateMsg {
-    pub client_state: Vec<u8>,
-    pub consensus_state: Vec<u8>,
-    pub checksum: Vec<u8>,
+    pub client_state: Binary,
+    pub consensus_state: Binary,
+    pub checksum: Binary,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientMessage {
-    pub data: Vec<u8>,
+    pub data: Binary,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -53,31 +54,31 @@ pub enum SudoMsg {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        proof: Vec<u8>,
+        proof: Binary,
         path: MerklePath,
-        value: Vec<u8>,
+        value: Binary,
     },
 
     VerifyNonMembership {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        proof: Vec<u8>,
+        proof: Binary,
         path: MerklePath,
     },
     UpdateState {
-        client_message: Vec<u8>,
+        client_message: Binary,
     },
 
     UpdateStateOnMisbehaviour {
-        client_message: Vec<u8>,
+        client_message: Binary,
     },
 
     VerifyUpgradeAndUpdateState {
-        upgrade_client_state: Vec<u8>,
-        upgrade_consensus_state: Vec<u8>,
-        proof_upgrade_client: Vec<u8>,
-        proof_upgrade_consensus_state: Vec<u8>,
+        upgrade_client_state: Binary,
+        upgrade_consensus_state: Binary,
+        proof_upgrade_client: Binary,
+        proof_upgrade_consensus_state: Binary,
     },
 
     MigrateClientStore {},
@@ -86,9 +87,9 @@ pub enum SudoMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
-    VerifyClientMessage { client_message: Vec<u8> },
+    VerifyClientMessage { client_message: Binary },
 
-    CheckForMisbehaviour { client_message: Vec<u8> },
+    CheckForMisbehaviour { client_message: Binary },
 
     TimestampAtHeight { height: Height },
 

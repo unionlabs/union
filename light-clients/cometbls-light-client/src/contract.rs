@@ -34,15 +34,15 @@ pub fn instantiate(
     save_proto_consensus_state::<CometblsLightClient>(
         deps.branch(),
         ProtoConsensusState {
-            data: msg.consensus_state,
+            data: msg.consensus_state.into(),
         },
         &client_state.latest_height,
     );
     save_proto_client_state::<CometblsLightClient>(
         deps,
         ProtoClientState {
-            data: msg.client_state,
-            checksum: msg.checksum,
+            data: msg.client_state.into(),
+            checksum: msg.checksum.into(),
             latest_height: Some(client_state.latest_height.into()),
         },
     );

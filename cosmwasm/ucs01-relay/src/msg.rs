@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
+use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
 use token_factory_api::TokenFactoryMsg;
 
 use crate::state::ChannelInfo;
@@ -25,7 +25,7 @@ pub enum ExecuteMsg {
     RegisterDenom {
         local_endpoint: IbcEndpoint,
         denom: String,
-        hash: Vec<u8>,
+        hash: Binary,
     },
     /// Change the admin (must be called by current admin)
     UpdateAdmin { admin: String },

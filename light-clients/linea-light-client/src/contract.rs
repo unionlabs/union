@@ -27,15 +27,15 @@ pub fn instantiate(
     save_proto_consensus_state::<LineaLightClient>(
         deps.branch(),
         ProtoConsensusState {
-            data: msg.consensus_state,
+            data: msg.consensus_state.into(),
         },
         &client_state.l1_latest_height,
     );
     save_proto_client_state::<LineaLightClient>(
         deps,
         ProtoClientState {
-            data: msg.client_state,
-            checksum: msg.checksum,
+            data: msg.client_state.into(),
+            checksum: msg.checksum.into(),
             latest_height: Some(client_state.l1_latest_height.into()),
         },
     );
