@@ -20,8 +20,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
 <nav
   class={cn(
     devBorder,
-    'flex flex-col items-start text-xs',
-    isCollapsed || alwaysCollapsed ? 'p-1' : 'p-2',
+    'flex flex-col items-start text-xs p-1'
   )}
 >
   {#each tableRoutes as { route, icon }}
@@ -56,7 +55,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
         variant="link"
         href={`/explorer/${route}`}
         class={cn(
-          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left justify-start self-start gap-x-1 font-gunship uppercase text-md',
+          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left justify-start self-start gap-x-1 font-gunship uppercase text-sm',
           selectedTable === route ? 'bg-muted' : 'bg-transparent',
         )}
       >

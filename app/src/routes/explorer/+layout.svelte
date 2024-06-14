@@ -80,7 +80,7 @@ onNavigate(navigation => {
       bind:pane={leftPane}
       defaultSize={leftSize}
       class={cn(
-        isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[300px] max-w-[250px]',
+        isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[258px] max-w-[258px]',
         'w-full border-r border-solid border-r-secondary',
       )}
     >
@@ -97,7 +97,7 @@ onNavigate(navigation => {
     <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
       <ScrollArea orientation="both" class="size-full flex-1 pr-6 pl-2">
         <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize font-gunship">{explorerRoute?.replaceAll('-', ' ')}</h2>
-        <p class="text-muted-foreground pb-4">{explorerPageDescription}</p>
+        <p class="pb-4 text-xs">> {explorerPageDescription}</p>
         <slot/>
       </ScrollArea>
     </Resizable.Pane>

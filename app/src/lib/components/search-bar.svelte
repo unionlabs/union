@@ -54,7 +54,7 @@ const onInputChange = (event: InputEvent) =>
     autocomplete="off"
     spellcheck="false"
     autocapitalize="none"
-    placeholder="Search…"
+    placeholder="Search"
     on:click={onInputClick}
     bind:value={searchInput}
     on:input={onInputChange}
@@ -64,9 +64,9 @@ const onInputChange = (event: InputEvent) =>
     )}
   />
   <kbd
-    class="absolute right-2.5 top-2.5 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"
+    class="absolute right-1.5 top-1.5 pointer-events-none inline-flex h-7 select-none items-center gap-0.5 border bg-primary px-1.5 font-mono text-xs font-medium text text-white dark:text-black opacity-100"
   >
-    <span class="text-xs">⌘</span>K
+    <span class="text-xs"><span class="text-md">⌘</span></span>K
   </kbd>
 </div>
 
