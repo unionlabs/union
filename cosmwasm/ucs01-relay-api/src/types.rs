@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
+use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
 use ethabi::{ParamType, Token};
 use unionlabs::encoding::{self, Decode, Encode, EncodeAs, Encoding};
 
@@ -311,7 +311,7 @@ impl From<Ucs01Ack> for GenericAck {
 /// Standard ICS20 acknowledgement https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/core/channel/v1/channel.proto#L141-L147
 #[cw_serde]
 pub enum Ics20Ack {
-    Result(Vec<u8>),
+    Result(Binary),
     Error(String),
 }
 
