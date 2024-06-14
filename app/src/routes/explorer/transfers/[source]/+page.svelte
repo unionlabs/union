@@ -42,25 +42,27 @@ let transfers = createQuery({
     <Card.Content class="flex flex-col gap-8">
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-gunship text-xl text-foreground">{transfer.source_chain?.display_name}</h2>
-        <p>{transfer.source_chain_id}</p>
-        <p>{transfer.source_connection_id}</p>
-        <p>{transfer.source_channel_id}</p>
+        <h2 class="font-gunship text-xl text-foreground">Source</h2>
+        <p class="text-sm font-bold">{transfer.source_chain?.display_name}</p>
+        <p class="text-xs">{transfer.source_chain_id}</p>
+        <p class="text-xs">{transfer.source_connection_id}</p>
+        <p class="text-xs">{transfer.source_channel_id}</p>
       </div>
       <div class="flex items-center justify-center px-8">
         <MoveRightIcon/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-gunship text-xl text-foreground">{transfer.destination_chain?.display_name}</h2>
-        <p>{transfer.destination_chain_id}</p>
-        <p>{transfer.destination_connection_id}</p>
-        <p>{transfer.destination_channel_id}</p>
+        <h2 class="font-gunship text-xl text-foreground">Destination</h2>
+        <p class="text-sm font-bold">{transfer.destination_chain?.display_name}</p>
+        <p class="text-xs">{transfer.destination_chain_id}</p>
+        <p class="text-xs">{transfer.destination_connection_id}</p>
+        <p class="text-xs">{transfer.destination_channel_id}</p>
       </div>
     </section>
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
         <h2 class="font-gunship text-xl text-foreground">Sender</h2>
-        <p>{transfer.sender}</p>
+        <p class="text-sm">{transfer.sender}</p>
         <p class="text-xs">{transfer.normalized_sender}</p>
       </div>
       <div class="flex items-center justify-center px-8">
@@ -68,7 +70,7 @@ let transfers = createQuery({
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
         <h2 class="font-gunship text-xl text-foreground">Receiver</h2>
-        <p>{transfer.receiver}</p>
+        <p class="text-sm">{transfer.receiver}</p>
         <p class="text-xs">{transfer.normalized_receiver}</p>
       </div>
     </section>
@@ -85,15 +87,15 @@ let transfers = createQuery({
       {/if}
     </section>
     <section class="flex flex-col gap-4">
-      <h2 class="font-gunship text-2xl text-foreground">Trace</h2>
+      <h2 class="font-gunship text-xl text-foreground">Trace</h2>
 
       <div class="flex flex-col gap-4">
         {#each transfer.traces as trace}
           <div>
-            <h3 class="text-lg font-bold capitalize">{trace.type}</h3>
-            <p class="text-muted-foreground">{trace.chain?.display_name}</p>
-            <p class="text-muted-foreground">{trace.timestamp}</p>
-            <p class="text-muted-foreground">{trace.transaction_hash}</p>
+            <h3 class="text-md font-bold capitalize">{trace.type}</h3>
+            <p class="text-sm text-muted-foreground">{trace.chain?.display_name}</p>
+            <p class="text-sm text-muted-foreground">{trace.timestamp}</p>
+            <p class="text-sm text-muted-foreground">{trace.transaction_hash}</p>
           </div>
         {/each}
       </div>
