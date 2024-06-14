@@ -56,12 +56,14 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
         variant="link"
         href={`/explorer/${route}`}
         class={cn(
-          'capitalize mb-2 w-full flex py-0 hover:no-underline hover:bg-muted px-2.75 text-left justify-start self-start gap-x-2',
+          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left justify-start self-start gap-x-1 font-gunship uppercase text-md',
           selectedTable === route ? 'bg-muted' : 'bg-transparent',
         )}
       >
-        <svelte:component this={icon} class={'size-4.5'} />
+        <span>[</span>
+        <svelte:component this={icon} class={'size-3'} />
         <div>{route.replaceAll('-', ' ')}</div>
+        <span>]</span>
       </Button>
     {/if}
   {/each}

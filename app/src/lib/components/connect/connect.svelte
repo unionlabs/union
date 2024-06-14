@@ -43,7 +43,7 @@ let collapsibleOpen = true
       )}
     >
       <WalletIcon class="size-5 text-accent-foreground/90" />
-      <span class="font-semibold">{buttonText}</span>
+      <span class="font-gunship">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
