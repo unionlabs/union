@@ -19,7 +19,7 @@ use unionlabs::{
 };
 
 use crate::{
-    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs},
+    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
     private_key::PrivateKey,
     Pool,
 };
@@ -28,22 +28,22 @@ use crate::{
 pub struct Union {
     pub chain_id: String,
     pub signers: Pool<CosmosSigner>,
-    pub fee_denom: String,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
     pub prover_endpoint: String,
     pub grpc_url: String,
 
     pub checksum_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
+    pub gas_config: GasConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
-    pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
     pub grpc_url: String,
+    pub gas_config: GasConfig,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -233,8 +233,8 @@ impl Union {
             chain_revision,
             prover_endpoint: config.prover_endpoint,
             grpc_url: config.grpc_url,
-            fee_denom: config.fee_denom,
             checksum_cache: Arc::new(DashMap::default()),
+            gas_config: config.gas_config,
         })
     }
 
@@ -250,8 +250,8 @@ impl Union {
 pub type UnionClientId = ClientId;
 
 impl CosmosSdkChain for Union {
-    fn fee_denom(&self) -> String {
-        self.fee_denom.clone()
+    fn gas_config(&self) -> &GasConfig {
+        &self.gas_config
     }
 
     fn signers(&self) -> &Pool<CosmosSigner> {
@@ -270,5 +270,51 @@ impl CosmosSdkChainRpcs for Union {
 
     fn tm_client(&self) -> &WebSocketClient {
         &self.tm_client
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_serde() {
+        let json = r#"{
+          "chain_type": "union",
+          "enabled": true,
+          "signers": [
+            {
+              "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+            },
+            {
+              "raw": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+            },
+            {
+              "raw": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+            },
+            {
+              "raw": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+            },
+            {
+              "raw": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
+            },
+            {
+              "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
+            }
+          ],
+          "ws_url": "ws://localhost:26657/websocket",
+          "prover_endpoint": "http://localhost:9999",
+          "grpc_url": "http://localhost:9090",
+          "gas_config": {
+            "gas_price": 1.0,
+            "gas_denom": "muno",
+            "gas_multiplier": 1.1,
+            "max_gas": 400000
+          }
+        }"#;
+
+        let cfg = serde_json::from_str::<Config>(json).unwrap();
+
+        dbg!(cfg);
     }
 }

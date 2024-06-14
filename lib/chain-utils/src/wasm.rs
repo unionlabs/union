@@ -14,7 +14,7 @@ use unionlabs::{
 };
 
 use crate::{
-    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs},
+    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
     Pool,
 };
 
@@ -26,8 +26,8 @@ pub trait Wraps<T: CosmosSdkChain + Chain>: CosmosSdkChain + Chain {
 }
 
 impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
-    fn fee_denom(&self) -> String {
-        self.0.fee_denom().clone()
+    fn gas_config(&self) -> &GasConfig {
+        self.0.gas_config()
     }
 
     fn signers(&self) -> &Pool<CosmosSigner> {

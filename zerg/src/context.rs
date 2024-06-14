@@ -82,7 +82,7 @@ impl Context {
         tracing::debug!("Created usc01 relay.");
         let denom = format!(
             "wasm.{}/{}/{}",
-            zerg_config.union_contract, zerg_config.channel, zerg_config.union.fee_denom
+            zerg_config.union_contract, zerg_config.channel, zerg_config.union.gas_config.gas_denom
         );
         let denom_address = ucs01_relay
             .get_denom_address(zerg_config.channel.clone(), denom)
@@ -177,8 +177,8 @@ impl Context {
                             contract: self.zerg_config.union_contract.clone(),
                             msg: transfer_msg.as_bytes().to_vec(),
                             funds: vec![Coin {
-                                denom: self.zerg_config.union.fee_denom.clone(),
-                                amount: "1".into(),
+                                denom: self.zerg_config.union.gas_config.gas_denom.clone(),
+                                amount: 1,
                             }],
                         })
                         .into();

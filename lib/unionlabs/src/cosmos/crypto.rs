@@ -40,13 +40,18 @@ impl AnyPubKey {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromAnyPubKeyError {
     // TODO: This is also in any.rs, find a way to generalize?
-    IncorrectTypeUrl {
+    #[error(
+        "invalid type url `{found}`, expected one of: {}",
+        expected.iter().map(|x| format!("`{x}`")).collect::<Vec<_>>().join(", ")
+    )]
+    InvalidTypeUrl {
         found: String,
         expected: Vec<String>,
     },
+    #[error("unable to decode pub key from proto bytes")]
     TryFromProto(TryFromProtoBytesError<InvalidLength>),
 }
 
@@ -67,7 +72,7 @@ impl TryFrom<protos::google::protobuf::Any> for AnyPubKey {
                 .map(Self::Secp256k1)
                 .map_err(TryFromAnyPubKeyError::TryFromProto)
         } else {
-            Err(TryFromAnyPubKeyError::IncorrectTypeUrl {
+            Err(TryFromAnyPubKeyError::InvalidTypeUrl {
                 found: value.type_url,
                 expected: vec![
                     bn254::PubKey::type_url(),

@@ -1053,6 +1053,7 @@ tsdbadmin
 tsqd
 tsup
 txes
+txfees
 txmodule
 txpool
 typecheck

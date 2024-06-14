@@ -1,6 +1,6 @@
 use std::{ffi::OsString, marker::PhantomData};
 
-use chain_utils::private_key::PrivateKey;
+use chain_utils::{cosmos_sdk::GasConfig, private_key::PrivateKey};
 use clap::{Parser, Subcommand};
 use ethers::{
     prelude::k256::ecdsa,
@@ -145,10 +145,10 @@ pub struct EthereumChainConfigFields {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnionChainConfig {
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
-    pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
     pub grpc_url: String,
+    pub gas_config: GasConfig,
 }
 
 #[derive(Debug, Clone)]

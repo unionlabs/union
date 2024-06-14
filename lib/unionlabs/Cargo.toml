@@ -65,7 +65,8 @@ ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
 grpc     = ["protos/client"]
 std      = ["ethers-core/std"]
 
-arbitrary = ["dep:arbitrary", "primitive-types/arbitrary"]
-fuzzing   = ["arbitrary", "serde_json"]
+arbitrary  = ["dep:arbitrary", "primitive-types/arbitrary"]
+fuzzing    = ["arbitrary", "test_utils"]
+test_utils = ["serde_json"]
 
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

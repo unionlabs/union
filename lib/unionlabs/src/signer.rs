@@ -23,8 +23,8 @@ impl CosmosSigner {
     }
 
     #[must_use]
-    pub fn public_key(&self) -> Vec<u8> {
-        self.signing_key.public_key().to_bytes().to_vec()
+    pub fn public_key(&self) -> [u8; 33] {
+        self.signing_key.public_key().to_bytes()
     }
 
     /// Attempt to sign the given bytes.

@@ -94,7 +94,7 @@ pub(crate) mod macros;
 
 pub mod errors;
 
-#[cfg(any(feature = "fuzzing", test))]
+#[cfg(any(feature = "test_utils", test))]
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils;
 
@@ -295,6 +295,7 @@ impl<H: IsHeight> TryFrom<&'_ str> for QueryHeight<H> {
     }
 }
 
+// TODO: remove this as it is unused
 pub trait MaybeRecoverableError: std::error::Error {
     fn is_recoverable(&self) -> bool;
 }

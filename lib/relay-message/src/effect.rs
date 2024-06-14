@@ -20,6 +20,7 @@ use unionlabs::{
     },
     id::ConnectionId,
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    MaybeRecoverableError,
 };
 
 use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayMessageTypes};
@@ -64,7 +65,7 @@ impl HandleEffect<RelayMessageTypes> for AnyLightClientIdentified<AnyEffect> {
                 )
                 .map_err(|e| QueueError::Fatal(Box::new(e)))?
                 .await
-                .map_err(|e: <Hc as ChainExt>::MsgError| QueueError::Retry(Box::new(e)))
+                .map_err(|e: <Hc as ChainExt>::MsgError| if e.is_recoverable() {QueueError::Retry(Box::new(e))} else {QueueError::Fatal(Box::new(e))})
                 .map(|()| noop())
             }
         }
