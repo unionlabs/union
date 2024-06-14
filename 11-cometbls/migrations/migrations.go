@@ -8,14 +8,14 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibccomet "github.com/unionlabs/union/11-cometbls"
 )
 
 // PruneExpiredConsensusStates prunes all expired tendermint consensus states. This function
 // may optionally be called during in-place store migrations. The ibc store key must be provided.
 func PruneExpiredConsensusStates(ctx sdk.Context, cdc codec.BinaryCodec, clientKeeper ClientKeeper) (int, error) {
 	var clientIDs []string
-	clientKeeper.IterateClientStates(ctx, []byte(exported.Tendermint), func(clientID string, _ exported.ClientState) bool {
+	clientKeeper.IterateClientStates(ctx, []byte(ibccomet.ClientType), func(clientID string, _ exported.ClientState) bool {
 		clientIDs = append(clientIDs, clientID)
 		return false
 	})
@@ -32,12 +32,12 @@ func PruneExpiredConsensusStates(ctx sdk.Context, cdc codec.BinaryCodec, clientK
 			return 0, errorsmod.Wrapf(clienttypes.ErrClientNotFound, "clientID %s", clientID)
 		}
 
-		tmClientState, ok := clientState.(*ibctm.ClientState)
+		tmClientState, ok := clientState.(*ibccomet.ClientState)
 		if !ok {
-			return 0, errorsmod.Wrap(clienttypes.ErrInvalidClient, "client state is not tendermint even though client id contains 07-tendermint")
+			return 0, errorsmod.Wrap(clienttypes.ErrInvalidClient, "client state is not cometbls even though client id contains 11-cometbls")
 		}
 
-		totalPruned += ibctm.PruneAllExpiredConsensusStates(ctx, clientStore, cdc, tmClientState)
+		totalPruned += ibccomet.PruneAllExpiredConsensusStates(ctx, clientStore, cdc, tmClientState)
 	}
 
 	clientLogger := clientKeeper.Logger(ctx)

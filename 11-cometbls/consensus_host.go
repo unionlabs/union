@@ -99,7 +99,7 @@ func (c *ConsensusHost) ValidateSelfClient(ctx sdk.Context, clientState exported
 
 	// TODO(aeryz): verify if this is nanoseconds
 	if uint64(expectedUbdPeriod.Nanoseconds()) != tmClient.UnbondingPeriod {
-		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "invalid unbonding period. expected: %s, got: %s",
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "invalid unbonding period. expected: %d, got: %d",
 			expectedUbdPeriod, tmClient.UnbondingPeriod)
 	}
 

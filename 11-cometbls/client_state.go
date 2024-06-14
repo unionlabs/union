@@ -25,8 +25,7 @@ var _ exported.ClientState = (*ClientState)(nil)
 func NewClientState(
 	chainID string,
 	trustingPeriod, ubdPeriod, maxClockDrift uint64,
-	latestHeight clienttypes.Height, specs []*ics23.ProofSpec,
-	upgradePath []string,
+	latestHeight clienttypes.Height,
 ) *ClientState {
 	return &ClientState{
 		ChainId:         chainID,
@@ -142,7 +141,7 @@ func (cs ClientState) Validate() error {
 	if cs.TrustingPeriod >= cs.UnbondingPeriod {
 		return errorsmod.Wrapf(
 			ErrInvalidTrustingPeriod,
-			"trusting period (%s) should be < unbonding period (%s)", cs.TrustingPeriod, cs.UnbondingPeriod,
+			"trusting period (%d) should be < unbonding period (%d)", cs.TrustingPeriod, cs.UnbondingPeriod,
 		)
 	}
 
@@ -161,7 +160,7 @@ func (cs ClientState) ZeroCustomFields() exported.ClientState {
 	}
 }
 
-// Initialize checks that the initial consensus state is an 07-tendermint consensus state and
+// Initialize checks that the initial consensus state is an 11-cometbls consensus state and
 // sets the client state, consensus state and associated metadata in the provided client store.
 func (cs ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consState exported.ConsensusState) error {
 	consensusState, ok := consState.(*ConsensusState)
