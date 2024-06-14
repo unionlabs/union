@@ -679,7 +679,6 @@ mdast
 mdsvex
 merkle
 merkleize
-merkleize        
 merklizer
 metadatas
 metas
@@ -1119,6 +1118,7 @@ upgradekeeper
 upgradetypes
 urql
 ursi
+usertransfers
 usizes
 ustars
 utilised
