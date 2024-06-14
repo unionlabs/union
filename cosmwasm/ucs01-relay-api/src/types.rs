@@ -23,16 +23,17 @@ pub enum EncodingError {
     InvalidReceiver { value: String, err: StdError },
 }
 
-pub enum Json {}
-impl Encoding for Json {}
+/// A json encoding specific to serde_json_wasm as it does not use the same error types as serde_json.
+pub enum JsonWasm {}
+impl Encoding for JsonWasm {}
 
-impl Encode<Json> for Ics20Ack {
+impl Encode<JsonWasm> for Ics20Ack {
     fn encode(self) -> Vec<u8> {
         serde_json_wasm::to_vec(&self).expect("json serialization should be infallible")
     }
 }
 
-impl Decode<Json> for Ics20Ack {
+impl Decode<JsonWasm> for Ics20Ack {
     type Error = serde_json_wasm::de::Error;
 
     fn decode(bytes: &[u8]) -> Result<Self, serde_json_wasm::de::Error> {
@@ -40,13 +41,13 @@ impl Decode<Json> for Ics20Ack {
     }
 }
 
-impl Encode<Json> for Ics20Packet {
+impl Encode<JsonWasm> for Ics20Packet {
     fn encode(self) -> Vec<u8> {
         serde_json_wasm::to_vec(&self).expect("json serialization should be infallible")
     }
 }
 
-impl Decode<Json> for Ics20Packet {
+impl Decode<JsonWasm> for Ics20Packet {
     type Error = serde_json_wasm::de::Error;
 
     fn decode(bytes: &[u8]) -> Result<Self, serde_json_wasm::de::Error> {
@@ -317,8 +318,8 @@ pub enum Ics20Ack {
 impl From<Ics20Ack> for GenericAck {
     fn from(value: Ics20Ack) -> Self {
         match value {
-            Ics20Ack::Result(_) => Ok(value.encode_as::<Json>()),
-            Ics20Ack::Error(_) => Err(value.encode_as::<Json>()),
+            Ics20Ack::Result(_) => Ok(value.encode_as::<JsonWasm>()),
+            Ics20Ack::Error(_) => Err(value.encode_as::<JsonWasm>()),
         }
     }
 }
@@ -383,7 +384,7 @@ mod tests {
     use unionlabs::encoding::{Decode, DecodeAs, Encode, EncodeAs};
 
     use super::{Ics20Packet, TransferToken, Ucs01Ack, Ucs01TransferPacket};
-    use crate::types::{DenomOrigin, Ics20Ack, Json};
+    use crate::types::{DenomOrigin, Ics20Ack, JsonWasm};
 
     #[test]
     fn ucs01_packet_encode_decode_iso() {
@@ -435,7 +436,8 @@ mod tests {
         };
         assert_eq!(
             packet,
-            Ics20Packet::decode_as::<Json>(packet.clone().encode_as::<Json>().as_slice()).unwrap()
+            Ics20Packet::decode_as::<JsonWasm>(packet.clone().encode_as::<JsonWasm>().as_slice())
+                .unwrap()
         );
     }
 
@@ -443,17 +445,19 @@ mod tests {
     fn ics20_ack_encode_decode_iso() {
         assert_eq!(
             Ics20Ack::Result(b"blabla".into()),
-            Ics20Ack::decode_as::<Json>(
+            Ics20Ack::decode_as::<JsonWasm>(
                 Ics20Ack::Result(b"blabla".into())
-                    .encode_as::<Json>()
+                    .encode_as::<JsonWasm>()
                     .as_slice()
             )
             .unwrap()
         );
         assert_eq!(
             Ics20Ack::Error("ok".into()),
-            Ics20Ack::decode_as::<Json>(
-                Ics20Ack::Error("ok".into()).encode_as::<Json>().as_slice()
+            Ics20Ack::decode_as::<JsonWasm>(
+                Ics20Ack::Error("ok".into())
+                    .encode_as::<JsonWasm>()
+                    .as_slice()
             )
             .unwrap()
         );

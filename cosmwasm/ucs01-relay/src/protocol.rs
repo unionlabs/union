@@ -13,8 +13,8 @@ use ucs01_relay_api::{
     },
     protocol::{TransferProtocol, ATTR_ERROR, ATTR_SUCCESS, IBC_SEND_ID},
     types::{
-        make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet, Json,
-        TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
+        make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet,
+        JsonWasm, TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
     },
 };
 use unionlabs::encoding::{self, Encode, EncodeAs};
@@ -407,7 +407,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     type Ack = Ics20Ack;
     type CustomMsg = TokenFactoryMsg;
     type Error = ContractError;
-    type Encoding = Json;
+    type Encoding = JsonWasm;
 
     fn channel_endpoint(&self) -> &cosmwasm_std::IbcEndpoint {
         &self.common.channel.endpoint
@@ -561,7 +561,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             Ok(forward_response) => forward_response,
             Err(e) => {
                 return IbcReceiveResponse::new(
-                    Self::ack_failure(e.to_string()).encode_as::<Json>(),
+                    Self::ack_failure(e.to_string()).encode_as::<JsonWasm>(),
                 )
                 .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
             }
