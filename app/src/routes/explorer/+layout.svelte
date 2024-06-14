@@ -63,7 +63,7 @@ onNavigate(navigation => {
   }
 })
 
-$: mainExplorerPage = $page.route.id?.split("/").length <= 3;
+$: mainExplorerPage = $page.route.id?.split("/").length <= 3
 </script>
 
 <svelte:head>

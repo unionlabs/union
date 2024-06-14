@@ -7,7 +7,7 @@ import { URLS } from "$lib/constants"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { truncate } from "$lib/utilities/format"
-import { toIsoString } from '$lib/utilities/date'
+import { toIsoString } from "$lib/utilities/date"
 
 const source = $page.params.source
 
