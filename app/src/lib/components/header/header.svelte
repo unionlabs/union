@@ -38,7 +38,7 @@ import { routes } from "$lib/components/navigation/index.ts"
             draft
               ? 'hidden'
               : [
-                  'p-2 capitalize no-underline decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70',
+                  'p-2 capitalize no-underline decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70 font-gunship',
                   $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-muted-foreground/10',
                 ],
           )}

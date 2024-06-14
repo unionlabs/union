@@ -6,4 +6,4 @@ export let value: string
 const goodValue = (v: string) => v === "HEALTHY" || v === "CONFIRM"
 </script>
 
-<div class={cn(goodValue(value) ? 'bg-green-500 dark:bg-green-800' : 'bg-red-500 dark:bg-red-800', 'font-bold text-white inline px-2 py-1 rounded')}  {...$$restProps}>{value}</div>
+<div class={cn(goodValue(value) ? 'dark:text-[#A0ECFD]' : 'dark:text-[#FD6363]', 'text-black inline px-2 py-1 rounded')}  {...$$restProps}>{value}</div>

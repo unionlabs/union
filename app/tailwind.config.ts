@@ -46,7 +46,6 @@ export default (<Config>{
         175: "1.75"
       }),
       fontSize: _ => ({
-        md: ["1rem", { lineHeight: "1.5rem" }],
         "10xl": ["10rem", { lineHeight: "10rem" }],
         "11xl": ["11rem", { lineHeight: "11rem" }],
         "12xl": ["12rem", { lineHeight: "12rem" }],
@@ -139,8 +138,9 @@ export default (<Config>{
         "9xl": "96rem"
       }),
       fontFamily: _ => ({
-        sans: ["geist-sans", ...defaultTheme.fontFamily.sans],
-        mono: ["geist-mono", ...defaultTheme.fontFamily.mono]
+        gunship: ["gunship", ...defaultTheme.fontFamily.sans],
+        sans: ["quattro-sans", ...defaultTheme.fontFamily.sans],
+        mono: ["quattro-mono", ...defaultTheme.fontFamily.mono]
       }),
       animation: _ => ({
         wiggle: "wiggle 1s ease-in-out infinite",

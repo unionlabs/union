@@ -43,7 +43,7 @@ let collapsibleOpen = true
       )}
     >
       <WalletIcon class="size-5 text-accent-foreground/90" />
-      <span class="font-semibold">{buttonText}</span>
+      <span class="font-gunship">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
@@ -77,7 +77,7 @@ let collapsibleOpen = true
           !collapsibleOpen && 'border-accent',
         )}
       >
-        <span class="mb-0.5 text-center w-full text-lg">Connect Wallets</span>
+        <span class="mb-0.5 text-start w-full text-lg font-gunship">Connect Wallets</span>
         <Button variant="ghost" size="sm" class="w-9 p-0 my-auto h-10 hover:bg-transparent">
           <ChevronsUpDownIcon class="w-6 h-6" />
           <span class="sr-only">Toggle</span>
