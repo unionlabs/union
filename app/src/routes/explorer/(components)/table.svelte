@@ -19,6 +19,7 @@ export let columns: Array<ColumnDef<any>>
 // https://github.com/TanStack/table/issues/4241
 // @ts-ignore
 export let dataStore: Readable<Array<any>>
+export let onClick: (tr: unknown) => void | undefined
 
 const options = writable<TableOptions<any>>({
   data: $dataStore,
@@ -77,9 +78,10 @@ $: dataStore.subscribe(() => {
       <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]] whitespace-nowrap`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
           <Table.Row
-            class={cn(
+            class={cn(onClick !== undefined ? 'cursor-pointer' : '',
               index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
             )}
+             on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
           >
             {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
               <Table.Cell>
