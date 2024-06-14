@@ -11167,6 +11167,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "destination_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "destination_chain_id",
             "type": {
               "kind": "SCALAR",
@@ -11332,6 +11341,15 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
             },
             "args": [],
             "isDeprecated": false
@@ -11591,6 +11609,13 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
+            }
+          },
+          {
             "name": "destination_chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -11714,6 +11739,13 @@ export type introspection = {
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
             }
           },
           {
@@ -11843,6 +11875,13 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
+          {
             "name": "destination_chain_id",
             "type": {
               "kind": "ENUM",
@@ -11966,6 +12005,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
             }
           },
           {

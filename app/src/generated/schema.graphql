@@ -2951,6 +2951,9 @@ type v0_transfers {
     path: String
   ): jsonb
   destination_block_hash: String
+
+  """An object relationship"""
+  destination_chain: v0_chains
   destination_chain_id: String
   destination_channel_id: String
   destination_connection_id: String
@@ -2972,6 +2975,9 @@ type v0_transfers {
   receiver: String
   sender: String
   source_block_hash: String
+
+  """An object relationship"""
+  source_chain: v0_chains
   source_chain_id: String
   source_channel_id: String
   source_connection_id: String
@@ -3018,6 +3024,7 @@ input v0_transfers_bool_exp {
   _or: [v0_transfers_bool_exp!]
   assets: jsonb_comparison_exp
   destination_block_hash: String_comparison_exp
+  destination_chain: v0_chains_bool_exp
   destination_chain_id: String_comparison_exp
   destination_channel_id: String_comparison_exp
   destination_connection_id: String_comparison_exp
@@ -3036,6 +3043,7 @@ input v0_transfers_bool_exp {
   receiver: String_comparison_exp
   sender: String_comparison_exp
   source_block_hash: String_comparison_exp
+  source_chain: v0_chains_bool_exp
   source_chain_id: String_comparison_exp
   source_channel_id: String_comparison_exp
   source_connection_id: String_comparison_exp
@@ -3057,6 +3065,7 @@ input v0_transfers_bool_exp {
 input v0_transfers_order_by {
   assets: order_by
   destination_block_hash: order_by
+  destination_chain: v0_chains_order_by
   destination_chain_id: order_by
   destination_channel_id: order_by
   destination_connection_id: order_by
@@ -3075,6 +3084,7 @@ input v0_transfers_order_by {
   receiver: order_by
   sender: order_by
   source_block_hash: order_by
+  source_chain: v0_chains_order_by
   source_chain_id: order_by
   source_channel_id: order_by
   source_connection_id: order_by

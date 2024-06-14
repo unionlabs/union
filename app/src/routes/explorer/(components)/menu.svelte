@@ -55,7 +55,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
         variant="link"
         href={`/explorer/${route}`}
         class={cn(
-          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left text-md justify-start self-start gap-x-1 font-gunship uppercase',
+          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left text-md justify-start self-start gap-x-1 font-gunship capitalize',
           selectedTable === route ? 'bg-muted' : 'bg-transparent',
         )}
       >
