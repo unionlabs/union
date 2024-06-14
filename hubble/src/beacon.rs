@@ -1,6 +1,7 @@
 use backon::{ExponentialBuilder, Retryable};
 use color_eyre::{eyre::eyre, Result};
 use futures::{stream::FuturesOrdered, TryStreamExt};
+use tracing::{debug, info, info_span, Instrument};
 
 use crate::postgres::ChainId;
 
@@ -12,6 +13,7 @@ pub struct Config {
 
 impl Config {
     pub async fn indexer(self, db: sqlx::PgPool) -> Result<Indexer> {
+        info!("fetching db chain_id for chain {}", &self.chain_id);
         let chain_id = (|| async {
             let chain_id = crate::postgres::get_chain_id(&db, self.chain_id.clone())
                 .await?
@@ -42,11 +44,13 @@ pub struct Indexer {
 impl Indexer {
     pub async fn index(&self) -> Result<()> {
         loop {
+            debug!("getting unmapped consensus heights");
             let consensus_heights =
                 crate::postgres::get_batch_of_unmapped_execution_heights(&self.pool, self.chain_id)
                     .await?;
 
             if consensus_heights.is_empty() {
+                debug!("no unmapped heights found, sleeping");
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                 continue;
             }
@@ -57,7 +61,10 @@ impl Indexer {
                     .map(|height| get_execution_height(&self.client, &self.url, *height)),
             );
 
+            debug!("getting execution heights");
             let execution_heights: Vec<i64> = futures.try_collect().await?;
+
+            debug!("inserting execution heights");
             crate::postgres::insert_mapped_execution_heights(
                 &self.pool,
                 execution_heights,
@@ -77,6 +84,7 @@ async fn get_execution_height(
 ) -> Result<i64> {
     let path = format!("eth/v2/beacon/blocks/{height}");
     let url = format!("{url}{path}");
+    debug!("fetching execution height for block: {}", height);
     let val: serde_json::Value = (|| client.get(&url).send())
         .retry(&ExponentialBuilder::default())
         .await?
