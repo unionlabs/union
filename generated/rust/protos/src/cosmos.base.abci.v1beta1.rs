@@ -147,8 +147,8 @@ pub struct Result {
     pub log: ::prost::alloc::string::String,
     /// Events contains a slice of Event objects that were emitted during message
     /// or handler execution.
-    #[prost(message, repeated, tag = "3")]
-    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
+    // #[prost(message, repeated, tag = "3")]
+    // pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
     /// msg_responses contains the Msg handler responses type packed in Anys.
     ///
     /// Since: cosmos-sdk 0.46
