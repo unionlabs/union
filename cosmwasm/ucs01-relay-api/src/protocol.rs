@@ -250,7 +250,7 @@ pub trait TransferProtocol {
                         (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
                         (
                             ATTR_ACK,
-                            serde_utils::to_hex(ibc_packet.acknowledgement.data).as_str(),
+                            ibc_packet.acknowledgement.data.to_base64().as_str(),
                         ),
                     ])
                     .add_attributes([tokens_to_attr(packet.tokens())]),
