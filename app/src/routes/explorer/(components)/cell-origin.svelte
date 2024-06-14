@@ -14,12 +14,12 @@ export let value: {
 </script>
 
 <div  class={cn("flex flex-col ")} {...$$restProps}>
-  <div class="">{value.name}</div>
+  <div class="font-bold">{value.name}</div>
   <!--
   <div>{value.chain}</div>
   <div>{value.connection}</div>
   <div>{value.channel}</div>
   {#if value.transaction_hash !== null}<div>{value.transaction_hash}</div>{/if}
   !-->
-  <div class="text-muted-foreground">{#if value.timestamp && value.timestamp !== undefined}<Duration totalUnits={3} variant="short" minUnits={DurationUnits.Second} start={value.timestamp}/>{:else}in transit{/if}</div>
+  <div class="text-muted-foreground text-xs">{#if value.timestamp && value.timestamp !== undefined}<Duration totalUnits={3} variant="short" minUnits={DurationUnits.Second} start={value.timestamp}/>{:else}in transit{/if}</div>
 </div>

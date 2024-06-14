@@ -20,7 +20,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
 <nav
   class={cn(
     devBorder,
-    'flex flex-col items-start text-xs p-1'
+    'flex flex-col items-start p-1'
   )}
 >
   {#each tableRoutes as { route, icon }}
@@ -37,7 +37,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
               'px-1 text-center mb-2 w-full flex py-0 hover:no-underline hover:bg-muted',
             )}
           >
-            <svelte:component this={icon} class="block size-5" />
+            <svelte:component this={icon} class="block size-5 text-muted-foreground" />
             <span class="sr-only">{route}</span>
           </Button>
         </Tooltip.Trigger>
@@ -55,14 +55,14 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
         variant="link"
         href={`/explorer/${route}`}
         class={cn(
-          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left justify-start self-start gap-x-1 font-gunship uppercase text-sm',
+          'mb-2 w-full flex py-0 hover:no-underline hover:bg-muted text-left text-md justify-start self-start gap-x-1 font-gunship uppercase',
           selectedTable === route ? 'bg-muted' : 'bg-transparent',
         )}
       >
-        <span>[</span>
+        <span class="text-muted-foreground">[</span>
         <svelte:component this={icon} class={'size-3'} />
         <div>{route.replaceAll('-', ' ')}</div>
-        <span>]</span>
+        <span class="text-muted-foreground">]</span>
       </Button>
     {/if}
   {/each}
