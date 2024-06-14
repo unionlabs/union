@@ -17,7 +17,7 @@ use ucs01_relay_api::{
         TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
     },
 };
-use unionlabs::encoding::Encode;
+use unionlabs::encoding::{self, Encode};
 
 use crate::{
     contract::execute_transfer,
@@ -407,6 +407,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     type Ack = Ics20Ack;
     type CustomMsg = TokenFactoryMsg;
     type Error = ContractError;
+    type Encoding = encoding::Json;
 
     fn channel_endpoint(&self) -> &cosmwasm_std::IbcEndpoint {
         &self.common.channel.endpoint
@@ -752,6 +753,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     type Ack = Ucs01Ack;
     type CustomMsg = TokenFactoryMsg;
     type Error = ContractError;
+    type Encoding = encoding::EthAbi;
 
     fn channel_endpoint(&self) -> &cosmwasm_std::IbcEndpoint {
         &self.common.channel.endpoint

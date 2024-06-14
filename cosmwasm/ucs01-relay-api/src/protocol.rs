@@ -5,7 +5,7 @@ use cosmwasm_std::{
     IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
 };
 use thiserror::Error;
-use unionlabs::encoding::{self, Decode, Encode};
+use unionlabs::encoding::{self, Decode, DecodeErrorOf, Encode};
 
 use crate::{
     middleware::{Memo, PacketForward},
@@ -82,17 +82,19 @@ pub trait TransferProtocol {
     /// Must be unique per Protocol
     const RECEIVE_REPLY_ID: u64;
 
-    type Packet: Decode<encoding::Binary, Error = EncodingError>
-        + Encode<encoding::Binary>
-        + TransferPacket;
+    type Packet: Decode<Self::Encoding> + Encode<Self::Encoding> + TransferPacket;
 
-    type Ack: Decode<encoding::Binary, Error = EncodingError>
-        + Encode<encoding::Binary>
-        + Into<GenericAck>;
+    type Ack: Decode<Self::Encoding> + Encode<Self::Encoding> + Into<GenericAck>;
+
+    type Encoding: encoding::Encoding;
 
     type CustomMsg;
 
-    type Error: Debug + From<ProtocolError> + From<EncodingError>;
+    type Error: Debug
+        + From<ProtocolError>
+        + From<EncodingError>
+        + From<DecodeErrorOf<Self::Encoding, Self::Packet>>
+        + From<DecodeErrorOf<Self::Encoding, Self::Ack>>;
 
     fn channel_endpoint(&self) -> &IbcEndpoint;
 
@@ -100,6 +102,7 @@ pub trait TransferProtocol {
 
     fn self_addr(&self) -> &Addr;
 
+    // TODO: Remove use of Encoding Error
     fn common_to_protocol_packet(
         &self,
         packet: TransferPacketCommon<PacketExtensionOf<Self>>,

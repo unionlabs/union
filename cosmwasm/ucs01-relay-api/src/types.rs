@@ -17,9 +17,9 @@ pub enum EncodingError {
     InvalidICS20PacketEncoding { value: Vec<u8>, err: StdError },
     #[error("Could not decode ICS20 ack: value: {data}, err: {err}", data = serde_utils::to_hex(.value))]
     InvalidICS20AckEncoding { value: Vec<u8>, err: StdError },
-    #[error("Invalid sender address: sender: {data}, err: {err}", data = serde_utils::to_hex(.value))]
+    #[error("Invalid sender address: sender: `{value}`, err: {err}")]
     InvalidSender { value: String, err: StdError },
-    #[error("Invalid receiver address: receiver: {data}, err: {err}", data = serde_utils::to_hex(.value))]
+    #[error("Invalid receiver address: receiver: `{value}`, err: {err}")]
     InvalidReceiver { value: String, err: StdError },
 }
 
@@ -85,7 +85,7 @@ impl Ucs01TransferPacket {
     }
 }
 
-impl Encode<encoding::Binary> for Ucs01TransferPacket {
+impl Encode<encoding::EthAbi> for Ucs01TransferPacket {
     fn encode(self) -> Vec<u8> {
         ethabi::encode(&[
             Token::Bytes(self.sender.into()),
@@ -106,7 +106,7 @@ impl Encode<encoding::Binary> for Ucs01TransferPacket {
     }
 }
 
-impl Decode<encoding::Binary> for Ucs01TransferPacket {
+impl Decode<encoding::EthAbi> for Ucs01TransferPacket {
     type Error = EncodingError;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
@@ -169,13 +169,13 @@ pub struct Ics20Packet {
     pub memo: String,
 }
 
-impl Encode<encoding::Binary> for Ics20Packet {
+impl Encode<encoding::Json> for Ics20Packet {
     fn encode(self) -> Vec<u8> {
         cosmwasm_std::to_json_vec(&self).expect("impossible")
     }
 }
 
-impl Decode<encoding::Binary> for Ics20Packet {
+impl Decode<encoding::Json> for Ics20Packet {
     type Error = EncodingError;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
@@ -261,7 +261,7 @@ pub enum Ucs01Ack {
     Success,
 }
 
-impl Encode<encoding::Binary> for Ucs01Ack {
+impl Encode<encoding::EthAbi> for Ucs01Ack {
     fn encode(self) -> Vec<u8> {
         match self {
             Ucs01Ack::Failure => vec![0],
@@ -270,7 +270,7 @@ impl Encode<encoding::Binary> for Ucs01Ack {
     }
 }
 
-impl Decode<encoding::Binary> for Ucs01Ack {
+impl Decode<encoding::EthAbi> for Ucs01Ack {
     type Error = EncodingError;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
@@ -300,16 +300,16 @@ pub enum Ics20Ack {
     Error(String),
 }
 
-impl Encode<encoding::Binary> for Ics20Ack {
+impl Encode<encoding::Json> for Ics20Ack {
     fn encode(self) -> Vec<u8> {
         cosmwasm_std::to_json_vec(&self).expect("impossible")
     }
 }
 
-impl Decode<encoding::Binary> for Ics20Ack {
+impl Decode<encoding::Json> for Ics20Ack {
     type Error = EncodingError;
 
-    fn decode(bytes: &[u8]) -> Result<Self, <Self as Decode<encoding::Binary>>::Error> {
+    fn decode(bytes: &[u8]) -> Result<Self, <Self as Decode<encoding::Json>>::Error> {
         // Interesting, the Error variant of the enum clash with the AT in the return type, https://github.com/rust-lang/rust/issues/57644
         cosmwasm_std::from_json::<Ics20Ack>(&bytes).map_err(|err| {
             EncodingError::InvalidICS20AckEncoding {
