@@ -169,23 +169,6 @@ pub struct Ics20Packet {
     pub memo: String,
 }
 
-impl Encode<encoding::Json> for Ics20Packet {
-    fn encode(self) -> Vec<u8> {
-        cosmwasm_std::to_json_vec(&self).expect("impossible")
-    }
-}
-
-impl Decode<encoding::Json> for Ics20Packet {
-    type Error = EncodingError;
-
-    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        cosmwasm_std::from_json(bytes).map_err(|err| EncodingError::InvalidICS20PacketEncoding {
-            value: bytes.to_vec(),
-            err,
-        })
-    }
-}
-
 pub trait TransferPacket {
     type Extension: Into<String> + Clone;
     type Addr: ToString;
@@ -298,26 +281,6 @@ impl From<Ucs01Ack> for GenericAck {
 pub enum Ics20Ack {
     Result(Vec<u8>),
     Error(String),
-}
-
-impl Encode<encoding::Json> for Ics20Ack {
-    fn encode(self) -> Vec<u8> {
-        cosmwasm_std::to_json_vec(&self).expect("impossible")
-    }
-}
-
-impl Decode<encoding::Json> for Ics20Ack {
-    type Error = EncodingError;
-
-    fn decode(bytes: &[u8]) -> Result<Self, <Self as Decode<encoding::Json>>::Error> {
-        // Interesting, the Error variant of the enum clash with the AT in the return type, https://github.com/rust-lang/rust/issues/57644
-        cosmwasm_std::from_json::<Ics20Ack>(&bytes).map_err(|err| {
-            EncodingError::InvalidICS20AckEncoding {
-                value: bytes.to_vec(),
-                err,
-            }
-        })
-    }
 }
 
 impl From<Ics20Ack> for GenericAck {

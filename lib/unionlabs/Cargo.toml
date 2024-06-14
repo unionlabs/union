@@ -41,7 +41,7 @@ rlp                      = { workspace = true, features = ["derive"] }
 rs_merkle                = "1.4.1"
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
-serde_json               = { workspace = true, optional = true }
+serde_json               = { workspace = true }
 sha2                     = { workspace = true }
 sha3.workspace           = true
 ssz                      = { workspace = true }
