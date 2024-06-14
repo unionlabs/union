@@ -10,6 +10,7 @@ import CellOrigin from "../(components)/cell-origin.svelte"
 import CellAssets from "../(components)/cell-assets.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { truncate } from "$lib/utilities/format"
+import { goto } from "$app/navigation"
 
 let transfers = createQuery({
   queryKey: ["transfers"],
@@ -93,5 +94,8 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 {#if $transfers.isLoading}
   <div>Loading...</div>
 {:else if $transfers.isSuccess}
-  <Table bind:dataStore={transfersData} {columns} />
+  <Table bind:dataStore={transfersData} {columns} onClick={(x) => {
+    // @ts-ignore
+    goto(`/explorer/transfers/${x.source.transaction_hash}`)}
+  }/>
 {/if}

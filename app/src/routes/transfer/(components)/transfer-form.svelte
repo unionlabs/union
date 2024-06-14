@@ -27,6 +27,7 @@ import { rawToBech32 } from "$lib/utilities/address.ts"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import type { Address } from "viem"
+import { goto } from "$app/navigation"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -132,7 +133,6 @@ const transfer = async () => {
   }
 
   if ($fromChain.rpc_type === "cosmos") {
-    const evmClient = await getWalletClient(config)
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
@@ -148,7 +148,6 @@ const transfer = async () => {
             })
           : undefined
     ) as OfflineSigner
-
     let cosmosClient = new UnionClient({
       cosmosOfflineSigner,
       evmSigner: undefined,
@@ -158,23 +157,44 @@ const transfer = async () => {
       rpcUrl: `https://${rpcUrl}`
     })
 
-    const transferHash = await cosmosClient.transferAssets({
-      kind: "cosmwasm",
-      instructions: [
-        {
-          contractAddress: ucs1_configuration.contract_address,
-          msg: {
-            transfer: {
-              channel: ucs1_configuration.channel_id,
-              receiver: $recipient?.slice(2),
-              memo: ``
-            }
-          },
-          funds: [{ denom: $assetSymbol, amount }]
-        }
-      ]
-    })
-    toast.success(`Transfer transaction sent: ${transferHash}`)
+    if (ucs1_configuration.contract_address === "ics20") {
+      const osmoFromOsmosisToUnion = await cosmosClient.transferAssets({
+        kind: "ibc",
+        messageTransfers: [
+          {
+            sourcePort: "transfer",
+            sourceChannel: ucs1_configuration.channel_id,
+            token: { denom: $assetSymbol, amount },
+            sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
+            receiver: $recipient,
+            memo: ``,
+            timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
+          }
+        ]
+      })
+      console.log(osmoFromOsmosisToUnion)
+    } else {
+      const evmClient = await getWalletClient(config)
+
+      const transferHash = await cosmosClient.transferAssets({
+        kind: "cosmwasm",
+        instructions: [
+          {
+            contractAddress: ucs1_configuration.contract_address,
+            msg: {
+              transfer: {
+                channel: ucs1_configuration.channel_id,
+                receiver: $recipient?.slice(2),
+                memo: ``
+              }
+            },
+            funds: [{ denom: $assetSymbol, amount }]
+          }
+        ]
+      })
+      console.log(transferHash)
+      goto(`/explorer/transfers/${transferHash.transactionHash}`)
+    }
   } else if ($fromChain.rpc_type === "evm") {
     const publicClient = createPublicClient({
       chain: sepolia,
