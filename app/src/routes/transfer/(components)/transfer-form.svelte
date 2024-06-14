@@ -27,7 +27,7 @@ import { rawToBech32 } from "$lib/utilities/address.ts"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import type { Address } from "viem"
-    import { goto } from "$app/navigation";
+import { goto } from "$app/navigation"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -147,7 +147,7 @@ const transfer = async () => {
               disableBalanceCheck: false
             })
           : undefined
-    ) as OfflineSigner  
+    ) as OfflineSigner
     let cosmosClient = new UnionClient({
       cosmosOfflineSigner,
       evmSigner: undefined,
@@ -172,10 +172,10 @@ const transfer = async () => {
           }
         ]
       })
-      console.log(osmoFromOsmosisToUnion);
+      console.log(osmoFromOsmosisToUnion)
     } else {
       const evmClient = await getWalletClient(config)
-    
+
       const transferHash = await cosmosClient.transferAssets({
         kind: "cosmwasm",
         instructions: [
@@ -192,8 +192,8 @@ const transfer = async () => {
           }
         ]
       })
-      console.log(transferHash);
-      goto(`/explorer/transfers/${transferHash.transactionHash}`);
+      console.log(transferHash)
+      goto(`/explorer/transfers/${transferHash.transactionHash}`)
     }
   } else if ($fromChain.rpc_type === "evm") {
     const publicClient = createPublicClient({

@@ -10,7 +10,7 @@ import CellOrigin from "../(components)/cell-origin.svelte"
 import CellAssets from "../(components)/cell-assets.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { truncate } from "$lib/utilities/format"
-    import { goto } from "$app/navigation";
+import { goto } from "$app/navigation"
 
 let transfers = createQuery({
   queryKey: ["transfers"],
