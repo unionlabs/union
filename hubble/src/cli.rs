@@ -67,6 +67,8 @@ pub enum IndexerConfig {
     Tm(crate::tm::Config),
     #[serde(rename = "ethereum")]
     Eth(crate::eth::Config),
+    #[serde(rename = "beacon")]
+    Beacon(crate::beacon::Config),
 }
 
 impl IndexerConfig {
@@ -74,6 +76,7 @@ impl IndexerConfig {
         let rpc_type = match self {
             Self::Tm(_) => "tendermint",
             Self::Eth(_) => "ethereum",
+            Self::Beacon(_) => "beacon",
         };
 
         let initializer_span = info_span!("initializer", rpc_type);
@@ -82,6 +85,14 @@ impl IndexerConfig {
         match self {
             Self::Tm(cfg) => cfg.index(db).instrument(indexer_span).await,
             Self::Eth(cfg) => {
+                cfg.indexer(db)
+                    .instrument(initializer_span)
+                    .await?
+                    .index()
+                    .instrument(indexer_span)
+                    .await
+            }
+            Self::Beacon(cfg) => {
                 cfg.indexer(db)
                     .instrument(initializer_span)
                     .await?

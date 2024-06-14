@@ -28,6 +28,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
     for indexer in indexers {
         match indexer {
+            IndexerConfig::Beacon(_) => {}
             IndexerConfig::Tm(tm_config) => {
                 let client = HttpClient::new(tm_config.url.as_str()).unwrap();
 
