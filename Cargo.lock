@@ -3637,7 +3637,6 @@ dependencies = [
  "axum",
  "backon",
  "base64 0.21.7",
- "beacon-api",
  "clap 4.5.4",
  "color-eyre",
  "contracts",
