@@ -54,19 +54,30 @@ query TransfersBySourceHash($source_transaction_hash: String!) {
     sender
     normalized_sender
     source_chain_id
+    source_chain {
+      display_name
+    }
     source_connection_id
     source_channel_id
+    source_transaction_hash
     receiver
     normalized_receiver
     destination_chain_id
+    destination_chain {
+      display_name
+    }
     destination_connection_id
     destination_channel_id
+    destination_transaction_hash
     assets
     source_timestamp
     destination_timestamp
     traces(order_by: {timestamp: asc}) {
       timestamp
-      chain_id
+      chain {
+        display_name
+        chain_id
+      }
       type
       transaction_hash
     }
