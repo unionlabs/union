@@ -3,8 +3,8 @@ export function toIsoString(date: Date) {
   const pad = (num: number) => (num < 10 ? "0" : "") + num
 
   // @ts-ignore
-  // biome-ignore lint/style/useTemplate: would be illegible
   return (
+    // biome-ignore lint/style/useTemplate: would be illegible
     date.getFullYear() +
     "-" +
     pad(date.getMonth() + 1) +
