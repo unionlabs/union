@@ -7,6 +7,7 @@ import { URLS } from "$lib/constants"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { truncate } from "$lib/utilities/format"
+import { toIsoString } from '$lib/utilities/date'
 
 const source = $page.params.source
 
@@ -37,7 +38,7 @@ let transfers = createQuery({
     !-->
 
   <Card.Root class="flex flex-col divide-y max-w-5xl self-center mt-4">
-    <Card.Header class="font-bold text-center text-muted-foreground">
+    <Card.Header class="font-bold text-md text-center text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
     <Card.Content class="flex flex-col gap-8">
@@ -84,14 +85,18 @@ let transfers = createQuery({
       </div>
     </section>
     </Card.Content>
-    <Card.Footer>
-      <div class="flex flex-col gap-4 mt-6">
+    <Card.Footer class="items-start flex flex-col w-full gap-4">
+      <div class="mt-6 font-bold text-md">{toIsoString(new Date(transfer.source_timestamp)).split('T')[0]}</div>
+      <div class="flex flex-col gap-4 w-full">
         {#each transfer.traces as trace}
           <div>
+            {#if trace.timestamp}
+            <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {trace.chain?.display_name}</p>
+            {/if}
             <h3 class="text-md font-bold capitalize">{trace.type}</h3>
-            <p class="text-sm text-muted-foreground">{trace.chain?.display_name}</p>
-            <p class="text-sm text-muted-foreground">{trace.timestamp}</p>
-            <p class="text-sm text-muted-foreground">{trace.transaction_hash}</p>
+            {#if trace.transaction_hash}
+              <p class="text-xs text-muted-foreground">{trace.transaction_hash}</p>
+            {/if}
           </div>
         {/each}
       </div>
