@@ -2,12 +2,13 @@ import { redirect } from "@sveltejs/kit"
 import type { LayoutLoad } from "./$types.ts"
 import type { SvelteComponent } from "svelte"
 
-import TvIcon from "virtual:icons/lucide/tv"
-import BlocksIcon from "virtual:icons/lucide/blocks"
-import RocketIcon from "virtual:icons/lucide/rocket"
-import DatabaseIcon from "virtual:icons/lucide/database"
-import ConnectionIcon from "virtual:icons/mdi/connection"
 import SendHorizontalIcon from "virtual:icons/lucide/send-horizontal"
+import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
+import UserTransfersIcon from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
+import BlocksIcon from "$lib/components/union-icons/color/icon-blocks-color.svelte"
+import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
+import ChannelsIcon from "$lib/components/union-icons/color/icon-channel.svelte"
+import IndexIcon from "$lib/components/union-icons/color/icon-index.svelte"
 
 const tables = ["blocks", "packets", "channels", "connections"] as const
 
@@ -25,12 +26,12 @@ export const load = (loadEvent => {
     tables: [
       {
         route: "transfers",
-        icon: RocketIcon,
+        icon: TransfersIcon,
         description: "All UCS-01 transfers"
       },
       // {
       //   route: "user-transfers",
-      //   icon: RocketIcon,
+      //   icon: UserTransfersIcon,
       //   description: "Your UCS-01 transfers"
       // },
       {
@@ -44,11 +45,11 @@ export const load = (loadEvent => {
         description:
           "IBC Connections based on on-chain handshake events. Status is only 'CONFIRM' if we have indexed the entire four-way handshake."
       },
-      { route: "channels", icon: TvIcon, description: "Open IBC Channels" },
+      { route: "channels", icon: ChannelsIcon, description: "Open IBC Channels" },
       { route: "packets", icon: SendHorizontalIcon, description: "Packets sent through Union" },
       {
         route: "index-status",
-        icon: DatabaseIcon,
+        icon: IndexIcon,
         description: "Statuses of Hubble indices for connected chains"
       }
     ] as Array<Table>
