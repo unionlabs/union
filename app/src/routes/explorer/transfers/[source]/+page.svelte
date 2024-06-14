@@ -4,6 +4,7 @@ import request from "graphql-request"
 import { transfersBySourceHashQueryDocument } from "$lib/graphql/documents/transfers.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
+import MoveRightIcon from "virtual:icons/lucide/move-right"
 
 const source = $page.params.source
 
@@ -42,7 +43,7 @@ let transfers = createQuery({
         <p>{transfer.source_channel_id}</p>
       </div>
       <div class="flex items-center justify-center">
-        <div>➡️</div>
+        <MoveRightIcon/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
         <h2 class="font-gunship text-2xl text-foreground">{transfer.destination_chain?.display_name}</h2>
@@ -58,7 +59,7 @@ let transfers = createQuery({
         <p class="text-xs">{transfer.normalized_sender}</p>
       </div>
       <div class="flex items-center justify-center">
-        <div>➡️</div>
+        <MoveRightIcon/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
         <h2 class="font-gunship text-2xl text-foreground">Receiver</h2>
@@ -82,7 +83,7 @@ let transfers = createQuery({
       <div class="flex flex-col gap-4">
         {#each transfer.traces as trace}
           <div>
-            <h3 class="text-lg font-gunship capitalize">{trace.type?.replace('_', ' ').toLowerCase()}</h3>
+            <h3 class="text-lg font-bold capitalize">{trace.type}</h3>
             <p class="text-muted-foreground">{trace.chain?.display_name}</p>
             <p class="text-muted-foreground">{trace.timestamp}</p>
             <p class="text-muted-foreground">{trace.transaction_hash}</p>

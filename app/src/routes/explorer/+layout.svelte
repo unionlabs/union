@@ -9,6 +9,7 @@ import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 import { page } from "$app/stores"
 import { derived } from "svelte/store"
 import { onNavigate } from "$app/navigation"
+import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 
 export let data: LayoutData
 
@@ -61,14 +62,16 @@ onNavigate(navigation => {
     explorerRoute = navigation.to?.route.id?.split("/").at(2)
   }
 })
+
+$: mainExplorerPage = $page.route.id?.split("/").length <= 3;
 </script>
 
 <svelte:head>
   <title>Union - Explorer</title>
 </svelte:head>
 
-
 <main class="flex flex-row flex-1 overflow-y-hidden">
+  {#if mainExplorerPage}
   <Resizable.PaneGroup direction="horizontal" class="w-full rounded-lg bg-re" {onLayoutChange}>
     <Resizable.Pane
       {onExpand}
@@ -102,4 +105,10 @@ onNavigate(navigation => {
       </ScrollArea>
     </Resizable.Pane>
   </Resizable.PaneGroup>
+  {:else}
+  <div class="flex flex-col flex-1">
+    <a class="font-bold text-xl p-4 flex flex-row gap-2 items-center" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/>Back to <span class="capitalize">{$page.route.id?.split("/")[2]}</span></a>
+    <slot/>
+  </div>
+  {/if}
 </main>
