@@ -663,7 +663,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value_string = Binary::from(value.clone()).to_base64();
+                let value_string = Binary::from(value.clone()).to_string();
                 (
                     self.send_tokens_success(sender, &String::new(), tokens)?,
                     Vec::from_iter(
@@ -676,7 +676,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                 self.send_tokens_failure(sender, &String::new(), tokens)?,
                 Vec::from_iter(
                     (!error.is_empty())
-                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_base64())),
+                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_string())),
                 ),
                 error.to_vec(),
             ),
@@ -1047,7 +1047,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
         let (mut ack_msgs, mut ack_attr, ack_def) = match ack {
             Ok(value) => {
-                let value_string = Binary::from(value.clone()).to_base64();
+                let value_string = Binary::from(value.clone()).to_string();
                 (
                     self.send_tokens_success(sender, &String::new().as_bytes().into(), tokens)?,
                     Vec::from_iter(
@@ -1060,7 +1060,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 self.send_tokens_failure(sender, &String::new().as_bytes().into(), tokens)?,
                 Vec::from_iter(
                     (!error.is_empty())
-                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_base64())),
+                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_string())),
                 ),
                 error.to_vec(),
             ),

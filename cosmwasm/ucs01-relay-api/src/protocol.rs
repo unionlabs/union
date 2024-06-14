@@ -208,7 +208,7 @@ pub trait TransferProtocol {
         } else {
             match ack {
                 Ok(value) => {
-                    let value_string = Binary::from(value).to_base64();
+                    let value_string = Binary::from(value).to_string();
                     (
                         self.send_tokens_success(
                             packet.sender(),
@@ -221,7 +221,7 @@ pub trait TransferProtocol {
                     )
                 }
                 Err(error) => {
-                    let error_string = Binary::from(error).to_base64();
+                    let error_string = Binary::from(error).to_string();
                     (
                         self.send_tokens_failure(
                             packet.sender(),
@@ -250,7 +250,7 @@ pub trait TransferProtocol {
                         (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
                         (
                             ATTR_ACK,
-                            ibc_packet.acknowledgement.data.to_base64().as_str(),
+                            ibc_packet.acknowledgement.data.to_string().as_str(),
                         ),
                     ])
                     .add_attributes([tokens_to_attr(packet.tokens())]),
