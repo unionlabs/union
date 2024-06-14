@@ -17,7 +17,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/holiman/uint256 v1.2.3
 	github.com/spf13/cobra v1.8.0
-	github.com/unionlabs/union/galoisd v0.0.0-20240606071215-17f905375f98
+	github.com/unionlabs/union/galoisd v0.0.0-20240614104816-a49fb19d57cd
 )
 
 require (
@@ -173,6 +173,4 @@ replace (
 	github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240312175655-ce0186ef32c1
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
-
-	github.com/unionlabs/union/galoisd => ../galoisd
 )

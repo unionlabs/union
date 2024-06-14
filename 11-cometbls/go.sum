@@ -774,6 +774,8 @@ github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b h1:KLUmkf0vAzt+
 github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6 h1:wRt6Yt29bWvwCSeRmRJ/Wm1sRev1GjJGXn4MzSrMbv4=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6/go.mod h1:wKqwsieaKPThcFkHe0d0zMsbHEUWFmZcG7KBCse210o=
+github.com/unionlabs/union/galoisd v0.0.0-20240614104816-a49fb19d57cd h1:VABwzrGGloLm2lCsC648IOlytb9NlxH76K0U5HIyA9U=
+github.com/unionlabs/union/galoisd v0.0.0-20240614104816-a49fb19d57cd/go.mod h1:+aZPt+NS4QAyNESWE+Hl8JMEpGMvnxvnsjIVyFBWa1A=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
