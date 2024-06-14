@@ -972,6 +972,7 @@ dependencies = [
  "arbitrary",
  "beacon-api",
  "bip32",
+ "bip39",
  "chrono",
  "cometbft-rpc",
  "contracts",

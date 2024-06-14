@@ -263,7 +263,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                     .gas_info
                     .expect("gas info is present on successful simulation result"),
                 Err(err) => {
-                    warn!(message = %err.message(), "tx simulation failed");
+                    warn!(error = %err.message(), "tx simulation failed");
                     return Err(BroadcastTxCommitError::SimulateTx(err.message().to_owned()));
                 }
             }
