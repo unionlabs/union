@@ -10,6 +10,7 @@ import ColorSearch from "$lib/components/union-icons/color/icon-search-color.sve
 import ColorTransfers from "$lib/components/union-icons/color/icon-transfers-color.svelte"
 import ColorUserTransfers from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
 import ColorWallet from "$lib/components/union-icons/color/icon-wallet-color.svelte"
+import ColorPacket from "$lib/components/union-icons/color/icon-packet-color.svelte"
 
 import MonoBlocks from "$lib/components/union-icons/mono/icon-blocks-mono.svelte"
 import MonoChannel from "$lib/components/union-icons/mono/icon-channel-mono.svelte"
@@ -22,6 +23,7 @@ import MonoSearch from "$lib/components/union-icons/mono/icon-search-mono.svelte
 import MonoTransfers from "$lib/components/union-icons/mono/icon-transfers-mono.svelte"
 import MonoUserTransfers from "$lib/components/union-icons/mono/icon-usertransfers-mono.svelte"
 import MonoWallet from "$lib/components/union-icons/mono/icon-wallet-mono.svelte"
+import MonoPacket from "$lib/components/union-icons/mono/icon-packet-mono.svelte"
 
 import InverseBlocks from "$lib/components/union-icons/inverse/icon-blocks-inverse.svelte"
 import InverseChannel from "$lib/components/union-icons/inverse/icon-channel-inverse.svelte"
@@ -34,6 +36,7 @@ import InverseSearch from "$lib/components/union-icons/inverse/icon-search-inver
 import InverseTransfers from "$lib/components/union-icons/inverse/icon-transfers-inverse.svelte"
 import InverseUserTransfers from "$lib/components/union-icons/inverse/icon-usertransfers-inverse.svelte"
 import InverseWallet from "$lib/components/union-icons/inverse/icon-wallet-inverse.svelte"
+import InversePacket from "$lib/components/union-icons/inverse/icon-packet-inverse.svelte"
 
 type IconName =
   | "blocks"
@@ -135,6 +138,14 @@ let icons = [
       color: ColorWallet,
       mono: MonoWallet,
       inverse: InverseWallet
+    }
+  },
+  {
+    name: "packet",
+    variants: {
+      color: ColorPacket,
+      mono: MonoPacket,
+      inverse: InversePacket
     }
   }
 ]
