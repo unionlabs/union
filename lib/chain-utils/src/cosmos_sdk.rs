@@ -244,21 +244,30 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .expect("signing failed")
             .to_vec();
 
-        let simulation_gas_info = client
-            .simulate(tx::v1beta1::SimulateRequest {
-                tx_bytes: Tx {
-                    body: tx_body.clone(),
-                    auth_info: auth_info.clone(),
-                    signatures: [simulation_signature.clone()].to_vec(),
+        let simulation_gas_info = {
+            let result = client
+                .simulate(tx::v1beta1::SimulateRequest {
+                    tx_bytes: Tx {
+                        body: tx_body.clone(),
+                        auth_info: auth_info.clone(),
+                        signatures: [simulation_signature.clone()].to_vec(),
+                    }
+                    .encode_as::<Proto>(),
+                    ..Default::default()
+                })
+                .await;
+
+            match result {
+                Ok(ok) => ok
+                    .into_inner()
+                    .gas_info
+                    .expect("gas info is present on successful simulation result"),
+                Err(err) => {
+                    warn!(message = %err.message(), "tx simulation failed");
+                    return Err(BroadcastTxCommitError::SimulateTx(err.message().to_owned()));
                 }
-                .encode_as::<Proto>(),
-                ..Default::default()
-            })
-            .await
-            .unwrap()
-            .into_inner()
-            .gas_info
-            .expect("gas info should be present");
+            }
+        };
 
         info!(
             gas_used = %simulation_gas_info.gas_used,
@@ -418,6 +427,8 @@ pub enum BroadcastTxCommitError {
     Inclusion(#[from] tendermint_rpc::Error),
     #[error("tx failed: {0:?}")]
     Tx(CosmosSdkError),
+    #[error("tx simulation failed: {0:?}")]
+    SimulateTx(String),
 }
 
 impl MaybeRecoverableError for BroadcastTxCommitError {
@@ -432,6 +443,7 @@ impl MaybeRecoverableError for BroadcastTxCommitError {
                     | CosmosSdkError::SdkError(SdkError::ErrTxTimeoutHeight)
                     | CosmosSdkError::SdkError(SdkError::ErrWrongSequence)
             ),
+            Self::SimulateTx(_) => false,
         }
     }
 }

@@ -15,7 +15,6 @@ workspace = true
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
-bnum                     = { version = "0.11.0", features = ["serde"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
 contracts                = { workspace = true, optional = true }
