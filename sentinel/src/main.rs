@@ -2,28 +2,37 @@ use std::fs::read_to_string;
 
 use clap::Parser;
 use config::Config;
-use context::{ Context, IbcTransfer, TransferDirection };
+use context::{Context, IbcTransfer, TransferDirection};
 use sqlx::PgPool;
 
 pub mod config;
 pub mod context;
+mod lib;
 // pub mod datadog;
 pub mod sql_helper;
 use std::ffi::OsString;
-use unionlabs::{ hash::H160 };
 
-use tokio::{ signal, time::{ interval, Duration } };
+use tokio::{
+    signal,
+    time::{interval, Duration},
+};
+use unionlabs::hash::H160;
 
 use crate::{
-    config::{ ChainConfig, CosmosConfig },
-    sql_helper::{ create_table_if_not_exists, get_packet_status },
+    config::{ChainConfig, CosmosConfig},
+    sql_helper::{create_table_if_not_exists, get_packet_status},
 }; //, events::{ EventType } };
 
 /// Arguments provided to the top-level command.
 #[derive(Debug, Parser, Clone)]
 pub struct AppArgs {
     /// The path to the configuration file.
-    #[arg(long, short = 'c', global = true, default_value = "sentinel-config-testnet.json")]
+    #[arg(
+        long,
+        short = 'c',
+        global = true,
+        default_value = "sentinel-config-testnet.json"
+    )]
     pub config: OsString,
 
     /// The database URL
@@ -41,18 +50,22 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let args = AppArgs::parse();
     tracing::debug!("args.config: {:?}", args.config);
-    let transfer_test_config: Config = serde_json
-        ::from_str(&read_to_string(args.config).unwrap())
-        .unwrap();
-    tracing::debug!("All json: {}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
+    let transfer_test_config: Config =
+        serde_json::from_str(&read_to_string(args.config).unwrap()).unwrap();
+    tracing::debug!(
+        "All json: {}",
+        serde_json::to_string_pretty(&transfer_test_config).unwrap()
+    );
 
-    let pool: sqlx::Pool<sqlx::Postgres> = PgPool::connect(
-        &transfer_test_config.db_url
-    ).await.unwrap();
+    let pool: sqlx::Pool<sqlx::Postgres> =
+        PgPool::connect(&transfer_test_config.db_url).await.unwrap();
 
     create_table_if_not_exists(&pool).await.unwrap();
 
-    tracing::debug!("{}", serde_json::to_string_pretty(&transfer_test_config).unwrap());
+    tracing::debug!(
+        "{}",
+        serde_json::to_string_pretty(&transfer_test_config).unwrap()
+    );
     let context = Context::new(transfer_test_config.clone(), pool).await;
 
     // Task to handle listening for events
@@ -61,7 +74,9 @@ async fn main() {
         let source_chain = connection.source_chain.clone();
         let target_chain = connection.target_chain.clone();
         tokio::spawn(async move {
-            context_clone.listen(source_chain.as_str(), target_chain.as_str()).await;
+            context_clone
+                .listen(source_chain.as_str(), target_chain.as_str())
+                .await;
         });
     }
 
@@ -81,94 +96,190 @@ async fn main() {
 
                 match (source_chain.as_str(), target_chain.as_str()) {
                     ("osmosis", "union") => {
-                        context_clone.send_ibc_transfer(TransferDirection {
-                            source_chain: CosmosConfig {
-                                protocol: transfer_test_config_clone.osmosis.protocol.clone(),
-                                chain_config: ChainConfig {
-                                    chain_config: context_clone.osmosis.clone().unwrap(),
-                                    address: transfer_test_config_clone.osmosis.chain_config.address.clone(),
-                                    channel: transfer_test_config_clone.osmosis.chain_config.channel.clone(),
-                                    counterparty_channel: transfer_test_config_clone.osmosis.chain_config.counterparty_channel.clone(),
+                        context_clone
+                            .send_ibc_transfer(TransferDirection {
+                                source_chain: CosmosConfig {
+                                    protocol: transfer_test_config_clone.osmosis.protocol.clone(),
+                                    chain_config: ChainConfig {
+                                        chain_config: context_clone.osmosis.clone().unwrap(),
+                                        address: transfer_test_config_clone
+                                            .osmosis
+                                            .chain_config
+                                            .address
+                                            .clone(),
+                                        channel: transfer_test_config_clone
+                                            .osmosis
+                                            .chain_config
+                                            .channel
+                                            .clone(),
+                                        counterparty_channel: transfer_test_config_clone
+                                            .osmosis
+                                            .chain_config
+                                            .counterparty_channel
+                                            .clone(),
+                                    },
                                 },
-                            },
-                            destination_chain: CosmosConfig {
-                                protocol: transfer_test_config_clone.union.protocol.clone(),
-                                chain_config: ChainConfig {
-                                    chain_config: context_clone.union.clone().unwrap(),
-                                    address: transfer_test_config_clone.union.chain_config.address.clone(),
-                                    channel: transfer_test_config_clone.union.chain_config.channel.clone(),
-                                    counterparty_channel: transfer_test_config_clone.union.chain_config.counterparty_channel.clone(),
+                                destination_chain: CosmosConfig {
+                                    protocol: transfer_test_config_clone.union.protocol.clone(),
+                                    chain_config: ChainConfig {
+                                        chain_config: context_clone.union.clone().unwrap(),
+                                        address: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .address
+                                            .clone(),
+                                        channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .channel
+                                            .clone(),
+                                        counterparty_channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .counterparty_channel
+                                            .clone(),
+                                    },
                                 },
-                            },
-                        }).await;
+                            })
+                            .await;
                     }
                     ("union", "osmosis") => {
-                        context_clone.send_ibc_transfer(TransferDirection {
-                            source_chain: CosmosConfig {
-                                protocol: transfer_test_config_clone.union.protocol.clone(),
-                                chain_config: ChainConfig {
-                                    chain_config: context_clone.union.clone().unwrap(),
-                                    address: transfer_test_config_clone.union.chain_config.address.clone(),
-                                    channel: transfer_test_config_clone.union.chain_config.channel.clone(),
-                                    counterparty_channel: transfer_test_config_clone.union.chain_config.counterparty_channel.clone(),
+                        context_clone
+                            .send_ibc_transfer(TransferDirection {
+                                source_chain: CosmosConfig {
+                                    protocol: transfer_test_config_clone.union.protocol.clone(),
+                                    chain_config: ChainConfig {
+                                        chain_config: context_clone.union.clone().unwrap(),
+                                        address: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .address
+                                            .clone(),
+                                        channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .channel
+                                            .clone(),
+                                        counterparty_channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .counterparty_channel
+                                            .clone(),
+                                    },
                                 },
-                            },
-                            destination_chain: CosmosConfig {
-                                protocol: transfer_test_config_clone.osmosis.protocol.clone(),
-                                chain_config: ChainConfig {
-                                    chain_config: context_clone.osmosis.clone().unwrap(),
-                                    address: transfer_test_config_clone.osmosis.chain_config.address.clone(),
-                                    channel: transfer_test_config_clone.osmosis.chain_config.channel.clone(),
-                                    counterparty_channel: transfer_test_config_clone.osmosis.chain_config.counterparty_channel.clone(),
+                                destination_chain: CosmosConfig {
+                                    protocol: transfer_test_config_clone.osmosis.protocol.clone(),
+                                    chain_config: ChainConfig {
+                                        chain_config: context_clone.osmosis.clone().unwrap(),
+                                        address: transfer_test_config_clone
+                                            .osmosis
+                                            .chain_config
+                                            .address
+                                            .clone(),
+                                        channel: transfer_test_config_clone
+                                            .osmosis
+                                            .chain_config
+                                            .channel
+                                            .clone(),
+                                        counterparty_channel: transfer_test_config_clone
+                                            .osmosis
+                                            .chain_config
+                                            .counterparty_channel
+                                            .clone(),
+                                    },
                                 },
-                            },
-                        }).await;
+                            })
+                            .await;
                     }
                     ("ethereum", "union") => {
-                        context_clone.send_ibc_transfer(TransferDirection {
-                            source_chain: ChainConfig::<_, H160> {
-                                chain_config: (
-                                    transfer_test_config_clone.ethereum.chain_config.signers[0].clone(),
-                                    context_clone.ethereum.clone().unwrap(),
-                                ),
+                        context_clone
+                            .send_ibc_transfer(TransferDirection {
+                                source_chain: ChainConfig::<_, H160> {
+                                    chain_config: (
+                                        transfer_test_config_clone.ethereum.chain_config.signers[0]
+                                            .clone(),
+                                        context_clone.ethereum.clone().unwrap(),
+                                    ),
 
-                                address: transfer_test_config_clone.ethereum.address.clone().into(),
-                                channel: transfer_test_config_clone.ethereum.channel.clone(),
-                                counterparty_channel: transfer_test_config_clone.ethereum.counterparty_channel.clone(),
-                            },
-                            destination_chain: CosmosConfig {
-                                protocol: transfer_test_config_clone.union.protocol.clone(),
-                                chain_config: ChainConfig {
-                                    chain_config: context_clone.union.clone().unwrap(),
-                                    address: transfer_test_config_clone.union.chain_config.address.clone(),
-                                    channel: transfer_test_config_clone.union.chain_config.channel.clone(),
-                                    counterparty_channel: transfer_test_config_clone.union.chain_config.counterparty_channel.clone(),
+                                    address: transfer_test_config_clone
+                                        .ethereum
+                                        .address
+                                        .clone()
+                                        .into(),
+                                    channel: transfer_test_config_clone.ethereum.channel.clone(),
+                                    counterparty_channel: transfer_test_config_clone
+                                        .ethereum
+                                        .counterparty_channel
+                                        .clone(),
                                 },
-                            },
-                        }).await;
+                                destination_chain: CosmosConfig {
+                                    protocol: transfer_test_config_clone.union.protocol.clone(),
+                                    chain_config: ChainConfig {
+                                        chain_config: context_clone.union.clone().unwrap(),
+                                        address: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .address
+                                            .clone(),
+                                        channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .channel
+                                            .clone(),
+                                        counterparty_channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .counterparty_channel
+                                            .clone(),
+                                    },
+                                },
+                            })
+                            .await;
                     }
                     ("union", "ethereum") => {
-                        context_clone.send_ibc_transfer(TransferDirection {
-                            destination_chain: ChainConfig::<_, H160> {
-                                chain_config: (
-                                    transfer_test_config_clone.ethereum.chain_config.signers[0].clone(),
-                                    context_clone.ethereum.clone().unwrap(),
-                                ),
+                        context_clone
+                            .send_ibc_transfer(TransferDirection {
+                                destination_chain: ChainConfig::<_, H160> {
+                                    chain_config: (
+                                        transfer_test_config_clone.ethereum.chain_config.signers[0]
+                                            .clone(),
+                                        context_clone.ethereum.clone().unwrap(),
+                                    ),
 
-                                address: transfer_test_config_clone.ethereum.address.clone().into(),
-                                channel: transfer_test_config_clone.ethereum.channel.clone(),
-                                counterparty_channel: transfer_test_config_clone.ethereum.counterparty_channel.clone(),
-                            },
-                            source_chain: CosmosConfig {
-                                protocol: transfer_test_config_clone.union.protocol.clone(),
-                                chain_config: ChainConfig {
-                                    chain_config: context_clone.union.clone().unwrap(),
-                                    address: transfer_test_config_clone.union.chain_config.address.clone(),
-                                    channel: transfer_test_config_clone.union.chain_config.channel.clone(),
-                                    counterparty_channel: transfer_test_config_clone.union.chain_config.counterparty_channel.clone(),
+                                    address: transfer_test_config_clone
+                                        .ethereum
+                                        .address
+                                        .clone()
+                                        .into(),
+                                    channel: transfer_test_config_clone.ethereum.channel.clone(),
+                                    counterparty_channel: transfer_test_config_clone
+                                        .ethereum
+                                        .counterparty_channel
+                                        .clone(),
                                 },
-                            },
-                        }).await;
+                                source_chain: CosmosConfig {
+                                    protocol: transfer_test_config_clone.union.protocol.clone(),
+                                    chain_config: ChainConfig {
+                                        chain_config: context_clone.union.clone().unwrap(),
+                                        address: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .address
+                                            .clone(),
+                                        channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .channel
+                                            .clone(),
+                                        counterparty_channel: transfer_test_config_clone
+                                            .union
+                                            .chain_config
+                                            .counterparty_channel
+                                            .clone(),
+                                    },
+                                },
+                            })
+                            .await;
                     }
 
                     // ("ethereum", "union") => {
@@ -205,11 +316,13 @@ async fn main() {
         let expect_full_circle = connection.expect_full_circle as u64;
         let context_clone = context.clone();
 
-        context_clone.check_packet_sequences(
-            source_chain.as_str(),
-            target_chain.as_str(),
-            expect_full_circle
-        ).await;
+        context_clone
+            .check_packet_sequences(
+                source_chain.as_str(),
+                target_chain.as_str(),
+                expect_full_circle,
+            )
+            .await;
     }
 
     signal::ctrl_c().await.unwrap();

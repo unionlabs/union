@@ -6106,6 +6106,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "sentinel-new"
+version = "0.1.0"
+dependencies = [
+ "bech32",
+ "block-message",
+ "chain-utils",
+ "chrono",
+ "clap 4.5.4",
+ "contracts",
+ "cosmwasm-std 2.0.3",
+ "csv",
+ "ethers",
+ "futures",
+ "hex",
+ "prost",
+ "protos",
+ "queue-msg",
+ "reqwest",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sqlx",
+ "tendermint",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+ "ucs01-relay",
+ "ucs01-relay-api",
+ "unionlabs",
+ "uuid 1.8.0",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.197"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -68,6 +68,7 @@ members = [
   "zerg",
   "lib/linea-zktrie",
   "sentinel",
+  "sentinel-new",
 ]
 
 [workspace.package]
