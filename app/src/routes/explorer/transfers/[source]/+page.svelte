@@ -45,7 +45,7 @@ let transfers = createQuery({
 
     <section class="mt-6">
       {#if transfer.assets}
-        <ul class="text-foreground text-center font-bold text-4xl">
+        <ul class="text-foreground text-center  uppercase condenced font-bold text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
             <li>{value.amount} {truncate(denom, 4)}</li>
           {/each}
@@ -57,16 +57,16 @@ let transfers = createQuery({
     
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-gunship text-2xl text-foreground">{transfer.source_chain?.display_name}</h2>
+        <h2 class="font-supermolot text-2xl font-bold text-foreground">{transfer.source_chain?.display_name}</h2>
         <p class="text-sm">{transfer.source_chain_id}</p>
         <p class="text-sm">{transfer.source_connection_id}</p>
         <p class="text-sm">{transfer.source_channel_id}</p>
       </div>
       <div class="flex items-center justify-center px-8">
-        <MoveRightIcon class="size-8"/>
+        <MoveRightIcon class="text-foreground size-8"/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-gunship text-2xl text-foreground">{transfer.destination_chain?.display_name}</h2>
+        <h2 class="font-supermolot text-2xl font-bold text-foreground">{transfer.destination_chain?.display_name}</h2>
         <p class="text-sm">{transfer.destination_chain_id}</p>
         <p class="text-sm">{transfer.destination_connection_id}</p>
         <p class="text-sm">{transfer.destination_channel_id}</p>
@@ -74,12 +74,12 @@ let transfers = createQuery({
     </section>
     <section class="flex gap-8">
       <div class=" lex-col text-muted-foreground">
-        <h2 class=" text-md text-foreground uppercase font-bold">Sender</h2>
+        <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
         <p class="text-sm">{transfer.sender}</p>
         <p class="text-[10px]">normalized: {transfer.normalized_sender}</p>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="text-md text-foreground uppercase font-bold">Receiver</h2>
+        <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
         <p class="text-sm">{transfer.receiver}</p>
         <p class="text-[10px]">normalized: {transfer.normalized_receiver}</p>
       </div>

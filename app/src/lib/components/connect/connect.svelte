@@ -32,18 +32,17 @@ let collapsibleOpen = true
 <Sheet.Root bind:open={sheetOpen}>
   <Sheet.Trigger asChild let:builder class="w-full">
     <Button
-      variant="outline"
+      size="sm"
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn(
-        'truncate space-x-2 text-md w-full min-w-[145px] hover:bg-cyan-300/80',
-        ($sepoliaStore.connectionStatus === 'connected' ||
-          $cosmosStore.connectionStatus === 'connected') &&
-          'border-cyan-300/50',
+        'space-x-2 text-md bg-cyan-300/80 text-black hover:bg-cyan-300/90',
+        ($sepoliaStore.connectionStatus === 'connected' &&
+          $cosmosStore.connectionStatus === 'connected')
       )}
     >
-      <WalletIcon class="size-5 text-accent-foreground/90" />
-      <span class="font-gunship">{buttonText}</span>
+      <WalletIcon class="size-4 text-black" />
+      <span class="font-supermolot font-bold uppercase">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
@@ -77,7 +76,7 @@ let collapsibleOpen = true
           !collapsibleOpen && 'border-accent',
         )}
       >
-        <span class="mb-0.5 text-start w-full text-lg font-gunship">Connect Wallets</span>
+        <span class="mb-0.5 text-start w-full text-lg font-supermolot">Connect Wallets</span>
         <Button variant="ghost" size="sm" class="w-9 p-0 my-auto h-10 hover:bg-transparent">
           <ChevronsUpDownIcon class="w-6 h-6" />
           <span class="sr-only">Toggle</span>

@@ -99,7 +99,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
     </Resizable.Handle>
     <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
       <ScrollArea orientation="both" class="size-full flex-1 pr-6 pl-2">
-        <h2 class="text-4xl font-bold tracking-tight mt-8 capitalize font-gunship">{explorerRoute?.replaceAll('-', ' ')}</h2>
+        <h2 class="text-4xl font-extrabold font-extra-expanded mt-8 uppercase font-supermolot">{explorerRoute?.replaceAll('-', ' ')}</h2>
         <p class="pb-4 text-muted-foreground">> {explorerPageDescription}</p>
         <slot/>
       </ScrollArea>
@@ -107,7 +107,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
   </Resizable.PaneGroup>
   {:else}
   <div class="flex flex-col flex-1">
-    <a class="font-bold text-xl p-4 flex flex-row gap-2 items-center" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="capitalize">{$page.route.id?.split("/")[2]}</span></a>
+    <a class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="uppercase">{$page.route.id?.split("/")[2]}</span></a>
     <slot/>
   </div>
   {/if}

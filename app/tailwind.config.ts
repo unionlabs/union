@@ -139,6 +139,7 @@ export default (<Config>{
       }),
       fontFamily: _ => ({
         gunship: ["gunship", ...defaultTheme.fontFamily.sans],
+        supermolot: ["tt-supermolot-neue", ...defaultTheme.fontFamily.sans],
         sans: ["quattro-sans", ...defaultTheme.fontFamily.sans],
         mono: ["quattro-mono", ...defaultTheme.fontFamily.mono]
       }),

@@ -162,6 +162,23 @@
 }
 
 @layer utilities {
+
+  .font-condensed {
+    font-stretch: condensed;
+  }
+
+  .font-expanded {
+    font-stretch: expanded;
+  }
+
+  .font-extra-expanded {
+    font-stretch: extra-expanded;
+  }
+
+  .font-ultra-expanded {
+    font-stretch: ultra-expanded;
+  }
+  
   .step {
     counter-increment: step;
   }

@@ -993,6 +993,7 @@ subtrie
 sumbitter
 superforms
 supermajority
+supermolot
 svooltip
 svrcmd
 symlinker

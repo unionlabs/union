@@ -70,3 +70,10 @@
   src: url("/fonts/gunship/gunship.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "tt-supermolot-neue";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/tt-supermolot-neue/TT-Supermolot-Neue-Variable.ttf") format("truetype");
+}

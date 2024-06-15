@@ -12,3 +12,4 @@ evm/contracts/proto/** linguist-generated
 .zip filter=lfs diff=lfs merge=lfs -text
 *.splinecode filter=lfs diff=lfs merge=lfs -text
 *.lockb binary diff=lockb
+*.otf filter=lfs diff=lfs merge=lfs -text
