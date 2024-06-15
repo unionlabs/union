@@ -21,8 +21,10 @@ path = "src/main.rs"
 axum                = { workspace = true, features = ["macros", "tokio"] }
 backon              = "0.4.4"
 base64              = { workspace = true }
+chain-utils         = { workspace = true }
 clap                = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre          = { workspace = true, features = ["default"] }
+cometbft-rpc        = { workspace = true }
 contracts.workspace = true
 ethers              = { workspace = true, features = ["default", "std"] }
 futures             = { workspace = true, features = ["async-await"] }
