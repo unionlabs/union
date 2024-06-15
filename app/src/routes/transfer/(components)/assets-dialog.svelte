@@ -24,13 +24,13 @@ export let onAssetSelect: (asset: string) => void
   closeOnOutsideClick={true}
 >
   <Dialog.Content
-    class="max-w-[90%] sm:max-w-[450px] border-[1px] border-solid border-accent overflow-auto px-0 pt-3 pb-0 flex flex-col items-start rounded-md"
+    class="max-w-[90%] sm:max-w-[450px]  overflow-auto px-0 pt-4 pb-2 flex flex-col items-start"
   >
     <Dialog.Header class="max-h-min h-8 p-2">
-      <Dialog.Title class="font-extrabold text-2xl pl-3 -mt-2">Select a token</Dialog.Title>
+      <Dialog.Title class="px-2">Select Asset</Dialog.Title>
     </Dialog.Header>
     <Dialog.Description class="size-full">
-      <ul class="my-3 mx-2 space-y-1">
+      <ul class="">
         {#each assets as { address, symbol, decimals, balance }, index}
           <li
             class={cn(
@@ -40,7 +40,7 @@ export let onAssetSelect: (asset: string) => void
             <Button
               variant="ghost"
               class={cn(
-                'w-full flex justify-start space-x-4 p-2 rounded-none pl-3',
+                'size-full px-4 py-2 w-full text-foreground rounded-none flex ',
               )}
               on:click={() => {onAssetSelect(symbol); dialogOpen = false }}
             >

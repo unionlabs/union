@@ -24,12 +24,11 @@ $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 >
   <Dialog.Content
     class={cn(
-      'border-solid overflow-auto flex flex-col items-start',
-      'max-w-[90%] sm:max-w-[375px] border-[1px] pt-4 pb-1 px-0',
+      'border-solid overflow-auto flex flex-col items-start p-0 pt-4 pb-2',
     )}
   >
-    <Dialog.Header class="max-h-min p-2 w-full space-y-3">
-      <Dialog.Title class="font-extrabold text-2xl text-center -mt-2">
+    <Dialog.Header class="max-h-min p-2 w-full">
+      <Dialog.Title class="px-2">
         Select {kind} Network
       </Dialog.Title>
     </Dialog.Header>
@@ -57,16 +56,19 @@ $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
             )}
           >
             <Button
-              variant={selectedChain === chain.chain_id ? 'secondary' : 'ghost'}
+              variant={'ghost'}
               on:click={() => {onChainSelect(chain.chain_id); dialogOpen = false}}
-              class={cn('size-full px-4 py-2 w-full rounded-none flex flex-col items-start')}
+              class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex flex-col items-start',
+                selectedChain === chain.chain_id ? 'bg-foreground text-background' : '' 
+              
+              )}
             >
                 <div
                   class="text-lg font-bold"
                 >
                   {chain.display_name}
                 </div>
-                <div class="text-xs text-muted-foreground">{chain.chain_id}</div>
+                <div class="text-xs -mt-1">{chain.chain_id}</div>
             </Button>
           </li>
         {/each}

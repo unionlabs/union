@@ -39,7 +39,7 @@ import { routes } from "$lib/components/navigation/index.ts"
               ? 'hidden'
               : [
                   'py-2 px-4 text-md no-underline font-supermolot font-bold decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70 uppercase',
-                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-foreground text-background !hover:bg-foreground hover:text-background',
+                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-foreground text-primary-foreground !hover:bg-foreground hover:text-background',
                 ],
           )}
         >
