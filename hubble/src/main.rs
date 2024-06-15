@@ -14,6 +14,7 @@ use tracing::{error, info, warn};
 mod beacon;
 mod chain_id_query;
 mod cli;
+mod consensus;
 mod eth;
 mod healthz;
 mod logging;
