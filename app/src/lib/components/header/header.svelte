@@ -25,7 +25,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     />
   </Button>
   <div class="flex-1 p-0 m-0 w-full">
-    <SearchBar />
+    <!--<SearchBar />!-->
   </div>
   <div class="hidden sm:flex flex-row space-x-0">
     <nav class="hidden lg:flex items-center space-x-0 sm:space-x-2 mr-0 sm:mr-3">
@@ -38,8 +38,8 @@ import { routes } from "$lib/components/navigation/index.ts"
             draft
               ? 'hidden'
               : [
-                  'p-2 capitalize no-underline decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70 font-gunship',
-                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-muted-foreground/10',
+                  'py-2 px-4 text-md no-underline font-supermolot font-bold decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70 uppercase',
+                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-foreground text-background !hover:bg-foreground hover:text-background',
                 ],
           )}
         >
