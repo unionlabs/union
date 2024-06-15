@@ -72,7 +72,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 <main class="flex flex-row flex-1 overflow-y-hidden">
   {#if mainExplorerPage}
-  <Resizable.PaneGroup direction="horizontal" class="w-full rounded-lg bg-re" {onLayoutChange}>
+  <Resizable.PaneGroup direction="horizontal" class="w-full" {onLayoutChange}>
     <Resizable.Pane
       {onExpand}
       {onCollapse}
@@ -84,7 +84,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
       defaultSize={leftSize}
       class={cn(
         isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[258px] max-w-[258px]',
-        'w-full border-r border-solid border-r-secondary',
+        'w-full border-r bg-muted',
       )}
     >
       <Menu tableRoutes={data.tables} {isCollapsed} />

@@ -36,7 +36,7 @@ let collapsibleOpen = true
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
       class={cn(
-        'space-x-2 text-md bg-cyan-300/80 text-black hover:bg-cyan-300/90',
+        'space-x-2 text-md bg-accent text-black hover:bg-cyan-300/90',
         ($sepoliaStore.connectionStatus === 'connected' &&
           $cosmosStore.connectionStatus === 'connected')
       )}
@@ -46,10 +46,10 @@ let collapsibleOpen = true
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="h-full border-solid border-[1px] border-accent min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[475px] px-2 flex flex-col justify-start"
+    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[475px] flex flex-col justify-start"
   >
     <Sheet.Header class="mb-4 pl-2">
-      <Sheet.Title>
+      <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
           class={cn('size-10', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
@@ -60,54 +60,30 @@ let collapsibleOpen = true
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
+      <h2 class=" text-start w-full text-2xl font-bold uppercase font-supermolot">Connect Wallets</h2>
       </Sheet.Title>
     </Sheet.Header>
-    <Collapsible.Root
-      open={true}
-      tabindex={-1}
-      onOpenChange={() => (collapsibleOpen = !collapsibleOpen)}
-      class="h-3/5 focus:ring-0 ring-transparent focus-visible:ring-0 mb-auto pb-0"
-    >
-      <Collapsible.Trigger
-        tabindex={-1}
-        class={cn(
-          'mb-3 font-bold w-full flex justify-between items-center align-middle transition-all active:scale-98 rounded-md px-2',
-          'border-solid border-[1px] border-transparent hover:bg-white/10',
-          !collapsibleOpen && 'border-accent',
-        )}
-      >
-        <span class="mb-0.5 text-start w-full text-lg font-supermolot">Connect Wallets</span>
-        <Button variant="ghost" size="sm" class="w-9 p-0 my-auto h-10 hover:bg-transparent">
-          <ChevronsUpDownIcon class="w-6 h-6" />
-          <span class="sr-only">Toggle</span>
-        </Button>
-      </Collapsible.Trigger>
-      <Collapsible.Content transition={node => slide(node, { duration: 300, delay: 50 })}>
-        <Connection
-          chain="evm"
-          address={$sepoliaStore.address}
-          hoverState={$sepoliaStore.hoverState}
-          onConnectClick={sepoliaStore.connect}
-          onDisconnectClick={sepoliaStore.disconnect}
-          connectStatus={$sepoliaStore.connectionStatus}
-          chainWalletsInformation={evmWalletsInformation}
-          connectedWalletId={$sepoliaStore.connectedWallet}
-        />
-        <Separator class={cn('px-0 bg-[#303033] my-1.5')} />
-        <Connection
-          chain="cosmos"
-          address={$cosmosStore.address}
-          hoverState={$cosmosStore.hoverState}
-          onConnectClick={cosmosStore.connect}
-          onDisconnectClick={cosmosStore.disconnect}
-          connectStatus={$cosmosStore.connectionStatus}
-          chainWalletsInformation={cosmosWalletsInformation}
-          connectedWalletId={$cosmosStore.connectedWallet}
-        />
-      </Collapsible.Content>
-    </Collapsible.Root>
-    <div class="">
+      <Connection
+        chain="evm"
+        address={$sepoliaStore.address}
+        hoverState={$sepoliaStore.hoverState}
+        onConnectClick={sepoliaStore.connect}
+        onDisconnectClick={sepoliaStore.disconnect}
+        connectStatus={$sepoliaStore.connectionStatus}
+        chainWalletsInformation={evmWalletsInformation}
+        connectedWalletId={$sepoliaStore.connectedWallet}
+      />
+      <Separator class={cn('px-0 bg-border my-4')} />
+      <Connection
+        chain="cosmos"
+        address={$cosmosStore.address}
+        hoverState={$cosmosStore.hoverState}
+        onConnectClick={cosmosStore.connect}
+        onDisconnectClick={cosmosStore.disconnect}
+        connectStatus={$cosmosStore.connectionStatus}
+        chainWalletsInformation={cosmosWalletsInformation}
+        connectedWalletId={$cosmosStore.connectedWallet}
+      />
       <ThemeSwitch />
-    </div>
   </Sheet.Content>
 </Sheet.Root>

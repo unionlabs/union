@@ -112,10 +112,10 @@ const handleSubmit = () => {
   <title>Union | Faucet</title>
 </svelte:head>
 
-<main class="flex justify-center items-start max-h-full px-0 sm:px-3 py-8">
-  <Card.Root class="max-w-[475px] w-full">
+<main class="flex justify-center items-start max-h-full px-4 py-8">
+  <Card.Root class="w-full max-w-lg">
     <Card.Header>
-      <Card.Title class="font-bold text-2xl" tag="h1">Faucet</Card.Title>
+      <Card.Title>Faucet</Card.Title>
     </Card.Header>
     <Card.Content>
       <form class="space-y-8" on:submit|preventDefault={handleSubmit}>
@@ -143,14 +143,6 @@ const handleSubmit = () => {
                     required={true}
                     spellcheck="false"
                     type="text"
-                  />
-                  <input
-                    aria-hidden="true"
-                    bind:this={input}
-                    class="pointer-events-none absolute left-0 top-0 z-10 h-10 sm:h-11 w-full cursor-default rounded-md border border-[#8678F9] bg-[transparent] p-3.5 opacity-0 transition-opacity duration-500 placeholder:select-none"
-                    disabled
-                    name="style-input-mask"
-                    style={`opacity: ${opacity};mask-image: radial-gradient(30% 30px at ${position.x}px ${position.y}px, black 80%, transparent);`}
                   />
                 </div>
                 <div class="flex justify-between px-1">

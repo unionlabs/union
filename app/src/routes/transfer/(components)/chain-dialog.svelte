@@ -24,7 +24,7 @@ $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 >
   <Dialog.Content
     class={cn(
-      'border-solid border-accent overflow-auto flex flex-col items-start rounded-md',
+      'border-solid overflow-auto flex flex-col items-start',
       'max-w-[90%] sm:max-w-[375px] border-[1px] pt-4 pb-1 px-0',
     )}
   >

@@ -12,9 +12,9 @@ import * as Card from "$lib/components/ui/card/index.ts"
 <main
   class="overflow-scroll flex flex-col gap-4 items-center size-full px-0 sm:px-3 max-h-full sm:py-8"
 >
-  <Card.Root class={cn('max-w-[490px] w-full')}>
+  <Card.Root class={cn('max-w-lg w-full')}>
     <Card.Header class="flex flex-row w-full items-center gap-x-2">
-      <Card.Title tag="h1" class="flex-1 font-bold text-2xl">Transfer</Card.Title>
+      <Card.Title>Transfer</Card.Title>
     </Card.Header>
     <ChainsGate let:chains>
       <WalletGate let:userAddr>
