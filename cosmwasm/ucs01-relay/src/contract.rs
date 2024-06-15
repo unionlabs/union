@@ -15,8 +15,8 @@ use crate::{
     error::ContractError,
     ibc::enforce_order_and_version,
     msg::{
-        ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg, ListChannelsResponse, MigrateMsg,
-        PortResponse, QueryMsg, TransferMsg,
+        ChannelResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, ListChannelsResponse,
+        MigrateMsg, PortResponse, QueryMsg, TransferMsg,
     },
     protocol::{Ics20Protocol, ProtocolCommon, Ucs01Protocol},
     state::{
@@ -25,6 +25,7 @@ use crate::{
     },
 };
 
+// REVIEW: This isn't on crates.io, what else should we use?
 const CONTRACT_NAME: &str = "crates.io:ucs01-relay";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -33,13 +34,15 @@ pub fn instantiate(
     mut deps: DepsMut,
     env: Env,
     _info: MessageInfo,
-    msg: InitMsg,
-) -> Result<Response, ContractError> {
+    msg: InstantiateMsg,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    let cfg = Config {
-        default_timeout: msg.default_timeout,
-    };
-    CONFIG.save(deps.storage, &cfg)?;
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            default_timeout: msg.default_timeout,
+        },
+    )?;
 
     let admin = deps.api.addr_validate(&msg.gov_contract)?;
     ADMIN.set(deps.branch(), Some(admin))?;

@@ -23,7 +23,9 @@ pub enum EncodingError {
     InvalidReceiver { value: String, err: StdError },
 }
 
-/// A json encoding specific to serde_json_wasm as it does not use the same error types as serde_json.
+/// A json encoding specific to [`serde_json_wasm`] as it does not use the same error types as `serde_json`.
+///
+/// Note that we can't do a blanket impl here, as both [`Encode`]/[`Decode`] and [`serde::Serialize`]/[`serde::Deserialize`] are foreign traits.
 pub enum JsonWasm {}
 impl Encoding for JsonWasm {}
 
@@ -202,11 +204,12 @@ pub struct Ics20Packet {
 }
 
 pub trait TransferPacket {
-    type Extension: Into<String> + Clone;
-    type Addr: ToString;
+    type Extension: ToString + Clone;
+    type Addr: Default + ToString;
 
     // NOTE: can't ref here because cosmwasm_std::Coins don't impl iterator nor
     // exposes the underlying BTreeMap...
+    // REVIEW: Coins does implement iterator, adjust this function perhaps?
     fn tokens(&self) -> Vec<TransferToken>;
 
     fn sender(&self) -> &Self::Addr;
@@ -214,15 +217,6 @@ pub trait TransferPacket {
     fn receiver(&self) -> &Self::Addr;
 
     fn extension(&self) -> &Self::Extension;
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct NoExtension;
-
-impl From<NoExtension> for String {
-    fn from(_: NoExtension) -> Self {
-        String::new()
-    }
 }
 
 impl TransferPacket for Ucs01TransferPacket {

@@ -5,7 +5,7 @@ use cosmwasm_std::{
     IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg,
     IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Reply, Response, SubMsgResult,
 };
-use prost::Message;
+use prost::{Message, Name};
 use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
@@ -54,6 +54,7 @@ pub fn reply(
             Ok(to_response(Ucs01Protocol::receive_error(err)))
         }
         (IBC_SEND_ID, SubMsgResult::Ok(value)) => {
+            // REVIEW: Is an empty reply payload valid/ expected?
             if reply.payload.is_empty() {
                 return Ok(Response::new());
             }
@@ -61,29 +62,30 @@ pub fn reply(
             let msg_response = value
                 .msg_responses
                 .iter()
-                .find(|msg_response| {
-                    msg_response
-                        .type_url
-                        .eq("/cosmwasm.wasm.v1.MsgIBCSendResponse")
-                })
+                .find(|msg_response| msg_response.type_url == MsgIbcSendResponse::type_url())
                 .expect("type url is correct and exists");
-            let send_res: MsgIbcSendResponse =
+
+            let send_response =
                 MsgIbcSendResponse::decode(msg_response.value.as_slice()).expect("is type url");
 
-            let in_flight_packet: InFlightPfmPacket =
-                serde_json_wasm::from_slice(reply.payload.as_slice()).expect("binary is type");
+            let in_flight_packet =
+                serde_json_wasm::from_slice::<InFlightPfmPacket>(reply.payload.as_slice())
+                    .expect("binary is type");
 
             let refund_packet_key = PfmRefundPacketKey {
-                channel_id: in_flight_packet.clone().forward_channel_id,
-                port_id: in_flight_packet.clone().forward_port_id,
-                sequence: send_res.sequence,
+                channel_id: in_flight_packet.forward_src_channel_id.clone(),
+                port_id: in_flight_packet.forward_src_port_id.clone(),
+                sequence: send_response.sequence,
             };
 
             IN_FLIGHT_PFM_PACKETS
                 .save(deps.storage, refund_packet_key.clone(), &in_flight_packet)
                 .expect("infallible update");
 
-            Ok(Response::new().add_event(in_flight_packet.create_hop_event(send_res.sequence)))
+            Ok(
+                Response::new()
+                    .add_event(in_flight_packet.create_hop_event(send_response.sequence)),
+            )
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,

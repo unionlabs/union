@@ -26,11 +26,19 @@ pub const HASH_LENGTH: usize = 21;
 
 pub type Hash = [u8; HASH_LENGTH];
 
-/// Used for indexing in flight packets for refunds.
+/// Used for indexing in flight packets for refunds and acknowledgements.
+///
+/// Given a PFM sequence of A -> B -> C, these keys refer to the packet going from B -> C.
+///
+/// All of the information in this key is available both when the packet is sent, and when
+/// the acknowledgement is recieved for this packet.
 #[derive(Debug, Clone)]
 pub struct PfmRefundPacketKey {
+    /// The source channel of the hop between B -> C.
     pub channel_id: String,
+    /// The source port of the hop between B -> C.
     pub port_id: String,
+    /// The send sequence for this packet (the MsgIbcSendResponse.sequence when doing the forward, and the
     pub sequence: u64,
 }
 
