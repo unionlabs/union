@@ -11,6 +11,7 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
+mod beacon;
 mod chain_id_query;
 mod cli;
 mod eth;

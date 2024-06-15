@@ -29,13 +29,14 @@ futures             = { workspace = true, features = ["async-await"] }
 hex.workspace       = true
 itertools           = "0.13.0"
 lazy_static         = { workspace = true }
+num-traits          = "0.2.19"
 prometheus          = { version = "0.13.3", features = ["process"] }
 prost.workspace     = true
 protos              = { workspace = true, features = ["client"] }
 reqwest             = { workspace = true, features = ["json", "blocking"] }
 serde               = { workspace = true, features = ["derive"] }
 serde_json          = { workspace = true }
-sqlx                = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }
+sqlx                = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
 tendermint          = { workspace = true, features = ["std"] }
 tendermint-rpc      = { workspace = true, features = ["http-client", "tokio"] }
 thiserror           = { workspace = true }

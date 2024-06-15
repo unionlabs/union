@@ -262,6 +262,7 @@ benluelo
 berachain
 berachain's
 bhapi
+bigdecimal
 bigtestnet
 binaryen
 bindgen

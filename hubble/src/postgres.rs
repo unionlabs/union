@@ -351,3 +351,67 @@ pub async fn fetch_or_insert_chain_id<'a, A: Acquire<'a, Database = Postgres>>(
     };
     Ok(db_chain_id)
 }
+
+pub async fn get_chain_id<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+    canonical: String,
+) -> sqlx::Result<Option<ChainId>> {
+    let mut conn = db.acquire().await?;
+    let id = sqlx::query!(
+        "SELECT id FROM \"v0\".chains WHERE chain_id = $1 LIMIT 1",
+        canonical.to_string()
+    )
+    .fetch_optional(&mut *conn)
+    .await?
+    .map(|r| ChainId::new(r.id, canonical.leak()));
+    Ok(id)
+}
+
+pub async fn get_batch_of_unmapped_execution_heights<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+    chain_id: ChainId,
+) -> sqlx::Result<Vec<i64>> {
+    use num_traits::cast::ToPrimitive;
+
+    let mut conn = db.acquire().await?;
+    let heights = sqlx::query!(
+        "
+        SELECT DISTINCT revision_height FROM v0.lightclient_updates_mat
+        WHERE counterparty_chain_id = $1
+        AND revision_height > coalesce((
+            SELECT MAX(consensus_height) from v0.consensus_heights
+            WHERE chain_id = $1
+        ), 0)
+        ORDER BY revision_height ASC
+        LIMIT 200
+        ",
+        chain_id.db
+    )
+    .fetch_all(&mut *conn)
+    .await?
+    .into_iter()
+    .map(|record| record.revision_height.unwrap().to_u128().unwrap() as i64)
+    .collect();
+    Ok(heights)
+}
+
+pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+    execution_heights: Vec<i64>,
+    consensus_heights: Vec<i64>,
+    chain_id: ChainId,
+) -> sqlx::Result<()> {
+    let mut conn = db.acquire().await?;
+    sqlx::query!(
+        "
+        INSERT INTO v0.consensus_heights (chain_id, consensus_height, execution_height)
+        SELECT $1, unnest($2::bigint[]), unnest($3::bigint[])
+        ",
+        chain_id.db,
+        &consensus_heights,
+        &execution_heights,
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
