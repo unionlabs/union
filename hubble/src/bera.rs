@@ -91,3 +91,23 @@ impl Querier for Bera {
         Ok(height)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A simple test to verify that the querier works. Will check that we correctly fetch
+    // the slot etc.
+    #[tokio::test]
+    async fn test_querier_works() {
+        let client = Client::new("wss://bartio-cosmos.berachain-devnet.com/websocket")
+            .await
+            .expect("instantiating client should work");
+        let querier = Bera::new(client);
+        let height = querier
+            .get_execution_height(100)
+            .await
+            .expect("getting execution height should work");
+        assert_eq!(height, 69);
+    }
+}

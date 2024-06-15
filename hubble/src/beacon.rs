@@ -63,3 +63,24 @@ impl Querier for Beacon {
         Ok(height)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A simple test to verify that the querier works. Really only verifies that we
+    // are calling a working rest endpoint correctly, and decoding the payload.
+    #[tokio::test]
+    async fn test_querier_works() {
+        let client = reqwest::Client::new();
+        let querier = Beacon::new(
+            "https://lodestar-sepolia.chainsafe.io/".try_into().unwrap(),
+            client,
+        );
+        let height = querier
+            .get_execution_height(200000)
+            .await
+            .expect("getting execution height should work");
+        assert_eq!(height, 1529845);
+    }
+}
