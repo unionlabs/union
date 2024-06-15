@@ -8,6 +8,7 @@ Acks
 Axelar
 BAYC
 BLOCKSCOUT
+Bera
 Berachain
 Beriker
 Bitfield
