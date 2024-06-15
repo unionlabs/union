@@ -19,9 +19,9 @@ import { routes } from "$lib/components/navigation/index.ts"
     class="p-0 mr-0 md:mr-2 no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
   >
     <img
-      src="/images/logo/union-logo-wide-transparent.svg"
+      src="/images/logo/union-logo-supermolot.svg"
       alt="Union Logo"
-      class="size-full max-w-26 select-none invert dark:invert-0"
+      class="size-full max-w-32 h-12 select-none invert dark:invert-0"
     />
   </Button>
   <div class="flex-1 p-0 m-0 w-full">
