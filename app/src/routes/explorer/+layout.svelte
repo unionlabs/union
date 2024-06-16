@@ -70,7 +70,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
   <title>Union - Explorer</title>
 </svelte:head>
 
-<main class="flex flex-row flex-1 overflow-hidden">
+<main class={cn('flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
   {#if mainExplorerPage}
   <Resizable.PaneGroup direction="horizontal" class="w-full" {onLayoutChange}>
     <Resizable.Pane
@@ -108,9 +108,11 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
     </Resizable.Pane>
   </Resizable.PaneGroup>
   {:else}
-  <div class="flex flex-col flex-1">
     <a class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="uppercase">{$page.route.id?.split("/")[2]}</span></a>
-    <slot/>
-  </div>
+    <ScrollArea class="flex-1" orientation="both">
+      <div class="p-4 sm:p-6">
+        <slot/>
+      </div>
+    </ScrollArea>
   {/if}
 </main>

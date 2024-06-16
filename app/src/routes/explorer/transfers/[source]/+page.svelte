@@ -27,6 +27,7 @@ let transfers = createQuery({
 <h1 class="font-bold text-md">Transfer for <span class="font-mono">{source}</span></h1>
 <a href="/explorer/transfers">Back to all transfers </a>
 !-->
+<div>
 
 {#if $transfers.isLoading}
   <div>Loading...</div>
@@ -37,7 +38,7 @@ let transfers = createQuery({
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col divide-y max-w-5xl self-center mt-4">
+  <Card.Root class="flex flex-col divide-y max-w-5xl self-center">
     <Card.Header class="font-bold text-md text-center text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
@@ -104,4 +105,5 @@ let transfers = createQuery({
   </Card.Root>
   {/each}
 {/if}
+</div>
 
