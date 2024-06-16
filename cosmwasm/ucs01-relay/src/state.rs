@@ -31,7 +31,7 @@ pub type Hash = [u8; HASH_LENGTH];
 /// Given a PFM sequence of A -> B -> C, these keys refer to the packet going from B -> C.
 ///
 /// All of the information in this key is available both when the packet is sent, and when
-/// the acknowledgement is recieved for this packet.
+/// the acknowledgement is received for this packet.
 #[derive(Debug, Clone)]
 pub struct PfmRefundPacketKey {
     /// The source channel of the hop between B -> C.
