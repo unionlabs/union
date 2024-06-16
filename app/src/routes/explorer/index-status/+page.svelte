@@ -48,13 +48,7 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
     accessorKey: "timestamp",
     header: () => "Latest block",
     size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    cell: info => flexRender(CellDurationText, { value: info.getValue() })
   },
   {
     accessorKey: "status",

@@ -140,8 +140,8 @@ export default (<Config>{
       fontFamily: _ => ({
         gunship: ["gunship", ...defaultTheme.fontFamily.sans],
         supermolot: ["tt-supermolot-neue", ...defaultTheme.fontFamily.sans],
-        sans: ["quattro-sans", ...defaultTheme.fontFamily.sans],
-        mono: ["quattro-mono", ...defaultTheme.fontFamily.mono]
+        sans: ["jetbrains-mono", ...defaultTheme.fontFamily.sans],
+        mono: ["jetbrains-mono", ...defaultTheme.fontFamily.mono]
       }),
       animation: _ => ({
         wiggle: "wiggle 1s ease-in-out infinite",

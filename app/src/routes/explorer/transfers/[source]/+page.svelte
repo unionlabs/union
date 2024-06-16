@@ -37,7 +37,7 @@ let transfers = createQuery({
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col divide-y max-w-5xl self-center mt-4">
+  <Card.Root class="flex flex-col divide-y max-w-5xl  justify-self-center">
     <Card.Header class="font-bold text-md text-center text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
@@ -57,7 +57,7 @@ let transfers = createQuery({
     
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-supermolot text-2xl font-bold text-foreground">{transfer.source_chain?.display_name}</h2>
+        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground">{transfer.source_chain?.display_name}</h2>
         <p class="text-sm">{transfer.source_chain_id}</p>
         <p class="text-sm">{transfer.source_connection_id}</p>
         <p class="text-sm">{transfer.source_channel_id}</p>
@@ -66,7 +66,7 @@ let transfers = createQuery({
         <MoveRightIcon class="text-foreground size-8"/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-supermolot text-2xl font-bold text-foreground">{transfer.destination_chain?.display_name}</h2>
+        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground">{transfer.destination_chain?.display_name}</h2>
         <p class="text-sm">{transfer.destination_chain_id}</p>
         <p class="text-sm">{transfer.destination_connection_id}</p>
         <p class="text-sm">{transfer.destination_channel_id}</p>

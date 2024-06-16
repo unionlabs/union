@@ -8,6 +8,7 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { derived, writable } from "svelte/store"
 import CellOrigin from "../(components)/cell-origin.svelte"
 import CellAssets from "../(components)/cell-assets.svelte"
+import CellDuration from "../(components)/cell-duration-text.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { truncate } from "$lib/utilities/format"
 import { goto } from "$app/navigation"
@@ -31,28 +32,13 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
     )?.display_name
 
     return {
-      source: {
-        name: sourceDisplayName,
-        chain: transfer.source_chain_id,
-        connection: transfer.source_connection_id,
-        channel: transfer.source_channel_id,
-        timestamp: transfer.source_timestamp,
-        transaction_hash: transfer.source_transaction_hash
-      },
-
+      source: sourceDisplayName,
+      destination: destinationDisplayName,
       sender: transfer.sender,
-
-      destination: {
-        name: destinationDisplayName,
-        chain: transfer.destination_chain_id,
-        connection: transfer.destination_connection_id,
-        channel: transfer.destination_channel_id,
-        timestamp: transfer.destination_timestamp,
-        transaction_hash: transfer.destination_transaction_hash
-      },
-
       receiver: transfer.receiver,
-      assets: transfer.assets
+      assets: transfer.assets,
+      timestamp: transfer.source_timestamp,
+      source_transaction_hash: transfer.source_transaction_hash
     }
   })
 })
@@ -62,13 +48,13 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
     accessorKey: "source",
     header: () => "Source",
     size: 200,
-    cell: info => flexRender(CellOrigin, { value: info.getValue() })
+    cell: info => info.getValue()
   },
   {
     accessorKey: "destination",
     header: () => "Destination",
     size: 200,
-    cell: info => flexRender(CellOrigin, { value: info.getValue() })
+    cell: info => info.getValue()
   },
   {
     accessorKey: "sender",
@@ -87,6 +73,12 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
     header: () => "Assets",
     size: 200,
     cell: info => flexRender(CellAssets, { value: info.getValue() })
+  },
+  {
+    accessorKey: "timestamp",
+    header: () => "Time",
+    size: 200,
+    cell: info => flexRender(CellDuration, { value: info.getValue() })
   }
 ]
 </script>
@@ -96,6 +88,6 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 {:else if $transfers.isSuccess}
   <Table bind:dataStore={transfersData} {columns} onClick={(x) => {
     // @ts-ignore
-    goto(`/explorer/transfers/${x.source.transaction_hash}`)}
+    goto(`/explorer/transfers/${x.source_transaction_hash}`)}
   }/>
 {/if}

@@ -41,37 +41,24 @@ const columns = [
     accessorKey: "chain_id",
     header: () => "Chain ID",
     meta: {},
-    size: 200,
     cell: info => CHAIN_MAP[info.getValue() as unknown as number].chainId
   },
   {
     accessorKey: "height",
     header: () => "Height",
-    size: 200,
-    meta: {
-      class: "p-0"
-    },
     accessorFn: row => row.height,
     cell: info => info.getValue()
   },
   {
     accessorKey: "time",
-    size: 100,
     meta: {},
     header: () => "Time",
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    cell: info => flexRender(CellDurationText, { value: info.getValue() })
   },
   {
     accessorKey: "hash",
     meta: {},
     header: () => flexRender(CellText, { value: "Hash" }),
-    size: 200,
     cell: info =>
       flexRender(CellText, {
         class: "p-0 m-0 font-mono text-muted-foreground",

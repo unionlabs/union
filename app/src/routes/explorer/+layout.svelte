@@ -70,7 +70,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
   <title>Union - Explorer</title>
 </svelte:head>
 
-<main class="flex flex-row flex-1 overflow-y-hidden">
+<main class={cn('flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
   {#if mainExplorerPage}
   <Resizable.PaneGroup direction="horizontal" class="w-full" {onLayoutChange}>
     <Resizable.Pane
@@ -98,17 +98,21 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
       </div>
     </Resizable.Handle>
     <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
-      <ScrollArea orientation="both" class="size-full flex-1 pr-6 pl-2">
-        <h2 class="text-4xl font-extrabold font-extra-expanded mt-8 uppercase font-supermolot">{explorerRoute?.replaceAll('-', ' ')}</h2>
-        <p class="pb-4 text-muted-foreground">> {explorerPageDescription}</p>
-        <slot/>
+      <ScrollArea orientation="both" class="size-full flex-1">
+        <div class="py-6 pr-4 pl-2">
+          <h2 class="text-4xl font-extrabold font-extra-expanded uppercase font-supermolot">{explorerRoute?.replaceAll('-', ' ')}</h2>
+          <p class="pb-4 text-muted-foreground">> {explorerPageDescription}</p>
+          <slot/>
+        </div>
       </ScrollArea>
     </Resizable.Pane>
   </Resizable.PaneGroup>
   {:else}
-  <div class="flex flex-col flex-1">
     <a class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="uppercase">{$page.route.id?.split("/")[2]}</span></a>
-    <slot/>
-  </div>
+    <ScrollArea class="flex-1" orientation="both">
+      <div class="p-4 sm:p-6 flex items-center justify-center">
+        <slot/>
+      </div>
+    </ScrollArea>
   {/if}
 </main>

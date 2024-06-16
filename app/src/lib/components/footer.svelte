@@ -12,63 +12,39 @@ const onWalletClick = () => document.querySelector("button[data-dialog-trigger]"
 
 const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-accent"
 
-const isCurrentPage = (route: string) => $page.route.id === route
+$: isCurrentPage = (route: string) => $page.route.id?.split("/")[1] === route
+
+let buttons = [
+  { href: "", icon: HomeIcon },
+  { href: "transfer", icon: ArrowDownUpIcon },
+  { href: "explorer", icon: TelescopeIcon },
+  { href: "faucet", icon: FaucetDripIcon }
+]
 </script>
 
 <footer
   class={cn(
-    'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16',
-    'border-t-[1px] border-solid border-secondary border-opacity-90 backdrop-blur-lg',
+    'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 uppercase font-supermolot font-bold text-xl',
+    'border-t bg-card',
     'grid lg:hidden grid-cols-5 place-content-center items-center',
     // styling children
-    '*:flex *:hover:bg-transparent *:text-xs *:gap-px *:decoration-primary/75 *:flex-col *:h-16 *:w-full *:rounded-none *:border-solid *:border-t-0',
   )}
 >
-  <Button
-    href="/"
-    size="icon"
-    name="home"
-    variant="link"
-    aria-label="Home page link"
-    class={cn(isCurrentPage('/') ? 'bg-secondary/30' : 'bg-transparent')}
-  >
-    <HomeIcon class={navigationIconStyle} />
-    <div>Home</div>
-  </Button>
-  <Button
-    size="icon"
-    variant="link"
-    name="transfer"
-    href="/transfer"
-    aria-label="send page link"
-    class={cn(isCurrentPage('/transfer') ? 'bg-secondary/30' : 'bg-transparent')}
-  >
-    <ArrowDownUpIcon class={navigationIconStyle} />
-    Transfer
-  </Button>
-  <Button
-    size="icon"
-    variant="link"
-    name="explorer"
-    href="/explorer"
-    aria-label="send page link"
-    class={cn(isCurrentPage('/explorer') ? 'bg-secondary/30' : 'bg-transparent')}
-  >
-    <TelescopeIcon class={navigationIconStyle} />
-    Explorer
-  </Button>
-  <Button
-    size="icon"
-    name="faucet"
-    href="/faucet"
-    variant="link"
-    aria-label="send page link"
-    class={cn(isCurrentPage('/faucet') ? 'bg-secondary/30' : 'bg-transparent')}
-  >
-    <FaucetDripIcon class={navigationIconStyle} />
-    Faucet
-  </Button>
-  <Button size="icon" name="wallet" type="button" variant="ghost" on:click={() => onWalletClick()}>
+  {#each buttons as button}
+    <Button
+      href={`/${button.href}`}
+      size="icon"
+      name="home"
+      variant="ghost"
+      aria-label="Home page link"
+      class={cn('hover:no-underline flex text-xs gap-px  flex-col h-16 w-full rounded-none border-solid border-t-0 font-bold', isCurrentPage(button.href) ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground' : 'bg-transparent')}
+    >
+      <svelte:component this={button.icon} class="size-7 min-w-6 dark:hover:text-white text-zinc-accent" />
+      <div>Home</div>
+    </Button>
+  {/each}
+  
+  <Button class="hover:no-underline flex text-xs gap-px  flex-col h-16 w-full rounded-none border-solid border-t-0 font-bold" size="icon" name="wallet" type="button" variant="ghost" on:click={() => onWalletClick()}>
     <WalletMinimalIcon class={navigationIconStyle} />
     Wallet
   </Button>

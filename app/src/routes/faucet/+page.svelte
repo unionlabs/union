@@ -21,6 +21,7 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import BalancesOverview from "$lib/components/balances-overview.svelte"
 import CosmosBalance from "./(components)/cosmos-balance.svelte"
+import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 
 interface Balance {
   amount: string
@@ -112,6 +113,7 @@ const handleSubmit = () => {
   <title>Union | Faucet</title>
 </svelte:head>
 
+<ScrollArea orientation="both">
 <main class="flex justify-center items-start max-h-full px-4 py-8">
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
@@ -197,7 +199,4 @@ const handleSubmit = () => {
     </Card.Content>
   </Card.Root>
 </main>
-
-<style lang="postcss">
-</style>
-
+</ScrollArea>
