@@ -11,20 +11,21 @@ import "cosmos/ics23/v1/proofs.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 
 message ClientState {
-    string chain_id = 1;
+    string consensus_chain_id = 1;
+    string execution_chain_id = 2;
 
     // TENDERMINT
-    .ibc.lightclients.tendermint.v1.Fraction trust_level = 2;
-    .google.protobuf.Duration trusting_period = 3;
-    .google.protobuf.Duration max_clock_drift = 4;
-    .ibc.core.client.v1.Height frozen_height = 5;
-    .ibc.core.client.v1.Height latest_height = 6;
-    repeated .cosmos.ics23.v1.ProofSpec proof_specs = 7;
-    repeated string upgrade_path = 8;
+    .ibc.lightclients.tendermint.v1.Fraction trust_level = 3;
+    .google.protobuf.Duration trusting_period = 4;
+    .google.protobuf.Duration max_clock_drift = 5;
+    .ibc.core.client.v1.Height frozen_height = 6;
+    .ibc.core.client.v1.Height latest_height = 7;
+    repeated .cosmos.ics23.v1.ProofSpec proof_specs = 8;
+    repeated string upgrade_path = 9;
 
     // ETHEREUM
-    bytes ibc_commitment_slot = 9;
-    bytes ibc_contract_address = 10;
+    bytes ibc_commitment_slot = 10;
+    bytes ibc_contract_address = 11;
 }
 
 message ConsensusState {

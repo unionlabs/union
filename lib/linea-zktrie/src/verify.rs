@@ -783,7 +783,7 @@ mod tests {
         let mimc_constants = new_mimc_constants_bls12_377();
         let mimc = new_mimc_bls12_377(&mimc_constants);
         let hash = mimc
-            .update(&ZkAccount::default().into_bytes())
+            .update(ZkAccount::default().into_bytes())
             .unwrap()
             .finalize();
         assert_eq!(

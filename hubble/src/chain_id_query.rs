@@ -134,7 +134,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                 WasmClientType::Berachain => {
                                     let cs = unionlabs::ibc::lightclients::berachain::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
 
-                                    cs.chain_id()
+                                    cs.chain_id().to_string()
                                 }
                             };
 

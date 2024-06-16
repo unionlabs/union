@@ -182,7 +182,7 @@ impl IbcClient for BerachainLightClient {
 
         tendermint_verifier::verify::verify(
             &construct_partial_header(
-                client_state.data.chain_id,
+                client_state.data.consensus_chain_id,
                 i64::try_from(header.cometbft_header.trusted_height.revision_height)
                     .map_err(|_| {
                         Error::from(IbcHeightTooLargeForTendermintHeight(
@@ -392,7 +392,7 @@ impl IbcClient for BerachainLightClient {
             deps,
             WasmClientStateOf::<Self> {
                 data: ClientState {
-                    chain_id: scs.chain_id,
+                    consensus_chain_id: scs.consensus_chain_id,
                     trusting_period: scs.trusting_period,
                     latest_height: scs.latest_height,
                     frozen_height: None,

@@ -793,6 +793,7 @@ let
       ];
       text =
         ''
+          # this value isn't exposed anywhere, so read the abci store directly
           prop_id=$(("0x$(curl --silent "${rpc_endpoint}"'/abci_query?path="store/gov/key"&data=0x03' | jq '.result.response.value' -r | base64 --decode | hexdump -v -e '/1 "%02x"')"))
 
           echo "prop_id: $prop_id"

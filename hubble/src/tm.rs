@@ -558,6 +558,8 @@ fn replace_escape_chars(val: &mut serde_json::Value) {
         serde_json::Value::Number(_) => (),
         serde_json::Value::String(ref mut data) => {
             if data.contains('\u{0000}') {
+                // https://github.com/rust-lang/rust-clippy/issues/12856
+                #[allow(clippy::needless_borrows_for_generic_args)]
                 let encoded = general_purpose::STANDARD.encode(&data);
                 *data = encoded;
             }

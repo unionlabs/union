@@ -213,7 +213,7 @@ mod tests {
         };
 
         assert_eq!(
-            H256(keccak256(&header.rlp_bytes())),
+            H256(keccak256(header.rlp_bytes())),
             H256(hex!(
                 "a548151261174cf854534934ca88e68220e328be563c01915fc11c740a543489"
             ))
