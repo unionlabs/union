@@ -113,7 +113,7 @@ pub trait IbcClient: Sized {
                 delay_block_period,
                 proof.into(),
                 path,
-                StorageState::Occupied(value.0),
+                StorageState::Occupied(value.into()),
             )?),
             SudoMsg::VerifyNonMembership {
                 height,
@@ -131,7 +131,7 @@ pub trait IbcClient: Sized {
                 StorageState::Empty,
             )?),
             SudoMsg::UpdateState { client_message } => {
-                if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message.0) {
+                if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message) {
                     to_json_binary(&UpdateStateResult {
                         heights: Self::update_state(deps, env, header)?,
                     })
@@ -142,7 +142,7 @@ pub trait IbcClient: Sized {
                 }
             }
             SudoMsg::UpdateStateOnMisbehaviour { client_message } => {
-                Self::update_state_on_misbehaviour(deps, env, client_message.0)?;
+                Self::update_state_on_misbehaviour(deps, env, client_message.into())?;
                 to_json_binary(&EmptyResult {})
             }
             SudoMsg::VerifyUpgradeAndUpdateState {
@@ -186,23 +186,23 @@ pub trait IbcClient: Sized {
                 genesis_metadata: Self::export_metadata(deps, &env)?,
             }),
             QueryMsg::VerifyClientMessage { client_message } => {
-                if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message.0) {
+                if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message) {
                     to_json_binary(&Self::verify_header(deps, env, header)?)
                 } else if let Ok(misbehaviour) =
-                    Self::Misbehaviour::decode_as::<Self::Encoding>(&client_message.0)
+                    Self::Misbehaviour::decode_as::<Self::Encoding>(&client_message)
                 {
                     to_json_binary(&Self::verify_misbehaviour(deps, env, misbehaviour)?)
                 } else {
-                    return Err(IbcClientError::InvalidClientMessage(client_message.0));
+                    return Err(IbcClientError::InvalidClientMessage(client_message.into()));
                 }
             }
             QueryMsg::CheckForMisbehaviour { client_message } => {
-                if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message.0) {
+                if let Ok(header) = Self::Header::decode_as::<Self::Encoding>(&client_message) {
                     to_json_binary(&CheckForMisbehaviourResult {
                         found_misbehaviour: Self::check_for_misbehaviour_on_header(deps, header)?,
                     })
                 } else if let Ok(misbehaviour) =
-                    Self::Misbehaviour::decode_as::<Self::Encoding>(&client_message.0)
+                    Self::Misbehaviour::decode_as::<Self::Encoding>(&client_message)
                 {
                     to_json_binary(&CheckForMisbehaviourResult {
                         found_misbehaviour: Self::check_for_misbehaviour_on_misbehaviour(
@@ -211,7 +211,7 @@ pub trait IbcClient: Sized {
                         )?,
                     })
                 } else {
-                    return Err(IbcClientError::InvalidClientMessage(client_message.0));
+                    return Err(IbcClientError::InvalidClientMessage(client_message.into()));
                 }
             }
             QueryMsg::TimestampAtHeight { height } => to_json_binary(&TimestampAtHeightResult {

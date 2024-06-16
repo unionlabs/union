@@ -3,8 +3,10 @@ use core::fmt::Debug;
 use macros::model;
 
 use crate::{
-    encoding::Decode, errors::InvalidLength, google::protobuf::any::Any, TryFromProtoBytesError,
-    TypeUrl,
+    encoding::{DecodeAs, Proto},
+    errors::InvalidLength,
+    google::protobuf::any::Any,
+    TryFromProtoBytesError, TypeUrl,
 };
 
 pub mod bn254;
@@ -60,15 +62,15 @@ impl TryFrom<protos::google::protobuf::Any> for AnyPubKey {
 
     fn try_from(value: protos::google::protobuf::Any) -> Result<Self, Self::Error> {
         if value.type_url == bn254::PubKey::type_url() {
-            bn254::PubKey::decode(&value.value)
+            bn254::PubKey::decode_as::<Proto>(&value.value)
                 .map(Self::Bn254)
                 .map_err(TryFromAnyPubKeyError::TryFromProto)
         } else if value.type_url == ed25519::PubKey::type_url() {
-            ed25519::PubKey::decode(&value.value)
+            ed25519::PubKey::decode_as::<Proto>(&value.value)
                 .map(Self::Ed25519)
                 .map_err(TryFromAnyPubKeyError::TryFromProto)
         } else if value.type_url == secp256k1::PubKey::type_url() {
-            secp256k1::PubKey::decode(&value.value)
+            secp256k1::PubKey::decode_as::<Proto>(&value.value)
                 .map(Self::Secp256k1)
                 .map_err(TryFromAnyPubKeyError::TryFromProto)
         } else {

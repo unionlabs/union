@@ -9,7 +9,7 @@ use ics008_wasm_client::{
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::{Decode, Proto},
+    encoding::{DecodeAs, Proto},
     ethereum::keccak256,
     hash::H256,
     ibc::{
@@ -71,7 +71,8 @@ impl IbcClient for ArbitrumLightClient {
         // This storage root is verified during the header update, so we don't need to verify it again.
         let storage_root = consensus_state.data.ibc_storage_root;
 
-        let storage_proof = StorageProof::decode(&proof).map_err(Error::StorageProofDecode)?;
+        let storage_proof =
+            StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
         match value {
             StorageState::Occupied(value) => do_verify_membership(

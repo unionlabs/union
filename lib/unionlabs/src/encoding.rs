@@ -11,6 +11,32 @@ impl Encoding for Proto {}
 pub enum Ssz {}
 impl Encoding for Ssz {}
 
+pub enum Json {}
+impl Encoding for Json {}
+
+impl<T> Encode<Json> for T
+where
+    T: serde::Serialize,
+{
+    fn encode(self) -> Vec<u8> {
+        serde_json::to_vec(&self).expect("json serialization should be infallible")
+    }
+}
+
+impl<T> Decode<Json> for T
+where
+    T: serde::de::DeserializeOwned,
+{
+    type Error = serde_json::Error;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        serde_json::from_slice(bytes)
+    }
+}
+
+static_assertions::assert_impl_all!(u8: Encode<Json>);
+static_assertions::assert_impl_all!(&u8: Encode<Json>);
+
 pub trait Encode<Enc: Encoding>: Sized {
     fn encode(self) -> Vec<u8>;
 }

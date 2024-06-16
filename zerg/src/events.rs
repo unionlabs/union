@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use ucs01_relay_api::types::Ucs01TransferPacket;
-use unionlabs::events::RecvPacket;
+use unionlabs::{encoding::Decode, events::RecvPacket};
 use uuid::Uuid;
 
 /// A timestamped event originating from `chain_id`.
@@ -70,9 +70,7 @@ impl Event {
         execution_timestamp: Option<u64>,
         finalization_timestamp: Option<u64>,
     ) -> Event {
-        let transfer =
-            Ucs01TransferPacket::try_from(cosmwasm_std::Binary::new(e.packet_data_hex.clone()))
-                .unwrap();
+        let transfer = Ucs01TransferPacket::decode(e.packet_data_hex.as_slice()).unwrap();
 
         let timed_event = TimedEvent::new(chain_id, execution_timestamp, finalization_timestamp);
 

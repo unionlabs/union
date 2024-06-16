@@ -34,8 +34,8 @@ use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::{TransferPacket, Ucs01TransferPacket};
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    ethereum::config::Minimal, events::IbcEvent, google::protobuf::any::Any, traits::Chain,
-    uint::U256,
+    encoding::Decode, ethereum::config::Minimal, events::IbcEvent, google::protobuf::any::Any,
+    traits::Chain, uint::U256,
 };
 
 use crate::{
@@ -244,9 +244,7 @@ impl Context {
     }
 
     async fn send_from_eth(self, e: unionlabs::events::RecvPacket) {
-        let transfer =
-            Ucs01TransferPacket::try_from(cosmwasm_std::Binary::new(e.packet_data_hex.clone()))
-                .unwrap();
+        let transfer = Ucs01TransferPacket::decode(e.packet_data_hex.as_slice()).unwrap();
 
         let wallet = if let Some(wallet) = self
             .ethereum_accounts

@@ -1,7 +1,6 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
-use prost::Message;
 use queue_msg::{data, fetch, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
@@ -532,8 +531,10 @@ where
                     .ops
                     .into_iter()
                     .map(|op| {
-                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                            .unwrap()
+                        <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
+                            op.data.as_slice(),
+                        )
+                        .unwrap()
                     })
                     .collect::<Vec<_>>(),
             })

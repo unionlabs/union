@@ -10,7 +10,7 @@ use ics008_wasm_client::{
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::{Decode, Proto},
+    encoding::{DecodeAs, Proto},
     ethereum::keccak256,
     hash::H256,
     ibc::{
@@ -75,8 +75,8 @@ impl IbcClient for LineaLightClient {
 
         match value {
             StorageState::Occupied(value) => {
-                let inclusion_proof =
-                    InclusionProof::decode(&proof).map_err(Error::InclusionProofDecode)?;
+                let inclusion_proof = InclusionProof::decode_as::<Proto>(&proof)
+                    .map_err(Error::InclusionProofDecode)?;
                 do_verify_membership(
                     path,
                     storage_root,
@@ -86,8 +86,8 @@ impl IbcClient for LineaLightClient {
                 )?
             }
             StorageState::Empty => {
-                let noninclusion_proof =
-                    NonInclusionProof::decode(&proof).map_err(Error::InclusionProofDecode)?;
+                let noninclusion_proof = NonInclusionProof::decode_as::<Proto>(&proof)
+                    .map_err(Error::InclusionProofDecode)?;
                 do_verify_non_membership(
                     path,
                     storage_root,

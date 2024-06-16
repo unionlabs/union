@@ -1,6 +1,6 @@
 use std::string::FromUtf8Error;
 
-use cosmwasm_std::{Binary, IbcOrder, OverflowError, StdError, SubMsgResult};
+use cosmwasm_std::{IbcOrder, OverflowError, StdError, SubMsgResult};
 use cw_controllers::AdminError;
 use thiserror::Error;
 use ucs01_relay_api::{middleware::MiddlewareError, protocol::ProtocolError, types::EncodingError};
@@ -66,8 +66,8 @@ pub enum ContractError {
     #[error("{0}")]
     MiddlewareError(#[from] MiddlewareError),
 
-    #[error("invalid ack ({0})")]
-    InvalidAck(Binary),
+    #[error("unable to decode json value")]
+    SerdeJson(#[from] serde_json_wasm::de::Error),
 }
 
 impl From<FromUtf8Error> for ContractError {

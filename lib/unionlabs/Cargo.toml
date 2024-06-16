@@ -41,7 +41,7 @@ rlp                      = { workspace = true, features = ["derive"] }
 rs_merkle                = "1.4.1"
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
-serde_json               = { workspace = true, optional = true }
+serde_json               = { workspace = true }
 sha2                     = { workspace = true }
 sha3.workspace           = true
 ssz                      = { workspace = true }
@@ -66,7 +66,7 @@ grpc     = ["protos/client"]
 std      = ["ethers-core/std"]
 
 arbitrary  = ["dep:arbitrary", "primitive-types/arbitrary"]
-fuzzing    = ["arbitrary", "test_utils"]
-test_utils = ["serde_json"]
+fuzzing    = ["arbitrary"]
+test_utils = []
 
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

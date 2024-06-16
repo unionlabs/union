@@ -5,7 +5,7 @@ use token_factory_api::TokenFactoryMsg;
 use crate::state::ChannelInfo;
 
 #[cw_serde]
-pub struct InitMsg {
+pub struct InstantiateMsg {
     /// Default timeout for ics20 packets, specified in seconds
     pub default_timeout: u64,
     /// who can allow more contracts

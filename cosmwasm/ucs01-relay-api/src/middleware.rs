@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary, Event, IbcPacket, IbcTimeout};
+use cosmwasm_std::{Addr, Event, IbcPacket};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use unionlabs::{
@@ -61,55 +61,46 @@ pub struct PacketId {
 }
 
 /// Information about an in flight packet, used to process retries and refunds.
+/// - `origin_`: "origin" information, i.e. in a chain of A -> B -> C, where we are currently on B, this is data referring to the packet from A -> B
+/// - `forward_`: "destination" information, i.e. for the transfer from B -> C (the "hop")
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct InFlightPfmPacket {
-    pub original_sender_addr: Addr,
-    pub packet_data: Binary,
-    pub packet_src_channel_id: String,
-    pub packet_src_port_id: String,
-    pub refund_channel_id: String,
-    pub refund_port_id: String,
-    pub packet_sequence: u64,
-    pub timeout: u64,
-    pub src_packet_timeout: IbcTimeout,
-    pub forward_channel_id: String,
-    pub forward_port_id: String,
-    pub original_protocol_version: String,
+    pub origin_sender_addr: Addr,
+    pub origin_protocol_version: String,
+    pub origin_packet: IbcPacket,
+    pub forward_src_channel_id: String,
+    pub forward_src_port_id: String,
+
+    pub forward_timeout: u64,
 }
 
 impl InFlightPfmPacket {
     pub fn new(
-        original_sender_addr: Addr,
-        original_packet: IbcPacket,
+        origin_sender_addr: Addr,
+        origin_packet: IbcPacket,
         timeout: u64,
-        forward_channel_id: String,
-        forward_port_id: String,
-        original_protocol_version: String,
+        forward_src_channel_id: String,
+        forward_src_port_id: String,
+        origin_protocol_version: String,
     ) -> Self {
         Self {
-            original_sender_addr,
-            packet_data: original_packet.data,
-            packet_src_channel_id: original_packet.src.channel_id,
-            packet_src_port_id: original_packet.src.port_id,
-            refund_channel_id: original_packet.dest.channel_id,
-            refund_port_id: original_packet.dest.port_id,
-            timeout,
-            src_packet_timeout: original_packet.timeout,
-            packet_sequence: original_packet.sequence,
-            forward_channel_id,
-            forward_port_id,
-            original_protocol_version,
+            origin_sender_addr,
+            origin_packet,
+            forward_timeout: timeout,
+            forward_src_channel_id,
+            forward_src_port_id,
+            origin_protocol_version,
         }
     }
 
     pub fn create_hop_event(&self, sent_sequence: u64) -> Event {
         Event::new(PFM_HOP_EVENT)
-            .add_attribute(RECV_SEQUENCE_ATTR, self.packet_sequence.to_string())
-            .add_attribute(DEST_CHANNEL_ATTR, self.forward_channel_id.clone())
-            .add_attribute(DEST_PORT_ATTR, self.forward_port_id.clone())
+            .add_attribute(RECV_SEQUENCE_ATTR, self.origin_packet.sequence.to_string())
+            .add_attribute(DEST_CHANNEL_ATTR, self.forward_src_channel_id.clone())
+            .add_attribute(DEST_PORT_ATTR, self.forward_src_port_id.clone())
             .add_attribute(SENT_SEQUENCE_ATTR, sent_sequence.to_string())
-            .add_attribute(SRC_CHANNEL_ATTR, self.packet_src_channel_id.clone())
-            .add_attribute(SRC_PORT_ATTR, self.packet_src_port_id.clone())
+            .add_attribute(SRC_CHANNEL_ATTR, self.origin_packet.src.channel_id.clone())
+            .add_attribute(SRC_PORT_ATTR, self.origin_packet.src.port_id.clone())
     }
 }
 
