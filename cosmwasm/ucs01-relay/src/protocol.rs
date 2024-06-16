@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, AnyMsg, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event, HexBinary,
-    IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+    wasm_execute, Addr, AnyMsg, Attribute, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event,
+    HexBinary, IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use prost::{Message, Name};
 use protos::deferredack::v1beta1::{DeferredPacketInfo, MsgWriteDeferredAck};
@@ -42,24 +42,27 @@ pub trait TransferProtocolExt<'a>:
 
     fn common_mut(&mut self) -> &mut ProtocolCommon<'a>;
 
+    fn do_is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
+        let refund_key = PfmRefundPacketKey {
+            channel_id: forward_packet.src.channel_id,
+            port_id: forward_packet.src.port_id,
+            sequence: forward_packet.sequence,
+        };
+
+        IN_FLIGHT_PFM_PACKETS
+            .load(self.common().deps.storage, refund_key.clone())
+            .ok()
+    }
+
+    #[allow(clippy::type_complexity)]
     fn do_pfm_ack(
         &mut self,
         ibc_packet: IbcPacket,
+        refund_info: InFlightPfmPacket,
         ack: Result<Vec<u8>, Vec<u8>>,
         sender: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
-        let refund_key = PfmRefundPacketKey {
-            channel_id: ibc_packet.src.channel_id,
-            port_id: ibc_packet.src.port_id,
-            sequence: ibc_packet.sequence,
-        };
-        let Ok(refund_info) =
-            IN_FLIGHT_PFM_PACKETS.load(self.common().deps.storage, refund_key.clone())
-        else {
-            return Ok(None);
-        };
-
+    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error> {
         let ack =
             self.convert_ack_to_foreign_protocol(&refund_info.origin_protocol_version, ack)?;
 
@@ -69,17 +72,18 @@ pub trait TransferProtocolExt<'a>:
                 (
                     self.send_tokens_success(sender, &Default::default(), tokens)?,
                     Vec::from_iter(
-                        (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
+                        (!value_string.is_empty())
+                            .then_some(Attribute::new(ATTR_SUCCESS, value_string)),
                     ),
                     value.to_vec(),
                 )
             }
             Err(error) => (
                 self.send_tokens_failure(sender, &Default::default(), tokens)?,
-                Vec::from_iter(
-                    (!error.is_empty())
-                        .then_some((ATTR_ERROR, Binary::from(error.clone()).to_string())),
-                ),
+                Vec::from_iter((!error.is_empty()).then_some(Attribute::new(
+                    ATTR_ERROR,
+                    Binary::from(error.clone()).to_string(),
+                ))),
                 error.to_vec(),
             ),
         };
@@ -124,11 +128,18 @@ pub trait TransferProtocolExt<'a>:
         });
 
         ack_msgs.push(deferred_ack_msg);
-        ack_attrs.push((ATTR_PFM, ATTR_VALUE_PFM_ACK.to_string()));
+        ack_attrs.push(Attribute::new(ATTR_PFM, ATTR_VALUE_PFM_ACK.to_string()));
 
-        IN_FLIGHT_PFM_PACKETS.remove(self.common_mut().deps.storage, refund_key);
+        IN_FLIGHT_PFM_PACKETS.remove(
+            self.common_mut().deps.storage,
+            PfmRefundPacketKey {
+                channel_id: ibc_packet.src.channel_id,
+                port_id: ibc_packet.src.port_id,
+                sequence: ibc_packet.sequence,
+            },
+        );
 
-        Ok(Some((ack_msgs, ack_attrs)))
+        Ok((ack_msgs, ack_attrs))
     }
 
     fn do_forward_transfer_packet(
@@ -776,15 +787,15 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         self.do_forward_transfer_packet(tokens, original_packet, forward, receiver)
     }
 
-    #[allow(clippy::type_complexity)]
     fn pfm_ack(
         &mut self,
         ack: GenericAck,
         ibc_packet: IbcPacket,
+        refund_info: InFlightPfmPacket,
         sender: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
-        self.do_pfm_ack(ibc_packet, ack, sender, tokens)
+    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error> {
+        self.do_pfm_ack(ibc_packet, refund_info, ack, sender, tokens)
     }
 
     fn convert_ack_to_foreign_protocol(
@@ -805,6 +816,10 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
                 protocol_version: v.to_string(),
             }),
         }
+    }
+
+    fn is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
+        self.do_is_pfm_ack(forward_packet)
     }
 }
 
@@ -1038,10 +1053,11 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         &mut self,
         ack: GenericAck,
         ibc_packet: IbcPacket,
+        refund_info: InFlightPfmPacket,
         sender: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error> {
-        self.do_pfm_ack(ibc_packet, ack, sender, tokens)
+    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error> {
+        self.do_pfm_ack(ibc_packet, refund_info, ack, sender, tokens)
     }
 
     fn convert_ack_to_foreign_protocol(
@@ -1061,6 +1077,10 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                 protocol_version: v.to_string(),
             }),
         }
+    }
+
+    fn is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
+        self.do_is_pfm_ack(forward_packet)
     }
 }
 

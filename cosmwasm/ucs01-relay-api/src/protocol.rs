@@ -8,7 +8,7 @@ use thiserror::Error;
 use unionlabs::encoding::{self, Decode, DecodeErrorOf, Encode};
 
 use crate::{
-    middleware::{Memo, PacketForward},
+    middleware::{InFlightPfmPacket, Memo, PacketForward},
     types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
 };
 
@@ -209,43 +209,47 @@ pub trait TransferProtocol {
         let ack: GenericAck = Self::Ack::decode(ibc_packet.acknowledgement.data.as_slice())?.into();
         let memo = packet.extension().to_string();
 
-        let (ack_msgs, ack_attr) = if let Some((ack_msgs, ack_attr)) = self.pfm_ack(
-            ack.clone(),
-            ibc_packet.original_packet.clone(),
-            packet.sender(),
-            packet.tokens(),
-        )? {
-            (ack_msgs, ack_attr)
-        } else {
-            match ack {
-                Ok(value) => {
-                    let value_string = Binary::from(value).to_string();
-                    (
-                        self.send_tokens_success(
-                            packet.sender(),
-                            packet.receiver(),
-                            packet.tokens(),
-                        )?,
-                        Vec::from_iter(
-                            (!value_string.is_empty()).then_some((ATTR_SUCCESS, value_string)),
-                        ),
-                    )
+        let (ack_msgs, ack_attr) =
+            if let Some(in_flight_packet) = self.is_pfm_ack(ibc_packet.original_packet.clone()) {
+                self.pfm_ack(
+                    ack.clone(),
+                    ibc_packet.original_packet.clone(),
+                    in_flight_packet,
+                    packet.sender(),
+                    packet.tokens(),
+                )?
+            } else {
+                match ack {
+                    Ok(value) => {
+                        let value_string = Binary::from(value).to_string();
+                        (
+                            self.send_tokens_success(
+                                packet.sender(),
+                                packet.receiver(),
+                                packet.tokens(),
+                            )?,
+                            Vec::from_iter(
+                                (!value_string.is_empty())
+                                    .then_some(Attribute::new(ATTR_SUCCESS, value_string)),
+                            ),
+                        )
+                    }
+                    Err(error) => {
+                        let error_string = Binary::from(error).to_string();
+                        (
+                            self.send_tokens_failure(
+                                packet.sender(),
+                                packet.receiver(),
+                                packet.tokens(),
+                            )?,
+                            Vec::from_iter(
+                                (!error_string.is_empty())
+                                    .then_some(Attribute::new(ATTR_ERROR, error_string)),
+                            ),
+                        )
+                    }
                 }
-                Err(error) => {
-                    let error_string = Binary::from(error).to_string();
-                    (
-                        self.send_tokens_failure(
-                            packet.sender(),
-                            packet.receiver(),
-                            packet.tokens(),
-                        )?,
-                        Vec::from_iter(
-                            (!error_string.is_empty()).then_some((ATTR_ERROR, error_string)),
-                        ),
-                    )
-                }
-            }
-        };
+            };
 
         let packet_event = {
             Event::new(PACKET_EVENT)
@@ -278,10 +282,15 @@ pub trait TransferProtocol {
         // same branch as failure ack
         let memo = packet.extension().to_string();
         let ack = GenericAck::Err(ACK_ERR_TIMEOUT_MSG.to_vec());
-        let refund_msgs = if let Some((ack_msgs, _)) =
-            self.pfm_ack(ack, ibc_packet.clone(), packet.sender(), packet.tokens())?
-        {
-            ack_msgs
+        let refund_msgs = if let Some(in_flight_packet) = self.is_pfm_ack(ibc_packet.clone()) {
+            self.pfm_ack(
+                ack.clone(),
+                ibc_packet.clone(),
+                in_flight_packet,
+                packet.sender(),
+                packet.tokens(),
+            )?
+            .0
         } else {
             self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?
         };
@@ -396,8 +405,11 @@ pub trait TransferProtocol {
         receiver: Addr,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
 
-    /// On packet acknowledgment (be it success, failure, or timeout) check if the packet is a PFM packet.
-    /// If the packet is a PFM packet, overwrite the acknowledgment process to forward the acknowledgment to the original sender.
+    /// Check if a packet is an in flight pfm, if so return the `InFlightPfmPacket` from storage
+    fn is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket>;
+
+    /// On pfm packet acknowledgment (be it success, failure, or timeout),
+    /// overwrite the acknowledgment process to forward the acknowledgment to the original sender.
     /// Handle and overwrites required for refunding tokens correctly.
     /// Returns a tuple of `(messages, attributes)`.
     #[allow(clippy::type_complexity)]
@@ -405,9 +417,10 @@ pub trait TransferProtocol {
         &mut self,
         ack: GenericAck,
         ibc_packet: IbcPacket,
+        refund_info: InFlightPfmPacket,
         sender: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<Option<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<(&str, String)>)>, Self::Error>;
+    ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error>;
 
     fn convert_ack_to_foreign_protocol(
         &self,
