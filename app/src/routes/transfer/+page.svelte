@@ -10,7 +10,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
   <title>Union | Send</title>
 </svelte:head>
 <main
-  class="overflow-scroll flex flex-col gap-4 items-center size-full px-0 sm:px-3 max-h-full sm:py-8"
+  class="overflow-auto flex flex-col gap-4 items-center size-full px-0 sm:px-3 max-h-full sm:py-8"
 >
   <Card.Root class={cn('max-w-lg w-full')}>
     <Card.Header class="flex flex-row w-full items-center gap-x-2">

@@ -3,9 +3,12 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import WalletGate from "$lib/components/wallet-gate.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import BalancesOverview from "$lib/components/balances-overview.svelte"
+    import { ScrollArea } from "$lib/components/ui/scroll-area";
 </script>
 
-<main class="flex flex-col items-center w-full p-4 mt-16 gap-6">
+
+<ScrollArea orientation="both">
+  <main class="flex flex-col justify-center items-center w-full p-6 gap-6">
   <Card.Root class="max-w-xl size-full">
     <Card.Header>
       <Card.Title>Welcome to Union</Card.Title>
@@ -31,7 +34,8 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
       </ChainsGate>
     </Card.Content>
   </Card.Root>
-</main>
+  </main>
+</ScrollArea>
 
 
 
