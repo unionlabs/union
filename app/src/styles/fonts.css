@@ -72,8 +72,11 @@
 
 @font-face {
   font-family: "tt-supermolot-neue";
-  font-style: normal;
-  font-weight: 100 900;
   font-display: swap;
+  font-style: normal;
   src: url("/fonts/tt-supermolot-neue/TT-Supermolot-Neue-Variable.ttf") format("truetype");
+}
+
+:root {
+  font-synthesis: none;
 }
