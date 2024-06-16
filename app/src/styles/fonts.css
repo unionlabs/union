@@ -1,82 +1,19 @@
 @font-face {
-  font-family: "quattro-mono";
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  src: url("/fonts/quattro-mono/iAWriterMonoS-Italic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-mono";
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-  src: url("/fonts/quattro-mono/iAWriterMonoS-BoldItalic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-mono";
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/quattro-mono/iAWriterMonoS-Regular.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-mono";
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/quattro-mono/iAWriterMonoS-Bold.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-sans";
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/quattro-sans/iAWriterQuattroS-Italic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-sans";
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/quattro-sans/iAWriterQuattroS-BoldItalic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-sans";
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/quattro-sans/iAWriterQuattroS-Regular.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "quattro-sans";
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/quattro-sans/iAWriterQuattroS-Bold.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "gunship";
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/gunship/gunship.woff2") format("woff2");
-}
-
-@font-face {
   font-family: "tt-supermolot-neue";
-  font-display: swap;
   font-style: normal;
+  font-display: swap;
   src: url("/fonts/tt-supermolot-neue/TT-Supermolot-Neue-Variable.ttf") format("truetype");
 }
+@font-face {
+  font-family: "jetbrains-mono";
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono.ttf") format("truetype");
+}
 
-:root {
-  font-synthesis: none;
+@font-face {
+  font-family: "jetbrains-mono";
+  font-style: italic;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-Italic.ttf") format("truetype");
 }
