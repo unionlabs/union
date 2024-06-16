@@ -38,7 +38,7 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
       receiver: transfer.receiver,
       assets: transfer.assets,
       timestamp: transfer.source_timestamp,
-      source_transaction_hash: transfer.source_transaction_hash      
+      source_transaction_hash: transfer.source_transaction_hash
     }
   })
 })

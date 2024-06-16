@@ -2,8 +2,7 @@
 import { Duration } from "svelte-ux"
 import { DurationUnits } from "svelte-ux"
 
-
-export let value;
+export let value: Date | undefined
 </script>
 
 

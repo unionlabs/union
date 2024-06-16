@@ -12,15 +12,14 @@ const onWalletClick = () => document.querySelector("button[data-dialog-trigger]"
 
 const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-accent"
 
-$: isCurrentPage = (route: string) => $page.route.id?.split('/')[1] === route
-
+$: isCurrentPage = (route: string) => $page.route.id?.split("/")[1] === route
 
 let buttons = [
   { href: "", icon: HomeIcon },
   { href: "transfer", icon: ArrowDownUpIcon },
   { href: "explorer", icon: TelescopeIcon },
-  { href: "faucet", icon: FaucetDripIcon },
-];
+  { href: "faucet", icon: FaucetDripIcon }
+]
 </script>
 
 <footer
