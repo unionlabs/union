@@ -85,11 +85,12 @@ pub trait TransferProtocolExt<'a>:
         };
 
         let packet_timeout_timestamp: u64 = refund_info
-            .origin_packet_timeout
+            .origin_packet
+            .timeout
             .timestamp()
             .unwrap_or_default()
             .nanos();
-        let packet_timeout_height = match refund_info.origin_packet_timeout.block() {
+        let packet_timeout_height = match refund_info.origin_packet.timeout.block() {
             Some(timeout_block) => Height {
                 revision_number: timeout_block.revision,
                 revision_height: timeout_block.height,
@@ -101,14 +102,14 @@ pub trait TransferProtocolExt<'a>:
         };
 
         let deferred_packet_into = DeferredPacketInfo {
-            refund_channel_id: refund_info.origin_dst_channel_id,
-            refund_port_id: refund_info.origin_dst_port_id,
-            packet_src_channel_id: refund_info.origin_packet_src_channel_id,
-            packet_src_port_id: refund_info.origin_packet_src_port_id,
+            refund_channel_id: refund_info.origin_packet.dest.channel_id,
+            refund_port_id: refund_info.origin_packet.dest.port_id,
+            packet_src_channel_id: refund_info.origin_packet.src.channel_id,
+            packet_src_port_id: refund_info.origin_packet.src.port_id,
             packet_timeout_timestamp,
             packet_timeout_height: packet_timeout_height.to_string(),
-            packet_data: refund_info.origin_packet_data.to_vec(),
-            sequence: refund_info.origin_packet_sequence,
+            packet_data: refund_info.origin_packet.data.to_vec(),
+            sequence: refund_info.origin_packet.sequence,
         };
 
         let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
