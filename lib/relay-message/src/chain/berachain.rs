@@ -10,7 +10,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, queue_msg, seq, wait, QueueMsg,
+    data, effect, fetch, queue_msg, seq, wait, Op,
 };
 use unionlabs::{
     berachain::{BerachainChainSpec, LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX},
@@ -216,7 +216,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(
@@ -257,7 +257,7 @@ where
     >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Berachain, Tr>)>,
 {
-    async fn do_fetch(c: &Berachain, fetch: Self) -> QueueMsg<RelayMessage> {
+    async fn do_fetch(c: &Berachain, fetch: Self) -> Op<RelayMessage> {
         match fetch {
             Self::FetchIbcState(fetch) => data(id(c.chain_id(), fetch_ibc_state(c, fetch).await)),
             Self::FetchGetProof(fetch) => data(id(c.chain_id(), fetch_get_proof(c, fetch).await)),
@@ -440,7 +440,7 @@ where
     Tr: ChainExt<SelfClientState: Decode<IbcStateEncodingOf<Berachain>> + Encode<EthAbi>>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Berachain, Tr>)>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> QueueMsg<RelayMessage> {
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::specific(FetchIbcState { path, height: at }),
@@ -466,7 +466,7 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Berachain, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Berachain, Tr>)>,
 {
-    fn proof(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> QueueMsg<RelayMessage> {
+    fn proof(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> Op<RelayMessage> {
         fetch(id::<Berachain, Tr, _>(
             hc.chain_id(),
             Fetch::specific(GetProof::<Berachain, Tr> { path, height: at }),
@@ -483,7 +483,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         seq([
             wait(id(
                 c.chain_id(),
@@ -570,7 +570,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         match data {
             BerachainAggregate::AggregateHeader(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)

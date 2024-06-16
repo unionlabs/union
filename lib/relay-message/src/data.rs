@@ -1,5 +1,5 @@
 use macros::apply;
-use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMessageTypes, QueueMsg};
+use queue_msg::{data, queue_msg, HandleData, Op, QueueError, QueueMessage};
 use tracing::instrument;
 use unionlabs::{
     ics24::{
@@ -14,7 +14,7 @@ use unionlabs::{
 use crate::{any_enum, AnyLightClientIdentified, ChainExt, RelayMessage};
 
 #[apply(any_enum)]
-/// Data that will likely be used in a [`QueueMsg::Aggregate`].
+/// Data that will likely be used in an [`Op::Aggregate`].
 #[any = AnyData]
 #[specific = LightClientSpecificData]
 pub enum Data<Hc: ChainExt, Tr: ChainExt> {
@@ -61,8 +61,8 @@ impl HandleData<RelayMessage> for AnyLightClientIdentified<AnyData> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        _: &<RelayMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
+        _: &<RelayMessage as QueueMessage>::Store,
+    ) -> Result<Op<RelayMessage>, QueueError> {
         Ok(data(self))
     }
 }

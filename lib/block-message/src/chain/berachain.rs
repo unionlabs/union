@@ -7,7 +7,7 @@ use chain_utils::{
 use enumorph::Enumorph;
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
 use futures::StreamExt;
-use queue_msg::{aggregation::do_aggregate, conc, fetch, noop, queue_msg, QueueMsg};
+use queue_msg::{aggregation::do_aggregate, conc, fetch, noop, queue_msg, Op};
 use tracing::{debug, info, warn};
 use unionlabs::{
     ibc::core::client::height::IsHeight,
@@ -35,10 +35,7 @@ impl DoFetchBlockRange<Berachain> for Berachain
 where
     AnyChainIdentified<AnyFetch>: From<Identified<Berachain, Fetch<Berachain>>>,
 {
-    fn fetch_block_range(
-        c: &Berachain,
-        range: FetchBlockRange<Berachain>,
-    ) -> QueueMsg<BlockMessage> {
+    fn fetch_block_range(c: &Berachain, range: FetchBlockRange<Berachain>) -> Op<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<Berachain>::specific(FetchBlocks {
@@ -55,7 +52,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Berachain, Aggregate<Berachain>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Berachain, Fetch<Berachain>>>,
 {
-    async fn do_fetch(c: &Berachain, msg: Self) -> QueueMsg<BlockMessage> {
+    async fn do_fetch(c: &Berachain, msg: Self) -> Op<BlockMessage> {
         match msg {
             Self::FetchBlockEvents(FetchBlockEvents { height }) => {
                 info!(%height, "fetching block events");
@@ -208,7 +205,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessage> {
+    ) -> Op<BlockMessage> {
         match t {
             BerachainAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
         }

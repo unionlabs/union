@@ -21,7 +21,7 @@ use futures::{
 use pg_queue::EnqueueStatus;
 use queue_msg::{
     optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
-    Engine, InMemoryQueue, Queue, QueueMessageTypes, QueueMsg,
+    Engine, InMemoryQueue, Op, Queue, QueueMessage,
 };
 use relay_message::RelayMessage;
 use reqwest::StatusCode;
@@ -52,7 +52,7 @@ pub enum AnyQueueConfig {
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub enum AnyQueue<T: QueueMessageTypes> {
+pub enum AnyQueue<T: QueueMessage> {
     InMemory(InMemoryQueue<T>),
     PgQueue(PgQueue<T>),
 }
@@ -64,7 +64,7 @@ pub enum AnyQueueError {
     PgQueue(sqlx::Error),
 }
 
-impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
+impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
     type Error = AnyQueueError;
     type Config = AnyQueueConfig;
 
@@ -85,7 +85,7 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
 
     fn enqueue<'a, O: PurePass<T>>(
         &'a self,
-        item: QueueMsg<T>,
+        item: Op<T>,
         pre_enqueue_passes: &'a O,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
         async move {
@@ -112,8 +112,8 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
-        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
+        F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
         O: PurePass<T>,
     {
@@ -153,7 +153,7 @@ impl<T: QueueMessageTypes> Queue<T> for AnyQueue<T> {
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct PgQueue<T: QueueMessageTypes>(pg_queue::Queue<QueueMsg<T>>, sqlx::PgPool);
+pub struct PgQueue<T: QueueMessage>(pg_queue::Queue<Op<T>>, sqlx::PgPool);
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct PgQueueConfig {
@@ -176,7 +176,7 @@ impl PgQueueConfig {
     }
 }
 
-impl<T: QueueMessageTypes> Queue<T> for PgQueue<T> {
+impl<T: QueueMessage> Queue<T> for PgQueue<T> {
     type Error = sqlx::Error;
 
     type Config = PgQueueConfig;
@@ -187,7 +187,7 @@ impl<T: QueueMessageTypes> Queue<T> for PgQueue<T> {
 
     fn enqueue<'a, O: PurePass<T>>(
         &'a self,
-        item: QueueMsg<T>,
+        item: Op<T>,
         pre_enqueue_passes: &'a O,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
         async move {
@@ -213,8 +213,8 @@ impl<T: QueueMessageTypes> Queue<T> for PgQueue<T> {
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
-        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
+        F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
         O: PurePass<T>,
     {
@@ -273,7 +273,7 @@ impl Voyager {
 
     pub async fn run(self) -> Result<(), RunError> {
         // set up msg server
-        let (queue_tx, queue_rx) = futures::channel::mpsc::unbounded::<QueueMsg<VoyagerMessage>>();
+        let (queue_tx, queue_rx) = futures::channel::mpsc::unbounded::<Op<VoyagerMessage>>();
 
         let app = axum::Router::new()
             .route("/msg", post(msg))
@@ -282,9 +282,9 @@ impl Voyager {
             .with_state(queue_tx.clone());
 
         // #[axum::debug_handler]
-        async fn msg<T: QueueMessageTypes>(
-            State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
-            Json(msg): Json<QueueMsg<T>>,
+        async fn msg<T: QueueMessage>(
+            State(mut sender): State<UnboundedSender<Op<T>>>,
+            Json(msg): Json<Op<T>>,
         ) -> StatusCode {
             info!(?msg, "received msg");
             sender.send(msg).await.expect("receiver should not close");
@@ -293,9 +293,9 @@ impl Voyager {
         }
 
         // #[axum::debug_handler]
-        async fn msgs<T: QueueMessageTypes>(
-            State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
-            Json(msgs): Json<Vec<QueueMsg<T>>>,
+        async fn msgs<T: QueueMessage>(
+            State(mut sender): State<UnboundedSender<Op<T>>>,
+            Json(msgs): Json<Vec<Op<T>>>,
         ) -> StatusCode {
             info!(?msgs, "received msgs");
             for msg in msgs {

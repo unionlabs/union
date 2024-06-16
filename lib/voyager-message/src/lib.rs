@@ -12,7 +12,7 @@ use chain_utils::{
 use futures::TryFutureExt;
 use queue_msg::{
     event, noop, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
-    HandleWait, QueueError, QueueMessageTypes, QueueMsg,
+    HandleWait, Op, QueueError, QueueMessage,
 };
 use relay_message::RelayMessage;
 use tracing::{info_span, Instrument};
@@ -29,7 +29,7 @@ use unionlabs::{
 
 pub enum VoyagerMessage {}
 
-impl QueueMessageTypes for VoyagerMessage {
+impl QueueMessage for VoyagerMessage {
     type Event = VoyagerEvent;
     type Data = VoyagerData;
     type Fetch = VoyagerFetch;
@@ -40,119 +40,107 @@ impl QueueMessageTypes for VoyagerMessage {
     type Store = Chains;
 }
 
-pub trait FromQueueMsg<T: QueueMessageTypes>: QueueMessageTypes + Sized {
-    fn from_queue_msg(value: QueueMsg<T>) -> QueueMsg<Self>;
+pub trait FromOp<T: QueueMessage>: QueueMessage + Sized {
+    fn from_op(value: Op<T>) -> Op<Self>;
 }
 
-impl FromQueueMsg<RelayMessage> for VoyagerMessage {
-    fn from_queue_msg(value: QueueMsg<RelayMessage>) -> QueueMsg<Self> {
+impl FromOp<RelayMessage> for VoyagerMessage {
+    fn from_op(value: Op<RelayMessage>) -> Op<Self> {
         match value {
-            QueueMsg::Event(event) => QueueMsg::Event(VoyagerEvent::Relay(event)),
-            QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Relay(data)),
-            QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Relay(fetch)),
-            QueueMsg::Effect(msg) => QueueMsg::Effect(VoyagerMsg::Relay(msg)),
-            QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Relay(wait)),
-            QueueMsg::Defer(defer) => QueueMsg::Defer(defer),
-            QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
+            Op::Event(event) => Op::Event(VoyagerEvent::Relay(event)),
+            Op::Data(data) => Op::Data(VoyagerData::Relay(data)),
+            Op::Fetch(fetch) => Op::Fetch(VoyagerFetch::Relay(fetch)),
+            Op::Effect(msg) => Op::Effect(VoyagerMsg::Relay(msg)),
+            Op::Wait(wait) => Op::Wait(VoyagerWait::Relay(wait)),
+            Op::Defer(defer) => Op::Defer(defer),
+            Op::Repeat { times, msg } => Op::Repeat {
                 times,
-                msg: Box::new(Self::from_queue_msg(*msg)),
+                msg: Box::new(Self::from_op(*msg)),
             },
-            QueueMsg::Timeout {
+            Op::Timeout {
                 timeout_timestamp,
                 msg,
-            } => QueueMsg::Timeout {
+            } => Op::Timeout {
                 timeout_timestamp,
-                msg: Box::new(Self::from_queue_msg(*msg)),
+                msg: Box::new(Self::from_op(*msg)),
             },
-            QueueMsg::Sequence(seq) => {
-                QueueMsg::Sequence(seq.into_iter().map(Self::from_queue_msg).collect())
-            }
-            QueueMsg::Concurrent(seq) => {
-                QueueMsg::Concurrent(seq.into_iter().map(Self::from_queue_msg).collect())
-            }
-            QueueMsg::Retry { remaining, msg } => QueueMsg::Retry {
+            Op::Seq(seq) => Op::Seq(seq.into_iter().map(Self::from_op).collect()),
+            Op::Conc(seq) => Op::Conc(seq.into_iter().map(Self::from_op).collect()),
+            Op::Retry { remaining, msg } => Op::Retry {
                 remaining,
-                msg: Box::new(Self::from_queue_msg(*msg)),
+                msg: Box::new(Self::from_op(*msg)),
             },
-            QueueMsg::Aggregate {
+            Op::Aggregate {
                 queue,
                 data,
                 receiver,
-            } => QueueMsg::Aggregate {
-                queue: queue.into_iter().map(Self::from_queue_msg).collect(),
+            } => Op::Aggregate {
+                queue: queue.into_iter().map(Self::from_op).collect(),
                 data: data.into_iter().map(VoyagerData::Relay).collect(),
                 receiver: VoyagerAggregate::Relay(receiver),
             },
-            QueueMsg::Race(seq) => {
-                QueueMsg::Race(seq.into_iter().map(Self::from_queue_msg).collect())
-            }
-            QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
-            QueueMsg::Noop => noop(),
+            Op::Race(seq) => Op::Race(seq.into_iter().map(Self::from_op).collect()),
+            Op::Void(msg) => Op::Void(Box::new(Self::from_op(*msg))),
+            Op::Noop => noop(),
         }
     }
 }
 
-impl FromQueueMsg<BlockMessage> for VoyagerMessage {
-    fn from_queue_msg(value: QueueMsg<BlockMessage>) -> QueueMsg<Self> {
+impl FromOp<BlockMessage> for VoyagerMessage {
+    fn from_op(value: Op<BlockMessage>) -> Op<Self> {
         match value {
-            QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Block(data)),
-            QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Block(fetch)),
-            QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Block(wait)),
-            QueueMsg::Defer(defer) => QueueMsg::Defer(defer),
-            QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
+            Op::Data(data) => Op::Data(VoyagerData::Block(data)),
+            Op::Fetch(fetch) => Op::Fetch(VoyagerFetch::Block(fetch)),
+            Op::Wait(wait) => Op::Wait(VoyagerWait::Block(wait)),
+            Op::Defer(defer) => Op::Defer(defer),
+            Op::Repeat { times, msg } => Op::Repeat {
                 times,
-                msg: Box::new(Self::from_queue_msg(*msg)),
+                msg: Box::new(Self::from_op(*msg)),
             },
-            QueueMsg::Timeout {
+            Op::Timeout {
                 timeout_timestamp,
                 msg,
-            } => QueueMsg::Timeout {
+            } => Op::Timeout {
                 timeout_timestamp,
-                msg: Box::new(Self::from_queue_msg(*msg)),
+                msg: Box::new(Self::from_op(*msg)),
             },
-            QueueMsg::Sequence(seq) => {
-                QueueMsg::Sequence(seq.into_iter().map(Self::from_queue_msg).collect())
-            }
-            QueueMsg::Concurrent(seq) => {
-                QueueMsg::Concurrent(seq.into_iter().map(Self::from_queue_msg).collect())
-            }
-            QueueMsg::Retry { remaining, msg } => QueueMsg::Retry {
+            Op::Seq(seq) => Op::Seq(seq.into_iter().map(Self::from_op).collect()),
+            Op::Conc(seq) => Op::Conc(seq.into_iter().map(Self::from_op).collect()),
+            Op::Retry { remaining, msg } => Op::Retry {
                 remaining,
-                msg: Box::new(Self::from_queue_msg(*msg)),
+                msg: Box::new(Self::from_op(*msg)),
             },
-            QueueMsg::Aggregate {
+            Op::Aggregate {
                 queue,
                 data,
                 receiver,
-            } => QueueMsg::Aggregate {
-                queue: queue.into_iter().map(Self::from_queue_msg).collect(),
+            } => Op::Aggregate {
+                queue: queue.into_iter().map(Self::from_op).collect(),
                 data: data.into_iter().map(VoyagerData::Block).collect(),
                 receiver: VoyagerAggregate::Block(receiver),
             },
-            QueueMsg::Race(seq) => {
-                QueueMsg::Race(seq.into_iter().map(Self::from_queue_msg).collect())
-            }
-            QueueMsg::Void(msg) => QueueMsg::Void(Box::new(Self::from_queue_msg(*msg))),
-            QueueMsg::Noop => noop(),
+            Op::Race(seq) => Op::Race(seq.into_iter().map(Self::from_op).collect()),
+            Op::Void(msg) => Op::Void(Box::new(Self::from_op(*msg))),
+            Op::Noop => noop(),
         }
     }
 }
 
 #[queue_msg]
 pub enum VoyagerMsg {
-    Block(<BlockMessage as QueueMessageTypes>::Effect),
-    Relay(<RelayMessage as QueueMessageTypes>::Effect),
+    Block(<BlockMessage as QueueMessage>::Effect),
+    Relay(<RelayMessage as QueueMessage>::Effect),
 }
 
 impl HandleEffect<VoyagerMessage> for VoyagerMsg {
     async fn handle(
         self,
-        store: &<VoyagerMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        store: &<VoyagerMessage as QueueMessage>::Store,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         Ok(match self {
             Self::Relay(msg) => {
                 Box::pin(msg.handle(store))
-                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .map_ok(VoyagerMessage::from_op)
                     .instrument(info_span!("relay"))
                     .await?
             }
@@ -162,25 +150,25 @@ impl HandleEffect<VoyagerMessage> for VoyagerMsg {
 
 #[queue_msg]
 pub enum VoyagerWait {
-    Block(<BlockMessage as QueueMessageTypes>::Wait),
-    Relay(<RelayMessage as QueueMessageTypes>::Wait),
+    Block(<BlockMessage as QueueMessage>::Wait),
+    Relay(<RelayMessage as QueueMessage>::Wait),
 }
 
 impl HandleWait<VoyagerMessage> for VoyagerWait {
     async fn handle(
         self,
-        store: &<VoyagerMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        store: &<VoyagerMessage as QueueMessage>::Store,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         Ok(match self {
             Self::Block(msg) => {
                 Box::pin(HandleWait::<BlockMessage>::handle(msg, store))
-                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .map_ok(VoyagerMessage::from_op)
                     .instrument(info_span!("block"))
                     .await?
             }
             Self::Relay(msg) => {
                 Box::pin(HandleWait::<RelayMessage>::handle(msg, store))
-                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .map_ok(VoyagerMessage::from_op)
                     .instrument(info_span!("relay"))
                     .await?
             }
@@ -190,15 +178,15 @@ impl HandleWait<VoyagerMessage> for VoyagerWait {
 
 #[queue_msg]
 pub enum VoyagerAggregate {
-    Block(<BlockMessage as QueueMessageTypes>::Aggregate),
-    Relay(<RelayMessage as QueueMessageTypes>::Aggregate),
+    Block(<BlockMessage as QueueMessage>::Aggregate),
+    Relay(<RelayMessage as QueueMessage>::Aggregate),
 }
 
 impl HandleAggregate<VoyagerMessage> for VoyagerAggregate {
     fn handle(
         self,
-        data: VecDeque<<VoyagerMessage as QueueMessageTypes>::Data>,
-    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        data: VecDeque<<VoyagerMessage as QueueMessage>::Data>,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             Self::Block(aggregate) => {
                 let _span = info_span!("block").entered();
@@ -213,7 +201,7 @@ impl HandleAggregate<VoyagerMessage> for VoyagerAggregate {
                             })
                             .collect(),
                     )
-                    .map(VoyagerMessage::from_queue_msg)
+                    .map(VoyagerMessage::from_op)
             }
             Self::Relay(aggregate) => {
                 let _span = info_span!("relay").entered();
@@ -228,7 +216,7 @@ impl HandleAggregate<VoyagerMessage> for VoyagerAggregate {
                             })
                             .collect(),
                     )
-                    .map(VoyagerMessage::from_queue_msg)
+                    .map(VoyagerMessage::from_op)
             }
         }
     }
@@ -236,19 +224,19 @@ impl HandleAggregate<VoyagerMessage> for VoyagerAggregate {
 
 #[queue_msg]
 pub enum VoyagerEvent {
-    Block(<BlockMessage as QueueMessageTypes>::Event),
-    Relay(<RelayMessage as QueueMessageTypes>::Event),
+    Block(<BlockMessage as QueueMessage>::Event),
+    Relay(<RelayMessage as QueueMessage>::Event),
 }
 
 impl HandleEvent<VoyagerMessage> for VoyagerEvent {
     fn handle(
         self,
-        store: &<VoyagerMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        store: &<VoyagerMessage as QueueMessage>::Store,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             Self::Relay(event) => {
                 let _span = info_span!("relay").entered();
-                HandleEvent::handle(event, store).map(VoyagerMessage::from_queue_msg)
+                HandleEvent::handle(event, store).map(VoyagerMessage::from_op)
             }
         }
     }
@@ -256,25 +244,25 @@ impl HandleEvent<VoyagerMessage> for VoyagerEvent {
 
 #[queue_msg]
 pub enum VoyagerData {
-    Block(<BlockMessage as QueueMessageTypes>::Data),
-    Relay(<RelayMessage as QueueMessageTypes>::Data),
+    Block(<BlockMessage as QueueMessage>::Data),
+    Relay(<RelayMessage as QueueMessage>::Data),
 }
 
 impl HandleData<VoyagerMessage> for VoyagerData {
     fn handle(
         self,
-        store: &<VoyagerMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        store: &<VoyagerMessage as QueueMessage>::Store,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         Ok(match self {
             Self::Block(data) => {
                 let _span = info_span!("block").entered();
                 match data.handle(store)? {
-                    QueueMsg::Data(block_message::AnyChainIdentified::Cosmos(
+                    Op::Data(block_message::AnyChainIdentified::Cosmos(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Wasm(WasmClientType::Cometbls) => {
                                 event::<RelayMessage>(relay_message::id::<Wasm<Cosmos>, Union, _>(
@@ -303,12 +291,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    QueueMsg::Data(block_message::AnyChainIdentified::Union(
+                    Op::Data(block_message::AnyChainIdentified::Union(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Wasm(WasmClientType::EthereumMinimal) => {
                                 event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
@@ -385,12 +373,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    QueueMsg::Data(block_message::AnyChainIdentified::EthMainnet(
+                    Op::Data(block_message::AnyChainIdentified::EthMainnet(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Cometbls => event(relay_message::id::<
                                 Ethereum<Mainnet>,
@@ -409,12 +397,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    QueueMsg::Data(block_message::AnyChainIdentified::EthMinimal(
+                    Op::Data(block_message::AnyChainIdentified::EthMinimal(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Cometbls => event(relay_message::id::<
                                 Ethereum<Minimal>,
@@ -433,12 +421,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    QueueMsg::Data(block_message::AnyChainIdentified::Scroll(
+                    Op::Data(block_message::AnyChainIdentified::Scroll(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Cometbls => {
                                 event(relay_message::id::<Scroll, Wasm<Union>, _>(
@@ -455,12 +443,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    QueueMsg::Data(block_message::AnyChainIdentified::Arbitrum(
+                    Op::Data(block_message::AnyChainIdentified::Arbitrum(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Cometbls => {
                                 event(relay_message::id::<Arbitrum, Wasm<Union>, _>(
@@ -477,12 +465,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    QueueMsg::Data(block_message::AnyChainIdentified::Berachain(
+                    Op::Data(block_message::AnyChainIdentified::Berachain(
                         block_message::Identified {
                             chain_id,
                             t: block_message::data::Data::IbcEvent(ibc_event),
                         },
-                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                    )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
                         match ibc_event.client_type {
                             ClientType::Cometbls => {
                                 event(relay_message::id::<Berachain, Wasm<Union>, _>(
@@ -499,12 +487,12 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                             _ => unimplemented!(),
                         },
                     ),
-                    msg => VoyagerMessage::from_queue_msg(msg),
+                    msg => VoyagerMessage::from_op(msg),
                 }
             }
             Self::Relay(data) => {
                 let _span = info_span!("relay").entered();
-                VoyagerMessage::from_queue_msg(data.handle(store)?)
+                VoyagerMessage::from_op(data.handle(store)?)
             }
         })
     }
@@ -512,26 +500,26 @@ impl HandleData<VoyagerMessage> for VoyagerData {
 
 #[queue_msg]
 pub enum VoyagerFetch {
-    Block(<BlockMessage as QueueMessageTypes>::Fetch),
-    Relay(<RelayMessage as QueueMessageTypes>::Fetch),
+    Block(<BlockMessage as QueueMessage>::Fetch),
+    Relay(<RelayMessage as QueueMessage>::Fetch),
 }
 
 impl HandleFetch<VoyagerMessage> for VoyagerFetch {
     async fn handle(
         self,
-        store: &<VoyagerMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        store: &<VoyagerMessage as QueueMessage>::Store,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             Self::Block(fetch) => {
                 fetch
                     .handle(store)
-                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .map_ok(VoyagerMessage::from_op)
                     .instrument(info_span!("block"))
                     .await
             }
             Self::Relay(fetch) => {
                 Box::pin(fetch.handle(store))
-                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .map_ok(VoyagerMessage::from_op)
                     .instrument(info_span!("relay"))
                     .await
             }
@@ -798,7 +786,7 @@ mod tests {
     };
     use hex_literal::hex;
     use queue_msg::{
-        aggregate, defer_relative, effect, event, fetch, repeat, seq, QueueMessageTypes, QueueMsg,
+        aggregate, defer_relative, effect, event, fetch, repeat, seq, Op, QueueMessage,
     };
     use relay_message::{
         aggregate::AggregateMsgCreateClient,
@@ -830,7 +818,7 @@ mod tests {
         QueryHeight, DELAY_PERIOD,
     };
 
-    use crate::{FromQueueMsg, VoyagerMessage};
+    use crate::{FromOp, VoyagerMessage};
 
     macro_rules! parse {
         ($expr:expr) => {
@@ -1323,11 +1311,11 @@ mod tests {
         )));
     }
 
-    fn print_json<T: QueueMessageTypes>(msg: QueueMsg<T>)
+    fn print_json<T: QueueMessage>(msg: Op<T>)
     where
-        VoyagerMessage: FromQueueMsg<T>,
+        VoyagerMessage: FromOp<T>,
     {
-        let msg = VoyagerMessage::from_queue_msg(msg);
+        let msg = VoyagerMessage::from_op(msg);
 
         let json = serde_json::to_string(&msg).unwrap();
 

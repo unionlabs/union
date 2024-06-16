@@ -35,7 +35,7 @@ use queue_msg::{
     aggregation::TupleAggregator,
     conc, defer_relative, effect, event, fetch,
     optimize::{passes::NormalizeFinal, Pure},
-    repeat, run_to_completion, seq, InMemoryQueue, QueueMsg,
+    repeat, run_to_completion, seq, InMemoryQueue, Op,
 };
 use relay_message::{
     aggregate::{
@@ -61,7 +61,7 @@ use unionlabs::{
     traits::{Chain, ClientIdOf},
     QueryHeight,
 };
-use voyager_message::{FromQueueMsg, VoyagerFetch, VoyagerMessage};
+use voyager_message::{FromOp, VoyagerFetch, VoyagerMessage};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -349,7 +349,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 _ => panic!("no database set in config"),
             };
 
-            type Item = sqlx::types::Json<QueueMsg<VoyagerMessage>>;
+            type Item = sqlx::types::Json<Op<VoyagerMessage>>;
 
             match cli_msg {
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
@@ -600,7 +600,7 @@ async fn mk_handshake<A, B>(
     b: &B,
     ty: HandshakeType,
     chains: Arc<Chains>,
-) -> QueueMsg<VoyagerMessage>
+) -> Op<VoyagerMessage>
 where
     A: relay_message::ChainExt<ClientId: TryFrom<ClientId, Error: Debug>> + LightClientType<B>,
     B: relay_message::ChainExt<ClientId: TryFrom<ClientId, Error: Debug>> + LightClientType<A>,
@@ -730,7 +730,7 @@ where
                                  client_b_config: serde_json::Value,
                                  next_client_sequence_a,
                                  next_client_sequence_b,
-                                 msgs: QueueMsg<RelayMessage>| {
+                                 msgs: Op<RelayMessage>| {
         let client_config_a =
             serde_json::from_value::<<A as relay_message::ChainExt>::Config>(client_a_config)
                 .unwrap();
@@ -985,7 +985,7 @@ where
                 client_b_config,
                 sequence_a.t.state,
                 sequence_b.t.state,
-                QueueMsg::Noop,
+                Op::Noop,
             )
         }
         HandshakeType::ClientConnection {
@@ -1108,10 +1108,10 @@ where
         ),
     };
 
-    VoyagerMessage::from_queue_msg(msgs)
+    VoyagerMessage::from_op(msgs)
 }
 
-async fn mk_init_fetch<A>(a: &A) -> QueueMsg<VoyagerMessage>
+async fn mk_init_fetch<A>(a: &A) -> Op<VoyagerMessage>
 where
     A: block_message::ChainExt,
     block_message::AnyChainIdentified<block_message::fetch::AnyFetch>:

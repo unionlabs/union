@@ -24,7 +24,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, queue_msg, void, wait, QueueMsg,
+    data, effect, fetch, queue_msg, void, wait, Op,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info};
@@ -376,11 +376,7 @@ impl<C: ChainSpec, Tr: ChainExt> DoFetchProof<Self, Tr> for Ethereum<C>
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
-    fn proof(
-        c: &Self,
-        at: HeightOf<Self>,
-        path: PathOf<Ethereum<C>, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Ethereum<C>, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::specific(GetProof { path, height: at }),
@@ -395,11 +391,7 @@ where
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
-    fn state(
-        hc: &Self,
-        at: HeightOf<Self>,
-        path: PathOf<Ethereum<C>, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Ethereum<C>, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::specific(FetchIbcState { path, height: at }),
@@ -430,7 +422,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         aggregate(
             [fetch(id::<Ethereum<C>, Tr, _>(
                 c.chain_id,
@@ -454,7 +446,7 @@ where
     >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
 {
-    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> QueueMsg<RelayMessage> {
+    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> Op<RelayMessage> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
             Self::FetchFinalityUpdate(FetchFinalityUpdate {}) => Data::specific(FinalityUpdate {
@@ -969,7 +961,7 @@ where
             __marker: _,
         }: Self,
         aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         match data {
             EthereumAggregateMsg::CreateUpdate(msg) => {
                 do_aggregate(id(chain_id, msg), aggregated_data)
@@ -990,7 +982,7 @@ fn make_create_update<C, Tr>(
     currently_trusted_slot: u64,
     light_client_update: light_client_update::LightClientUpdate<C>,
     is_next: bool,
-) -> QueueMsg<RelayMessage>
+) -> Op<RelayMessage>
 where
     C: ChainSpec,
     Tr: ChainExt,
@@ -1144,7 +1136,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(light_client_update_chain_id, account_update_chain_id);
         assert_eq!(chain_id, account_update_chain_id);
         assert_eq!(chain_id, beacon_api_chain_id);
@@ -1213,7 +1205,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(chain_id, bootstrap_chain_id);
 
         let target_period =
@@ -1286,7 +1278,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(chain_id, light_client_updates_chain_id);
 
         let target_period = sync_committee_period::<_, C>(finality_update.signature_slot);

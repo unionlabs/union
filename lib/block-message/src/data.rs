@@ -1,5 +1,5 @@
 use macros::apply;
-use queue_msg::{data, queue_msg, HandleData, QueueError, QueueMessageTypes, QueueMsg};
+use queue_msg::{data, queue_msg, HandleData, Op, QueueError, QueueMessage};
 use tracing::instrument;
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
@@ -21,8 +21,8 @@ impl HandleData<BlockMessage> for AnyChainIdentified<AnyData> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        _store: &<BlockMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<BlockMessage>, QueueError> {
+        _store: &<BlockMessage as QueueMessage>::Store,
+    ) -> Result<Op<BlockMessage>, QueueError> {
         Ok(data(self))
     }
 }

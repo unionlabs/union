@@ -12,7 +12,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, queue_msg, QueueMsg,
+    data, effect, fetch, queue_msg, Op,
 };
 use unionlabs::{
     encoding::{Decode, Encode, EthAbi},
@@ -74,7 +74,7 @@ impl<Tr: ChainExt> DoFetchProof<Self, Tr> for Scroll
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
 {
-    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> QueueMsg<RelayMessage> {
+    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::<Self, Tr>::specific(GetProof { path, height: at }),
@@ -89,7 +89,7 @@ where
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> QueueMsg<RelayMessage> {
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
@@ -118,7 +118,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         // - scroll rollup contract root proof
         // - scroll latest batch index proof against rollup contract
         // - scroll finalized root at batch index against rollup contract
@@ -190,7 +190,7 @@ where
         SelfConsensusState: Decode<IbcStateEncodingOf<Scroll>> + Encode<EthAbi>,
     >,
 {
-    async fn do_fetch(scroll: &Scroll, msg: Self) -> QueueMsg<RelayMessage> {
+    async fn do_fetch(scroll: &Scroll, msg: Self) -> Op<RelayMessage> {
         let msg = match msg {
             Self::FetchGetProof(get_proof) => fetch_get_proof(scroll, get_proof).await,
             Self::FetchIbcState(ibc_state) => fetch_ibc_state(scroll, ibc_state).await,
@@ -632,7 +632,7 @@ where
             __marker,
         }: Self,
         data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         match t {
             ScrollAggregate::AggregateHeader(msg) => do_aggregate(id(chain_id, msg), data),
         }
@@ -729,7 +729,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(rollup_contract_root_proof_chain_id, chain_id);
         assert_eq!(latest_batch_index_proof_chain_id, chain_id);
         assert_eq!(scroll_finalized_root_proof_chain_id, chain_id);

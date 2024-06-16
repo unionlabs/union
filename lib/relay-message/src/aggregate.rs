@@ -5,8 +5,8 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    defer_relative, effect, fetch, noop, queue_msg, race, seq, wait, HandleAggregate, QueueError,
-    QueueMessageTypes, QueueMsg,
+    defer_relative, effect, fetch, noop, queue_msg, race, seq, wait, HandleAggregate, Op,
+    QueueError, QueueMessage,
 };
 use tracing::{debug, info, instrument};
 use unionlabs::{
@@ -114,8 +114,8 @@ impl HandleAggregate<RelayMessage> for AnyLightClientIdentified<AnyAggregate> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        data: VecDeque<<RelayMessage as QueueMessageTypes>::Data>,
-    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
+        data: VecDeque<<RelayMessage as QueueMessage>::Data>,
+    ) -> Result<Op<RelayMessage>, QueueError> {
         let aggregate = self;
 
         any_lc! {
@@ -125,7 +125,7 @@ impl HandleAggregate<RelayMessage> for AnyLightClientIdentified<AnyAggregate> {
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
-    pub fn handle(self, data: VecDeque<AnyLightClientIdentified<AnyData>>) -> QueueMsg<RelayMessage>
+    pub fn handle(self, data: VecDeque<AnyLightClientIdentified<AnyData>>) -> Op<RelayMessage>
     where
         identified!(SelfClientState<Tr, Hc>): IsAggregateData,
         identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,
@@ -458,7 +458,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         let event_msg = match channel_handshake_event {
@@ -503,7 +503,7 @@ pub fn mk_aggregate_wait_for_update<Hc: ChainExt, Tr: ChainExt>(
     client_id: ClientIdOf<Hc>,
     counterparty_client_id: ClientIdOf<Tr>,
     wait_for: HeightOf<Hc>,
-) -> QueueMsg<RelayMessage>
+) -> Op<RelayMessage>
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
@@ -561,7 +561,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         let event = match packet_event {
@@ -660,7 +660,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, client_state_chain_id);
         assert_eq!(this_chain_id, connection_chain_id);
         assert_eq!(client_id, connection.client_id);
@@ -793,7 +793,7 @@ where
             t: LatestHeight { height, __marker },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(latest_height_chain_id, counterparty_chain_id);
 
         wait(id(
@@ -830,7 +830,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         fetch(id::<Hc, Tr, _>(
@@ -868,7 +868,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         fetch(id(
@@ -915,7 +915,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_client_id, client_id);
@@ -967,7 +967,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         fetch(id::<Tr, Hc, _>(
             counterparty_chain_id,
             FetchUpdateHeaders {
@@ -1011,7 +1011,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(trusted_client_state_client_id, client_id);
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
 
@@ -1059,7 +1059,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         match msg_to_aggregate {
@@ -1732,7 +1732,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert!(consensus_state_proof_height.revision_height() >= trusted_height.revision_height());
         assert!(client_state_proof_height.revision_height() >= trusted_height.revision_height());
 
@@ -1851,7 +1851,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert!(consensus_state_proof_height.revision_height() >= trusted_height.revision_height());
         assert!(client_state_proof_height.revision_height() >= trusted_height.revision_height());
 
@@ -1930,7 +1930,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
@@ -2018,7 +2018,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
@@ -2111,7 +2111,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
@@ -2192,7 +2192,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, channel_proof_chain_id);
         assert_eq!(channel_end_chain_id, this_chain_id);
@@ -2260,7 +2260,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, commitment_proof_chain_id);
 
@@ -2339,7 +2339,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(commitment_proof_chain_id, this_chain_id);
 
@@ -2416,7 +2416,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(proof_unreceived_path, packet_receipt_path);
         assert_eq!(proof_unreceived_height, packet_receipt_height);
 
@@ -2485,7 +2485,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         if packet_receipt {
             info!(
                 sequence = %packet.sequence,
@@ -2545,7 +2545,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
@@ -2583,7 +2583,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, next_sequence_recv_chain_id);
 
         assert_eq!(next_sequence_recv_path.port_id, port_id);
@@ -2639,7 +2639,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(self_client_state_chain_id, self_consensus_state_chain_id);
 
         effect(id::<Hc, Tr, _>(
@@ -2682,7 +2682,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, next_connection_sequence_chain_id);
 
         if next_connection_sequence >= sequence {
@@ -2739,7 +2739,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, next_client_sequence_chain_id);
 
         if next_client_sequence >= sequence {
@@ -2798,7 +2798,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(this_chain_id, connection_state_client_id);
         assert_eq!(connection_id, path_connection_id);
 

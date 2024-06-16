@@ -9,7 +9,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    effect, fetch, queue_msg, wait, QueueMsg,
+    effect, fetch, queue_msg, wait, Op,
 };
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
@@ -98,10 +98,7 @@ where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    fn fetch_update_headers(
-        hc: &Hc,
-        update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> Op<RelayMessage> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -188,7 +185,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessage> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> Op<RelayMessage> {
         match msg {
             Self::FetchTrustedCommit(FetchTrustedCommit {
                 height,
@@ -240,7 +237,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         match data {
             CosmosAggregateMsg::AggregateHeader(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)
@@ -328,7 +325,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(

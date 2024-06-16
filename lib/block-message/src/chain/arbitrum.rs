@@ -5,7 +5,7 @@ use chain_utils::{
     ethereum::EthereumConsensusChain,
 };
 use enumorph::Enumorph;
-use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, QueueMsg};
+use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, Op};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::Chain};
 
 use crate::{
@@ -29,7 +29,7 @@ impl DoFetchBlockRange<Arbitrum> for Arbitrum
 where
     AnyChainIdentified<AnyFetch>: From<Identified<Arbitrum, Fetch<Arbitrum>>>,
 {
-    fn fetch_block_range(c: &Arbitrum, range: FetchBlockRange<Arbitrum>) -> QueueMsg<BlockMessage> {
+    fn fetch_block_range(c: &Arbitrum, range: FetchBlockRange<Arbitrum>) -> Op<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<Arbitrum>::specific(FetchEvents {
@@ -46,7 +46,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Arbitrum, Aggregate<Arbitrum>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Arbitrum, Fetch<Arbitrum>>>,
 {
-    async fn do_fetch(c: &Arbitrum, msg: Self) -> QueueMsg<BlockMessage> {
+    async fn do_fetch(c: &Arbitrum, msg: Self) -> Op<BlockMessage> {
         match msg {
             Self::FetchEvents(FetchEvents {
                 from_height,
@@ -109,7 +109,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessage> {
+    ) -> Op<BlockMessage> {
         match t {
             ArbitrumAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
         }

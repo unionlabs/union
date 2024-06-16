@@ -1,6 +1,6 @@
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{noop, queue_msg, HandleEffect, QueueError, QueueMessageTypes, QueueMsg};
+use queue_msg::{noop, queue_msg, HandleEffect, Op, QueueError, QueueMessage};
 use tracing::instrument;
 use unionlabs::{
     ibc::core::{
@@ -52,8 +52,8 @@ impl HandleEffect<RelayMessage> for AnyLightClientIdentified<AnyEffect> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
-        store: &<RelayMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
+        store: &<RelayMessage as QueueMessage>::Store,
+    ) -> Result<Op<RelayMessage>, QueueError> {
         let msg = self;
 
         any_lc! {

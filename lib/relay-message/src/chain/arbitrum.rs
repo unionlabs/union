@@ -9,7 +9,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, queue_msg, QueueMsg,
+    data, effect, fetch, queue_msg, Op,
 };
 use unionlabs::{
     encoding::{Decode, Encode, EthAbi},
@@ -71,7 +71,7 @@ impl<Tr: ChainExt> DoFetchProof<Self, Tr> for Arbitrum
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Arbitrum, Tr>)>,
 {
-    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Arbitrum, Tr>) -> QueueMsg<RelayMessage> {
+    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Arbitrum, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::<Self, Tr>::specific(GetProof { path, height: at }),
@@ -86,7 +86,7 @@ where
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Arbitrum, Tr>)>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Arbitrum, Tr>) -> QueueMsg<RelayMessage> {
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Arbitrum, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
@@ -118,7 +118,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         aggregate(
             [
                 fetch(id(
@@ -168,7 +168,7 @@ where
         SelfConsensusState: Decode<IbcStateEncodingOf<Arbitrum>> + Encode<EthAbi>,
     >,
 {
-    async fn do_fetch(arbitrum: &Arbitrum, msg: Self) -> QueueMsg<RelayMessage> {
+    async fn do_fetch(arbitrum: &Arbitrum, msg: Self) -> Op<RelayMessage> {
         let msg = match msg {
             Self::FetchGetProof(get_proof) => fetch_get_proof(arbitrum, get_proof).await,
             Self::FetchIbcState(ibc_state) => fetch_ibc_state(arbitrum, ibc_state).await,
@@ -461,7 +461,7 @@ where
             __marker,
         }: Self,
         data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         match t {
             ArbitrumAggregate::AggregateHeader(msg) => do_aggregate(id(chain_id, msg), data),
         }
@@ -531,7 +531,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessage> {
+    ) -> Op<RelayMessage> {
         // assert_eq!(rollup_contract_root_proof_chain_id, chain_id);
         // assert_eq!(latest_batch_index_proof_chain_id, chain_id);
         // assert_eq!(arbitrum_finalized_root_proof_chain_id, chain_id);

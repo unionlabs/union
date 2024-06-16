@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use chain_utils::GetChain;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, fetch, noop, queue_msg, wait, HandleEvent, QueueError, QueueMessageTypes,
-    QueueMsg,
+    aggregate, conc, fetch, noop, queue_msg, wait, HandleEvent, Op, QueueError, QueueMessage,
 };
 use tracing::{info, instrument};
 use unionlabs::{
@@ -42,8 +41,8 @@ impl HandleEvent<RelayMessage> for AnyLightClientIdentified<AnyEvent> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        store: &<RelayMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
+        store: &<RelayMessage as QueueMessage>::Store,
+    ) -> Result<Op<RelayMessage>, QueueError> {
         let wait = self;
 
         any_lc! {
@@ -57,7 +56,7 @@ impl HandleEvent<RelayMessage> for AnyLightClientIdentified<AnyEvent> {
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
-    pub fn handle(self, hc: Hc) -> QueueMsg<RelayMessage>
+    pub fn handle(self, hc: Hc) -> Op<RelayMessage>
     where
         AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
         AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,

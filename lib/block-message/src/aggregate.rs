@@ -4,7 +4,7 @@ use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
-    fetch, queue_msg, HandleAggregate, QueueError, QueueMessageTypes, QueueMsg,
+    fetch, queue_msg, HandleAggregate, Op, QueueError, QueueMessage,
 };
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::IsHeight;
@@ -29,8 +29,8 @@ impl HandleAggregate<BlockMessage> for AnyChainIdentified<AnyAggregate> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        data: VecDeque<<BlockMessage as QueueMessageTypes>::Data>,
-    ) -> Result<QueueMsg<BlockMessage>, QueueError> {
+        data: VecDeque<<BlockMessage as QueueMessage>::Data>,
+    ) -> Result<Op<BlockMessage>, QueueError> {
         let aggregate = self;
 
         any_chain! {
@@ -40,7 +40,7 @@ impl HandleAggregate<BlockMessage> for AnyChainIdentified<AnyAggregate> {
 }
 
 impl<C: ChainExt> Identified<C, Aggregate<C>> {
-    pub fn handle(self, data: VecDeque<AnyChainIdentified<AnyData>>) -> QueueMsg<BlockMessage>
+    pub fn handle(self, data: VecDeque<AnyChainIdentified<AnyData>>) -> Op<BlockMessage>
     where
         Identified<C, C::Aggregate>: DoAggregate,
 
@@ -87,7 +87,7 @@ where
             chain_id: latest_height_chain_id,
             t: LatestHeight(to_height),
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockMessage> {
+    ) -> Op<BlockMessage> {
         assert!(to_height.revision_height() > from_height.revision_number());
         assert_eq!(this_chain_id, latest_height_chain_id);
 

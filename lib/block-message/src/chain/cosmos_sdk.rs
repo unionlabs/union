@@ -6,7 +6,7 @@ use futures::FutureExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, noop, queue_msg, QueueMsg,
+    conc, data, fetch, noop, queue_msg, Op,
 };
 use tendermint_rpc::Client;
 use tracing::{info, warn};
@@ -54,7 +54,7 @@ where
             from_height,
             to_height,
         }: FetchBlockRange<C>,
-    ) -> QueueMsg<BlockMessage> {
+    ) -> Op<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<C>::specific(FetchBlocks {
@@ -79,7 +79,7 @@ where
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
     AnyChainIdentified<AnyAggregate>: From<Identified<C, Aggregate<C>>>,
 {
-    async fn do_fetch(c: &C, this: Self) -> QueueMsg<BlockMessage> {
+    async fn do_fetch(c: &C, this: Self) -> Op<BlockMessage> {
         match this {
             CosmosSdkFetch::FetchTransactions(FetchTransactions { height, page }) => {
                 info!(%height, %page, "fetching events in block");
@@ -415,7 +415,7 @@ where
                 __marker: _
             },
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockMessage> {
+    ) -> Op<BlockMessage> {
         assert_eq!(chain_id, client_type_chain_id);
 
         data(id(
@@ -443,7 +443,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t: data }: Self,
         aggregate_data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessage> {
+    ) -> Op<BlockMessage> {
         match data {
             CosmosSdkAggregate::AggregateEventWithClientType(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)

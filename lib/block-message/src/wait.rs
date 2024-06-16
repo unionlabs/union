@@ -1,8 +1,6 @@
 use chain_utils::{Chains, GetChain};
 use macros::apply;
-use queue_msg::{
-    data, defer_absolute, now, queue_msg, seq, wait, HandleWait, QueueError, QueueMsg,
-};
+use queue_msg::{data, defer_absolute, now, queue_msg, seq, wait, HandleWait, Op, QueueError};
 use tracing::{debug, instrument};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
@@ -23,7 +21,7 @@ where
     AnyChainIdentified<AnyWait>: From<Identified<C, Wait<C>>>,
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
 {
-    async fn handle(self, c: C) -> QueueMsg<BlockMessage> {
+    async fn handle(self, c: C) -> Op<BlockMessage> {
         match self {
             Wait::Height(WaitForHeight { height }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
@@ -58,7 +56,7 @@ where
 
 impl HandleWait<BlockMessage> for AnyChainIdentified<AnyWait> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
-    async fn handle(self, store: &Chains) -> Result<QueueMsg<BlockMessage>, QueueError> {
+    async fn handle(self, store: &Chains) -> Result<Op<BlockMessage>, QueueError> {
         let wait = self;
 
         any_chain! {

@@ -4,7 +4,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, fetch, queue_msg, wait, HandleFetch, QueueError, QueueMessageTypes, QueueMsg,
+    aggregate, conc, fetch, queue_msg, wait, HandleFetch, Op, QueueError, QueueMessage,
 };
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::IsHeight;
@@ -31,8 +31,8 @@ impl HandleFetch<BlockMessage> for AnyChainIdentified<AnyFetch> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
-        store: &<BlockMessage as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<BlockMessage>, QueueError> {
+        store: &<BlockMessage as QueueMessage>::Store,
+    ) -> Result<Op<BlockMessage>, QueueError> {
         let fetch = self;
 
         any_chain! {
@@ -55,7 +55,7 @@ where
     AnyChainIdentified<AnyWait>: From<Identified<C, Wait<C>>>,
     AnyChainIdentified<AnyAggregate>: From<Identified<C, Aggregate<C>>>,
 {
-    pub async fn handle(self, c: C) -> QueueMsg<BlockMessage> {
+    pub async fn handle(self, c: C) -> Op<BlockMessage> {
         match self {
             Fetch::FetchBlock(FetchBlock { height }) => aggregate(
                 [wait(Identified::<C, _>::new(
@@ -87,11 +87,11 @@ where
 }
 
 pub trait DoFetch<C: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &C, _: Self) -> impl Future<Output = QueueMsg<BlockMessage>>;
+    fn do_fetch(c: &C, _: Self) -> impl Future<Output = Op<BlockMessage>>;
 }
 
 pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {
-    fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockMessage>;
+    fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> Op<BlockMessage>;
 }
 
 #[queue_msg]
