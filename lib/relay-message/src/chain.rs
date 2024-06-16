@@ -15,8 +15,8 @@ macro_rules! try_from_relayer_msg {
         ),
     ) => {
         const _: () = {
-            use crate::{AnyLightClientIdentified, RelayMessageTypes, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
-            use queue_msg::QueueMsg;
+            use crate::{AnyLightClientIdentified, RelayMessage, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
+            use queue_msg::Op;
 
             with_dollar_sign! {
                 ($d:tt) => {
@@ -28,26 +28,26 @@ macro_rules! try_from_relayer_msg {
                             ),
                         ) => {
                             $d (
-                                impl <$($generics)+> TryFrom<QueueMsg<RelayMessageTypes>> for Identified<$d Chain, Tr, $d Ty>
+                                impl <$($generics)+> TryFrom<Op<RelayMessage>> for Identified<$d Chain, Tr, $d Ty>
                                 where
                                     identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
                                 {
-                                    type Error = QueueMsg<RelayMessageTypes>;
-                                    fn try_from(value: QueueMsg<RelayMessageTypes>) -> Result<Identified<$d Chain, Tr, $d Ty>, QueueMsg<RelayMessageTypes>> {
+                                    type Error = Op<RelayMessage>;
+                                    fn try_from(value: Op<RelayMessage>) -> Result<Identified<$d Chain, Tr, $d Ty>, Op<RelayMessage>> {
                                         match value {
-                                            QueueMsg::Data(data) => {
+                                            Op::Data(data) => {
                                                 let Identified {
                                                     chain_id,
                                                     t,
                                                     __marker: _,
-                                                } = data.try_into().map_err(QueueMsg::Data)?;
+                                                } = data.try_into().map_err(Op::Data)?;
 
                                                 match t {
                                                     Data::LightClientSpecific(
                                                         LightClientSpecificData($d Enum::$d Variant(
                                                         t,
                                                     ))) => Ok(id(chain_id, t)),
-                                                    _ => Err(QueueMsg::Data(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t))))
+                                                    _ => Err(Op::Data(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t))))
                                                 }
 
                                             },

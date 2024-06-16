@@ -5,18 +5,18 @@ use chain_utils::{
     scroll::{Scroll, SCROLL_REVISION_NUMBER},
 };
 use enumorph::Enumorph;
-use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, QueueMsg};
+use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, Op};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::Chain};
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::ethereum::{
+    chain::ethereum::{
         fetch_beacon_block_range, fetch_channel, fetch_get_logs, AggregateWithChannel, ChannelData,
         ConnectionData, FetchBeaconBlockRange, FetchChannel, FetchEvents, FetchGetLogs,
     },
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 impl ChainExt for Scroll {
@@ -29,10 +29,7 @@ impl DoFetchBlockRange<Scroll> for Scroll
 where
     AnyChainIdentified<AnyFetch>: From<Identified<Scroll, Fetch<Scroll>>>,
 {
-    fn fetch_block_range(
-        c: &Scroll,
-        range: FetchBlockRange<Scroll>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    fn fetch_block_range(c: &Scroll, range: FetchBlockRange<Scroll>) -> Op<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<Scroll>::specific(FetchEvents {
@@ -49,7 +46,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Scroll, Aggregate<Scroll>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Scroll, Fetch<Scroll>>>,
 {
-    async fn do_fetch(c: &Scroll, msg: Self) -> QueueMsg<BlockMessageTypes> {
+    async fn do_fetch(c: &Scroll, msg: Self) -> Op<BlockMessage> {
         match msg {
             ScrollFetch::FetchEvents(FetchEvents {
                 from_height,
@@ -112,7 +109,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> Op<BlockMessage> {
         match t {
             ScrollAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
         }

@@ -21,7 +21,7 @@ use futures::StreamExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, noop, queue_msg, QueueMsg,
+    conc, data, fetch, noop, queue_msg, Op,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
@@ -51,7 +51,7 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 pub trait EthereumChainExt = ChainExt + chain_utils::ethereum::EthereumChainExt;
@@ -66,10 +66,7 @@ impl<C: ChainSpec> DoFetchBlockRange<Ethereum<C>> for Ethereum<C>
 where
     AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
-    fn fetch_block_range(
-        c: &Ethereum<C>,
-        range: FetchBlockRange<Ethereum<C>>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    fn fetch_block_range(c: &Ethereum<C>, range: FetchBlockRange<Ethereum<C>>) -> Op<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<Ethereum<C>>::specific(FetchEvents {
@@ -86,7 +83,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
-    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<BlockMessageTypes> {
+    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> Op<BlockMessage> {
         match msg {
             Self::FetchEvents(FetchEvents {
                 from_height,
@@ -121,7 +118,7 @@ pub(crate) async fn fetch_get_logs<Hc>(
     c: &Hc,
     FetchGetLogs { from_slot, to_slot }: FetchGetLogs,
     revision_number: u64,
-) -> QueueMsg<BlockMessageTypes>
+) -> Op<BlockMessage>
 where
     Hc: EthereumConsensusChain
         + EthereumChainExt<
@@ -197,7 +194,7 @@ pub(crate) async fn fetch_beacon_block_range<C, Hc>(
     c: &Hc,
     FetchBeaconBlockRange { from_slot, to_slot }: FetchBeaconBlockRange,
     beacon_api_client: &BeaconApiClient<C>,
-) -> QueueMsg<BlockMessageTypes>
+) -> Op<BlockMessage>
 where
     C: ChainSpec,
     Hc: ChainExt<Fetch: From<FetchGetLogs> + From<FetchBeaconBlockRange>> + EthereumChain,
@@ -267,7 +264,7 @@ pub(crate) async fn fetch_channel<Hc>(
     c: &Hc,
     path: ChannelEndPath,
     execution_height: u64,
-) -> QueueMsg<BlockMessageTypes>
+) -> Op<BlockMessage>
 where
     Hc: EthereumChainExt<Data: From<ChannelData<Hc>>>,
 
@@ -298,7 +295,7 @@ pub async fn mk_aggregate_event<Hc, F, Fut>(
     tx_hash: H256,
     // normalize the height from the "public facing" height to the execution height of this chain.
     normalize_height: F,
-) -> QueueMsg<BlockMessageTypes>
+) -> Op<BlockMessage>
 where
     Hc: EthereumChainExt<Aggregate: From<AggregateWithChannel<Hc>>, Fetch: From<FetchChannel<Hc>>>,
 
@@ -570,7 +567,7 @@ pub fn with_channel<Hc, T>(
     event_height: HeightOf<Hc>,
     tx_hash: H256,
     raw_event: T,
-) -> QueueMsg<BlockMessageTypes>
+) -> Op<BlockMessage>
 where
     Hc: ChainExt<Aggregate: From<AggregateWithChannel<Hc>>, Fetch: From<FetchChannel<Hc>>>
         + EthereumChain,
@@ -656,7 +653,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> Op<BlockMessage> {
         match t {
             EthereumAggregate::AggregateWithChannel(msg) => {
                 do_aggregate(id::<Ethereum<C>, _>(chain_id, msg), data)
@@ -710,7 +707,7 @@ impl<Hc: ChainExt, T: Clone> Clone for EventInfo<Hc, T> {
 }
 
 // NOTE: Currently, we assume that EthereumChains will only connect to Union, and as such hardcode the client_type to be Cometbls. This avoids an extra fetch and aggregation to figure out the client type.
-impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockMessageTypes>
+impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockMessage>
     for Identified<Hc, AggregateWithChannel<Hc>>
 where
     Identified<Hc, ChannelData<Hc>>: IsAggregateData,
@@ -728,7 +725,7 @@ where
                 __marker: _
             }
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> Op<BlockMessage> {
         assert_eq!(chain_id, channel_data_chain_id);
 
         let event = match msg {

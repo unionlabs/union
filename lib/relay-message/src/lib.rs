@@ -8,7 +8,7 @@ use chain_utils::{
     union::Union, wasm::Wasm, Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use queue_msg::{seq, QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
+use queue_msg::{seq, Op, OpT, QueueMessage};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -36,12 +36,12 @@ pub mod event;
 pub mod fetch;
 pub mod wait;
 
-pub mod chain_impls;
+pub mod chain;
 
 pub trait ChainExt: Chain {
-    type Data<Tr: ChainExt>: QueueMsgTypesTraits;
-    type Fetch<Tr: ChainExt>: QueueMsgTypesTraits;
-    type Aggregate<Tr: ChainExt>: QueueMsgTypesTraits;
+    type Data<Tr: ChainExt>: OpT;
+    type Fetch<Tr: ChainExt>: OpT;
+    type Aggregate<Tr: ChainExt>: OpT;
 
     /// Error type for [`Self::msg`].
     type MsgError: Debug + MaybeRecoverableError;
@@ -52,7 +52,7 @@ pub trait ChainExt: Chain {
     fn do_fetch<Tr: ChainExt>(
         &self,
         msg: Self::Fetch<Tr>,
-    ) -> impl Future<Output = QueueMsg<RelayMessageTypes>> + '_
+    ) -> impl Future<Output = Op<RelayMessage>> + '_
     where
         Self::Fetch<Tr>: DoFetch<Self>,
     {
@@ -60,9 +60,9 @@ pub trait ChainExt: Chain {
     }
 }
 
-pub struct RelayMessageTypes;
+pub enum RelayMessage {}
 
-impl QueueMessageTypes for RelayMessageTypes {
+impl QueueMessage for RelayMessage {
     type Event = AnyLightClientIdentified<AnyEvent>;
     type Data = AnyLightClientIdentified<AnyData>;
     type Fetch = AnyLightClientIdentified<AnyFetch>;
@@ -73,12 +73,12 @@ impl QueueMessageTypes for RelayMessageTypes {
     type Store = Chains;
 }
 
-impl TryFrom<QueueMsg<RelayMessageTypes>> for AnyLightClientIdentified<AnyData> {
-    type Error = QueueMsg<RelayMessageTypes>;
+impl TryFrom<Op<RelayMessage>> for AnyLightClientIdentified<AnyData> {
+    type Error = Op<RelayMessage>;
 
-    fn try_from(value: QueueMsg<RelayMessageTypes>) -> Result<Self, Self::Error> {
+    fn try_from(value: Op<RelayMessage>) -> Result<Self, Self::Error> {
         match value {
-            QueueMsg::Data(data) => Ok(data),
+            Op::Data(data) => Ok(data),
             _ => Err(value),
         }
     }
@@ -406,23 +406,17 @@ pub fn id<Hc: Chain, Tr, T>(chain_id: ChainIdOf<Hc>, t: T) -> Identified<Hc, Tr,
 }
 
 pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
-    fn do_aggregate(
-        _: Self,
-        _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes>;
+    fn do_aggregate(_: Self, _: VecDeque<AnyLightClientIdentified<AnyData>>) -> Op<RelayMessage>;
 }
 
 impl<Hc: Chain, Tr> DoAggregate for Identified<Hc, Tr, Never> {
-    fn do_aggregate(
-        s: Self,
-        _: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    fn do_aggregate(s: Self, _: VecDeque<AnyLightClientIdentified<AnyData>>) -> Op<RelayMessage> {
         match s.t {}
     }
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
+    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> Op<RelayMessage>;
 
     // SEE: <https://github.com/unionlabs/union/issues/1813>
     fn query_unfinalized_trusted_client_state(
@@ -432,14 +426,11 @@ pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
 }
 
 pub trait DoFetchProof<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes>;
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> Op<RelayMessage>;
 }
 
 pub trait DoFetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn fetch_update_headers(
-        hc: &Hc,
-        update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayMessageTypes>;
+    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> Op<RelayMessage>;
 }
 
 pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
@@ -611,13 +602,13 @@ mod sanity_checks {
     use unionlabs::ethereum::config::Mainnet;
 
     use crate::{
-        aggregate::AggregateMsgConnectionOpenTry, chain_impls::union::UnionFetch, fetch::DoFetch,
-        DoFetchState, RelayMessageTypes,
+        aggregate::AggregateMsgConnectionOpenTry, chain::union::UnionFetch, fetch::DoFetch,
+        DoFetchState, RelayMessage,
     };
 
     assert_impl_all!(Wasm<Cosmos>: DoFetchState<Wasm<Cosmos>, Union>);
 
-    assert_impl_all!(identified!(AggregateMsgConnectionOpenTry<Wasm<Cosmos>, Union>): UseAggregate<RelayMessageTypes>);
+    assert_impl_all!(identified!(AggregateMsgConnectionOpenTry<Wasm<Cosmos>, Union>): UseAggregate<RelayMessage>);
 
     assert_impl_all!(UnionFetch<Wasm<Union>, Ethereum<Mainnet>>: DoFetch<Wasm<Union>>);
 }
@@ -628,13 +619,13 @@ mod tests {
     use unionlabs::{hash::H256, ibc::core::client::height::Height};
 
     use super::*;
-    use crate::{chain_impls::scroll::ScrollData, data::Data};
+    use crate::{chain::scroll::ScrollData, data::Data};
 
     #[test]
     fn serde() {
         let expected_json =
             serde_json::to_string_pretty(&Data::<Scroll, Wasm<Union>>::specific(ScrollData::CommitBatchTransactionInput(
-                chain_impls::scroll::CommitBatchTransactionInput {
+                chain::scroll::CommitBatchTransactionInput {
                     height: Height {
                         revision_number: 0,
                         revision_height: 4846816,

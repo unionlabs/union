@@ -3,7 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, queue_msg, HandleFetch, QueueError, QueueMessageTypes, QueueMsg};
+use queue_msg::{data, fetch, queue_msg, HandleFetch, Op, QueueError, QueueMessage};
 use tracing::instrument;
 use unionlabs::{
     ics24,
@@ -16,7 +16,7 @@ use crate::{
     any_enum, any_lc,
     data::{AnyData, Data, LatestHeight, SelfClientState, SelfConsensusState},
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, RelayMessageTypes,
+    DoFetchUpdateHeaders, RelayMessage,
 };
 
 #[apply(any_enum)]
@@ -40,12 +40,12 @@ pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
     LightClientSpecific(LightClientSpecificFetch<Hc, Tr>),
 }
 
-impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
+impl HandleFetch<RelayMessage> for AnyLightClientIdentified<AnyFetch> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
+        store: &<RelayMessage as QueueMessage>::Store,
+    ) -> Result<Op<RelayMessage>, QueueError> {
         let fetch = self;
 
         any_lc! {
@@ -60,11 +60,11 @@ impl HandleFetch<RelayMessageTypes> for AnyLightClientIdentified<AnyFetch> {
 }
 
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayMessageTypes>>;
+    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = Op<RelayMessage>>;
 }
 
 impl<Hc: ChainExt> DoFetch<Hc> for Never {
-    async fn do_fetch(_: &Hc, this: Self) -> QueueMsg<RelayMessageTypes> {
+    async fn do_fetch(_: &Hc, this: Self) -> Op<RelayMessage> {
         match this {}
     }
 }
@@ -122,7 +122,7 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
-    pub async fn handle(self, c: Hc) -> QueueMsg<RelayMessageTypes> {
+    pub async fn handle(self, c: Hc) -> Op<RelayMessage> {
         match self {
             Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
             Fetch::State(msg) => match msg.at {
@@ -206,7 +206,7 @@ mod tests {
     use chain_utils::{cosmos::Cosmos, union::Union, wasm::Wasm};
 
     use super::*;
-    use crate::chain_impls::union::UnionFetch;
+    use crate::chain::union::UnionFetch;
 
     #[test]
     fn sanity_check() {

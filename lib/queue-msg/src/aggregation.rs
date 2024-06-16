@@ -3,12 +3,12 @@ use std::{collections::VecDeque, fmt::Debug, ops::ControlFlow};
 use frunk::{HCons, HList, HNil};
 use tracing::error;
 
-use crate::{QueueMessageTypes, QueueMsg};
+use crate::{Op, QueueMessage};
 
-pub fn do_aggregate<T: QueueMessageTypes, A: UseAggregate<T>>(
+pub fn do_aggregate<T: QueueMessage, A: UseAggregate<T>>(
     event: A,
     data: VecDeque<T::Data>,
-) -> QueueMsg<T> {
+) -> Op<T> {
     let data = match HListTryFromIterator::try_from_iter(data) {
         Ok(ok) => ok,
         Err(_) => {
@@ -80,7 +80,7 @@ impl<U> HListTryFromIterator<U> for HNil {
     }
 }
 
-pub trait UseAggregate<T: QueueMessageTypes, R = QueueMsg<T>> {
+pub trait UseAggregate<T: QueueMessage, R = Op<T>> {
     type AggregatedData: HListTryFromIterator<T::Data>;
 
     fn aggregate(this: Self, data: Self::AggregatedData) -> R;
@@ -88,12 +88,12 @@ pub trait UseAggregate<T: QueueMessageTypes, R = QueueMsg<T>> {
 
 pub struct TupleAggregator;
 
-pub trait IsAggregateData<T: QueueMessageTypes> = TryFrom<<T as QueueMessageTypes>::Data, Error = <T as QueueMessageTypes>::Data>
-    + Into<<T as QueueMessageTypes>::Data>;
+pub trait IsAggregateData<T: QueueMessage> = TryFrom<<T as QueueMessage>::Data, Error = <T as QueueMessage>::Data>
+    + Into<<T as QueueMessage>::Data>;
 
 impl<T> UseAggregate<T, ()> for TupleAggregator
 where
-    T: QueueMessageTypes,
+    T: QueueMessage,
 {
     type AggregatedData = HList![];
 
@@ -102,7 +102,7 @@ where
 
 impl<T, U, Tail> UseAggregate<T, (U, Tail)> for TupleAggregator
 where
-    T: QueueMessageTypes,
+    T: QueueMessage,
     U: IsAggregateData<T>,
     TupleAggregator: UseAggregate<T, Tail>,
     HList![U, ...<TupleAggregator as UseAggregate<T, Tail>>::AggregatedData]:

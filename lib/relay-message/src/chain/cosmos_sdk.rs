@@ -2,7 +2,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
 use prost::Message;
-use queue_msg::{data, fetch, seq, wait, QueueMsg};
+use queue_msg::{data, fetch, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, Encode, Proto},
@@ -15,7 +15,7 @@ use unionlabs::{
 };
 
 use crate::{
-    chain_impls::cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
+    chain::cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
     data::{AnyData, Data, IbcProof, IbcState},
     effect::{
         BatchMsg, Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
@@ -28,7 +28,7 @@ use crate::{
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState, Identified, PathOf,
-    RelayMessageTypes,
+    RelayMessage,
 };
 
 pub trait CosmosSdkChainSealed: CosmosSdkChain + ChainExt {}
@@ -283,7 +283,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> Op<RelayMessage> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -310,7 +310,7 @@ where
     ) -> Hc::StoredClientState<Tr> {
         let height = hc.query_latest_height().await.unwrap();
 
-        let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
+        let Op::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
             hc,
             ClientStatePath { client_id }.into(),
             height,
@@ -335,7 +335,7 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayMessageTypes> {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> Op<RelayMessage> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -361,7 +361,7 @@ pub async fn fetch_abci_query<Hc, Tr>(
     path: Path<Hc::ClientId, Tr::Height>,
     height: HeightOf<Hc>,
     ty: AbciQueryType,
-) -> QueueMsg<RelayMessageTypes>
+) -> Op<RelayMessage>
 where
     Hc: CosmosSdkChain
         + ChainExt<
@@ -658,20 +658,20 @@ pub mod fetch {
 
     use chain_utils::cosmos_sdk::CosmosSdkChainRpcs;
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-    use queue_msg::{data, queue_msg, QueueMsg};
+    use queue_msg::{data, queue_msg, Op};
     use serde::{Deserialize, Serialize};
     use tendermint_rpc::Client;
     use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
     use crate::{
-        chain_impls::cosmos_sdk::{
+        chain::cosmos_sdk::{
             data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
             tendermint_helpers::{
                 tendermint_commit_to_signed_header, tendermint_validator_info_to_validator,
             },
         },
         data::{AnyData, Data},
-        id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayMessageTypes,
+        id, identified, AnyLightClientIdentified, ChainExt, PathOf, RelayMessage,
     };
 
     #[queue_msg]
@@ -713,10 +713,7 @@ pub mod fetch {
         pub height: Hc::Height,
     }
 
-    pub async fn fetch_trusted_commit<Hc, Tr>(
-        hc: &Hc,
-        height: Hc::Height,
-    ) -> QueueMsg<RelayMessageTypes>
+    pub async fn fetch_trusted_commit<Hc, Tr>(hc: &Hc, height: Hc::Height) -> Op<RelayMessage>
     where
         Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<TrustedCommit<Hc, Tr>>>,
         Tr: ChainExt,
@@ -743,10 +740,7 @@ pub mod fetch {
         ))
     }
 
-    pub async fn fetch_untrusted_commit<Hc, Tr>(
-        hc: &Hc,
-        height: Hc::Height,
-    ) -> QueueMsg<RelayMessageTypes>
+    pub async fn fetch_untrusted_commit<Hc, Tr>(hc: &Hc, height: Hc::Height) -> Op<RelayMessage>
     where
         Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<UntrustedCommit<Hc, Tr>>>,
         Tr: ChainExt,
@@ -773,10 +767,7 @@ pub mod fetch {
         ))
     }
 
-    pub async fn fetch_trusted_validators<Hc, Tr>(
-        hc: &Hc,
-        height: Hc::Height,
-    ) -> QueueMsg<RelayMessageTypes>
+    pub async fn fetch_trusted_validators<Hc, Tr>(hc: &Hc, height: Hc::Height) -> Op<RelayMessage>
     where
         Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<TrustedValidators<Hc, Tr>>>,
         Tr: ChainExt,
@@ -805,10 +796,7 @@ pub mod fetch {
         ))
     }
 
-    pub async fn fetch_untrusted_validators<Hc, Tr>(
-        hc: &Hc,
-        height: Hc::Height,
-    ) -> QueueMsg<RelayMessageTypes>
+    pub async fn fetch_untrusted_validators<Hc, Tr>(hc: &Hc, height: Hc::Height) -> Op<RelayMessage>
     where
         Hc: CosmosSdkChainRpcs + ChainExt<Data<Tr>: From<UntrustedValidators<Hc, Tr>>>,
         Tr: ChainExt,
@@ -1059,7 +1047,7 @@ pub mod wasm {
         union::Union,
         wasm::Wasm,
     };
-    use queue_msg::QueueMsg;
+    use queue_msg::Op;
     use serde::{Deserialize, Serialize};
     use unionlabs::{
         encoding::{Encode, Proto},
@@ -1071,7 +1059,7 @@ pub mod wasm {
     };
 
     use crate::{
-        chain_impls::{
+        chain::{
             cosmos::{CosmosAggregateMsg, CosmosDataMsg, CosmosFetch},
             cosmos_sdk::{
                 data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
@@ -1081,7 +1069,7 @@ pub mod wasm {
         },
         effect::Effect,
         fetch::FetchUpdateHeaders,
-        ChainExt, DoFetchUpdateHeaders, DoMsg, RelayMessageTypes,
+        ChainExt, DoFetchUpdateHeaders, DoMsg, RelayMessage,
     };
 
     impl ChainExt for Wasm<Union> {
@@ -1150,7 +1138,7 @@ pub mod wasm {
         fn fetch_update_headers(
             hc: &Self,
             update_info: FetchUpdateHeaders<Self, Tr>,
-        ) -> QueueMsg<RelayMessageTypes> {
+        ) -> Op<RelayMessage> {
             Hc::fetch_update_headers(
                 hc,
                 FetchUpdateHeaders {

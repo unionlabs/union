@@ -4,7 +4,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, fetch, queue_msg, wait, HandleFetch, QueueError, QueueMessageTypes, QueueMsg,
+    aggregate, conc, fetch, queue_msg, wait, HandleFetch, Op, QueueError, QueueMessage,
 };
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::IsHeight;
@@ -13,7 +13,7 @@ use crate::{
     aggregate::{Aggregate, AggregateFetchBlockRange, AnyAggregate},
     any_chain, any_enum,
     wait::{AnyWait, Wait, WaitForHeight},
-    AnyChainIdentified, BlockMessageTypes, ChainExt, Identified,
+    AnyChainIdentified, BlockMessage, ChainExt, Identified,
 };
 
 #[apply(any_enum)]
@@ -27,12 +27,12 @@ pub enum Fetch<C: ChainExt> {
     ChainSpecific(ChainSpecificFetch<C>),
 }
 
-impl HandleFetch<BlockMessageTypes> for AnyChainIdentified<AnyFetch> {
+impl HandleFetch<BlockMessage> for AnyChainIdentified<AnyFetch> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
-        store: &<BlockMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
+        store: &<BlockMessage as QueueMessage>::Store,
+    ) -> Result<Op<BlockMessage>, QueueError> {
         let fetch = self;
 
         any_chain! {
@@ -55,7 +55,7 @@ where
     AnyChainIdentified<AnyWait>: From<Identified<C, Wait<C>>>,
     AnyChainIdentified<AnyAggregate>: From<Identified<C, Aggregate<C>>>,
 {
-    pub async fn handle(self, c: C) -> QueueMsg<BlockMessageTypes> {
+    pub async fn handle(self, c: C) -> Op<BlockMessage> {
         match self {
             Fetch::FetchBlock(FetchBlock { height }) => aggregate(
                 [wait(Identified::<C, _>::new(
@@ -87,11 +87,11 @@ where
 }
 
 pub trait DoFetch<C: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &C, _: Self) -> impl Future<Output = QueueMsg<BlockMessageTypes>>;
+    fn do_fetch(c: &C, _: Self) -> impl Future<Output = Op<BlockMessage>>;
 }
 
 pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {
-    fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockMessageTypes>;
+    fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> Op<BlockMessage>;
 }
 
 #[queue_msg]

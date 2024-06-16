@@ -35,7 +35,7 @@ use queue_msg::{
     aggregation::TupleAggregator,
     conc, defer_relative, effect, event, fetch,
     optimize::{passes::NormalizeFinal, Pure},
-    repeat, run_to_completion, seq, InMemoryQueue, QueueMsg,
+    repeat, run_to_completion, seq, InMemoryQueue, Op,
 };
 use relay_message::{
     aggregate::{
@@ -43,7 +43,7 @@ use relay_message::{
         AggregateWaitForNextConnectionSequence,
     },
     data::IbcState,
-    RelayMessageTypes,
+    RelayMessage,
 };
 use serde::Serialize;
 use sqlx::{query_as, PgPool};
@@ -61,7 +61,7 @@ use unionlabs::{
     traits::{Chain, ClientIdOf},
     QueryHeight,
 };
-use voyager_message::{FromQueueMsg, VoyagerFetch, VoyagerMessageTypes};
+use voyager_message::{FromOp, VoyagerFetch, VoyagerMessage};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -349,7 +349,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 _ => panic!("no database set in config"),
             };
 
-            type Item = sqlx::types::Json<QueueMsg<VoyagerMessageTypes>>;
+            type Item = sqlx::types::Json<Op<VoyagerMessage>>;
 
             match cli_msg {
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
@@ -600,7 +600,7 @@ async fn mk_handshake<A, B>(
     b: &B,
     ty: HandshakeType,
     chains: Arc<Chains>,
-) -> QueueMsg<VoyagerMessageTypes>
+) -> Op<VoyagerMessage>
 where
     A: relay_message::ChainExt<ClientId: TryFrom<ClientId, Error: Debug>> + LightClientType<B>,
     B: relay_message::ChainExt<ClientId: TryFrom<ClientId, Error: Debug>> + LightClientType<A>,
@@ -649,7 +649,7 @@ where
     let get_next_client_sequences = || async {
         run_to_completion::<
             TupleAggregator,
-            RelayMessageTypes,
+            RelayMessage,
             (
                 relay_message::Identified<A, B, IbcState<NextClientSequencePath, A, B>>,
                 (
@@ -657,7 +657,7 @@ where
                     (),
                 ),
             ),
-            InMemoryQueue<RelayMessageTypes>,
+            InMemoryQueue<RelayMessage>,
             _,
             _,
         >(
@@ -689,7 +689,7 @@ where
     let get_next_connection_sequences = || async {
         run_to_completion::<
             TupleAggregator,
-            RelayMessageTypes,
+            RelayMessage,
             (
                 relay_message::Identified<A, B, IbcState<NextConnectionSequencePath, A, B>>,
                 (
@@ -697,7 +697,7 @@ where
                     (),
                 ),
             ),
-            InMemoryQueue<RelayMessageTypes>,
+            InMemoryQueue<RelayMessage>,
             _,
             _,
         >(
@@ -726,152 +726,151 @@ where
         .await
     };
 
-    let mk_create_client_msgs =
-        |client_a_config: serde_json::Value,
-         client_b_config: serde_json::Value,
-         next_client_sequence_a,
-         next_client_sequence_b,
-         msgs: QueueMsg<RelayMessageTypes>| {
-            let client_config_a =
-                serde_json::from_value::<<A as relay_message::ChainExt>::Config>(client_a_config)
-                    .unwrap();
-            let client_config_b =
-                serde_json::from_value::<<B as relay_message::ChainExt>::Config>(client_b_config)
-                    .unwrap();
+    let mk_create_client_msgs = |client_a_config: serde_json::Value,
+                                 client_b_config: serde_json::Value,
+                                 next_client_sequence_a,
+                                 next_client_sequence_b,
+                                 msgs: Op<RelayMessage>| {
+        let client_config_a =
+            serde_json::from_value::<<A as relay_message::ChainExt>::Config>(client_a_config)
+                .unwrap();
+        let client_config_b =
+            serde_json::from_value::<<B as relay_message::ChainExt>::Config>(client_b_config)
+                .unwrap();
 
-            seq([
-                // create both clients, in parallel
-                conc::<RelayMessageTypes>([
-                    aggregate(
-                        [
-                            fetch(relay_message::id::<B, A, _>(
-                                b.chain_id(),
-                                relay_message::fetch::FetchSelfClientState {
-                                    at: QueryHeight::Latest,
-                                    __marker: PhantomData,
-                                },
-                            )),
-                            fetch(relay_message::id::<B, A, _>(
-                                b.chain_id(),
-                                relay_message::fetch::FetchSelfConsensusState {
-                                    at: QueryHeight::Latest,
-                                    __marker: PhantomData,
-                                },
-                            )),
-                        ],
-                        [],
-                        relay_message::id::<A, B, _>(
-                            a.chain_id(),
-                            relay_message::aggregate::AggregateMsgCreateClient {
-                                config: client_config_a,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ),
-                    aggregate(
-                        [
-                            fetch(relay_message::id::<A, B, _>(
-                                a.chain_id(),
-                                relay_message::fetch::FetchSelfClientState {
-                                    at: QueryHeight::Latest,
-                                    __marker: PhantomData,
-                                },
-                            )),
-                            fetch(relay_message::id::<A, B, _>(
-                                a.chain_id(),
-                                relay_message::fetch::FetchSelfConsensusState {
-                                    at: QueryHeight::Latest,
-                                    __marker: PhantomData,
-                                },
-                            )),
-                        ],
-                        [],
-                        relay_message::id::<B, A, _>(
-                            b.chain_id(),
-                            relay_message::aggregate::AggregateMsgCreateClient {
-                                config: client_config_b,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ),
-                ]),
-                // wait for the next client sequence to increase
-                conc([
-                    aggregate(
-                        [fetch(relay_message::id::<A, B, _>(
-                            a.chain_id(),
-                            relay_message::fetch::FetchState {
-                                at: QueryHeight::Latest,
-                                path: NextClientSequencePath {}.into(),
-                            },
-                        ))],
-                        [],
-                        relay_message::id::<A, B, _>(
-                            a.chain_id(),
-                            AggregateWaitForNextClientSequence {
-                                // increment because we wait for the current next sequence to increase
-                                sequence: next_client_sequence_a + 1,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ),
-                    aggregate(
-                        [fetch(relay_message::id::<B, A, _>(
-                            b.chain_id(),
-                            relay_message::fetch::FetchState {
-                                at: QueryHeight::Latest,
-                                path: NextClientSequencePath {}.into(),
-                            },
-                        ))],
-                        [],
-                        relay_message::id::<B, A, _>(
-                            b.chain_id(),
-                            AggregateWaitForNextClientSequence {
-                                // increment because we wait for the current next sequence to increase
-                                sequence: next_client_sequence_b + 1,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ),
-                ]),
-                // queue update messages, along with any additional messages to be handled after the clients are created (i.e. connection and channel handshakes)
-                conc(
+        seq([
+            // create both clients, in parallel
+            conc::<RelayMessage>([
+                aggregate(
                     [
-                        repeat(
-                            None,
-                            seq([
-                                event(relay_message::id::<A, B, _>(
-                                    a.chain_id(),
-                                    relay_message::event::Command::UpdateClient {
-                                        client_id: mk_client_id::<A, B>(next_client_sequence_a),
-                                        __marker: PhantomData,
-                                    },
-                                )),
-                                defer_relative(10),
-                            ]),
-                        ),
-                        repeat(
-                            None,
-                            seq([
-                                event(relay_message::id::<B, A, _>(
-                                    b.chain_id(),
-                                    relay_message::event::Command::UpdateClient {
-                                        client_id: mk_client_id::<B, A>(next_client_sequence_b),
-                                        __marker: PhantomData,
-                                    },
-                                )),
-                                defer_relative(10),
-                            ]),
-                        ),
-                    ]
-                    .into_iter()
-                    .chain([msgs]),
+                        fetch(relay_message::id::<B, A, _>(
+                            b.chain_id(),
+                            relay_message::fetch::FetchSelfClientState {
+                                at: QueryHeight::Latest,
+                                __marker: PhantomData,
+                            },
+                        )),
+                        fetch(relay_message::id::<B, A, _>(
+                            b.chain_id(),
+                            relay_message::fetch::FetchSelfConsensusState {
+                                at: QueryHeight::Latest,
+                                __marker: PhantomData,
+                            },
+                        )),
+                    ],
+                    [],
+                    relay_message::id::<A, B, _>(
+                        a.chain_id(),
+                        relay_message::aggregate::AggregateMsgCreateClient {
+                            config: client_config_a,
+                            __marker: PhantomData,
+                        },
+                    ),
                 ),
-            ])
-        };
+                aggregate(
+                    [
+                        fetch(relay_message::id::<A, B, _>(
+                            a.chain_id(),
+                            relay_message::fetch::FetchSelfClientState {
+                                at: QueryHeight::Latest,
+                                __marker: PhantomData,
+                            },
+                        )),
+                        fetch(relay_message::id::<A, B, _>(
+                            a.chain_id(),
+                            relay_message::fetch::FetchSelfConsensusState {
+                                at: QueryHeight::Latest,
+                                __marker: PhantomData,
+                            },
+                        )),
+                    ],
+                    [],
+                    relay_message::id::<B, A, _>(
+                        b.chain_id(),
+                        relay_message::aggregate::AggregateMsgCreateClient {
+                            config: client_config_b,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
+            ]),
+            // wait for the next client sequence to increase
+            conc([
+                aggregate(
+                    [fetch(relay_message::id::<A, B, _>(
+                        a.chain_id(),
+                        relay_message::fetch::FetchState {
+                            at: QueryHeight::Latest,
+                            path: NextClientSequencePath {}.into(),
+                        },
+                    ))],
+                    [],
+                    relay_message::id::<A, B, _>(
+                        a.chain_id(),
+                        AggregateWaitForNextClientSequence {
+                            // increment because we wait for the current next sequence to increase
+                            sequence: next_client_sequence_a + 1,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
+                aggregate(
+                    [fetch(relay_message::id::<B, A, _>(
+                        b.chain_id(),
+                        relay_message::fetch::FetchState {
+                            at: QueryHeight::Latest,
+                            path: NextClientSequencePath {}.into(),
+                        },
+                    ))],
+                    [],
+                    relay_message::id::<B, A, _>(
+                        b.chain_id(),
+                        AggregateWaitForNextClientSequence {
+                            // increment because we wait for the current next sequence to increase
+                            sequence: next_client_sequence_b + 1,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ),
+            ]),
+            // queue update messages, along with any additional messages to be handled after the clients are created (i.e. connection and channel handshakes)
+            conc(
+                [
+                    repeat(
+                        None,
+                        seq([
+                            event(relay_message::id::<A, B, _>(
+                                a.chain_id(),
+                                relay_message::event::Command::UpdateClient {
+                                    client_id: mk_client_id::<A, B>(next_client_sequence_a),
+                                    __marker: PhantomData,
+                                },
+                            )),
+                            defer_relative(10),
+                        ]),
+                    ),
+                    repeat(
+                        None,
+                        seq([
+                            event(relay_message::id::<B, A, _>(
+                                b.chain_id(),
+                                relay_message::event::Command::UpdateClient {
+                                    client_id: mk_client_id::<B, A>(next_client_sequence_b),
+                                    __marker: PhantomData,
+                                },
+                            )),
+                            defer_relative(10),
+                        ]),
+                    ),
+                ]
+                .into_iter()
+                .chain([msgs]),
+            ),
+        ])
+    };
 
     let mk_connection_msgs = |client_a_id, client_b_id, connection_ordering| {
-        effect::<RelayMessageTypes>(relay_message::id::<A, B, _>(
+        effect::<RelayMessage>(relay_message::id::<A, B, _>(
             a.chain_id(),
             relay_message::effect::MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: client_a_id,
@@ -953,7 +952,7 @@ where
     };
 
     let mk_channel_msgs = |connection_a_id, port_a, port_b, channel_ordering, channel_version| {
-        effect::<RelayMessageTypes>(relay_message::id::<A, B, _>(
+        effect::<RelayMessage>(relay_message::id::<A, B, _>(
             a.chain_id(),
             relay_message::effect::MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -986,7 +985,7 @@ where
                 client_b_config,
                 sequence_a.t.state,
                 sequence_b.t.state,
-                QueueMsg::Noop,
+                Op::Noop,
             )
         }
         HandshakeType::ClientConnection {
@@ -1109,10 +1108,10 @@ where
         ),
     };
 
-    VoyagerMessageTypes::from_queue_msg(msgs)
+    VoyagerMessage::from_op(msgs)
 }
 
-async fn mk_init_fetch<A>(a: &A) -> QueueMsg<VoyagerMessageTypes>
+async fn mk_init_fetch<A>(a: &A) -> Op<VoyagerMessage>
 where
     A: block_message::ChainExt,
     block_message::AnyChainIdentified<block_message::fetch::AnyFetch>:

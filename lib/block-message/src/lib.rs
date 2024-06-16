@@ -7,7 +7,7 @@ use chain_utils::{
     union::Union, Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use queue_msg::{QueueMessageTypes, QueueMsg, QueueMsgTypesTraits};
+use queue_msg::{Op, OpT, QueueMessage};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -23,17 +23,17 @@ pub mod data;
 pub mod fetch;
 pub mod wait;
 
-pub mod chain_impls;
+pub mod chain;
 
 pub trait ChainExt: Chain {
-    type Data: QueueMsgTypesTraits;
-    type Fetch: QueueMsgTypesTraits;
-    type Aggregate: QueueMsgTypesTraits;
+    type Data: OpT;
+    type Fetch: OpT;
+    type Aggregate: OpT;
 }
 
-pub struct BlockMessageTypes;
+pub enum BlockMessage {}
 
-impl QueueMessageTypes for BlockMessageTypes {
+impl QueueMessage for BlockMessage {
     type Event = Never;
     type Data = AnyChainIdentified<AnyData>;
     type Fetch = AnyChainIdentified<AnyFetch>;
@@ -217,10 +217,7 @@ pub trait IsAggregateData = TryFrom<AnyChainIdentified<AnyData>, Error = AnyChai
     + Into<AnyChainIdentified<AnyData>>;
 
 pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
-    fn do_aggregate(
-        _: Self,
-        _: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes>;
+    fn do_aggregate(_: Self, _: VecDeque<AnyChainIdentified<AnyData>>) -> Op<BlockMessage>;
 }
 
 macro_rules! any_chain {

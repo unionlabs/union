@@ -4,7 +4,7 @@ use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
-    fetch, queue_msg, HandleAggregate, QueueError, QueueMessageTypes, QueueMsg,
+    fetch, queue_msg, HandleAggregate, Op, QueueError, QueueMessage,
 };
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::IsHeight;
@@ -13,7 +13,7 @@ use crate::{
     any_chain, any_enum,
     data::{AnyData, LatestHeight},
     fetch::{AnyFetch, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 #[apply(any_enum)]
@@ -25,12 +25,12 @@ pub enum Aggregate<C: ChainExt> {
     ChainSpecific(ChainSpecificAggregate<C>),
 }
 
-impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {
+impl HandleAggregate<BlockMessage> for AnyChainIdentified<AnyAggregate> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        data: VecDeque<<BlockMessageTypes as QueueMessageTypes>::Data>,
-    ) -> Result<QueueMsg<BlockMessageTypes>, QueueError> {
+        data: VecDeque<<BlockMessage as QueueMessage>::Data>,
+    ) -> Result<Op<BlockMessage>, QueueError> {
         let aggregate = self;
 
         any_chain! {
@@ -40,7 +40,7 @@ impl HandleAggregate<BlockMessageTypes> for AnyChainIdentified<AnyAggregate> {
 }
 
 impl<C: ChainExt> Identified<C, Aggregate<C>> {
-    pub fn handle(self, data: VecDeque<AnyChainIdentified<AnyData>>) -> QueueMsg<BlockMessageTypes>
+    pub fn handle(self, data: VecDeque<AnyChainIdentified<AnyData>>) -> Op<BlockMessage>
     where
         Identified<C, C::Aggregate>: DoAggregate,
 
@@ -70,7 +70,7 @@ pub struct AggregateFetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
 }
 
-impl<C: ChainExt> UseAggregate<BlockMessageTypes> for Identified<C, AggregateFetchBlockRange<C>>
+impl<C: ChainExt> UseAggregate<BlockMessage> for Identified<C, AggregateFetchBlockRange<C>>
 where
     Identified<C, LatestHeight<C>>: IsAggregateData,
 
@@ -87,7 +87,7 @@ where
             chain_id: latest_height_chain_id,
             t: LatestHeight(to_height),
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> Op<BlockMessage> {
         assert!(to_height.revision_height() > from_height.revision_number());
         assert_eq!(this_chain_id, latest_height_chain_id);
 

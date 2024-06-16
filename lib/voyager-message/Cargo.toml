@@ -6,14 +6,16 @@ repository   = { workspace = true }
 version      = "0.1.0"
 
 [dependencies]
-arbitrary        = { workspace = true, optional = true, features = ["derive"] }
-block-message    = { workspace = true }
-chain-utils      = { workspace = true }
-macros.workspace = true
-queue-msg        = { workspace = true }
-relay-message    = { workspace = true }
-serde            = { workspace = true, features = ["derive"] }
-unionlabs        = { workspace = true }
+arbitrary         = { workspace = true, optional = true, features = ["derive"] }
+block-message     = { workspace = true }
+chain-utils       = { workspace = true }
+futures.workspace = true
+macros.workspace  = true
+queue-msg         = { workspace = true }
+relay-message     = { workspace = true }
+serde             = { workspace = true, features = ["derive"] }
+tracing           = { workspace = true }
+unionlabs         = { workspace = true }
 
 [lints]
 workspace = true

@@ -14,7 +14,7 @@ use queue_msg::{
 use relay_message::{
     data::{IbcProof, IbcState},
     use_aggregate::IsAggregateData,
-    ChainExt, DoFetchProof, DoFetchState, Identified, RelayMessageTypes,
+    ChainExt, DoFetchProof, DoFetchState, Identified, RelayMessage,
 };
 use tracing::info;
 use unionlabs::{
@@ -622,7 +622,7 @@ struct FetchStateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
 }
 
 impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>>
-    UseAggregate<RelayMessageTypes, StateProof<Hc, Tr, P>> for FetchStateProof<Hc, Tr, P>
+    UseAggregate<RelayMessage, StateProof<Hc, Tr, P>> for FetchStateProof<Hc, Tr, P>
 where
     Identified<Hc, Tr, IbcState<P, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<P, Hc, Tr>>: IsAggregateData,

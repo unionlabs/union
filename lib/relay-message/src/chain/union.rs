@@ -14,7 +14,7 @@ use protos::union::galois::api::v3::union_prover_api_client;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, defer_relative, effect, fetch, queue_msg, wait, QueueMsg,
+    data, defer_relative, effect, fetch, queue_msg, wait, Op,
 };
 use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
@@ -45,7 +45,7 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::cosmos_sdk::{
+    chain::cosmos_sdk::{
         data::{TrustedValidators, UntrustedCommit, UntrustedValidators},
         do_msg,
         fetch::{
@@ -61,7 +61,7 @@ use crate::{
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchUpdateHeaders, DoMsg, Identified,
-    RelayMessageTypes,
+    RelayMessage,
 };
 
 impl ChainExt for Union {
@@ -140,7 +140,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessageTypes> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> Op<RelayMessage> {
         match msg {
             Self::FetchUntrustedCommit(FetchUntrustedCommit {
                 height,
@@ -168,7 +168,7 @@ where
     skip_all,
     fields(height = %request.vote.height)
 )]
-async fn fetch_prove_request<Hc, Tr>(hc: &Hc, request: ProveRequest) -> QueueMsg<RelayMessageTypes>
+async fn fetch_prove_request<Hc, Tr>(hc: &Hc, request: ProveRequest) -> Op<RelayMessage>
 where
     Hc: Wraps<Union>
         + CosmosSdkChain
@@ -238,10 +238,7 @@ where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    fn fetch_update_headers(
-        hc: &Hc,
-        update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> Op<RelayMessage> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -302,8 +299,8 @@ where
 
     Identified<Hc, Tr, ProveResponse<Hc, Tr>>: IsAggregateData,
 
-    identified!(AggregateProveRequest<Hc, Tr>): UseAggregate<RelayMessageTypes>,
-    identified!(AggregateHeader<Hc, Tr>): UseAggregate<RelayMessageTypes>,
+    identified!(AggregateProveRequest<Hc, Tr>): UseAggregate<RelayMessage>,
+    identified!(AggregateHeader<Hc, Tr>): UseAggregate<RelayMessage>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -314,7 +311,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> Op<RelayMessage> {
         match data {
             UnionAggregateMsg::AggregateProveRequest(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)
@@ -358,7 +355,7 @@ pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessage> for Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>
 where
     Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>,
     Tr: ChainExt,
@@ -411,7 +408,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> Op<RelayMessage> {
         assert_eq!(untrusted_commit_chain_id, untrusted_validators_chain_id);
         assert_eq!(chain_id, trusted_validators_chain_id);
         assert_eq!(chain_id, untrusted_validators_chain_id);
@@ -555,7 +552,7 @@ where
     }
 }
 
-impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessage> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Union as Chain>::Header>,
     Tr: ChainExt,
@@ -584,7 +581,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> Op<RelayMessage> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         // TODO: maybe introduce a new commit for union signed header as we don't need the signatures but the ZKP only

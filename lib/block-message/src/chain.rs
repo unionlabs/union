@@ -25,26 +25,26 @@ macro_rules! try_from_block_poll_msg {
                         ),
                     ) => {
                         $d (
-                            impl <$($generics)*> TryFrom<QueueMsg<crate::BlockMessageTypes>> for Identified<$d Chain, $d Ty>
+                            impl <$($generics)*> TryFrom<Op<crate::BlockMessage>> for Identified<$d Chain, $d Ty>
                             where
                                 Identified<$d Chain, Data<$d Chain>>: TryFrom<AnyChainIdentified<AnyData>, Error = AnyChainIdentified<AnyData>> + Into<AnyChainIdentified<AnyData>>,
                                 $($($where)+)?
                             {
-                                type Error = QueueMsg<crate::BlockMessageTypes>;
-                                fn try_from(value: QueueMsg<crate::BlockMessageTypes>) -> Result<Identified<$d Chain, $d Ty>, QueueMsg<BlockMessageTypes>> {
+                                type Error = Op<crate::BlockMessage>;
+                                fn try_from(value: Op<crate::BlockMessage>) -> Result<Identified<$d Chain, $d Ty>, Op<BlockMessage>> {
                                     match value {
-                                        QueueMsg::Data(data) => {
+                                        Op::Data(data) => {
                                             let Identified {
                                                 chain_id,
                                                 t,
-                                            } = data.try_into().map_err(QueueMsg::Data)?;
+                                            } = data.try_into().map_err(Op::Data)?;
 
                                             match t {
                                                 crate::data::Data::ChainSpecific(
                                                     crate::data::ChainSpecificData($d Enum::$d Variant(
                                                     t,
                                                 ))) => Ok(Identified::new(chain_id, t)),
-                                                _ => Err(QueueMsg::Data(Into::<AnyChainIdentified<AnyData>>::into(Identified::<$d Chain, _>::new(chain_id, t))))
+                                                _ => Err(Op::Data(Into::<AnyChainIdentified<AnyData>>::into(Identified::<$d Chain, _>::new(chain_id, t))))
                                             }
 
                                         },
