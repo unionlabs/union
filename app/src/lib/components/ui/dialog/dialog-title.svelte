@@ -9,7 +9,7 @@ export { className as class }
 </script>
 
 <DialogPrimitive.Title
-  class={cn('text-lg font-semibold leading-none tracking-tight', className)}
+  class={cn('text-xl uppercase font-bold font-supermolot', className)}
   {...$$restProps}
 >
   <slot />

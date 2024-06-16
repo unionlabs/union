@@ -351,7 +351,7 @@ let buttonText = "Transfer" satisfies
     {buttonText}
   </Button>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{truncate($recipient, 6)}</span>{/if} on <b>{$toChain?.display_name}</b>. 
+    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>. 
   </div>
 </Card.Footer>
 <ChainDialog

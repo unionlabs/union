@@ -14,7 +14,7 @@ export { className as class }
 
 <svelte:element
   this={tag}
-  class={cn('text-lg font-supermolot uppercase', className)}
+  class={cn('text-xl font-supermolot font-bold uppercase', className)}
   {...$$restProps}
 >
   <slot />

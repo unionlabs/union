@@ -10,7 +10,7 @@ import { routes } from "$lib/components/navigation/index.ts"
 <header
   class={cn(
     'p-2 md:p-3 min-w-full w-screen flex flex-row items-center md:gap-4',
-    'bg-card flex justify-between space-x-2 sm:space-x-3 border-b-[1px] border-solid border-secondary/65',
+    'bg-card flex justify-between space-x-2 sm:space-x-3 border-b border-solid',
   )}
 >
   <Button
@@ -19,9 +19,9 @@ import { routes } from "$lib/components/navigation/index.ts"
     class="p-0 mr-0 md:mr-2 no-underline decoration-transparent border-solid border-[1px] border-transparent hover:border-accent-400"
   >
     <img
-      src="/images/logo/union-logo-wide-transparent.svg"
+      src="/images/logo/union-logo-supermolot.svg"
       alt="Union Logo"
-      class="size-full max-w-26 select-none invert dark:invert-0"
+      class="size-full max-w-32 h-12 select-none invert dark:invert-0"
     />
   </Button>
   <div class="flex-1 p-0 m-0 w-full">
@@ -39,7 +39,7 @@ import { routes } from "$lib/components/navigation/index.ts"
               ? 'hidden'
               : [
                   'py-2 px-4 text-md no-underline font-supermolot font-bold decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70 uppercase',
-                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-foreground text-background !hover:bg-foreground hover:text-background',
+                  $page.route.id?.split('/')[1] === path.split('/')[1] && 'bg-foreground text-primary-foreground !hover:bg-foreground hover:text-background',
                 ],
           )}
         >
