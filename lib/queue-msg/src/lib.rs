@@ -75,6 +75,9 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
 
 #[queue_msg]
 #[debug(bound())]
+// TODO: Merge "event" and "data", and "fetch", "effect", and "wait"
+// essentially what we want is "pure custom message" and "impure custom message"
+// all other logic can be built with aggregations
 pub enum Op<T: QueueMessage> {
     /// An external event. This could be something like an IBC event, an external command, or
     /// anything else that occurs outside of the state machine. Can also be thought of as an "entry
@@ -121,9 +124,19 @@ pub enum Op<T: QueueMessage> {
     /// [B C D]
     /// ```
     ///
-    /// Note that this is similar to `Sequence`, but the new messages are queued at the *back* of
-    /// the list, allowing for uniform progress across all nested messages.
+    /// Note that this is similar to `Sequence`, expcepc that the new messages are queued at the
+    /// *back* of the list, allowing for uniform progress across all nested messages.
     Conc(VecDeque<Self>),
+    /// Race a list of messages. The head of the list is handled, and if it returns no new messages,
+    /// then the rest of the list is dropped; otherwise, the new message is pushed to the back of the
+    /// list (similar to [`Self::Conc`]).
+    ///
+    /// ```txt
+    /// [A B C]
+    /// D = handle(A)
+    /// if D.is_none() noop else race([B C D])
+    /// ```
+    Race(VecDeque<Self>),
     // REVIEW: Remove? We don't use this
     Retry {
         remaining: u8,
@@ -139,16 +152,6 @@ pub enum Op<T: QueueMessage> {
     },
     /// Handle the contained message, voiding any returned `Data` messages that it returns.
     Void(Box<Self>),
-    /// Race a list of messages. The head of the list is handled, and if it returns no new messages,
-    /// then the rest of the list is dropped; otherwise, the new message is pushed to the back of the
-    /// list (similar to [`Self::Concurrent`]).
-    ///
-    /// ```txt
-    /// [A B C]
-    /// D = handle(A)
-    /// if D.is_none() noop else race([B C D])
-    /// ```
-    Race(VecDeque<Self>),
     Noop,
 }
 
@@ -278,6 +281,7 @@ pub trait QueueMessage: Sized + 'static {
     type Fetch: HandleFetch<Self> + OpT;
     type Effect: HandleEffect<Self> + OpT;
     type Wait: HandleWait<Self> + OpT;
+
     type Aggregate: HandleAggregate<Self> + OpT;
 
     type Store: Debug + Send + Sync;

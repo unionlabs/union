@@ -21,7 +21,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Wasm<C: Chain>(pub C);
 
-pub trait Wraps<T: CosmosSdkChain + Chain>: CosmosSdkChain + Chain {
+pub trait Wraps<T: Chain>: Chain {
     fn inner(&self) -> &T;
 }
 
@@ -49,7 +49,7 @@ impl<T: CosmosSdkChainRpcs + CosmosSdkChain> CosmosSdkChainRpcs for Wasm<T> {
     }
 }
 
-impl<T: CosmosSdkChain + Chain> Wraps<T> for T {
+impl<T: Chain> Wraps<T> for T {
     fn inner(&self) -> &T {
         self
     }
