@@ -209,47 +209,48 @@ pub trait TransferProtocol {
         let ack: GenericAck = Self::Ack::decode(ibc_packet.acknowledgement.data.as_slice())?.into();
         let memo = packet.extension().to_string();
 
-        let (ack_msgs, ack_attr) =
-            if let Some(in_flight_packet) = self.is_pfm_ack(ibc_packet.original_packet.clone()) {
-                self.pfm_ack(
-                    ack.clone(),
-                    ibc_packet.original_packet.clone(),
-                    in_flight_packet,
-                    packet.sender(),
-                    packet.tokens(),
-                )?
-            } else {
-                match ack {
-                    Ok(value) => {
-                        let value_string = Binary::from(value).to_string();
-                        (
-                            self.send_tokens_success(
-                                packet.sender(),
-                                packet.receiver(),
-                                packet.tokens(),
-                            )?,
-                            Vec::from_iter(
-                                (!value_string.is_empty())
-                                    .then_some(Attribute::new(ATTR_SUCCESS, value_string)),
-                            ),
-                        )
-                    }
-                    Err(error) => {
-                        let error_string = Binary::from(error).to_string();
-                        (
-                            self.send_tokens_failure(
-                                packet.sender(),
-                                packet.receiver(),
-                                packet.tokens(),
-                            )?,
-                            Vec::from_iter(
-                                (!error_string.is_empty())
-                                    .then_some(Attribute::new(ATTR_ERROR, error_string)),
-                            ),
-                        )
-                    }
+        let (ack_msgs, ack_attr) = if let Some(in_flight_packet) =
+            self.get_in_flight_packet(ibc_packet.original_packet.clone())
+        {
+            self.pfm_ack(
+                ack.clone(),
+                ibc_packet.original_packet.clone(),
+                in_flight_packet,
+                packet.sender(),
+                packet.tokens(),
+            )?
+        } else {
+            match ack {
+                Ok(value) => {
+                    let value_string = Binary::from(value).to_string();
+                    (
+                        self.send_tokens_success(
+                            packet.sender(),
+                            packet.receiver(),
+                            packet.tokens(),
+                        )?,
+                        Vec::from_iter(
+                            (!value_string.is_empty())
+                                .then_some(Attribute::new(ATTR_SUCCESS, value_string)),
+                        ),
+                    )
                 }
-            };
+                Err(error) => {
+                    let error_string = Binary::from(error).to_string();
+                    (
+                        self.send_tokens_failure(
+                            packet.sender(),
+                            packet.receiver(),
+                            packet.tokens(),
+                        )?,
+                        Vec::from_iter(
+                            (!error_string.is_empty())
+                                .then_some(Attribute::new(ATTR_ERROR, error_string)),
+                        ),
+                    )
+                }
+            }
+        };
 
         let packet_event = {
             Event::new(PACKET_EVENT)
@@ -282,18 +283,19 @@ pub trait TransferProtocol {
         // same branch as failure ack
         let memo = packet.extension().to_string();
         let ack = GenericAck::Err(ACK_ERR_TIMEOUT_MSG.to_vec());
-        let refund_msgs = if let Some(in_flight_packet) = self.is_pfm_ack(ibc_packet.clone()) {
-            self.pfm_ack(
-                ack.clone(),
-                ibc_packet.clone(),
-                in_flight_packet,
-                packet.sender(),
-                packet.tokens(),
-            )?
-            .0
-        } else {
-            self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?
-        };
+        let refund_msgs =
+            if let Some(in_flight_packet) = self.get_in_flight_packet(ibc_packet.clone()) {
+                self.pfm_ack(
+                    ack.clone(),
+                    ibc_packet.clone(),
+                    in_flight_packet,
+                    packet.sender(),
+                    packet.tokens(),
+                )?
+                .0
+            } else {
+                self.send_tokens_failure(packet.sender(), packet.receiver(), packet.tokens())?
+            };
 
         let timeout_event = if memo.is_empty() {
             Event::new(PACKET_EVENT)
@@ -406,7 +408,7 @@ pub trait TransferProtocol {
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
 
     /// Check if a packet is an in flight pfm, if so return the `InFlightPfmPacket` from storage
-    fn is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket>;
+    fn get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket>;
 
     /// On pfm packet acknowledgment (be it success, failure, or timeout),
     /// overwrite the acknowledgment process to forward the acknowledgment to the original sender.

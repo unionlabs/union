@@ -42,7 +42,7 @@ pub trait TransferProtocolExt<'a>:
 
     fn common_mut(&mut self) -> &mut ProtocolCommon<'a>;
 
-    fn do_is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
+    fn do_get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
         let refund_key = PfmRefundPacketKey {
             channel_id: forward_packet.src.channel_id,
             port_id: forward_packet.src.port_id,
@@ -818,8 +818,8 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         }
     }
 
-    fn is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
-        self.do_is_pfm_ack(forward_packet)
+    fn get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
+        self.do_get_in_flight_packet(forward_packet)
     }
 }
 
@@ -1079,8 +1079,8 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         }
     }
 
-    fn is_pfm_ack(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
-        self.do_is_pfm_ack(forward_packet)
+    fn get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
+        self.do_get_in_flight_packet(forward_packet)
     }
 }
 
