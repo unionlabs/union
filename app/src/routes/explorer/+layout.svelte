@@ -110,7 +110,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
   {:else}
     <a class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="uppercase">{$page.route.id?.split("/")[2]}</span></a>
     <ScrollArea class="flex-1" orientation="both">
-      <div class="p-4 sm:p-6">
+      <div class="p-4 sm:p-6 flex items-center justify-center">
         <slot/>
       </div>
     </ScrollArea>
