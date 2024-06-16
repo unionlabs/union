@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { UnionClient } from "#mod.ts"
+import { UnionClient } from "#v0/mod.ts"
+import { createUnionClient } from '#mod.ts'
 
-/* `bun scripts/from-osmosis.ts --private-key "..."` */
+/* `bun playground/from-osmosis.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -32,3 +33,7 @@ const sendUnoToUnionAddress = await cwClient.sendTokens(
 )
 // 0xa833b03d8ed1228c4791cbfab22b3ed57954429f
 console.log(sendUnoToUnionAddress.transactionHash)
+
+const client = createUnionClient({
+  
+})

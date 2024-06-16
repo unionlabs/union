@@ -1,3 +1,12 @@
+export type ErrorType<name extends string = "Error"> = Error & { name: name }
+
+export type RpcRequest = {
+  jsonrpc?: "2.0" | undefined
+  method: string
+  params?: any | undefined
+  id?: number | undefined
+}
+
 export type HexAddress = `0x${string}`
 export type Bech32Address<T extends string = string> = `${T}${string}`
 

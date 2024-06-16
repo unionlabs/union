@@ -1,11 +1,11 @@
-import { raise, timestamp } from "./utilities.ts"
+import type {
+  Coin,
+  MessageTransferWithOptionals,
+  OfflineSigner as CosmosOfflineSigner
+} from "./types.ts"
+import { raise, timestamp } from "./utilities/index.ts"
 import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 import type { GasPrice, DeliverTxResponse, MsgTransferEncodeObject } from "@cosmjs/stargate"
-import type {
-  MessageTransferWithOptionals,
-  OfflineSigner as CosmosOfflineSigner,
-  Coin
-} from "./types.ts"
 
 /**
  * Transfer tokens from ibc-enabled chain to another ibc-enabled chain

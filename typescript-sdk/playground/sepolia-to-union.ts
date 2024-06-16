@@ -1,11 +1,12 @@
 #!/usr/bin/env bun
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#mod.ts"
+import { UnionClient } from "#v0/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { http, createWalletClient, fallback, getAddress } from "viem"
 import contracts from "~root/versions/contracts.json" with { type: "json" }
-import { createUnionClient } from "#client.ts"
+import { createUnionClient } from "#mod.ts"
+
 /* `bun playground/sepolia-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({

@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { UnionClient } from "#mod.ts"
+import { UnionClient } from "#v0/mod.ts"
 
-/* `bun scripts/to-sepolia.ts --private-key "..."` */
+/* `bun playground/to-sepolia.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),

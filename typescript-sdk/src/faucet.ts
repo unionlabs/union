@@ -1,4 +1,4 @@
-import { fetcher } from "./utilities.ts"
+import { fetcher } from "./utilities/index.ts"
 
 export async function getUnoFromFaucet({ address }: { address: string }) {
   const response = await fetcher<

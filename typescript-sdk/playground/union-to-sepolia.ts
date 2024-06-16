@@ -1,15 +1,18 @@
 #!/usr/bin/env bun
 import "#patch.ts"
+import { http } from "viem"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#mod.ts"
-import { raise } from "#utilities.ts"
+import { UnionClient } from "#v0/mod.ts"
+import { cosmosHttp } from "#transport.ts"
+import { raise } from "#utilities/index.ts"
+import { createUnionClient } from "#mod.ts"
 import { GasPrice } from "@cosmjs/stargate"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { consola, timestamp } from "../scripts/logger.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import contracts from "~root/versions/contracts.json" with { type: "json" }
-import { createUnionClient } from "#client.ts"
+import { sepolia } from 'viem/chains'
 
 /* `bun playground/union-to-sepolia.ts --private-key "..."` */
 
@@ -34,16 +37,16 @@ const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 consola.box(`Sending ${TX_COUNT} transactions from Union to Sepolia`)
 
-const unionClient = await UnionClient.connectWithSecret({
-  rpcUrl: "https://rpc.testnet.bonlulu.uno",
-  bech32Prefix: "union",
-  chainId: "union-testnet-8",
-  secretType: "key",
-  privateKeyOrMnemonic: PRIVATE_KEY,
-  gas: { amount: "0.0025", denom: "muno" }
-})
+// const unionClient = await UnionClient.connectWithSecret({
+//   rpcUrl: "https://rpc.testnet.bonlulu.uno",
+//   bech32Prefix: "union",
+//   chainId: "union-testnet-8",
+//   secretType: "key",
+//   privateKeyOrMnemonic: PRIVATE_KEY,
+//   gas: { amount: "0.0025", denom: "muno" }
+// })
 
-const { address } = await unionClient.getCosmosSdkAccount()
+// const { address } = await unionClient.getCosmosSdkAccount()
 
 const contractAddress = "union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3"
 const stamp = timestamp()
@@ -77,57 +80,32 @@ const stamp = timestamp()
 //   )
 // )
 
-const cosmosSigner = await DirectSecp256k1Wallet.fromKey(
+const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
 
-// const transfer = await cosmwasmTransfer({
-//   cosmosSigner: await DirectSecp256k1Wallet.fromKey(
-//     Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-//     "union"
-//   ),
-//   cosmosRpcUrl: "https://rpc.testnet.bonlulu.uno",
-//   gasPrice: GasPrice.fromString("0.0025muno"),
-//   instructions: [
-//     {
-//       contractAddress,
-//       msg: {
-//         transfer: {
-//           channel: CHANNEL,
-//           receiver: evmAccount.address.slice(2),
-//           memo: `${stamp} Sending UNO from Union to ${evmAccount.address} on Sepolia`
-//         }
-//       },
-//       funds: [
-//         {
-//           amount: "1",
-//           denom:
-//             "factory/union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3/0xbf41fec2bba5519a54171fc02966728e29e3d18adc"
-//         }
-//       ]
-//     }
-//   ]
-// })
-
-// console.info(transfer.transactionHash)
-
 const client = createUnionClient({
-  cosmosRpcUrl: "https://rpc.testnet.bonlulu.uno",
-  cosmosSigner
+  evm: {
+    chain: sepolia,
+    account: evmAccount,
+    transport: http("https://rpc2.sepolia.org")
+  },
+  cosmos: {
+    chain: unionTestnet,
+    account: cosmosAccount,
+    transport: cosmosHttp("https://rpc.testnet.bonlulu.uno"),
+    gasPrice: GasPrice.fromString("0.0025muno")
+  }
 })
 
 const hash = await client.transferAsset({
   relayContractAddress: ucs01Contract,
-  path: ["union-testnet-8", "11155111"],
   amount: 1n,
   denomAddress: "muno",
-  receiver: evmAccount.address,
-  cosmosSigner,
-  sourceChannel: CHANNEL,
-  network: "cosmos",
-  gasPrice: GasPrice.fromString("0.0025muno"),
-  cosmosRpcUrl: "https://rpc.testnet.bonlulu.uno"
+  receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+  sourceChannel: 'channel-28',
+  network: "cosmos"
 })
 
 console.info(hash)
