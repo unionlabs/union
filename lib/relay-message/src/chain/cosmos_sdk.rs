@@ -1,8 +1,7 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
-use prost::Message;
-use queue_msg::{data, fetch, seq, wait, Op, QueueMsg};
+use queue_msg::{data, fetch, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, Encode, Proto},
