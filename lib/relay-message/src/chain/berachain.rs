@@ -35,7 +35,7 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::{
+    chain::{
         cosmos::mk_valset,
         cosmos_sdk::{
             data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
@@ -56,7 +56,7 @@ use crate::{
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessage,
 };
 
 impl ChainExt for Berachain {
@@ -133,7 +133,7 @@ pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-impl<Tr> UseAggregate<RelayMessageTypes> for identified!(AggregateHeader<Berachain, Tr>)
+impl<Tr> UseAggregate<RelayMessage> for identified!(AggregateHeader<Berachain, Tr>)
 where
     Tr: ChainExt,
 
@@ -216,7 +216,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(
@@ -257,7 +257,7 @@ where
     >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Berachain, Tr>)>,
 {
-    async fn do_fetch(c: &Berachain, fetch: Self) -> QueueMsg<RelayMessageTypes> {
+    async fn do_fetch(c: &Berachain, fetch: Self) -> QueueMsg<RelayMessage> {
         match fetch {
             Self::FetchIbcState(fetch) => data(id(c.chain_id(), fetch_ibc_state(c, fetch).await)),
             Self::FetchGetProof(fetch) => data(id(c.chain_id(), fetch_get_proof(c, fetch).await)),
@@ -334,7 +334,7 @@ where
                     },
                 ))
             }
-            // TODO: Refactor cosmos & union to use the new cometbft_rpc::Client instead of tendermint_rpc, and then deduplicate these fetchers (they have been inlined from the fns in chain_impls::cosmos_sdk)
+            // TODO: Refactor cosmos & union to use the new cometbft_rpc::Client instead of tendermint_rpc, and then deduplicate these fetchers (they have been inlined from the fns in chain::cosmos_sdk)
             Self::FetchTrustedCommit(FetchTrustedCommit {
                 height,
                 __marker: _,
@@ -440,7 +440,7 @@ where
     Tr: ChainExt<SelfClientState: Decode<IbcStateEncodingOf<Berachain>> + Encode<EthAbi>>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Berachain, Tr>)>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> QueueMsg<RelayMessageTypes> {
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> QueueMsg<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::specific(FetchIbcState { path, height: at }),
@@ -466,7 +466,7 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Berachain, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Berachain, Tr>)>,
 {
-    fn proof(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> QueueMsg<RelayMessageTypes> {
+    fn proof(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> QueueMsg<RelayMessage> {
         fetch(id::<Berachain, Tr, _>(
             hc.chain_id(),
             Fetch::specific(GetProof::<Berachain, Tr> { path, height: at }),
@@ -483,7 +483,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         seq([
             wait(id(
                 c.chain_id(),
@@ -559,7 +559,7 @@ where
     Identified<Berachain, Tr, LatestExecutionPayloadHeaderAbciProof>: IsAggregateData,
     Identified<Berachain, Tr, IbcAccountProof<Tr>>: IsAggregateData,
 
-    Identified<Berachain, Tr, AggregateHeader<Berachain, Tr>>: UseAggregate<RelayMessageTypes>,
+    Identified<Berachain, Tr, AggregateHeader<Berachain, Tr>>: UseAggregate<RelayMessage>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Berachain, Tr>)>,
 {
@@ -570,7 +570,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         match data {
             BerachainAggregate::AggregateHeader(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)

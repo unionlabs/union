@@ -459,9 +459,9 @@ mod tests {
         PurePass,
     };
 
-    struct UnitMessageTypes;
+    enum UnitMessage {}
 
-    impl QueueMessageTypes for UnitMessageTypes {
+    impl QueueMessageTypes for UnitMessage {
         type Event = ();
         type Data = ();
         type Fetch = ();
@@ -473,38 +473,38 @@ mod tests {
         type Store = ();
     }
 
-    impl HandleEffect<UnitMessageTypes> for () {
-        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+    impl HandleEffect<UnitMessage> for () {
+        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
-    impl HandleEvent<UnitMessageTypes> for () {
-        fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+    impl HandleEvent<UnitMessage> for () {
+        fn handle(self, _: &()) -> Result<QueueMsg<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
-    impl HandleData<UnitMessageTypes> for () {
-        fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+    impl HandleData<UnitMessage> for () {
+        fn handle(self, _: &()) -> Result<QueueMsg<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
-    impl HandleFetch<UnitMessageTypes> for () {
-        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+    impl HandleFetch<UnitMessage> for () {
+        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
-    impl HandleWait<UnitMessageTypes> for () {
-        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+    impl HandleWait<UnitMessage> for () {
+        async fn handle(self, _: &()) -> Result<QueueMsg<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
-    impl HandleAggregate<UnitMessageTypes> for () {
-        fn handle(self, _: VecDeque<()>) -> Result<QueueMsg<UnitMessageTypes>, QueueError> {
+    impl HandleAggregate<UnitMessage> for () {
+        fn handle(self, _: VecDeque<()>) -> Result<QueueMsg<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
@@ -542,7 +542,7 @@ mod tests {
 
     #[test]
     fn flatten() {
-        let msg = seq::<UnitMessageTypes>([
+        let msg = seq::<UnitMessage>([
             defer_absolute(1),
             seq([defer_absolute(2), seq([defer_absolute(3)])]),
             seq([defer_absolute(4)]),
@@ -562,37 +562,37 @@ mod tests {
             )]
         );
 
-        let msg = seq::<UnitMessageTypes>([defer_absolute(1)]);
+        let msg = seq::<UnitMessage>([defer_absolute(1)]);
         assert_eq!(
             FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
             vec![(vec![0], defer_absolute(1))]
         );
 
-        let msg = conc::<UnitMessageTypes>([defer_absolute(1)]);
+        let msg = conc::<UnitMessage>([defer_absolute(1)]);
         assert_eq!(
             FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
             vec![(vec![0], conc([defer_absolute(1)]))]
         );
 
-        let msg = conc::<UnitMessageTypes>([seq([defer_absolute(1)])]);
+        let msg = conc::<UnitMessage>([seq([defer_absolute(1)])]);
         assert_eq!(
             FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
             vec![(vec![0], conc([defer_absolute(1)]))]
         );
 
-        let msg = seq::<UnitMessageTypes>([noop()]);
+        let msg = seq::<UnitMessage>([noop()]);
         assert_eq!(
             FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
             vec![(vec![0], noop())]
         );
 
-        let msg = conc::<UnitMessageTypes>([seq([noop()])]);
+        let msg = conc::<UnitMessage>([seq([noop()])]);
         assert_eq!(
             FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
             vec![(vec![0], conc([noop()]))]
         );
 
-        let msg = conc::<UnitMessageTypes>([conc([conc([noop()])])]);
+        let msg = conc::<UnitMessage>([conc([conc([noop()])])]);
         assert_eq!(
             FlattenConc.run_pass_pure(vec![msg]).optimize_further,
             vec![(vec![0], noop())]
@@ -604,7 +604,7 @@ mod tests {
         // any nesting level of seq and conc should be handled in a single pass of (seq, conc) or
         // (conc, seq)
 
-        let msg = conc::<UnitMessageTypes>([seq([conc([noop()])])]);
+        let msg = conc::<UnitMessage>([seq([conc([noop()])])]);
         assert_eq!(
             (FlattenConc, FlattenSeq)
                 .run_pass_pure(vec![msg])
@@ -612,25 +612,7 @@ mod tests {
             vec![(vec![0], noop())]
         );
 
-        let msg = conc::<UnitMessageTypes>([seq([conc([seq([conc([seq([conc([noop()])])])])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
-
-        let msg = conc::<UnitMessageTypes>([seq([conc([seq([conc([seq([conc([seq([
-            conc([noop()]),
-        ])])])])])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
-
-        let msg = seq::<UnitMessageTypes>([conc([seq([conc([noop()])])])]);
+        let msg = conc::<UnitMessage>([seq([conc([seq([conc([seq([conc([noop()])])])])])])]);
         assert_eq!(
             (FlattenConc, FlattenSeq)
                 .run_pass_pure(vec![msg])
@@ -639,7 +621,9 @@ mod tests {
         );
 
         let msg =
-            seq::<UnitMessageTypes>([conc([seq([conc([seq([conc([seq([conc([noop()])])])])])])])]);
+            conc::<UnitMessage>([seq([conc([seq([conc([seq([conc([seq([conc([
+                noop(),
+            ])])])])])])])])]);
         assert_eq!(
             (FlattenConc, FlattenSeq)
                 .run_pass_pure(vec![msg])
@@ -647,9 +631,25 @@ mod tests {
             vec![(vec![0], noop())]
         );
 
-        let msg = seq::<UnitMessageTypes>([conc([seq([conc([seq([conc([seq([conc([
-            seq([conc([noop()])]),
-        ])])])])])])])]);
+        let msg = seq::<UnitMessage>([conc([seq([conc([noop()])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+
+        let msg = seq::<UnitMessage>([conc([seq([conc([seq([conc([seq([conc([noop()])])])])])])])]);
+        assert_eq!(
+            (FlattenConc, FlattenSeq)
+                .run_pass_pure(vec![msg])
+                .optimize_further,
+            vec![(vec![0], noop())]
+        );
+
+        let msg = seq::<UnitMessage>([conc([seq([conc([seq([conc([seq([conc([seq([
+            conc([noop()]),
+        ])])])])])])])])]);
         assert_eq!(
             (FlattenConc, FlattenSeq)
                 .run_pass_pure(vec![msg])
@@ -662,7 +662,7 @@ mod tests {
     fn flatten_seq_conc_fixed_point_is_noop() {
         // this message can't be optimized any further, flattening operations should be a noop
 
-        let msg = seq::<UnitMessageTypes>([
+        let msg = seq::<UnitMessage>([
             conc([defer_absolute(1), defer_absolute(2)]),
             defer_absolute(3),
         ]);
@@ -682,7 +682,7 @@ mod tests {
 
     #[test]
     fn extract_data_simple() {
-        let msg = seq::<UnitMessageTypes>([
+        let msg = seq::<UnitMessage>([
             data(()),
             seq([data(()), seq([data(())])]),
             seq([data(())]),
@@ -703,7 +703,7 @@ mod tests {
 
     #[test]
     fn extract_data_complex() {
-        let msg = seq::<UnitMessageTypes>([
+        let msg = seq::<UnitMessage>([
             data(()),
             effect(()),
             seq([fetch(()), data(()), seq([data(())])]),

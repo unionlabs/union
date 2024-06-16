@@ -23,14 +23,14 @@ use queue_msg::{
     optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
     Engine, InMemoryQueue, Queue, QueueMessageTypes, QueueMsg,
 };
-use relay_message::RelayMessageTypes;
+use relay_message::RelayMessage;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, trace};
 use unionlabs::traits::{Chain, ClientState, FromStrExact};
-use voyager_message::VoyagerMessageTypes;
+use voyager_message::VoyagerMessage;
 
 use crate::config::{ChainConfig, Config};
 
@@ -41,7 +41,7 @@ pub struct Voyager {
     pub chains: Arc<Chains>,
     num_workers: u16,
     // NOTE: pub temporarily
-    pub queue: AnyQueue<VoyagerMessageTypes>,
+    pub queue: AnyQueue<VoyagerMessage>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -267,14 +267,13 @@ impl Voyager {
         })
     }
 
-    pub fn worker(&self) -> Engine<RelayMessageTypes> {
+    pub fn worker(&self) -> Engine<RelayMessage> {
         Engine::new(self.chains.clone())
     }
 
     pub async fn run(self) -> Result<(), RunError> {
         // set up msg server
-        let (queue_tx, queue_rx) =
-            futures::channel::mpsc::unbounded::<QueueMsg<VoyagerMessageTypes>>();
+        let (queue_tx, queue_rx) = futures::channel::mpsc::unbounded::<QueueMsg<VoyagerMessage>>();
 
         let app = axum::Router::new()
             .route("/msg", post(msg))

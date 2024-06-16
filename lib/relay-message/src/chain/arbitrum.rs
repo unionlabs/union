@@ -28,7 +28,7 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::ethereum::{
+    chain::ethereum::{
         do_msg, fetch_get_proof, fetch_ibc_state, EthereumConfig, FetchIbcState, GetProof,
         TxSubmitError,
     },
@@ -38,7 +38,7 @@ use crate::{
     id, identified,
     use_aggregate::IsAggregateData,
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessageTypes,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayMessage,
 };
 
 impl ChainExt for Arbitrum {
@@ -71,11 +71,7 @@ impl<Tr: ChainExt> DoFetchProof<Self, Tr> for Arbitrum
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Arbitrum, Tr>)>,
 {
-    fn proof(
-        c: &Self,
-        at: HeightOf<Self>,
-        path: PathOf<Arbitrum, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Arbitrum, Tr>) -> QueueMsg<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::<Self, Tr>::specific(GetProof { path, height: at }),
@@ -90,11 +86,7 @@ where
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Arbitrum, Tr>)>,
 {
-    fn state(
-        hc: &Self,
-        at: HeightOf<Self>,
-        path: PathOf<Arbitrum, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Arbitrum, Tr>) -> QueueMsg<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
@@ -126,7 +118,7 @@ where
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         aggregate(
             [
                 fetch(id(
@@ -176,7 +168,7 @@ where
         SelfConsensusState: Decode<IbcStateEncodingOf<Arbitrum>> + Encode<EthAbi>,
     >,
 {
-    async fn do_fetch(arbitrum: &Arbitrum, msg: Self) -> QueueMsg<RelayMessageTypes> {
+    async fn do_fetch(arbitrum: &Arbitrum, msg: Self) -> QueueMsg<RelayMessage> {
         let msg = match msg {
             Self::FetchGetProof(get_proof) => fetch_get_proof(arbitrum, get_proof).await,
             Self::FetchIbcState(ibc_state) => fetch_ibc_state(arbitrum, ibc_state).await,
@@ -469,14 +461,14 @@ where
             __marker,
         }: Self,
         data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         match t {
             ArbitrumAggregate::AggregateHeader(msg) => do_aggregate(id(chain_id, msg), data),
         }
     }
 }
 
-impl<Tr> UseAggregate<RelayMessageTypes> for Identified<Arbitrum, Tr, AggregateHeader<Tr>>
+impl<Tr> UseAggregate<RelayMessage> for Identified<Arbitrum, Tr, AggregateHeader<Tr>>
 where
     Tr: ChainExt,
     Identified<Arbitrum, Tr, L1ContractRootProof<Tr>>: IsAggregateData,
@@ -539,7 +531,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         // assert_eq!(rollup_contract_root_proof_chain_id, chain_id);
         // assert_eq!(latest_batch_index_proof_chain_id, chain_id);
         // assert_eq!(arbitrum_finalized_root_proof_chain_id, chain_id);

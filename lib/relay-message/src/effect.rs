@@ -23,7 +23,7 @@ use unionlabs::{
     MaybeRecoverableError,
 };
 
-use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayMessageTypes};
+use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayMessage};
 
 #[apply(any_enum)]
 #[any = AnyEffect]
@@ -48,12 +48,12 @@ pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
     Batch(BatchMsg<Hc, Tr>),
 }
 
-impl HandleEffect<RelayMessageTypes> for AnyLightClientIdentified<AnyEffect> {
+impl HandleEffect<RelayMessage> for AnyLightClientIdentified<AnyEffect> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
+        store: &<RelayMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
         let msg = self;
 
         any_lc! {

@@ -30,7 +30,7 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::cosmos_sdk::{
+    chain::cosmos_sdk::{
         data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
         do_msg,
         fetch::{
@@ -47,7 +47,7 @@ use crate::{
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForHeight},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchUpdateHeaders, DoMsg, Identified,
-    RelayMessageTypes,
+    RelayMessage,
 };
 
 impl ChainExt for Cosmos {
@@ -101,7 +101,7 @@ where
     fn fetch_update_headers(
         hc: &Hc,
         update_info: FetchUpdateHeaders<Hc, Tr>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         seq([
             wait(id(
                 hc.chain_id(),
@@ -188,7 +188,7 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessageTypes> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayMessage> {
         match msg {
             Self::FetchTrustedCommit(FetchTrustedCommit {
                 height,
@@ -229,7 +229,7 @@ where
     identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
     identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
-    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayMessageTypes>,
+    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayMessage>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -240,7 +240,7 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         match data {
             CosmosAggregateMsg::AggregateHeader(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)
@@ -265,7 +265,7 @@ pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-impl<Hc, Tr> UseAggregate<RelayMessageTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayMessage> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Cosmos as Chain>::Header>,
     Tr: ChainExt,
@@ -328,7 +328,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(

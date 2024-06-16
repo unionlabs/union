@@ -15,7 +15,7 @@ macro_rules! try_from_relayer_msg {
         ),
     ) => {
         const _: () = {
-            use crate::{AnyLightClientIdentified, RelayMessageTypes, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
+            use crate::{AnyLightClientIdentified, RelayMessage, id, identified, Identified, data::{AnyData, Data, LightClientSpecificData}};
             use queue_msg::QueueMsg;
 
             with_dollar_sign! {
@@ -28,12 +28,12 @@ macro_rules! try_from_relayer_msg {
                             ),
                         ) => {
                             $d (
-                                impl <$($generics)+> TryFrom<QueueMsg<RelayMessageTypes>> for Identified<$d Chain, Tr, $d Ty>
+                                impl <$($generics)+> TryFrom<QueueMsg<RelayMessage>> for Identified<$d Chain, Tr, $d Ty>
                                 where
                                     identified!(Data<$d Chain, Tr>): TryFrom<AnyLightClientIdentified<AnyData>, Error = AnyLightClientIdentified<AnyData>> + Into<AnyLightClientIdentified<AnyData>>
                                 {
-                                    type Error = QueueMsg<RelayMessageTypes>;
-                                    fn try_from(value: QueueMsg<RelayMessageTypes>) -> Result<Identified<$d Chain, Tr, $d Ty>, QueueMsg<RelayMessageTypes>> {
+                                    type Error = QueueMsg<RelayMessage>;
+                                    fn try_from(value: QueueMsg<RelayMessage>) -> Result<Identified<$d Chain, Tr, $d Ty>, QueueMsg<RelayMessage>> {
                                         match value {
                                             QueueMsg::Data(data) => {
                                                 let Identified {

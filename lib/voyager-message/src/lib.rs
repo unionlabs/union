@@ -4,16 +4,18 @@
 
 use std::{collections::VecDeque, fmt::Debug, str::FromStr};
 
-use block_message::BlockMessageTypes;
+use block_message::BlockMessage;
 use chain_utils::{
     arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll,
     union::Union, wasm::Wasm, Chains,
 };
+use futures::TryFutureExt;
 use queue_msg::{
     event, noop, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
     HandleWait, QueueError, QueueMessageTypes, QueueMsg,
 };
-use relay_message::RelayMessageTypes;
+use relay_message::RelayMessage;
+use tracing::{info_span, Instrument};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
     events::{
@@ -25,9 +27,9 @@ use unionlabs::{
     ClientType, WasmClientType,
 };
 
-pub struct VoyagerMessageTypes;
+pub enum VoyagerMessage {}
 
-impl QueueMessageTypes for VoyagerMessageTypes {
+impl QueueMessageTypes for VoyagerMessage {
     type Event = VoyagerEvent;
     type Data = VoyagerData;
     type Fetch = VoyagerFetch;
@@ -42,8 +44,8 @@ pub trait FromQueueMsg<T: QueueMessageTypes>: QueueMessageTypes + Sized {
     fn from_queue_msg(value: QueueMsg<T>) -> QueueMsg<Self>;
 }
 
-impl FromQueueMsg<RelayMessageTypes> for VoyagerMessageTypes {
-    fn from_queue_msg(value: QueueMsg<RelayMessageTypes>) -> QueueMsg<Self> {
+impl FromQueueMsg<RelayMessage> for VoyagerMessage {
+    fn from_queue_msg(value: QueueMsg<RelayMessage>) -> QueueMsg<Self> {
         match value {
             QueueMsg::Event(event) => QueueMsg::Event(VoyagerEvent::Relay(event)),
             QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Relay(data)),
@@ -90,8 +92,8 @@ impl FromQueueMsg<RelayMessageTypes> for VoyagerMessageTypes {
     }
 }
 
-impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
-    fn from_queue_msg(value: QueueMsg<BlockMessageTypes>) -> QueueMsg<Self> {
+impl FromQueueMsg<BlockMessage> for VoyagerMessage {
+    fn from_queue_msg(value: QueueMsg<BlockMessage>) -> QueueMsg<Self> {
         match value {
             QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Block(data)),
             QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Block(fetch)),
@@ -138,20 +140,21 @@ impl FromQueueMsg<BlockMessageTypes> for VoyagerMessageTypes {
 
 #[queue_msg]
 pub enum VoyagerMsg {
-    Block(<BlockMessageTypes as QueueMessageTypes>::Effect),
-    Relay(<RelayMessageTypes as QueueMessageTypes>::Effect),
+    Block(<BlockMessage as QueueMessageTypes>::Effect),
+    Relay(<RelayMessage as QueueMessageTypes>::Effect),
 }
 
-impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
+impl HandleEffect<VoyagerMessage> for VoyagerMsg {
     async fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        store: &<VoyagerMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
         Ok(match self {
             Self::Relay(msg) => {
-                <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    Box::pin(msg.handle(store)).await?,
-                )
+                Box::pin(msg.handle(store))
+                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .instrument(info_span!("relay"))
+                    .await?
             }
         })
     }
@@ -159,25 +162,27 @@ impl HandleEffect<VoyagerMessageTypes> for VoyagerMsg {
 
 #[queue_msg]
 pub enum VoyagerWait {
-    Block(<BlockMessageTypes as QueueMessageTypes>::Wait),
-    Relay(<RelayMessageTypes as QueueMessageTypes>::Wait),
+    Block(<BlockMessage as QueueMessageTypes>::Wait),
+    Relay(<RelayMessage as QueueMessageTypes>::Wait),
 }
 
-impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
+impl HandleWait<VoyagerMessage> for VoyagerWait {
     async fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        store: &<VoyagerMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
         Ok(match self {
             Self::Block(msg) => {
-                <VoyagerMessageTypes as FromQueueMsg<BlockMessageTypes>>::from_queue_msg(
-                    HandleWait::<BlockMessageTypes>::handle(msg, store).await?,
-                )
+                Box::pin(HandleWait::<BlockMessage>::handle(msg, store))
+                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .instrument(info_span!("block"))
+                    .await?
             }
             Self::Relay(msg) => {
-                <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    HandleWait::<RelayMessageTypes>::handle(msg, store).await?,
-                )
+                Box::pin(HandleWait::<RelayMessage>::handle(msg, store))
+                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .instrument(info_span!("relay"))
+                    .await?
             }
         })
     }
@@ -185,199 +190,213 @@ impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
 
 #[queue_msg]
 pub enum VoyagerAggregate {
-    Block(<BlockMessageTypes as QueueMessageTypes>::Aggregate),
-    Relay(<RelayMessageTypes as QueueMessageTypes>::Aggregate),
+    Block(<BlockMessage as QueueMessageTypes>::Aggregate),
+    Relay(<RelayMessage as QueueMessageTypes>::Aggregate),
 }
 
-impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
+impl HandleAggregate<VoyagerMessage> for VoyagerAggregate {
     fn handle(
         self,
-        data: VecDeque<<VoyagerMessageTypes as QueueMessageTypes>::Data>,
-    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
-        Ok(match self {
-            Self::Block(aggregate) => VoyagerMessageTypes::from_queue_msg(
-                aggregate.handle(
-                    data.into_iter()
-                        .map(|d| match d {
-                            VoyagerData::Block(d) => d,
-                            VoyagerData::Relay(_) => panic!(),
-                        })
-                        .collect(),
-                )?,
-            ),
-            Self::Relay(aggregate) => VoyagerMessageTypes::from_queue_msg(
-                aggregate.handle(
-                    data.into_iter()
-                        .map(|d| match d {
-                            VoyagerData::Block(_) => panic!(),
-                            VoyagerData::Relay(d) => d,
-                        })
-                        .collect(),
-                )?,
-            ),
-        })
+        data: VecDeque<<VoyagerMessage as QueueMessageTypes>::Data>,
+    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        match self {
+            Self::Block(aggregate) => {
+                let _span = info_span!("block").entered();
+                aggregate
+                    .handle(
+                        data.into_iter()
+                            .map(|d| match d {
+                                VoyagerData::Block(d) => d,
+                                VoyagerData::Relay(_) => {
+                                    panic!("found relay message in data of block message aggregate")
+                                }
+                            })
+                            .collect(),
+                    )
+                    .map(VoyagerMessage::from_queue_msg)
+            }
+            Self::Relay(aggregate) => {
+                let _span = info_span!("relay").entered();
+                aggregate
+                    .handle(
+                        data.into_iter()
+                            .map(|d| match d {
+                                VoyagerData::Block(_) => {
+                                    panic!("found block message in data of relay message aggregate")
+                                }
+                                VoyagerData::Relay(d) => d,
+                            })
+                            .collect(),
+                    )
+                    .map(VoyagerMessage::from_queue_msg)
+            }
+        }
     }
 }
 
 #[queue_msg]
 pub enum VoyagerEvent {
-    Block(<BlockMessageTypes as QueueMessageTypes>::Event),
-    Relay(<RelayMessageTypes as QueueMessageTypes>::Event),
+    Block(<BlockMessage as QueueMessageTypes>::Event),
+    Relay(<RelayMessage as QueueMessageTypes>::Event),
 }
 
-impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
+impl HandleEvent<VoyagerMessage> for VoyagerEvent {
     fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
-        Ok(match self {
+        store: &<VoyagerMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        match self {
             Self::Relay(event) => {
-                <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    HandleEvent::handle(event, store)?,
-                )
+                let _span = info_span!("relay").entered();
+                HandleEvent::handle(event, store).map(VoyagerMessage::from_queue_msg)
             }
-        })
+        }
     }
 }
 
 #[queue_msg]
 pub enum VoyagerData {
-    Block(<BlockMessageTypes as QueueMessageTypes>::Data),
-    Relay(<RelayMessageTypes as QueueMessageTypes>::Data),
+    Block(<BlockMessage as QueueMessageTypes>::Data),
+    Relay(<RelayMessage as QueueMessageTypes>::Data),
 }
 
-impl HandleData<VoyagerMessageTypes> for VoyagerData {
+impl HandleData<VoyagerMessage> for VoyagerData {
     fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        store: &<VoyagerMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
         Ok(match self {
-            Self::Block(data) => match data.handle(store)? {
-                QueueMsg::Data(block_message::AnyChainIdentified::Cosmos(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Wasm(WasmClientType::Cometbls) => {
-                            event::<RelayMessageTypes>(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Wasm<Cosmos>, Union>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        ClientType::Tendermint => {
-                            event::<RelayMessageTypes>(relay_message::id::<Cosmos, Cosmos, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Cosmos, Cosmos>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        _ => unimplemented!(),
-                    },
-                ),
-                QueueMsg::Data(block_message::AnyChainIdentified::Union(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Wasm(WasmClientType::EthereumMinimal) => {
-                            event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Ethereum<Minimal>>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        ClientType::Wasm(WasmClientType::EthereumMainnet) => {
-                            event(relay_message::id::<Wasm<Union>, Ethereum<Mainnet>, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Ethereum<Mainnet>>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        ClientType::Wasm(WasmClientType::Scroll) => {
-                            event(relay_message::id::<Wasm<Union>, Scroll, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Scroll>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        ClientType::Wasm(WasmClientType::Arbitrum) => {
-                            event(relay_message::id::<Wasm<Union>, Arbitrum, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Arbitrum>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        ClientType::Wasm(WasmClientType::Berachain) => {
-                            event(relay_message::id::<Wasm<Union>, Berachain, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Berachain>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        ClientType::Tendermint => {
-                            event(relay_message::id::<Union, Wasm<Cosmos>, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        _ => unimplemented!(),
-                    },
-                ),
-                QueueMsg::Data(block_message::AnyChainIdentified::EthMainnet(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Cometbls => {
-                            event(relay_message::id::<Ethereum<Mainnet>, Wasm<Union>, _>(
+            Self::Block(data) => {
+                let _span = info_span!("block").entered();
+                match data.handle(store)? {
+                    QueueMsg::Data(block_message::AnyChainIdentified::Cosmos(
+                        block_message::Identified {
+                            chain_id,
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Wasm(WasmClientType::Cometbls) => {
+                                event::<RelayMessage>(relay_message::id::<Wasm<Cosmos>, Union, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Wasm<Cosmos>, Union>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            ClientType::Tendermint => {
+                                event::<RelayMessage>(relay_message::id::<Cosmos, Cosmos, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Cosmos, Cosmos>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    QueueMsg::Data(block_message::AnyChainIdentified::Union(
+                        block_message::Identified {
+                            chain_id,
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Wasm(WasmClientType::EthereumMinimal) => {
+                                event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Union, Ethereum<Minimal>>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            ClientType::Wasm(WasmClientType::EthereumMainnet) => {
+                                event(relay_message::id::<Wasm<Union>, Ethereum<Mainnet>, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Union, Ethereum<Mainnet>>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            ClientType::Wasm(WasmClientType::Scroll) => {
+                                event(relay_message::id::<Wasm<Union>, Scroll, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Union, Scroll>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            ClientType::Wasm(WasmClientType::Arbitrum) => {
+                                event(relay_message::id::<Wasm<Union>, Arbitrum, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Union, Arbitrum>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            ClientType::Wasm(WasmClientType::Berachain) => {
+                                event(relay_message::id::<Wasm<Union>, Berachain, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Union, Berachain>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            ClientType::Tendermint => {
+                                event(relay_message::id::<Union, Wasm<Cosmos>, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    QueueMsg::Data(block_message::AnyChainIdentified::EthMainnet(
+                        block_message::Identified {
+                            chain_id,
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Cometbls => event(relay_message::id::<
+                                Ethereum<Mainnet>,
+                                Wasm<Union>,
+                                _,
+                            >(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
@@ -386,20 +405,22 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                         ibc_event.event,
                                     ),
                                 },
-                            ))
-                        }
-                        _ => unimplemented!(),
-                    },
-                ),
-                QueueMsg::Data(block_message::AnyChainIdentified::EthMinimal(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Cometbls => {
-                            event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                            )),
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    QueueMsg::Data(block_message::AnyChainIdentified::EthMinimal(
+                        block_message::Identified {
+                            chain_id,
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Cometbls => event(relay_message::id::<
+                                Ethereum<Minimal>,
+                                Wasm<Union>,
+                                _,
+                            >(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
@@ -408,83 +429,82 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                                         ibc_event.event,
                                     ),
                                 },
-                            ))
-                        }
-                        _ => unimplemented!(),
-                    },
-                ),
-                QueueMsg::Data(block_message::AnyChainIdentified::Scroll(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Cometbls => event(relay_message::id::<Scroll, Wasm<Union>, _>(
+                            )),
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    QueueMsg::Data(block_message::AnyChainIdentified::Scroll(
+                        block_message::Identified {
                             chain_id,
-                            relay_message::event::IbcEvent {
-                                tx_hash: ibc_event.tx_hash,
-                                height: ibc_event.height,
-                                event: chain_event_to_lc_event::<Scroll, Wasm<Union>>(
-                                    ibc_event.event,
-                                ),
-                            },
-                        )),
-                        _ => unimplemented!(),
-                    },
-                ),
-                QueueMsg::Data(block_message::AnyChainIdentified::Arbitrum(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Cometbls => {
-                            event(relay_message::id::<Arbitrum, Wasm<Union>, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Arbitrum, Wasm<Union>>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        _ => unimplemented!(),
-                    },
-                ),
-                QueueMsg::Data(block_message::AnyChainIdentified::Berachain(
-                    block_message::Identified {
-                        chain_id,
-                        t: block_message::data::Data::IbcEvent(ibc_event),
-                    },
-                )) => <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    match ibc_event.client_type {
-                        ClientType::Cometbls => {
-                            event(relay_message::id::<Berachain, Wasm<Union>, _>(
-                                chain_id,
-                                relay_message::event::IbcEvent {
-                                    tx_hash: ibc_event.tx_hash,
-                                    height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Berachain, Wasm<Union>>(
-                                        ibc_event.event,
-                                    ),
-                                },
-                            ))
-                        }
-                        _ => unimplemented!(),
-                    },
-                ),
-                msg => {
-                    <VoyagerMessageTypes as FromQueueMsg<BlockMessageTypes>>::from_queue_msg(msg)
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Cometbls => {
+                                event(relay_message::id::<Scroll, Wasm<Union>, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Scroll, Wasm<Union>>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    QueueMsg::Data(block_message::AnyChainIdentified::Arbitrum(
+                        block_message::Identified {
+                            chain_id,
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Cometbls => {
+                                event(relay_message::id::<Arbitrum, Wasm<Union>, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Arbitrum, Wasm<Union>>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    QueueMsg::Data(block_message::AnyChainIdentified::Berachain(
+                        block_message::Identified {
+                            chain_id,
+                            t: block_message::data::Data::IbcEvent(ibc_event),
+                        },
+                    )) => <VoyagerMessage as FromQueueMsg<RelayMessage>>::from_queue_msg(
+                        match ibc_event.client_type {
+                            ClientType::Cometbls => {
+                                event(relay_message::id::<Berachain, Wasm<Union>, _>(
+                                    chain_id,
+                                    relay_message::event::IbcEvent {
+                                        tx_hash: ibc_event.tx_hash,
+                                        height: ibc_event.height,
+                                        event: chain_event_to_lc_event::<Berachain, Wasm<Union>>(
+                                            ibc_event.event,
+                                        ),
+                                    },
+                                ))
+                            }
+                            _ => unimplemented!(),
+                        },
+                    ),
+                    msg => VoyagerMessage::from_queue_msg(msg),
                 }
-            },
+            }
             Self::Relay(data) => {
-                <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    data.handle(store)?,
-                )
+                let _span = info_span!("relay").entered();
+                VoyagerMessage::from_queue_msg(data.handle(store)?)
             }
         })
     }
@@ -492,27 +512,30 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
 
 #[queue_msg]
 pub enum VoyagerFetch {
-    Block(<BlockMessageTypes as QueueMessageTypes>::Fetch),
-    Relay(<RelayMessageTypes as QueueMessageTypes>::Fetch),
+    Block(<BlockMessage as QueueMessageTypes>::Fetch),
+    Relay(<RelayMessage as QueueMessageTypes>::Fetch),
 }
 
-impl HandleFetch<VoyagerMessageTypes> for VoyagerFetch {
+impl HandleFetch<VoyagerMessage> for VoyagerFetch {
     async fn handle(
         self,
-        store: &<VoyagerMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
-        Ok(match self {
+        store: &<VoyagerMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<VoyagerMessage>, QueueError> {
+        match self {
             Self::Block(fetch) => {
-                <VoyagerMessageTypes as FromQueueMsg<BlockMessageTypes>>::from_queue_msg(
-                    fetch.handle(store).await?,
-                )
+                fetch
+                    .handle(store)
+                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .instrument(info_span!("block"))
+                    .await
             }
             Self::Relay(fetch) => {
-                <VoyagerMessageTypes as FromQueueMsg<RelayMessageTypes>>::from_queue_msg(
-                    Box::pin(fetch.handle(store)).await?,
-                )
+                Box::pin(fetch.handle(store))
+                    .map_ok(VoyagerMessage::from_queue_msg)
+                    .instrument(info_span!("relay"))
+                    .await
             }
-        })
+        }
     }
 }
 
@@ -769,7 +792,7 @@ where
 mod tests {
     use std::marker::PhantomData;
 
-    use block_message::BlockMessageTypes;
+    use block_message::BlockMessage;
     use chain_utils::{
         cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm,
     };
@@ -779,7 +802,7 @@ mod tests {
     };
     use relay_message::{
         aggregate::AggregateMsgCreateClient,
-        chain_impls::{
+        chain::{
             cosmos_sdk::{
                 fetch::{AbciQueryType, FetchAbciQuery},
                 wasm::WasmConfig,
@@ -789,7 +812,7 @@ mod tests {
         effect::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
         event::IbcEvent,
         fetch::{FetchSelfClientState, FetchSelfConsensusState},
-        RelayMessageTypes,
+        RelayMessage,
     };
     use unionlabs::{
         ethereum::config::Minimal,
@@ -807,7 +830,7 @@ mod tests {
         QueryHeight, DELAY_PERIOD,
     };
 
-    use crate::{FromQueueMsg, VoyagerMessageTypes};
+    use crate::{FromQueueMsg, VoyagerMessage};
 
     macro_rules! parse {
         ($expr:expr) => {
@@ -827,152 +850,140 @@ mod tests {
         println!("---------------------------------------");
         println!("Union - Eth (Sending to Union) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(effect(relay_message::id::<
-            Wasm<Union>,
-            Ethereum<Minimal>,
-            _,
-        >(
-            union_chain_id.clone(),
-            MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("08-wasm-0"),
-                counterparty: connection::counterparty::Counterparty {
-                    client_id: parse!("cometbls-0"),
-                    connection_id: parse!(""),
-                    prefix: MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
+        print_json::<RelayMessage>(effect(
+            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                union_chain_id.clone(),
+                MsgConnectionOpenInitData(MsgConnectionOpenInit {
+                    client_id: parse!("08-wasm-0"),
+                    counterparty: connection::counterparty::Counterparty {
+                        client_id: parse!("cometbls-0"),
+                        connection_id: parse!(""),
+                        prefix: MerklePrefix {
+                            key_prefix: b"ibc".to_vec(),
+                        },
                     },
-                },
-                version: Version {
-                    identifier: "1".into(),
-                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                },
-                delay_period: DELAY_PERIOD,
-            }),
-        )));
+                    version: Version {
+                        identifier: "1".into(),
+                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                    },
+                    delay_period: DELAY_PERIOD,
+                }),
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Fetch Client State: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(fetch(relay_message::id::<
-            Wasm<Union>,
-            Ethereum<Minimal>,
-            _,
-        >(
-            union_chain_id.clone(),
-            relay_message::fetch::Fetch::specific(FetchAbciQuery {
-                path: ics24::Path::ClientState(ics24::ClientStatePath {
-                    client_id: parse!("client-id"),
+        print_json::<RelayMessage>(fetch(
+            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                union_chain_id.clone(),
+                relay_message::fetch::Fetch::specific(FetchAbciQuery {
+                    path: ics24::Path::ClientState(ics24::ClientStatePath {
+                        client_id: parse!("client-id"),
+                    }),
+                    height: parse!("123-456"),
+                    ty: AbciQueryType::State,
                 }),
-                height: parse!("123-456"),
-                ty: AbciQueryType::State,
-            }),
-        )));
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(effect(relay_message::id::<
-            Wasm<Union>,
-            Ethereum<Minimal>,
-            _,
-        >(
-            union_chain_id.clone(),
-            MsgChannelOpenInitData {
-                msg: MsgChannelOpenInit {
-                    port_id: parse!("WASM_PORT_ID"),
-                    channel: Channel {
-                        state: channel::state::State::Init,
-                        ordering: channel::order::Order::Unordered,
-                        counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
+        print_json::<RelayMessage>(effect(
+            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                union_chain_id.clone(),
+                MsgChannelOpenInitData {
+                    msg: MsgChannelOpenInit {
+                        port_id: parse!("WASM_PORT_ID"),
+                        channel: Channel {
+                            state: channel::state::State::Init,
+                            ordering: channel::order::Order::Unordered,
+                            counterparty: channel::counterparty::Counterparty {
+                                port_id: parse!("ucs01-relay"),
+                                channel_id: parse!(""),
+                            },
+                            connection_hops: vec![parse!("connection-8")],
+                            version: "ucs01-0".to_string(),
                         },
-                        connection_hops: vec![parse!("connection-8")],
-                        version: "ucs01-0".to_string(),
                     },
+                    __marker: PhantomData,
                 },
-                __marker: PhantomData,
-            },
-        )));
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Starting on Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(effect(relay_message::id::<
-            Ethereum<Minimal>,
-            Wasm<Union>,
-            _,
-        >(
-            eth_chain_id,
-            MsgChannelOpenInitData {
-                msg: MsgChannelOpenInit {
-                    port_id: parse!("ucs01-relay"),
-                    channel: Channel {
-                        state: channel::state::State::Init,
-                        ordering: channel::order::Order::Ordered,
-                        counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
+        print_json::<RelayMessage>(effect(
+            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                eth_chain_id,
+                MsgChannelOpenInitData {
+                    msg: MsgChannelOpenInit {
+                        port_id: parse!("ucs01-relay"),
+                        channel: Channel {
+                            state: channel::state::State::Init,
+                            ordering: channel::order::Order::Ordered,
+                            counterparty: channel::counterparty::Counterparty {
+                                port_id: parse!("ucs01-relay"),
+                                channel_id: parse!(""),
+                            },
+                            connection_hops: vec![parse!("connection-8")],
+                            version: "ucs001-pingpong".to_string(),
                         },
-                        connection_hops: vec![parse!("connection-8")],
-                        version: "ucs001-pingpong".to_string(),
                     },
+                    __marker: PhantomData,
                 },
-                __marker: PhantomData,
-            },
-        )));
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(effect(relay_message::id::<
-            Ethereum<Minimal>,
-            Wasm<Union>,
-            _,
-        >(
-            eth_chain_id,
-            MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("cometbls-0"),
-                counterparty: connection::counterparty::Counterparty {
-                    client_id: parse!("08-wasm-0"),
-                    connection_id: parse!(""),
-                    prefix: MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
+        print_json::<RelayMessage>(effect(
+            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                eth_chain_id,
+                MsgConnectionOpenInitData(MsgConnectionOpenInit {
+                    client_id: parse!("cometbls-0"),
+                    counterparty: connection::counterparty::Counterparty {
+                        client_id: parse!("08-wasm-0"),
+                        connection_id: parse!(""),
+                        prefix: MerklePrefix {
+                            key_prefix: b"ibc".to_vec(),
+                        },
                     },
-                },
-                version: Version {
-                    identifier: "1".into(),
-                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                },
-                delay_period: DELAY_PERIOD,
-            }),
-        )));
+                    version: Version {
+                        identifier: "1".into(),
+                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                    },
+                    delay_period: DELAY_PERIOD,
+                }),
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Try: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(event(relay_message::id::<
-            Ethereum<Minimal>,
-            Wasm<Union>,
-            _,
-        >(
-            eth_chain_id,
-            IbcEvent {
-                tx_hash: H256([0; 32]),
-                height: parse!("0-2941"),
-                event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                    connection_id: parse!("connection-0"),
-                    client_id: parse!("cometbls-0"),
-                    counterparty_client_id: parse!("08-wasm-1"),
-                    counterparty_connection_id: parse!("connection-14"),
-                }),
-            },
-        )));
+        print_json::<RelayMessage>(event(
+            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                eth_chain_id,
+                IbcEvent {
+                    tx_hash: H256([0; 32]),
+                    height: parse!("0-2941"),
+                    event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
+                        connection_id: parse!("connection-0"),
+                        client_id: parse!("cometbls-0"),
+                        counterparty_client_id: parse!("08-wasm-1"),
+                        counterparty_connection_id: parse!("connection-14"),
+                    }),
+                },
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Update Client: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(repeat(
+        print_json::<RelayMessage>(repeat(
             None,
             seq([
                 event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
@@ -989,7 +1000,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Union) Update Client: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(repeat(
+        print_json::<RelayMessage>(repeat(
             None,
             seq([
                 event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
@@ -1006,7 +1017,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Cosmos - Union (Sending to Cosmos) Update Client: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(repeat(
+        print_json::<RelayMessage>(repeat(
             None,
             seq([
                 event(relay_message::id::<Wasm<Cosmos>, Union, _>(
@@ -1023,7 +1034,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Cosmos - Union (Sending to Union) Update Client: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(repeat(
+        print_json::<RelayMessage>(repeat(
             None,
             seq([
                 event(relay_message::id::<Union, Wasm<Cosmos>, _>(
@@ -1040,7 +1051,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Scroll - Union (Sending to Union) Create Scroll lightclient on Union: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(aggregate(
+        print_json::<RelayMessage>(aggregate(
             [
                 fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
                     scroll_chain_id,
@@ -1074,7 +1085,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Scroll - single update client");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
+        print_json::<RelayMessage>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
             scroll_chain_id,
             relay_message::event::Command::UpdateClient {
                 client_id: parse!("cometbls-0"),
@@ -1085,7 +1096,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Union - Eth Create Both Clients: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(seq([
+        print_json::<RelayMessage>(seq([
             aggregate(
                 [
                     fetch(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
@@ -1150,7 +1161,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Union - Cosmos Create Both Client: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(seq([
+        print_json::<RelayMessage>(seq([
             aggregate(
                 [
                     fetch(relay_message::id::<Wasm<Cosmos>, Union, _>(
@@ -1212,7 +1223,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Cosmos - Cosmos Create Both Client: ");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(seq([
+        print_json::<RelayMessage>(seq([
             aggregate(
                 [
                     fetch(relay_message::id::<Cosmos, Cosmos, _>(
@@ -1270,7 +1281,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Scroll - single update client");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
+        print_json::<RelayMessage>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
             scroll_chain_id,
             relay_message::event::Command::UpdateClient {
                 client_id: parse!("cometbls-0"),
@@ -1281,7 +1292,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Scroll - fetch update header");
         println!("---------------------------------------");
-        print_json::<RelayMessageTypes>(fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
+        print_json::<RelayMessage>(fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
             scroll_chain_id,
             relay_message::fetch::Fetch::UpdateHeaders(relay_message::fetch::FetchUpdateHeaders {
                 counterparty_chain_id: union_chain_id.clone(),
@@ -1291,7 +1302,7 @@ mod tests {
             }),
         )));
 
-        print_json::<BlockMessageTypes>(fetch(block_message::id::<Cosmos, _>(
+        print_json::<BlockMessage>(fetch(block_message::id::<Cosmos, _>(
             "simd-devnet-1".parse().unwrap(),
             block_message::fetch::FetchBlock {
                 height: unionlabs::ibc::core::client::height::Height {
@@ -1301,7 +1312,7 @@ mod tests {
             },
         )));
 
-        print_json::<BlockMessageTypes>(fetch(block_message::id::<Union, _>(
+        print_json::<BlockMessage>(fetch(block_message::id::<Union, _>(
             "union-devnet-1".parse().unwrap(),
             block_message::fetch::FetchBlock {
                 height: unionlabs::ibc::core::client::height::Height {
@@ -1314,9 +1325,9 @@ mod tests {
 
     fn print_json<T: QueueMessageTypes>(msg: QueueMsg<T>)
     where
-        VoyagerMessageTypes: FromQueueMsg<T>,
+        VoyagerMessage: FromQueueMsg<T>,
     {
-        let msg = VoyagerMessageTypes::from_queue_msg(msg);
+        let msg = VoyagerMessage::from_queue_msg(msg);
 
         let json = serde_json::to_string(&msg).unwrap();
 

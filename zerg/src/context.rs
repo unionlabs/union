@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use block_message::{data::Data, AnyChainIdentified, BlockMessageTypes, Identified};
+use block_message::{data::Data, AnyChainIdentified, BlockMessage, Identified};
 use chain_utils::{cosmos_sdk::CosmosSdkChainExt, Chains};
 use contracts::{
     erc20,
@@ -357,7 +357,7 @@ impl Context {
         }));
 
         // NOTE: InMemoryQueue no longer removes done messages, we should add a retention policy
-        let queue = InMemoryQueue::<BlockMessageTypes>::new(()).await.unwrap();
+        let queue = InMemoryQueue::<BlockMessage>::new(()).await.unwrap();
 
         let q = queue.clone();
 

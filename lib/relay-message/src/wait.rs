@@ -18,7 +18,7 @@ use crate::{
     any_enum, any_lc,
     data::{AnyData, Data, LatestHeight},
     fetch::{AnyFetch, Fetch, FetchState},
-    id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayMessageTypes,
+    id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayMessage,
 };
 
 #[apply(any_enum)]
@@ -30,12 +30,12 @@ pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
     TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
 }
 
-impl HandleWait<RelayMessageTypes> for AnyLightClientIdentified<AnyWait> {
+impl HandleWait<RelayMessage> for AnyLightClientIdentified<AnyWait> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
+        store: &<RelayMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
         let wait = self;
 
         any_lc! {
@@ -57,7 +57,7 @@ where
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: &Hc) -> QueueMsg<RelayMessageTypes> {
+    pub async fn handle(self, c: &Hc) -> QueueMsg<RelayMessage> {
         match self {
             Wait::Height(WaitForHeight { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();

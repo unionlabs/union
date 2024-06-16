@@ -28,7 +28,7 @@ use crate::{
     fetch::{AnyFetch, Fetch, FetchState},
     id, identified, seq,
     wait::{AnyWait, Wait, WaitForHeight},
-    AnyLightClientIdentified, ChainExt, RelayMessageTypes,
+    AnyLightClientIdentified, ChainExt, RelayMessage,
 };
 
 #[apply(any_enum)]
@@ -38,12 +38,12 @@ pub enum Event<Hc: ChainExt, Tr: ChainExt> {
     Command(Command<Hc, Tr>),
 }
 
-impl HandleEvent<RelayMessageTypes> for AnyLightClientIdentified<AnyEvent> {
+impl HandleEvent<RelayMessage> for AnyLightClientIdentified<AnyEvent> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        store: &<RelayMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
+        store: &<RelayMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
         let wait = self;
 
         any_lc! {
@@ -57,7 +57,7 @@ impl HandleEvent<RelayMessageTypes> for AnyLightClientIdentified<AnyEvent> {
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
-    pub fn handle(self, hc: Hc) -> QueueMsg<RelayMessageTypes>
+    pub fn handle(self, hc: Hc) -> QueueMsg<RelayMessage>
     where
         AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
         AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,

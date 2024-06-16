@@ -8233,12 +8233,14 @@ dependencies = [
  "arbitrary",
  "block-message",
  "chain-utils",
+ "futures",
  "hex-literal",
  "macros",
  "queue-msg",
  "relay-message",
  "serde",
  "serde_json",
+ "tracing",
  "unionlabs",
 ]
 

@@ -11,7 +11,7 @@ use unionlabs::{
     traits::{ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, AnyLightClientIdentified, ChainExt, RelayMessageTypes};
+use crate::{any_enum, AnyLightClientIdentified, ChainExt, RelayMessage};
 
 #[apply(any_enum)]
 /// Data that will likely be used in a [`QueueMsg::Aggregate`].
@@ -57,12 +57,12 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 }
 
 // Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
-impl HandleData<RelayMessageTypes> for AnyLightClientIdentified<AnyData> {
+impl HandleData<RelayMessage> for AnyLightClientIdentified<AnyData> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        _: &<RelayMessageTypes as QueueMessageTypes>::Store,
-    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
+        _: &<RelayMessage as QueueMessageTypes>::Store,
+    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
         Ok(data(self))
     }
 }

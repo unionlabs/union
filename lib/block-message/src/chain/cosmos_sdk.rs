@@ -29,7 +29,7 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate},
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 pub trait CosmosSdkChainSealed: CosmosSdkChain + ChainExt {}
@@ -54,7 +54,7 @@ where
             from_height,
             to_height,
         }: FetchBlockRange<C>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> QueueMsg<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<C>::specific(FetchBlocks {
@@ -79,7 +79,7 @@ where
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
     AnyChainIdentified<AnyAggregate>: From<Identified<C, Aggregate<C>>>,
 {
-    async fn do_fetch(c: &C, this: Self) -> QueueMsg<BlockMessageTypes> {
+    async fn do_fetch(c: &C, this: Self) -> QueueMsg<BlockMessage> {
         match this {
             CosmosSdkFetch::FetchTransactions(FetchTransactions { height, page }) => {
                 info!(%height, %page, "fetching events in block");
@@ -388,7 +388,7 @@ pub struct AggregateEventWithClientType<C: CosmosSdkChain> {
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,
 }
 
-impl<C> UseAggregate<BlockMessageTypes> for Identified<C, AggregateEventWithClientType<C>>
+impl<C> UseAggregate<BlockMessage> for Identified<C, AggregateEventWithClientType<C>>
 where
     C: CosmosSdkChainSealed,
     Identified<C, ClientType<C>>: IsAggregateData,
@@ -415,7 +415,7 @@ where
                 __marker: _
             },
         }]: Self::AggregatedData,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> QueueMsg<BlockMessage> {
         assert_eq!(chain_id, client_type_chain_id);
 
         data(id(
@@ -437,13 +437,13 @@ where
 
     Identified<C, ClientType<C>>: IsAggregateData,
 
-    Identified<C, AggregateEventWithClientType<C>>: UseAggregate<BlockMessageTypes>,
+    Identified<C, AggregateEventWithClientType<C>>: UseAggregate<BlockMessage>,
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
 {
     fn do_aggregate(
         Identified { chain_id, t: data }: Self,
         aggregate_data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> QueueMsg<BlockMessage> {
         match data {
             CosmosSdkAggregate::AggregateEventWithClientType(data) => {
                 do_aggregate(id(chain_id, data), aggregate_data)

@@ -10,13 +10,13 @@ use unionlabs::{ibc::core::client::height::IsHeight, traits::Chain};
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::ethereum::{
+    chain::ethereum::{
         fetch_beacon_block_range, fetch_channel, fetch_get_logs, AggregateWithChannel, ChannelData,
         ConnectionData, FetchBeaconBlockRange, FetchChannel, FetchEvents, FetchGetLogs,
     },
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 impl ChainExt for Arbitrum {
@@ -29,10 +29,7 @@ impl DoFetchBlockRange<Arbitrum> for Arbitrum
 where
     AnyChainIdentified<AnyFetch>: From<Identified<Arbitrum, Fetch<Arbitrum>>>,
 {
-    fn fetch_block_range(
-        c: &Arbitrum,
-        range: FetchBlockRange<Arbitrum>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    fn fetch_block_range(c: &Arbitrum, range: FetchBlockRange<Arbitrum>) -> QueueMsg<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<Arbitrum>::specific(FetchEvents {
@@ -49,7 +46,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Arbitrum, Aggregate<Arbitrum>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Arbitrum, Fetch<Arbitrum>>>,
 {
-    async fn do_fetch(c: &Arbitrum, msg: Self) -> QueueMsg<BlockMessageTypes> {
+    async fn do_fetch(c: &Arbitrum, msg: Self) -> QueueMsg<BlockMessage> {
         match msg {
             Self::FetchEvents(FetchEvents {
                 from_height,
@@ -112,7 +109,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> QueueMsg<BlockMessage> {
         match t {
             ArbitrumAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
         }

@@ -16,13 +16,13 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::ethereum::{
+    chain::ethereum::{
         fetch_channel, mk_aggregate_event, AggregateWithChannel, ChannelData, ConnectionData,
         FetchChannel,
     },
     data::{AnyData, ChainEvent, Data},
     fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    id, AnyChainIdentified, BlockMessageTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 impl ChainExt for Berachain {
@@ -38,7 +38,7 @@ where
     fn fetch_block_range(
         c: &Berachain,
         range: FetchBlockRange<Berachain>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> QueueMsg<BlockMessage> {
         fetch(id(
             c.chain_id(),
             Fetch::<Berachain>::specific(FetchBlocks {
@@ -55,7 +55,7 @@ where
     AnyChainIdentified<AnyAggregate>: From<Identified<Berachain, Aggregate<Berachain>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Berachain, Fetch<Berachain>>>,
 {
-    async fn do_fetch(c: &Berachain, msg: Self) -> QueueMsg<BlockMessageTypes> {
+    async fn do_fetch(c: &Berachain, msg: Self) -> QueueMsg<BlockMessage> {
         match msg {
             Self::FetchBlockEvents(FetchBlockEvents { height }) => {
                 info!(%height, "fetching block events");
@@ -208,7 +208,7 @@ where
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes> {
+    ) -> QueueMsg<BlockMessage> {
         match t {
             BerachainAggregate::AggregateWithChannel(msg) => do_aggregate(id(chain_id, msg), data),
         }

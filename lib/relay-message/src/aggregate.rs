@@ -56,7 +56,7 @@ use crate::{
     id, identified,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForHeight, WaitForTimestamp, WaitForTrustedHeight},
-    AnyLightClientIdentified, ChainExt, DoAggregate, Identified, RelayMessageTypes,
+    AnyLightClientIdentified, ChainExt, DoAggregate, Identified, RelayMessage,
 };
 
 #[apply(any_enum)]
@@ -110,12 +110,12 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
     LightClientSpecific(LightClientSpecificAggregate<Hc, Tr>),
 }
 
-impl HandleAggregate<RelayMessageTypes> for AnyLightClientIdentified<AnyAggregate> {
+impl HandleAggregate<RelayMessage> for AnyLightClientIdentified<AnyAggregate> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     fn handle(
         self,
-        data: VecDeque<<RelayMessageTypes as QueueMessageTypes>::Data>,
-    ) -> Result<QueueMsg<RelayMessageTypes>, QueueError> {
+        data: VecDeque<<RelayMessage as QueueMessageTypes>::Data>,
+    ) -> Result<QueueMsg<RelayMessage>, QueueError> {
         let aggregate = self;
 
         any_lc! {
@@ -125,10 +125,7 @@ impl HandleAggregate<RelayMessageTypes> for AnyLightClientIdentified<AnyAggregat
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
-    pub fn handle(
-        self,
-        data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> QueueMsg<RelayMessageTypes>
+    pub fn handle(self, data: VecDeque<AnyLightClientIdentified<AnyData>>) -> QueueMsg<RelayMessage>
     where
         identified!(SelfClientState<Tr, Hc>): IsAggregateData,
         identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,
@@ -433,7 +430,7 @@ pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
 #[queue_msg]
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateChannelHandshakeMsgAfterUpdate<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateChannelHandshakeMsgAfterUpdate<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -461,7 +458,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         let event_msg = match channel_handshake_event {
@@ -506,7 +503,7 @@ pub fn mk_aggregate_wait_for_update<Hc: ChainExt, Tr: ChainExt>(
     client_id: ClientIdOf<Hc>,
     counterparty_client_id: ClientIdOf<Tr>,
     wait_for: HeightOf<Hc>,
-) -> QueueMsg<RelayMessageTypes>
+) -> QueueMsg<RelayMessage>
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
@@ -534,7 +531,7 @@ where
     )
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregatePacketMsgAfterUpdate<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregatePacketMsgAfterUpdate<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -564,7 +561,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         let event = match packet_event {
@@ -613,7 +610,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregatePacketTimeout<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregatePacketTimeout<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<ClientIdOf<Hc>>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
@@ -663,7 +660,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, client_state_chain_id);
         assert_eq!(this_chain_id, connection_chain_id);
         assert_eq!(client_id, connection.client_id);
@@ -773,7 +770,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForTrustedHeight<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateWaitForTrustedHeight<Hc, Tr>)
 where
     identified!(LatestHeight<Tr, Hc>): IsAggregateData,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -796,7 +793,7 @@ where
             t: LatestHeight { height, __marker },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(latest_height_chain_id, counterparty_chain_id);
 
         wait(id(
@@ -811,7 +808,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateConnectionFetchFromChannelEnd<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateConnectionFetchFromChannelEnd<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -833,7 +830,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         fetch(id::<Hc, Tr, _>(
@@ -849,7 +846,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateClientStateFromConnection<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateClientStateFromConnection<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -871,7 +868,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         fetch(id(
@@ -887,7 +884,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateUpdateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateUpdateClient<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -918,7 +915,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_client_id, client_id);
@@ -943,7 +940,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateUpdateClientFromHeight<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateUpdateClientFromHeight<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     identified!(LatestHeight<Tr, Hc>): IsAggregateData,
@@ -970,7 +967,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         fetch(id::<Tr, Hc, _>(
             counterparty_chain_id,
             FetchUpdateHeaders {
@@ -983,7 +980,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForCounterpartyTrustedHeight<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateWaitForCounterpartyTrustedHeight<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Hc>)>,
@@ -1014,7 +1011,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(trusted_client_state_client_id, client_id);
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
 
@@ -1032,7 +1029,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgAfterUpdate<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgAfterUpdate<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -1062,7 +1059,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, self_chain_id);
 
         match msg_to_aggregate {
@@ -1650,7 +1647,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgConnectionOpenTry<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgConnectionOpenTry<Hc, Tr>)
 where
     // state
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
@@ -1735,7 +1732,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert!(consensus_state_proof_height.revision_height() >= trusted_height.revision_height());
         assert!(client_state_proof_height.revision_height() >= trusted_height.revision_height());
 
@@ -1774,7 +1771,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgConnectionOpenAck<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgConnectionOpenAck<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
@@ -1854,7 +1851,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert!(consensus_state_proof_height.revision_height() >= trusted_height.revision_height());
         assert!(client_state_proof_height.revision_height() >= trusted_height.revision_height());
 
@@ -1886,7 +1883,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgConnectionOpenConfirm<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgConnectionOpenConfirm<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
@@ -1933,7 +1930,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
@@ -1953,7 +1950,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgChannelOpenTry<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgChannelOpenTry<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
@@ -2021,7 +2018,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
@@ -2058,7 +2055,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgChannelOpenAck<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgChannelOpenAck<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
@@ -2114,7 +2111,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
@@ -2138,7 +2135,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgChannelOpenConfirm<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgChannelOpenConfirm<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
@@ -2195,7 +2192,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, channel_proof_chain_id);
         assert_eq!(channel_end_chain_id, this_chain_id);
@@ -2217,7 +2214,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgRecvPacket<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgRecvPacket<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<CommitmentPath, Hc, Tr>>: IsAggregateData,
@@ -2263,7 +2260,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, commitment_proof_chain_id);
 
@@ -2294,7 +2291,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgAckPacket<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgAckPacket<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
@@ -2342,7 +2339,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(commitment_proof_chain_id, this_chain_id);
 
@@ -2374,7 +2371,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgTimeout<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgTimeout<Hc, Tr>)
 where
     Identified<Tr, Hc, IbcProof<ReceiptPath, Tr, Hc>>: IsAggregateData,
     Identified<Tr, Hc, IbcState<ReceiptPath, Tr, Hc>>: IsAggregateData,
@@ -2419,7 +2416,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(proof_unreceived_path, packet_receipt_path);
         assert_eq!(proof_unreceived_height, packet_receipt_height);
 
@@ -2462,7 +2459,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForPacketReceipt<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateWaitForPacketReceipt<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ReceiptPath, Hc, Tr>>: IsAggregateData,
 
@@ -2488,7 +2485,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         if packet_receipt {
             info!(
                 sequence = %packet.sequence,
@@ -2521,7 +2518,7 @@ where
         }
     }
 }
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateFetchCounterpartyStateProof<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateFetchCounterpartyStateProof<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -2548,7 +2545,7 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
@@ -2557,7 +2554,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateFetchReceiptPathProofFromChannelAndPort<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateFetchReceiptPathProofFromChannelAndPort<Hc, Tr>)
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
@@ -2586,7 +2583,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, next_sequence_recv_chain_id);
 
         assert_eq!(next_sequence_recv_path.port_id, port_id);
@@ -2607,7 +2604,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateMsgCreateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateMsgCreateClient<Hc, Tr>)
 where
     identified!(SelfClientState<Tr, Hc>): IsAggregateData,
     identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,
@@ -2642,7 +2639,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(self_client_state_chain_id, self_consensus_state_chain_id);
 
         effect(id::<Hc, Tr, _>(
@@ -2658,7 +2655,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForNextConnectionSequence<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateWaitForNextConnectionSequence<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -2685,7 +2682,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, next_connection_sequence_chain_id);
 
         if next_connection_sequence >= sequence {
@@ -2715,7 +2712,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForNextClientSequence<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateWaitForNextClientSequence<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -2742,7 +2739,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, next_client_sequence_chain_id);
 
         if next_client_sequence >= sequence {
@@ -2772,7 +2769,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessageTypes> for identified!(AggregateWaitForConnectionOpen<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayMessage> for identified!(AggregateWaitForConnectionOpen<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -2801,7 +2798,7 @@ where
             },
             __marker: _
         },]: Self::AggregatedData,
-    ) -> QueueMsg<RelayMessageTypes> {
+    ) -> QueueMsg<RelayMessage> {
         assert_eq!(this_chain_id, connection_state_client_id);
         assert_eq!(connection_id, path_connection_id);
 

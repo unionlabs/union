@@ -23,7 +23,7 @@ pub mod data;
 pub mod fetch;
 pub mod wait;
 
-pub mod chain_impls;
+pub mod chain;
 
 pub trait ChainExt: Chain {
     type Data: QueueMsgTypesTraits;
@@ -31,9 +31,9 @@ pub trait ChainExt: Chain {
     type Aggregate: QueueMsgTypesTraits;
 }
 
-pub struct BlockMessageTypes;
+pub enum BlockMessage {}
 
-impl QueueMessageTypes for BlockMessageTypes {
+impl QueueMessageTypes for BlockMessage {
     type Event = Never;
     type Data = AnyChainIdentified<AnyData>;
     type Fetch = AnyChainIdentified<AnyFetch>;
@@ -217,10 +217,7 @@ pub trait IsAggregateData = TryFrom<AnyChainIdentified<AnyData>, Error = AnyChai
     + Into<AnyChainIdentified<AnyData>>;
 
 pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
-    fn do_aggregate(
-        _: Self,
-        _: VecDeque<AnyChainIdentified<AnyData>>,
-    ) -> QueueMsg<BlockMessageTypes>;
+    fn do_aggregate(_: Self, _: VecDeque<AnyChainIdentified<AnyData>>) -> QueueMsg<BlockMessage>;
 }
 
 macro_rules! any_chain {
