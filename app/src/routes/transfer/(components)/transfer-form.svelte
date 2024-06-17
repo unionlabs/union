@@ -20,7 +20,7 @@ import AssetsDialog from "./assets-dialog.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import CardSectionHeading from "./card-section-heading.svelte"
 import { config } from "$lib/wallet/evm/config.ts"
-import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
+import { userBalancesQuery } from "$lib/queries/balance"
 import { derived } from "svelte/store"
 import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
@@ -31,8 +31,7 @@ import { goto } from "$app/navigation"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
-
-let cosmosChains = chains.filter(c => c.rpc_type === "cosmos")
+let userBalances = userBalancesQuery({ chains, userAddr })
 
 // CURRENT FORM STATE
 let fromChainId = writable("union-testnet-8")
@@ -49,17 +48,6 @@ let dialogOpenToken = false
 let dialogOpenToChain = false
 let dialogOpenFromChain = false
 
-let evmBalances = evmBalancesQuery({
-  chainId: "11155111",
-  address: userAddr.evm.canonical,
-  tokenSpecification: "erc20"
-})
-
-let cosmosBalances = cosmosBalancesQuery({
-  chains: cosmosChains,
-  address: userAddr.cosmos.bytes
-})
-
 let unionClient: UnionClient
 
 let toChain = derived(
@@ -73,32 +61,20 @@ let fromChain = derived(
 )
 
 let asset = derived(
-  [assetSymbol, fromChain, cosmosBalances, evmBalances],
-  ([$assetSymbol, $fromChain, $cosmosBalances, $evmBalances]) => {
-    if ($assetSymbol === "" || $fromChain === null) return null
-    if ($fromChain.rpc_type === "cosmos") {
-      const chainIndex = cosmosChains.findIndex(c => c.chain_id === $fromChainId)
-      const cosmosBalance = $cosmosBalances[chainIndex]
-      if (!cosmosBalance.isSuccess) {
-        return null
-      }
-      let balance = cosmosBalance.data.find(balance => balance.symbol === $assetSymbol)
-      if (!balance) {
-        return null
-      }
-      return balance
+  [assetSymbol, fromChain, userBalances],
+  ([$assetSymbol, $fromChain, $userBalances]) => {
+    if ($assetSymbol === "" || $fromChain === null) return null;
+
+    const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
+    const userBalance = $userBalances[chainIndex]
+    if (!userBalance.isSuccess) {
+      return null
     }
-    if ($fromChain.rpc_type === "evm") {
-      if (!$evmBalances.isSuccess) {
-        return null
-      }
-      let balance = $evmBalances.data.find(balance => balance.symbol === $assetSymbol)
-      if (!balance) {
-        return null
-      }
-      return balance
+    let balance = userBalance.data.find(balance => balance.symbol === $assetSymbol)
+    if (!balance) {
+      return null
     }
-    return null
+    return balance
   }
 )
 
@@ -249,18 +225,10 @@ onMount(() => {
 })
 
 let sendableBalances = derived(
-  [fromChainId, evmBalances, cosmosBalances],
-  ([$fromChainId, $evmBalances, $cosmosBalances]) => {
-    if ($fromChainId === "11155111") {
-      if (!$evmBalances.isSuccess) {
-        console.log("trying to send from evm but no balances fetched yet")
-        return null
-      }
-      return $evmBalances.data
-    }
-
-    const chainIndex = cosmosChains.findIndex(c => c.chain_id === $fromChainId)
-    const cosmosBalance = $cosmosBalances[chainIndex]
+  [fromChainId, userBalances],
+  ([$fromChainId, $userBalances]) => {
+    const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
+    const cosmosBalance = $userBalances[chainIndex]
     if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
       console.log("trying to send from cosmos but no balances fetched yet")
       return null
