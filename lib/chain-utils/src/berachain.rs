@@ -36,8 +36,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, EthereumChain, EthereumConsensusChain, EthereumSignerMiddleware,
-        EthereumSignersConfig, ReadWrite,
+        self, balance_of_signers, EthereumChain, EthereumConsensusChain, EthereumExecutionRpcs,
+        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, SignerBalance},
 };
@@ -189,7 +189,7 @@ impl Chain for Berachain {
                     denominator: option_unwrap!(NonZeroU64::new(3)),
                 }
             },
-            trusting_period: const { result_unwrap!(Duration::new(UNBONDING_PERIOD * 85 / 100, 0)) },
+            trusting_period: const { result_unwrap!(Duration::new((UNBONDING_PERIOD * 85) / 100, 0)) },
             max_clock_drift: const { result_unwrap!(Duration::new(60 * 10, 0)) },
             frozen_height: None,
             latest_height: Height {
@@ -234,7 +234,7 @@ impl Chain for Berachain {
     }
 }
 
-impl EthereumChain for Berachain {
+impl EthereumExecutionRpcs for Berachain {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }

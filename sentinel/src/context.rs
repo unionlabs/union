@@ -27,17 +27,10 @@ impl Context {
         let mut chains = HashMap::new();
 
         if config.ethereum.enable {
-            // We can take the first signer as the default signer since we don't need couple signers.
-
-            let eth = match config.ethereum.preset {
-                PresetBaseKind::Minimal => Chain::EthereumMinimal(
-                    Ethereum::new(config.ethereum, "hebele".to_string()).await,
-                ),
-                PresetBaseKind::Mainnet => Chain::EthereumMainnet(
-                    Ethereum::new(config.ethereum, "hubele".to_string()).await,
-                ),
-            };
-            chains.insert(KEY_ETHEREUM.to_string(), eth);
+            chains.insert(
+                KEY_ETHEREUM.to_string(),
+                Chain::Ethereum(Ethereum::new(config.ethereum).await),
+            );
         }
 
         if config.osmosis.enable {
@@ -84,19 +77,9 @@ impl Context {
             });
         }
 
-        if let Some(Chain::EthereumMinimal(ethereum)) = self.chains.get(KEY_ETHEREUM).cloned() {
+        if let Some(Chain::Ethereum(ethereum)) = self.chains.get(KEY_ETHEREUM).cloned() {
             let shared_map = self.shared_map.clone();
 
-            tokio::spawn(async move {
-                ethereum.listen(&shared_map).await;
-            });
-        }
-
-        // TODO(caglankaan): It will be %100 same with the above block. We can refactor it.
-        if let Some(Chain::EthereumMainnet(ethereum)) = self.chains.get(KEY_ETHEREUM).cloned() {
-            let shared_map = self.shared_map.clone();
-
-            tracing::info!("Listening to EthereumMainnet chain");
             tokio::spawn(async move {
                 ethereum.listen(&shared_map).await;
             });
@@ -121,42 +104,29 @@ impl Context {
 
                     let amount = rng.gen_range(interaction.amount_min..=interaction.amount_max);
 
-                    match source_chain {
-                        Chain::EthereumMinimal(_) => {
-                            source_chain
-                                .send_ibc_transfer(
-                                    interaction.protocol.clone(),
-                                    interaction.source.channel.clone(),
-                                    interaction.destination.channel.clone(),
-                                    "muno".to_string(),
-                                    amount,
-                                )
-                                .await;
+                    match &source_chain {
+                        Chain::Ethereum(eth) => {
+                            eth.send_ibc_transfer(
+                                interaction.protocol.clone(),
+                                interaction.source.channel.clone(),
+                                interaction.destination.channel.clone(),
+                                "muno".to_string(),
+                                amount,
+                            )
+                            .await;
                         }
-                        Chain::EthereumMainnet(_) => {
-                            source_chain
-                                .send_ibc_transfer(
-                                    interaction.protocol.clone(),
-                                    interaction.source.channel.clone(),
-                                    interaction.destination.channel.clone(),
-                                    "muno".to_string(),
-                                    amount,
-                                )
-                                .await;
+                        Chain::Osmosis(osmo) => {
+                            osmo.send_ibc_transfer(
+                                interaction.protocol.clone(),
+                                interaction.source.channel.clone(),
+                                interaction.destination.channel.clone(),
+                                "muno".to_string(),
+                                amount,
+                            )
+                            .await;
                         }
-                        Chain::Osmosis(_) => {
-                            source_chain
-                                .send_ibc_transfer(
-                                    interaction.protocol.clone(),
-                                    interaction.source.channel.clone(),
-                                    interaction.destination.channel.clone(),
-                                    "muno".to_string(),
-                                    amount,
-                                )
-                                .await;
-                        }
-                        Chain::Union(_) => {
-                            source_chain
+                        Chain::Union(union) => {
+                            union
                                 .send_ibc_transfer(
                                     interaction.protocol.clone(),
                                     interaction.source.channel.clone(),
