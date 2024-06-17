@@ -213,13 +213,14 @@ const transfer = async () => {
     })
 
     toast.info("Submitting UCS01 contract call")
-    await walletClient.writeContract(request)
+    const hash = await walletClient.writeContract(request)
+    goto(`/explorer/transfers/${hash}`)
   } else {
     console.error("invalid rpc type")
   }
 }
 onMount(() => {
-  fromChainId.subscribe(fromChain => {
+  fromChainId.subscribe(_ => {
     assetSymbol.set("")
   })
 })
