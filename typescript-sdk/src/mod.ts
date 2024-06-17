@@ -2,12 +2,11 @@ export * from "./v0/mod.ts"
 import {
   http,
   getAddress,
-  createClient,
   type Address,
   type Account,
-  walletActions,
   publicActions,
   type Transport,
+  createWalletClient,
   type WalletClientConfig
 } from "viem"
 import {
@@ -52,8 +51,7 @@ export function createUnionClient({
   const chain = evm.chain ?? sepolia
   const transport: Transport = evm.transport ?? http("https://rpc2.sepolia.org")
 
-  return createClient({ ...evm, transport, chain, account: evm.account })
-    .extend(walletActions)
+  return createWalletClient({ ...evm, transport, chain, account: evm.account })
     .extend(publicActions)
     .extend(() => ({ offchainQuery }))
     .extend(() => ({

@@ -40,15 +40,15 @@ const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
 try {
   const {
-    data: [unionTestnetInfo]
+    data: [sepoliaInfo]
   } = await offchainQuery.chain({
-    includeContracts: true,
-    chainId: "11155111"
+    chainId: "11155111",
+    includeContracts: true
   })
 
-  if (!unionTestnetInfo) raise("Sepolia testnet info not found")
+  if (!sepoliaInfo) raise("Sepolia testnet info not found")
 
-  const ucsConfiguration = unionTestnetInfo.ucs1_configurations
+  const ucsConfiguration = sepoliaInfo.ucs1_configurations
     ?.filter(config => config.destination_chain.chain_id === "osmo-test-5")
     .at(0)
 
@@ -69,7 +69,7 @@ try {
 
   const transfer = await client.transferAsset({
     amount: 1n,
-    network: "evm",
+    network: sepoliaInfo.rpc_type,
     denomAddress: USDC_CONTRACT_ADDRESS,
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,

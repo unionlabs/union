@@ -1,12 +1,10 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { hexStringToUint8Array } from "#convert.ts"
-import { createUnionClient, cosmosHttp, offchainQuery } from "#mod.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { raise } from "#utilities/index.ts"
-import { http } from "viem"
+import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { sepolia } from "viem/chains"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createUnionClient, cosmosHttp, offchainQuery } from "#mod.ts"
 
 /* `bun playground/osmosis-to-union.ts --private-key "..."` */
 

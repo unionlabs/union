@@ -34,8 +34,8 @@ try {
   const {
     data: [unionTestnetInfo]
   } = await offchainQuery.chain({
-    includeContracts: true,
-    chainId: "11155111"
+    chainId: "11155111",
+    includeContracts: true
   })
 
   if (!unionTestnetInfo) raise("Sepolia testnet info not found")
@@ -66,7 +66,7 @@ try {
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id],
+    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   })
 
   console.info(transfer)
