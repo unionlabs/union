@@ -9,7 +9,6 @@ export let chains: Array<Chain>
 export let chainId: ChainId
 export let symbol: boolean
 
-
 let cosmosBalances = userBalancesQuery({
   chains: chains.filter(c => c.chain_id === chainId),
   userAddr

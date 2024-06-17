@@ -1,16 +1,15 @@
 <script lang="ts">
-import AssetCard from '$lib/components/asset-card.svelte';
+import AssetCard from "$lib/components/asset-card.svelte"
 import { userBalancesQuery } from "$lib/queries/balance"
 import type { Chain, UserAddresses } from "$lib/types"
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
-import ScrollArea from "./ui/scroll-area/scroll-area.svelte";
+import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
 
 let userBalances = userBalancesQuery({
   chains,
-  userAddr,
+  userAddr
 })
-
 </script>
 
 {#each $userBalances as balance, index}

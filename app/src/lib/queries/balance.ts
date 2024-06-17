@@ -29,7 +29,6 @@ const cosmosBalancesResponseSchema = v.object({
   )
 })
 
-
 export type EvmBalances = v.InferOutput<typeof evmBalancesResponseSchema>
 
 export function userBalancesQuery({
@@ -46,15 +45,13 @@ export function userBalancesQuery({
       refetchOnWindowFocus: false,
       refetchInterval: 2_000,
       queryFn: async () => {
-
         if (chain.rpc_type === "evm") {
-
           let json: undefined | unknown
-
 
           // TODO: support quicknode
           const alchemy_rpcs = chain.rpcs.filter(rpc => rpc.type === "alchemy")
-          if (alchemy_rpcs.length === 0) raise(`no alchemy rpc available for chain ${chain.chain_id}`)
+          if (alchemy_rpcs.length === 0)
+            raise(`no alchemy rpc available for chain ${chain.chain_id}`)
 
           const alchemyUrl = alchemy_rpcs[0].url
 
@@ -88,11 +85,10 @@ export function userBalancesQuery({
             balance: BigInt(result.output.result.tokenBalances[index].tokenBalance),
             address: token.address as Address
           }))
-          
         }
-        
+
         if (chain.rpc_type === "cosmos") {
-          const bech32_addr = rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes);
+          const bech32_addr = rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes)
 
           let json: undefined | unknown
           const rest_rpcs = chain.rpcs.filter(rpc => rpc.type === "rest")
@@ -126,7 +122,7 @@ export function userBalancesQuery({
           }))
         }
 
-        raise(`chain has unsupported rpc type ${chain.rpc_type}`);
+        raise(`chain has unsupported rpc type ${chain.rpc_type}`)
       }
     }))
   })

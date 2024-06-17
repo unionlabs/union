@@ -28,7 +28,7 @@ import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
-    import { page } from "$app/stores";
+import { page } from "$app/stores"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -64,7 +64,7 @@ let fromChain = derived(
 let asset = derived(
   [assetSymbol, fromChain, userBalances],
   ([$assetSymbol, $fromChain, $userBalances]) => {
-    if ($assetSymbol === "" || $fromChain === null) return null;
+    if ($assetSymbol === "" || $fromChain === null) return null
 
     const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
     const userBalance = $userBalances[chainIndex]
@@ -221,36 +221,31 @@ const transfer = async () => {
   }
 }
 onMount(() => {
-  const source = $page.url.searchParams.get('source');
-  const asset = $page.url.searchParams.get('asset');
-
+  const source = $page.url.searchParams.get("source")
+  const asset = $page.url.searchParams.get("asset")
 
   fromChainId.subscribe(_ => {
     assetSymbol.set("")
   })
 
   if (source) {
-    fromChainId.set(source);
+    fromChainId.set(source)
   }
 
   if (asset) {
-    assetSymbol.set(asset);
+    assetSymbol.set(asset)
   }
-
 })
 
-let sendableBalances = derived(
-  [fromChainId, userBalances],
-  ([$fromChainId, $userBalances]) => {
-    const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
-    const cosmosBalance = $userBalances[chainIndex]
-    if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
-      console.log("trying to send from cosmos but no balances fetched yet")
-      return null
-    }
-    return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
+let sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
+  const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
+  const cosmosBalance = $userBalances[chainIndex]
+  if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
+    console.log("trying to send from cosmos but no balances fetched yet")
+    return null
   }
-)
+  return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
+})
 
 function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$fromChainId, $toChainId]

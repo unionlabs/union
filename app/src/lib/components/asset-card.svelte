@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { truncate } from "$lib/utilities/format";
-  import type { Chain } from "$lib/types";
+import { truncate } from "$lib/utilities/format"
+import type { Chain } from "$lib/types"
 
-  export let asset: { symbol: string, balance: string | bigint };
-  export let chain: Chain;
+export let asset: { symbol: string; balance: string | bigint }
+export let chain: Chain
 
-  import { Button } from "$lib/components/ui/button/index.ts"
+import { Button } from "$lib/components/ui/button/index.ts"
 </script>
 <div class="asset-scene">
   <div class="asset-card asset-card asset-card--show-side my-4">
