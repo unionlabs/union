@@ -1,7 +1,9 @@
 <script lang="ts">
   import { truncate } from "$lib/utilities/format";
+  import type { Chain } from "$lib/types";
 
   export let asset: { symbol: string, balance: string | bigint };
+  export let chain: Chain;
 
   import { Button } from "$lib/components/ui/button/index.ts"
 </script>
@@ -14,7 +16,7 @@
     <div class="asset-card__front flex flex-col">
       <div class="uppercase font-bold">{truncate(asset.symbol, 8)}</div>
       <div class="flex-1 text-xl font-mono">{asset.balance}</div>
-      <Button>Transfer</Button>
+      <Button href={`/transfer?source=${encodeURIComponent(chain.chain_id)}&asset=${encodeURIComponent(asset.symbol)}`}>Transfer</Button>
     </div>
   </div>
 </div>

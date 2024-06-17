@@ -30,7 +30,7 @@ let userBalances = userBalancesQuery({
       <div class="flex gap-4 px-6">
         {#if !(balance.data instanceof Error)}
           {#each balance.data as asset}
-            <AssetCard {asset}/>
+            <AssetCard {asset} chain={chains[index]} />
           {/each}
         {/if}
       </div>

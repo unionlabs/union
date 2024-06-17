@@ -28,6 +28,7 @@ import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
+    import { page } from "$app/stores";
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -220,9 +221,22 @@ const transfer = async () => {
   }
 }
 onMount(() => {
+  const source = $page.url.searchParams.get('source');
+  const asset = $page.url.searchParams.get('asset');
+
+
   fromChainId.subscribe(_ => {
     assetSymbol.set("")
   })
+
+  if (source) {
+    fromChainId.set(source);
+  }
+
+  if (asset) {
+    assetSymbol.set(asset);
+  }
+
 })
 
 let sendableBalances = derived(

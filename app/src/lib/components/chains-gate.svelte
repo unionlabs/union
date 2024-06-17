@@ -32,7 +32,6 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
     } else {
       addr_prefix = chain.addr_prefix
     }
-    console.log(chain)
 
     let ucs1_configurations = chain.ucs1_configurations.reduce<
       Record<string, (typeof chain.ucs1_configurations)[number]>
