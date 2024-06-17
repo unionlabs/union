@@ -3,6 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use ecdsa::SigningKey;
 use ethers::{core::k256::ecdsa, signers::LocalWallet, utils::secret_key_to_address};
 use hex::{decode as hex_decode, encode as hex_encode, FromHex};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use tokio::{sync::Mutex, time::interval};
 use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
@@ -116,6 +117,10 @@ impl Context {
 
                 loop {
                     interval.tick().await;
+                    let mut rng = StdRng::from_entropy();
+
+                    let amount = rng.gen_range(interaction.amount_min..=interaction.amount_max);
+
                     match source_chain {
                         Chain::EthereumMinimal(_) => {
                             source_chain
@@ -124,7 +129,7 @@ impl Context {
                                     interaction.source.channel.clone(),
                                     interaction.destination.channel.clone(),
                                     "muno".to_string(),
-                                    interaction.amount,
+                                    amount,
                                 )
                                 .await;
                         }
@@ -135,7 +140,7 @@ impl Context {
                                     interaction.source.channel.clone(),
                                     interaction.destination.channel.clone(),
                                     "muno".to_string(),
-                                    interaction.amount,
+                                    amount,
                                 )
                                 .await;
                         }
@@ -146,7 +151,7 @@ impl Context {
                                     interaction.source.channel.clone(),
                                     interaction.destination.channel.clone(),
                                     "muno".to_string(),
-                                    interaction.amount,
+                                    amount,
                                 )
                                 .await;
                         }
@@ -157,7 +162,7 @@ impl Context {
                                     interaction.source.channel.clone(),
                                     interaction.destination.channel.clone(),
                                     "muno".to_string(),
-                                    interaction.amount,
+                                    amount,
                                 )
                                 .await;
                         }

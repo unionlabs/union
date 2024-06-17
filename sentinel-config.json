@@ -17,7 +17,6 @@
   "osmosis": {
     "chain_config": {
       "chain_config": {
-
         "signers": [
           {
             "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -36,7 +35,6 @@
   "union": {
     "chain_config": {
       "chain_config": {
-
         "signers": [
           {
             "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"

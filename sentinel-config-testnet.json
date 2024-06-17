@@ -6,7 +6,19 @@
       "ibc_handler_address": "0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb",
       "signers": [
         {
-          "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
+          "raw": "0xc7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff"
+        },
+        {
+          "raw": "0xe712cc7e3725edd811fd95e5000d8ddb9c15731d209c07aef6a01b11d1e9f338"
+        },
+        {
+          "raw": "0xa95fe53f16d55ad179e3e875bc47cc5714e01760ee1a894ac39e3d3d3fa51664"
+        },
+        {
+          "raw": "0xfdf3322e1f8e69253ae01d6d6618c474657478c1af578e4b971e7b3320492b9a"
+        },
+        {
+          "raw": "0x01a8120444d22681bb4aabcc3bcfca7a56c1669ce7ebeff568e24f21b71d0689"
         }
       ],
       "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB",
@@ -44,7 +56,19 @@
     "chain_config": {
       "signers": [
         {
-          "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+          "raw": "0x2f24463986e806bbcf1f421149dc3f6621ce2af389a8686cad6f0d8713ee28ac"
+        },
+        {
+          "raw": "0xa6a757d01d9c67b93dc83dcbb2a6e452a8e943272e2aba47c1587311a2a1475e"
+        },
+        {
+          "raw": "0xcee5a483927677970859272e4b41c0aad8192058b8456988b42fbe880ee8c182"
+        },
+        {
+          "raw": "0x7806ee0819c050485253c73cec0e621556db5a5f83cca4c6cd8a8881b7e73c0f"
+        },
+        {
+          "raw": "0x7890cafa9c8561dc7bf51ca815aba5fa73365c644ac163904b36e4de56c77c53"
         }
       ],
 
@@ -76,16 +100,21 @@
         "channel": "channel-67"
       },
       "protocol": {
-        "Ics20": {
-          "receiver": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
-          "module": {
-            "type": "native"
-          }
+        "Ucs01": {
+          "receivers": [
+            "union1z2u7cveszcmcx8lxmwalf4zve482wflafdm37w",
+            "union1vv8l5eh0j0yemkljwhdxssw5a8yhs7p65vt0s7",
+            "union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq",
+            "union1hv627uvztsuadzh8nmqytpzaspscd4tna9nc79",
+            "union1xwxwcgx7t8auvup2ts9cyx8ug2cwadrkrlrerz"
+          ],
+          "contract": "union177jpkxrhvzca0dhr7p05ty595ucdgdl6k4wv67500jxcu6t5hppqemdy20"
         }
       },
       "send_packet_interval": 50,
-      "expect_full_cycle": 10,
-      "amount": 1
+      "expect_full_cycle": 300,
+      "amount_min": 1,
+      "amount_max": 50
     },
     {
       "source": {
@@ -98,13 +127,20 @@
       },
       "protocol": {
         "Ucs01": {
-          "receiver": "0x50c9c35e0197e781e9ad7a3f6badd8d01e45c377",
+          "receivers": [
+            "0xfbf2b6f136feb11b738592c7c5cf63b83825ff46",
+            "0x86aa21156824575541eb42bd705c9f3d27849cf0",
+            "0xd06115b064715365620a5bddbdfed026a25b8a5e",
+            "0xd2cf1b074bfd07b3c35864ddb69d2be8b0823d9b",
+            "0x5ae6f7917091ba6ab6b6b8dc3684fdc49afc18de"
+          ],
           "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
         }
       },
       "send_packet_interval": 50,
-      "expect_full_cycle": 10,
-      "amount": 1
+      "expect_full_cycle": 300,
+      "amount_min": 1,
+      "amount_max": 50
     }
   ]
 }

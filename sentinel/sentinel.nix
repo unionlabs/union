@@ -70,10 +70,10 @@
             serviceConfig = {
               Type = "simple";
               ExecStart = "${pkgs.lib.getExe cfg.package} --config ${configJson}";
-              Restart = "always";
-              RestartSec = 10;
-              User = "sentinel";
-              Group = "sentinel";
+              # Restart = "always";
+              # RestartSec = 10;
+              # User = "sentinel";
+              # Group = "sentinel";
             };
             environment = {
               RUST_LOG = "${cfg.log-level}";
