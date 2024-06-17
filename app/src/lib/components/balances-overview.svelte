@@ -63,6 +63,9 @@ onMount(() => {
           {#each balance.data as asset}
             <AssetCard {asset}/>
           {/each}
+          {#each balance.data as asset}
+            <AssetCard {asset}/>
+          {/each}
         {/if}
       </div>
     </ScrollArea>
