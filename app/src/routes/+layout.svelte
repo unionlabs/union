@@ -84,7 +84,7 @@ onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
   client={queryClient}
   persistOptions={{ persister: localStoragePersister }}
 >
-  <ModeWatcher />
+  <ModeWatcher defaultMode={"light"} track={false} />
   <Toaster position="bottom-right" />
 
   <Header />
