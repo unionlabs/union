@@ -24,9 +24,6 @@
           type = types.package;
           default = self.packages.${pkgs.system}.sentinel;
         };
-        db_url = mkOption {
-          type = types.str;
-        };
         ethereum = mkOption {
           type = types.attrs;
         };
@@ -58,7 +55,6 @@
             osmosis = cfg.osmosis;
             union = cfg.union;
             interactions = cfg.interactions;
-            db_url = cfg.db_url;
           });
 
         in
@@ -70,13 +66,13 @@
             serviceConfig = {
               Type = "simple";
               ExecStart = "${pkgs.lib.getExe cfg.package} --config ${configJson}";
-              # Restart = "always";
-              # RestartSec = 10;
+              Restart = "always";
+              RestartSec = 10;
               # User = "sentinel";
               # Group = "sentinel";
             };
             environment = {
-              RUST_LOG = "${cfg.log-level}";
+              RUST_LOG = "INFO";
             };
           };
         };
