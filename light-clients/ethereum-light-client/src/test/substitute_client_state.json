@@ -27,11 +27,6 @@
     "seconds_per_slot": 12,
     "slots_per_epoch": 32,
     "epochs_per_sync_committee_period": 256,
-    "trust_level": {
-      "numerator": 1,
-      "denominator": 5
-    },
-    "trusting_period": 100000000,
     "latest_slot": 3577184,
     "frozen_height": {
       "revision_number": 0,

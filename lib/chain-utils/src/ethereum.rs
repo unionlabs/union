@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -30,10 +30,7 @@ use unionlabs::{
     hash::{H160, H256},
     ibc::{
         core::client::height::{Height, IsHeight},
-        lightclients::{
-            ethereum::{self, storage_proof::StorageProof},
-            tendermint::fraction::Fraction,
-        },
+        lightclients::ethereum::{self, storage_proof::StorageProof},
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -41,7 +38,7 @@ use unionlabs::{
         NextConnectionSequencePath, NextSequenceRecvPath, ReceiptPath,
     },
     id::ClientId,
-    iter, option_unwrap,
+    iter,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
     uint::U256,
 };
@@ -390,14 +387,8 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
             seconds_per_slot: C::SECONDS_PER_SLOT::U64,
             slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
             epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
-            // In nanoseconds
-            trusting_period: 100_000_000 * 1_000_000_000,
             latest_slot: beacon_height.revision_height,
             min_sync_committee_participants: 0,
-            trust_level: Fraction {
-                numerator: 1,
-                denominator: const { option_unwrap!(NonZeroU64::new(3)) },
-            },
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,
