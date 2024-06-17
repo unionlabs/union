@@ -6,7 +6,7 @@ import { derived, type Readable } from "svelte/store"
 import type { UserAddresses } from "$lib/types"
 import type { Address } from "viem"
 
-export let defaultText: boolean = false
+export let defaultText = false
 let userAddr: Readable<UserAddresses | null> = derived(
   [cosmosStore, sepoliaStore],
   ([$cosmosStore, $sepoliaStore]) => {
