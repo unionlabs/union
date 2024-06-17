@@ -69,7 +69,6 @@ members = [
   "ucli",
   "unionvisor",
   "voyager",
-  "zerg",
   "near/near-ibc",
   "near/near-light-client",
   "near/dummy-ibc-app",

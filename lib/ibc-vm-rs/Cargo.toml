@@ -13,7 +13,7 @@ lazy_static.workspace              = true
 schemars                           = { workspace = true, features = ["derive"], optional = true }
 serde-utils.workspace              = true
 serde.workspace                    = true
-thiserror                          = { version = "1.0", package = "thiserror-core", default-features = false }
+thiserror.workspace                = true
 unionlabs.workspace                = true
 
 [lints]

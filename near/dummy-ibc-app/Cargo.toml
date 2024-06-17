@@ -5,7 +5,7 @@ name    = "dummy-ibc-app"
 version = "0.1.0"
 
 [dependencies]
-borsh                   = { version = "1.5.0", features = ["borsh-derive"] }
+borsh                   = { workspace = true, features = ["borsh-derive"] }
 ibc-vm-rs.workspace     = true
 near-contract-standards = { workspace = true }
 near-sdk                = { workspace = true }
