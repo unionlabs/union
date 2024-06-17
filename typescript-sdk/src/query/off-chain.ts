@@ -27,12 +27,11 @@ export const offchainQuery = {
     includeEndpoints = false,
     includeContracts = false
   }: { includeEndpoints?: boolean; includeContracts?: boolean } = {}) => {
-    return await hubbleRestFetch<Array<Chain<typeof includeEndpoints, typeof includeContracts>>>(
-      `/chains`,
-      {
-        query: { include_rpcs: includeEndpoints, include_contracts: includeContracts }
-      }
-    )
+    return await hubbleRestFetch<
+      OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
+    >(`/chains`, {
+      query: { include_rpcs: includeEndpoints, include_contracts: includeContracts }
+    })
   },
   chain: async ({
     chainId,
@@ -43,26 +42,29 @@ export const offchainQuery = {
     includeEndpoints?: boolean
     includeContracts?: boolean
   }) => {
-    return await hubbleRestFetch<Chain<typeof includeEndpoints, typeof includeContracts>>(
-      `/chains/${chainId}`,
-      {
-        query: { include_rpcs: includeEndpoints, include_contracts: includeContracts }
-      }
-    )
+    return await hubbleRestFetch<
+      OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
+    >(`/chains/${chainId}`, {
+      query: { include_rpcs: includeEndpoints, include_contracts: includeContracts }
+    })
   }
 }
 
+interface OffchainQueryBaseResponse<T> {
+  data: Array<T>
+}
+
 export interface Rpc {
-  enabled: boolean
   url: string
+  enabled: boolean
   type: "rpc" | "rest" | "grpc"
 }
 
 export interface Ucs1Configuration {
   channel_id: string
   connection_id: string
-  contract_address: string
   source_chain_id: number
+  contract_address: string
   source_chain: {
     id: number
     testnet: boolean
@@ -87,11 +89,11 @@ export interface Ucs1Configuration {
 export interface Chain<IncludeEndpoints extends boolean, IncludeContracts extends boolean> {
   id: number
   chain_id: string
-  rpc_type: "evm" | "cosmos"
+  enabled: boolean
   addr_prefix: string
   display_name: string
-  enabled: boolean
   logo_uri: string | null
+  rpc_type: "evm" | "cosmos"
   rpcs: IncludeEndpoints extends true ? Array<Rpc> : undefined
-  ucs01_configurations: IncludeContracts extends true ? Array<Ucs1Configuration> : undefined
+  ucs1_configurations: IncludeContracts extends true ? Array<Ucs1Configuration> : undefined
 }

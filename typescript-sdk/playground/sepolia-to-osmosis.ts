@@ -1,10 +1,13 @@
 #!/usr/bin/env bun
+import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#v0/mod.ts"
+import { cosmosHttp } from "#transport.ts"
+import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import contracts from "~root/versions/contracts.json" with { type: "json" }
-import { http, erc20Abi, publicActions, createWalletClient, getAddress } from "viem"
+import { hexStringToUint8Array } from "#convert.ts"
+import { offchainQuery, createUnionClient } from "#mod.ts"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /**
  *
@@ -26,60 +29,58 @@ if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
-const evmSigner = createWalletClient({
-  chain: sepolia,
-  account: evmAccount,
-  transport: http(`https://eth-sepolia.g.alchemy.com/v2/SQAcneXzJzITjplR7cwQhFUqF-SU-ds4`)
-}).extend(publicActions)
-
-const unionClient = await UnionClient.connectWithSecret({
-  rpcUrl: "https://rpc.testnet.bonlulu.uno",
-  bech32Prefix: "union",
-  chainId: "union-testnet-8",
-  secretType: "key",
-  privateKeyOrMnemonic: PRIVATE_KEY,
-  gas: { amount: "0.0025", denom: "muno" },
-  evmSigner
-})
+const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  "osmo"
+)
 
 const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
-const currentContracts = contracts.find(c => c.latest === true) as (typeof contracts)[0]
-const relayContractAddress = getAddress(currentContracts?.sepolia.UCS01)
+try {
+  const {
+    data: [unionTestnetInfo]
+  } = await offchainQuery.chain({
+    includeContracts: true,
+    chainId: "11155111"
+  })
 
-const approve = await evmSigner.writeContract({
-  account: evmAccount,
-  address: LINK_CONTRACT_ADDRESS,
-  abi: erc20Abi,
-  functionName: "approve",
-  chain: sepolia,
-  args: [
-    "0xd0081080ae8493cf7340458eaf4412030df5feeb", // spender - SEPOLIA_UCS01_ADDRESS
-    10n // amount
-  ]
-})
+  if (!unionTestnetInfo) raise("Sepolia testnet info not found")
 
-console.log(approve)
+  const ucsConfiguration = unionTestnetInfo.ucs1_configurations
+    ?.filter(config => config.destination_chain.chain_id === "osmo-test-5")
+    .at(0)
 
-/**
- * 
-cast send \ 
-    --rpc-url https://rpc2.sepolia.org \
-    --private-key 0x1bdd5c2105f62c51d72c90d9e5ca6854a94337bcbcbb0b959846b85813d69380 \
-    0xd0081080ae8493cf7340458eaf4412030df5feeb \
-    "send(string, string, bytes, (address, uint128)[], uint64, uint64)" "0x3d0eb16ad2619666dbde1921282cd885b58eeefe" "channel-0" "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed" "[(0x779877A7B0D9E8603169DdbD7836e478b4624789, 1)]" "8" "10000000"
+  if (!ucsConfiguration) raise("UCS configuration not found")
 
- */
+  const client = createUnionClient({
+    evm: {
+      chain: sepolia,
+      account: evmAccount,
+      transport: http("https://rpc2.sepolia.org")
+    },
+    cosmos: {
+      account: cosmosAccount,
+      gasPrice: { amount: "0.0025", denom: "uosmo" },
+      transport: cosmosHttp("https://rpc.osmo.test.yieldpay.finance")
+    }
+  })
 
-const osmoFromSepoliaToUnion = await unionClient.transferEvmAsset({
-  account: evmAccount,
-  receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-  denomAddress: LINK_CONTRACT_ADDRESS,
-  amount: 1n,
-  sourceChannel: "channel-8",
-  relayContractAddress,
-  simulate: true
-})
-console.log(osmoFromSepoliaToUnion)
+  const transfer = await client.transferAsset({
+    amount: 1n,
+    network: "evm",
+    denomAddress: USDC_CONTRACT_ADDRESS,
+    sourceChannel: ucsConfiguration.channel_id,
+    relayContractAddress: ucsConfiguration.contract_address,
+    recipient: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
+    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
+  })
+
+  console.info(transfer)
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : error
+  console.error(errorMessage)
+} finally {
+  process.exit(0)
+}
