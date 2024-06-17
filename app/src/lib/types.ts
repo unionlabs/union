@@ -22,6 +22,24 @@ export type Chain = {
     type: string
     url: string
   }>
-  ucs1_configurations: Record<string, { contract_address: string; channel_id: string }>
+  ucs1_configurations: Record<
+    string,
+    {
+      contract_address: string
+      channel_id: string
+      forward: Record<
+        string,
+        {
+          channel_id: string
+          port: string
+        }
+      >
+    }
+  >
   addr_prefix: string
+  assets: Array<{
+    denom: string
+    display_symbol: string
+    decimals: number
+  }>
 }

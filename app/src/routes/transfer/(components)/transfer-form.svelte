@@ -90,6 +90,16 @@ let recipient = derived(toChain, $toChain => {
   }
 })
 
+const pfmMemo = (port: string, channel: string, receiver: string): string => {
+  return JSON.stringify({
+    forward: {
+      port,
+      channel,
+      receiver
+    }
+  })
+}
+
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
@@ -103,7 +113,11 @@ const transfer = async () => {
   const ucs1_configuration =
     $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null
 
+  let pfmMemo = ""
+
   if (ucs1_configuration === null) {
+    // try finding pfm path
+
     return toast.error(
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
     )
