@@ -8,6 +8,7 @@
 )]
 
 use std::{
+    collections::HashMap,
     error::Error,
     ffi::OsString,
     fmt::{Debug, Write},
@@ -24,6 +25,7 @@ use chain_utils::{
     berachain::Berachain,
     cosmos::Cosmos,
     ethereum::{Ethereum, EthereumConsensusChain},
+    keyring::ChainKeyring,
     scroll::Scroll,
     union::Union,
     wasm::Wasm,
@@ -69,7 +71,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     cli::{
         any_state_proof_to_json, AppArgs, ArbitrumCmd, BerachainCmd, Command, HandshakeCmd,
-        HandshakeType, QueryCmd, UtilCmd,
+        HandshakeType, QueryCmd, SignerCmd, UtilCmd,
     },
     config::{Config, GetChainError},
     queue::{
@@ -584,6 +586,33 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         .beacon_block_header_at_beacon_slot(slot)
                         .await,
                 ),
+            },
+        },
+        Command::Signer(cmd) => match cmd {
+            SignerCmd::Balances { on } => match on {
+                Some(on) => {
+                    let on = voyager_config.get_chain(&on).await.unwrap();
+
+                    any_chain!(|on| {
+                        print_json(&on.balances().await);
+                    });
+                }
+                None => {
+                    let chains = chains_from_config(voyager_config.chain).await.unwrap();
+
+                    let mut balances = HashMap::new();
+
+                    for (chain_id, chain) in chains.chains {
+                        any_chain!(|chain| {
+                            balances.insert(
+                                chain_id,
+                                serde_json::to_value(chain.balances().await).unwrap(),
+                            );
+                        });
+                    }
+
+                    print_json(&balances);
+                }
             },
         },
     }

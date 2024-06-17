@@ -1,12 +1,9 @@
-// #![warn(clippy::pedantic)]
 #![feature(trait_alias)]
+// #![warn(clippy::pedantic)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use bip32::secp256k1::ecdsa;
-use crossbeam_queue::ArrayQueue;
 use enumorph::Enumorph;
-use futures::Future;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 use unionlabs::{
@@ -21,7 +18,7 @@ use crate::{
     berachain::{Berachain, BerachainInitError},
     cosmos::{Cosmos, CosmosInitError},
     ethereum::{Ethereum, EthereumInitError},
-    private_key::PrivateKey,
+    keyring::KeyringConfig,
     scroll::{Scroll, ScrollInitError},
     union::{Union, UnionInitError},
     wasm::Wasm,
@@ -40,56 +37,7 @@ pub mod wasm;
 
 pub mod private_key;
 
-#[derive(Debug, Clone)]
-pub struct Pool<T> {
-    pool: Arc<ArrayQueue<T>>,
-}
-
-impl<T: Clone> Pool<T> {
-    pub fn new(ts: impl ExactSizeIterator<Item = T>) -> Self {
-        let data = ArrayQueue::new(ts.len());
-
-        for t in ts {
-            data.push(t)
-                .map_err(|_| ())
-                .expect("queue is initialized with the correct length; qed;");
-        }
-
-        Self {
-            pool: Arc::new(data),
-        }
-    }
-
-    pub async fn with<R, F: FnOnce(T) -> Fut, Fut: Future<Output = R>>(&self, f: F) -> R {
-        let t = loop {
-            match self.pool.pop() {
-                Some(t) => break t,
-                None => {
-                    const RETRY_SECONDS: u64 = 3;
-
-                    warn!(
-                        "high traffic in pool of {}, ran out of items! trying again in {RETRY_SECONDS} seconds",
-                        std::any::type_name::<T>()
-                    );
-
-                    tokio::time::sleep(std::time::Duration::from_secs(RETRY_SECONDS)).await;
-
-                    continue;
-                }
-            }
-        };
-
-        // TODO: Figure out a way to pass this as ref
-        let r = f(t.clone()).await;
-
-        self.pool
-            .push(t)
-            .map_err(|_| ())
-            .expect("no additional items are added; qed;");
-
-        r
-    }
-}
+pub mod keyring;
 
 pub trait GetChain<C: Chain> {
     fn get_chain(&self, chain_id: &ChainIdOf<C>) -> Option<C>;
@@ -121,71 +69,91 @@ pub struct ChainNotFoundError<C: Chain> {
     chain_id: ChainIdOf<C>,
 }
 
-type ChainMap<C> = HashMap<ChainIdOf<C>, C>;
-
 #[derive(Debug, Clone, Default)]
 pub struct Chains {
-    // TODO: Use some sort of typemap here instead of individual fields
-    pub ethereum_minimal: ChainMap<Ethereum<Minimal>>,
-    pub ethereum_mainnet: ChainMap<Ethereum<Mainnet>>,
-    pub union: ChainMap<Union>,
-    pub cosmos: ChainMap<Cosmos>,
-    pub scroll: ChainMap<Scroll>,
-    pub arbitrum: ChainMap<Arbitrum>,
-    pub berachain: ChainMap<Berachain>,
+    pub chains: HashMap<String, AnyChain>,
 }
 
 impl GetChain<Union> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Option<Union> {
-        self.union.get(chain_id).cloned()
+        self.chains
+            .get(chain_id)
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
 impl GetChain<Cosmos> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Cosmos>) -> Option<Cosmos> {
-        self.cosmos.get(chain_id).cloned()
+        self.chains
+            .get(chain_id)
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
 impl GetChain<Scroll> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Scroll>) -> Option<Scroll> {
-        self.scroll.get(chain_id).cloned()
+        self.chains
+            .get(&chain_id.to_string())
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
 impl GetChain<Arbitrum> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Arbitrum>) -> Option<Arbitrum> {
-        self.arbitrum.get(chain_id).cloned()
+        self.chains
+            .get(&chain_id.to_string())
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
 impl GetChain<Berachain> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Berachain>) -> Option<Berachain> {
-        self.berachain.get(chain_id).cloned()
+        self.chains
+            .get(&chain_id.to_string())
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
 impl GetChain<Wasm<Union>> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Option<Wasm<Union>> {
-        self.union.get(chain_id).cloned().map(Wasm)
+        self.chains
+            .get(chain_id)
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
+            .map(Wasm)
     }
 }
 
 impl GetChain<Wasm<Cosmos>> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Option<Wasm<Cosmos>> {
-        self.cosmos.get(chain_id).cloned().map(Wasm)
+        self.chains
+            .get(chain_id)
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
+            .map(Wasm)
     }
 }
 
 impl GetChain<Ethereum<Minimal>> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Ethereum<Minimal>>) -> Option<Ethereum<Minimal>> {
-        self.ethereum_minimal.get(chain_id).cloned()
+        self.chains
+            .get(&chain_id.to_string())
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
 impl GetChain<Ethereum<Mainnet>> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Ethereum<Mainnet>>) -> Option<Ethereum<Mainnet>> {
-        self.ethereum_mainnet.get(chain_id).cloned()
+        self.chains
+            .get(&chain_id.to_string())
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
     }
 }
 
@@ -207,8 +175,8 @@ pub struct EthereumChainConfig {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    /// The signer that will be used to submit transactions by voyager.
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    /// The signers that will be used to submit transactions by voyager.
+    pub keyring: KeyringConfig,
 
     // TODO(benluelo): Use `Url` or something similar
     /// The RPC endpoint for the execution chain.
@@ -217,7 +185,7 @@ pub struct EthereumChainConfig {
     pub eth_beacon_rpc_api: String,
 }
 
-#[derive(Debug, Enumorph)]
+#[derive(Debug, Clone, Enumorph)]
 pub enum AnyChain {
     Union(Union),
     Cosmos(Cosmos),
@@ -269,7 +237,7 @@ impl AnyChain {
             ChainConfigType::Ethereum(ethereum) => {
                 let config = crate::ethereum::Config {
                     ibc_handler_address: ethereum.ibc_handler_address,
-                    signers: ethereum.signers,
+                    keyring: ethereum.keyring,
                     eth_rpc_api: ethereum.eth_rpc_api,
                     eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
                 };

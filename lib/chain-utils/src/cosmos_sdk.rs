@@ -29,8 +29,10 @@ use unionlabs::{
 
 use crate::{
     cosmos_sdk::cosmos_sdk_error::{CosmosSdkError, SdkError},
-    Pool,
+    keyring::{ConcurrentKeyring, SignerBalance},
 };
+
+pub type CosmosKeyring = ConcurrentKeyring<String, CosmosSigner>;
 
 // TODO: Look into how to support `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -66,7 +68,6 @@ pub trait CosmosSdkChainRpcs: Chain {
 
 pub trait CosmosSdkChain: CosmosSdkChainRpcs {
     fn gas_config(&self) -> &GasConfig;
-    fn signers(&self) -> &Pool<CosmosSigner>;
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>>;
 }
 
@@ -197,7 +198,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
     /// - wait for inclusion
     async fn broadcast_tx_commit(
         &self,
-        signer: CosmosSigner,
+        signer: &CosmosSigner,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
     ) -> Result<H256, BroadcastTxCommitError> {
         use protos::cosmos::tx;
@@ -409,6 +410,44 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             },
         )
     }
+}
+
+pub async fn fetch_balances(
+    keyring: &CosmosKeyring,
+    gas_denom: String,
+    grpc_url: String,
+) -> Vec<SignerBalance<String>> {
+    let mut query_client =
+        protos::cosmos::bank::v1beta1::query_client::QueryClient::connect(grpc_url.clone())
+            .await
+            .unwrap();
+
+    // couldn't get fancy stream stuff to work so this will have to do
+    let mut out_vec = vec![];
+
+    for (name, address) in keyring.keys() {
+        let coin: Coin = query_client
+            .balance(protos::cosmos::bank::v1beta1::QueryBalanceRequest {
+                address: address.clone(),
+                denom: gas_denom.clone(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .balance
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        out_vec.push(SignerBalance {
+            key_name: name.to_owned(),
+            address: address.clone(),
+            balance: coin.amount,
+            denom: coin.denom,
+        });
+    }
+
+    out_vec
 }
 
 fn u128_mul_f64(u: u128, f: f64) -> u128 {

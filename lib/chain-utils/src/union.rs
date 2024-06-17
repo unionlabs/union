@@ -19,15 +19,14 @@ use unionlabs::{
 };
 
 use crate::{
-    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
-    private_key::PrivateKey,
-    Pool,
+    cosmos_sdk::{CosmosKeyring, CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
+    keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, KeyringEntry, SignerBalance},
 };
 
 #[derive(Debug, Clone)]
 pub struct Union {
     pub chain_id: String,
-    pub signers: Pool<CosmosSigner>,
+    pub keyring: CosmosKeyring,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
     pub prover_endpoint: String,
@@ -37,13 +36,41 @@ pub struct Union {
     pub gas_config: GasConfig,
 }
 
+// impl Signers for Union {
+//     type Signer = CosmosSigner;
+
+//     fn balances(&self) -> impl Iterator<Item = (String, String)> {
+//         // self.signers
+//         todo!()
+//     }
+// }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    pub keyring: KeyringConfig,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
     pub grpc_url: String,
     pub gas_config: GasConfig,
+}
+
+impl ChainKeyring for Union {
+    type Address = String;
+
+    type Signer = CosmosSigner;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        &self.keyring
+    }
+
+    async fn balances(&self) -> Vec<SignerBalance<Self::Address>> {
+        crate::cosmos_sdk::fetch_balances(
+            &self.keyring,
+            self.gas_config.gas_denom.clone(),
+            self.grpc_url.clone(),
+        )
+        .await
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -222,11 +249,27 @@ impl Union {
             })?;
 
         Ok(Self {
-            signers: Pool::new(
+            // TODO: Deduplicate between this and cosmos.rs
+            keyring: CosmosKeyring::new(
+                config.keyring.name,
                 config
-                    .signers
+                    .keyring
+                    .keys
                     .into_iter()
-                    .map(|signer| CosmosSigner::new(signer.value(), "union".to_string())),
+                    // TODO: Make this configurable or fetch it from the chain
+                    .map(|entry| {
+                        let signer = CosmosSigner::new(
+                            ecdsa::SigningKey::from_bytes(entry.value().as_slice().into())
+                                .expect("invalid private key"),
+                            "union".to_owned(),
+                        );
+
+                        KeyringEntry {
+                            name: entry.name(),
+                            address: signer.to_string(),
+                            signer,
+                        }
+                    }),
             ),
             tm_client,
             chain_id,
@@ -252,10 +295,6 @@ pub type UnionClientId = ClientId;
 impl CosmosSdkChain for Union {
     fn gas_config(&self) -> &GasConfig {
         &self.gas_config
-    }
-
-    fn signers(&self) -> &Pool<CosmosSigner> {
-        &self.signers
     }
 
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {

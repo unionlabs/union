@@ -63,7 +63,7 @@ where
     >,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
-        do_msg(&self.ibc_handlers, msg, false).await
+        do_msg(&self.keyring, msg, false).await
     }
 }
 

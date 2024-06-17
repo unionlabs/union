@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use bip32::secp256k1::ecdsa;
 use contracts::ibc_handler::IBCHandler;
 use ethers::{
     contract::EthEvent,
@@ -26,13 +25,13 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, get_proof, Ethereum, EthereumChain, EthereumConsensusChain, EthereumInitError,
-        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
+        self, balance_of_signers, get_proof, Ethereum, EthereumChain, EthereumConsensusChain,
+        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
+        ReadWrite, Readonly,
     },
-    private_key::PrivateKey,
+    keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
     wasm::Wasm,
-    Pool,
 };
 
 pub const ARBITRUM_REVISION_NUMBER: u64 = 0;
@@ -41,7 +40,7 @@ pub const ARBITRUM_REVISION_NUMBER: u64 = 0;
 pub struct Arbitrum {
     chain_id: U256,
 
-    pub ibc_handlers: Pool<IBCHandler<EthereumSignerMiddleware>>,
+    pub keyring: EthereumKeyring,
 
     pub provider: Arc<Provider<Ws>>,
     pub ibc_handler_address: H160,
@@ -66,7 +65,7 @@ pub struct Config {
     pub ibc_commitment_slot: U256,
 
     /// The signer that will be used to submit transactions by voyager.
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    pub keyring: KeyringConfig,
 
     /// The RPC endpoint for the execution (scroll) chain.
     pub l2_eth_rpc_api: String,
@@ -80,6 +79,20 @@ pub struct Config {
     pub l1: ethereum::Config<Readonly>,
 
     pub union_grpc_url: String,
+}
+
+impl ChainKeyring for Arbitrum {
+    type Address = H160;
+
+    type Signer = IBCHandler<EthereumSignerMiddleware>;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        &self.keyring
+    }
+
+    async fn balances(&self) -> Vec<SignerBalance<Self::Address>> {
+        balance_of_signers(&self.keyring, &self.provider).await
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -99,9 +112,9 @@ impl Arbitrum {
         let chain_id = provider.get_chainid().await?;
 
         Ok(Self {
-            chain_id: U256(chain_id),
-            ibc_handlers: ReadWrite::new(
-                config.signers,
+            chain_id: U256::from(chain_id),
+            keyring: ReadWrite::new(
+                config.keyring,
                 config.ibc_handler_address,
                 chain_id.as_u64(),
                 provider.clone(),

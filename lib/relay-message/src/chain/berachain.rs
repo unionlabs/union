@@ -431,7 +431,7 @@ where
     Self::SelfClientState: Encode<Tr::IbcStateEncoding>,
 {
     async fn msg(&self, msg: Effect<Berachain, Tr>) -> Result<(), Self::MsgError> {
-        ethereum::do_msg(&self.ibc_handlers, msg, false).await
+        ethereum::do_msg(&self.keyring, msg, false).await
     }
 }
 

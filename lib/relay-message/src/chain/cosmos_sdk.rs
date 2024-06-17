@@ -1,6 +1,9 @@
 use std::{fmt::Debug, marker::PhantomData};
 
-use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
+use chain_utils::{
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    keyring::ChainKeyring,
+};
 use queue_msg::{data, fetch, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
@@ -45,11 +48,12 @@ pub async fn do_msg<Hc, Tr>(
     mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
 ) -> Result<(), BroadcastTxCommitError>
 where
-    Hc: CosmosSdkChainSealed<
-        MsgError = BroadcastTxCommitError,
-        SelfConsensusState: Encode<Proto> + TypeUrl,
-        SelfClientState: Encode<Proto> + TypeUrl,
-    >,
+    Hc: ChainKeyring<Signer = CosmosSigner>
+        + CosmosSdkChainSealed<
+            MsgError = BroadcastTxCommitError,
+            SelfConsensusState: Encode<Proto> + TypeUrl,
+            SelfClientState: Encode<Proto> + TypeUrl,
+        >,
     Tr: ChainExt<
         SelfConsensusState: Encode<Proto> + TypeUrl,
         SelfClientState: Encode<Proto> + TypeUrl,
@@ -58,11 +62,11 @@ where
         StateProof: Encode<Proto>,
     >,
 {
-    hc.signers()
-        .with(|signer| async {
+    hc.keyring()
+        .with(|signer| async move {
             let msgs = process_msgs(
                 msg.clone(),
-                &signer,
+                signer,
                 mk_create_client_states,
                 mk_client_message,
             );
@@ -1045,6 +1049,7 @@ pub mod wasm {
     use chain_utils::{
         cosmos::Cosmos,
         cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain},
+        keyring::ChainKeyring,
         union::Union,
         wasm::Wasm,
     };
@@ -1055,6 +1060,7 @@ pub mod wasm {
         google::protobuf::any::{Any, IntoAny},
         hash::H256,
         ibc::lightclients::wasm,
+        signer::CosmosSigner,
         traits::ClientState,
         TypeUrl,
     };
@@ -1154,13 +1160,15 @@ pub mod wasm {
 
     impl<Hc, Tr> DoMsg<Wasm<Hc>, Tr> for Wasm<Hc>
     where
-        Wasm<Hc>: ChainExt<
-            SelfConsensusState: Encode<Proto> + TypeUrl,
-            SelfClientState: Encode<Proto> + TypeUrl,
-            MsgError = BroadcastTxCommitError,
-            Config = WasmConfig,
-        >,
-        Hc: CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
+        Wasm<Hc>: ChainKeyring<Signer = CosmosSigner>
+            + ChainExt<
+                SelfConsensusState: Encode<Proto> + TypeUrl,
+                SelfClientState: Encode<Proto> + TypeUrl,
+                MsgError = BroadcastTxCommitError,
+                Config = WasmConfig,
+            >,
+        Hc: ChainKeyring<Signer = CosmosSigner>
+            + CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
         Tr: ChainExt<
             StoredClientState<Wasm<Hc>>: IntoAny,
             StateProof: Encode<Proto>,

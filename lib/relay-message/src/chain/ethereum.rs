@@ -1,11 +1,8 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
-use chain_utils::{
-    ethereum::{
-        Ethereum, EthereumChain, EthereumChainExt as _, EthereumConsensusChain,
-        EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
-    },
-    Pool,
+use chain_utils::ethereum::{
+    Ethereum, EthereumChain, EthereumChainExt as _, EthereumConsensusChain, EthereumKeyring,
+    EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
 };
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
@@ -103,12 +100,13 @@ where
     ClientStateOf<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
-        do_msg(&self.ibc_handlers, msg, false).await
+        do_msg(&self.keyring, msg, false).await
     }
 }
 
+// TODO: Refactor this to use `Hc: ChainKeyring`
 pub async fn do_msg<Hc, Tr>(
-    ibc_handlers: &Pool<IBCHandler<EthereumSignerMiddleware>>,
+    ibc_handlers: &EthereumKeyring,
     msg: Effect<Hc, Tr>,
     legacy: bool,
 ) -> Result<(), TxSubmitError>
@@ -123,8 +121,12 @@ where
         StateProof: Encode<EthAbi>,
     >,
 {
-    let f = |ibc_handler| async move {
-        let msg: ethers::contract::FunctionCall<_, _, ()> = match msg.clone() {
+    let f = move |ibc_handler| async move {
+        let msg: ethers::contract::FunctionCall<
+            Arc<EthereumSignerMiddleware>,
+            EthereumSignerMiddleware,
+            (),
+        > = match msg {
             Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
                 ibc_handler,
                 ConnectionOpenInitCall(contracts::ibc_handler::MsgConnectionOpenInit {
@@ -1053,7 +1055,7 @@ impl MaybeRecoverableError for TxSubmitError {
 }
 
 pub fn mk_function_call<Call: EthCall>(
-    ibc_handler: IBCHandler<EthereumSignerMiddleware>,
+    ibc_handler: &IBCHandler<EthereumSignerMiddleware>,
     data: Call,
 ) -> ethers::contract::FunctionCall<Arc<EthereumSignerMiddleware>, EthereumSignerMiddleware, ()> {
     ibc_handler

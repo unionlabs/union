@@ -1,0 +1,21 @@
+{
+ "messages": [
+  {
+   "@type": "/cosmos.staking.v1beta1.MsgUpdateParams",
+   "authority": "union10d07y265gmmuvt4z0w9aw880jnsr700js4jdcz",
+   "params": {
+    "unbonding_time": "1209600s",
+    "max_validators": 128,
+    "max_entries": 7,
+    "historical_entries": 10000,
+    "bond_denom": "muno",
+    "min_commission_rate": "0.050000000000000000",
+    "jailed_validator_threshold": 50,
+    "epoch_length": "100"
+   }
+  }
+ ],
+ "deposit": "10000000muno",
+ "title": "update staking params",
+ "summary": "update staking params"
+}

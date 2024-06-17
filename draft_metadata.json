@@ -1,0 +1,10 @@
+{
+ "title": "update staking params",
+ "authors": [
+  "ben"
+ ],
+ "summary": "update staking params",
+ "details": "update unbonding_time such that light clients tracking union don't expire immediately",
+ "proposal_forum_url": "/dev/null",
+ "vote_option_context": "???"
+}

@@ -725,6 +725,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bimap"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "230c5f1ca6a325a32553f8640d31ac9b49f2411e901e427570154868b46da4f7"
+
+[[package]]
 name = "binary-install"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1272,6 +1278,7 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "beacon-api",
+ "bimap",
  "bip32",
  "chrono",
  "cometbft-rpc",
