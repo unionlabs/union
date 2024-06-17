@@ -8,10 +8,7 @@ use crate::{
     hash::{H160, H256},
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
-            tendermint::fraction::{Fraction, TryFromFractionError},
-        },
+        lightclients::ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
     },
     uint::U256,
 };
@@ -30,9 +27,6 @@ pub struct ClientState {
     pub seconds_per_slot: u64,
     pub slots_per_epoch: u64,
     pub epochs_per_sync_committee_period: u64,
-    pub trust_level: Fraction,
-    /// The trusting period of this client, *normalized to nanoseconds* in order to be compatible with ibc-go.
-    pub trusting_period: u64,
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
@@ -52,8 +46,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: Some(value.trust_level.into()),
-            trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: Some(value.frozen_height.into()),
             ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
@@ -74,8 +66,6 @@ pub enum TryFromClientStateError {
     GenesisValidatorsRoot(#[source] InvalidLength),
     #[error("invalid ibc commitment slot")]
     IbcCommitmentSlot(#[source] InvalidLength),
-    #[error("invalid trust level")]
-    TrustLevel(#[source] TryFromFractionError),
     #[error("invalid ibc contract address")]
     IbcContractAddress(#[source] InvalidLength),
 }
@@ -100,10 +90,6 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: required!(value.trust_level)?
-                .try_into()
-                .map_err(TryFromClientStateError::TrustLevel)?,
-            trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
             ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)

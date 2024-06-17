@@ -409,9 +409,6 @@ impl IbcClient for EthereumLightClient {
                     chain_id: scs.chain_id,
                     min_sync_committee_participants: scs.min_sync_committee_participants,
                     fork_parameters: scs.fork_parameters,
-
-                    trust_level: scs.trust_level,
-                    trusting_period: scs.trusting_period,
                     latest_slot: scs.latest_slot,
                     ibc_commitment_slot: scs.ibc_commitment_slot,
                     ibc_contract_address: scs.ibc_contract_address,
@@ -426,25 +423,11 @@ impl IbcClient for EthereumLightClient {
         Ok(())
     }
 
-    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, IbcClientError<Self>> {
+    fn status(deps: Deps<Self::CustomQuery>, _: &Env) -> Result<Status, IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != ZERO_HEIGHT {
             return Ok(Status::Frozen);
-        }
-
-        let Some(consensus_state) =
-            read_consensus_state::<Self>(deps, &client_state.latest_height)?
-        else {
-            return Ok(Status::Expired);
-        };
-
-        if is_client_expired(
-            consensus_state.data.timestamp,
-            client_state.data.trusting_period,
-            env.block.time.nanos(),
-        ) {
-            return Ok(Status::Expired);
         }
 
         Ok(Status::Active)
@@ -576,14 +559,6 @@ pub fn check_commitment_key(
     } else {
         Ok(())
     }
-}
-
-pub fn is_client_expired(
-    consensus_state_timestamp: u64,
-    trusting_period: u64,
-    current_block_time: u64,
-) -> bool {
-    consensus_state_timestamp + trusting_period < current_block_time
 }
 
 #[cfg(all(test, feature = "mainnet"))]
@@ -725,57 +700,6 @@ mod test {
             EthereumLightClient::status(deps.as_ref(), &mock_env()),
             Ok(Status::Frozen)
         );
-    }
-
-    #[test]
-    fn query_status_returns_expired() {
-        let mut deps = OwnedDeps::<_, _, _, UnionCustomQuery> {
-            storage: MockStorage::default(),
-            api: MockApi::default(),
-            querier: MockQuerier::<UnionCustomQuery>::new(&[])
-                .with_custom_handler(custom_query_handler),
-            custom_query_type: PhantomData,
-        };
-
-        let mut wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
-
-        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state.clone());
-
-        // Client returns expired here because it cannot find the consensus state
-        assert_eq!(
-            EthereumLightClient::status(deps.as_ref(), &mock_env()),
-            Ok(Status::Expired)
-        );
-
-        let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
-
-        save_consensus_state::<EthereumLightClient>(
-            deps.as_mut(),
-            wasm_consensus_state.clone(),
-            &INITIAL_CONSENSUS_STATE_HEIGHT,
-        );
-
-        wasm_client_state.data.trusting_period = 10;
-        save_client_state::<EthereumLightClient>(deps.as_mut(), wasm_client_state.clone());
-        let mut env = mock_env();
-
-        env.block.time = Timestamp::from_nanos(
-            wasm_client_state.data.trusting_period + wasm_consensus_state.data.timestamp + 1,
-        );
-        assert_eq!(
-            EthereumLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Expired)
-        );
-
-        env.block.time = Timestamp::from_nanos(
-            wasm_client_state.data.trusting_period + wasm_consensus_state.data.timestamp,
-        );
-        assert_eq!(
-            EthereumLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Active)
-        )
     }
 
     #[test]
