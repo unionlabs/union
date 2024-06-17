@@ -13,7 +13,7 @@
     </div>
     <div class="asset-card__front flex flex-col">
       <div class="uppercase font-bold">{truncate(asset.symbol, 8)}</div>
-      <div class="flex-1">{asset.balance}</div>
+      <div class="flex-1 text-xl font-mono">{asset.balance}</div>
       <Button>Transfer</Button>
 
     </div>
