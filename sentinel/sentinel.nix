@@ -28,71 +28,15 @@
           type = types.str;
         };
         ethereum = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
           type = types.attrs;
         };
         osmosis = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
           type = types.attrs;
         };
         union = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
           type = types.attrs;
         };
-        amount = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
-          type = types.str;
-        };
-        # osmosis_contract = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        # };
-        # union_contract = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        # };
-        # ethereum_contract = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        # };
-        # ethereum_priv_key = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        # };
-        # channel = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        #   default = "channel-0";
-        # };
-        # counterparty_channel = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        #   default = "channel-0";
-        # };
-        # amount = mkOption {
-        #   # The configuration design is breaking quite often, would be a waste
-        #   # of effort to fix the type for now.
-        #   type = types.str;
-        #   default = "1";
-        # };
-        # # datadog_data = mkOption {
-        # #   # The configuration design is breaking quite often, would be a waste
-        # #   # of effort to fix the type for now.
-        # #   type = types.attrs;
-        # # };
-        connections = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
+        interactions = mkOption {
           type = types.listOf types.attrs;
         };
         log-level = mkOption {
@@ -113,15 +57,7 @@
             ethereum = cfg.ethereum;
             osmosis = cfg.osmosis;
             union = cfg.union;
-            # osmosis_contract = cfg.osmosis_contract;
-            # ethereum_contract = cfg.ethereum_contract;
-            # union_contract = cfg.union_contract;
-            # ethereum_priv_key = cfg.ethereum_priv_key;
-            # channel = cfg.channel;
-            # counterparty_channel = cfg.counterparty_channel;
-            amount = cfg.amount;
-            # datadog_data = cfg.datadog_data;
-            connections = cfg.connections;
+            interactions = cfg.interactions;
             db_url = cfg.db_url;
           });
 
@@ -134,10 +70,10 @@
             serviceConfig = {
               Type = "simple";
               ExecStart = "${pkgs.lib.getExe cfg.package} --config ${configJson}";
-              # Restart = "always";
-              # RestartSec = 10;
-              # User = "sentinel";
-              # Group = "sentinel";
+              Restart = "always";
+              RestartSec = 10;
+              User = "sentinel";
+              Group = "sentinel";
             };
             environment = {
               RUST_LOG = "${cfg.log-level}";

@@ -1,17 +1,14 @@
-use std::{ collections::HashMap, sync::Arc, time::Duration };
-
-use tokio::{ sync::Mutex, time::interval };
-use unionlabs::ethereum::config::{ Mainnet, Minimal, PresetBaseKind };
-
-use hex::{ decode as hex_decode, encode as hex_encode };
-use hex::FromHex;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use ecdsa::SigningKey;
+use ethers::{core::k256::ecdsa, signers::LocalWallet, utils::secret_key_to_address};
+use hex::{decode as hex_decode, encode as hex_encode, FromHex};
+use tokio::{sync::Mutex, time::interval};
+use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
-use ethers::{ signers::LocalWallet, core::k256::ecdsa, utils::secret_key_to_address };
 use crate::{
-    chains::{ Chain, Ethereum, IbcTransfer as _, Cosmos, IbcListen as _ },
-    config::{ Config, IbcInteraction, KEY_ETHEREUM, KEY_OSMOSIS, KEY_UNION },
+    chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
+    config::{Config, IbcInteraction, KEY_ETHEREUM, KEY_OSMOSIS, KEY_UNION},
 };
 type InnerInnerMap = HashMap<i32, bool>;
 type InnerMap = HashMap<i32, InnerInnerMap>;
@@ -32,16 +29,12 @@ impl Context {
             // We can take the first signer as the default signer since we don't need couple signers.
 
             let eth = match config.ethereum.preset {
-                PresetBaseKind::Minimal => {
-                    Chain::EthereumMinimal(
-                        Ethereum::new(config.ethereum, "hebele".to_string()).await
-                    )
-                }
-                PresetBaseKind::Mainnet => {
-                    Chain::EthereumMainnet(
-                        Ethereum::new(config.ethereum, "hubele".to_string()).await
-                    )
-                }
+                PresetBaseKind::Minimal => Chain::EthereumMinimal(
+                    Ethereum::new(config.ethereum, "hebele".to_string()).await,
+                ),
+                PresetBaseKind::Mainnet => Chain::EthereumMainnet(
+                    Ethereum::new(config.ethereum, "hubele".to_string()).await,
+                ),
             };
             chains.insert(KEY_ETHEREUM.to_string(), eth);
         }
@@ -49,15 +42,21 @@ impl Context {
         if config.osmosis.enable {
             chains.insert(
                 KEY_OSMOSIS.to_string(),
-                Chain::Osmosis(Cosmos::new(config.osmosis).await)
+                Chain::Osmosis(Cosmos::new(config.osmosis).await),
             );
         }
 
         if config.union.enable {
-            chains.insert(KEY_UNION.to_string(), Chain::Union(Cosmos::new(config.union).await));
+            chains.insert(
+                KEY_UNION.to_string(),
+                Chain::Union(Cosmos::new(config.union).await),
+            );
         }
 
-        tracing::info!("Initialized chains: {:?}", chains.keys().collect::<Vec<_>>());
+        tracing::info!(
+            "Initialized chains: {:?}",
+            chains.keys().collect::<Vec<_>>()
+        );
 
         // Initialize the shared hashmap
         let shared_map = Arc::new(Mutex::new(HashMap::new()));
@@ -106,7 +105,8 @@ impl Context {
     pub async fn do_transactions(self) {
         for interaction in self.interactions {
             let source_chain = self.chains.get(&interaction.source.chain).cloned().unwrap();
-            let destination_chain = self.chains
+            let destination_chain = self
+                .chains
                 .get(&interaction.destination.chain)
                 .cloned()
                 .unwrap();
@@ -118,40 +118,48 @@ impl Context {
                     interval.tick().await;
                     match source_chain {
                         Chain::EthereumMinimal(_) => {
-                            source_chain.send_ibc_transfer(
-                                interaction.protocol.clone(),
-                                interaction.source.channel.clone(),
-                                interaction.destination.channel.clone(),
-                                "muno".to_string(),
-                                interaction.amount
-                            ).await;
+                            source_chain
+                                .send_ibc_transfer(
+                                    interaction.protocol.clone(),
+                                    interaction.source.channel.clone(),
+                                    interaction.destination.channel.clone(),
+                                    "muno".to_string(),
+                                    interaction.amount,
+                                )
+                                .await;
                         }
                         Chain::EthereumMainnet(_) => {
-                            source_chain.send_ibc_transfer(
-                                interaction.protocol.clone(),
-                                interaction.source.channel.clone(),
-                                interaction.destination.channel.clone(),
-                                "muno".to_string(),
-                                interaction.amount
-                            ).await;
+                            source_chain
+                                .send_ibc_transfer(
+                                    interaction.protocol.clone(),
+                                    interaction.source.channel.clone(),
+                                    interaction.destination.channel.clone(),
+                                    "muno".to_string(),
+                                    interaction.amount,
+                                )
+                                .await;
                         }
                         Chain::Osmosis(_) => {
-                            source_chain.send_ibc_transfer(
-                                interaction.protocol.clone(),
-                                interaction.source.channel.clone(),
-                                interaction.destination.channel.clone(),
-                                "muno".to_string(),
-                                interaction.amount
-                            ).await;
+                            source_chain
+                                .send_ibc_transfer(
+                                    interaction.protocol.clone(),
+                                    interaction.source.channel.clone(),
+                                    interaction.destination.channel.clone(),
+                                    "muno".to_string(),
+                                    interaction.amount,
+                                )
+                                .await;
                         }
                         Chain::Union(_) => {
-                            source_chain.send_ibc_transfer(
-                                interaction.protocol.clone(),
-                                interaction.source.channel.clone(),
-                                interaction.destination.channel.clone(),
-                                "muno".to_string(),
-                                interaction.amount
-                            ).await;
+                            source_chain
+                                .send_ibc_transfer(
+                                    interaction.protocol.clone(),
+                                    interaction.source.channel.clone(),
+                                    interaction.destination.channel.clone(),
+                                    "muno".to_string(),
+                                    interaction.amount,
+                                )
+                                .await;
                         }
                     }
                 }
@@ -223,8 +231,7 @@ impl Context {
         for interaction in &self.interactions {
             let key = format!(
                 "{}->{}",
-                interaction.destination.channel,
-                interaction.source.channel
+                interaction.destination.channel, interaction.source.channel
             );
             let expect_full_cycle = interaction.expect_full_cycle;
             tracing::info!("Calling check_packet_sequence for key: {}", key);

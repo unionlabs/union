@@ -1,9 +1,12 @@
-use std::{ ffi::OsString, fs };
+use std::{ffi::OsString, fs};
 
 use clap::Parser;
 use config::Config;
 use context::Context;
-use tokio::{ signal, time::{ interval, Duration } };
+use tokio::{
+    signal,
+    time::{interval, Duration},
+};
 
 pub mod chains;
 pub mod config;
@@ -13,7 +16,12 @@ pub mod context;
 #[derive(Debug, Parser, Clone)]
 pub struct AppArgs {
     /// The path to the configuration file.
-    #[arg(long, short = 'c', global = true, default_value = "sentinel-config-testnet.json")]
+    #[arg(
+        long,
+        short = 'c',
+        global = true,
+        default_value = "sentinel-config-testnet.json"
+    )]
     pub config: OsString,
 
     /// The database URL
