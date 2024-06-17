@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use chain_utils::private_key::PrivateKey;
 use ethers::core::k256::ecdsa;
 use serde::{Deserialize, Serialize};
@@ -15,9 +17,7 @@ pub const KEY_UNION: &str = "union";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub ethereum: EthereumConfig,
-    pub osmosis: CosmosConfig,
-    pub union: CosmosConfig,
+    pub chain_configs: HashMap<String, AnyChainConfig>,
     pub interactions: Vec<IbcInteraction>,
 }
 
@@ -59,4 +59,11 @@ pub struct IbcInteraction {
 pub struct Endpoint {
     pub chain: String,
     pub channel: ChannelId,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnyChainConfig {
+    Cosmos(CosmosConfig),
+    Ethereum(EthereumConfig),
 }

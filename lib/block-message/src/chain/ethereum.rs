@@ -43,7 +43,7 @@ use unionlabs::{
     },
     ics24::ChannelEndPath,
     id::ClientIdValidator,
-    traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
+    traits::{ChainIdOf, ClientIdOf, HeightOf},
     validated::ValidateT,
 };
 

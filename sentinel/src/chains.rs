@@ -10,7 +10,6 @@ use contracts::{
     ibc_packet::IBCPacketEvents,
     ucs01_relay::{LocalToken, UCS01Relay},
 };
-use ecdsa::SigningKey;
 use ethers::{
     abi::RawLog,
     contract::EthLogDecode,
@@ -18,29 +17,22 @@ use ethers::{
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, Ws},
     signers::LocalWallet,
-    types::{Address, BlockId, Filter},
+    types::{Address, Filter},
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
-use hex::{decode as hex_decode, encode as hex_encode};
-use prost::{Message, Name};
+use hex::encode as hex_encode;
+use prost::Message;
 use protos::{google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::{
-    event::{Event, EventData},
-    SubscriptionClient, WebSocketClient,
-};
-use ucs01_relay::{
-    ibc,
-    msg::{ExecuteMsg, TransferMsg},
-};
+use tendermint_rpc::{event::EventData, SubscriptionClient};
+use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::{Ics20Ack, JsonWasm, Ucs01Ack};
 use unionlabs::{
     cosmos::base::coin::Coin,
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
-    encoding::{self, Decode, DecodeAs},
-    ethereum::config::{ChainSpec, Mainnet, Minimal},
+    encoding::{self, DecodeAs},
     events::{AcknowledgePacket, RecvPacket, SendPacket, WriteAcknowledgement},
     google::protobuf::any,
     hash::H160,
@@ -271,8 +263,7 @@ pub enum Protocol {
 #[derive(Debug, Clone)]
 pub enum Chain {
     Ethereum(Ethereum),
-    Osmosis(Cosmos),
-    Union(Cosmos),
+    Cosmos(Cosmos),
 }
 
 impl IbcListen for Chain {
@@ -281,11 +272,8 @@ impl IbcListen for Chain {
             Chain::Ethereum(ethereum) => {
                 ethereum.listen(shared_map).await;
             }
-            Chain::Union(union) => {
-                union.listen(shared_map).await;
-            }
-            Chain::Osmosis(osmosis) => {
-                osmosis.listen(shared_map).await;
+            Chain::Cosmos(cosmos) => {
+                cosmos.listen(shared_map).await;
             }
         }
     }
@@ -302,13 +290,8 @@ impl IbcListen for Chain {
                     .handle_ibc_event(ibc_event, shared_map, block_number)
                     .await;
             }
-            Chain::Union(union) => {
-                union
-                    .handle_ibc_event(ibc_event, shared_map, block_number)
-                    .await;
-            }
-            Chain::Osmosis(osmosis) => {
-                osmosis
+            Chain::Cosmos(cosmos) => {
+                cosmos
                     .handle_ibc_event(ibc_event, shared_map, block_number)
                     .await;
             }
@@ -338,13 +321,8 @@ impl IbcTransfer for Chain {
                     .send_ibc_transfer(protocol, channel, destination_channel, denom, amount)
                     .await;
             }
-            Chain::Osmosis(osmosis) => {
-                osmosis
-                    .send_ibc_transfer(protocol, channel, destination_channel, denom, amount)
-                    .await;
-            }
-            Chain::Union(union) => {
-                union
+            Chain::Cosmos(cosmos) => {
+                cosmos
                     .send_ibc_transfer(protocol, channel, destination_channel, denom, amount)
                     .await;
             }
