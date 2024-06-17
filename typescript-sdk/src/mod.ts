@@ -8,11 +8,16 @@ import {
   publicActions,
   type createWalletClient
 } from "viem"
+import {
+  bech32AddressToHex,
+  hexAddressToBech32,
+  hexStringToUint8Array,
+  uint8ArrayToHexString,
+  convertByteArrayToHex
+} from "./convert.ts"
 import type { OfflineSigner } from "./types.ts"
 import type { GasPrice } from "@cosmjs/stargate"
-import { bech32AddressToHex } from "./convert.ts"
 import { ucs01RelayAbi } from "./abi/ucs01-relay.ts"
-import type { ChainId } from "./constants/testnet.ts"
 import { raise, timestamp } from "./utilities/index.ts"
 import { type cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import { cosmosTransfer, cosmwasmTransfer, ibcTransfer } from "./transfer.ts"
@@ -130,7 +135,7 @@ export function createUnionClient({
           memo = timestamp()
         }: {
           network: "cosmos" | "evm"
-          path: [ChainId, ChainId]
+          path: [string, string]
           receiver: string
           amount: bigint
           sourceChannel: string
@@ -236,8 +241,15 @@ export function createUnionClient({
             })
           }
 
-          throw new Error("Invalid network")
+          raise("Invalid network")
         }
       }
     })
+    .extend(() => ({
+      bech32AddressToHex,
+      hexAddressToBech32,
+      convertByteArrayToHex,
+      hexStringToUint8Array,
+      uint8ArrayToHexString
+    }))
 }
