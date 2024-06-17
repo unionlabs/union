@@ -124,7 +124,7 @@ pub enum Op<T: QueueMessage> {
     /// [B C D]
     /// ```
     ///
-    /// Note that this is similar to `Sequence`, expcepc that the new messages are queued at the
+    /// Note that this is similar to `Sequence`, except that the new messages are queued at the
     /// *back* of the list, allowing for uniform progress across all nested messages.
     Conc(VecDeque<Self>),
     /// Race a list of messages. The head of the list is handled, and if it returns no new messages,
