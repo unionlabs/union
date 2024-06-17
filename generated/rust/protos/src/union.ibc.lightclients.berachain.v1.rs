@@ -3,31 +3,33 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
+    pub consensus_chain_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub execution_chain_id: ::prost::alloc::string::String,
     /// TENDERMINT
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "3")]
     pub trust_level: ::core::option::Option<
         super::super::super::super::super::ibc::lightclients::tendermint::v1::Fraction,
     >,
-    #[prost(message, optional, tag = "3")]
-    pub trusting_period: ::core::option::Option<::pbjson_types::Duration>,
     #[prost(message, optional, tag = "4")]
-    pub max_clock_drift: ::core::option::Option<::pbjson_types::Duration>,
+    pub trusting_period: ::core::option::Option<::pbjson_types::Duration>,
     #[prost(message, optional, tag = "5")]
+    pub max_clock_drift: ::core::option::Option<::pbjson_types::Duration>,
+    #[prost(message, optional, tag = "6")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "7")]
     pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(message, repeated, tag = "7")]
+    #[prost(message, repeated, tag = "8")]
     pub proof_specs:
         ::prost::alloc::vec::Vec<super::super::super::super::super::cosmos::ics23::v1::ProofSpec>,
-    #[prost(string, repeated, tag = "8")]
+    #[prost(string, repeated, tag = "9")]
     pub upgrade_path: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// ETHEREUM
-    #[prost(bytes = "vec", tag = "9")]
-    pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "10")]
+    pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "11")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {

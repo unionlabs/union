@@ -56,13 +56,13 @@ pub trait BlsVerify {
 ///
 /// ## Important Notes
 /// * This verification does not assume that the updated header is greater (in terms of height) than the
-/// light client state. When the updated header is in the next signature period, the light client uses
-/// the next sync committee to verify the signature, then it saves the next sync committee as the current
-/// sync committee. However, it's not mandatory for light clients to expect the next sync committee to be given
-/// during these updates. So if it's not given, the light client still can validate updates until the next signature
-/// period arrives. In a situation like this, the update can be any header within the same signature period. And
-/// this function only allows a non-existent next sync committee to be set in that case. It doesn't allow a sync committee
-/// to be changed or removed.
+///   light client state. When the updated header is in the next signature period, the light client uses
+///   the next sync committee to verify the signature, then it saves the next sync committee as the current
+///   sync committee. However, it's not mandatory for light clients to expect the next sync committee to be given
+///   during these updates. So if it's not given, the light client still can validate updates until the next signature
+///   period arrives. In a situation like this, the update can be any header within the same signature period. And
+///   this function only allows a non-existent next sync committee to be set in that case. It doesn't allow a sync committee
+///   to be changed or removed.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(

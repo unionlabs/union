@@ -28,7 +28,7 @@
       "ibc_commitment_slot": "0"
     },
     "ethereum-devnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
@@ -54,7 +54,7 @@
       "eth_beacon_rpc_api": "http://localhost:9596"
     },
     "berachain-devnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "berachain",
       "ibc_commitment_slot": "0",
       "ibc_handler_address": "0x9664d804589c1c9f573288edc2b9027661d624fa",

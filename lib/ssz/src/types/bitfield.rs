@@ -349,7 +349,7 @@ impl<T: BitfieldBehaviour> Bitfield<T> {
     ///
     /// - `bytes` is not the minimal required bytes to represent a bitfield of `bit_len` bits.
     /// - `bit_len` is not a multiple of 8 and `bytes` contains set bits that are higher than, or
-    /// equal to `bit_len`.
+    ///   equal to `bit_len`.
     fn from_raw_bytes(
         bytes: SmallVec<[u8; SMALLVEC_LEN]>,
         bit_len: usize,

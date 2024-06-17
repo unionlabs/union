@@ -1,7 +1,8 @@
 { ... }: {
   perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, mkCi, ... }:
     let
-      nightlyVersion = "2024-05-13";
+      # https://releases.rs/docs/1.80.0/
+      nightlyVersion = "2024-06-07";
       defaultChannel = "nightly-${nightlyVersion}";
 
       # # hopefully if we ever use wasi this issue will be resolved: https://github.com/NixOS/nixpkgs/pull/146274
@@ -22,7 +23,7 @@
 
       rustSrc =
         let
-          content = pkgs.rust-bin.manifests.nightly.${nightlyVersion}.pkg.rust-src.target."*";
+          content = pkgs.rust-bin.nightly.${nightlyVersion}._manifest.pkg.rust-src.target."*";
           # copied from https://github.com/oxalica/rust-overlay/blob/44210df7a70dcf0a81a5919f9422b6ae589ee673/rust-overlay.nix#L123C36-L123C36
           mkComponentSrc = { url, sha256 }:
             let

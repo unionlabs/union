@@ -1,4 +1,8 @@
+use alloc::sync::Arc;
+use core::str::FromStr;
+
 use macros::model;
+use uint::FromDecStrErr;
 
 use crate::{
     cosmos::ics23::proof_spec::{ProofSpec, TryFromProofSpecError},
@@ -19,8 +23,8 @@ use crate::{
     from
 ))]
 pub struct ClientState {
-    // Consensus layer chain id
-    pub chain_id: String,
+    pub consensus_chain_id: String,
+    pub execution_chain_id: U256,
 
     // TENDERMINT
     pub trust_level: Fraction,
@@ -41,6 +45,9 @@ pub struct ClientState {
 pub enum TryFromClientStateError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
+    #[error("invalid execution chain id")]
+    // arc bc not clone
+    ExecutionChainId(#[source] Arc<FromDecStrErr>),
     #[error("invalid trust level")]
     TrustLevel(#[source] TryFromFractionError),
     #[error("invalid trusting period")]
@@ -64,7 +71,9 @@ impl TryFrom<protos::union::ibc::lightclients::berachain::v1::ClientState> for C
         value: protos::union::ibc::lightclients::berachain::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            chain_id: value.chain_id,
+            consensus_chain_id: value.consensus_chain_id,
+            execution_chain_id: U256::from_str(&value.execution_chain_id)
+                .map_err(|e| TryFromClientStateError::ExecutionChainId(Arc::new(e)))?,
             trust_level: required!(value.trust_level)?
                 .try_into()
                 .map_err(TryFromClientStateError::TrustLevel)?,
@@ -95,7 +104,8 @@ impl TryFrom<protos::union::ibc::lightclients::berachain::v1::ClientState> for C
 impl From<ClientState> for protos::union::ibc::lightclients::berachain::v1::ClientState {
     fn from(value: ClientState) -> Self {
         Self {
-            chain_id: value.chain_id,
+            consensus_chain_id: value.consensus_chain_id,
+            execution_chain_id: value.execution_chain_id.to_string(),
             trust_level: Some(value.trust_level.into()),
             trusting_period: Some(value.trusting_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
@@ -110,7 +120,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::berachain::v1::Clie
 }
 
 impl traits::ClientState for ClientState {
-    type ChainId = String;
+    type ChainId = U256;
     type Height = Height;
 
     fn height(&self) -> Self::Height {
@@ -118,6 +128,6 @@ impl traits::ClientState for ClientState {
     }
 
     fn chain_id(&self) -> Self::ChainId {
-        self.chain_id.clone()
+        self.execution_chain_id
     }
 }

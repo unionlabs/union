@@ -7,7 +7,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "aeryz";
             repo = "wasmd";
-            rev = "wasm-clients-v0.50.0";
+            # rev = "wasm-clients-v0.50.0";
+            rev = "8430bd3a9c8908f7c12eb8939d9126ddeba0f4d2";
             sha256 = "sha256-+S/0zM4CBGYHXRhbkNwcqwmZeh6RUBhWt5Ya2QQWKH8=";
           };
           vendorHash = null;

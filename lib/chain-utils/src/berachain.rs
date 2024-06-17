@@ -50,7 +50,9 @@ use crate::ethereum::{
 #[derive(Debug, Clone)]
 pub struct Berachain {
     /// Consensus layer chain id
-    pub chain_id: String,
+    pub consensus_chain_id: String,
+    /// Execution layer chain id
+    pub execution_chain_id: U256,
     /// The revision of the cometbft consensus layer. This is used by the tendermint light client verification.
     pub consensus_chain_revision: u64,
 
@@ -108,8 +110,9 @@ impl Chain for Berachain {
 
     type StateProof = StorageProof;
 
+    /// We expose the execution chain id instead of the consensus chain id since the execution chain id is the "public facing" one.
     fn chain_id(&self) -> ChainIdOf<Self> {
-        self.chain_id.clone()
+        self.execution_chain_id
     }
 
     async fn query_latest_height(&self) -> Result<HeightOf<Self>, Self::Error> {
@@ -158,7 +161,8 @@ impl Chain for Berachain {
         const UNBONDING_PERIOD: i64 = 60 * 60 * 7;
 
         berachain::client_state::ClientState {
-            chain_id: self.chain_id(),
+            consensus_chain_id: self.consensus_chain_id.clone(),
+            execution_chain_id: self.execution_chain_id,
             // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
             trust_level: const {
                 Fraction {
@@ -283,7 +287,8 @@ impl Berachain {
 
         Ok(Self {
             tm_client,
-            chain_id: consensus_chain_id,
+            consensus_chain_id,
+            execution_chain_id: execution_chain_id.into(),
             ibc_handler_address: config.ibc_handler_address,
             ibc_handlers: ReadWrite::new(
                 config.signers,
