@@ -1,4 +1,3 @@
-
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 
 type rpcUrlArgument = { rpcUrl: string }

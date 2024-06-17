@@ -6,7 +6,15 @@ import { privateKeyToAccount } from "viem/accounts"
 import contracts from "~root/versions/contracts.json" with { type: "json" }
 import { http, erc20Abi, publicActions, createWalletClient, getAddress } from "viem"
 
-/* `bun playground/to-sepolia.ts --private-key "..."` */
+/**
+ *
+ *
+ * W  I  P
+ *
+ *
+ */
+
+/* `bun playground/sepolia-to-osmosis.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),

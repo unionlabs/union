@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 import * as Bun from "bun"
 import { consola } from "./logger.ts"
-import { parseArgs } from "node:util"
 
 /**
  * Use this script to publish a new version of the TypeScript SDK to JSR registry
@@ -11,15 +10,10 @@ import { parseArgs } from "node:util"
  * Usage:
  *
  * `bun scripts/publish`
- * `bun scripts/publish --dry-run`
+ * `DRY_RUN=1 bun scripts/publish`
  */
 
-const { values } = parseArgs({
-  args: process.argv.slice(2),
-  options: { "dry-run": { type: "boolean", default: false } }
-})
-
-const DRY_RUN = values["dry-run"] ?? false
+const DRY_RUN = import.meta.env.DRY_RUN === "1" ?? process.env.DRY_RUN === "1" ?? true
 
 main().catch(_ => {
   consola.error(_)

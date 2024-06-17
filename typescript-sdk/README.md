@@ -17,4 +17,3 @@ Union Labs TypeScript SDK providing utilities for cross-chain transfers and more
 ```sh
 npx jsr add @union/client
 ```
-

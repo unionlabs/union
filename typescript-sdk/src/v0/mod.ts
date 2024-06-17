@@ -192,9 +192,7 @@ export class UnionClient implements IUnionClient {
       const { DirectSecp256k1HdWallet } = await import("@cosmjs/proto-signing")
       cosmosOfflineSigner = await DirectSecp256k1HdWallet.fromMnemonic(
         params.privateKeyOrMnemonic,
-        {
-          prefix: params.bech32Prefix
-        }
+        { prefix: params.bech32Prefix }
       )
     }
     return new UnionClient({ ...params, cosmosOfflineSigner })

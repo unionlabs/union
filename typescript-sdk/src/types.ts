@@ -1,3 +1,8 @@
+export interface TransactionResponse {
+  data: string
+  success: boolean
+}
+
 export type MaybePromise<TValue> = TValue | Promise<TValue>
 
 export type ErrorType<name extends string = "Error"> = Error & { name: name }

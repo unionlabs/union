@@ -6,7 +6,7 @@
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": ["ESNext"],
     "target": "ESNext",
     "module": "ESNext",
     "skipLibCheck": true,

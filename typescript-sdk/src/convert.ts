@@ -8,7 +8,7 @@ import { isValidBech32Address } from "./utilities/address.ts"
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
-  if (!isValidBech32Address(address)) raise("Invalid Cosmos address")
+  if (!isValidBech32Address(address)) raise("Invalid bech32 address")
   const { words } = bech32.decode(address)
   return getAddress(`0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`)
 }
@@ -20,20 +20,20 @@ export function hexAddressToBech32({
   address,
   bech32Prefix
 }: { address: HexAddress; bech32Prefix: string }): Bech32Address {
+  if (!isHex(address)) raise("Invalid hex address")
   const words = bech32.toWords(Buffer.from(address.slice(2), "hex"))
   return bech32.encode(bech32Prefix, words)
 }
-
 /**
  * @credit https://stackoverflow.com/a/78013306/10605502
  */
 const LUT_HEX_4b = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
-const LUT_HEX_8b = new Array(0x100) satisfies Array<string>
-for (let index = 0; index < 0x100; index++) {
-  LUT_HEX_8b[index] = `${LUT_HEX_4b[(index >>> 4) & 0xf]}${LUT_HEX_4b[index & 0xf]}`
+const LUT_HEX_8b = new Array(0x100) as Array<string>
+for (let n = 0; n < 0x100; n++) {
+  LUT_HEX_8b[n] = `${LUT_HEX_4b[(n >>> 4) & 0xf]}${LUT_HEX_4b[n & 0xf]}`
 }
-let out = ""
 export function uint8ArrayToHexString(uintArray: Uint8Array): string {
+  let out = ""
   for (let index = 0, edx = uintArray.length; index < edx; index++) {
     out += LUT_HEX_8b[uintArray[index] as number]
   }
@@ -53,10 +53,11 @@ export function hexStringToUint8Array(hexString: string) {
 export const convertByteArrayToHex = (byteArray: Uint8Array): string =>
   byteArray.reduce((hex, byte) => hex + byte.toString(16).padStart(2, "0"), "").toUpperCase()
 
-export const normalizeToCosmosAddress = (address: string): Bech32Address =>
-  isHex(address)
-    ? hexAddressToBech32({ address, bech32Prefix: "union" })
-    : (address as Bech32Address)
+export const normalizeToCosmosAddress = ({
+  address,
+  bech32Prefix
+}: { address: string; bech32Prefix: string }): Bech32Address =>
+  isHex(address) ? hexAddressToBech32({ address, bech32Prefix }) : (address as Bech32Address)
 
 export const normalizeToEvmAddress = (address: string): HexAddress =>
   isHex(address) ? address : bech32AddressToHex({ address })
