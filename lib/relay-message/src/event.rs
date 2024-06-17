@@ -91,7 +91,15 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             .collect::<Vec<_>>()
                             .join(",");
 
-                        info!(event = %event_name, %client_id, %client_type, %consensus_heights);
+                        info!(
+                            event = %event_name,
+                            height = %ibc_event.height,
+                            tx_hash = %ibc_event.tx_hash,
+
+                            %client_id,
+                            %client_type,
+                            %consensus_heights
+                        );
 
                         noop()
                     }
