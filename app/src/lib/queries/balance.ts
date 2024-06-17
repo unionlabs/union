@@ -50,66 +50,69 @@ const evmBalancesResponseSchema = v.object({
 
 export type EvmBalances = v.InferOutput<typeof evmBalancesResponseSchema>
 
-/**
- * @docs https://docs.alchemy.com/reference/alchemy-gettokenbalances
- * @note the parameters here match the API parameters 1:1. See docs
- */
 export function evmBalancesQuery({
   address,
-  chainId,
-  ...restParams
+  chains
 }: {
   address: Address
-  chainId: string
-} & ({ contractAddresses: Array<string> } | { tokenSpecification: "erc20" | "DEFAULT_TOKENS" })) {
-  return createQuery({
-    queryKey: ["balances", chainId, address],
-    enabled: isValidEvmAddress(address),
-    refetchOnWindowFocus: false,
-    refetchInterval: 200_000,
-    queryFn: async () => {
-      DecodeLogDataMismatch
-      const assetsToCheck =
-        "contractAddresses" in restParams && Array.isArray(restParams.contractAddresses)
-          ? restParams.contractAddresses // if contractAddresses is an array, use it
-          : "tokenSpecification" in restParams &&
-              ["erc20", "DEFAULT_TOKENS"].includes(restParams.tokenSpecification)
-            ? restParams.tokenSpecification // if tokenSpecification is a string, use it
-            : "DEFAULT_TOKENS"
+  chains: Array<{
+    chain_id: string
+    rpcs: Array<{ url: string; type: string }>
+  }>
+}) {
+  return createQueries({
 
-      let json: undefined | unknown
+    queries: chains.map(chain => ({
+      queryKey: ["balances", chain.chain_id, address],
+      enabled: isValidEvmAddress(address),
+      refetchOnWindowFocus: false,
+      refetchInterval: 200_000,
+      queryFn: async () => {
+        DecodeLogDataMismatch
 
-      try {
-        const response = await fetch(`https://eth-sepolia.g.alchemy.com/v2/${KEY.RPC.ALCHEMY}`, {
-          method: "POST",
-          body: JSON.stringify({
-            id: 1,
-            jsonrpc: "2.0",
-            method: "alchemy_getTokenBalances",
-            params: [address, assetsToCheck]
+        let json: undefined | unknown
+
+
+        // TODO: support quicknode
+        const alchemy_rpcs = chain.rpcs.filter(rpc => rpc.type === "alchemy")
+        if (alchemy_rpcs.length === 0) raise(`no alchemy rpc available for chain ${chain.chain_id}`)
+
+        const alchemyUrl = alchemy_rpcs[0].url
+
+        try {
+          const response = await fetch(`https://${alchemyUrl}`, {
+            method: "POST",
+            body: JSON.stringify({
+              id: 1,
+              jsonrpc: "2.0",
+              method: "alchemy_getTokenBalances",
+              params: [address, "erc20"]
+            })
           })
-        })
-        if (!response.ok) raise("error fetching from alchemy: non-200 status")
-        json = await response.json()
-      } catch (err) {
-        if (err instanceof Error) {
-          raise(`error fetching from alchemy: ${err.message}`)
+          if (!response.ok) raise("error fetching from alchemy: non-200 status")
+          json = await response.json()
+        } catch (err) {
+          if (err instanceof Error) {
+            raise(`error fetching from alchemy: ${err.message}`)
+          }
+          raise(`unknown error while fetching from alchemy: ${JSON.stringify(err)}`)
         }
-        raise(`unknown error while fetching from alchemy: ${JSON.stringify(err)}`)
+        const result = v.safeParse(evmBalancesResponseSchema, json)
+
+        if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
+
+        const tokensInfo = await getEvmTokensInfo(
+          result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)
+        )
+        return tokensInfo.map((token, index) => ({
+          ...token,
+          balance: BigInt(result.output.result.tokenBalances[index].tokenBalance),
+          address: token.address as Address
+        }))
       }
-      const result = v.safeParse(evmBalancesResponseSchema, json)
 
-      if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
 
-      const tokensInfo = await getEvmTokensInfo(
-        result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)
-      )
-      return tokensInfo.map((token, index) => ({
-        ...token,
-        balance: BigInt(result.output.result.tokenBalances[index].tokenBalance),
-        address: token.address as Address
-      }))
-    }
+    }))
   })
 }
 
@@ -133,7 +136,6 @@ export function cosmosBalancesQuery({
     rpcs: Array<{ url: string; type: string }>
   }>
 }) {
-  console.log(address)
   return createQueries({
     queries: chains.map(chain => {
       const bech32_addr = rawToBech32(chain.addr_prefix, address)

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { truncate } from "$lib/utilities/format";
 
-  export let asset: { symbol: string, balance: string };
+  export let asset: { symbol: string, balance: string | bigint };
 
   import { Button } from "$lib/components/ui/button/index.ts"
 </script>
@@ -15,7 +15,6 @@
       <div class="uppercase font-bold">{truncate(asset.symbol, 8)}</div>
       <div class="flex-1 text-xl font-mono">{asset.balance}</div>
       <Button>Transfer</Button>
-
     </div>
   </div>
 </div>
