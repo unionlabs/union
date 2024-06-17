@@ -68,7 +68,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{
-        any_state_proof_to_json, AppArgs, ArbitrumCmd, BerachainCmd, Command, Handshake,
+        any_state_proof_to_json, AppArgs, ArbitrumCmd, BerachainCmd, Command, HandshakeCmd,
         HandshakeType, QueryCmd, UtilCmd,
     },
     config::{Config, GetChainError},
@@ -390,7 +390,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 }
             }
         }
-        Command::Handshake(Handshake {
+        Command::Handshake(HandshakeCmd {
             chain_a,
             chain_b,
             ty,

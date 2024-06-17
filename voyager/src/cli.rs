@@ -61,14 +61,14 @@ pub enum LogFormat {
 }
 
 #[derive(Debug)]
-pub struct Handshake {
+pub struct HandshakeCmd {
     pub chain_a: String,
     pub chain_b: String,
 
     pub ty: HandshakeType,
 }
 
-impl Args for Handshake {
+impl Args for HandshakeCmd {
     fn augment_args(cmd: clap::Command) -> clap::Command {
         HandshakeRaw::augment_args(cmd)
     }
@@ -78,7 +78,7 @@ impl Args for Handshake {
     }
 }
 
-impl Handshake {
+impl HandshakeCmd {
     pub fn from_raw(mut raw: HandshakeRaw) -> Result<Self, clap::Error> {
         use HandshakeType::*;
 
@@ -217,7 +217,7 @@ pub enum HandshakeType {
     },
 }
 
-impl FromArgMatches for Handshake {
+impl FromArgMatches for HandshakeCmd {
     fn from_arg_matches(matches: &clap::ArgMatches) -> Result<Self, clap::Error> {
         HandshakeRaw::from_arg_matches(matches).and_then(Self::from_raw)
     }
@@ -326,7 +326,7 @@ impl HandshakeRaw {
 pub enum Command {
     RunMigrations,
     PrintConfig,
-    Handshake(Handshake),
+    Handshake(HandshakeCmd),
     InitFetch {
         on: String,
     },
