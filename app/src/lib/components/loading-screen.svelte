@@ -1,6 +1,6 @@
 <script>
 import { fade } from "svelte/transition"
-import Logo from "./logo.svelte"
+import Logo from "./loading-logo.svelte"
 </script>
 
 <div
