@@ -13,6 +13,7 @@ import { truncate } from "$lib/utilities/format"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { rawToHex } from "$lib/utilities/address"
 import { sepoliaStore } from "$lib/wallet/evm"
+import LoadingLogo from "$lib/components/loading-logo.svelte"
 
 let transfers = createQuery({
   queryKey: ["user-transfers"],
@@ -109,7 +110,7 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 
 {:else}
   {#if $transfers.isLoading}
-    <div>Loading...</div>
+    <LoadingLogo class="size-16" />
   {:else if $transfers.isSuccess}
     <Table bind:dataStore={transfersData} {columns} />
   {/if}

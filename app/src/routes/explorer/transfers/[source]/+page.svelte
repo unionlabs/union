@@ -8,6 +8,7 @@ import MoveRightIcon from "virtual:icons/lucide/move-right"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { truncate } from "$lib/utilities/format"
 import { toIsoString } from "$lib/utilities/date"
+import LoadingLogo from "$lib/components/loading-logo.svelte"
 
 const source = $page.params.source
 
@@ -29,7 +30,7 @@ let transfers = createQuery({
 !-->
 
 {#if $transfers.isLoading}
-  <div>Loading...</div>
+  <LoadingLogo class="size-16"/>
 {:else if $transfers.isSuccess}
   {#each $transfers.data as transfer}
 
@@ -54,7 +55,7 @@ let transfers = createQuery({
         No assets in transfer
       {/if}
     </section>
-    
+
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground">{transfer.source_chain?.display_name}</h2>
