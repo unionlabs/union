@@ -11,10 +11,10 @@ import { ScrollArea } from "$lib/components/ui/scroll-area"
   <main class="flex flex-col w-full py-6 gap-6">
     <ChainsGate let:chains>
       <WalletGate let:userAddr>
-        <div slot="disconnected">
+        <div slot="disconnected" class="px-4">
           <p>Connect your wallets to continue</p>
         </div>
-        <div let:userAddr>
+        <div>
           <BalancesOverview {chains} {userAddr}/>
         </div>
       </WalletGate>

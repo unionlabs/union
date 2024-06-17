@@ -149,8 +149,13 @@ const handleSubmit = () => {
                   <p class="text-xs">
                     <ChainsGate let:chains>
                       <WalletGate let:userAddr>
-                        <span class="text-muted-foreground">Balance: </span>
-                        <CosmosBalance chainId={"union-testnet-8"} {chains} symbol {userAddr}/>
+                        <div slot="disconnected">
+                          Connect your wallets
+                        </div>
+                        <div>
+                          <span class="text-muted-foreground">Balance: </span>
+                          <CosmosBalance chainId={"union-testnet-8"} {chains} symbol {userAddr}/>
+                        </div>
                       </WalletGate>
                     </ChainsGate>
                   </p>
