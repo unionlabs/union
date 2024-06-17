@@ -6,7 +6,7 @@ import {
   type Account,
   walletActions,
   publicActions,
-  type createWalletClient
+  type WalletClientConfig
 } from "viem"
 import {
   bech32AddressToHex,
@@ -21,8 +21,10 @@ import { ucs01RelayAbi } from "./abi/ucs01-relay.ts"
 import { raise, timestamp } from "./utilities/index.ts"
 import { type cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import { cosmosTransfer, cosmwasmTransfer, ibcTransfer } from "./transfer.ts"
+import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
-export type EvmClientParameters = Parameters<typeof createWalletClient>[0]
+export interface EvmClientParameters extends WalletClientConfig {}
+
 export interface CosmosClientParameters {
   account: OfflineSigner
   transport: ReturnType<typeof cosmosHttp> | Array<ReturnType<typeof cosmosHttp>>
@@ -39,6 +41,16 @@ export function createUnionClient({
   return createClient(evm)
     .extend(walletActions)
     .extend(publicActions)
+    .extend(() => ({
+      bech32AddressToHex,
+      hexAddressToBech32,
+      convertByteArrayToHex,
+      hexStringToUint8Array,
+      uint8ArrayToHexString,
+      truncateAddress,
+      isValidEvmAddress,
+      isValidBech32Address
+    }))
     .extend(client => ({
       async transferAssetFromEvm({
         sourceChainId,
@@ -245,11 +257,4 @@ export function createUnionClient({
         }
       }
     })
-    .extend(() => ({
-      bech32AddressToHex,
-      hexAddressToBech32,
-      convertByteArrayToHex,
-      hexStringToUint8Array,
-      uint8ArrayToHexString
-    }))
 }

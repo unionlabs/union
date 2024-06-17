@@ -25,7 +25,7 @@ export function truncateAddress({
 export const isValidEvmAddress = (address: unknown): address is HexAddress =>
   typeof address === "string" && isAddress(address) && getAddress(address) === address
 
-export function isValidCosmosAddress(
+export function isValidBech32Address(
   address: unknown,
   { expectedPrefixes }: { expectedPrefixes: ["union"] } = { expectedPrefixes: ["union"] }
 ): address is Bech32Address {

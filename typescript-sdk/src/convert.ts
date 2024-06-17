@@ -2,13 +2,13 @@ import { bech32 } from "@scure/base"
 import { getAddress, isHex } from "viem"
 import { raise } from "./utilities/index.ts"
 import type { Bech32Address, HexAddress } from "./types.ts"
-import { isValidCosmosAddress } from "./utilities/address.ts"
+import { isValidBech32Address } from "./utilities/address.ts"
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
-  if (!isValidCosmosAddress(address)) raise("Invalid Cosmos address")
+  if (!isValidBech32Address(address)) raise("Invalid Cosmos address")
   const { words } = bech32.decode(address)
   return getAddress(`0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`)
 }
@@ -27,30 +27,13 @@ export function hexAddressToBech32({
 /**
  * @credit https://stackoverflow.com/a/78013306/10605502
  */
+const LUT_HEX_4b = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
+const LUT_HEX_8b = new Array(0x100) satisfies Array<string>
+for (let index = 0; index < 0x100; index++) {
+  LUT_HEX_8b[index] = `${LUT_HEX_4b[(index >>> 4) & 0xf]}${LUT_HEX_4b[index & 0xf]}`
+}
+let out = ""
 export function uint8ArrayToHexString(uintArray: Uint8Array): string {
-  const LUT_HEX_4b = [
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F"
-  ]
-  const LUT_HEX_8b = new Array(0x100) satisfies Array<string>
-  for (let index = 0; index < 0x100; index++) {
-    LUT_HEX_8b[index] = `${LUT_HEX_4b[(index >>> 4) & 0xf]}${LUT_HEX_4b[index & 0xf]}`
-  }
-  let out = ""
   for (let index = 0, edx = uintArray.length; index < edx; index++) {
     out += LUT_HEX_8b[uintArray[index] as number]
   }
