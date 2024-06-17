@@ -23,7 +23,6 @@ pub struct Config {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EthereumConfig {
-    pub enable: bool,
     pub ibc_handler_address: H160,
     pub eth_rpc_api: String,
     pub transfer_module: TransferModule,
@@ -32,7 +31,6 @@ pub struct EthereumConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CosmosConfig {
-    pub enable: bool,
     pub chain_config: chain_utils::cosmos::Config,
     pub transfer_module: TransferModule,
 }
