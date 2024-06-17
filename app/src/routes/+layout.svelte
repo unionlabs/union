@@ -18,22 +18,12 @@ import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { createQueryClient } from "$lib/graphql/client.ts"
-import LoadingScreen from "$lib/components/loading-screen.svelte"
 import LoadingBar from "$lib/components/loading-bar.svelte"
 
-let loading = true
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
-
-$: {
-  if (!$navigating) {
-    setTimeout(() => {
-      loading = false
-    }, 1500)
-  }
-}
 
 onMount(() => {
   /* fix for iOS Safari viewport zooming on input focus */
@@ -85,10 +75,6 @@ onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
     ],
   }}
 />
-
-{#if loading}
-  <LoadingScreen />
-{/if}
 
 <LoadingBar />
 
