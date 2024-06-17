@@ -1,4 +1,5 @@
 <script lang="ts">
+import AssetCard from '$lib/components/asset-card.svelte';
 import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance"
 import type { Chain, UserAddresses } from "$lib/types"
 export let userAddr: UserAddresses
@@ -60,9 +61,7 @@ onMount(() => {
       <div class="flex gap-4 px-6">
         {#if !(balance.data instanceof Error)}
           {#each balance.data as asset}
-            <div class="border w-60 h-40 p-4 bg-card">
-              {truncate(asset.symbol, 8)} | {asset.balance}
-            </div>
+            <AssetCard {asset}/>
           {/each}
         {/if}
       </div>
