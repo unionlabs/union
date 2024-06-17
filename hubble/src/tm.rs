@@ -391,7 +391,7 @@ async fn fetch_transactions_for_block(
     };
 
     for page in 1..u32::MAX {
-        info!("fetching page {page} for block {height}");
+        debug!("fetching page {page} for block {height}");
         let response = client
             .tx_search(query.clone(), false, page, 100, Order::Ascending)
             .await?;
