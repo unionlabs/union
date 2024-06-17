@@ -18,6 +18,18 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
       destination_chain {
         chain_id
       }
+      forward {
+        channel_id
+        destination_chain {
+          chain_id
+        }
+        port
+      }
+    }
+    assets {
+      denom
+      display_symbol
+      decimals
     }
   }
 }`)

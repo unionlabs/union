@@ -3956,6 +3956,18 @@ export type introspection = {
         "name": "v0_assets",
         "fields": [
           {
+            "name": "chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_chains"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "chain_id",
             "type": {
               "kind": "NON_NULL",
@@ -4011,6 +4023,111 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
+        "name": "v0_assets_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_avg_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
         "name": "v0_assets_bool_exp",
         "inputFields": [
           {
@@ -4044,6 +4161,13 @@ export type introspection = {
                   "name": "v0_assets_bool_exp"
                 }
               }
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
             }
           },
           {
@@ -4086,8 +4210,99 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
+        "name": "v0_assets_max_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_min_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
         "name": "v0_assets_order_by",
         "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
           {
             "name": "chain_id",
             "type": {
@@ -4154,6 +4369,69 @@ export type introspection = {
       },
       {
         "kind": "INPUT_OBJECT",
+        "name": "v0_assets_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
         "name": "v0_assets_stream_cursor_input",
         "inputFields": [
           {
@@ -4213,6 +4491,90 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_sum_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_assets_variance_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
             }
           }
         ],
@@ -4944,6 +5306,72 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "assets",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_assets"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_assets_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_assets_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_assets_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
             "name": "blocks",
             "type": {
               "kind": "NON_NULL",
@@ -5047,6 +5475,15 @@ export type introspection = {
                 "kind": "SCALAR",
                 "name": "Int"
               }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
             },
             "args": [],
             "isDeprecated": false
@@ -5315,6 +5752,13 @@ export type introspection = {
             }
           },
           {
+            "name": "assets",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_bool_exp"
+            }
+          },
+          {
             "name": "blocks",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -5347,6 +5791,13 @@ export type introspection = {
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
             }
           },
           {
@@ -5399,6 +5850,13 @@ export type introspection = {
             }
           },
           {
+            "name": "assets_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_assets_aggregate_order_by"
+            }
+          },
+          {
             "name": "blocks_aggregate",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -5428,6 +5886,13 @@ export type introspection = {
           },
           {
             "name": "id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -5493,6 +5958,10 @@ export type introspection = {
           },
           {
             "name": "id",
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
             "isDeprecated": false
           },
           {
@@ -5566,6 +6035,13 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "Int"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
             }
           },
           {
@@ -11301,6 +11777,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "hop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_transfers"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "normalized_receiver",
             "type": {
               "kind": "SCALAR",
@@ -11707,6 +12192,13 @@ export type introspection = {
             }
           },
           {
+            "name": "hop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_transfers_bool_exp"
+            }
+          },
+          {
             "name": "normalized_receiver",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -11970,6 +12462,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "hop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_transfers_order_by"
             }
           },
           {
@@ -12598,6 +13097,84 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "forward",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_ucs1_configuration"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_ucs1_configuration_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_ucs1_configuration_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_ucs1_configuration_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "port",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "source_chain",
             "type": {
               "kind": "NON_NULL",
@@ -12802,6 +13379,20 @@ export type introspection = {
             }
           },
           {
+            "name": "forward",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_ucs1_configuration_bool_exp"
+            }
+          },
+          {
+            "name": "port",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "source_chain",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -12851,6 +13442,13 @@ export type introspection = {
             }
           },
           {
+            "name": "port",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "source_chain_id",
             "type": {
               "kind": "ENUM",
@@ -12887,6 +13485,13 @@ export type introspection = {
           },
           {
             "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "port",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -12942,6 +13547,20 @@ export type introspection = {
             }
           },
           {
+            "name": "forward_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_ucs1_configuration_aggregate_order_by"
+            }
+          },
+          {
+            "name": "port",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "source_chain",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -12976,6 +13595,10 @@ export type introspection = {
           },
           {
             "name": "destination_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "port",
             "isDeprecated": false
           },
           {
@@ -13101,6 +13724,13 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "Int"
+            }
+          },
+          {
+            "name": "port",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
             }
           },
           {
