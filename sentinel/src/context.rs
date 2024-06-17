@@ -9,7 +9,7 @@ use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
 use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
-    config::{Config, IbcInteraction, KEY_ETHEREUM, KEY_OSMOSIS, KEY_UNION},
+    config::{AnyChainConfig, Config, IbcInteraction, KEY_ETHEREUM, KEY_OSMOSIS, KEY_UNION},
 };
 type InnerInnerMap = HashMap<i32, bool>;
 type InnerMap = HashMap<i32, InnerInnerMap>;
@@ -26,25 +26,15 @@ impl Context {
     pub async fn new(config: Config) -> Result<Self, ()> {
         let mut chains = HashMap::new();
 
-        if config.ethereum.enable {
-            chains.insert(
-                KEY_ETHEREUM.to_string(),
-                Chain::Ethereum(Ethereum::new(config.ethereum).await),
-            );
-        }
-
-        if config.osmosis.enable {
-            chains.insert(
-                KEY_OSMOSIS.to_string(),
-                Chain::Osmosis(Cosmos::new(config.osmosis).await),
-            );
-        }
-
-        if config.union.enable {
-            chains.insert(
-                KEY_UNION.to_string(),
-                Chain::Union(Cosmos::new(config.union).await),
-            );
+        for (chain_name, chain) in config.chain_configs {
+            match chain {
+                AnyChainConfig::Cosmos(cosmos) => {
+                    chains.insert(chain_name, Chain::Cosmos(Cosmos::new(cosmos).await));
+                }
+                AnyChainConfig::Ethereum(ethereum) => {
+                    chains.insert(chain_name, Chain::Ethereum(Ethereum::new(ethereum).await));
+                }
+            }
         }
 
         tracing::info!(
@@ -63,25 +53,14 @@ impl Context {
     }
 
     pub async fn listen(&self) {
-        if let Some(Chain::Osmosis(osmosis)) = self.chains.get(KEY_OSMOSIS).cloned() {
-            let shared_map = self.shared_map.clone();
-            tokio::spawn(async move {
-                osmosis.listen(&shared_map).await;
-            });
-        }
+        for (chain_name, chain) in &self.chains {
+            tracing::info!(%chain_name, "listening on chain");
 
-        if let Some(Chain::Union(union)) = self.chains.get(KEY_UNION).cloned() {
             let shared_map = self.shared_map.clone();
-            tokio::spawn(async move {
-                union.listen(&shared_map).await;
-            });
-        }
-
-        if let Some(Chain::Ethereum(ethereum)) = self.chains.get(KEY_ETHEREUM).cloned() {
-            let shared_map = self.shared_map.clone();
+            let chain = chain.clone();
 
             tokio::spawn(async move {
-                ethereum.listen(&shared_map).await;
+                chain.listen(&shared_map).await;
             });
         }
     }
@@ -105,28 +84,19 @@ impl Context {
                     let amount = rng.gen_range(interaction.amount_min..=interaction.amount_max);
 
                     match &source_chain {
-                        Chain::Ethereum(eth) => {
-                            eth.send_ibc_transfer(
-                                interaction.protocol.clone(),
-                                interaction.source.channel.clone(),
-                                interaction.destination.channel.clone(),
-                                "muno".to_string(),
-                                amount,
-                            )
-                            .await;
+                        Chain::Ethereum(ethereum) => {
+                            ethereum
+                                .send_ibc_transfer(
+                                    interaction.protocol.clone(),
+                                    interaction.source.channel.clone(),
+                                    interaction.destination.channel.clone(),
+                                    "muno".to_string(),
+                                    amount,
+                                )
+                                .await;
                         }
-                        Chain::Osmosis(osmo) => {
-                            osmo.send_ibc_transfer(
-                                interaction.protocol.clone(),
-                                interaction.source.channel.clone(),
-                                interaction.destination.channel.clone(),
-                                "muno".to_string(),
-                                amount,
-                            )
-                            .await;
-                        }
-                        Chain::Union(union) => {
-                            union
+                        Chain::Cosmos(cosmos) => {
+                            cosmos
                                 .send_ibc_transfer(
                                     interaction.protocol.clone(),
                                     interaction.source.channel.clone(),
