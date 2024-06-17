@@ -660,6 +660,11 @@ export const ucs01RelayAbi = [
         ]
       },
       {
+        name: "extension",
+        type: "string",
+        internalType: "string"
+      },
+      {
         name: "timeoutHeight",
         type: "tuple",
         internalType: "struct IbcCoreClientV1Height.Data",

@@ -1,7 +1,13 @@
 #!/usr/bin/env bun
+import { http } from "viem"
 import { parseArgs } from "node:util"
-import { UnionClient } from "#v0/mod.ts"
-import { createUnionClient } from '#mod.ts'
+import { sepolia } from "viem/chains"
+import { cosmosHttp } from "#transport.ts"
+import { GasPrice } from "@cosmjs/stargate"
+import { createUnionClient } from "#mod.ts"
+import { hexStringToUint8Array } from "#convert.ts"
+import { privateKeyToAccount } from "viem/accounts"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /* `bun playground/from-osmosis.ts --private-key "..."` */
 
@@ -13,27 +19,33 @@ const { values } = parseArgs({
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
-const unionClient = await UnionClient.connectWithSecret({
-  secretType: "key",
-  bech32Prefix: "union",
-  chainId: "union-testnet-8",
-  privateKeyOrMnemonic: PRIVATE_KEY,
-  gas: { amount: "0.0025", denom: "muno" },
-  rpcUrl: "https://rpc.testnet.bonlulu.uno"
-})
+const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
-const account = await unionClient.getCosmosSdkAccount()
-const cwClient = await unionClient.signingCosmWasmClient()
-const sendUnoToUnionAddress = await cwClient.sendTokens(
-  account.address,
-  "union1eumfw2ppz8cwl8xdh3upttzp5rdyms48kqhm30f8g9u4zwj0pprqg2vmu3",
-  [{ denom: "muno", amount: "25000000" }],
-  "auto",
-  "memo"
+const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  "union"
 )
-// 0xa833b03d8ed1228c4791cbfab22b3ed57954429f
-console.log(sendUnoToUnionAddress.transactionHash)
 
 const client = createUnionClient({
-  
+  evm: {
+    chain: sepolia,
+    account: evmAccount,
+    transport: http("https://rpc2.sepolia.org")
+  },
+  cosmos: {
+    account: cosmosAccount,
+    transport: cosmosHttp("https://rpc.testnet.bonlulu.uno"),
+    gasPrice: GasPrice.fromString("0.0025muno")
+  }
 })
+
+// @ts-expect-error
+const transfer = await client.transferAsset({
+  network: "cosmos",
+  path: ["union-testnet-8", "union-testnet-8"],
+  amount: 1n,
+  receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+  denomAddress: "muno"
+})
+
+console.info(transfer)

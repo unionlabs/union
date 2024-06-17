@@ -3,6 +3,7 @@ interface EnvironmentVariables {
   readonly ADDRESS_PREFIX: string
   readonly UNION_COIN_TYPE: string
   readonly UNION_NATIVE_DENOM: string
+  readonly HUBBLE_URL: string
 }
 
 declare module "bun" {

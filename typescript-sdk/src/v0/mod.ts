@@ -1,4 +1,4 @@
-import "./patch.ts"
+import "../patch.ts"
 import {
   erc20Abi,
   type Hash,
@@ -373,6 +373,7 @@ export class UnionClient implements IUnionClient {
         sourceChannel,
         bech32AddressToHex({ address: receiver }),
         [{ denom: denomAddress, amount }],
+        "",
         { revision_number: 9n, revision_height: BigInt(currentUnionHeight) + 100n },
         0n
       ]

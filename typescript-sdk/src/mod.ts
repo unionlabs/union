@@ -28,10 +28,6 @@ export function createUnionClient({
   evm,
   cosmos
 }: {
-  evmRpcUrl?: string
-  cosmosRpcUrl?: string
-  evmAccount?: Account
-  cosmosSigner?: OfflineSigner
   evm: EvmClientParameters
   cosmos: CosmosClientParameters
 }) {
@@ -47,7 +43,8 @@ export function createUnionClient({
         amount,
         denomAddress,
         relayContractAddress,
-        simulate = true
+        simulate = true,
+        memo = timestamp()
       }: {
         sourceChainId: string
         evmAccount?: Account
@@ -57,6 +54,7 @@ export function createUnionClient({
         denomAddress: Address
         relayContractAddress: Address
         simulate?: boolean
+        memo?: string
       }) {
         if (sourceChainId === "11115511" && !evmAccount) raise("EVM account not found")
         if (!evmAccount) raise("EVM account not found")
@@ -75,7 +73,7 @@ export function createUnionClient({
           abi: ucs01RelayAbi,
           chain: client.chain,
           /**
-           * @dev `send` function of UCS01 contract: https://github.com/unionlabs/union/blob/1b9e4a6551163e552d85405eb70917fdfdc14b55/evm/contracts/apps/ucs/01-relay/Relay.sol#L50-L56
+           * @dev `send` function of UCS01 contract: https://github.com/unionlabs/union/blob/142e0af66a9b0218cf010e3f8d1138de9b778bb9/evm/contracts/apps/ucs/01-relay/Relay.sol#L51-L58
            */
           functionName: "send",
           address: relayContractAddress,
@@ -83,6 +81,7 @@ export function createUnionClient({
            * string calldata sourceChannel,
            * bytes calldata receiver,
            * LocalToken[] calldata tokens,
+           * string calldata extension (memo),
            * IbcCoreClientV1Height.Data calldata timeoutHeight,
            * uint64 timeoutTimestamp
            */
@@ -90,6 +89,7 @@ export function createUnionClient({
             sourceChannel,
             bech32AddressToHex({ address: receiver }),
             [{ denom: denomAddress, amount }],
+            memo,
             { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
             0n
           ]
@@ -126,8 +126,8 @@ export function createUnionClient({
           relayContractAddress,
           evmSigner = evmAccount,
           cosmosSigner = _cosmosSigner,
-          // cosmosRpcUrl,
-          gasPrice = _gasPrice
+          gasPrice = _gasPrice,
+          memo = timestamp()
         }: {
           network: "cosmos" | "evm"
           path: [ChainId, ChainId]
@@ -138,8 +138,8 @@ export function createUnionClient({
           relayContractAddress: string
           evmSigner?: Account
           cosmosSigner?: OfflineSigner
-          // cosmosRpcUrl?: string
           gasPrice?: GasPrice
+          memo?: string
         }): Promise<string> {
           if (!path.includes("union-testnet-8")) {
             raise(
@@ -158,10 +158,13 @@ export function createUnionClient({
               amount,
               denomAddress: getAddress(denomAddress),
               relayContractAddress: getAddress(relayContractAddress),
-              simulate: true
+              simulate: true,
+              memo
             })
             return transactionHash
           }
+
+          console.info(`Transferring ${amount} ${denomAddress} to ${receiver}`)
 
           const cosmosRpcTransport = await rankCosmosRpcProviders({
             transports: Array.isArray(cosmos.transport)
