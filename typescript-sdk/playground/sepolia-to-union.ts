@@ -31,20 +31,23 @@ const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
 try {
+  /**
+   * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
+   */
   const {
-    data: [unionTestnetInfo]
+    data: [sepoliaInfo]
   } = await offchainQuery.chain({
     chainId: "11155111",
     includeContracts: true
   })
+  if (!sepoliaInfo) raise("Sepolia info not found")
 
-  if (!unionTestnetInfo) raise("Sepolia testnet info not found")
-
-  const ucsConfiguration = unionTestnetInfo.ucs1_configurations
+  const ucsConfiguration = sepoliaInfo.ucs1_configurations
     ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
     .at(0)
-
   if (!ucsConfiguration) raise("UCS configuration not found")
+
+  const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
   const client = createUnionClient({
     evm: {
@@ -61,12 +64,13 @@ try {
 
   const transfer = await client.transferAsset({
     amount: 1n,
-    network: "evm",
-    denomAddress: USDC_CONTRACT_ADDRESS,
-    sourceChannel: ucsConfiguration.channel_id,
-    relayContractAddress: ucsConfiguration.contract_address,
+    sourceChannel: channel_id,
+    network: sepoliaInfo.rpc_type,
+    relayContractAddress: contract_address,
+    // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
+    denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
+    path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
   console.info(transfer)
