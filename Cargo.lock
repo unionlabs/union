@@ -8346,6 +8346,7 @@ dependencies = [
  "prost",
  "protos",
  "queue-msg",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde-utils",

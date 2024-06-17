@@ -1,9 +1,5 @@
-use serde::{Deserialize, Serialize};
-use unionlabs::{
-    ethereum::config::{ChainSpec, PresetBaseKind},
-    hash::H160,
-    id::ChannelId,
-};
+use serde::{ Deserialize, Serialize };
+use unionlabs::{ ethereum::config::{ ChainSpec, PresetBaseKind }, hash::H160, id::ChannelId };
 
 use crate::chains::Protocol;
 
@@ -17,7 +13,6 @@ pub struct Config {
     pub osmosis: CosmosConfig,
     pub union: CosmosConfig,
     pub interactions: Vec<IbcInteraction>,
-    pub db_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,7 +34,9 @@ pub struct CosmosConfig {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TransferModule {
     Native,
-    Contract { address: String },
+    Contract {
+        address: String,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -88,7 +88,6 @@
       "address": "union177jpkxrhvzca0dhr7p05ty595ucdgdl6k4wv67500jxcu6t5hppqemdy20"
     }
   },
-  "db_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
   "interactions": [
     {
       "source": {
