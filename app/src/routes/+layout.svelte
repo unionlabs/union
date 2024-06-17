@@ -2,28 +2,27 @@
 import "$lib/polyfill.ts"
 import "$styles/index.css"
 import { onMount } from "svelte"
-import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { onNavigate } from "$app/navigation"
-import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
+import { setMode, ModeWatcher } from "mode-watcher"
 import { Toaster } from "$lib/components/ui/sonner"
+import { notifyManager } from "@tanstack/svelte-query"
 import Header from "$lib/components/header/header.svelte"
-import { updateTheme } from "$lib/utilities/update-theme.ts"
+import { createQueryClient } from "$lib/graphql/client.ts"
+import LoadingBar from "$lib/components/loading-bar.svelte"
 import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
-import { notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-import { createQueryClient } from "$lib/graphql/client.ts"
-import LoadingBar from "$lib/components/loading-bar.svelte"
+
+/* Override css `prefers-color-scheme` and any preference for dark mode */
+onMount(() => setMode("light"))
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
-
-$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
 onMount(() => {
   /* fix for iOS Safari viewport zooming on input focus */

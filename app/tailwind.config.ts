@@ -23,7 +23,7 @@ export default (<Config>{
     optimizeUniversalDefaults: true
   },
   dark: "class",
-  safelist: ["dark"],
+  safelist: ["light"],
   darkMode: ["class"],
   theme: {
     screens: _ => fluidScreens,
