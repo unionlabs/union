@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Chain, UserAddresses } from "$lib/types.ts"
-import { cosmosBalancesQuery, evmBalancesQuery } from "$lib/queries/balance.ts"
+import { userBalancesQuery } from "$lib/queries/balance.ts"
 import type { ChainId } from "$lib/constants/assets.ts"
 import { truncate } from "$lib/utilities/format.ts"
 
@@ -9,11 +9,10 @@ export let chains: Array<Chain>
 export let chainId: ChainId
 export let symbol: boolean
 
-let cosmosChains = chains.filter(c => c.chain_id === chainId)
 
-let cosmosBalances = cosmosBalancesQuery({
-  chains: cosmosChains,
-  address: userAddr.cosmos.bytes
+let cosmosBalances = userBalancesQuery({
+  chains: chains.filter(c => c.chain_id === chainId),
+  userAddr
 })
 </script>
 

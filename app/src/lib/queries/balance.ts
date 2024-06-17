@@ -1,6 +1,6 @@
 import * as v from "valibot"
 import { getEvmTokensInfo } from "./token-info.ts"
-import { createQueries, createQuery } from "@tanstack/svelte-query"
+import { createQueries } from "@tanstack/svelte-query"
 import { raise } from "$lib/utilities/index.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import type { Address } from "viem"
