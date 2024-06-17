@@ -3,7 +3,6 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { cosmosHttp } from "#transport.ts"
-import { GasPrice } from "@cosmjs/stargate"
 import { createUnionClient } from "#mod.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
@@ -35,7 +34,7 @@ const client = createUnionClient({
   cosmos: {
     account: cosmosAccount,
     transport: cosmosHttp("https://rpc.testnet.bonlulu.uno"),
-    gasPrice: GasPrice.fromString("0.0025muno")
+    gasPrice: { amount: "0.025", denom: "muno" }
   }
 })
 

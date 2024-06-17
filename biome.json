@@ -196,6 +196,7 @@
         "useLiteralKeys": "off",
         "noUselessTernary": "off",
         "noUselessFragments": "off",
+        "useSimplifiedLogicExpression": "off",
         "noExcessiveCognitiveComplexity": "off"
       },
       "security": {

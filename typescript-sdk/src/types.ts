@@ -1,3 +1,5 @@
+export type MaybePromise<TValue> = TValue | Promise<TValue>
+
 export type ErrorType<name extends string = "Error"> = Error & { name: name }
 
 export type RpcRequest = {

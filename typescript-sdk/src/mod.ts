@@ -1,3 +1,4 @@
+export * from "./v0/mod.ts"
 import {
   erc20Abi,
   getAddress,
@@ -15,20 +16,26 @@ import {
   uint8ArrayToHexString,
   convertByteArrayToHex
 } from "./convert.ts"
+import { GasPrice } from "@cosmjs/stargate"
 import type { OfflineSigner } from "./types.ts"
-import type { GasPrice } from "@cosmjs/stargate"
+import { offchainQuery } from "#query/off-chain.ts"
 import { ucs01RelayAbi } from "./abi/ucs01-relay.ts"
 import { raise, timestamp } from "./utilities/index.ts"
 import { type cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import { cosmosTransfer, cosmwasmTransfer, ibcTransfer } from "./transfer.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
+/**
+ * We export this as a standalone so that it can be used to fetch data that get passed to `createUnionClient`
+ */
+export { offchainQuery }
+
 export interface EvmClientParameters extends WalletClientConfig {}
 
 export interface CosmosClientParameters {
   account: OfflineSigner
   transport: ReturnType<typeof cosmosHttp> | Array<ReturnType<typeof cosmosHttp>>
-  gasPrice?: GasPrice
+  gasPrice?: { amount: string; denom: string }
 }
 
 export function createUnionClient({
@@ -41,6 +48,7 @@ export function createUnionClient({
   return createClient(evm)
     .extend(walletActions)
     .extend(publicActions)
+    .extend(() => ({ offchainQuery }))
     .extend(() => ({
       bech32AddressToHex,
       hexAddressToBech32,
@@ -155,7 +163,7 @@ export function createUnionClient({
           relayContractAddress: string
           evmSigner?: Account
           cosmosSigner?: OfflineSigner
-          gasPrice?: GasPrice
+          gasPrice?: { amount: string; denom: string }
           memo?: string
         }): Promise<string> {
           if (!path.includes("union-testnet-8")) {
@@ -193,6 +201,8 @@ export function createUnionClient({
           }).rank()
           const cosmosRpcUrl = cosmosRpcTransport.at(0)?.rpcUrl
 
+          const _gasPrice = GasPrice.fromString(`${gasPrice?.amount}${gasPrice?.denom}`)
+
           if (!cosmosSigner) raise("Cosmos signer not found")
           if (!cosmosRpcUrl) raise("Cosmos RPC URL not found")
           if (!gasPrice) raise("Gas price not found")
@@ -202,7 +212,7 @@ export function createUnionClient({
               receiver,
               cosmosSigner,
               cosmosRpcUrl,
-              gasPrice,
+              gasPrice: _gasPrice,
               asset: { denom: denomAddress, amount: amount.toString() }
             })
             return transfer.transactionHash
@@ -214,7 +224,7 @@ export function createUnionClient({
             const transfer = await cosmwasmTransfer({
               cosmosSigner,
               cosmosRpcUrl,
-              gasPrice,
+              gasPrice: _gasPrice,
               instructions: [
                 {
                   contractAddress: relayContractAddress,
@@ -238,7 +248,7 @@ export function createUnionClient({
             ibcTransfer({
               cosmosSigner,
               cosmosRpcUrl,
-              gasPrice,
+              gasPrice: _gasPrice,
               messageTransfers: [
                 {
                   sourceChannel,

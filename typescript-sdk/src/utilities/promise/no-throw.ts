@@ -1,6 +1,14 @@
-export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> => x.catch(() => undefined)
+import type { MaybePromise } from "../../types.ts"
 
-export const noThrowSync = <T>(callback: T): T | undefined => {
+export async function noThrow<T>(x: MaybePromise<T>): Promise<T | undefined> {
+  try {
+    return await x
+  } catch {
+    return undefined
+  }
+}
+
+export function noThrowSync<T>(callback: T): T | undefined {
   try {
     return callback
   } catch {

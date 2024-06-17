@@ -1,7 +1,14 @@
+
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 
 type rpcUrlArgument = { rpcUrl: string }
 export type RpcQueryPath = "height" | "block" | "transaction" | "net_info" | "health"
+
+const queryHeaders = new Headers({
+  Accept: "application/json",
+  "Content-Type": "application/json",
+  "User-Agent": "typescript-sdk"
+})
 
 export async function getCosmosSdkChainHeight({ rpcUrl }: { rpcUrl: string }) {
   const response = await fetch(`${rpcUrl}/header`)
