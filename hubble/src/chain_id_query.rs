@@ -7,6 +7,7 @@ use protos::ibc::{
 };
 use sqlx::PgPool;
 use tendermint_rpc::{Client, HttpClient};
+use tracing::warn;
 use unionlabs::{
     encoding::{DecodeAs, EthAbi, Proto},
     parse_wasm_client_type,
@@ -132,7 +133,14 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                 }
                                 WasmClientType::Linea => todo!("We still need to add linea"),
                                 WasmClientType::Berachain => {
-                                    let cs = unionlabs::ibc::lightclients::berachain::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
+                                    let cs = match unionlabs::ibc::lightclients::berachain::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
+                                        Err(err) => {
+                                            warn!("error while decoding client state: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue;
+                                        }
+                                    };
 
                                     cs.chain_id().to_string()
                                 }
