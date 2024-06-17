@@ -25,6 +25,7 @@ use futures::StreamExt;
 use hex::{decode as hex_decode, encode as hex_encode};
 use prost::{Message, Name};
 use protos::{google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{
     event::{Event, EventData},
@@ -112,7 +113,7 @@ pub trait IbcListen: Send + Sync {
                     return true;
                 }
                 Ics20Ack::Error(_) => {
-                    tracing::info!("Ics20Ack::Result failed decode.");
+                    tracing::warn!("Ics20Ack::Result failed decode.");
                 }
             }
         }
@@ -204,18 +205,6 @@ pub trait IbcListen: Send + Sync {
                         }
                     }
                     IbcEvent::WriteAcknowledgement(ref e) => {
-                        tracing::info!("WriteAcknowledgement event {:?}", e);
-                        // let channel: Channel = self.chain
-                        //     .ibc_handler()
-                        //     .get_channel(
-                        //         e.packet_src_port.parse().unwrap(),
-                        //         e.packet_src_channel.parse().unwrap()
-                        //     )
-                        //     .block(block_number).await
-                        //     .unwrap()
-                        //     .try_into()
-                        //     .unwrap();
-                        // tracing::info!("WriteAcknowledgement channel: {:?}", channel);
                         if self.write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone()) {
                             sequence_entry.insert(2, true);
                             tracing::info!(
@@ -270,11 +259,11 @@ pub trait IbcListen: Send + Sync {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Protocol {
     Ics20 {
-        receiver: String,
+        receivers: Vec<String>, // Changed to Vec<String>
         module: TransferModule,
     },
     Ucs01 {
-        receiver: String, //Vec<u8>,
+        receivers: Vec<String>, //Vec<Vec<u8>>,
         contract: String,
     },
 }
@@ -380,11 +369,12 @@ impl IbcTransfer for Chain {
 #[derive(Debug, Clone)]
 pub struct Ethereum<C: ChainSpec> {
     pub chain: chain_utils::ethereum::Ethereum<C>,
-    pub relay: UCS01Relay<SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>>,
-    pub signer_middleware:
-        Arc<SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>>,
+    pub relays:
+        Vec<UCS01Relay<SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>>>,
+    pub signer_middlewares:
+        Vec<Arc<SignerMiddleware<NonceManagerMiddleware<Arc<Provider<Ws>>>, LocalWallet>>>,
     pub ucs01_contract: String,
-    pub msg_sender: ethers::types::H160,
+    pub msg_senders: Vec<ethers::types::H160>,
     pub relay_addr: ethers::types::H160,
 }
 
@@ -535,6 +525,13 @@ impl<C: ChainSpec> IbcTransfer for Ethereum<C> {
         denom: String,
         amount: u64,
     ) {
+        let mut rng = StdRng::from_entropy();
+        let index = rng.gen_range(0..self.relays.len()); // Select a random index
+
+        let relay = &self.relays[index];
+        let signer_middleware = &self.signer_middlewares[index];
+        let msg_sender = self.msg_senders[index];
+
         let denom: String = format!(
             "{}/{}/{}",
             self.ucs01_contract.to_lowercase(),
@@ -542,8 +539,7 @@ impl<C: ChainSpec> IbcTransfer for Ethereum<C> {
             denom
         );
 
-        let denom_address = self
-            .relay
+        let denom_address = relay
             .get_denom_address(destination_channel.clone().to_string(), denom.clone())
             .call()
             .await
@@ -552,25 +548,41 @@ impl<C: ChainSpec> IbcTransfer for Ethereum<C> {
             tracing::warn!("Denom address not found");
             return;
         }
-        let erc_contract = erc20::ERC20::new(denom_address, self.signer_middleware.clone());
-        let balance = erc_contract.balance_of(self.msg_sender).await.unwrap();
-        tracing::info!("balance: {}", balance);
+        let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+        let balance = erc_contract.balance_of(msg_sender).await.unwrap();
+        tracing::info!("balance: {}, amount: {}", balance);
         if balance < amount.into() {
             tracing::warn!("Insufficient balance");
             return;
         }
 
-        erc_contract
-            .approve(self.relay_addr, (U256::MAX / U256::from(2)).into())
-            .send()
-            .await;
+        let allowance = erc_contract
+            .allowance(msg_sender, self.relay_addr)
+            .await
+            .unwrap();
+        tracing::info!("allowance: {}", allowance);
+        if allowance < amount.into() {
+            erc_contract
+                .approve(self.relay_addr, (U256::MAX / U256::from(2)).into())
+                .send()
+                .await;
+        } else {
+            tracing::info!("Already approved");
+        }
 
         match protocol {
-            Protocol::Ics20 { receiver, module } => {
+            Protocol::Ucs01 {
+                receivers,
+                contract,
+            } => {
+                let mut rng = StdRng::from_entropy();
+                let index = rng.gen_range(0..receivers.len()); // Select a random index
+
+                let receiver = &receivers[index];
                 tracing::info!(
                     "Sending IBC transfer via Ethereum: {:?}, {:?}, {}, {}",
                     receiver,
-                    module,
+                    contract,
                     denom,
                     amount
                 );
@@ -580,8 +592,7 @@ impl<C: ChainSpec> IbcTransfer for Ethereum<C> {
 
                 let bytes: Vec<u8> = Vec::<u8>::from_base32(&data).expect("Invalid base32 data");
 
-                let _tx_rcp: Option<ethers::types::TransactionReceipt> = match self
-                    .relay
+                let _tx_rcp: Option<ethers::types::TransactionReceipt> = match relay
                     .send(
                         destination_channel.clone().to_string(),
                         bytes.into(),
@@ -618,8 +629,8 @@ impl<C: ChainSpec> IbcTransfer for Ethereum<C> {
                     _tx_rcp.unwrap().transaction_hash
                 );
             }
-            Protocol::Ucs01 { receiver, contract } => {
-                unimplemented!("UCS01 protocol not implemented"); // TODO: Do we even have this case?
+            Protocol::Ics20 { receivers, module } => {
+                unimplemented!("Ics20 protocol not implemented"); // TODO: Do we even have this case?
             }
         }
     }
@@ -631,30 +642,10 @@ impl<C: ChainSpec> Ethereum<C> {
             .await
             .unwrap();
 
-        let signer = config
-            .chain_config
-            .signers
-            .clone()
-            .into_iter()
-            .next()
-            .unwrap();
-        let signing_key: ecdsa::SigningKey = signer.value();
-        let address_of_privkey: ethers::types::H160 = secret_key_to_address(&signing_key);
-        tracing::info!("address: {:?}", address_of_privkey);
+        let mut relays = Vec::new();
+        let mut signers_middleware = Vec::new();
+        let mut msg_senders = Vec::new();
 
-        let provider: Arc<Provider<Ws>> = ethereum.provider.clone();
-
-        let chain_id = provider
-            .get_chainid()
-            .await
-            .expect("Failed to get chain ID")
-            .as_u64();
-        let wallet = LocalWallet::new_with_signer(signing_key, address_of_privkey, chain_id);
-
-        let signer_middleware = Arc::new(SignerMiddleware::new(
-            NonceManagerMiddleware::new(provider.clone(), address_of_privkey),
-            wallet.clone(),
-        ));
         let (relay_addr, ucs01_contract) = match config.transfer_module {
             TransferModule::Contract { ref address } => {
                 let relay_addr: Address = address.parse().expect("Invalid contract address");
@@ -664,15 +655,38 @@ impl<C: ChainSpec> Ethereum<C> {
                 panic!("Native transfer module is not supported in this context")
             }
         };
+        for signer in config.chain_config.signers.clone() {
+            let signing_key: ecdsa::SigningKey = signer.value();
+            let address_of_privkey: ethers::types::H160 = secret_key_to_address(&signing_key);
+            tracing::info!("address: {:?}", address_of_privkey);
 
-        let relay = UCS01Relay::new(relay_addr, signer_middleware.clone());
+            let provider: Arc<Provider<Ws>> = ethereum.provider.clone();
+
+            let chain_id = provider
+                .get_chainid()
+                .await
+                .expect("Failed to get chain ID")
+                .as_u64();
+            let wallet = LocalWallet::new_with_signer(signing_key, address_of_privkey, chain_id);
+
+            let signer_middleware = Arc::new(SignerMiddleware::new(
+                NonceManagerMiddleware::new(provider.clone(), address_of_privkey),
+                wallet.clone(),
+            ));
+
+            let relay = UCS01Relay::new(relay_addr, signer_middleware.clone());
+
+            relays.push(relay);
+            signers_middleware.push(signer_middleware);
+            msg_senders.push(address_of_privkey);
+        }
 
         Ethereum {
             chain: ethereum,
-            relay: relay,
-            signer_middleware: signer_middleware,
+            relays: relays,
+            signer_middlewares: signers_middleware,
             ucs01_contract: ucs01_contract,
-            msg_sender: address_of_privkey,
+            msg_senders: msg_senders,
             relay_addr: relay_addr,
         }
     }
@@ -702,7 +716,17 @@ impl IbcTransfer for Cosmos {
             .signers
             .with(|signer| async move {
                 let transfer_msg = match protocol {
-                    Protocol::Ics20 { receiver, module } => {
+                    Protocol::Ics20 { receivers, module } => {
+                        let mut rng = StdRng::from_entropy();
+                        let index = rng.gen_range(0..receivers.len()); // Select a random index
+
+                        let receiver = &receivers[index];
+                        tracing::info!(
+                            "Sending ibc transfer from: {:?}. Receiver: {:?}. amount: {:?}",
+                            signer.to_string(),
+                            receiver,
+                            amount
+                        );
                         let msg = MsgTransfer {
                             source_port: "transfer".into(),
                             source_channel: destination_channel.to_string(),
@@ -725,7 +749,20 @@ impl IbcTransfer for Cosmos {
                             value: msg.encode_to_vec().into(),
                         }
                     }
-                    Protocol::Ucs01 { receiver, contract } => {
+                    Protocol::Ucs01 {
+                        receivers,
+                        contract,
+                    } => {
+                        let mut rng = StdRng::from_entropy();
+                        let index = rng.gen_range(0..receivers.len()); // Select a random index
+                        let receiver = &receivers[index];
+                        tracing::info!(
+                            "Sending ibc transfer from: {:?}. Receiver: {:?}. amount: {:?}",
+                            signer.to_string(),
+                            receiver,
+                            amount
+                        );
+
                         let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
                             channel: destination_channel.to_string(),
                             receiver: receiver[2..].to_string(),

@@ -49,7 +49,8 @@ pub struct IbcInteraction {
     pub send_packet_interval: u64,
     pub expect_full_cycle: u64,
     pub protocol: Protocol,
-    pub amount: u64,
+    pub amount_min: u64,
+    pub amount_max: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -24,6 +24,7 @@ hex                = { version = "0.4.3", default-features = false }
 prost              = { workspace = true }
 protos             = { workspace = true, features = ["default", "client"] }
 queue-msg          = { workspace = true }
+rand               = "0.8"
 reqwest            = { workspace = true, features = ["json"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
