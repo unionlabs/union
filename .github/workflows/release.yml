@@ -87,7 +87,7 @@ jobs:
           if [[ ${{ matrix.package }} =~ uniond-release ]]
           then
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
-          elif [[ ${{ matrix.package}} =~ bundle-testnet-8 ]]
+          elif [[ ${{ matrix.package}} =~ bundle-testnet-8 || ${{ matrix.package }} =~ cometbls-light-client ]]
           then
             ls -la
             tar -zcf ${{ matrix.package }}-${{ matrix.system }} ${{ matrix.system }}.${{ matrix.package }}
