@@ -22,7 +22,10 @@ use unionlabs::{
     cometbls::types::canonical_vote::CanonicalVote,
     encoding::{Decode, Encode, Proto},
     google::protobuf::any::IntoAny,
-    ibc::{core::client::msg_update_client::MsgUpdateClient, lightclients::cometbls},
+    ibc::{
+        core::client::{height::IsHeight, msg_update_client::MsgUpdateClient},
+        lightclients::cometbls,
+    },
     ics24::ClientStatePath,
     tendermint::{
         crypto::public_key::PublicKey,
@@ -266,7 +269,7 @@ where
                     fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         Fetch::specific(FetchTrustedValidators {
-                            height: update_info.update_from,
+                            height: update_info.update_from.increment(),
                             __marker: PhantomData,
                         }),
                     )),
@@ -413,7 +416,7 @@ where
         assert_eq!(chain_id, trusted_validators_chain_id);
         assert_eq!(chain_id, untrusted_validators_chain_id);
 
-        assert_eq!(req.update_from, trusted_validators_height);
+        assert_eq!(req.update_from, trusted_validators_height.decrement());
         assert_eq!(untrusted_commit_height, untrusted_validators_height);
 
         let make_validators_commit =
