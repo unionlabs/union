@@ -357,7 +357,6 @@
       #       "--html"
       #       "--output-dir=$out"
       #       "--ignore-filename-regex='((nix/store)|(generated))/.+'"
-      #       "--exclude=zerg"
       #       "--exclude=parse-wasm-client-type"
       #       "--exclude=protos"
       #       "--exclude=contracts"

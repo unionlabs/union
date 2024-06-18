@@ -68,7 +68,6 @@ members = [
   "ucli",
   "unionvisor",
   "voyager",
-  "zerg",
 ]
 
 [workspace.package]
