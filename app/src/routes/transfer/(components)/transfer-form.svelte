@@ -90,7 +90,7 @@ let recipient = derived(toChain, $toChain => {
   }
 })
 
-const pfmMemo = (port: string, channel: string, receiver: string): string => {
+const generatePfmMemo = (channel: string, port: string, receiver: string): string => {
   return JSON.stringify({
     forward: {
       port,
@@ -110,17 +110,31 @@ const transfer = async () => {
   if (!amount) return toast.error("Please select an amount")
   if (!$recipient) return toast.error("Invalid recipient")
 
-  const ucs1_configuration =
+  let ucs1_configuration =
     $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null
 
   let pfmMemo = ""
+  let hopChainId = "";
+
 
   if (ucs1_configuration === null) {
     // try finding pfm path
+    for (const chain of chains) {
+      let [foundHopChainId, ucs1Config] = Object.entries(chain.ucs1_configurations).find(([foundHopChainId, config]) => config.forward[$toChainId] !== undefined) ?? []
+      if (foundHopChainId !== undefined && ucs1Config !== undefined) {
+        hopChainId = foundHopChainId;
+        ucs1_configuration = ucs1Config;
+        console.log('ucs1config', ucs1Config);
+        let forwardConfig = ucs1_configuration.forward[$toChainId];
+        pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient);
+      }
+    }
 
-    return toast.error(
-      `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
-    )
+    if (ucs1_configuration === null) {
+      return toast.error(
+        `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
+      )
+    }
   }
 
   if ($fromChain.rpc_type === "cosmos") {
@@ -158,7 +172,7 @@ const transfer = async () => {
             token: { denom: $assetSymbol, amount },
             sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
             receiver: $recipient,
-            memo: ``,
+            memo: pfmMemo,
             timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
           }
         ]
@@ -176,7 +190,7 @@ const transfer = async () => {
               transfer: {
                 channel: ucs1_configuration.channel_id,
                 receiver: $recipient?.slice(2),
-                memo: ``
+                memo: pfmMemo
               }
             },
             funds: [{ denom: $assetSymbol, amount }]
@@ -221,7 +235,7 @@ const transfer = async () => {
         ucs1_configuration.channel_id,
         userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
         [{ denom: $asset.address.toLowerCase() as Address, amount: BigInt(amount) }],
-        "", // memo
+        pfmMemo, // memo
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
         0n
       ]
