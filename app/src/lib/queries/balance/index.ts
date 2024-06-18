@@ -20,17 +20,18 @@ export function userBalancesQuery({
       refetchInterval: 2_000,
       queryFn: async () => {
         if (chain.rpc_type === "evm") {
-          const url = chain.rpcs.filter(rpc => rpc.type === "alchemy")?.at(0)?.url
+          const url = chain.rpcs.filter(rpc => rpc.type === "alchemy").at(0)?.url
           if (!url) raise(`no alchemy rpc available for chain ${chain.chain_id}`)
+
           return getEvmChainBalances({ url, walletAddress: userAddr.evm.canonical })
         }
 
         if (chain.rpc_type === "cosmos") {
-          const restUrl = chain.rpcs.filter(rpc => rpc.type === "rest").at(0)?.url
-          if (!restUrl) raise(`no rest rpc available for chain ${chain.chain_id}`)
+          const url = chain.rpcs.filter(rpc => rpc.type === "rest").at(0)?.url
+          if (!url) raise(`no rest rpc available for chain ${chain.chain_id}`)
 
           const bech32_addr = rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes)
-          return getCosmosChainBalances({ url: `https://${restUrl}`, walletAddress: bech32_addr })
+          return getCosmosChainBalances({ url, walletAddress: bech32_addr })
         }
 
         return []

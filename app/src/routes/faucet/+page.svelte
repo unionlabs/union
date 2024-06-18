@@ -15,7 +15,6 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { unionTransfersQuery } from "$lib/queries/transfers.ts"
 import CosmosBalance from "./(components)/cosmos-balance.svelte"
 import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
@@ -59,13 +58,6 @@ function handleMouseMove(event: MouseEvent) {
   const rect = input.getBoundingClientRect()
   position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
 }
-
-$: unionTransfers = unionTransfersQuery({
-  address: address,
-  include: ["RECEIVED"],
-  refetchInterval: 5_000,
-  enabled: !!address && isValidCosmosAddress(address)
-})
 
 const mutation = createMutation({
   mutationKey: ["faucetRequest"],

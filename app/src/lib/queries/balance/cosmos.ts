@@ -17,6 +17,7 @@ export async function getCosmosChainBalances({
   let json: undefined | unknown
 
   try {
+    url = URL.canParse(url) ? url : `https://${url}`
     const response = await fetch(`${url}/cosmos/bank/v1beta1/balances/${walletAddress}`)
     if (!response.ok) raise("invalid response")
 
