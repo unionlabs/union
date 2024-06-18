@@ -1,13 +1,16 @@
 <script lang="ts">
-export let asset: any
-export let chain: any
-export let displayDecimals: number = 2
-export let toolTip: boolean = false
-export let symbol: boolean = false
 import * as Tooltip from "$lib/components/ui/tooltip"
+import type { Chain } from "$lib/types.ts"
+import { findAsset } from "$lib/utilities/helpers.ts"
+
+export let asset: any
+export let chain: Chain
+export let displayDecimals = 2
+export let toolTip = false
+export let symbol = false
 
 const format = (balance: string | bigint, decimals: number, abbreviate: boolean): string => {
-  if (!balance) return "0.00"
+  if (!balance || Number.isNaN(Number(balance))) return "0.00"
   const num = BigInt(balance)
   const divisor = BigInt(10 ** decimals)
   const rawNumber = num / divisor
@@ -30,16 +33,8 @@ const abbreviateNumber = (num: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-function findAsset(denom: string) {
-  for (const asset of chain.assets) {
-    if (asset.denom === denom) {
-      return asset
-    }
-  }
-  return undefined
-}
-
-$: info = findAsset(asset.denom)
+$: console.log(chain, asset)
+$: info = findAsset(chain, asset.denom)
 $: formatted = format(asset.balance, info ? info.decimals : asset.decimals, true)
 $: precise = format(asset.balance, info ? info.decimals : asset.decimals, false)
 </script>

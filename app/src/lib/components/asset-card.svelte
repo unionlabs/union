@@ -2,20 +2,22 @@
 import { truncate } from "$lib/utilities/format"
 import type { Chain } from "$lib/types"
 import Precise from "$lib/components/precise.svelte"
+import { Button } from "$lib/components/ui/button/index.ts"
+import { findAsset } from "$lib/utilities/helpers.ts"
 
-export let asset: { symbol: string; balance: string | bigint }
+export let asset: { symbol: string; balance: string | bigint; denom: string }
 export let chain: Chain
 
-import { Button } from "$lib/components/ui/button/index.ts"
+$: info = findAsset(chain, asset.denom)
 </script>
 <div class="asset-scene">
   <div class="asset-card asset-card asset-card--show-side my-4">
     <div class="asset-card__side">
-      <div class="uppercase font-bold">{truncate(asset.symbol, 6)}</div>
+      <div class="uppercase font-bold">{truncate(info ? info.display_symbol : asset.symbol, 6)}</div>
       <div><Precise {asset} {chain} /></div>
     </div>
     <div class="asset-card__front flex flex-col">
-      <div class="uppercase font-bold">{truncate(asset.symbol, 8)}</div>
+      <div class="uppercase font-bold">{truncate(info ? info.display_symbol : asset.symbol, 8)}</div>
       <div class="flex-1 text-xl font-mono"><Precise {asset} {chain} toolTip /></div>
       <Button href={`/transfer?source=${encodeURIComponent(chain.chain_id)}&asset=${encodeURIComponent(asset.symbol)}`}>Transfer</Button>
     </div>
