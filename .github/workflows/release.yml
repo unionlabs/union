@@ -86,6 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
+      - run: |
+          ls -a
       - uses: softprops/action-gh-release@v2
         with:
           body: test
