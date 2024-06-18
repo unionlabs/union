@@ -2,12 +2,12 @@
 import "$lib/polyfill.ts"
 import "$styles/index.css"
 import { onMount } from "svelte"
+import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { onNavigate } from "$app/navigation"
 import { shortcut } from "@svelte-put/shortcut"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
-import { setMode, ModeWatcher } from "mode-watcher"
 import { Toaster } from "$lib/components/ui/sonner"
 import { notifyManager } from "@tanstack/svelte-query"
 import Header from "$lib/components/header/header.svelte"
@@ -17,9 +17,6 @@ import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-
-/* Override css `prefers-color-scheme` and any preference for dark mode */
-onMount(() => setMode("light"))
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -45,7 +42,7 @@ onMount(() => {
   else if (window?.leap) cosmosStore.connect("leap")
 })
 
-onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
+// onNavigate(navigation => console.info('Navigating to', navigation.to?.route.id))
 </script>
 
 <svelte:head>

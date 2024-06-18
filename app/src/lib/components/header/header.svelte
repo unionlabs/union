@@ -1,7 +1,6 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
-import SearchBar from "$lib/components/search-bar.svelte"
 import Connect from "$lib/components/connect/connect.svelte"
 import Button from "$lib/components/ui/button/button.svelte"
 import { routes } from "$lib/components/navigation/index.ts"

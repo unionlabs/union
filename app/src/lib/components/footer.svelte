@@ -15,10 +15,10 @@ const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-acce
 $: isCurrentPage = (route: string) => $page.route.id?.split("/")[1] === route
 
 let buttons = [
-  { href: "", icon: HomeIcon },
-  { href: "transfer", icon: ArrowDownUpIcon },
-  { href: "explorer", icon: TelescopeIcon },
-  { href: "faucet", icon: FaucetDripIcon }
+  { displayName: "home", href: "", icon: HomeIcon },
+  { displayName: "transfer", href: "transfer", icon: ArrowDownUpIcon },
+  { displayName: "explorer", href: "explorer", icon: TelescopeIcon },
+  { displayName: "faucet", href: "faucet", icon: FaucetDripIcon }
 ]
 </script>
 
@@ -34,13 +34,13 @@ let buttons = [
     <Button
       href={`/${button.href}`}
       size="icon"
-      name="home"
       variant="ghost"
+      name={button.displayName}
       aria-label="Home page link"
       class={cn('hover:no-underline flex text-xs gap-px  flex-col h-16 w-full rounded-none border-solid border-t-0 font-bold', isCurrentPage(button.href) ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground' : 'bg-transparent')}
     >
       <svelte:component this={button.icon} class="size-7 min-w-6 dark:hover:text-white text-zinc-accent" />
-      <div>Home</div>
+      <div>{button.displayName}</div>
     </Button>
   {/each}
   

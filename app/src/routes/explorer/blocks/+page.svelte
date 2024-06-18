@@ -3,12 +3,10 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { writable } from "svelte/store"
-import { DurationUnits } from "svelte-ux"
 import { CHAIN_MAP } from "$lib/constants/chains"
 import { createQuery } from "@tanstack/svelte-query"
 import { removeArrayDuplicates } from "$lib/utilities"
 import type { Override } from "$lib/utilities/types.ts"
-import Button from "$lib/components/ui/button/button.svelte"
 import CellText from "../(components)/cell-plain-text.svelte"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
@@ -19,7 +17,6 @@ import { truncate } from "$lib/utilities/format"
 $: cosmosBlocks = createQuery({
   queryKey: ["cosmos-blocks"],
   refetchInterval: 6_000,
-  // enabled: false,
   queryFn: async () => request(URLS.GRAPHQL, cosmosBlocksQuery, { limit: 100 })
 })
 
@@ -36,11 +33,10 @@ $: if (blockData) {
     removeArrayDuplicates([...(blockData as Array<CosmosBlock>), ...currentBlocks], "height")
   )
 }
-const columns = [
+const columns: Array<ColumnDef<CosmosBlock>> = [
   {
     accessorKey: "chain_id",
     header: () => "Chain ID",
-    meta: {},
     cell: info => CHAIN_MAP[info.getValue() as unknown as number].chainId
   },
   {
@@ -51,13 +47,11 @@ const columns = [
   },
   {
     accessorKey: "time",
-    meta: {},
     header: () => "Time",
     cell: info => flexRender(CellDurationText, { value: info.getValue() })
   },
   {
     accessorKey: "hash",
-    meta: {},
     header: () => flexRender(CellText, { value: "Hash" }),
     cell: info =>
       flexRender(CellText, {
@@ -65,7 +59,7 @@ const columns = [
         value: truncate(info.getValue(), 12)
       })
   }
-] as Array<ColumnDef<CosmosBlock>>
+]
 </script>
 
 <Table columns={columns} bind:dataStore={blocksStore}/>

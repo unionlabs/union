@@ -22,9 +22,8 @@ export default (<Config>{
     matchVariant: true,
     optimizeUniversalDefaults: true
   },
-  dark: "class",
   safelist: ["light"],
-  darkMode: ["class"],
+  darkMode: ["variant", "&:not(.light *)"],
   theme: {
     screens: _ => fluidScreens,
     fontSize: _ => fluidFontSize,

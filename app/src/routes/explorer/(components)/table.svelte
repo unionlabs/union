@@ -19,7 +19,7 @@ export let columns: Array<ColumnDef<any>>
 // https://github.com/TanStack/table/issues/4241
 // @ts-ignore
 export let dataStore: Readable<Array<any>>
-export let onClick: ((tr: unknown) => void) | undefined
+export let onClick: ((tr: unknown) => void) | undefined = undefined
 
 const options = writable<TableOptions<any>>({
   data: $dataStore,
