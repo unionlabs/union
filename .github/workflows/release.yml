@@ -89,6 +89,7 @@ jobs:
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
           elif [[ ${{ matrix.package}} =~ bundle-testnet-8 ]]
           then
+            ls -la
             tar -zcf ${{ matrix.package }}-${{ matrix.system }} ${{ matrix.package }}-${{ matrix.system }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
