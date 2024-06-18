@@ -106,6 +106,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
       - run: |
+          ls -la
           echo "# sha256 Checksums" >> release.md
           echo $(sha256sum bundle-testnet-8-aarch64-linux) >> release.md
           echo $(sha256sum bundle-testnet-8-x86_64-linux) >> release.md
