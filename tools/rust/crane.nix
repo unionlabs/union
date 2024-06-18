@@ -350,6 +350,15 @@
             src = cargoWorkspaceSrc;
             cargoClippyExtraArgs = "--workspace --tests";
             SQLX_OFFLINE = true;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+
+            buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.protobuf pkgs.perl pkgs.gnumake pkgs.systemd ] ++ (
+              lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+            );
+            nativeBuildInputs = [
+              pkgs.clang
+            ];
           };
         in
         craneLib.cargoClippy (attrs // { cargoArtifacts = craneLib.buildDepsOnly attrs; });
