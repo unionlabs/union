@@ -3,8 +3,10 @@ use std::{ffi::OsString, fs};
 use clap::Parser;
 use config::Config;
 use context::Context;
+use futures::future::try_join_all;
 use tokio::{
     signal,
+    task::JoinHandle,
     time::{interval, Duration},
 };
 
@@ -43,9 +45,18 @@ async fn main() {
 
     let context = Context::new(config).await.unwrap();
 
-    context.clone().do_transactions().await;
-    context.clone().listen().await;
-    context.clone().check_packet_sequences().await;
+    let mut handles = vec![];
+
+    handles.extend(context.clone().do_transactions().await);
+    handles.extend(context.clone().listen().await);
+    handles.extend(context.clone().check_packet_sequences().await);
+
+    // Await all handles and handle panics
+    let result: Result<Vec<_>, _> = try_join_all(handles).await;
+    if let Err(e) = result {
+        tracing::error!("A task has panicked: {:?}", e);
+        std::process::exit(1);
+    }
 
     signal::ctrl_c().await.unwrap();
 }
