@@ -8,6 +8,7 @@ import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { createUnionClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { consola } from "scripts/logger"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` */
 
@@ -62,7 +63,7 @@ try {
     }
   })
 
-  const gasCostResponse = await client.simulateTransaction({
+  const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
     sourceChannel: channel_id,
     network: sepoliaInfo.rpc_type,
@@ -73,7 +74,12 @@ try {
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
-  console.info("Sepolia to Union gas cost:", gasCostResponse)
+  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
+
+  if (!gasEstimationResponse.success) {
+    console.info("Transaction simulation failed")
+    process.exit(1)
+  }
 
   const transfer = await client.transferAsset({
     amount: 1n,

@@ -62,6 +62,24 @@ try {
     }
   })
 
+  const gasEstimationResponse = await client.simulateTransaction({
+    amount: 1n,
+    sourceChannel: channel_id,
+    network: beraInfo.rpc_type,
+    relayContractAddress: contract_address,
+    // or `client.cosmos.account.address` if you want to send to yourself
+    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    denomAddress: "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae", // wBTC
+    path: [source_chain.chain_id, destination_chain.chain_id]
+  })
+
+  console.info("Berachain to Union gas cost:", gasEstimationResponse)
+
+  if (!gasEstimationResponse.success) {
+    console.info("Transaction simulation failed")
+    process.exit(1)
+  }
+
   const transfer = await client.transferAsset({
     amount: 1n,
     sourceChannel: channel_id,

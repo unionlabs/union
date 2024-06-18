@@ -40,14 +40,19 @@ try {
     }
   })
 
-  const gasCostResponse = await client.simulateTransaction({
+  const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
     network: "cosmos",
     denomAddress: "muno",
     path: ["union-testnet-8", "union-testnet-8"],
     recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
   })
-  consola.info(`Gas cost: ${gasCostResponse.data}`)
+  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
+
+  if (!gasEstimationResponse.success) {
+    console.info("Transaction simulation failed")
+    process.exit(1)
+  }
 
   // @ts-expect-error
   const transfer = await client.transferAsset({

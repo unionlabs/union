@@ -59,7 +59,7 @@ try {
     }
   })
 
-  const gasCostResponse = await client.simulateTransaction({
+  const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
     denomAddress: "muno",
     network: unionTestnetInfo.rpc_type,
@@ -69,19 +69,24 @@ try {
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   })
 
-  console.info("Union to Sepolia gas cost:", gasCostResponse)
+  console.info("Union to Sepolia gas cost:", gasEstimationResponse)
 
-  // const transfer = await client.transferAsset({
-  //   amount: 1n,
-  //   denomAddress: "muno",
-  //   network: unionTestnetInfo.rpc_type,
-  //   sourceChannel: ucsConfiguration.channel_id,
-  //   relayContractAddress: ucsConfiguration.contract_address,
-  //   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-  //   path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
-  // })
+  if(!gasEstimationResponse.success) {
+    console.info("Transaction simulation failed")
+    process.exit(1)
+  }
 
-  // console.info(transfer)
+  const transfer = await client.transferAsset({
+    amount: 1n,
+    denomAddress: "muno",
+    network: unionTestnetInfo.rpc_type,
+    sourceChannel: ucsConfiguration.channel_id,
+    relayContractAddress: ucsConfiguration.contract_address,
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
+  })
+
+  console.info(transfer)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)
