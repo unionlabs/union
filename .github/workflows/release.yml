@@ -81,7 +81,7 @@ jobs:
           name: ${{ matrix.package }}-${{ matrix.system }}
           path: ${{ matrix.package }}-${{ matrix.system }}
 
-  docker-manifest:
+  public-release:
     runs-on: ubuntu-latest
     steps:
       - uses: peter-evans/repository-dispatch@v3
@@ -112,6 +112,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
+      - run: exit 1
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
