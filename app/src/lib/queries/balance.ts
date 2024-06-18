@@ -1,9 +1,9 @@
 import * as v from "valibot"
+import type { Address } from "viem"
+import { raise } from "$lib/utilities/index.ts"
 import { getEvmTokensInfo } from "./token-info.ts"
 import { createQueries } from "@tanstack/svelte-query"
-import { raise } from "$lib/utilities/index.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
-import type { Address } from "viem"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 
 const evmBalancesResponseSchema = v.object({
@@ -50,8 +50,9 @@ export function userBalancesQuery({
 
           // TODO: support quicknode
           const alchemy_rpcs = chain.rpcs.filter(rpc => rpc.type === "alchemy")
-          if (alchemy_rpcs.length === 0)
+          if (alchemy_rpcs.length === 0) {
             raise(`no alchemy rpc available for chain ${chain.chain_id}`)
+          }
 
           const alchemyUrl = alchemy_rpcs[0].url
 
@@ -101,7 +102,7 @@ export function userBalancesQuery({
               `https://${restUrl}/cosmos/bank/v1beta1/balances/${bech32_addr}`
             )
 
-            if (!response.ok) throw new Error("invalid response")
+            if (!response.ok) raise("invalid response")
 
             json = await response.json()
           } catch (err) {

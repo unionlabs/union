@@ -6,7 +6,7 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
 
 
 <div class="overflow-y-auto">
-  <main class="flex flex-col w-full py-6 gap-6">
+  <main class="flex flex-col w-full p-6 gap-6">
     <ChainsGate let:chains>
       <WalletGate let:userAddr>
         <BalancesOverview {chains} {userAddr}/>
