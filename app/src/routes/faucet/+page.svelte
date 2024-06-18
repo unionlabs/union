@@ -16,9 +16,9 @@ import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import CosmosBalance from "./(components)/cosmos-balance.svelte"
-import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+import ExternalFaucets from "./(components)/external-faucets.svelte"
 
 let userInput = false
 let address: string = $cosmosStore.address ?? ""
@@ -95,10 +95,10 @@ const handleSubmit = () => {
 </svelte:head>
 
 <ScrollArea orientation="both">
-  <main class="flex justify-center items-start max-h-full px-4 py-8">
+  <main class="flex flex-col gap-6 items-center max-h-full px-4 py-8">
     <Card.Root class="w-full max-w-lg">
       <Card.Header>
-        <Card.Title>Faucet</Card.Title>
+        <Card.Title>UNO Faucet</Card.Title>
       </Card.Header>
       <Card.Content>
         <form class="space-y-8" on:submit|preventDefault={handleSubmit}>
@@ -172,19 +172,13 @@ const handleSubmit = () => {
                   </span>
                 {/if}
               </Button>
-              <a
-                class="flex items-center gap-x-2 font-m text-xs hover:underline"
-                href="https://git-faucets.web.val.run"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Faucets for other assets & chains
-                <ExternalLinkIcon class="size-3.5" />
-              </a>
             </div>
           </div>
         </form>
       </Card.Content>
     </Card.Root>
+    <ChainsGate let:chains>
+      <ExternalFaucets {chains}/>
+    </ChainsGate>
   </main>
 </ScrollArea>
