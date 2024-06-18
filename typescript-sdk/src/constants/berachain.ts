@@ -6,12 +6,10 @@ import { defineChain } from "viem"
 export const berachainTestnetV2 = defineChain({
   id: 8_0084,
   testnet: true,
-  name: "Berachain v2",
+  name: "Berachain bArtio",
   rpcUrls: {
     default: {
-      http: [
-        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
-      ]
+      http: ["https://bartio.rpc.berachain.com/"]
     }
   },
   nativeCurrency: {

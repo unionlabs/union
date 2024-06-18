@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { http } from "viem"
+import { erc20Abi, http } from "viem"
 import { parseArgs } from "node:util"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
@@ -15,7 +15,7 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: { "private-key": { type: "string" } }
 })
-
+erc20Abi
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
