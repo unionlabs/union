@@ -394,11 +394,7 @@ $: buttonText =
     {buttonText}
   </Button>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b>
-    to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on
-    <b>{$toChain?.display_name}</b>{#if $hopChain}&nbsp;by forwarding through <b>
-        {$hopChain.display_name}
-      </b>{/if}.
+    Will transfer {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
   </div>
 </Card.Footer>
 <ChainDialog
