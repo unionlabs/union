@@ -24,13 +24,7 @@
           type = types.package;
           default = self.packages.${pkgs.system}.sentinel;
         };
-        ethereum = mkOption {
-          type = types.attrs;
-        };
-        osmosis = mkOption {
-          type = types.attrs;
-        };
-        union = mkOption {
+        chain_configs = mkOption {
           type = types.attrs;
         };
         interactions = mkOption {
@@ -51,9 +45,7 @@
       config =
         let
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
-            ethereum = cfg.ethereum;
-            osmosis = cfg.osmosis;
-            union = cfg.union;
+            chain_configs = cfg.chain_configs;
             interactions = cfg.interactions;
           });
 

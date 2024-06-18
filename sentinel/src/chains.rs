@@ -685,7 +685,6 @@ pub struct Union {
     pub chain: chain_utils::union::Union,
 }
 
-// TODO(caglankaan): This will be %100 identical for osmosis too.
 impl IbcTransfer for Cosmos {
     async fn send_ibc_transfer(
         &self,

@@ -4,7 +4,7 @@ use ecdsa::SigningKey;
 use ethers::{core::k256::ecdsa, signers::LocalWallet, utils::secret_key_to_address};
 use hex::{decode as hex_decode, encode as hex_encode, FromHex};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use tokio::{sync::Mutex, time::interval};
+use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
 use crate::{
@@ -52,20 +52,26 @@ impl Context {
         })
     }
 
-    pub async fn listen(&self) {
+    pub async fn listen(&self) -> Vec<JoinHandle<()>> {
+        let mut handles = vec![];
+
         for (chain_name, chain) in &self.chains {
             tracing::info!(%chain_name, "listening on chain");
 
             let shared_map = self.shared_map.clone();
             let chain = chain.clone();
 
-            tokio::spawn(async move {
+            let handle = tokio::spawn(async move {
                 chain.listen(&shared_map).await;
             });
+            handles.push(handle);
         }
+        handles
     }
 
-    pub async fn do_transactions(self) {
+    pub async fn do_transactions(self) -> Vec<JoinHandle<()>> {
+        let mut handles = vec![];
+
         for interaction in self.interactions {
             let source_chain = self.chains.get(&interaction.source.chain).cloned().unwrap();
             let destination_chain = self
@@ -74,7 +80,7 @@ impl Context {
                 .cloned()
                 .unwrap();
 
-            tokio::spawn(async move {
+            let handle = tokio::spawn(async move {
                 let mut interval = interval(Duration::from_secs(interaction.send_packet_interval));
 
                 loop {
@@ -109,9 +115,11 @@ impl Context {
                     }
                 }
             });
+            handles.push(handle);
         }
+        handles
     }
-    pub async fn check_packet_sequence(&self, expect_full_cycle: u64, key: &str) {
+    pub async fn check_packet_sequence(&self, expect_full_cycle: u64, key: &str) -> JoinHandle<()> {
         let shared_map = Arc::clone(&self.shared_map); // Clone the Arc to extend its lifetime
         let key = key.to_string(); // Clone the key to extend its lifetime
 
@@ -169,10 +177,11 @@ impl Context {
                     tracing::info!("No data found for chain flow: {}", key);
                 }
             }
-        });
+        })
     }
 
-    pub async fn check_packet_sequences(&self) {
+    pub async fn check_packet_sequences(&self) -> Vec<JoinHandle<()>> {
+        let mut handles = vec![];
         for interaction in &self.interactions {
             let key = format!(
                 "{}->{}",
@@ -180,7 +189,9 @@ impl Context {
             );
             let expect_full_cycle = interaction.expect_full_cycle;
             tracing::info!("Calling check_packet_sequence for key: {}", key);
-            self.check_packet_sequence(expect_full_cycle, &key).await;
+            let handle = self.check_packet_sequence(expect_full_cycle, &key).await;
+            handles.push(handle);
         }
+        handles
     }
 }
