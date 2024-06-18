@@ -20,16 +20,17 @@ const handleResize = () => {
   })
 }
 
+let isCollapsed = false
+let leftPane: Resizable.PaneAPI
+$: [leftSize, rightSize] = [14, 88]
+
 onMount(() => {
+  isCollapsed = windowSize?.width < 900
   window.addEventListener("resize", handleResize)
   return () => {
     window.removeEventListener("resize", handleResize)
   }
 })
-
-let isCollapsed = false
-let leftPane: Resizable.PaneAPI
-$: [leftSize, rightSize] = [14, 88]
 
 $: {
   try {
@@ -74,7 +75,12 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 <main class={cn('flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
   {#if mainExplorerPage}
-    <Resizable.PaneGroup direction="horizontal" class="w-full" {onLayoutChange}>
+    <Resizable.PaneGroup
+      class="w-full"
+      autoSaveId="explorer"
+      direction="horizontal"
+      {onLayoutChange}
+    >
       <Resizable.Pane
         {onExpand}
         {onCollapse}
