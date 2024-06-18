@@ -23,7 +23,7 @@ import { routes } from "$lib/components/navigation/index.ts"
       alt="Union Logo"
       class="size-full max-w-32 h-12 select-none invert dark:invert-0"
     />
-    <Badge variant="default" class="tracking-widest mb-0.5 ml-1">testnet</Badge>
+    <Badge variant="default" class="font-condensed mb-0.5 ml-1 uppercase">Testnet</Badge>
   </Button>
   <nav class="hidden md:flex items-center justify-end space-x-0 sm:space-x-2 w-full">
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
