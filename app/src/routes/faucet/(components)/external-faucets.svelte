@@ -1,19 +1,30 @@
 <script lang="ts">
-  import type { Chain } from "$lib/types";
-  import { Button } from '$lib/components/ui/button';
-  import ExternalLinkIcon from "virtual:icons/lucide/external-link"
+import type { Chain } from "$lib/types"
+import { Button } from "$lib/components/ui/button"
+import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { Badge } from "$lib/components/ui/badge/index.ts"
 
-  export let chains: Chain[];
-  import * as Card from "$lib/components/ui/card/index.ts"
+export let chains: Array<Chain>
+import * as Card from "$lib/components/ui/card/index.ts"
 
-  let chainsWithFaucets = chains.filter(chain => chain.assets.filter(asset => asset.faucets.length > 0).length > 0);
+let chainsWithFaucets = chains.filter(
+  chain => chain.assets.filter(asset => asset.faucets.length > 0).length > 0
+)
 
-  let filterAndOrderAssets = (assets: Array<Chain["assets"]>): Array<Chain["assets"]> => {
-    const filtered = assets.filter(asset => asset.faucets.length > 0);
-    filtered.sort((a, b) => a.denom === "native" ? -1 : 1);
-    return filtered;
-  };
+let filterAndOrderAssets = (assets: Chain["assets"]): Chain["assets"] => {
+  const filtered = assets.filter(asset => asset.faucets.length > 0)
+  filtered.sort((a, b) => (a.denom === "native" ? -1 : 1))
+
+  filtered.map(asset => {
+    let a = asset
+    a.faucets.sort((x, y) =>
+      x.display_name > y.display_name ? 1 : y.display_name > x.display_name ? -1 : 0
+    )
+    return a
+  })
+
+  return filtered
+}
 </script>
 
 {#each chainsWithFaucets as chain}

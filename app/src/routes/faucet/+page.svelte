@@ -18,7 +18,7 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import CosmosBalance from "./(components)/cosmos-balance.svelte"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-    import ExternalFaucets from "./(components)/external-faucets.svelte";
+import ExternalFaucets from "./(components)/external-faucets.svelte"
 
 let userInput = false
 let address: string = $cosmosStore.address ?? ""
