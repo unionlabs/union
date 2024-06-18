@@ -105,6 +105,8 @@ jobs:
           echo "# sha256 Checksums" >> release.md
           echo $(sha256sum bundle-testnet-8-aarch64-linux) >> release.md
           echo $(sha256sum bundle-testnet-8-x86_64-linux) >> release.md
+          echo $(sha256sum cometbls-light-client-aarch64-linux) >> release.md
+          echo $(sha256sum cometbls-light-client-x86_64-linux) >> release.md
           echo $(sha256sum ucs01-relay-aarch64-linux) >> release.md
           echo $(sha256sum ucs01-relay-x86_64-linux) >> release.md
           echo $(sha256sum uniond-release-aarch64-linux) >> release.md
@@ -120,6 +122,8 @@ jobs:
           files: |
             **/bundle-testnet-8-aarch64-linux
             **/bundle-testnet-8-aarch64-linux
+            **/cometbls-light-client-aarch64-linux
+            **/cometbls-light-client-x86_64-linux
             **/ucs01-relay-aarch64-linux
             **/ucs01-relay-x86_64-linux
             **/uniond-release-aarch64-linux
