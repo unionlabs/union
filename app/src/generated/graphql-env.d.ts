@@ -8570,15 +8570,6 @@ export type introspection = {
         "name": "v0_faucets",
         "fields": [
           {
-            "name": "asset",
-            "type": {
-              "kind": "OBJECT",
-              "name": "v0_assets"
-            },
-            "args": [],
-            "isDeprecated": false
-          },
-          {
             "name": "chain_id",
             "type": {
               "kind": "NON_NULL",
@@ -8592,6 +8583,18 @@ export type introspection = {
           },
           {
             "name": "denom",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -8753,13 +8756,6 @@ export type introspection = {
             }
           },
           {
-            "name": "asset",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_assets_bool_exp"
-            }
-          },
-          {
             "name": "chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -8768,6 +8764,13 @@ export type introspection = {
           },
           {
             "name": "denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display_name",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
@@ -8802,6 +8805,13 @@ export type introspection = {
             }
           },
           {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "url",
             "type": {
               "kind": "ENUM",
@@ -8830,6 +8840,13 @@ export type introspection = {
             }
           },
           {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "url",
             "type": {
               "kind": "ENUM",
@@ -8844,13 +8861,6 @@ export type introspection = {
         "name": "v0_faucets_order_by",
         "inputFields": [
           {
-            "name": "asset",
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "v0_assets_order_by"
-            }
-          },
-          {
             "name": "chain_id",
             "type": {
               "kind": "ENUM",
@@ -8859,6 +8869,13 @@ export type introspection = {
           },
           {
             "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -8884,6 +8901,10 @@ export type introspection = {
           },
           {
             "name": "denom",
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
             "isDeprecated": false
           },
           {
@@ -8971,6 +8992,13 @@ export type introspection = {
           },
           {
             "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "display_name",
             "type": {
               "kind": "SCALAR",
               "name": "String"

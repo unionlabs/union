@@ -17,6 +17,7 @@ export type UserAddresses = {
 export type Chain = {
   chain_id: string
   display_name: string
+  testnet: boolean
   rpc_type: "evm" | "cosmos"
   rpcs: Array<{
     type: string
@@ -40,6 +41,7 @@ export type Chain = {
   assets: Array<{
     denom: string
     display_symbol: string
+    display_name: string | null
     decimals: number
     faucets: Array<{
       url: string

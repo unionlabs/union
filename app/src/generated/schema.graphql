@@ -2267,10 +2267,9 @@ input v0_connections_stream_cursor_value_input {
 columns and relationships of "v0.faucets"
 """
 type v0_faucets {
-  """An object relationship"""
-  asset: v0_assets
   chain_id: Int!
   denom: String!
+  display_name: String!
   url: String!
 }
 
@@ -2305,9 +2304,9 @@ input v0_faucets_bool_exp {
   _and: [v0_faucets_bool_exp!]
   _not: v0_faucets_bool_exp
   _or: [v0_faucets_bool_exp!]
-  asset: v0_assets_bool_exp
   chain_id: Int_comparison_exp
   denom: String_comparison_exp
+  display_name: String_comparison_exp
   url: String_comparison_exp
 }
 
@@ -2317,6 +2316,7 @@ order by max() on columns of table "v0.faucets"
 input v0_faucets_max_order_by {
   chain_id: order_by
   denom: order_by
+  display_name: order_by
   url: order_by
 }
 
@@ -2326,14 +2326,15 @@ order by min() on columns of table "v0.faucets"
 input v0_faucets_min_order_by {
   chain_id: order_by
   denom: order_by
+  display_name: order_by
   url: order_by
 }
 
 """Ordering options when selecting data from "v0.faucets"."""
 input v0_faucets_order_by {
-  asset: v0_assets_order_by
   chain_id: order_by
   denom: order_by
+  display_name: order_by
   url: order_by
 }
 
@@ -2346,6 +2347,9 @@ enum v0_faucets_select_column {
 
   """column name"""
   denom
+
+  """column name"""
+  display_name
 
   """column name"""
   url
@@ -2387,6 +2391,7 @@ input v0_faucets_stream_cursor_input {
 input v0_faucets_stream_cursor_value_input {
   chain_id: Int
   denom: String
+  display_name: String
   url: String
 }
 
