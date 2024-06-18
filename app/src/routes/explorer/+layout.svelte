@@ -1,45 +1,47 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import Menu from "./(components)/menu.svelte"
-import type { LayoutData } from "./$types.ts"
+import { page } from "$app/stores"
+import { onNavigate } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn.ts"
+import type { LayoutData } from "./$types.ts"
+import Menu from "./(components)/menu.svelte"
 import * as Resizable from "$lib/components/ui/resizable"
+import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 import GripVerticalIcon from "virtual:icons/tabler/grip-vertical"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
-import { page } from "$app/stores"
-import { derived } from "svelte/store"
-import { onNavigate } from "$app/navigation"
-import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 
 export let data: LayoutData
 
-// Pane collapse on resize has been disabled because it was throwing console errors.
+let windowSize = { width: window.innerWidth, height: window.innerHeight }
 
-// let windowSize = { width: window.innerWidth, height: window.innerHeight }
-
-// const handleResize = () => {
-//   requestAnimationFrame(() => {
-//     windowSize = { width: window.innerWidth, height: window.innerHeight }
-//   })
-// }
-
-// onMount(() => {
-//   window.addEventListener("resize", handleResize)
-//   return () => {
-//     window.removeEventListener("resize", handleResize)
-//   }
-// })
-
-// $: if (windowSize?.width < 900) {
-//   try {
-//     leftPane.collapse()
-//     // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
-//   } catch {}
-// }
+const handleResize = () => {
+  requestAnimationFrame(() => {
+    windowSize = { width: window.innerWidth, height: window.innerHeight }
+  })
+}
 
 let isCollapsed = false
 let leftPane: Resizable.PaneAPI
 $: [leftSize, rightSize] = [14, 88]
+
+onMount(() => {
+  isCollapsed = windowSize?.width < 900
+  window.addEventListener("resize", handleResize)
+  return () => {
+    window.removeEventListener("resize", handleResize)
+  }
+})
+
+$: {
+  try {
+    if (windowSize?.width < 900) {
+      isCollapsed = true
+    } else {
+      isCollapsed = false
+    }
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
+  } catch {}
+}
 
 const onLayoutChange: Resizable.PaneGroupProps["onLayoutChange"] = sizes => {
   document.cookie = `PaneForge:layout=${JSON.stringify(sizes)}`
@@ -63,6 +65,7 @@ onNavigate(navigation => {
   }
 })
 
+// @ts-expect-error
 $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 </script>
 
@@ -72,46 +75,59 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 <main class={cn('flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
   {#if mainExplorerPage}
-  <Resizable.PaneGroup direction="horizontal" class="w-full" {onLayoutChange}>
-    <Resizable.Pane
-      {onExpand}
-      {onCollapse}
-      maxSize={14}
-      minSize={14}
-      collapsible={true}
-      collapsedSize={4.5}
-      bind:pane={leftPane}
-      defaultSize={leftSize}
-      class={cn(
-        isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[258px] max-w-[258px]',
-        'w-full border-r bg-muted',
-      )}
+    <Resizable.PaneGroup
+      class="w-full"
+      autoSaveId="explorer"
+      direction="horizontal"
+      {onLayoutChange}
     >
-      <Menu tableRoutes={data.tables} {isCollapsed} />
-    </Resizable.Pane>
-    <Resizable.Handle
-      withHandle
-      class="relative flex w-4 max-w-4 items-center justify-center bg-background"
-    >
-      <div class="h-full w-12 items-center justify-center rounded-sm border bg-muted">
-        <GripVerticalIcon />
-      </div>
-    </Resizable.Handle>
-    <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
-      <ScrollArea orientation="both" class="size-full flex-1">
-        <div class="py-6 pr-4 pl-2">
-          <h2 class="text-4xl font-extrabold font-extra-expanded uppercase font-supermolot">{explorerRoute?.replaceAll('-', ' ')}</h2>
-          <p class="pb-4 text-muted-foreground">> {explorerPageDescription}</p>
-          <slot/>
+      <Resizable.Pane
+        {onExpand}
+        {onCollapse}
+        maxSize={14}
+        minSize={14}
+        collapsible={true}
+        collapsedSize={4.5}
+        bind:pane={leftPane}
+        defaultSize={leftSize}
+        class={cn(
+          isCollapsed ? 'min-w-13 max-w-13' : 'min-w-[200px] w-[250px]',
+          'w-full border-r bg-muted',
+        )}
+      >
+        <Menu tableRoutes={data.tables} {isCollapsed} />
+      </Resizable.Pane>
+      <Resizable.Handle
+        withHandle
+        class="relative flex w-4 max-w-4 items-center justify-center bg-background"
+      >
+        <div class="h-full w-12 items-center justify-center rounded-sm border bg-muted">
+          <GripVerticalIcon />
         </div>
-      </ScrollArea>
-    </Resizable.Pane>
-  </Resizable.PaneGroup>
+      </Resizable.Handle>
+      <Resizable.Pane defaultSize={rightSize} class="rounded-lg p-0">
+        <ScrollArea orientation="both" class="size-full flex-1">
+          <div class="py-6 pr-4 pl-2">
+            <h2 class="text-4xl font-extrabold font-extra-expanded uppercase font-supermolot">
+              {explorerRoute?.replaceAll('-', ' ')}
+            </h2>
+            <p class="pb-4 text-muted-foreground">{'>'} {explorerPageDescription}</p>
+            <slot />
+          </div>
+        </ScrollArea>
+      </Resizable.Pane>
+    </Resizable.PaneGroup>
   {:else}
-    <a class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot" href={$page.route.id?.split("/").slice(0, 3).join('/')}><ArrowLeftIcon/><span class="uppercase">{$page.route.id?.split("/")[2]}</span></a>
+    <a
+      class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot"
+      href={$page.route.id?.split('/').slice(0, 3).join('/')}
+    >
+      <ArrowLeftIcon />
+      <span class="uppercase">{$page.route.id?.split('/')[2]}</span>
+    </a>
     <ScrollArea class="flex-1" orientation="both">
       <div class="p-4 sm:p-6 flex items-center justify-center">
-        <slot/>
+        <slot />
       </div>
     </ScrollArea>
   {/if}
