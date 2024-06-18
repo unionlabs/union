@@ -3,7 +3,7 @@
 <br />
 
 <p align="center">
-  <img width="175" src="https://union.build/logo.svg" alt="Union logo" />
+  <img width="675" src="https://i.imgur.com/yFpIuzm.jpeg" alt="Union logo" />
 </p>
 <br />
 <p align="center">
@@ -17,3 +17,41 @@ Union Labs TypeScript SDK providing utilities for cross-chain transfers and more
 ```sh
 npx jsr add @union/client
 ```
+
+### Quick Start
+
+```ts
+import { http } from "viem"
+import { sepolia } from "viem/chains"
+import { createUnionClient, cosmosHttp } from "@union/client"
+
+
+const unionClient = createUnionClient({
+  evm: {
+    chain: sepolia,
+    // browser wallet or `privateKeyToAccount` from `viem/accounts`
+    account: evmAccount,
+    transport: http("https://rpc2.sepolia.org")
+  },
+  cosmos: {
+    // browser wallet or `DirectSecp256k1Wallet.fromKey`
+    account: cosmosAccount,
+    gasPrice: { amount: "0.0025", denom: "muno" },
+    transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+  }
+})
+
+const transfer = await unionClient.transferAsset({
+  amount: 1n,
+  network: "evm",
+  sourceChannel: "channel-69",
+  path: ["11155111", "union-testnet-8"],
+  recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+  denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  relayContractAddress: "0x3C148Ec863404e48d88757E88e456963A14238ef"
+})
+```
+
+You can also fetch contracts, channels, etc. from Hubble by using [`offchainQuery.<chains|chain>`](https://github.com/unionlabs/union/blob/d8228c1bed450850401b84e5885411346b7d5484/typescript-sdk/src/query/off-chain.ts#L25).
+
+See [`./playground/berachain-to-union.ts`](./playground/berachain-to-union.ts) and [`./playground`](./playground) in general for more examples.
