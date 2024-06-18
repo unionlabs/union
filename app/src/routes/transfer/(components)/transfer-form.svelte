@@ -225,34 +225,31 @@ const transfer = async () => {
       goto(`/explorer/transfers/${transferHash.transactionHash}`)
     }
   } else if ($fromChain.rpc_type === "evm") {
+    const rpcUrls = $fromChain.rpcs.filter(c => c.type === "rpc").map(c => `https://${c.url}`)
 
-    const rpcUrls = $fromChain.rpcs
-      .filter((c) => c.type === "rpc")
-      .map((c) => `https://${c.url}`);
+    if (rpcUrls.length === 0) return toast.error(`No RPC url for ${$fromChain.display_name}`)
 
-    if (rpcUrls.length === 0) return toast.error(`No RPC url for ${$fromChain.display_name}`);
+    const nativeCurrency = $fromChain.assets.filter(asset => asset.denom === "native").at(0)
 
-    const nativeCurrency = $fromChain.assets.filter((asset) => asset.denom === "native").at(0);
-
-    if (nativeCurrency === undefined) return toast.error(`No native currency for ${$fromChain.display_name}`);
-
+    if (nativeCurrency === undefined)
+      return toast.error(`No native currency for ${$fromChain.display_name}`)
 
     const chain = defineChain({
-        name: $fromChain.display_name,
-        nativeCurrency: {
-          name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
-          /** 2-6 characters long */
-          symbol: nativeCurrency.display_symbol,
-          decimals: nativeCurrency.decimals
-        },
-        id: Number($fromChainId),
-        rpcUrls: {
-          default: {
-            http: rpcUrls
-          },
-        },
-        testnet: $fromChain.testnet
-      });
+      name: $fromChain.display_name,
+      nativeCurrency: {
+        name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
+        /** 2-6 characters long */
+        symbol: nativeCurrency.display_symbol,
+        decimals: nativeCurrency.decimals
+      },
+      id: Number($fromChainId),
+      rpcUrls: {
+        default: {
+          http: rpcUrls
+        }
+      },
+      testnet: $fromChain.testnet
+    })
 
     const publicClient = createPublicClient({
       chain,
@@ -265,11 +262,11 @@ const transfer = async () => {
       transport: custom(window.ethereum)
     })
 
-    toast.info(`Adding chain ${$fromChain.display_name} to your wallet`);
-    await walletClient.addChain({ chain });
+    toast.info(`Adding chain ${$fromChain.display_name} to your wallet`)
+    await walletClient.addChain({ chain })
 
-    toast.info(`Switching wallet to chain ${$fromChain.display_name}`);
-    await walletClient.switchChain({ id: chain.id });
+    toast.info(`Switching wallet to chain ${$fromChain.display_name}`)
+    await walletClient.switchChain({ id: chain.id })
 
     const ucs01address = ucs1_configuration.contract_address as Address
 

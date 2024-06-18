@@ -17,7 +17,7 @@ export type UserAddresses = {
 export type Chain = {
   chain_id: string
   display_name: string
-  testnet: boolean,
+  testnet: boolean
   rpc_type: "evm" | "cosmos"
   rpcs: Array<{
     type: string
