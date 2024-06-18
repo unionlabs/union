@@ -15,10 +15,10 @@ import { updateTheme } from "$lib/utilities/update-theme.ts"
 import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
-import PreloadingIndicator from "$lib/components/preloading-indicator.svelte"
 import { notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { createQueryClient } from "$lib/graphql/client.ts"
+import LoadingBar from "$lib/components/loading-bar.svelte"
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -58,10 +58,6 @@ onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
   {@html '<script>' + partytownSnippet() + '</script>'}
 </svelte:head>
 
-{#if $navigating}
-  <PreloadingIndicator />
-{/if}
-
 <svelte:window
   use:shortcut={{
     trigger: [
@@ -79,6 +75,8 @@ onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
     ],
   }}
 />
+
+<LoadingBar />
 
 <PersistQueryClientProvider
   client={queryClient}

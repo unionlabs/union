@@ -1085,11 +1085,38 @@ input timestamptz_comparison_exp {
 columns and relationships of "v0.assets"
 """
 type v0_assets {
+  """An object relationship"""
+  chain: v0_chains!
   chain_id: Int!
   decimals: Int
   denom: String!
   display_symbol: String
   logo_uri: String
+}
+
+"""
+order by aggregate values of table "v0.assets"
+"""
+input v0_assets_aggregate_order_by {
+  avg: v0_assets_avg_order_by
+  count: order_by
+  max: v0_assets_max_order_by
+  min: v0_assets_min_order_by
+  stddev: v0_assets_stddev_order_by
+  stddev_pop: v0_assets_stddev_pop_order_by
+  stddev_samp: v0_assets_stddev_samp_order_by
+  sum: v0_assets_sum_order_by
+  var_pop: v0_assets_var_pop_order_by
+  var_samp: v0_assets_var_samp_order_by
+  variance: v0_assets_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.assets"
+"""
+input v0_assets_avg_order_by {
+  chain_id: order_by
+  decimals: order_by
 }
 
 """
@@ -1099,6 +1126,7 @@ input v0_assets_bool_exp {
   _and: [v0_assets_bool_exp!]
   _not: v0_assets_bool_exp
   _or: [v0_assets_bool_exp!]
+  chain: v0_chains_bool_exp
   chain_id: Int_comparison_exp
   decimals: Int_comparison_exp
   denom: String_comparison_exp
@@ -1106,8 +1134,31 @@ input v0_assets_bool_exp {
   logo_uri: String_comparison_exp
 }
 
+"""
+order by max() on columns of table "v0.assets"
+"""
+input v0_assets_max_order_by {
+  chain_id: order_by
+  decimals: order_by
+  denom: order_by
+  display_symbol: order_by
+  logo_uri: order_by
+}
+
+"""
+order by min() on columns of table "v0.assets"
+"""
+input v0_assets_min_order_by {
+  chain_id: order_by
+  decimals: order_by
+  denom: order_by
+  display_symbol: order_by
+  logo_uri: order_by
+}
+
 """Ordering options when selecting data from "v0.assets"."""
 input v0_assets_order_by {
+  chain: v0_chains_order_by
   chain_id: order_by
   decimals: order_by
   denom: order_by
@@ -1136,6 +1187,30 @@ enum v0_assets_select_column {
 }
 
 """
+order by stddev() on columns of table "v0.assets"
+"""
+input v0_assets_stddev_order_by {
+  chain_id: order_by
+  decimals: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.assets"
+"""
+input v0_assets_stddev_pop_order_by {
+  chain_id: order_by
+  decimals: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.assets"
+"""
+input v0_assets_stddev_samp_order_by {
+  chain_id: order_by
+  decimals: order_by
+}
+
+"""
 Streaming cursor of the table "v0_assets"
 """
 input v0_assets_stream_cursor_input {
@@ -1153,6 +1228,38 @@ input v0_assets_stream_cursor_value_input {
   denom: String
   display_symbol: String
   logo_uri: String
+}
+
+"""
+order by sum() on columns of table "v0.assets"
+"""
+input v0_assets_sum_order_by {
+  chain_id: order_by
+  decimals: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.assets"
+"""
+input v0_assets_var_pop_order_by {
+  chain_id: order_by
+  decimals: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.assets"
+"""
+input v0_assets_var_samp_order_by {
+  chain_id: order_by
+  decimals: order_by
+}
+
+"""
+order by variance() on columns of table "v0.assets"
+"""
+input v0_assets_variance_order_by {
+  chain_id: order_by
+  decimals: order_by
 }
 
 """
@@ -1364,6 +1471,24 @@ type v0_chains {
   addr_prefix: String
 
   """An array relationship"""
+  assets(
+    """distinct select on columns"""
+    distinct_on: [v0_assets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_assets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_assets_bool_exp
+  ): [v0_assets!]!
+
+  """An array relationship"""
   blocks(
     """distinct select on columns"""
     distinct_on: [v0_blocks_select_column!]
@@ -1384,6 +1509,7 @@ type v0_chains {
   display_name: String
   enabled: Boolean
   id: Int!
+  logo_uri: String
   rpc_type: String
 
   """An array relationship"""
@@ -1450,11 +1576,13 @@ input v0_chains_bool_exp {
   _not: v0_chains_bool_exp
   _or: [v0_chains_bool_exp!]
   addr_prefix: String_comparison_exp
+  assets: v0_assets_bool_exp
   blocks: v0_blocks_bool_exp
   chain_id: String_comparison_exp
   display_name: String_comparison_exp
   enabled: Boolean_comparison_exp
   id: Int_comparison_exp
+  logo_uri: String_comparison_exp
   rpc_type: String_comparison_exp
   rpcs: v0_rpcs_bool_exp
   testnet: Boolean_comparison_exp
@@ -1465,11 +1593,13 @@ input v0_chains_bool_exp {
 """Ordering options when selecting data from "v0.chains"."""
 input v0_chains_order_by {
   addr_prefix: order_by
+  assets_aggregate: v0_assets_aggregate_order_by
   blocks_aggregate: v0_blocks_aggregate_order_by
   chain_id: order_by
   display_name: order_by
   enabled: order_by
   id: order_by
+  logo_uri: order_by
   rpc_type: order_by
   rpcs_aggregate: v0_rpcs_aggregate_order_by
   testnet: order_by
@@ -1497,6 +1627,9 @@ enum v0_chains_select_column {
   id
 
   """column name"""
+  logo_uri
+
+  """column name"""
   rpc_type
 
   """column name"""
@@ -1521,6 +1654,7 @@ input v0_chains_stream_cursor_value_input {
   display_name: String
   enabled: Boolean
   id: Int
+  logo_uri: String
   rpc_type: String
   testnet: Boolean
 }
@@ -2970,6 +3104,9 @@ type v0_transfers {
   destination_timestamp: timestamptz
   destination_transaction_hash: String
   destination_transaction_index: String
+
+  """An object relationship"""
+  hop: v0_transfers
   normalized_receiver: String
   normalized_sender: String
   receiver: String
@@ -3038,6 +3175,7 @@ input v0_transfers_bool_exp {
   destination_timestamp: timestamptz_comparison_exp
   destination_transaction_hash: String_comparison_exp
   destination_transaction_index: String_comparison_exp
+  hop: v0_transfers_bool_exp
   normalized_receiver: String_comparison_exp
   normalized_sender: String_comparison_exp
   receiver: String_comparison_exp
@@ -3079,6 +3217,7 @@ input v0_transfers_order_by {
   destination_timestamp: order_by
   destination_transaction_hash: order_by
   destination_transaction_index: order_by
+  hop: v0_transfers_order_by
   normalized_receiver: order_by
   normalized_sender: order_by
   receiver: order_by
@@ -3270,6 +3409,25 @@ type v0_ucs1_configuration {
   destination_chain: v0_chains!
   destination_chain_id: Int!
 
+  """An array relationship"""
+  forward(
+    """distinct select on columns"""
+    distinct_on: [v0_ucs1_configuration_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_ucs1_configuration_order_by!]
+
+    """filter the rows returned"""
+    where: v0_ucs1_configuration_bool_exp
+  ): [v0_ucs1_configuration!]!
+  port: String!
+
   """An object relationship"""
   source_chain: v0_chains!
   source_chain_id: Int!
@@ -3312,6 +3470,8 @@ input v0_ucs1_configuration_bool_exp {
   contract_address: String_comparison_exp
   destination_chain: v0_chains_bool_exp
   destination_chain_id: Int_comparison_exp
+  forward: v0_ucs1_configuration_bool_exp
+  port: String_comparison_exp
   source_chain: v0_chains_bool_exp
   source_chain_id: Int_comparison_exp
 }
@@ -3324,6 +3484,7 @@ input v0_ucs1_configuration_max_order_by {
   connection_id: order_by
   contract_address: order_by
   destination_chain_id: order_by
+  port: order_by
   source_chain_id: order_by
 }
 
@@ -3335,6 +3496,7 @@ input v0_ucs1_configuration_min_order_by {
   connection_id: order_by
   contract_address: order_by
   destination_chain_id: order_by
+  port: order_by
   source_chain_id: order_by
 }
 
@@ -3345,6 +3507,8 @@ input v0_ucs1_configuration_order_by {
   contract_address: order_by
   destination_chain: v0_chains_order_by
   destination_chain_id: order_by
+  forward_aggregate: v0_ucs1_configuration_aggregate_order_by
+  port: order_by
   source_chain: v0_chains_order_by
   source_chain_id: order_by
 }
@@ -3364,6 +3528,9 @@ enum v0_ucs1_configuration_select_column {
 
   """column name"""
   destination_chain_id
+
+  """column name"""
+  port
 
   """column name"""
   source_chain_id
@@ -3410,6 +3577,7 @@ input v0_ucs1_configuration_stream_cursor_value_input {
   connection_id: String
   contract_address: String
   destination_chain_id: Int
+  port: String
   source_chain_id: Int
 }
 

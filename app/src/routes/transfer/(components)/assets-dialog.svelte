@@ -1,9 +1,11 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
-import type { Asset } from "$lib/wallet/types"
-import { truncate } from "$lib/utilities/format"
+import Search from "virtual:icons/lucide/search"
 import * as Dialog from "$lib/components/ui/dialog"
+import type { Asset } from "$lib/constants/assets.js"
+import { Input } from "$lib/components/ui/input/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
+import { truncate } from "$lib/utilities/format"
 
 export let dialogOpen = false
 export let assets: Array<{
@@ -43,7 +45,7 @@ export let onAssetSelect: (asset: string) => void
               on:click={() => {onAssetSelect(symbol); dialogOpen = false }}
             >
               <div class="size-full flex flex-col items-start">
-                {truncate(symbol, 12)}
+                  {truncate(symbol, 12)}
               </div>
               <p class="mb-auto text-lg font-black">{balance}</p>
             </Button>

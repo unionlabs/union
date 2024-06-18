@@ -32,14 +32,28 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
     } else {
       addr_prefix = chain.addr_prefix
     }
-    console.log(chain)
 
-    let ucs1_configurations = chain.ucs1_configurations.reduce<
-      Record<string, (typeof chain.ucs1_configurations)[number]>
-    >((acc, item) => {
-      acc[item.destination_chain.chain_id] = item
-      return acc
-    }, {})
+    let ucs1_configurations = chain.ucs1_configurations.reduce<Chain["ucs1_configurations"]>(
+      (acc, item) => {
+        let forward = item.forward.reduce<Record<string, (typeof item.forward)[number]>>(
+          (acc2, item2) => {
+            acc2[item2.destination_chain.chain_id] = item2
+            return acc2
+          },
+          {}
+        )
+
+        let item_with_fwd = {
+          ...item,
+          forward
+        }
+
+        acc[item.destination_chain.chain_id] = item_with_fwd
+
+        return acc
+      },
+      {}
+    )
 
     return {
       chain_id: chain.chain_id,
@@ -47,7 +61,11 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       display_name,
       rpc_type,
       rpcs: chain.rpcs,
-      addr_prefix
+      addr_prefix,
+      // this as statement should no longer be required in the next typescript release
+      assets: chain.assets.filter(
+        asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null
+      ) as Chain["assets"]
     }
   })
 })
@@ -59,5 +77,4 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   Error loading chains.
 {:else if $chains.isSuccess}
   <slot chains={$checkedChains}/>
-
 {/if}
