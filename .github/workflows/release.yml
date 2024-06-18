@@ -11,7 +11,22 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond-release" or .attr == "galoisd" or .attr == "uniond-release-image" or .attr == "galoisd-image" or .attr == "bundle-testnet-8-image")' # ensure to append this list if you want to release more artifacts
+      # ensure to append this list if you want to release more artifacts
+      filter_builds: |
+        (.top_attr == "packages") 
+        and (
+          .system == "x86_64-linux" 
+          or .system == "aarch64-linux"
+        ) and (
+          .attr == "uniond-release" 
+          or .attr == "galoisd" 
+          or .attr == "uniond-release-image" 
+          or .attr == "galoisd-image" 
+          or .attr == "bundle-testnet-8-image"
+          or .attr == "bindle-testnet-8"
+          or .attr == "ucs01-relay"
+        ) 
+        
 
   dl-images:
     runs-on: ubuntu-latest
@@ -44,7 +59,7 @@ jobs:
     strategy:
       matrix:
         system: [aarch64-linux, x86_64-linux]
-        package: [uniond-release, galoisd]
+        package: [uniond-release, galoisd, ucs01-relay, bundle-testnet-8]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -87,16 +102,26 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
       - run: |
-          ls -a
+          echo "# sha256 Checksums" >> release.md
+          echo $(sha256sum bundle-testnet-8-aarch64-linux) >> release.md
+          echo $(sha256sum bundle-testnet-8-x86_64-linux) >> release.md
+          echo $(sha256sum ucs01-relay-aarch64-linux) >> release.md
+          echo $(sha256sum ucs01-relay-x86_64-linux) >> release.md
+          echo $(sha256sum uniond-release-aarch64-linux) >> release.md
+          echo $(sha256sum uniond-release-x86_64-linux) >> release.md
       - uses: softprops/action-gh-release@v2
         with:
-          body: test
+          body_path: release.md
           prerelease: false
           repository: unionlabs/union-releases
           token: ${{ secrets.UNION_RELEASES_PAT }}
           tag_name: ${{github.ref_name}}
           fail_on_unmatched_files: true
           files: |
+            **/bundle-testnet-8-aarch64-linux
+            **/bundle-testnet-8-aarch64-linux
+            **/ucs01-relay-aarch64-linux
+            **/ucs01-relay-x86_64-linux
             **/uniond-release-aarch64-linux
             **/uniond-release-x86_64-linux
 
