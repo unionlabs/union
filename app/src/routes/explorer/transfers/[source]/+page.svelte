@@ -9,6 +9,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import { truncate } from "$lib/utilities/format"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
+import { derived } from "svelte/store"
 
 const source = $page.params.source
 
@@ -22,6 +23,39 @@ let transfers = createQuery({
       })
     ).v0_transfers
 })
+
+let processedTransfers = derived(transfers, $transfers => {
+  if (!$transfers.isSuccess) {
+    return null
+  }
+  return $transfers.data.map(transfer => {
+    let tx = structuredClone(transfer)
+
+    let hop_chain = null
+    let hop_chain_id = null
+    if (tx.hop !== null) {
+      hop_chain = tx.destination_chain
+      hop_chain_id = tx.destination_chain_id
+
+      tx.destination_chain = tx.hop.destination_chain
+      tx.destination_chain_id = tx.hop.destination_chain_id
+      tx.receiver = tx.hop.receiver
+      tx.normalized_receiver = tx.hop.normalized_receiver
+      tx.traces.push.apply(tx.traces, tx.hop.traces)
+      tx.traces.sort((a, b) => {
+        // @ts-ignore timestamp is guaranteed to be a date
+        // biome-ignore lint/nursery/useDateNow: this is a biome bug
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      })
+    }
+
+    return {
+      hop_chain,
+      hop_chain_id,
+      ...tx
+    }
+  })
+})
 </script>
 
 <!--
@@ -31,14 +65,14 @@ let transfers = createQuery({
 
 {#if $transfers.isLoading}
   <LoadingLogo class="size-16"/>
-{:else if $transfers.isSuccess}
-  {#each $transfers.data as transfer}
+{:else if $transfers.isSuccess && $processedTransfers !== null}
+  {#each $processedTransfers as transfer}
 
     <!--
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col divide-y max-w-5xl  justify-self-center">
+  <Card.Root class="flex flex-col divide-y max-w-8xl  justify-self-center">
     <Card.Header class="font-bold text-md text-center text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
@@ -56,9 +90,10 @@ let transfers = createQuery({
       {/if}
     </section>
 
+    <section>
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground">{transfer.source_chain?.display_name}</h2>
+        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{transfer.source_chain?.display_name}</h2>
         <p class="text-sm">{transfer.source_chain_id}</p>
         <p class="text-sm">{transfer.source_connection_id}</p>
         <p class="text-sm">{transfer.source_channel_id}</p>
@@ -67,11 +102,18 @@ let transfers = createQuery({
         <MoveRightIcon class="text-foreground size-8"/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground">{transfer.destination_chain?.display_name}</h2>
+        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{transfer.destination_chain?.display_name}</h2>
         <p class="text-sm">{transfer.destination_chain_id}</p>
         <p class="text-sm">{transfer.destination_connection_id}</p>
         <p class="text-sm">{transfer.destination_channel_id}</p>
       </div>
+    </section>
+    {#if transfer.hop_chain}
+      <div class="flex-1 text-center flex-col text-sm text-muted-foreground items-center">
+        forwarded through
+        <h2 class="font-supermolot uppercase font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{transfer.hop_chain.display_name}</h2>
+      </div>
+    {/if}
     </section>
     <section class="flex gap-8">
       <div class=" lex-col text-muted-foreground">

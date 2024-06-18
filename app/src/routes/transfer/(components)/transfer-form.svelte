@@ -90,7 +90,55 @@ let recipient = derived(toChain, $toChain => {
   }
 })
 
-const pfmMemo = (port: string, channel: string, receiver: string): string => {
+let ucs01Configuration = derived(
+  [fromChain, toChainId, recipient],
+  ([$fromChain, $toChainId, $recipient]) => {
+    if ($fromChain === null || $toChainId === null || $recipient === null) return null
+
+    let ucs1_configuration =
+      $toChainId in $fromChain.ucs1_configurations
+        ? $fromChain.ucs1_configurations[$toChainId]
+        : null
+
+    let pfmMemo: string | null = null
+    let hopChainId: string | null = null
+
+    if (ucs1_configuration !== null) {
+      // non-pfm transfer
+      return { ucs1_configuration, hopChainId, pfmMemo }
+    }
+
+    // try finding pfm path
+    for (const chain of chains) {
+      let [foundHopChainId, ucs1Config] =
+        Object.entries(chain.ucs1_configurations).find(
+          ([foundHopChainId, config]) => config.forward[$toChainId] !== undefined
+        ) ?? []
+      if (foundHopChainId !== undefined && ucs1Config !== undefined) {
+        hopChainId = foundHopChainId
+        ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
+        let forwardConfig = ucs1_configuration.forward[$toChainId]
+        pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient.slice(2))
+        break
+      }
+    }
+
+    if (pfmMemo === null || hopChainId === null || ucs1_configuration === null) {
+      return null
+    }
+
+    return { ucs1_configuration, hopChainId, pfmMemo }
+  }
+)
+
+let hopChain = derived(ucs01Configuration, $ucs01Configuration => {
+  if ($ucs01Configuration === null) return null
+  if ($ucs01Configuration.hopChainId === null) return null
+
+  return chains.find(c => c.chain_id === $ucs01Configuration.hopChainId) ?? null
+})
+
+const generatePfmMemo = (channel: string, port: string, receiver: string): string => {
   return JSON.stringify({
     forward: {
       port,
@@ -109,19 +157,12 @@ const transfer = async () => {
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
   if (!$recipient) return toast.error("Invalid recipient")
-
-  const ucs1_configuration =
-    $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null
-
-  let pfmMemo = ""
-
-  if (ucs1_configuration === null) {
-    // try finding pfm path
-
+  if (!$ucs01Configuration)
     return toast.error(
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
     )
-  }
+
+  let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
 
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
@@ -158,7 +199,7 @@ const transfer = async () => {
             token: { denom: $assetSymbol, amount },
             sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
             receiver: $recipient,
-            memo: ``,
+            memo: pfmMemo ?? "",
             timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
           }
         ]
@@ -176,7 +217,7 @@ const transfer = async () => {
               transfer: {
                 channel: ucs1_configuration.channel_id,
                 receiver: $recipient?.slice(2),
-                memo: ``
+                memo: pfmMemo ?? ""
               }
             },
             funds: [{ denom: $assetSymbol, amount }]
@@ -221,7 +262,7 @@ const transfer = async () => {
         ucs1_configuration.channel_id,
         userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
         [{ denom: $asset.address.toLowerCase() as Address, amount: BigInt(amount) }],
-        "", // memo
+        pfmMemo ?? "", // memo
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
         0n
       ]
@@ -343,8 +384,11 @@ let buttonText = "Transfer" satisfies
     {buttonText}
   </Button>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>. 
+    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>{#if $hopChain}&nbsp;by forwarding through <b>{$hopChain.display_name}</b>{/if}. 
   </div>
+
+
+  
 </Card.Footer>
 <ChainDialog
   kind="from"
