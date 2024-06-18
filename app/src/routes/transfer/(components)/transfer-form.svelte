@@ -462,10 +462,11 @@ $: buttonText =
 </Card.Footer>
 </Card.Root>
 {:else}
-    <pre>{$transferState}</pre>
+  <div class="text-muted-foreground">
+    Transfering {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
+  </div>
+  <pre>{$transferState}</pre>
 {/if}
-
-
 
 
 <ChainDialog
