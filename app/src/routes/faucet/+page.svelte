@@ -19,6 +19,7 @@ import CosmosBalance from "./(components)/cosmos-balance.svelte"
 import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+    import ExternalFaucets from "./(components)/external-faucets.svelte";
 
 let userInput = false
 let address: string = $cosmosStore.address ?? ""
@@ -95,7 +96,7 @@ const handleSubmit = () => {
 </svelte:head>
 
 <ScrollArea orientation="both">
-  <main class="flex justify-center items-start max-h-full px-4 py-8">
+  <main class="flex flex-col items-center max-h-full px-4 py-8">
     <Card.Root class="w-full max-w-lg">
       <Card.Header>
         <Card.Title>Faucet</Card.Title>
@@ -186,5 +187,8 @@ const handleSubmit = () => {
         </form>
       </Card.Content>
     </Card.Root>
+    <ChainsGate let:chains>
+      <ExternalFaucets {chains}/>
+    </ChainsGate>
   </main>
 </ScrollArea>
