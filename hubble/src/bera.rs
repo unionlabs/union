@@ -1,4 +1,6 @@
-use backon::{ExponentialBuilder, Retryable};
+use std::time::Duration;
+
+use backon::{ConstantBuilder, ExponentialBuilder, Retryable};
 use color_eyre::{eyre::eyre, Result};
 use cometbft_rpc::{AbciQueryResponse, Client};
 use tracing::info;
@@ -85,7 +87,11 @@ impl Bera {
 impl Querier for Bera {
     async fn get_execution_height(&self, height: i64) -> Result<i64> {
         let height = (|| self.execution_header_at_beacon_slot(height as u64))
-            .retry(&ExponentialBuilder::default())
+            .retry(
+                &ConstantBuilder::default()
+                    .with_delay(Duration::from_millis(500))
+                    .with_max_times(60),
+            )
             .await?
             .block_number as i64;
         Ok(height)

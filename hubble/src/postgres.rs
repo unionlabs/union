@@ -367,6 +367,7 @@ pub async fn get_chain_id<'a, A: Acquire<'a, Database = Postgres>>(
     Ok(id)
 }
 
+#[allow(dead_code)]
 pub async fn get_batch_of_unmapped_execution_heights<'a, A: Acquire<'a, Database = Postgres>>(
     db: A,
     chain_id: ChainId,
@@ -414,4 +415,24 @@ pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postg
     .execute(&mut *conn)
     .await?;
     Ok(())
+}
+
+pub async fn get_max_consensus_height<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+    chain_id: ChainId,
+) -> sqlx::Result<i64> {
+    let mut conn = db.acquire().await?;
+    let height = sqlx::query!(
+        "
+        SELECT MAX(consensus_height) as height from v0.consensus_heights
+        WHERE chain_id = $1
+        ",
+        chain_id.db
+    )
+    .fetch_optional(&mut *conn)
+    .await?
+    .map(|r| r.height.unwrap_or_default())
+    .unwrap_or(0);
+
+    Ok(height)
 }
