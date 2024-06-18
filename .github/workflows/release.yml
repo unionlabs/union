@@ -25,7 +25,7 @@ jobs:
           or .attr == "bundle-testnet-8-image"
           or .attr == "bundle-testnet-8"
           or .attr == "ucs01-relay"
-          or .arrt == "cometbls-light-client"
+          or .attr == "cometbls-light-client"
         ) 
         
 
