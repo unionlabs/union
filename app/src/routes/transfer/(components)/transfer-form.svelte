@@ -90,44 +90,53 @@ let recipient = derived(toChain, $toChain => {
   }
 })
 
-let ucs01Configuration = derived([fromChain, toChainId, recipient], ([$fromChain, $toChainId, $recipient]) => {
-  if ($fromChain === null || $toChainId === null || $recipient === null ) return null;
+let ucs01Configuration = derived(
+  [fromChain, toChainId, recipient],
+  ([$fromChain, $toChainId, $recipient]) => {
+    if ($fromChain === null || $toChainId === null || $recipient === null) return null
 
-  let ucs1_configuration = $toChainId in $fromChain.ucs1_configurations ? $fromChain.ucs1_configurations[$toChainId] : null
-  
-  let pfmMemo: string | null = null
-  let hopChainId: string | null = null;
+    let ucs1_configuration =
+      $toChainId in $fromChain.ucs1_configurations
+        ? $fromChain.ucs1_configurations[$toChainId]
+        : null
 
-  if (ucs1_configuration !== null) {
-    // non-pfm transfer
-    return { ucs1_configuration, hopChainId, pfmMemo };
-  }
+    let pfmMemo: string | null = null
+    let hopChainId: string | null = null
 
-  // try finding pfm path
-  for (const chain of chains) {
-    let [foundHopChainId, ucs1Config] = Object.entries(chain.ucs1_configurations).find(([foundHopChainId, config]) => config.forward[$toChainId] !== undefined) ?? []
-    if (foundHopChainId !== undefined && ucs1Config !== undefined) {
-      hopChainId = foundHopChainId;
-      ucs1_configuration = $fromChain.ucs1_configurations[hopChainId];
-      let forwardConfig = ucs1_configuration.forward[$toChainId];
-      pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient.slice(2));
-      break;
+    if (ucs1_configuration !== null) {
+      // non-pfm transfer
+      return { ucs1_configuration, hopChainId, pfmMemo }
     }
+
+    // try finding pfm path
+    for (const chain of chains) {
+      let [foundHopChainId, ucs1Config] =
+        Object.entries(chain.ucs1_configurations).find(
+          ([foundHopChainId, config]) => config.forward[$toChainId] !== undefined
+        ) ?? []
+      if (foundHopChainId !== undefined && ucs1Config !== undefined) {
+        hopChainId = foundHopChainId
+        ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
+        let forwardConfig = ucs1_configuration.forward[$toChainId]
+        pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient.slice(2))
+        break
+      }
+    }
+
+    if (pfmMemo === null || hopChainId === null || ucs1_configuration === null) {
+      return null
+    }
+
+    return { ucs1_configuration, hopChainId, pfmMemo }
   }
+)
 
-  if (pfmMemo === null || hopChainId === null || ucs1_configuration === null) {
-    return null;
-  }
+let hopChain = derived(ucs01Configuration, $ucs01Configuration => {
+  if ($ucs01Configuration === null) return null
+  if ($ucs01Configuration.hopChainId === null) return null
 
-  return { ucs1_configuration, hopChainId, pfmMemo };
-});
-
-let hopChain = derived(ucs01Configuration, ($ucs01Configuration) => {
-  if ($ucs01Configuration === null) return null;
-  if ($ucs01Configuration.hopChainId  === null) return null;
-
-  return chains.find((c) => c.chain_id === $ucs01Configuration.hopChainId) ?? null
-});
+  return chains.find(c => c.chain_id === $ucs01Configuration.hopChainId) ?? null
+})
 
 const generatePfmMemo = (channel: string, port: string, receiver: string): string => {
   return JSON.stringify({
@@ -148,10 +157,12 @@ const transfer = async () => {
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
   if (!$recipient) return toast.error("Invalid recipient")
-  if (!$ucs01Configuration) return toast.error(`No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`)
+  if (!$ucs01Configuration)
+    return toast.error(
+      `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
+    )
 
-  let {ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration;
-
+  let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
 
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
@@ -375,7 +386,6 @@ let buttonText = "Transfer" satisfies
   <div class="text-muted-foreground">
     Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>{#if $hopChain}&nbsp;by forwarding through <b>{$hopChain.display_name}</b>{/if}. 
   </div>
-  <pre>{JSON.stringify($ucs01Configuration, null, 2)}</pre>
 
 
   

@@ -9,7 +9,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import { truncate } from "$lib/utilities/format"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-    import { derived } from "svelte/store";
+import { derived } from "svelte/store"
 
 const source = $page.params.source
 
@@ -24,37 +24,38 @@ let transfers = createQuery({
     ).v0_transfers
 })
 
-
-let processedTransfers = derived(transfers, ($transfers) => {
+let processedTransfers = derived(transfers, $transfers => {
   if (!$transfers.isSuccess) {
-    return null;
+    return null
   }
-  return $transfers.data.map((transfer) => {
-    let tx = structuredClone(transfer);
+  return $transfers.data.map(transfer => {
+    let tx = structuredClone(transfer)
 
-
-    let hop_chain = null;
-    let hop_chain_id = null;
+    let hop_chain = null
+    let hop_chain_id = null
     if (tx.hop !== null) {
-      hop_chain = tx.destination_chain;
-      hop_chain_id = tx.destination_chain_id;
-      
-      tx.destination_chain = tx.hop.destination_chain;
-      tx.destination_chain_id = tx.hop.destination_chain_id;
-      tx.receiver = tx.hop.receiver;
-      tx.normalized_receiver = tx.hop.normalized_receiver;
-      tx.traces.push.apply(tx.traces, tx.hop.traces);
-      // @ts-ignore timestamp is guarnateed to be a date
-      tx.traces.sort((a, b) => (new Date(a.timestamp)).getTime() - (new Date(b.timestamp)).getTime());
+      hop_chain = tx.destination_chain
+      hop_chain_id = tx.destination_chain_id
+
+      tx.destination_chain = tx.hop.destination_chain
+      tx.destination_chain_id = tx.hop.destination_chain_id
+      tx.receiver = tx.hop.receiver
+      tx.normalized_receiver = tx.hop.normalized_receiver
+      tx.traces.push.apply(tx.traces, tx.hop.traces)
+      tx.traces.sort((a, b) => {
+        // @ts-ignore timestamp is guaranteed to be a date
+        // biome-ignore lint/nursery/useDateNow: this is a biome bug
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      })
     }
 
     return {
       hop_chain,
       hop_chain_id,
       ...tx
-    };
+    }
   })
-});
+})
 </script>
 
 <!--
