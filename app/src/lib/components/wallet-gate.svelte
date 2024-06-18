@@ -6,7 +6,6 @@ import { derived, type Readable } from "svelte/store"
 import type { UserAddresses } from "$lib/types"
 import type { Address } from "viem"
 
-export let defaultText = false
 let userAddr: Readable<UserAddresses | null> = derived(
   [cosmosStore, sepoliaStore],
   ([$cosmosStore, $sepoliaStore]) => {
@@ -56,13 +55,11 @@ let confirmedUserAddr: Readable<UserAddresses> = derived(userAddr, $userAddr => 
 </script>
 
 {#if $userAddr}
-  <slot userAddr={$confirmedUserAddr}></slot>
+  <slot userAddr={$confirmedUserAddr} />
 {:else}
-  {#if defaultText}
+  <slot name="disconnected">
     <span>Connect your wallets to continue</span>
-  {:else}
-    <slot name="disconnected"></slot>
-  {/if}
+  </slot>
 {/if}
 
 
