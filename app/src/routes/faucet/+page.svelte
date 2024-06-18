@@ -98,7 +98,7 @@ const handleSubmit = () => {
   <main class="flex flex-col gap-6 items-center max-h-full px-4 py-8">
     <Card.Root class="w-full max-w-lg">
       <Card.Header>
-        <Card.Title>Faucet</Card.Title>
+        <Card.Title>UNO Faucet</Card.Title>
       </Card.Header>
       <Card.Content>
         <form class="space-y-8" on:submit|preventDefault={handleSubmit}>
