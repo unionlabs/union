@@ -3,6 +3,7 @@ import { graphql } from "gql.tada"
 export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cached(ttl: 30) {
   v0_chains(where: {enabled: {_eq: true}}, order_by: {display_name: asc}) {
     display_name
+    testnet
     chain_id
     enabled
     id
@@ -29,6 +30,7 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
     assets {
       denom
       display_symbol
+      display_name
       decimals
       faucets {
         url
