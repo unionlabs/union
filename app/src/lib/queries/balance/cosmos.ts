@@ -35,7 +35,7 @@ export async function getCosmosChainBalances({
   return result.output.balances.map(x => ({
     address: x.denom,
     symbol: x.denom,
-    balance: x.amount,
+    balance: BigInt(x.amount),
     decimals: 0
   }))
 }
