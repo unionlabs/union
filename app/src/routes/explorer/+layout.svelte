@@ -25,7 +25,6 @@ let leftPane: Resizable.PaneAPI
 $: [leftSize, rightSize] = [14, 88]
 
 onMount(() => {
-  isCollapsed = windowSize?.width < 900
   window.addEventListener("resize", handleResize)
   return () => {
     window.removeEventListener("resize", handleResize)

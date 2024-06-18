@@ -26,7 +26,7 @@ let buttons = [
   class={cn(
     'overflow-hidden fixed left-0 bottom-0 right-0 w-screen h-16 uppercase font-supermolot font-bold text-xl',
     'border-t bg-card',
-    'grid lg:hidden grid-cols-5 place-content-center items-center',
+    'grid md:hidden grid-cols-5 place-content-center items-center',
     // styling children
   )}
 >

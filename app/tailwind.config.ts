@@ -110,6 +110,10 @@ export default (<Config>{
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)"
       }),
+      screens: _ => ({
+        xs: "480px",
+        tiny: "380px"
+      }),
       margin: _ => ({
         "0.25": "0.0625rem",
         "0.75": "0.1875rem",

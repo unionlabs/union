@@ -10,7 +10,7 @@ $: appStatus = Number.isSafeInteger(Number(blockHeight)) ? "online" : "offline"
 </script>
 
 <Tooltip.Root>
-  <Tooltip.Trigger let:builder class="backdrop-blur-sm ml-0.25 mb-16 lg:mb-0.5 my-a fixed bottom-0 z-50 w-18">
+  <Tooltip.Trigger let:builder class="backdrop-blur-sm ml-1 mb-16 md:mb-1 my-a fixed bottom-0 z-50 w-18">
     <Button
       variant="outline"
       builders={[builder]}
