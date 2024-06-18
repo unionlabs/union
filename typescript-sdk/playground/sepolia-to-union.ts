@@ -62,6 +62,19 @@ try {
     }
   })
 
+  const gasCostResponse = await client.simulateTransaction({
+    amount: 1n,
+    sourceChannel: channel_id,
+    network: sepoliaInfo.rpc_type,
+    relayContractAddress: contract_address,
+    // or `client.cosmos.account.address` if you want to send to yourself
+    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
+    path: [source_chain.chain_id, destination_chain.chain_id]
+  })
+
+  console.info("Sepolia to Union gas cost:", gasCostResponse)
+
   const transfer = await client.transferAsset({
     amount: 1n,
     sourceChannel: channel_id,

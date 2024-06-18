@@ -27,9 +27,9 @@ import {
 import { sepolia } from "viem/chains"
 import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/off-chain.ts"
-import { transferAssetFromEvm } from "./transfer/evm.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
+import { transferAssetFromEvm, transferAssetFromEvmSimulate } from "./transfer/evm.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
 export {
@@ -305,7 +305,19 @@ export function createUnionClient({
         const [sourceChainId, destinationChainId] = path
 
         if (network === "evm") {
-          return { success: false, data: "WIP" }
+          if (!sourceChannel) return { success: false, data: "Source channel not found" }
+          if (!relayContractAddress) {
+            return { success: false, data: "Relay contract address not found" }
+          }
+          evmSigner ||= client.account
+          return await transferAssetFromEvmSimulate(client, {
+            amount,
+            recipient,
+            sourceChannel,
+            account: evmSigner,
+            denomAddress: getAddress(denomAddress),
+            relayContractAddress: getAddress(relayContractAddress)
+          })
         }
 
         const cosmosRpcUrl = cosmosRpcTransport.at(0)?.rpcUrl
