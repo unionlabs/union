@@ -1,8 +1,6 @@
 <script lang="ts">
 import type { Chain } from "$lib/types"
-import { Button } from "$lib/components/ui/button"
 import ExternalLinkIcon from "virtual:icons/lucide/external-link"
-import { Badge } from "$lib/components/ui/badge/index.ts"
 
 export let chains: Array<Chain>
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -13,7 +11,7 @@ let chainsWithFaucets = chains.filter(
 
 let filterAndOrderAssets = (assets: Chain["assets"]): Chain["assets"] => {
   const filtered = assets.filter(asset => asset.faucets.length > 0)
-  filtered.sort((a, b) => (a.denom === "native" ? -1 : 1))
+  filtered.sort((a, _) => (a.denom === "native" ? -1 : 1))
 
   filtered.map(asset => {
     let a = asset
