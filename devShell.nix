@@ -29,6 +29,7 @@
 
               echo "Checking spelling"
               nix build .\#checks.${pkgs.system}.spellcheck -L
+              nix build .\#checks.${pkgs.system}.biome-lint -L
             '';
           };
         };
