@@ -80,6 +80,20 @@ jobs:
         with:
           name: ${{ matrix.package }}-${{ matrix.system }}
           path: ${{ matrix.package }}-${{ matrix.system }}
+      - uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.UNION_RELEASES_PAT }}
+          repo: unionlabs/union-releases
+          event-type: public-release
+          client-payload: |-
+            {
+              "run-id": ${{ github.run_id }},
+              "name": "v0.24.0"
+              "release-artifacts": [
+                "uniond-release-aarch64-linux",
+                "uniond-release-x86_64-linux"
+              ]
+            }
 
   docker-manifest:
     runs-on: ubuntu-latest
