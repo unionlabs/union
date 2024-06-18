@@ -1,4 +1,6 @@
-use backon::{ExponentialBuilder, Retryable};
+use std::time::Duration;
+
+use backon::{ConstantBuilder, ExponentialBuilder, Retryable};
 use color_eyre::{eyre::eyre, Result};
 use tracing::{debug, info};
 
@@ -49,7 +51,11 @@ impl Querier for Beacon {
         let client = &self.client;
         debug!("fetching execution height for block: {}", height);
         let val: serde_json::Value = (|| client.clone().get(&url).send())
-            .retry(&ExponentialBuilder::default())
+            .retry(
+                &ConstantBuilder::default()
+                    .with_delay(Duration::from_millis(500))
+                    .with_max_times(90),
+            )
             .await?
             .json()
             .await?;

@@ -1,5 +1,4 @@
 use color_eyre::Result;
-use futures::{stream::FuturesOrdered, TryStreamExt};
 use tracing::{debug, info};
 
 use crate::postgres::ChainId;
@@ -24,36 +23,25 @@ impl<T: Querier + Send + Sync> Indexer<T> {
     }
 
     pub async fn index(&self) -> Result<()> {
-        loop {
-            info!("fixing next batch of unmapped_execution_heights");
+        let begin = crate::postgres::get_max_consensus_height(&self.pool, self.chain_id).await?;
+
+        for consensus_height in begin + 1..i64::MAX {
+            info!("mapping consensus height {consensus_height}");
+
             debug!("getting unmapped consensus heights");
-            let consensus_heights =
-                crate::postgres::get_batch_of_unmapped_execution_heights(&self.pool, self.chain_id)
-                    .await?;
+            let height = self.querier.get_execution_height(consensus_height).await?;
 
-            if consensus_heights.is_empty() {
-                debug!("no unmapped heights found, sleeping");
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                continue;
-            }
+            debug!("got execution height {height} for consensus height {consensus_height}");
 
-            let futures = FuturesOrdered::from_iter(
-                consensus_heights
-                    .iter()
-                    .map(|height| self.querier.get_execution_height(*height)),
-            );
-
-            debug!("getting execution heights");
-            let execution_heights: Vec<i64> = futures.try_collect().await?;
-
-            debug!("inserting execution heights");
+            debug!("inserting execution height");
             crate::postgres::insert_mapped_execution_heights(
                 &self.pool,
-                execution_heights,
-                consensus_heights,
+                vec![height],
+                vec![consensus_height],
                 self.chain_id,
             )
             .await?;
         }
+        unreachable!("indexing consensus heights should never end")
     }
 }
