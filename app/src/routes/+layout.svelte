@@ -12,7 +12,6 @@ import { notifyManager } from "@tanstack/svelte-query"
 import { createQueryClient } from "$lib/query-client.ts"
 import Header from "$lib/components/header/header.svelte"
 import LoadingBar from "$lib/components/loading-bar.svelte"
-import OnlineStatus from "$lib/components/online-status.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
@@ -87,5 +86,6 @@ onMount(() => {
     initialIsOpen={false}
     buttonPosition="bottom-right"
   />
-  <OnlineStatus />
+  <!-- will be enabled once powered by index status !-->
+  <!-- <OnlineStatus /> !-->
 </PersistQueryClientProvider>
