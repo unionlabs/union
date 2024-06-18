@@ -90,7 +90,7 @@ jobs:
           elif [[ ${{ matrix.package}} =~ bundle-testnet-8 ]]
           then
             ls -la
-            tar -zcf ${{ matrix.system }}.${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
+            tar -zcf ${{ matrix.package }}-${{ matrix.system }} ${{ matrix.system }}.${{ matrix.package }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
