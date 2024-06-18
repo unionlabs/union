@@ -1,3 +1,4 @@
+import { raise } from "#utilities/index.ts"
 import { expect, it, describe } from "vitest"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
@@ -5,29 +6,16 @@ import { bech32AddressToHex, hexAddressToBech32, hexStringToUint8Array } from "#
 
 const PRIVATE_KEY = "1bdd5c2105f62c51d72c90d9e5ca6854a94337bcbcbb0b959846b85813d69380"
 
-const evmAccount = "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
-const { address: evmAddress, publicKey: evmPublicKey } = privateKeyToAccount(`0x${PRIVATE_KEY}`)
+const { address: evmAddress } = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
-const [unionAccount] = await cosmosAccount.getAccounts()
-console.info({
-  // cosmos: unionAccount?.address,
-  cosmos: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-  cosmosToEvm: bech32AddressToHex({ address: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv" }),
-  // evm: evmAddress,
-  evm: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-  evmToCosmos: hexAddressToBech32({
-    address: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-    bech32Prefix: "union"
-  })
-})
 
-if (!unionAccount) throw new Error("No account found")
-const cosmosAddress = "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
-const { address: unionAddress, pubkey: unionPublicKey } = unionAccount
+const [unionAccount] = await cosmosAccount.getAccounts()
+if (!unionAccount) raise("Account not found")
+const { address: unionAddress } = unionAccount
 
 describe("union to evm address converter", () => {
   it("should convert union address to evm address", () => {

@@ -27,7 +27,7 @@
     "@cosmjs/tendermint-rpc": "0.32.3",
     "ofetch": "^1.3.4",
     "valibot": "^0.32.0",
-    "viem": "^2.14.2"
+    "viem": "^2.15.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
@@ -35,7 +35,7 @@
     "@scure/base": "^1.1.7",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.4",
-    "@types/node": "^20.14.2",
+    "@types/node": "^20.14.4",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.12.4",

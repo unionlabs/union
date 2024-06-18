@@ -71,7 +71,7 @@ try {
 
   console.info("Union to Sepolia gas cost:", gasEstimationResponse)
 
-  if(!gasEstimationResponse.success) {
+  if (!gasEstimationResponse.success) {
     console.info("Transaction simulation failed")
     process.exit(1)
   }
