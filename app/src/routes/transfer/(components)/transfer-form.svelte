@@ -5,8 +5,9 @@ import { sepolia } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { sleep } from "$lib/utilities/index.ts"
 import { getWalletClient } from "@wagmi/core"
-import { writable, derived } from "svelte/store"
+import { type Writable, writable, derived } from "svelte/store"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -24,6 +25,7 @@ import { page } from "$app/stores"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
+
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
@@ -38,11 +40,17 @@ let fromChainId = writable("union-testnet-8")
 let toChainId = writable("11155111")
 let assetSymbol = writable("")
 
+type TransferStates = "PRE_TRANSFER" | "ADDING_CHAIN" | "SWITCHING_TO_CHAIN" | "APPROVING_ASSET" | "SIMULATING_TRANSFER" | "CONFIRMING_TRANSFER" | "TRANSFERING";
+
+let transferState: Writable<TransferStates> = writable("PRE_TRANSFER");
+
 let amount = ""
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 $: {
   amount = amount.replaceAll(amountRegex, "")
 }
+
+const REDIRECT_DELAY_MS = 5000;
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
@@ -186,8 +194,12 @@ const transfer = async () => {
       rpcUrl: `https://${rpcUrl}`
     })
 
+    transferState.set("CONFIRMING_TRANSFER");
+    toast.info("Confirming transfer")
+
+    let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0];
     if (ucs1_configuration.contract_address === "ics20") {
-      const osmoFromOsmosisToUnion = await cosmosClient.transferAssets({
+      transferAssetsMessage = {
         kind: "ibc",
         messageTransfers: [
           {
@@ -200,12 +212,9 @@ const transfer = async () => {
             timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
           }
         ]
-      })
-      console.log(osmoFromOsmosisToUnion)
+      }
     } else {
-      const evmClient = await getWalletClient(config)
-
-      const transferHash = await cosmosClient.transferAssets({
+      transferAssetsMessage = {
         kind: "cosmwasm",
         instructions: [
           {
@@ -220,11 +229,19 @@ const transfer = async () => {
             funds: [{ denom: $assetSymbol, amount }]
           }
         ]
-      })
-      console.log(transferHash)
-      goto(`/explorer/transfers/${transferHash.transactionHash}`)
+      }
     }
+
+
+    const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage);
+    transferState.set("TRANSFERING");
+    toast.info("Transferring assets")
+    await sleep(REDIRECT_DELAY_MS);
+    goto(`/explorer/transfers/${cosmosTransfer.transactionHash}`)
+    
   } else if ($fromChain.rpc_type === "evm") {
+    transferState.set("ADDING_CHAIN");
+  
     const rpcUrls = $fromChain.rpcs.filter(c => c.type === "rpc").map(c => `https://${c.url}`)
 
     if (rpcUrls.length === 0) return toast.error(`No RPC url for ${$fromChain.display_name}`)
@@ -265,11 +282,13 @@ const transfer = async () => {
     toast.info(`Adding chain ${$fromChain.display_name} to your wallet`)
     await walletClient.addChain({ chain })
 
+    transferState.set("SWITCHING_TO_CHAIN");
     toast.info(`Switching wallet to chain ${$fromChain.display_name}`)
     await walletClient.switchChain({ id: chain.id })
 
     const ucs01address = ucs1_configuration.contract_address as Address
 
+    transferState.set("APPROVING_ASSET");
     toast.info("submitting approval")
     const approveContractSimulation = await walletClient.writeContract({
       account: userAddr.evm.canonical,
@@ -281,6 +300,7 @@ const transfer = async () => {
 
     toast.info("Submitting approval")
 
+    transferState.set("SIMULATING_TRANSFER");
     toast.info("Simulating UCS01 contract call")
     const { request } = await publicClient.simulateContract({
       abi: ucs01abi,
@@ -297,8 +317,13 @@ const transfer = async () => {
       ]
     })
 
+    transferState.set("CONFIRMING_TRANSFER");
     toast.info("Submitting UCS01 contract call")
     const hash = await walletClient.writeContract(request)
+
+    transferState.set("TRANSFERING");
+    toast.info("Transferring assets")
+    await sleep(REDIRECT_DELAY_MS);
     goto(`/explorer/transfers/${hash}`)
   } else {
     console.error("invalid rpc type")
@@ -345,6 +370,8 @@ $: buttonText =
     : "select asset and enter amount"
 </script>
 
+
+{#if $transferState === "PRE_TRANSFER"}
 <Card.Root>
   <Card.Header>
     <Card.Title>Transfers</Card.Title>
@@ -434,6 +461,13 @@ $: buttonText =
   </div>
 </Card.Footer>
 </Card.Root>
+{:else}
+    <pre>{$transferState}</pre>
+{/if}
+
+
+
+
 <ChainDialog
   kind="from"
   {chains}
