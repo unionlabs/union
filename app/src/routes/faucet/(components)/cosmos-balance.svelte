@@ -1,12 +1,11 @@
 <script lang="ts">
 import type { Chain, UserAddresses } from "$lib/types.ts"
-import { userBalancesQuery } from "$lib/queries/balance.ts"
-import type { ChainId } from "$lib/constants/assets.ts"
+import { userBalancesQuery } from "$lib/queries/balance"
 import { truncate } from "$lib/utilities/format.ts"
 
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
-export let chainId: ChainId
+export let chainId: string
 export let symbol: boolean
 
 let cosmosBalances = userBalancesQuery({

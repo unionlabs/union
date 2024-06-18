@@ -1,13 +1,12 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { writable } from "svelte/store"
 import { toast } from "svelte-sonner"
 import { sepolia } from "viem/chains"
+import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { getWalletClient } from "@wagmi/core"
-import Chevron from "./chevron.svelte"
-import { erc20Abi, createWalletClient, createPublicClient, isAddress, http, custom } from "viem"
+import { writable, derived } from "svelte/store"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -17,18 +16,18 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
-import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import CardSectionHeading from "./card-section-heading.svelte"
 import { config } from "$lib/wallet/evm/config.ts"
-import { userBalancesQuery } from "$lib/queries/balance"
-import { derived } from "svelte/store"
 import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
-import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import type { Chain, UserAddresses } from "$lib/types.ts"
+import { userBalancesQuery } from "$lib/queries/balance"
+import { page } from "$app/stores"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
-import { page } from "$app/stores"
+import { ucs01abi } from "$lib/abi/ucs-01.ts"
+import type { Chain, UserAddresses } from "$lib/types.ts"
+import CardSectionHeading from "./card-section-heading.svelte"
+import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
+import { erc20Abi, createWalletClient, createPublicClient, http, custom } from "viem"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -48,8 +47,6 @@ $: {
 let dialogOpenToken = false
 let dialogOpenToChain = false
 let dialogOpenFromChain = false
-
-let unionClient: UnionClient
 
 let toChain = derived(
   toChainId,
@@ -308,93 +305,109 @@ function swapChainsClick(_event: MouseEvent) {
   fromChainId.set(toChain)
 }
 
-let buttonText = "Transfer" satisfies
-  | "Transfer"
-  | "Invalid amount"
-  | "Connect Wallet"
-  | "Enter an amount"
-  | "Insufficient balance"
+$: buttonText =
+  $asset && amount
+    ? BigInt(amount) < BigInt($asset.balance)
+      ? "transfer"
+      : "insufficient balance"
+    : "select asset and enter amount"
 </script>
 
-<Card.Content class={cn("flex flex-col gap-4")}>
-<section>
-  <CardSectionHeading>From</CardSectionHeading>
-  <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain} >
-    {$fromChain?.display_name}
-  </ChainButton>
+<Card.Content class={cn('flex flex-col gap-4')}>
+  <section>
+    <CardSectionHeading>From</CardSectionHeading>
+    <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
+      {$fromChain?.display_name}
+    </ChainButton>
 
+    <div class="flex flex-col items-center pt-4 -mb-6">
+      <Button size="icon" variant="outline" on:click={swapChainsClick}>
+        <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
+      </Button>
+    </div>
 
-  <div class="flex flex-col items-center pt-4 -mb-6">
-    <Button size="icon" variant="outline" on:click={swapChainsClick}>
-      <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
-    </Button>
-  </div>
+    <CardSectionHeading>To</CardSectionHeading>
+    <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
+      {$toChain?.display_name}
+    </ChainButton>
+  </section>
+  <section>
+    <CardSectionHeading>Asset</CardSectionHeading>
+    {#if $sendableBalances === null}
+      Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+    {:else if $sendableBalances.length === 0}
+      You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
+    {:else}
+      <Button
+        class="size-full"
+        variant="outline"
+        on:click={() => (dialogOpenToken = !dialogOpenToken)}
+      >
+        <div class="flex-1 text-left">{truncate($assetSymbol, 12)}</div>
 
-  <CardSectionHeading>To</CardSectionHeading>
-  <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
-    {$toChain?.display_name}
-  </ChainButton>
-</section>
-<section>
-  <CardSectionHeading>Asset</CardSectionHeading>
-  {#if $sendableBalances === null}
-    Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-  {:else if $sendableBalances.length === 0}
-    You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
-  {:else}
-  <Button class="size-full" variant="outline" on:click={() => (dialogOpenToken = !dialogOpenToken)}>
-    <div class="flex-1 text-left">{truncate($assetSymbol, 12)}</div>
+        <Chevron />
+      </Button>
+    {/if}
+    {#if $assetSymbol !== '' && $sendableBalances !== null}
+      <div class="mt-4 text-xs text-muted-foreground">
+        <b>{truncate($assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
+        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>
+      </div>
+    {/if}
+  </section>
 
-    <Chevron />
-  </Button>
-  {/if}
-  {#if $assetSymbol !== "" && $sendableBalances !== null }
-    <div class="mt-4 text-xs text-muted-foreground"><b>{truncate($assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b></div>
-  {/if}
-</section>
-
-<section>
-  <CardSectionHeading>Amount</CardSectionHeading>
-  <Input
-    minlength={1}
-    maxlength={64}
-    placeholder="0.00"
-    autocorrect="off"
-    autocomplete="off"
-    spellcheck="false"
-    bind:value={amount}
-    autocapitalize="none"
-    pattern="^[0-9]*[.,]?[0-9]*$"
-  />
-</section>
-<section>
-  <CardSectionHeading>Recipient</CardSectionHeading>
-  <div class="text-muted-foreground font-mono">{$recipient}</div>
-</section>
+  <section>
+    <CardSectionHeading>Amount</CardSectionHeading>
+    <Input
+      minlength={1}
+      maxlength={64}
+      placeholder="0.00"
+      autocorrect="off"
+      autocomplete="off"
+      spellcheck="false"
+      bind:value={amount}
+      autocapitalize="none"
+      pattern="^[0-9]*[.,]?[0-9]*$"
+    />
+  </section>
+  <section>
+    <CardSectionHeading>Recipient</CardSectionHeading>
+    <div class="text-muted-foreground font-mono">{$recipient}</div>
+  </section>
 </Card.Content>
 <Card.Footer class="flex flex-col gap-4 items-start">
   <Button
     type="button"
-    disabled={!$fromChainId || !$assetSymbol || !$toChainId || !amount || !$recipient}
-    on:click={async (event) => {
+    disabled={!amount ||
+      !$asset ||
+      !$toChainId ||
+      !$recipient ||
+      !$assetSymbol ||
+      !$fromChainId ||
+      // >= because need some sauce for gas
+      BigInt(amount) >= BigInt($asset.balance)}
+    on:click={async event => {
       event.preventDefault()
-      transfer();
-      }}
+      transfer()
+    }}
   >
     {buttonText}
   </Button>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>{#if $hopChain}&nbsp;by forwarding through <b>{$hopChain.display_name}</b>{/if}. 
+    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b>
+    to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on
+    <b>{$toChain?.display_name}</b>{#if $hopChain}&nbsp;by forwarding through <b>
+        {$hopChain.display_name}
+      </b>{/if}.
   </div>
-
-
-  
 </Card.Footer>
 <ChainDialog
   kind="from"
   {chains}
   selectedChain={$fromChainId}
-  onChainSelect={(newSelectedChain) => {fromChainId.set(newSelectedChain)}}
+  onChainSelect={newSelectedChain => {
+    fromChainId.set(newSelectedChain)
+  }}
   bind:dialogOpen={dialogOpenFromChain}
 />
 
@@ -402,15 +415,18 @@ let buttonText = "Transfer" satisfies
   kind="to"
   {chains}
   selectedChain={$toChainId}
-  onChainSelect={(newSelectedChain) => {toChainId.set(newSelectedChain)}}
+  onChainSelect={newSelectedChain => {
+    toChainId.set(newSelectedChain)
+  }}
   bind:dialogOpen={dialogOpenToChain}
 />
 
 {#if $sendableBalances !== null}
   <AssetsDialog
     assets={$sendableBalances}
-    onAssetSelect={(newSelectedAsset) => {assetSymbol.set(newSelectedAsset)}}
+    onAssetSelect={newSelectedAsset => {
+      assetSymbol.set(newSelectedAsset)
+    }}
     bind:dialogOpen={dialogOpenToken}
   />
 {/if}
-
