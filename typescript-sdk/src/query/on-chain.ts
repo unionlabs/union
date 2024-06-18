@@ -9,13 +9,13 @@ const queryHeaders = new Headers({
   "User-Agent": "typescript-sdk"
 })
 
-export async function getCosmosSdkChainHeight({ rpcUrl }: { rpcUrl: string }) {
+export async function getCosmosHeight({ rpcUrl }: { rpcUrl: string }) {
   const response = await fetch(`${rpcUrl}/header`)
   const json = (await response.json()) as { result: { header: { height: string } } }
   return Number.parseInt(json.result.header.height)
 }
 
-export async function getCosmosSdkChainTransactionReceipt(params: {
+export async function getCosmosTransactionReceipt(params: {
   hash: string
   rpcUrl: string
 }) {
@@ -25,7 +25,7 @@ export async function getCosmosSdkChainTransactionReceipt(params: {
   })
 }
 
-export async function getCosmosSdkAccountTransactions({
+export async function getCosmosAccountTransactions({
   address,
   rpcUrl
 }: { address: string } & rpcUrlArgument) {
@@ -38,5 +38,9 @@ export async function getCosmosSdkAccountTransactions({
       query: `transfer.recipient='${address}'`
     })
   ])
-  return { sent, received }
+  return {
+    sent,
+    received,
+    total: sent.totalCount + received.totalCount
+  }
 }

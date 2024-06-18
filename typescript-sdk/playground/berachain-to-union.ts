@@ -5,8 +5,8 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
+import { berachainTestnetbArtio } from "viem/chains"
 import { createUnionClient, offchainQuery } from "#mod.ts"
-import { berachainTestnetV2 } from "#constants/berachain.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
@@ -50,7 +50,7 @@ try {
   const client = createUnionClient({
     evm: {
       account: berachainAccount,
-      chain: berachainTestnetV2,
+      chain: berachainTestnetbArtio,
       transport: http(
         "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
       )
