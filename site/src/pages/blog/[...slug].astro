@@ -28,7 +28,7 @@ const { Content } = await entry.render()
   <LanderSection gradient="to-t">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <div class="text-lg">
-        <time class="text-lg text-gray-400"  datetime={entry.data.date.toISOString()}>
+        <time class="text-lg text-gray-400" datetime={entry.data.date.toISOString()}>
           {
             entry.data.date.toLocaleDateString('fr-CA', {
               year: 'numeric',
@@ -44,7 +44,7 @@ const { Content } = await entry.render()
 
       <Content />
     </div>
-    </LanderSection>
+  </LanderSection>
   <SocialsSection />
 </Layout>
 
@@ -61,7 +61,7 @@ const { Content } = await entry.render()
     border-radius: 8px !important;
   }
 
-  p > a {
+  p > a, ul a:not(header a), ol a:not(header a) {
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
     transition: border-bottom-color 0.2s ease-in-out;
