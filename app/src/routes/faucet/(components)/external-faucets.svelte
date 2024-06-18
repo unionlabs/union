@@ -1,12 +1,19 @@
 <script lang="ts">
   import type { Chain } from "$lib/types";
   import { Button } from '$lib/components/ui/button';
-import ExternalLinkIcon from "virtual:icons/lucide/external-link"
+  import ExternalLinkIcon from "virtual:icons/lucide/external-link"
+import { Badge } from "$lib/components/ui/badge/index.ts"
 
   export let chains: Chain[];
   import * as Card from "$lib/components/ui/card/index.ts"
 
   let chainsWithFaucets = chains.filter(chain => chain.assets.filter(asset => asset.faucets.length > 0).length > 0);
+
+  let filterAndOrderAssets = (assets: Array<Chain["assets"]>): Array<Chain["assets"]> => {
+    const filtered = assets.filter(asset => asset.faucets.length > 0);
+    filtered.sort((a, b) => a.denom === "native" ? -1 : 1);
+    return filtered;
+  };
 </script>
 
 {#each chainsWithFaucets as chain}
@@ -16,11 +23,14 @@ import ExternalLinkIcon from "virtual:icons/lucide/external-link"
         <p class="text-sm">Faucets on {chain.display_name} are provided by third parties and listed here for your convenience.</p>
       </Card.Header>
       <Card.Content class="flex flex-col gap-4">
-      {#each chain.assets.filter(asset => asset.faucets.length > 0) as assetWithFaucet}
+      {#each filterAndOrderAssets(chain.assets) as assetWithFaucet}
         <section>
-          <h3 class="font-supermolot font-bold text-lg">{assetWithFaucet.display_symbol}</h3>
+          <div class="flex items-center gap-2">
+          <h3 class="font-supermolot font-bold text-xl">{assetWithFaucet.display_symbol}</h3>
+          {#if assetWithFaucet.denom === "native"}<div class="uppercase font-supermolot font-semibold font-condensed text-xs px-2 rounded-full bg-primary text-primary-foreground">gas token</div>{/if}
+          </div>
           <ul>
-            {#each assetWithFaucet.faucets as faucet, index}
+            {#each assetWithFaucet.faucets as faucet}
               <li>
                 <a
                   class="flex items-center gap-x-2  hover:underline"
@@ -28,7 +38,7 @@ import ExternalLinkIcon from "virtual:icons/lucide/external-link"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  {index + 1}: {faucet.display_name}
+                  {faucet.display_name}
                   <ExternalLinkIcon class="size-4" />
                 </a>
               </li>
