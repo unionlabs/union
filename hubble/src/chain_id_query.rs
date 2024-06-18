@@ -47,18 +47,16 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
                 let tm_clients = sqlx::query!(
                     r#"
-                    SELECT
-                        cl.client_id, ch.id
-                    FROM
-                        v0_cosmos.create_client cl
-                    JOIN
-                        v0.chains ch
-                    ON
-                        cl.chain_id = ch.id
-                    WHERE
-                        ch.chain_id = $1
-                    AND
-                        cl.client_id is not NULL
+                    select cc.client_id, ch.id
+                    from v0_cosmos.create_client cc
+                    join v0.chains ch on cc.chain_id = ch.id
+                    left join v0.clients cl on 
+                        cl.chain_id = ch.id and 
+                        cl.client_id = cc.client_id
+                    where
+                        ch.chain_id = $1 and 
+                        cc.client_id is not null 
+                        and cl.chain_id is null
                     "#,
                     chain_id
                 )
@@ -67,9 +65,10 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                 .unwrap();
 
                 for record in tm_clients {
+                    let client_id = record.client_id.unwrap();
                     let client_state = grpc_client
                         .client_state(QueryClientStateRequest {
-                            client_id: record.client_id.clone().unwrap(),
+                            client_id: client_id.clone(),
                         })
                         .await
                         .unwrap()
@@ -107,8 +106,14 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                             let counterparty_chain_id = match client_type.unwrap() {
                                 WasmClientType::EthereumMinimal
                                 | WasmClientType::EthereumMainnet => {
-                                    let cs = unionlabs::ibc::lightclients::ethereum::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
-
+                                    let cs = match unionlabs::ibc::lightclients::ethereum::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
+                                        Err(err) => {
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue;
+                                        }
+                                    };
                                     cs.chain_id().to_string()
                                 }
                                 WasmClientType::Cometbls => {
@@ -137,7 +142,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         Ok(cs) => cs,
                                         // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
                                         Err(err) => {
-                                            warn!("error while decoding client state: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
                                             continue;
                                         }
                                     };
@@ -148,7 +153,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
                             datas.push(Data {
                                 chain_id: record.id,
-                                client_id: record.client_id.clone().unwrap(),
+                                client_id: client_id.clone(),
                                 counterparty_chain_id,
                             })
                         }
@@ -161,7 +166,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
                             datas.push(Data {
                                 chain_id: record.id,
-                                client_id: record.client_id.clone().unwrap(),
+                                client_id: client_id.clone(),
                                 counterparty_chain_id: cs.chain_id,
                             })
                         }
