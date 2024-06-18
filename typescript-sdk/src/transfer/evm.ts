@@ -6,9 +6,9 @@ import {
   publicActions,
   type WalletClient
 } from "viem"
+import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
-import { ucs01RelayAbi } from "../abi/ucs01-relay.ts"
 import type { TransactionResponse } from "../types.ts"
 
 /**

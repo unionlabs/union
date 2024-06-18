@@ -29,7 +29,7 @@ import {
   type ExecuteInstruction
 } from "@cosmjs/cosmwasm-stargate"
 import { raise } from "../utilities/index.ts"
-import { ucs01RelayAbi } from "../abi/ucs01-relay.ts"
+import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { Comet38Client } from "@cosmjs/tendermint-rpc"
 import { hexStringToUint8Array, bech32AddressToHex } from "../convert.ts"
 

@@ -1,2 +1,2 @@
-export * from "./ucs02-nft.ts"
-export * from "./ucs01-relay.ts"
+export * from "./ucs-02.ts"
+export * from "./ucs-01.ts"
