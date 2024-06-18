@@ -33,6 +33,7 @@ export async function getCosmosChainBalances({
 
   if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
   return result.output.balances.map(x => ({
+    denom: x.denom,
     address: x.denom,
     symbol: x.denom,
     balance: BigInt(x.amount),

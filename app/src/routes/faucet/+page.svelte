@@ -134,7 +134,7 @@ const handleSubmit = () => {
                       <ChainsGate let:chains>
                         <WalletGate let:userAddr>
                           <span class="text-muted-foreground">Balance: </span>
-                          <UnoBalance {chains} userAddress={userAddr} />
+                          <UnoBalance {chains} {userAddr} />
                         </WalletGate>
                       </ChainsGate>
                     </p>
