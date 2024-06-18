@@ -82,6 +82,7 @@ jobs:
           path: ${{ matrix.package }}-${{ matrix.system }}
 
   public-release:
+    needs: [dl-bins]
     runs-on: ubuntu-latest
     steps:
       - uses: peter-evans/repository-dispatch@v3
