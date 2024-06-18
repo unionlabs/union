@@ -22,9 +22,8 @@ export default (<Config>{
     matchVariant: true,
     optimizeUniversalDefaults: true
   },
-  dark: "class",
-  safelist: ["dark"],
-  darkMode: ["class"],
+  safelist: ["light"],
+  darkMode: ["variant", "&:not(.light *)"],
   theme: {
     screens: _ => fluidScreens,
     fontSize: _ => fluidFontSize,
@@ -110,6 +109,10 @@ export default (<Config>{
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)"
+      }),
+      screens: _ => ({
+        xs: "480px",
+        tiny: "380px"
       }),
       margin: _ => ({
         "0.25": "0.0625rem",

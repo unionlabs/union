@@ -1,35 +1,31 @@
 <script lang="ts">
 import request from "graphql-request"
-import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
-import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
-import Table from "../(components)/table.svelte"
-import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { removeArrayDuplicates } from "$lib/utilities"
 import { writable } from "svelte/store"
-import CellDurationText from "../(components)/cell-duration-text.svelte"
+import Table from "../(components)/table.svelte"
+import { createQuery } from "@tanstack/svelte-query"
 import CellStatus from "../(components)/cell-status.svelte"
-import { DurationUnits } from "svelte-ux"
+import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
+import CellDurationText from "../(components)/cell-duration-text.svelte"
+import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
 
 $: indexStatus = createQuery({
   queryKey: ["index-status"],
   refetchInterval: 500,
-  queryFn: async () => request(URLS.GRAPHQL, indexStatusQuery, {})
+  queryFn: async () => request(URLS.GRAPHQL, indexStatusQuery, {}),
+  select: data => {
+    const enabledChains = data.chains.flatMap(chain => chain.chain_id)
+    return data.statuses.filter(
+      status => status.chain_id && enabledChains.includes(status.chain_id)
+    )
+  }
 })
 
-$: indexStatusData = $indexStatus?.data?.v0_index_status ?? []
+$: indexStatusData = $indexStatus?.data ?? []
 
 type IndexStatus = (typeof indexStatusData)[number]
 
 $: indexStatusStore = writable<Array<IndexStatus>>(indexStatusData as Array<IndexStatus>)
-$: if (indexStatus) {
-  indexStatusStore.update(currentStatuses =>
-    removeArrayDuplicates(
-      [...(indexStatusData as Array<IndexStatus>), ...currentStatuses],
-      "chain_id"
-    )
-  )
-}
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {

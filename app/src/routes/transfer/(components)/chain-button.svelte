@@ -1,7 +1,6 @@
 <script lang="ts">
-import { Button } from "$lib/components/ui/button/index.ts"
 import Chevron from "./chevron.svelte"
-import type { PageData } from "../$types.ts"
+import { Button } from "$lib/components/ui/button/index.ts"
 
 export let dialogOpen: boolean
 export let selectedChainId: string

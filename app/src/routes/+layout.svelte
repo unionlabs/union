@@ -4,26 +4,20 @@ import "$styles/index.css"
 import { onMount } from "svelte"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
-import { onNavigate } from "$app/navigation"
-import { page, navigating } from "$app/stores"
 import { shortcut } from "@svelte-put/shortcut"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
 import { Toaster } from "$lib/components/ui/sonner"
+import { notifyManager } from "@tanstack/svelte-query"
+import { createQueryClient } from "$lib/query-client.ts"
 import Header from "$lib/components/header/header.svelte"
-import { updateTheme } from "$lib/utilities/update-theme.ts"
-import OnlineStatus from "$lib/components/online-status.svelte"
+import LoadingBar from "$lib/components/loading-bar.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
-import { notifyManager } from "@tanstack/svelte-query"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-import { createQueryClient } from "$lib/graphql/client.ts"
-import LoadingBar from "$lib/components/loading-bar.svelte"
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
-
-$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
 onMount(() => {
   /* fix for iOS Safari viewport zooming on input focus */
@@ -45,8 +39,6 @@ onMount(() => {
   if (window?.keplr) cosmosStore.connect("keplr")
   else if (window?.leap) cosmosStore.connect("leap")
 })
-
-onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
 </script>
 
 <svelte:head>
@@ -94,5 +86,6 @@ onNavigate(navigation => console.info("Navigating to", navigation.to?.route.id))
     initialIsOpen={false}
     buttonPosition="bottom-right"
   />
-  <OnlineStatus />
+  <!-- will be enabled once powered by index status !-->
+  <!-- <OnlineStatus /> !-->
 </PersistQueryClientProvider>

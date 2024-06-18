@@ -1,11 +1,18 @@
 <script lang="ts">
+import { formatUnits } from "viem"
 import { cn } from "$lib/utilities/shadcn.ts"
-import Search from "virtual:icons/lucide/search"
-import * as Dialog from "$lib/components/ui/dialog"
-import type { Asset } from "$lib/constants/assets.js"
-import { Input } from "$lib/components/ui/input/index.js"
-import { Button } from "$lib/components/ui/button/index.js"
 import { truncate } from "$lib/utilities/format"
+import * as Dialog from "$lib/components/ui/dialog"
+import { Button } from "$lib/components/ui/button/index.js"
+
+/**
+ * TODO: format the balance to a readable format - in order to do that properly, need:
+ *  - the balance,
+ *  - the decimals,
+ *  - whether it's evm or cosmos:
+ *    - if evm then `Number(formatUnits(balance, decimals)).toFixed(2)`, - the 2 can be a 4 if you want more precision
+ *    - if cosmos then: TBD
+ */
 
 export let dialogOpen = false
 export let assets: Array<{
@@ -14,6 +21,7 @@ export let assets: Array<{
   decimals: number
   symbol: string
 }>
+
 export let onAssetSelect: (asset: string) => void
 </script>
 
@@ -39,13 +47,14 @@ export let onAssetSelect: (asset: string) => void
           >
             <Button
               variant="ghost"
-              class={cn(
-                'size-full px-4 py-2 w-full text-foreground rounded-none flex ',
-              )}
-              on:click={() => {onAssetSelect(symbol); dialogOpen = false }}
+              class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
+              on:click={() => {
+                onAssetSelect(symbol)
+                dialogOpen = false
+              }}
             >
               <div class="size-full flex flex-col items-start">
-                  {truncate(symbol, 12)}
+                {truncate(symbol, 12)}
               </div>
               <p class="mb-auto text-lg font-black">{balance}</p>
             </Button>

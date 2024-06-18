@@ -1,1 +1,1 @@
-export * from "./ucs01-relay.ts"
+export * from "./ucs-01.ts"

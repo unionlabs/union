@@ -1,10 +1,11 @@
 <script lang="ts">
-import AssetCard from "$lib/components/asset-card.svelte"
-import { userBalancesQuery } from "$lib/queries/balance"
 import type { Chain, UserAddresses } from "$lib/types"
+import { userBalancesQuery } from "$lib/queries/balance"
+import AssetCard from "$lib/components/asset-card.svelte"
+import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
+
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
-import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
 
 let userBalances = userBalancesQuery({
   chains,
@@ -25,15 +26,15 @@ let userBalances = userBalancesQuery({
     {:else if balance.isError}
       <p class="text-red-500">{balance.error}</p>
     {:else if balance.isSuccess}
-    <ScrollArea orientation="horizontal">
-      <div class="flex gap-4 px-6">
-        {#if !(balance.data instanceof Error)}
-          {#each balance.data as asset}
-            <AssetCard {asset} chain={chains[index]} />
-          {/each}
-        {/if}
-      </div>
-    </ScrollArea>
+      <ScrollArea orientation="horizontal">
+        <div class="flex gap-4 px-6">
+          {#if !(balance.data instanceof Error)}
+            {#each balance.data as asset}
+              <AssetCard {asset} chain={chains[index]} />
+            {/each}
+          {/if}
+        </div>
+      </ScrollArea>
     {/if}
   </div>
 {/each}

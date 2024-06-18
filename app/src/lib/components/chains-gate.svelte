@@ -2,6 +2,7 @@
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
 import type { Chain } from "$lib/types"
+
 let chains = chainsQuery()
 
 const EMPTY_CHAINS: Array<Chain> = []
