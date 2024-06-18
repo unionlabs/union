@@ -7,7 +7,7 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { consola, timestamp } from "../scripts/logger.ts"
+import { timestamp } from "../scripts/logger.ts"
 import { createUnionClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
@@ -15,15 +15,11 @@ import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: {
-    "private-key": { type: "string" },
-    "tx-count": { type: "string", default: "1" }
-  }
+  options: { "private-key": { type: "string" } }
 })
 
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
-const TX_COUNT = Number(values["tx-count"])
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
@@ -31,8 +27,6 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
-
-consola.box(`Sending ${TX_COUNT} transactions from Union to Sepolia`)
 
 const stamp = timestamp()
 
@@ -65,7 +59,7 @@ try {
     }
   })
 
-  const hash = await client.transferAsset({
+  const gasCostResponse = await client.simulateTransaction({
     amount: 1n,
     denomAddress: "muno",
     network: unionTestnetInfo.rpc_type,
@@ -75,7 +69,19 @@ try {
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   })
 
-  console.info(hash)
+  console.info("Union to Sepolia gas cost:", gasCostResponse)
+
+  // const transfer = await client.transferAsset({
+  //   amount: 1n,
+  //   denomAddress: "muno",
+  //   network: unionTestnetInfo.rpc_type,
+  //   sourceChannel: ucsConfiguration.channel_id,
+  //   relayContractAddress: ucsConfiguration.contract_address,
+  //   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+  //   path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
+  // })
+
+  // console.info(transfer)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)

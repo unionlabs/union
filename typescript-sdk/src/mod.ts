@@ -16,13 +16,20 @@ import {
   uint8ArrayToHexString,
   convertByteArrayToHex
 } from "./convert.ts"
+import {
+  ibcTransfer,
+  cosmwasmTransfer,
+  ibcTransferSimulate,
+  cosmosSameChainTransfer,
+  cosmwasmTransferSimulate,
+  cosmosSameChainTransferSimulate
+} from "./transfer/cosmos.ts"
 import { sepolia } from "viem/chains"
 import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/off-chain.ts"
 import { transferAssetFromEvm } from "./transfer/evm.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
-import { cosmosSameChainTransfer, cosmwasmTransfer, ibcTransfer } from "./transfer/cosmos.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
 export {
@@ -220,20 +227,21 @@ export function createUnionClient({
             const [account] = await cosmosSigner.getAccounts()
             if (!account) return { success: false, data: "No account found" }
 
+            sourcePort ||= "transfer"
+
             const transfer = await ibcTransfer({
               gasPrice,
               cosmosSigner,
               cosmosRpcUrl,
               messageTransfers: [
                 {
+                  sourcePort,
                   sourceChannel,
-                  // receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
-                  receiver: recipient,
                   sender: account.address,
-                  sourcePort: sourcePort ?? "transfer",
                   token: { denom: denomAddress, amount: amount.toString() },
                   memo: `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`,
-                  timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n }
+                  timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
+                  receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
                 }
               ]
             })
@@ -249,6 +257,133 @@ export function createUnionClient({
             data: error instanceof Error ? error.message : "An unknown error occurred"
           }
         }
+      }
+    }))
+    .extend(client => ({
+      simulateTransaction: async ({
+        path,
+        amount,
+        network,
+        recipient,
+        sourcePort,
+        denomAddress,
+        sourceChannel,
+        relayContractAddress,
+        evmSigner = evm.account,
+        gasPrice = cosmos.gasPrice,
+        cosmosSigner = cosmos.account
+      }: {
+        amount: bigint
+        recipient: string
+        sourcePort?: string
+        denomAddress: string
+        sourceChannel?: string
+        path: [string, string]
+        network: "cosmos" | "evm"
+        cosmosSigner?: OfflineSigner
+        relayContractAddress?: string
+        gasPrice?: { amount: string; denom: string }
+        evmSigner?: `0x${string}` | Account | undefined
+      }): Promise<TransactionResponse> => {
+        if (!path.includes("union-testnet-8")) {
+          return {
+            success: false,
+            data: "Either source or destination chain ID is not union-testnet-8. Must be union-testnet-8 until PFM is implemented"
+          }
+        }
+
+        const cosmosRpcTransport = await rankCosmosRpcProviders({
+          transports: Array.isArray(cosmos.transport)
+            ? cosmos.transport.flatMap(t => t({}).value?.url).filter(Boolean)
+            : [cosmos.transport({}).value?.url].filter(Boolean),
+          interval: 1_000,
+          sampleCount: 10,
+          timeout: 1_000
+        }).rank()
+        if (!cosmosSigner) return { success: false, data: "No cosmos signer found" }
+
+        const [sourceChainId, destinationChainId] = path
+
+        if (network === "evm") {
+          return { success: false, data: "WIP" }
+        }
+
+        const cosmosRpcUrl = cosmosRpcTransport.at(0)?.rpcUrl
+        if (!gasPrice) return { success: false, data: "No gas price found" }
+        if (!cosmosRpcUrl) return { success: false, data: "No cosmos RPC URL found" }
+
+        if (
+          network === "cosmos" &&
+          sourceChainId === "union-testnet-8" &&
+          destinationChainId === "union-testnet-8"
+        ) {
+          // Union to Union
+          return await cosmosSameChainTransferSimulate({
+            recipient,
+            cosmosSigner,
+            cosmosRpcUrl,
+            asset: { denom: denomAddress, amount: amount.toString() },
+            gasPrice: gasPrice ?? { amount: "0.0025", denom: "muno" }
+          })
+        }
+
+        if (network !== "cosmos") return { success: false, data: "Unsupported network" }
+
+        if (sourceChainId === "union-testnet-8") {
+          if (!relayContractAddress) {
+            return { success: false, data: "Relay contract address not found" }
+          }
+
+          return await cosmwasmTransferSimulate({
+            gasPrice,
+            cosmosRpcUrl,
+            cosmosSigner,
+            instructions: [
+              {
+                contractAddress: relayContractAddress,
+                msg: {
+                  transfer: {
+                    channel: sourceChainId,
+                    memo: "Simulating transfer",
+                    receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
+                  }
+                },
+                funds: [{ amount: amount.toString(), denom: denomAddress }]
+              }
+            ]
+          })
+        }
+
+        if (destinationChainId === "union-testnet-8") {
+          if (!sourcePort) return { success: false, data: "Source port not found" }
+          if (!sourceChannel) return { success: false, data: "Source channel not found" }
+
+          const [account] = await cosmosSigner.getAccounts()
+          if (!account) return { success: false, data: "No account found" }
+
+          sourcePort ||= "transfer"
+
+          const stamp = timestamp()
+
+          return await ibcTransferSimulate({
+            gasPrice,
+            cosmosSigner,
+            cosmosRpcUrl,
+            messageTransfers: [
+              {
+                sourcePort,
+                sourceChannel,
+                sender: account.address,
+                token: { denom: denomAddress, amount: amount.toString() },
+                memo: `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`,
+                timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
+                receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
+              }
+            ]
+          })
+        }
+
+        return { success: false, data: "Unsupported network" }
       }
     }))
 }

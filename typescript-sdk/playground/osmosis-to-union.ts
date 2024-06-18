@@ -49,6 +49,18 @@ try {
     }
   })
 
+  const gasCostResponse = await client.simulateTransaction({
+    amount: 1n,
+    denomAddress: "uosmo",
+    network: osmosisTestnetInfo.rpc_type,
+    sourceChannel: ucsConfiguration.channel_id,
+    relayContractAddress: ucsConfiguration.contract_address,
+    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
+  })
+
+  console.info(`Gas cost: ${gasCostResponse.data}`)
+
   const transfer = await client.transferAsset({
     amount: 1n,
     denomAddress: "uosmo",
