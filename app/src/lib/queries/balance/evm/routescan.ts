@@ -3,12 +3,14 @@ import type { Address } from "viem"
 import { raise } from "$lib/utilities"
 
 const alchemyTokenBalancesSchema = v.object({
-items: v.array( v.object({
-    tokenAddress: v.pipe(v.string(), v.length(42)),
-    tokenSymbol: v.string(),
-    tokenQuantity: v.string()
-  })) 
-});
+  items: v.array(
+    v.object({
+      tokenAddress: v.pipe(v.string(), v.length(42)),
+      tokenSymbol: v.string(),
+      tokenQuantity: v.string()
+    })
+  )
+})
 
 export type EvmBalances = v.InferOutput<typeof alchemyTokenBalancesSchema>
 
@@ -20,7 +22,7 @@ export async function getBalancesFromRoutescan({
 
   try {
     const routescanUrl = `https://${url}/address/${walletAddress}/erc20-holdings`
-    const response = await fetch(routescanUrl);
+    const response = await fetch(routescanUrl)
     if (!response.ok) raise("error fetching from routescan: non-200 status")
     json = await response.json()
   } catch (error) {

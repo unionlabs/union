@@ -889,6 +889,7 @@ rlpdump
 roadmap
 rollup
 rollups
+routescan
 rpath
 rpcs
 rsplit

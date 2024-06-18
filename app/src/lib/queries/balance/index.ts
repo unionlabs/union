@@ -3,8 +3,8 @@ import { createQueries } from "@tanstack/svelte-query"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos.ts"
-import { getBalancesFromAlchemy } from "./evm/alchemy"
-import { getBalancesFromRoutescan } from "./evm/routescan"
+import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
+import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
 export function userBalancesQuery({
   userAddr,
@@ -21,8 +21,11 @@ export function userBalancesQuery({
       refetchInterval: 4_000,
       queryFn: async () => {
         if (chain.rpc_type === "evm") {
-          const rpc = chain.rpcs.filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan").at(0);
-          if (rpc === undefined) raise(`no alchemy or routescan rpc available for chain ${chain.chain_id}`)
+          const rpc = chain.rpcs
+            .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
+            .at(0)
+          if (rpc === undefined)
+            raise(`no alchemy or routescan rpc available for chain ${chain.chain_id}`)
 
           if (rpc.type === "alchemy") {
             return getBalancesFromAlchemy({ url: rpc.url, walletAddress: userAddr.evm.canonical })
