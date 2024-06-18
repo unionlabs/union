@@ -85,20 +85,19 @@ jobs:
     needs: [dl-bins]
     runs-on: ubuntu-latest
     steps:
-      - uses: peter-evans/repository-dispatch@v3
+      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.UNION_RELEASES_PAT }}
+          body: test
+          prerelease: false
           repository: unionlabs/union-releases
-          event-type: public-release
-          client-payload: |-
-            {
-              "run-id": ${{ github.run_id }},
-              "name": "v0.24.0",
-              "release-artifacts": [
-                "uniond-release-aarch64-linux",
-                "uniond-release-x86_64-linux"
-              ]
-            }
+          token: ${{ secrets.UNION_RELEASES_PAT }}
+          tag_name: ${{github.ref_name}}
+          fail_on_unmatched_files: true
+          files: |
+            **/uniond-release-aarch64-linux
+            **/uniond-release-x86_64-linux
+
 
   docker-manifest:
     runs-on: ubuntu-latest
