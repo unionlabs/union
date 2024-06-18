@@ -1,3 +1,4 @@
+
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -787,6 +788,7 @@ pbjson
 pedersen
 permissioned
 permissionless
+permissionlessly
 pflag
 phang
 pingpong
@@ -1044,6 +1046,7 @@ tokenizable
 tokenz
 tombstoned
 tonumber
+transformative
 treefmt
 treeshake
 trustlessly
@@ -1192,4 +1195,5 @@ zkgm
 zkps
 zktrie
 zstd
+αlphα
 λpxrx
