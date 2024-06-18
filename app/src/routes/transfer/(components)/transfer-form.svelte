@@ -108,7 +108,7 @@ let ucs01Configuration = derived([fromChain, toChainId, recipient], ([$fromChain
     let [foundHopChainId, ucs1Config] = Object.entries(chain.ucs1_configurations).find(([foundHopChainId, config]) => config.forward[$toChainId] !== undefined) ?? []
     if (foundHopChainId !== undefined && ucs1Config !== undefined) {
       hopChainId = foundHopChainId;
-      ucs1_configuration = ucs1Config;
+      ucs1_configuration = $fromChain.ucs1_configurations[hopChainId];
       let forwardConfig = ucs1_configuration.forward[$toChainId];
       pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient.slice(2));
       break;
@@ -120,7 +120,13 @@ let ucs01Configuration = derived([fromChain, toChainId, recipient], ([$fromChain
   }
 
   return { ucs1_configuration, hopChainId, pfmMemo };
-  
+});
+
+let hopChain = derived(ucs01Configuration, ($ucs01Configuration) => {
+  if ($ucs01Configuration === null) return null;
+  if ($ucs01Configuration.hopChainId  === null) return null;
+
+  return chains.find((c) => c.chain_id === $ucs01Configuration.hopChainId) ?? null
 });
 
 const generatePfmMemo = (channel: string, port: string, receiver: string): string => {
@@ -367,12 +373,9 @@ let buttonText = "Transfer" satisfies
     {buttonText}
   </Button>
   <div class="text-muted-foreground">
-    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>. 
-
-  <pre>
-     {JSON.stringify($ucs01Configuration.pfmMemo, null, 2)}      
-   </pre>
+    Will transfer <b>{amount} {truncate($assetSymbol, 6)}</b> from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b>{#if $hopChain}&nbsp;by forwarding through <b>{$hopChain.display_name}</b>{/if}. 
   </div>
+  <pre>{JSON.stringify($ucs01Configuration, null, 2)}</pre>
 
 
   
