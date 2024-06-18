@@ -28,7 +28,7 @@ pub type IbcEvent = unionlabs::events::IbcEvent<ClientId, String, ClientId>;
 pub mod states;
 
 lazy_static::lazy_static! {
-    pub static ref DEFAULT_IBC_VERSION: Vec<Version> = vec![Version { identifier: String::from("1"), features: vec![Order::Unordered.into()] }];
+    pub static ref DEFAULT_IBC_VERSION: Vec<Version> = vec![Version { identifier: String::from("1"), features: vec![Order::Unordered] }];
 
     // TODO(aeryz): idk if this is enforced by ibc-go or by the spec. Because we don't have merkle prefix in ethereum or near.
     pub static ref DEFAULT_MERKLE_PREFIX: MerklePrefix = MerklePrefix { key_prefix: b"ibc".into() };
@@ -117,7 +117,7 @@ pub enum IbcError {
 pub trait IbcHost: Sized {
     type Error: core::fmt::Display + core::fmt::Debug + PartialEq + From<IbcError>;
 
-    fn next_client_identifier(&mut self, client_type: &String) -> Result<ClientId, Self::Error>;
+    fn next_client_identifier(&mut self, client_type: &str) -> Result<ClientId, Self::Error>;
 
     fn next_connection_identifier(&mut self) -> Result<ConnectionId, Self::Error>;
 
@@ -381,6 +381,7 @@ pub enum IbcMsg {
 }
 
 pub trait Runnable<T: IbcHost>: Serialize + Sized {
+    #[allow(clippy::type_complexity)]
     fn process(
         self,
         host: &mut T,

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use core::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use near_primitives_core::{
@@ -64,8 +64,8 @@ pub struct BlockHeaderInnerLiteView {
 }
 
 /// Epoch identifier -- wrapped hash, to make it easier to distinguish.
-/// EpochId of epoch T is the hash of last block in T-2
-/// EpochId of first two epochs is 0
+/// `EpochId` of epoch T is the hash of last block in T-2
+/// `EpochId` of first two epochs is 0
 #[derive(
     Debug,
     Clone,
@@ -84,8 +84,8 @@ pub struct BlockHeaderInnerLiteView {
 #[as_ref(forward)]
 pub struct EpochId(pub CryptoHash);
 
-impl std::str::FromStr for EpochId {
-    type Err = Box<dyn std::error::Error + Send + Sync>;
+impl core::str::FromStr for EpochId {
+    type Err = Box<dyn core::error::Error + Send + Sync>;
 
     /// Decodes base58-encoded string into a 32-byte crypto hash.
     fn from_str(epoch_id_str: &str) -> Result<Self, Self::Err> {
@@ -274,7 +274,7 @@ impl<'a> core::fmt::Display for Bs58<'a> {
         let output = &buf[..len];
         // SAFETY: we know that alphabet can only include ASCII characters
         // thus our result is an ASCII string.
-        fmt.write_str(unsafe { std::str::from_utf8_unchecked(output) })
+        fmt.write_str(unsafe { core::str::from_utf8_unchecked(output) })
     }
 }
 /// Helper which decodes fixed-length base58-encoded data.
@@ -305,7 +305,7 @@ enum DecodeBs58Error {
     BadData(String),
 }
 
-impl std::convert::From<DecodeBs58Error> for ParseKeyError {
+impl core::convert::From<DecodeBs58Error> for ParseKeyError {
     fn from(err: DecodeBs58Error) -> Self {
         match err {
             DecodeBs58Error::BadLength { expected, received } => ParseKeyError::InvalidLength {
@@ -318,7 +318,7 @@ impl std::convert::From<DecodeBs58Error> for ParseKeyError {
 }
 
 impl core::fmt::Display for PublicKey {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
         let (key_type, key_data) = match self {
             PublicKey::Ed25519(public_key) => (KeyType::ED25519, public_key.as_slice()),
             PublicKey::Secp256k1(public_key) => (KeyType::SECP256K1, public_key.as_slice()),
@@ -357,7 +357,7 @@ pub enum KeyType {
 }
 
 impl core::fmt::Display for KeyType {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         f.write_str(match self {
             KeyType::ED25519 => "ed25519",
             KeyType::SECP256K1 => "secp256k1",

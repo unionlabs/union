@@ -128,7 +128,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                 )?;
 
                 let consensus_heights = consensus_states
-                    .into_iter()
+                    .iter()
                     .map(|(height, state)| {
                         host.commit_raw(
                             ClientConsensusStatePath {

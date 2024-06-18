@@ -52,7 +52,7 @@ pub async fn chunk_proof(
         .chunks()
         .to_vec();
 
-    let prev_state_root = CryptoHash(chunks[0].prev_state_root.clone().0);
+    let prev_state_root = CryptoHash(chunks[0].prev_state_root.0);
 
     let (_, merkle_path) = merklize(
         &chunks

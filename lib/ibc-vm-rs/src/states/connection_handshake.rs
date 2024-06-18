@@ -141,7 +141,7 @@ fn find_supported_version<'a>(
     supported_versions: &'a [Version],
 ) -> Option<&'a Version> {
     supported_versions
-        .into_iter()
+        .iter()
         .find(|v| v.identifier == version.identifier)
 }
 

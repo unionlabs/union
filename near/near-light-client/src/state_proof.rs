@@ -49,18 +49,18 @@ impl StateProof {
         while let Some(node) = self.state_proof_nodes.get(expected_hash) {
             match &node.node {
                 RawTrieNode::Leaf(node_key, value) => {
-                    let nib = &NibbleSlice::from_encoded(&node_key).0;
-                    return if &key != nib {
-                        expected.is_none()
-                    } else {
+                    let nib = &NibbleSlice::from_encoded(node_key).0;
+                    return if &key == nib {
                         expected.is_some_and(|expected| value == expected)
+                    } else {
+                        expected.is_none()
                     };
                 }
                 RawTrieNode::Extension(node_key, child_hash) => {
                     expected_hash = child_hash;
 
                     // To avoid unnecessary copy
-                    let nib = NibbleSlice::from_encoded(&node_key).0;
+                    let nib = NibbleSlice::from_encoded(node_key).0;
                     if !key.starts_with(&nib) {
                         return expected.is_none();
                     }
@@ -105,7 +105,7 @@ pub struct RawTrieNodeWithSize {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 #[allow(clippy::large_enum_variant)]
 pub enum RawTrieNode {
-    /// Leaf(key, value_length, value_hash)
+    /// Leaf(`key`, `value_length`, `value_hash`)
     Leaf(Vec<u8>, ValueRef),
     /// Branch(children)
     BranchNoValue(Children),
@@ -141,18 +141,17 @@ impl<T: BorshSerialize> BorshSerialize for Children<T> {
     fn serialize<W: std::io::Write>(&self, wr: &mut W) -> std::io::Result<()> {
         let mut bitmap: u16 = 0;
         let mut pos: u16 = 1;
-        for child in self.0.iter() {
+        for child in &self.0 {
             if child.is_some() {
-                bitmap |= pos
+                bitmap |= pos;
             }
             pos <<= 1;
         }
         bitmap.serialize(wr)?;
         self.0
             .iter()
-            .flat_map(Option::as_ref)
-            .map(|child| child.serialize(wr))
-            .collect()
+            .filter_map(Option::as_ref)
+            .try_for_each(|child| child.serialize(wr))
     }
 }
 
@@ -161,7 +160,8 @@ impl<T: BorshDeserialize> BorshDeserialize for Children<T> {
         let mut bitmap = u16::deserialize_reader(rd)?;
         let mut children = Self::default();
         while bitmap != 0 {
-            let idx = bitmap.trailing_zeros() as u8;
+            // TODO(aeryz): return error
+            let idx = u8::try_from(bitmap.trailing_zeros()).unwrap();
             bitmap &= bitmap - 1;
             children[idx] = Some(T::deserialize_reader(rd)?);
         }

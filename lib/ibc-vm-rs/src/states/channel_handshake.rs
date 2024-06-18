@@ -495,7 +495,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ChannelNotFound(port_id.clone(), channel_id.clone()).into())?;
+                    .ok_or(IbcError::ChannelNotFound(
+                        port_id.clone(),
+                        channel_id.clone(),
+                    ))?;
 
                 if channel.state != channel::state::State::Init {
                     return Err(IbcError::IncorrectChannelState(
@@ -728,9 +731,9 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         }
                         .into(),
                     )
-                    .ok_or(
-                        IbcError::ConnectionNotFound(channel.connection_hops[0].to_string()).into(),
-                    )?;
+                    .ok_or(IbcError::ConnectionNotFound(
+                        channel.connection_hops[0].to_string(),
+                    ))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(

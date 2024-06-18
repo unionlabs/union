@@ -686,6 +686,7 @@ mdast
 mdsvex
 merkle
 merkleize
+merklize
 merklizer
 metadatas
 metas
@@ -694,6 +695,7 @@ migaloo
 milagro
 mimc
 miminum
+mina
 miniserve
 minp
 mintkeeper
@@ -913,6 +915,7 @@ rustfmt
 rustlib
 rustls
 rustup
+sandboxed
 sarahkc
 sbox
 schemars

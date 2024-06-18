@@ -7,6 +7,7 @@
 )]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 #![feature(trait_alias)]
+#![feature(error_in_core)]
 
 extern crate alloc;
 

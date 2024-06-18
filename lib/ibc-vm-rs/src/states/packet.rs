@@ -354,10 +354,10 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         }
                         .into(),
                     )
-                    .ok_or(
-                        IbcError::ChannelNotFound(source_port.clone(), source_channel.clone())
-                            .into(),
-                    )?;
+                    .ok_or(IbcError::ChannelNotFound(
+                        source_port.clone(),
+                        source_channel.clone(),
+                    ))?;
 
                 if channel.state != channel::state::State::Open {
                     return Err(IbcError::IncorrectChannelState(

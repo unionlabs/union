@@ -7,9 +7,7 @@ use near_sdk::{
     PanicOnDefault,
 };
 #[allow(unused)]
-use near_sdk_contract_tools::owner::OwnerExternal;
-#[allow(clippy::wildcard_imports)]
-use near_sdk_contract_tools::Owner;
+use near_sdk_contract_tools::{owner::OwnerExternal, Owner};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_path::MerklePath},
     id::ClientId,
@@ -45,7 +43,7 @@ impl Contract {
         let consensus_state: ConsensusState = borsh::from_slice(&consensus_state).unwrap();
         let mut block_producers = LookupMap::new(b"epoch_block_producers".as_slice());
         block_producers.insert(
-            consensus_state.state.epoch_id.clone(),
+            consensus_state.state.epoch_id,
             client_state.initial_block_producers.clone().unwrap(),
         );
         let mut consensus_states: LookupMap<u64, ConsensusState> = LookupMap::new(b"c");
@@ -228,8 +226,7 @@ fn reconstruct_light_client_block_view_fields(
 
     let next_block_hash = combine_hash(&block_view.next_block_inner_hash, &current_block_hash);
 
-    let mut approval_message =
-        borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash.clone())).unwrap();
+    let mut approval_message = borsh::to_vec(&ApprovalInner::Endorsement(next_block_hash)).unwrap();
     approval_message.extend_from_slice(&(block_view.inner_lite.height + 2).to_le_bytes());
 
     (current_block_hash, next_block_hash, approval_message)
@@ -243,17 +240,17 @@ fn validate_head(
     let (_current_block_hash, _next_block_hash, approval_message) =
         reconstruct_light_client_block_view_fields(block_view.clone());
 
-    if block_view.inner_lite.height <= head.height {
-        panic!("false");
-    }
+    assert!(block_view.inner_lite.height > head.height, "false");
 
-    if ![&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id) {
-        panic!("false");
-    }
+    assert!(
+        [&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id),
+        "false"
+    );
 
-    if block_view.inner_lite.epoch_id == head.next_epoch_id && block_view.next_bps.is_none() {
-        panic!("false");
-    }
+    assert!(
+        !(block_view.inner_lite.epoch_id == head.next_epoch_id && block_view.next_bps.is_none()),
+        "false"
+    );
 
     let mut total_stake = 0;
     let mut approved_stake = 0;
@@ -281,33 +278,33 @@ fn validate_head(
                     panic!("pubkey type is not supported");
                 };
 
-                if !verify_signature(&pubkey[..], signature, &approval_message) {
-                    panic!("no bro no");
-                }
+                assert!(
+                    verify_signature(&pubkey[..], signature, &approval_message),
+                    "invalid signature"
+                );
             }
             None => continue,
         }
     }
 
     let threshold = total_stake.checked_mul(2).unwrap().checked_div(3).unwrap();
-    if approved_stake <= threshold {
-        panic!("not cool bro");
-    }
+    assert!(approved_stake > threshold, "approved_stake <= threshold");
 
     if let Some(next_bps) = &block_view.next_bps {
-        if hash_borsh(next_bps) != block_view.inner_lite.next_bp_hash {
-            panic!("next bps hash mismatch");
-        }
+        assert!(
+            hash_borsh(next_bps) == block_view.inner_lite.next_bp_hash,
+            "next bps hash mismatch"
+        );
     }
 }
 
-fn verify_signature(public_key: &[u8], signature: &Signature, message: &Vec<u8>) -> bool {
+fn verify_signature(public_key: &[u8], signature: &Signature, message: &[u8]) -> bool {
     let &Signature::Ed25519(sig) = &signature else {
         panic!("signature must be ed25519");
     };
     env::ed25519_verify(
         sig.as_slice().try_into().unwrap(),
-        &message,
+        message,
         public_key.try_into().unwrap(),
     )
 }

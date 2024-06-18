@@ -27,7 +27,7 @@ use crate::{
     msgs::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        ConsensusState, CreateClient, GetAccountId, RegisterClient, UpdateClient,
+        ConsensusState, CreateClient, RegisterClient, UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
