@@ -12,7 +12,7 @@ use tendermint_rpc::{
 };
 use time::OffsetDateTime;
 use tokio::time::{sleep, Duration};
-use tracing::{debug, info, info_span, Instrument};
+use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
 use crate::postgres::{self, ChainId};
@@ -118,7 +118,8 @@ impl Config {
                     }
                     None => {
                         if retry_count > 30 {
-                            bail!("node has stopped providing new blocks")
+                            warn!("node {chain_id} has stopped providing new blocks");
+                            bail!("node {chain_id} has stopped providing new blocks");
                         }
                         retry_count += 1;
                         debug!("caught up indexing, sleeping for 1 second");
