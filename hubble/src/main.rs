@@ -62,9 +62,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
         let db: sqlx::Pool<sqlx::Postgres> = db.clone();
         set.spawn(async move {
             info!("starting indexer {:?}", indexer);
+            let label = indexer.label().to_owned();
             // indexer should never return with Ok, thus we log the error.
             indexer.index(db).await.inspect_err(|err| {
-                warn!("indexer exited with: {:?}", err);
+                warn!("indexer {label} exited with: {:?}", err);
             })
         });
     });

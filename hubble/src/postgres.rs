@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use std::fmt;
 
 use futures::{Stream, StreamExt, TryStreamExt};
 use serde::Serialize;
@@ -6,7 +7,6 @@ use sqlx::{Acquire, Postgres, QueryBuilder};
 use time::OffsetDateTime;
 use tracing::{debug, info};
 use valuable::Valuable;
-
 pub const BIND_LIMIT: usize = 65535;
 
 /// A trait to describe the different parameters of a chain, used to instantiate types for insertion.
@@ -75,6 +75,12 @@ pub type ChainId = ChainIdInner<'static>;
 pub struct ChainIdInner<'a> {
     pub db: i32,
     pub canonical: &'a str,
+}
+
+impl<'a> fmt::Display for ChainIdInner<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.canonical)
+    }
 }
 
 /// Inside of Hubble, we leak the ChainId.canonical to make ChainIds easily copyable.

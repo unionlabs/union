@@ -74,16 +74,22 @@ pub enum IndexerConfig {
 }
 
 impl IndexerConfig {
-    pub async fn index(self, db: sqlx::PgPool) -> Result<(), color_eyre::eyre::Report> {
-        let rpc_type = match self {
-            Self::Tm(_) => "tendermint",
-            Self::Eth(_) => "ethereum",
-            Self::Beacon(_) => "beacon",
-            Self::Bera(_) => "bera",
-        };
+    pub fn label(&self) -> &str {
+        match &self {
+            Self::Tm(cfg) => &cfg.label,
+            Self::Eth(cfg) => &cfg.label,
+            Self::Beacon(cfg) => &cfg.label,
+            Self::Bera(cfg) => &cfg.label,
+        }
+    }
+}
 
-        let initializer_span = info_span!("initializer", rpc_type);
-        let indexer_span = info_span!("indexer", rpc_type);
+impl IndexerConfig {
+    pub async fn index(self, db: sqlx::PgPool) -> Result<(), color_eyre::eyre::Report> {
+        let label = self.label();
+
+        let initializer_span = info_span!("initializer", label);
+        let indexer_span = info_span!("indexer", label);
 
         match self {
             Self::Tm(cfg) => cfg.index(db).instrument(indexer_span).await,
