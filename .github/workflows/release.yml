@@ -116,7 +116,7 @@ jobs:
             uniond-release-aarch64-linux \
             uniond-release-x86_64-linux
           do
-            (cd $artifact && mv $artifact $artifact.tar.gz
+            (cd $artifact && mv $artifact $artifact.tar.gz)
           done
 
           echo "# sha256 Checksums" >> release.md
