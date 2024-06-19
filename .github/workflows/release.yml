@@ -108,14 +108,14 @@ jobs:
       - run: |
           ls -la uniond-release-aarch64-linux
           echo "# sha256 Checksums" >> release.md
-          echo $(sha256sum bundle-testnet-8-aarch64-linux) >> release.md
-          echo $(sha256sum bundle-testnet-8-x86_64-linux) >> release.md
-          echo $(sha256sum cometbls-light-client-aarch64-linux) >> release.md
-          echo $(sha256sum cometbls-light-client-x86_64-linux) >> release.md
-          echo $(sha256sum ucs01-relay-aarch64-linux) >> release.md
-          echo $(sha256sum ucs01-relay-x86_64-linux) >> release.md
-          echo $(sha256sum uniond-release-aarch64-linux) >> release.md
-          echo $(sha256sum uniond-release-x86_64-linux) >> release.md
+          echo $(sha256sum **/bundle-testnet-8-aarch64-linux) >> release.md
+          echo $(sha256sum **/bundle-testnet-8-x86_64-linux) >> release.md
+          echo $(sha256sum **/cometbls-light-client-aarch64-linux) >> release.md
+          echo $(sha256sum **/cometbls-light-client-x86_64-linux) >> release.md
+          echo $(sha256sum **/ucs01-relay-aarch64-linux) >> release.md
+          echo $(sha256sum **/ucs01-relay-x86_64-linux) >> release.md
+          echo $(sha256sum **/uniond-release-aarch64-linux) >> release.md
+          echo $(sha256sum **/uniond-release-x86_64-linux) >> release.md
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
