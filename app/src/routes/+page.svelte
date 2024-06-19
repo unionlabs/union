@@ -10,8 +10,8 @@ import { ScrollArea } from "$lib/components/ui/scroll-area"
 <div class="overflow-y-auto">
   <main class="flex flex-col w-full py-6 gap-6">
     <ChainsGate let:chains>
-      <WalletGate let:userAddr>
-        <div>
+      <WalletGate>
+        <div slot="connected" let:userAddr>
           <BalancesOverview {chains} {userAddr}/>
         </div>
         <div slot="disconnected" class="px-4">
