@@ -345,6 +345,10 @@ $: buttonText =
     : "select asset and enter amount"
 </script>
 
+<Card.Root>
+  <Card.Header>
+    <Card.Title>Transfers</Card.Title>
+  </Card.Header>
 <Card.Content class={cn('flex flex-col gap-4')}>
   <section>
     <CardSectionHeading>From</CardSectionHeading>
@@ -429,6 +433,7 @@ $: buttonText =
     Will transfer {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
   </div>
 </Card.Footer>
+</Card.Root>
 <ChainDialog
   kind="from"
   {chains}
