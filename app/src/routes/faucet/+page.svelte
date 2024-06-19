@@ -19,6 +19,7 @@ import CosmosBalance from "./(components)/cosmos-balance.svelte"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
+import NotConnected from "$lib/components/not-connected.svelte"
 
 let userInput = false
 let address: string = $cosmosStore.address ?? ""
@@ -130,14 +131,21 @@ const handleSubmit = () => {
                     />
                   </div>
                   <div class="flex justify-between px-1">
-                    <p class="text-xs">
+                    <div class="text-xs">
                       <ChainsGate let:chains>
-                        <WalletGate let:userAddr>
-                          <span class="text-muted-foreground">Balance: </span>
-                          <UnoBalance {chains} userAddress={userAddr} />
+                        <WalletGate>
+                          <div slot="connected" let:userAddr>
+                            <p>
+                              <span class="text-muted-foreground">Balance: </span>
+                              <UnoBalance {chains} {userAddr} />
+                            </p>
+                          </div>
+                          <div slot="disconnected">
+                            <p>Please check wallet connections</p>
+                          </div>
                         </WalletGate>
                       </ChainsGate>
-                    </p>
+                    </div>
                     {#if userInput}
                       <button
                         type="button"
