@@ -12,7 +12,6 @@ use crate::id::PortId;
         from
     )
 )]
-#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: String,

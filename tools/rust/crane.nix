@@ -283,7 +283,6 @@
             packages.${cratePname} = cargoBuild.buildPackage (
               crateAttrs // {
                 pnameSuffix = pnameSuffix';
-                # note that we overwrite this here but we have to keep the packageFilterArg
                 cargoExtraArgs = "${lib.optionalString (!dev) "-j1"} ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!

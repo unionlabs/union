@@ -115,5 +115,7 @@
       packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // {
         inherit near-ibc-tests near-sandbox cargo-near;
       };
+
+      checks = near-light-client.checks // near-ibc.checks;
     };
 }
