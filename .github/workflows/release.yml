@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    # tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
+    tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   build:
@@ -132,7 +132,7 @@ jobs:
           prerelease: false
           repository: unionlabs/union-releases
           token: ${{ secrets.UNION_RELEASES_PAT }}
-          tag_name: v0.24.0
+          tag_name: ${{github.ref_name}}
           fail_on_unmatched_files: true
           files: |
             **/bundle-testnet-8-aarch64-linux.tar.gz
@@ -157,7 +157,6 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - run: exit 1
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
