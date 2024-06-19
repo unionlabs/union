@@ -85,8 +85,8 @@ impl Bera {
 }
 
 impl Querier for Bera {
-    async fn get_execution_height(&self, height: i64) -> Result<i64> {
-        let height = (|| self.execution_header_at_beacon_slot(height as u64))
+    async fn get_execution_height(&self, slot: i64) -> Result<(i64, i64)> {
+        let height = (|| self.execution_header_at_beacon_slot(slot as u64))
             .retry(
                 &ConstantBuilder::default()
                     .with_delay(Duration::from_millis(500))
@@ -94,6 +94,6 @@ impl Querier for Bera {
             )
             .await?
             .block_number as i64;
-        Ok(height)
+        Ok((slot, height))
     }
 }

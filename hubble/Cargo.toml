@@ -37,6 +37,7 @@ prost.workspace     = true
 protos              = { workspace = true, features = ["client"] }
 reqwest             = { workspace = true, features = ["json", "blocking"] }
 serde               = { workspace = true, features = ["derive"] }
+serde-aux           = "4.5.0"
 serde_json          = { workspace = true }
 sqlx                = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
 tendermint          = { workspace = true, features = ["std"] }

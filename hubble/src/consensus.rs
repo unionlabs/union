@@ -10,7 +10,7 @@ pub struct Indexer<T: Querier + Send + Sync> {
 }
 
 pub trait Querier {
-    async fn get_execution_height(&self, height: i64) -> Result<i64>;
+    async fn get_execution_height(&self, height: i64) -> Result<(i64, i64)>;
 }
 
 impl<T: Querier + Send + Sync> Indexer<T> {
@@ -23,13 +23,13 @@ impl<T: Querier + Send + Sync> Indexer<T> {
     }
 
     pub async fn index(&self) -> Result<()> {
-        let begin = crate::postgres::get_max_consensus_height(&self.pool, self.chain_id).await?;
-
-        for consensus_height in begin + 1..i64::MAX {
+        let mut consensus_height =
+            crate::postgres::get_max_consensus_height(&self.pool, self.chain_id).await? + 1;
+        loop {
             info!("mapping consensus height {consensus_height}");
 
             debug!("getting unmapped consensus heights");
-            let height = self.querier.get_execution_height(consensus_height).await?;
+            let (slot, height) = self.querier.get_execution_height(consensus_height).await?;
 
             debug!("got execution height {height} for consensus height {consensus_height}");
 
@@ -37,11 +37,11 @@ impl<T: Querier + Send + Sync> Indexer<T> {
             crate::postgres::insert_mapped_execution_heights(
                 &self.pool,
                 vec![height],
-                vec![consensus_height],
+                vec![slot],
                 self.chain_id,
             )
             .await?;
+            consensus_height = slot + 1;
         }
-        unreachable!("indexing consensus heights should never end")
     }
 }
