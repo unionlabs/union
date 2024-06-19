@@ -106,6 +106,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
       - run: |
+          echo "# sha256 Checksums" >> release.md
           for artifact in \
             bundle-testnet-8-aarch64-linux \
             bundle-testnet-8-x86_64-linux \
@@ -114,17 +115,10 @@ jobs:
             ucs01-relay-aarch64-linux \
             ucs01-relay-x86_64-linux 
           do
-            (cd $artifact && mv $artifact $artifact.tar.gz)
+            echo "- (cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)" >> release.md
           done
 
-          echo "# sha256 Checksums" >> release.md
           for artifact in \
-            bundle-testnet-8-aarch64-linux.tar.gz \
-            bundle-testnet-8-x86_64-linux.tar.gz \
-            cometbls-light-client-aarch64-linux.tar.gz \
-            cometbls-light-client-x86_64-linux.tar.gz \
-            ucs01-relay-aarch64-linux.tar.gz \
-            ucs01-relay-x86_64-linux.tar.gz \
             uniond-release-aarch64-linux \
             uniond-release-x86_64-linux
           do
