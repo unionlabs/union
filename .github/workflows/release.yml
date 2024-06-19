@@ -12,23 +12,7 @@ jobs:
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
       # ensure to append this list if you want to release more artifacts
-      filter_builds: |
-        (.top_attr == "packages") 
-        and (
-          .system == "x86_64-linux" 
-          or .system == "aarch64-linux"
-        ) and (
-          .attr == "uniond-release" 
-          or .attr == "galoisd" 
-          or .attr == "uniond-release-image" 
-          or .attr == "galoisd-image" 
-          or .attr == "bundle-testnet-8-image"
-          or .attr == "bundle-testnet-8"
-          or .attr == "ucs01-relay"
-          or .attr == "cometbls-light-client"
-          or .attr == "voyager"
-        ) 
-        
+      filter_builds: "(.top_attr == \"packages\") \nand (\n  .system == \"x86_64-linux\" \n  or .system == \"aarch64-linux\"\n) and (\n  .attr == \"uniond-release\" \n  or .attr == \"galoisd\" \n  or .attr == \"uniond-release-image\" \n  or .attr == \"galoisd-image\" \n  or .attr == \"bundle-testnet-8-image\"\n  or .attr == \"bundle-testnet-8\"\n  or .attr == \"ucs01-relay\"\n  or .attr == \"cometbls-light-client\"\n  or .attr == \"voyager\"\n) \n  #magic___^_^___line\n"
   dl-images:
     runs-on: ubuntu-latest
     needs: [build]
@@ -106,26 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-      - run: |
-          echo "# sha256 Checksums" >> release.md
-          for artifact in \
-            bundle-testnet-8-aarch64-linux \
-            bundle-testnet-8-x86_64-linux \
-            cometbls-light-client-x86_64-linux \
-            ucs01-relay-x86_64-linux 
-          do
-            echo "- $(cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)" >> release.md
-          done
-
-          for artifact in \
-            uniond-release-aarch64-linux \
-            uniond-release-x86_64-linux \
-            voyager-aarch64-linux \
-            voyager-x86_64-linux 
-          do
-            echo "- $(cd $artifact && sha256sum $artifact)" >> release.md
-          done
-
+      - run: "echo \"# sha256 Checksums\" >> release.md\nfor artifact in \\\n  bundle-testnet-8-aarch64-linux \\\n  bundle-testnet-8-x86_64-linux \\\n  cometbls-light-client-x86_64-linux \\\n  ucs01-relay-x86_64-linux \ndo\n  echo \"- $(cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)\" >> release.md\ndone\n  #magic___^_^___line\nfor artifact in \\\n  uniond-release-aarch64-linux \\\n  uniond-release-x86_64-linux \\\n  voyager-aarch64-linux \\\n  voyager-x86_64-linux \ndo\n  echo \"- $(cd $artifact && sha256sum $artifact)\" >> release.md\ndone\n  #magic___^_^___line\n"
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
@@ -134,16 +99,7 @@ jobs:
           token: ${{ secrets.UNION_RELEASES_PAT }}
           tag_name: ${{github.ref_name}}
           fail_on_unmatched_files: true
-          files: |
-            **/bundle-testnet-8-aarch64-linux.tar.gz
-            **/bundle-testnet-8-x86_64-linux.tar.gz
-            **/cometbls-light-client-x86_64-linux.tar.gz
-            **/ucs01-relay-x86_64-linux.tar.gz
-            **/uniond-release-aarch64-linux
-            **/uniond-release-x86_64-linux
-            **/voyager-aarch64-linux
-            **/voyager-x86_64-linux 
-
+          files: "**/bundle-testnet-8-aarch64-linux.tar.gz\n**/bundle-testnet-8-x86_64-linux.tar.gz\n**/cometbls-light-client-x86_64-linux.tar.gz\n**/ucs01-relay-x86_64-linux.tar.gz\n**/uniond-release-aarch64-linux\n**/uniond-release-x86_64-linux\n**/voyager-aarch64-linux\n**/voyager-x86_64-linux \n#magic___^_^___line\n"
   docker-manifest:
     runs-on: ubuntu-latest
     needs: [dl-images]
