@@ -57,6 +57,7 @@ pub trait IbcTransfer: Send + Sync {
         destination_channel: ChannelId,
         denom: String,
         amount: u64,
+        memo: String,
     );
 }
 
@@ -191,26 +192,37 @@ pub trait IbcListen: Send + Sync {
                                 "RecvPacket event received without SendPacket for sequence {}",
                                 sequence
                             );
+                            entry.remove(&sequence);
                         } else {
                             sequence_entry.insert(1, true);
                             tracing::info!("RecvPacket event recorded for sequence {}", sequence);
                         }
                     }
                     IbcEvent::WriteAcknowledgement(ref e) => {
-                        if self.write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone()) {
-                            sequence_entry.insert(2, true);
-                            tracing::info!(
-                                "WriteAcknowledgement event recorded for sequence {}",
+                        if !sequence_entry.get(&0).unwrap_or(&false) {
+                            tracing::warn!(
+                                "RecvPacket event received without SendPacket for sequence {}",
                                 sequence
                             );
-                        } else {
-                            tracing::error!(
-                                "WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}",
-                                sequence,
-                                e.packet_ack_hex.clone()
-                            );
-                            // Here remove it from the map
                             entry.remove(&sequence);
+                        } else {
+                            if self
+                                .write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone())
+                            {
+                                sequence_entry.insert(2, true);
+                                tracing::info!(
+                                    "WriteAcknowledgement event recorded for sequence {}",
+                                    sequence
+                                );
+                            } else {
+                                tracing::error!(
+                                    "WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}",
+                                    sequence,
+                                    e.packet_ack_hex.clone()
+                                );
+                                // Here remove it from the map
+                                entry.remove(&sequence);
+                            }
                         }
                     }
                     IbcEvent::AcknowledgePacket(_) => {
@@ -222,6 +234,7 @@ pub trait IbcListen: Send + Sync {
                                 "AcknowledgePacket event received out of order for sequence {}",
                                 sequence
                             );
+                            entry.remove(&sequence);
                         } else {
                             sequence_entry.insert(3, true);
                             tracing::info!(
@@ -314,16 +327,17 @@ impl IbcTransfer for Chain {
         destination_channel: ChannelId,
         denom: String,
         amount: u64,
+        memo: String,
     ) {
         match self {
             Chain::Ethereum(ethereum) => {
                 ethereum
-                    .send_ibc_transfer(protocol, channel, destination_channel, denom, amount)
+                    .send_ibc_transfer(protocol, channel, destination_channel, denom, amount, memo)
                     .await;
             }
             Chain::Cosmos(cosmos) => {
                 cosmos
-                    .send_ibc_transfer(protocol, channel, destination_channel, denom, amount)
+                    .send_ibc_transfer(protocol, channel, destination_channel, denom, amount, memo)
                     .await;
             }
         }
@@ -504,6 +518,7 @@ impl IbcTransfer for Ethereum {
         destination_channel: ChannelId,
         denom: String,
         amount: u64,
+        memo: String,
     ) {
         let mut rng = StdRng::from_entropy();
         let index = rng.gen_range(0..self.relays.len()); // Select a random index
@@ -518,6 +533,7 @@ impl IbcTransfer for Ethereum {
             destination_channel,
             denom
         );
+        tracing::info!("denom: {:?}", denom);
 
         let denom_address = relay
             .get_denom_address(destination_channel.clone().to_string(), denom.clone())
@@ -567,21 +583,24 @@ impl IbcTransfer for Ethereum {
                     amount
                 );
 
-                let (_hrp, data, _variant) =
-                    bech32::decode(&receiver).expect("Invalid Bech32 address");
+                if receiver == "invalid_receiver" {
+                } else {
+                    let (_hrp, data, _variant) =
+                        bech32::decode(&receiver).expect("Invalid Bech32 address");
 
-                let bytes: Vec<u8> = Vec::<u8>::from_base32(&data).expect("Invalid base32 data");
-
+                    let receiver: Vec<u8> =
+                        Vec::<u8>::from_base32(&data).expect("Invalid base32 data");
+                }
                 let _tx_rcp: Option<ethers::types::TransactionReceipt> = match relay
                     .send(
                         destination_channel.clone().to_string(),
-                        bytes.into(),
+                        receiver.encode_to_vec().into(),
                         [LocalToken {
                             denom: denom_address,
                             amount: amount as u128,
                         }]
                         .into(),
-                        "".into(),
+                        memo,
                         (Height {
                             revision_number: 0,
                             revision_height: 0,
@@ -693,6 +712,7 @@ impl IbcTransfer for Cosmos {
         destination_channel: ChannelId,
         denom: String,
         amount: u64,
+        memo: String,
     ) {
         self.chain
             .signers
@@ -723,7 +743,7 @@ impl IbcTransfer for Cosmos {
                             receiver: receiver.to_string(),
                             timeout_height: None,
                             timeout_timestamp: u64::MAX / 2,
-                            memo: String::new(),
+                            memo: memo,
                         };
 
                         Any {
@@ -748,7 +768,7 @@ impl IbcTransfer for Cosmos {
                         let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
                             channel: destination_channel.to_string(),
                             receiver: receiver[2..].to_string(),
-                            memo: Default::default(),
+                            memo: memo,
                             timeout: None,
                         });
 

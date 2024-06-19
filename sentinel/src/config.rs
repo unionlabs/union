@@ -11,10 +11,6 @@ use unionlabs::{
 
 use crate::chains::Protocol;
 
-pub const KEY_ETHEREUM: &str = "ethereum";
-pub const KEY_OSMOSIS: &str = "osmosis";
-pub const KEY_UNION: &str = "union";
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub chain_configs: HashMap<String, AnyChainConfig>,
@@ -51,6 +47,7 @@ pub struct IbcInteraction {
     pub protocol: Protocol,
     pub amount_min: u64,
     pub amount_max: u64,
+    pub memo: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
