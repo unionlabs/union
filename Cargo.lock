@@ -2482,7 +2482,7 @@ dependencies = [
  "sha2 0.10.8",
  "sha3",
  "thiserror",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -7191,7 +7191,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "uuid 0.8.2",
+ "uuid",
  "walkdir",
 ]
 
@@ -8132,16 +8132,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "uuid"
-version = "1.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
-dependencies = [
- "getrandom 0.2.12",
- "serde",
-]
-
-[[package]]
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8687,36 +8677,6 @@ name = "yansi"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
-
-[[package]]
-name = "zerg"
-version = "0.1.0"
-dependencies = [
- "block-message",
- "chain-utils",
- "clap 4.5.4",
- "contracts",
- "cosmwasm-std 2.0.3",
- "csv",
- "ethers",
- "futures",
- "queue-msg",
- "serde",
- "serde-utils",
- "serde_json",
- "tendermint",
- "tendermint-proto",
- "tendermint-rpc",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "tracing-subscriber",
- "ucs01-relay",
- "ucs01-relay-api",
- "unionlabs",
- "uuid 1.8.0",
-]
 
 [[package]]
 name = "zerocopy"

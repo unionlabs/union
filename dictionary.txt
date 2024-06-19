@@ -189,7 +189,6 @@ YMSB
 Yair
 ZKACCOUNT
 ZKTRIE
-Zerg
 aarch
 abci
 abidump
@@ -1185,7 +1184,6 @@ yamlfmt
 ypyp
 yqyp
 zellij
-zerg
 zerion
 zerolog
 zetachain

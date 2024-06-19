@@ -255,7 +255,6 @@
         ./devnet-compose/devnet-compose.nix
         ./faucet/faucet.nix
         ./ucli/ucli.nix
-        ./zerg/zerg.nix
         treefmt-nix.flakeModule
       ];
 
