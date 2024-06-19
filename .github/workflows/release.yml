@@ -115,7 +115,7 @@ jobs:
             ucs01-relay-aarch64-linux \
             ucs01-relay-x86_64-linux 
           do
-            echo "- (cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)" >> release.md
+            echo "- $(cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)" >> release.md
           done
 
           for artifact in \
