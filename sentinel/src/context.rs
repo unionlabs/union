@@ -9,7 +9,7 @@ use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
 use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
-    config::{AnyChainConfig, Config, IbcInteraction, KEY_ETHEREUM, KEY_OSMOSIS, KEY_UNION},
+    config::{AnyChainConfig, Config, IbcInteraction},
 };
 type InnerInnerMap = HashMap<i32, bool>;
 type InnerMap = HashMap<i32, InnerInnerMap>;
@@ -98,6 +98,7 @@ impl Context {
                                     interaction.destination.channel.clone(),
                                     "muno".to_string(),
                                     amount,
+                                    interaction.memo.clone(),
                                 )
                                 .await;
                         }
@@ -109,6 +110,7 @@ impl Context {
                                     interaction.destination.channel.clone(),
                                     "muno".to_string(),
                                     amount,
+                                    interaction.memo.clone(),
                                 )
                                 .await;
                         }
