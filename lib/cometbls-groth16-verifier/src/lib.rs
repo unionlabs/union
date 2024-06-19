@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 
 extern crate alloc;
 
@@ -325,6 +325,7 @@ fn verify_generic_zkp_2(
         (pc * r2, g.into()),
         (pok * r2, g_root_sigma_neg.into()),
     ]);
+
     if result != substrate_bn::Gt::one() {
         Err(Error::InvalidProof)
     } else {
@@ -334,6 +335,8 @@ fn verify_generic_zkp_2(
 
 #[cfg(test)]
 mod tests {
+    use core::str::FromStr;
+
     use unionlabs::google::protobuf::timestamp::Timestamp;
 
     use super::*;
@@ -355,6 +358,82 @@ mod tests {
                     app_hash: hex!("3A34FC963EEFAAE9B7C0D3DFF89180D91F3E31073E654F732340CEEDD77DD25B").into(),
                 },
                 hex!("294A48A750D5C2CF926516752FF484EEBE55FF26CF8A8A7536D98794CF062DB6214D0C9E5C6B164111927A1630889619DBBB40149D8E2D32898E7ACB765542CD0EB8A8E04CCC254C3BFDC2FCE627D59C3C05E2AC76E03977855DD889C1C9BA432FF7FF4DEFCB5286555D36D22DD073A859140508AF9B977F38EB9A604E99A5F6109D43A4AFA0AB161DA2B261DED80FBC0C36E57DE2001338941C834E3262CF751BC1BFC6EC27BB8E106BAAB976285BAC1D4AC38D1B759C8A2852D65CE239974F1275CC6765B3D174FD1122EFDE86137D19F07483FEF5244B1D74B2D9DC598AC32A5CA10E8837FBC89703F4D0D46912CF4AF82341C30C2A1F3941849CC011A56E18AD2162EEB71289B8821CC01875BC1E35E5FC1EBD9114C0B2C0F0D9A96C394001468C70A1716CA98EBE82B1E614D4D9B07292EBAD5B60E0C76FD1D58B485E7D1FB1E07F51A0C68E4CA59A399FCF0634D9585BE478E37480423681B984E96C0A1698D8FCB1DF51CAE023B045E114EED9CB233A5742D9E60E1097206EB20A5058")
+            ),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn test_err_969001_969006() {
+        assert_eq!(
+            verify_zkp(
+                "union-testnet-8",
+                hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                &LightHeader {
+                    height: 969006.try_into().unwrap(),
+                    time: Timestamp::from_str("2024-06-18T13:21:28.026113925Z").unwrap(),
+                    validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    next_validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    app_hash: hex!("87822b2b2affeed1c7a67b15f73d9b4ad128d0984a7f0dca910d033092dac828").into(),
+                },
+                hex!("07c6767f0ec80904244a735ed6b0dba033fdcfaf92697438c560673c255331550201e520aa2202d20f2f4a264f03fde7faf072f053ff0c11630fc951e5956e9b0ac9b8301e712a57be7bd624659d937c3c42880b629d910743297fa444f626af2823ac2e190c3a8a78dbb2e8cc8c431c8536ce8d8fd8a2c192591e1559b5cbea04f330ec60397f60363457c00884d797cd7ff3a0e58fa27d2fed6eef6840e85a270f44f1ecdac406385b6b1ba933b21b5e5c390e09230d6710b30940434a39ab13db654f0bad779cce75d84f5cd302aa0feb83de879bd2ac96830bcacba82e9f0d00f4b0611ed108fe7e63217c3b058dd33d4a4de0307506eb20799f3c9db9f52fd45d1875ab9a5cdeecd0757d7d20a3af34f3182c6b53adc6076d914d2281c20cf63a90841b4f9aefc896a4e8defc01e76509a9b779b7e580a19143ff9af2591691b825825167febe9b5d762a17df13a0a4c547efa12c10b33d67886f505836213e3df47da08b551e92cb3db933ab06fd7dfbe84950bfba30e4f481ae35c3bc")
+            ),
+            Err(Error::InvalidProof)
+        );
+    }
+
+    #[test]
+    fn test_ok_969001_969002() {
+        assert_eq!(
+            verify_zkp(
+                "union-testnet-8",
+                hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                &LightHeader {
+                    height: 969002.try_into().unwrap(),
+                    time: Timestamp::from_str("2024-06-18T13:21:02.868708953Z").unwrap(),
+                    validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    next_validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    app_hash: hex!("333f81c038816f109413eac1dc1cb8cef8facca1e9a49f21763f5dc84a375e14").into(),
+                },
+                hex!("02344d05cbb4f42548eadc621c46a3ae37f2ce23c12df83d1b490414bc20749a1fd5d4bd3b62a5b2cfae9f29686bfe1bc7a7c4bde72df168bdc1c1b0a3da1deb2a3f92896f5c37b4e3269aa84b47a67cad8b072350f794a15bac37608a5d549315e3850f18ddfa58ff9cfd5b2d133c3ac08d9f76e64611e6df4b6ba3d752e6f9054ec040028d1fd50d0f39eb60cb16326ba8876f5a47eea0c8b9c61461612bd518532a44ed88602a6e81177d08018fefadb2fedeac17ec26dae578532efb8a7905e1aca9429d9b8bfd7fb04e419c034258bc2d367e1c1a63936c67aca6767d5c1ba16ebb1dfccd919fa28d12255e6f9fcb98964682ca733bc591a25bd5a7993226daae60fea7d697b714916f9a6093f40a7a0e2a2a40b41b8741a98d5337b91f21a20866c16d94855c50593175e6d61481d56d08569ca55f8aa9f73277b3782a179b1bb01a269ae4eeacf273379099c641503f20830d6ef399867024b4f3c191120c8f0c1091387705c314ee6c5d8d23bf200649fe7b8dc2857db55f7bc5968c")
+            ),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn test_err_969001_969002() {
+        assert_eq!(
+            verify_zkp(
+                "union-testnet-8",
+                hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                &LightHeader {
+                    height: 969002.try_into().unwrap(),
+                    time: Timestamp::from_str("2024-06-18T13:21:02.868708953Z").unwrap(),
+                    validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    next_validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    app_hash: hex!("333f81c038816f109413eac1dc1cb8cef8facca1e9a49f21763f5dc84a375e14").into(),
+                },
+                hex!("13b9571349f3624ca8027ceb742ac0582a3d27847b794f567c0e35dc551a8e3e1c791e8efdd146de4319a39089755754a3a3b08a4ab1d343576ed085b5c924f825f284dad24cddb3614e663b3b407af8d3ec55edad709dace9266996aa91466126eb14026de607692bb70f8f6750c6245a9491bba466245f49ee08fbdc57ed12096bcc416908750ce28317609680ca01b5731237d600162f790d0c7085a6b721022f966ae2f087062644fcd20024ac0641ca732388cf360ce8cc61ac0480c7cc26a09e5a8c2e1b728fd0a37e5532fcc44dcd389314a80e0fb191d148740e436a1e4b916c9862c7ccf9073bfcb3b5dd09a3903f619e79a7c04f89cc42619fe35a074ad1bbd03821f2622c67a1ab95486896592703a846dda6e6e3c2b6213aa4791fc58b6834c89cbea52b43c31ca8c4a44378f38d06d2baa04672f7006651c2431ed56b4cc18b0b0082d919813a0f0433942b8691ec70c6305705faef970ceef00ca817ffdf6c5bfa0eaf33951e6695bc537f8345cc8f03d9f234d44dec3ff8b4")
+            ),
+            Err(Error::InvalidProof)
+        );
+    }
+
+    #[test]
+    fn test_ok_968996_969001() {
+        assert_eq!(
+            verify_zkp(
+                "union-testnet-8",
+                hex!("1deda64b1cc1319718f168b5aa8ed904b7d5b0ab932acdf6deae0ad9bd565a53").into(),
+                &LightHeader {
+                    height: 969001.try_into().unwrap(),
+                    time: Timestamp::from_str("2024-06-18T13:20:56.784169335Z").unwrap(),
+                    validators_hash: hex!("1deda64b1cc1319718f168b5aa8ed904b7d5b0ab932acdf6deae0ad9bd565a53").into(),
+                    next_validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
+                    app_hash: hex!("1818da4a8b1c430557a3018adc2bf9a06e56c3b530e5cce7709232e0f03bd9ab").into(),
+                },
+                hex!("086541c22b53d509d8369492d32683188f0b379950ea3c5da84aca2b331d911c163bc6e30c7610b6903832184d284399d140b316134202cfa53b695ed17db64e271a8ab10b015cc4562730180cc7af7d7509b64de00b5864ccef3ab6b5c187da1511c4af3392d5e4465cebeb3c92cad546ab6b5b7de08923ae756d4a49d972920ed4f1b33bde26016e753fe00e9ee8b37873e4df4696cce84baa34e444d6f9dc0021b25644dc22fd9414197dd9e094180eac33a5e6fc6d2e04e12df5baaae92815173080dedcafeb2789245e75f1c38ddaa4611273fa5eed1cb77f75aabace770186385a3a373190a9091147de95b3f11050152bc4376573ed454cfd703f1e7106edb33921b12717708fe03861534c812a5ea6c7e0ec428c02292f1e7dafb45901e8b29e0b18ba7cbfad2a7aef7db558f3eb49a943a379a03b1b976df912a0c329b66224da89f94e29c49b3c5070b86b23d9d23424246235088ea858a21340cc2d1120ac3dc25febd188abf16774ea49564f34bc769b6abd9295128c391dad18")
             ),
             Ok(())
         );

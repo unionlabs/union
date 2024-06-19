@@ -629,7 +629,8 @@ mod tests {
 
     use block_message::BlockMessage;
     use chain_utils::{
-        cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union, wasm::Wasm,
+        berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union,
+        wasm::Wasm,
     };
     use hex_literal::hex;
     use queue_msg::{
@@ -1156,6 +1157,66 @@ mod tests {
                 },
             },
         )));
+
+        print_json::<RelayMessage>(fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
+            parse!("union-testnet-8"),
+            relay_message::fetch::FetchUpdateHeaders {
+                counterparty_client_id: parse!("cometbls-4"),
+                counterparty_chain_id: parse!("80084"),
+                update_from: parse!("8-969001"),
+                update_to: parse!("8-969002"),
+            },
+        )));
+
+        print_json::<RelayMessage>(seq([
+            aggregate(
+                [
+                    fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
+                        parse!("union-testnet-8"),
+                        FetchSelfClientState {
+                            at: parse!("8-968996"),
+                            __marker: PhantomData,
+                        },
+                    )),
+                    fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
+                        parse!("union-testnet-8"),
+                        FetchSelfConsensusState {
+                            at: parse!("8-968996"),
+                            __marker: PhantomData,
+                        },
+                    )),
+                ],
+                [],
+                relay_message::id::<Berachain, Wasm<Union>, _>(
+                    parse!("80084"),
+                    AggregateMsgCreateClient {
+                        config: EthereumConfig {
+                            client_type: "cometbls".to_owned(),
+                            client_address: hex!("4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc").into(),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            ),
+            fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
+                parse!("union-testnet-8"),
+                relay_message::fetch::FetchUpdateHeaders {
+                    counterparty_client_id: parse!("cometbls-5"),
+                    counterparty_chain_id: parse!("80084"),
+                    update_from: parse!("8-968996"),
+                    update_to: parse!("8-969001"),
+                },
+            )),
+            fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
+                parse!("union-testnet-8"),
+                relay_message::fetch::FetchUpdateHeaders {
+                    counterparty_client_id: parse!("cometbls-5"),
+                    counterparty_chain_id: parse!("80084"),
+                    update_from: parse!("8-969001"),
+                    update_to: parse!("8-969002"),
+                },
+            )),
+        ]));
     }
 
     fn print_json<T: QueueMessage>(msg: Op<T>)
