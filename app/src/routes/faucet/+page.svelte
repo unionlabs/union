@@ -127,7 +127,7 @@ const handleSubmit = () => {
                       required={true}
                       spellcheck="false"
                       type="text"
-                      class="disabled:opacity-100 disabled:bg-background bg-white/50"
+                      class="disabled:opacity-100 disabled:bg-black/20"
                     />
                   </div>
                   <div class="flex justify-between px-1">
