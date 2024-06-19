@@ -115,6 +115,8 @@
         , extraEnv ? { }
           # if true, build without -j1 nd --release.
         , dev ? false
+        , extraBuildInputs ? [ ]
+        , extraNativeBuildInputs ? [ ]
         }:
           assert builtins.isAttrs extraEnv;
           assert builtins.isBool dev;
@@ -134,7 +136,7 @@
                 (
                   if buildStdTarget == null
                   then rust.toolchains.nightly
-                  else rust.mkBuildStdToolchain { target = buildStdTarget; }
+                  else rust.mkBuildStdToolchain { targets = [ buildStdTarget ]; }
                 )
               else cargoBuildRustToolchain;
 
@@ -233,7 +235,9 @@
 
               buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
                 lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-              );
+              ) ++ extraBuildInputs;
+
+              nativeBuildInputs = extraNativeBuildInputs;
 
               cargoVendorDir = craneLib.vendorMultipleCargoDeps {
                 inherit (craneLib.findCargoFiles crateSrc) cargoConfigs;
@@ -279,7 +283,6 @@
             packages.${cratePname} = cargoBuild.buildPackage (
               crateAttrs // {
                 pnameSuffix = pnameSuffix';
-                # note that we overwrite this here but we have to keep the packageFilterArg
                 cargoExtraArgs = "${lib.optionalString (!dev) "-j1"} ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!
@@ -346,6 +349,15 @@
             src = cargoWorkspaceSrc;
             cargoClippyExtraArgs = "--workspace --tests";
             SQLX_OFFLINE = true;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+
+            buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.protobuf pkgs.perl pkgs.gnumake pkgs.systemd ] ++ (
+              lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+            );
+            nativeBuildInputs = [
+              pkgs.clang
+            ];
           };
         in
         craneLib.cargoClippy (attrs // { cargoArtifacts = craneLib.buildDepsOnly attrs; });

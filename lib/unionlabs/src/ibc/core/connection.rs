@@ -1,3 +1,4 @@
+pub mod client_paths;
 pub mod connection_end;
 pub mod counterparty;
 pub mod state;

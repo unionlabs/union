@@ -7,6 +7,7 @@
 )]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 #![feature(trait_alias)]
+#![feature(error_in_core)]
 
 extern crate alloc;
 
@@ -31,6 +32,9 @@ pub const DELAY_PERIOD: u64 = 0;
 pub mod google;
 
 pub mod cosmwasm;
+
+#[cfg(feature = "near")]
+pub mod near;
 
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;

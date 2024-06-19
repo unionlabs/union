@@ -1,0 +1,26 @@
+[package]
+authors = ["Union Labs"]
+edition = "2021"
+name    = "dummy-ibc-app"
+version = "0.1.0"
+
+[dependencies]
+borsh                   = { workspace = true, features = ["borsh-derive"] }
+ibc-vm-rs.workspace     = true
+near-contract-standards = { workspace = true }
+near-sdk                = { workspace = true }
+near-sdk-contract-tools = { workspace = true }
+serde.workspace         = true
+serde_json.workspace    = true
+unionlabs               = { workspace = true, features = ["near"] }
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints.clippy]
+missing-panics-doc      = "allow"
+module-name-repetitions = "allow"
+must-use-candidate      = "allow"
+needless-pass-by-value  = "allow"
+pedantic                = "warn"
+wildcard-imports        = "allow"

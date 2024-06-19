@@ -15,6 +15,7 @@ Bitfield
 Bitvector
 Boiron
 Boneh
+Borsh
 CBFF
 CCTP
 CFLAGS
@@ -89,6 +90,7 @@ Karel
 Keplr
 Keybase
 Kubat
+LIBCLANG
 LIBVIPS
 Lahcen
 Layerzero
@@ -291,6 +293,7 @@ boneh
 bonlulu
 bools
 bootnode
+borsh
 brainer
 builtins
 bumpp
@@ -496,6 +499,7 @@ githook
 gitopia
 globalthis
 gnark
+gnumake
 gnused
 goblingarden
 gocosmos
@@ -645,6 +649,8 @@ legendapp
 legendres
 legos
 libblst
+libc
+libclang
 libcxx
 libdir
 libexec
@@ -680,6 +686,7 @@ mdast
 mdsvex
 merkle
 merkleize
+merklize
 merklizer
 metadatas
 metas
@@ -688,6 +695,7 @@ migaloo
 milagro
 mimc
 miminum
+mina
 miniserve
 minp
 mintkeeper
@@ -709,7 +717,10 @@ multistep
 muno
 muslc
 nanos
+nanosec
 nasm
+nearcore
+neard
 neighbouring
 nemo
 neoeinstein
@@ -722,6 +733,7 @@ newacc
 newtype
 nextest
 nextval
+nibbleslice
 nibiru
 nixbuildnet
 nixfmt
@@ -834,6 +846,7 @@ psim
 pubkey
 pubkey's
 pubkeys
+publickey
 publicnode
 publint
 punct
@@ -902,6 +915,7 @@ rustfmt
 rustlib
 rustls
 rustup
+sandboxed
 sarahkc
 sbox
 schemars
@@ -979,6 +993,7 @@ struct
 structs
 strxor
 stylesheet
+subaccount
 subdenom
 subdenoms
 subdetail
@@ -988,6 +1003,7 @@ submsg
 subroot
 subsec
 subslice
+substate
 substituters
 substores
 subtrie
@@ -1014,6 +1030,7 @@ tendermint
 tera
 teritori
 testdata
+testificate
 testkeeper
 testkey
 testutil

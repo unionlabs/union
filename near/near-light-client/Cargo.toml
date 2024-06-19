@@ -1,0 +1,34 @@
+[package]
+edition = "2021"
+name    = "near-light-client"
+version = "0.1.0"
+
+[dependencies]
+borsh                   = { workspace = true, features = ["borsh-derive"] }
+ibc-vm-rs               = { workspace = true }
+near-contract-standards = { workspace = true }
+near-primitives-core    = { version = "0.21" }
+near-sdk                = { workspace = true, features = ["wee_alloc"] }
+near-sdk-contract-tools = { workspace = true }
+serde                   = { workspace = true }
+serde_json              = { workspace = true }
+unionlabs               = { workspace = true, features = ["near"] }
+
+[dev-dependencies]
+anyhow     = "1.0"
+near-units = "0.2.0"
+tokio      = { version = "1.18.1", features = ["full"] }
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints.clippy]
+missing-panics-doc      = "allow"
+module-name-repetitions = "allow"
+must-use-candidate      = "allow"
+needless-pass-by-value  = "allow"
+pedantic                = "warn"
+wildcard-imports        = "allow"
+
+[features]
+schemars = ["ibc-vm-rs/schemars"]

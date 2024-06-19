@@ -63,6 +63,8 @@ in
     , checks ? [ ]
       # maximum size of the wasm output
     , maxSize ? DEFAULT_MAX_SIZE
+    , extraBuildInputs ? [ ]
+    , extraNativeBuildInputs ? [ ]
     }:
     let
       contractFileNameWithoutExt =
@@ -74,6 +76,8 @@ in
           #   nativeBuildInputs = [ pkgs.breakpointHook ];
           # };
           inherit crateDirFromRoot;
+          inherit extraBuildInputs;
+          inherit extraNativeBuildInputs;
           buildStdTarget = CARGO_BUILD_TARGET;
           pnameSuffix = featuresString features;
 
@@ -103,7 +107,7 @@ in
     , maxSize ? DEFAULT_MAX_SIZE
     }:
     let
-      craneLib' = craneLib.overrideToolchain (rust.mkBuildStdToolchain { target = CARGO_BUILD_TARGET; });
+      craneLib' = craneLib.overrideToolchain (rust.mkBuildStdToolchain { targets = [ CARGO_BUILD_TARGET ]; });
 
       attrs = {
         pname = contractFileNameWithoutExt;
