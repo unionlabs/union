@@ -54,10 +54,13 @@ let confirmedUserAddr: Readable<UserAddresses> = derived(userAddr, $userAddr => 
 })
 </script>
 
-
-{#if !$userAddr }
-  <div>Connect your wallets to continue.</div>
-{:else if $userAddr}
+{#if $userAddr}
   <slot userAddr={$confirmedUserAddr} />
+{:else}
+  <slot name="disconnected">
+    <span>Connect your wallets to continue</span>
+  </slot>
 {/if}
+
+
 
