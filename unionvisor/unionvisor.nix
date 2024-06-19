@@ -6,8 +6,7 @@
       unionvisorAll = crane.buildWorkspaceMember {
         crateDirFromRoot = "unionvisor";
         cargoTestExtraAttrs = {
-          partitions = 1;
-          partitionType = "count";
+          cargoTestExtraArgs = "-- --test-threads 1";
           preConfigureHooks = [
             ''
               cp -r ${self'.packages.uniond-release}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis

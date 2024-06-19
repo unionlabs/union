@@ -95,6 +95,8 @@
           cargoBuildExtraArgs ? ""
         , # extra args to be passed to cargo clippy.
           cargoClippyExtraArgs ? ""
+        , # extra args to be passed to cargo test.
+          cargoTestExtraArgs ? ""
         , # if set to a string, the crate will be built for the specified target and will
           # rebuild the std library. incompatible with `cargoBuildRustToolchain`.
           buildStdTarget ? null
@@ -242,7 +244,6 @@
                 ]));
               };
 
-              doCheck = cargoBuildCheckPhase != null;
               PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
               CARGO_PROFILE = if dev then "dev" else "release";
             };
@@ -257,7 +258,7 @@
                     crateAttrsWithArtifactsTest = crateAttrs // {
                       doNotLinkInheritedArtifacts = true;
                       cargoArtifacts = artifacts;
-                      buildPhaseCargoCommand = "cargo test ${packageFilterArg}";
+                      buildPhaseCargoCommand = "cargo test ${packageFilterArg} ${cargoTestExtraArgs}";
                     };
                     sharedAttrs = builtins.intersectAttrs crateAttrsWithArtifactsTest cargoTestExtraAttrs;
                   in
@@ -278,11 +279,14 @@
             packages.${cratePname} = cargoBuild.buildPackage (
               crateAttrs // {
                 pnameSuffix = pnameSuffix';
+                # note that we overwrite this here but we have to keep the packageFilterArg
                 cargoExtraArgs = "${lib.optionalString (!dev) "-j1"} ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!
                   " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
                 RUSTFLAGS = rustflags;
+                # we don't want to run cargo check/ cargo test on this derivation since we do that in a separate package
+                doCheck = false;
                 meta = {
                   mainProgram = crateInfo.pname;
                 };
@@ -298,11 +302,13 @@
               )
             );
 
-            checks = mkChecks "${cratePname}" {
-              clippy = mkCi (system == "x86_64-linux") (craneLib.cargoClippy (crateAttrs // {
-                cargoArtifacts = artifacts;
-                cargoClippyExtraArgs = "--tests -- --deny warnings ${cargoClippyExtraArgs}";
-              }));
+            checks = mkChecks cratePname {
+              # NOTE: We don't run this on individual crates, since we run clippy on the entire workspace.
+              # Left here for reference in case we ever want to reuse this down the line.
+              # clippy = mkCi (system == "x86_64-linux") (craneLib.cargoClippy (crateAttrs // {
+              #   cargoArtifacts = artifacts;
+              #   cargoClippyExtraArgs = "--tests -- --deny warnings ${cargoClippyExtraArgs}";
+              # }));
               tests = mkCi (system == "x86_64-linux") (craneLib.cargoTest cargoTestAttrs);
             };
           };
