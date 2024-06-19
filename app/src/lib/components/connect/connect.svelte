@@ -18,10 +18,20 @@ import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.
  * TODO: check both chains
  */
 
-$: buttonText =
-  $sepoliaStore.connectionStatus === "connected" || $cosmosStore.connectionStatus === "connected"
-    ? "Connected"
-    : "Connect Wallet"
+let buttonText: string
+$: if (
+  $sepoliaStore.connectionStatus === "connected" &&
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected"
+} else if (
+  $sepoliaStore.connectionStatus === "connected" ||
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected (1/2)"
+} else {
+  buttonText = "Connect Wallets"
+}
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
