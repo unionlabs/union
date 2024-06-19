@@ -132,7 +132,7 @@ jobs:
           prerelease: false
           repository: unionlabs/union-releases
           token: ${{ secrets.UNION_RELEASES_PAT }}
-          tag_name: ${{github.ref_name}}
+          tag_name: v0.24.0
           fail_on_unmatched_files: true
           files: |
             **/bundle-testnet-8-aarch64-linux.tar.gz
