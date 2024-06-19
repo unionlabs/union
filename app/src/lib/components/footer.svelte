@@ -1,27 +1,27 @@
 <script lang="ts">
-import { page } from "$app/stores"
-import { cn } from "$lib/utilities/shadcn.ts"
-import HomeIcon from "virtual:icons/lucide/home"
-import TelescopeIcon from "virtual:icons/lucide/telescope"
-import { Button } from "$lib/components/ui/button/index.ts"
-import WalletMinimalIcon from "virtual:icons/lucide/wallet"
-import ArrowDownUpIcon from "virtual:icons/lucide/arrow-up-down"
-import FaucetDripIcon from "virtual:icons/fa6-solid/faucet-drip"
+  import { page } from '$app/stores'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import HomeIcon from 'virtual:icons/lucide/home'
+  import TelescopeIcon from 'virtual:icons/lucide/telescope'
+  import { Button } from '$lib/components/ui/button/index.ts'
+  import WalletMinimalIcon from 'virtual:icons/lucide/wallet'
+  import ArrowDownUpIcon from 'virtual:icons/lucide/arrow-up-down'
+  import FaucetDripIcon from 'virtual:icons/fa6-solid/faucet-drip'
 
-const onWalletClick = () => document.querySelector("button[data-dialog-trigger]")?.click()
+  const onWalletClick = () => document.querySelector('button[data-dialog-trigger]')?.click()
 
-const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-accent"
+  const navigationIconStyle = 'size-7 min-w-6 dark:hover:text-white text-zinc-accent'
 
-$: isCurrentPage = (route: string) => $page.route.id?.split("/")[1] === route
+  $: isCurrentPage = (route: string) => $page.route.id?.split('/')[1] === route
 
-let buttons = [
-  { displayName: "home", href: "", icon: HomeIcon },
-  { displayName: "transfer", href: "transfer", icon: ArrowDownUpIcon },
-  { displayName: "explorer", href: "explorer", icon: TelescopeIcon },
-  { displayName: "faucet", href: "faucet", icon: FaucetDripIcon }
-]
+  let buttons = [
+    { displayName: 'home', href: '', icon: HomeIcon },
+    { displayName: 'transfer', href: 'transfer', icon: ArrowDownUpIcon },
+    { displayName: 'explorer', href: 'explorer', icon: TelescopeIcon },
+    { displayName: 'faucet', href: 'faucet', icon: FaucetDripIcon },
+  ]
 
-const height = "h-16"
+  const height = 'h-16 min-h-16'
 </script>
 
 <footer
@@ -39,7 +39,12 @@ const height = "h-16"
       variant="ghost"
       name={button.displayName}
       aria-label="Home page link"
-      class={cn('flex flex-col text-xs gap-px h-16 w-full', isCurrentPage(button.href) ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground' : 'bg-transparent')}
+      class={cn(
+        'flex flex-col text-xs gap-px h-16 w-full',
+        isCurrentPage(button.href)
+          ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground'
+          : 'bg-transparent',
+      )}
     >
       <svelte:component
         this={button.icon}
@@ -49,7 +54,14 @@ const height = "h-16"
     </Button>
   {/each}
 
-  <Button class="flex flex-col text-xs gap-px h-16 w-full" size="icon" name="wallet" type="button" variant="ghost" on:click={() => onWalletClick()}>
+  <Button
+    class="flex flex-col text-xs gap-px h-16 w-full"
+    size="icon"
+    name="wallet"
+    type="button"
+    variant="ghost"
+    on:click={() => onWalletClick()}
+  >
     <WalletMinimalIcon class={navigationIconStyle} />
     Wallet
   </Button>

@@ -18,7 +18,3 @@ import NotConnected from "$lib/components/not-connected.svelte"
     </WalletGate>
   </ChainsGate>
 </div>
-
-
-
-

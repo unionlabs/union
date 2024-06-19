@@ -1,7 +1,5 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
-import { Duration } from "svelte-ux"
-import { DurationUnits } from "svelte-ux"
 
 export let value: {
   name: string
