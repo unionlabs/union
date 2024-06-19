@@ -1,12 +1,9 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { page } from "$app/stores"
-import type { Address } from "viem"
 import { toast } from "svelte-sonner"
-import { goto } from "$app/navigation"
+import { sepolia } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
-import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { sleep } from "$lib/utilities/index.ts"
 import { getWalletClient } from "@wagmi/core"
@@ -19,11 +16,9 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
-import { writable, derived } from "svelte/store"
 import AssetsDialog from "./assets-dialog.svelte"
 import { config } from "$lib/wallet/evm/config.ts"
 import { truncate } from "$lib/utilities/format.ts"
-import type { OfflineSigner } from "@leapwallet/types"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
@@ -32,8 +27,6 @@ import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { Button } from "$lib/components/ui/button/index.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import {
@@ -392,9 +385,7 @@ $: buttonText =
     ? BigInt(amount) < BigInt($asset.balance)
       ? "transfer"
       : "insufficient balance"
-    : $asset && !amount
-      ? "enter amount"
-      : "select asset and enter amount"
+    : "select asset and enter amount"
 </script>
 
 

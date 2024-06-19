@@ -1,5 +1,6 @@
 <script lang="ts">
 import { toast } from "svelte-sonner"
+import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
 import { Label } from "$lib/components/ui/label"
 import { debounce } from "$lib/utilities/index.ts"
@@ -15,10 +16,9 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import CosmosBalance from "./(components)/cosmos-balance.svelte"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
-import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
+import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import NotConnected from "$lib/components/not-connected.svelte"
 
 let userInput = false
@@ -185,6 +185,6 @@ const handleSubmit = () => {
       </Card.Content>
     </Card.Root>
     <ChainsGate let:chains>
-      <ExternalFaucets {chains}/>
+      <ExternalFaucets {chains} />
     </ChainsGate>
   </main>

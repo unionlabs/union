@@ -20,6 +20,8 @@ let buttons = [
   { displayName: "explorer", href: "explorer", icon: TelescopeIcon },
   { displayName: "faucet", href: "faucet", icon: FaucetDripIcon }
 ]
+
+const height = "h-16"
 </script>
 
 <footer
@@ -39,7 +41,10 @@ let buttons = [
       aria-label="Home page link"
       class={cn('flex flex-col text-xs gap-px h-16 w-full', isCurrentPage(button.href) ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground' : 'bg-transparent')}
     >
-      <svelte:component this={button.icon} class="size-7 min-w-6 dark:hover:text-white text-zinc-accent" />
+      <svelte:component
+        this={button.icon}
+        class="size-7 min-w-6 dark:hover:text-white text-zinc-accent"
+      />
       <div>{button.displayName}</div>
     </Button>
   {/each}
