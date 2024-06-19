@@ -25,6 +25,8 @@ use crate::{
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
+    pub label: String,
+
     pub url: Url,
 
     /// The height from which we start indexing

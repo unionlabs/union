@@ -13,6 +13,7 @@ use crate::consensus::{Indexer, Querier};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
+    pub label: String,
     url: url::Url,
     chain_id: String,
 }
