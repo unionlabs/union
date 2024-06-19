@@ -106,16 +106,33 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
       - run: |
-          ls -la uniond-release-aarch64-linux
+          for $artifact in \
+            bundle-testnet-8-aarch64-linux \
+            bundle-testnet-8-x86_64-linux \
+            cometbls-light-client-aarch64-linux \
+            cometbls-light-client-x86_64-linux \
+            ucs01-relay-aarch64-linux \
+            ucs01-relay-x86_64-linux \
+            uniond-release-aarch64-linux \
+            uniond-release-x86_64-linux
+          do
+            (cd $artifact && mv $artifact $artifact.tar.gz
+          done
+
           echo "# sha256 Checksums" >> release.md
-          echo $(sha256sum **/bundle-testnet-8-aarch64-linux) >> release.md
-          echo $(sha256sum **/bundle-testnet-8-x86_64-linux) >> release.md
-          echo $(sha256sum **/cometbls-light-client-aarch64-linux) >> release.md
-          echo $(sha256sum **/cometbls-light-client-x86_64-linux) >> release.md
-          echo $(sha256sum **/ucs01-relay-aarch64-linux) >> release.md
-          echo $(sha256sum **/ucs01-relay-x86_64-linux) >> release.md
-          echo $(sha256sum **/uniond-release-aarch64-linux) >> release.md
-          echo $(sha256sum **/uniond-release-x86_64-linux) >> release.md
+          for $artifact in \
+            bundle-testnet-8-aarch64-linux.tar.gz \
+            bundle-testnet-8-x86_64-linux.tar.gz \
+            cometbls-light-client-aarch64-linux.tar.gz \
+            cometbls-light-client-x86_64-linux.tar.gz \
+            ucs01-relay-aarch64-linux.tar.gz \
+            ucs01-relay-x86_64-linux.tar.gz \
+            uniond-release-aarch64-linux \
+            uniond-release-x86_64-linux
+          do
+            echo "- $(cd $artifact && sha256sum $artifact)" >> release.md
+          done
+
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
@@ -125,12 +142,12 @@ jobs:
           tag_name: ${{github.ref_name}}
           fail_on_unmatched_files: true
           files: |
-            **/bundle-testnet-8-aarch64-linux
-            **/bundle-testnet-8-x86_64-linux
-            **/cometbls-light-client-aarch64-linux
-            **/cometbls-light-client-x86_64-linux
-            **/ucs01-relay-aarch64-linux
-            **/ucs01-relay-x86_64-linux
+            **/bundle-testnet-8-aarch64-linux.tar.gz
+            **/bundle-testnet-8-x86_64-linux.tar.gz
+            **/cometbls-light-client-aarch64-linux.tar.gz
+            **/cometbls-light-client-x86_64-linux.tar.gz
+            **/ucs01-relay-aarch64-linux.tar.gz
+            **/ucs01-relay-x86_64-linux.tar.gz
             **/uniond-release-aarch64-linux
             **/uniond-release-x86_64-linux
 
