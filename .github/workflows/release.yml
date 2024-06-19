@@ -60,7 +60,7 @@ jobs:
     strategy:
       matrix:
         system: [aarch64-linux, x86_64-linux]
-        package: [uniond-release, galoisd, ucs01-relay, bundle-testnet-8, cometbls-light-client voyager]
+        package: [uniond-release, galoisd, ucs01-relay, bundle-testnet-8, cometbls-light-client, voyager]
     steps:
       - uses: actions/download-artifact@v4
         with:
