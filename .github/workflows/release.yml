@@ -106,7 +106,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
       - run: |
-          ls -la
+          ls -la uniond-release-aarch64-linux
           echo "# sha256 Checksums" >> release.md
           echo $(sha256sum bundle-testnet-8-aarch64-linux) >> release.md
           echo $(sha256sum bundle-testnet-8-x86_64-linux) >> release.md
@@ -126,7 +126,7 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             **/bundle-testnet-8-aarch64-linux
-            **/bundle-testnet-8-aarch64-linux
+            **/bundle-testnet-8-x86_64-linux
             **/cometbls-light-client-aarch64-linux
             **/cometbls-light-client-x86_64-linux
             **/ucs01-relay-aarch64-linux
