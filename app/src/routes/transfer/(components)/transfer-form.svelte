@@ -392,8 +392,7 @@ $: buttonText =
     ? BigInt(amount) < BigInt($asset.balance)
       ? "transfer"
       : "insufficient balance"
-    : // : 'select asset and enter amount'
-      $asset && !amount
+    : $asset && !amount
       ? "enter amount"
       : "select asset and enter amount"
 </script>
