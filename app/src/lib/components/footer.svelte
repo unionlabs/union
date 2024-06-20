@@ -24,7 +24,7 @@ let buttons = [
 
 <footer
   class={cn(
-    'overflow-hidden  uppercase font-supermolot font-bold text-xl',
+    'uppercase font-supermolot font-bold text-xl',
     'border-t bg-card',
     'grid md:hidden grid-cols-5 place-content-center items-center',
     // styling children
