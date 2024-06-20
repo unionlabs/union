@@ -3,24 +3,24 @@ import {
   fallback,
   reconnect,
   serialize,
+  getClient,
+  getChainId,
   getAccount,
   deserialize,
+  watchClient,
   createConfig,
   watchAccount,
+  watchChainId,
+  getConnectors,
+  getConnections,
+  watchConnectors,
+  watchConnections,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage,
-  getChainId,
-  getClient,
-  getConnections,
-  getConnectors,
-  watchChainId,
-  watchClient,
-  watchConnections,
-  watchConnectors
+  createStorage as createWagmiStorage
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
 import { KEY } from "$lib/constants/keys.ts"
@@ -70,7 +70,10 @@ export const config = createConfig({
     storage: typeof window !== "undefined" ? window.sessionStorage : undefined
   }),
   connectors: [
-    injected({ shimDisconnect: true, unstable_shimAsyncInject: 2_500 }),
+    injected({
+      shimDisconnect: true,
+      unstable_shimAsyncInject: 2_500
+    }),
     walletConnect({
       projectId: KEY.WALLET_CONNECT_PROJECT_ID,
       qrModalOptions: {

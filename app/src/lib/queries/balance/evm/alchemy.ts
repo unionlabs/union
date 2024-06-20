@@ -53,6 +53,7 @@ export async function getBalancesFromAlchemy({
   )
   return tokensInfo.map((token, index) => ({
     ...token,
+    gasToken: false,
     balance: BigInt(result.output.result.tokenBalances[index].tokenBalance),
     address: token.address as Address
   }))

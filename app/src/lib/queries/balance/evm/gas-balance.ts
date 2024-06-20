@@ -7,7 +7,7 @@ export async function evmGasBalance({
   address,
   chainId
 }: { address: string; chainId: string }): Promise<{
-  gas: boolean
+  gasToken: boolean
   name: string
   symbol: string
   decimals: number
@@ -20,7 +20,7 @@ export async function evmGasBalance({
   const chain = config.chains.find(chain => String(chain.id) === chainId)
   if (!chain) raise(`chain with id ${chainId} not found`)
   const balance = await viemClient.getBalance({ address: validAddress })
-  return { gas: true, ...chain.nativeCurrency, chainId, balance }
+  return { gasToken: true, ...chain.nativeCurrency, chainId, balance }
 }
 
 /**
@@ -28,7 +28,7 @@ export async function evmGasBalance({
  */
 export async function evmGasBalances({ address }: { address: string }): Promise<
   Array<{
-    gas: boolean
+    gasToken: boolean
     name: string
     symbol: string
     decimals: number
@@ -41,7 +41,7 @@ export async function evmGasBalances({ address }: { address: string }): Promise<
 
   return await Promise.all(
     config.chains.map(async chain => ({
-      gas: true,
+      gasToken: true,
       ...chain.nativeCurrency,
       chainId: String(chain.id),
       balance: await viemClient.getBalance({ address: validAddress })
