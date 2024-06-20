@@ -16,5 +16,5 @@ $: asset = unionBalances.find(balance => balance.symbol.toLowerCase() === "muno"
 </script>
 
 {#if asset && chain}
-  <Precise {asset} {chain} toolTip symbol />
+  <Precise {asset} {chain} toolTip showSymbol />
 {/if}
