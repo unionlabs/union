@@ -14,6 +14,7 @@ export const allTransfersQueryDocument = graphql(/* GraphQL */ `
         chain {
           chain_id
         }
+        receiver
       }
     }
   }
