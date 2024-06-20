@@ -96,11 +96,22 @@ func (zkp ZKP) Verify(trustedValidatorsHash []byte, header LightHeader) error {
 	commHash := commitmentsHash(zkp.ProofCommitment)
 	inpHash := inputsHash(header, trustedValidatorsHash)
 
-	initialPoint := verifyingKey.G1.K[0].Add(zkp.ProofCommitment)
+	var initialPoint curve.G1Affine
+	initialPoint.Add(&verifyingKey.G1.K[0], &zkp.ProofCommitment)
+
+	var commMul curve.G1Affine
+	var commBigInt big.Int
+	commHash.BigInt(&commBigInt)
+	commMul.ScalarMultiplication(&verifyingKey.G1.K[2], &commBigInt)
+
+	var inpMul curve.G1Affine
+	var inpBigInt big.Int
+	inpHash.BigInt(&inpBigInt)
+	inpMul.ScalarMultiplication(&verifyingKey.G1.K[1], &inpBigInt)
 
 	publicInputsMsm := initialPoint
-	publicInputsMsm = publicInputsMsm.Add(commHash.Mul(verifyingKey.G1.K[1]))
-	publicInputsMsm = publicInputsMsm.Add(inpHash.Mul(verifyingKey.G1.K[2]))
+	publicInputsMsm.Add(&publicInputsMsm, &inpMul)
+	publicInputsMsm.Add(&publicInputsMsm, &commMul)
 
 	hasher := sha256.New()
 	a := zkp.Proof.A.Bytes()
@@ -110,19 +121,40 @@ func (zkp ZKP) Verify(trustedValidatorsHash []byte, header LightHeader) error {
 	msm := publicInputsMsm.Bytes()
 	hasher.Write(msm[:])
 
-	// TODO(aeryz): do we need to set the first elem to 0 here?
-	var r1 fr.Element
-	r1.SetBytes(hasher.Sum(nil))
-
 	hasher.Reset()
 	pc := zkp.ProofCommitment.Bytes()
 	hasher.Write(pc[:])
 	pcPok := zkp.ProofCommitmentPoK.Bytes()
 	hasher.Write(pcPok[:])
-	var r2 fr.Element
-	r2.SetBytes(hasher.Sum(nil))
 
-	return nil
+	alpha := verifyingKey.G1.Alpha
+	gamma := verifyingKey.G2.Gamma
+	delta := verifyingKey.G2.Delta
+	beta := verifyingKey.G2.Beta
+
+	// NOTE(aeryz): We didn't use fiat-shamir here since we don't batch two pairings. I'm not sure
+	// if we still need it though.
+	result, err := curve.PairingCheck([]curve.G1Affine{
+		zkp.Proof.A,
+		publicInputsMsm,
+		zkp.Proof.C,
+		alpha,
+	}, []curve.G2Affine{
+		zkp.Proof.B,
+		*gamma.Neg(&gamma),
+		*delta.Neg(&delta),
+		*beta.Neg(&beta),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !result {
+		return errors.New("proof verification failed")
+	}
+
+	return verifyingKey.CommitmentKey.Verify(zkp.ProofCommitment, zkp.ProofCommitmentPoK)
 }
 
 func hashToField(msg []byte) fr.Element {

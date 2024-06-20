@@ -3,8 +3,6 @@ package cometbls
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
