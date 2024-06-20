@@ -1,60 +1,12 @@
 <script lang="ts">
-import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { onNavigate } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn.ts"
 import type { LayoutData } from "./$types.ts"
 import Menu from "./(components)/menu.svelte"
-import * as Resizable from "$lib/components/ui/resizable"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
-import GripVerticalIcon from "virtual:icons/tabler/grip-vertical"
-import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
 
 export let data: LayoutData
-
-let windowSize = { width: window.innerWidth, height: window.innerHeight }
-
-const handleResize = () => {
-  requestAnimationFrame(() => {
-    windowSize = { width: window.innerWidth, height: window.innerHeight }
-  })
-}
-
-let isCollapsed = false
-let leftPane: Resizable.PaneAPI
-$: [leftSize, rightSize] = [14, 88]
-
-onMount(() => {
-  window.addEventListener("resize", handleResize)
-  return () => {
-    window.removeEventListener("resize", handleResize)
-  }
-})
-
-$: {
-  try {
-    if (windowSize?.width < 900) {
-      isCollapsed = true
-    } else {
-      isCollapsed = false
-    }
-    // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
-  } catch {}
-}
-
-const onLayoutChange: Resizable.PaneGroupProps["onLayoutChange"] = sizes => {
-  document.cookie = `PaneForge:layout=${JSON.stringify(sizes)}`
-}
-
-const onCollapse: Resizable.PaneProps["onExpand"] = () => {
-  isCollapsed = true
-  document.cookie = `PaneForge:collapsed=${true}`
-}
-
-const onExpand: Resizable.PaneProps["onExpand"] = () => {
-  isCollapsed = false
-  document.cookie = `PaneForge:collapsed=${false}`
-}
 
 let explorerRoute = $page.route.id?.split("/").at(2) ?? null
 $: explorerPageDescription =
@@ -73,8 +25,6 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 <svelte:head>
   <title>Union - Explorer</title>
 </svelte:head>
-
-
 
 <!-- mobile layout !-->
 <div class="flex flex-row sm:divide-x overflow-x-none max-w-full w-full">

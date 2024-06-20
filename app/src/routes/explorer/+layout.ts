@@ -16,32 +16,31 @@ export interface Table {
   description: string
 }
 
-export const load = (loadEvent => {
-  return {
-    tables: [
-      {
-        route: "transfers",
-        icon: TransfersIcon,
-        description: "All UCS-01 transfers"
-      },
-      {
-        route: "blocks",
-        icon: BlocksIcon,
-        description: "Blocks from all chains indexed by Hubble"
-      },
-      {
-        route: "connections",
-        icon: ConnectionIcon,
-        description:
-          "IBC Connections based on on-chain handshake events. Status is only 'CONFIRM' if we have indexed the entire four-way handshake."
-      },
-      { route: "channels", icon: ChannelsIcon, description: "Open IBC Channels" },
-      { route: "packets", icon: PacketIcon, description: "Packets sent through Union" },
-      {
-        route: "index-status",
-        icon: IndexIcon,
-        description: "Statuses of Hubble indices for connected chains"
-      }
-    ] as Array<Table>
-  }
-}) satisfies LayoutLoad
+export const load = (loadEvent => ({
+  sourceRoute: loadEvent.route,
+  tables: [
+    {
+      route: "transfers",
+      icon: TransfersIcon,
+      description: "All UCS-01 transfers"
+    },
+    {
+      route: "blocks",
+      icon: BlocksIcon,
+      description: "Blocks from all chains indexed by Hubble"
+    },
+    {
+      route: "connections",
+      icon: ConnectionIcon,
+      description:
+        "IBC Connections based on on-chain handshake events. Status is only 'CONFIRM' if we have indexed the entire four-way handshake."
+    },
+    { route: "channels", icon: ChannelsIcon, description: "Open IBC Channels" },
+    { route: "packets", icon: PacketIcon, description: "Packets sent through Union" },
+    {
+      route: "index-status",
+      icon: IndexIcon,
+      description: "Statuses of Hubble indices for connected chains"
+    }
+  ] as Array<Table>
+})) satisfies LayoutLoad
