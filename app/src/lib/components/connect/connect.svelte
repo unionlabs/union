@@ -13,25 +13,14 @@ import ThemeSwitch from "$lib/components/header/theme-switch.svelte"
 import ChevronsUpDownIcon from "virtual:icons/lucide/chevrons-up-down"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
+import { Switch } from "$lib/components/ui/switch"
+import { Label } from "$lib/components/ui/label"
+import { showUnsupported } from "$lib/stores/user.ts"
 
-/**
- * TODO: check both chains
- */
-
-let buttonText: string
-$: if (
-  $sepoliaStore.connectionStatus === "connected" &&
-  $cosmosStore.connectionStatus === "connected"
-) {
-  buttonText = "Connected"
-} else if (
-  $sepoliaStore.connectionStatus === "connected" ||
-  $cosmosStore.connectionStatus === "connected"
-) {
-  buttonText = "Connected (1/2)"
-} else {
-  buttonText = "Connect Wallets"
-}
+$: buttonText =
+  $sepoliaStore.connectionStatus === "connected" || $cosmosStore.connectionStatus === "connected"
+    ? "Connected"
+    : "Connect Wallet"
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
@@ -70,30 +59,35 @@ let collapsibleOpen = true
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
-      <h2 class=" text-start w-full text-2xl font-bold uppercase font-supermolot">Connect Wallets</h2>
+        <h2 class=" text-start w-full text-2xl font-bold uppercase font-supermolot">Connect Wallets</h2>
       </Sheet.Title>
     </Sheet.Header>
-      <Connection
-        chain="evm"
-        address={$sepoliaStore.address}
-        hoverState={$sepoliaStore.hoverState}
-        onConnectClick={sepoliaStore.connect}
-        onDisconnectClick={sepoliaStore.disconnect}
-        connectStatus={$sepoliaStore.connectionStatus}
-        chainWalletsInformation={evmWalletsInformation}
-        connectedWalletId={$sepoliaStore.connectedWallet}
-      />
-      <Separator class={cn('px-0 bg-border my-4')} />
-      <Connection
-        chain="cosmos"
-        address={$cosmosStore.address}
-        hoverState={$cosmosStore.hoverState}
-        onConnectClick={cosmosStore.connect}
-        onDisconnectClick={cosmosStore.disconnect}
-        connectStatus={$cosmosStore.connectionStatus}
-        chainWalletsInformation={cosmosWalletsInformation}
-        connectedWalletId={$cosmosStore.connectedWallet}
-      />
-      <ThemeSwitch />
+    <Connection
+      chain="evm"
+      address={$sepoliaStore.address}
+      hoverState={$sepoliaStore.hoverState}
+      onConnectClick={sepoliaStore.connect}
+      onDisconnectClick={sepoliaStore.disconnect}
+      connectStatus={$sepoliaStore.connectionStatus}
+      chainWalletsInformation={evmWalletsInformation}
+      connectedWalletId={$sepoliaStore.connectedWallet}
+    />
+    <Separator class={cn('px-0 bg-border my-4')} />
+    <Connection
+      chain="cosmos"
+      address={$cosmosStore.address}
+      hoverState={$cosmosStore.hoverState}
+      onConnectClick={cosmosStore.connect}
+      onDisconnectClick={cosmosStore.disconnect}
+      connectStatus={$cosmosStore.connectionStatus}
+      chainWalletsInformation={cosmosWalletsInformation}
+      connectedWalletId={$cosmosStore.connectedWallet}
+    />
+    <div class="flex items-center space-x-2">
+      <Switch id="unsupported-assets" bind:checked={$showUnsupported}/>
+      <Label for="unsupported-assets">Show unsupported assets</Label>
+    </div>
+    <ThemeSwitch />
   </Sheet.Content>
 </Sheet.Root>
+
