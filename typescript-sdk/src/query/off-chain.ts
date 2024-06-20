@@ -86,7 +86,10 @@ export interface Ucs1Configuration {
   }
 }
 
-export interface Chain<IncludeEndpoints extends boolean, IncludeContracts extends boolean> {
+export interface Chain<
+  IncludeEndpoints extends boolean | undefined = undefined,
+  IncludeContracts extends boolean | undefined = undefined
+> {
   id: number
   chain_id: string
   enabled: boolean

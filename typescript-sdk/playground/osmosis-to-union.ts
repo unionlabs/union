@@ -4,7 +4,7 @@ import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, cosmosHttp, offchainQuery } from "#mod.ts"
+import { createCosmosSdkClient, cosmosHttp, offchainQuery } from "#mod.ts"
 
 /* `bun playground/osmosis-to-union.ts --private-key "..."` */
 
@@ -39,7 +39,7 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createUnionClient({
+  const client = createCosmosSdkClient({
     // @ts-expect-error
     evm: {},
     cosmos: {

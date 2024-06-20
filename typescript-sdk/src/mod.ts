@@ -27,17 +27,21 @@ import {
 import { sepolia } from "viem/chains"
 import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/off-chain.ts"
+import { findPfmPath, createPfmMemo } from "./pfm.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { transferAssetFromEvm, transferAssetFromEvmSimulate } from "./transfer/evm.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
+const pfm = { findPfmPath, createPfmMemo }
+
 export {
   /**
-   * We export this as a standalone so that it can be used to fetch data that get passed to `createUnionClient`
+   * We export this as a standalone so that it can be used to fetch data that get passed to `createCosmosSdkClient`
    */
   offchainQuery,
-  cosmosHttp
+  cosmosHttp,
+  pfm
 }
 
 export interface EvmClientParameters extends WalletClientConfig {}
@@ -48,7 +52,7 @@ export interface CosmosClientParameters {
   transport: ReturnType<typeof cosmosHttp> | Array<ReturnType<typeof cosmosHttp>>
 }
 
-export function createUnionClient({
+export function createCosmosSdkClient({
   evm,
   cosmos
 }: {
@@ -70,6 +74,10 @@ export function createUnionClient({
       truncateAddress,
       isValidEvmAddress,
       isValidBech32Address
+    }))
+    .extend(() => ({
+      findPfmPath,
+      createPfmMemo
     }))
     .extend(client => ({
       transferAssetFromEvm: async ({
@@ -262,6 +270,7 @@ export function createUnionClient({
     .extend(client => ({
       simulateTransaction: async ({
         path,
+        memo,
         amount,
         network,
         recipient,
@@ -273,6 +282,7 @@ export function createUnionClient({
         gasPrice = cosmos.gasPrice,
         cosmosSigner = cosmos.account
       }: {
+        memo?: string
         amount: bigint
         recipient: string
         sourcePort?: string
@@ -311,6 +321,7 @@ export function createUnionClient({
           }
           evmSigner ||= client.account
           return await transferAssetFromEvmSimulate(client, {
+            memo,
             amount,
             recipient,
             sourceChannel,

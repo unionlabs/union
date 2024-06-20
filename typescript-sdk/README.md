@@ -23,10 +23,10 @@ npx jsr add @union/client
 ```ts
 import { http } from "viem"
 import { sepolia } from "viem/chains"
-import { createUnionClient, cosmosHttp } from "@union/client"
+import { createCosmosSdkClient, cosmosHttp } from "@union/client"
 
 
-const unionClient = createUnionClient({
+const unionClient = createCosmosSdkClient({
   evm: {
     chain: sepolia,
     // browser wallet or `privateKeyToAccount` from `viem/accounts`

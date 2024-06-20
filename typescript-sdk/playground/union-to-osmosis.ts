@@ -5,7 +5,7 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { timestamp } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { createUnionClient, offchainQuery } from "#mod.ts"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /**
@@ -51,7 +51,7 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createUnionClient({
+  const client = createCosmosSdkClient({
     // @ts-expect-error
     evm: {},
     cosmos: {

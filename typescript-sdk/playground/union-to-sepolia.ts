@@ -8,7 +8,7 @@ import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { timestamp } from "../scripts/logger.ts"
-import { createUnionClient, offchainQuery } from "#mod.ts"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /* `bun playground/union-to-sepolia.ts --private-key "..."` */
@@ -46,7 +46,7 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createUnionClient({
+  const client = createCosmosSdkClient({
     evm: {
       chain: sepolia,
       account: evmAccount,

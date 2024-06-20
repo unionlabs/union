@@ -6,7 +6,7 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { createUnionClient, offchainQuery } from "#mod.ts"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { consola } from "scripts/logger"
 
@@ -50,7 +50,7 @@ try {
 
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
-  const client = createUnionClient({
+  const client = createCosmosSdkClient({
     evm: {
       chain: sepolia,
       account: evmAccount,

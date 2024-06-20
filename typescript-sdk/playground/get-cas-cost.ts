@@ -3,7 +3,7 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { cosmosHttp } from "#transport.ts"
-import { createUnionClient } from "#mod.ts"
+import { createCosmosSdkClient } from "#mod.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
@@ -25,7 +25,7 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   "union"
 )
 
-const client = createUnionClient({
+const client = createCosmosSdkClient({
   evm: {
     chain: sepolia,
     account: evmAccount,
