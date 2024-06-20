@@ -1,9 +1,8 @@
 <script lang="ts">
-import * as Card from "$lib/components/ui/card/index.ts"
 import WalletGate from "$lib/components/wallet-gate.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
-import BalancesOverview from "$lib/components/balances-overview.svelte"
 import NotConnected from "$lib/components/not-connected.svelte"
+import BalancesOverview from "$lib/components/balances-overview.svelte"
 </script>
 
 <div class="max-w-full">

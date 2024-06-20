@@ -20,8 +20,6 @@ let buttons = [
   { displayName: "explorer", href: "explorer", icon: TelescopeIcon },
   { displayName: "faucet", href: "faucet", icon: FaucetDripIcon }
 ]
-
-const height = "h-16 min-h-16"
 </script>
 
 <footer
