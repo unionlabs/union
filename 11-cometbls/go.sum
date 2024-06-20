@@ -142,6 +142,8 @@ github.com/cockroachdb/redact v1.1.5/go.mod h1:BVNblN9mBWFyMyqK1k3AAiSxhvhfK2oOZ
 github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 h1:zuQyyAKVxetITBuuhv3BI9cMrmStnpT18zmgmTxunpo=
 github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06/go.mod h1:7nc4anLGjupUW/PeY5qiNYsdNXj7zopG+eqsS7To5IQ=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
+github.com/cometbft/cometbft v0.38.7 h1:ULhIOJ9+LgSy6nLekhq9ae3juX3NnQUMMPyVdhZV6Hk=
+github.com/cometbft/cometbft v0.38.7/go.mod h1:HIyf811dFMI73IE0F7RrnY/Fr+d1+HuJAgtkEpQjCMY=
 github.com/cometbft/cometbft-db v0.9.1 h1:MIhVX5ja5bXNHF8EYrThkG9F7r9kSfv8BX4LWaxWJ4M=
 github.com/cometbft/cometbft-db v0.9.1/go.mod h1:iliyWaoV0mRwBJoizElCwwRA9Tf7jZJOURcRZF9m60U=
 github.com/consensys/bavard v0.1.13 h1:oLhMLOFGTLdlda/kma4VOJazblc7IM5y5QPd2A/YjhQ=
@@ -759,8 +761,6 @@ github.com/tendermint/go-amino v0.16.0/go.mod h1:TQU0M1i/ImAo+tYpZi73AU3V/dKeCoM
 github.com/tidwall/btree v1.7.0 h1:L1fkJH/AuEh5zBnnBbmTwQ5Lt+bRJ5A8EWecslvo9iI=
 github.com/tidwall/btree v1.7.0/go.mod h1:twD9XRA5jj9VUQGELzDO4HPQTNJsoWWfYEL+EUQ2cKY=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
-github.com/tunabay/go-bitarray v1.3.1 h1:5q38uagXhrdzT0LjKWBB5ILO56fptGrJG8750171cAo=
-github.com/tunabay/go-bitarray v1.3.1/go.mod h1:k6MncM9mWklQRcVy5Xe9RYixeDd9b3H0xqtgiANJFF4=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
@@ -770,12 +770,8 @@ github.com/ugorji/go/codec v1.2.11 h1:BMaWp1Bb6fHwEtbplGBGJ498wD+LKlNSl25MjdZY4d
 github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b h1:KLUmkf0vAzt+ZfwfuH03bf7+73rNB+iLV8ux/6S5rmg=
-github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6 h1:wRt6Yt29bWvwCSeRmRJ/Wm1sRev1GjJGXn4MzSrMbv4=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6/go.mod h1:wKqwsieaKPThcFkHe0d0zMsbHEUWFmZcG7KBCse210o=
-github.com/unionlabs/union/galoisd v0.0.0-20240614104816-a49fb19d57cd h1:VABwzrGGloLm2lCsC648IOlytb9NlxH76K0U5HIyA9U=
-github.com/unionlabs/union/galoisd v0.0.0-20240614104816-a49fb19d57cd/go.mod h1:+aZPt+NS4QAyNESWE+Hl8JMEpGMvnxvnsjIVyFBWa1A=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=

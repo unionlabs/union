@@ -18,7 +18,6 @@ require (
 	github.com/holiman/uint256 v1.2.3
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	github.com/unionlabs/union/galoisd v0.0.0-20240614104816-a49fb19d57cd
 	golang.org/x/crypto v0.22.0
 )
 
@@ -142,7 +141,6 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
-	github.com/tunabay/go-bitarray v1.3.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
 	github.com/zondax/ledger-go v0.14.3 // indirect
@@ -169,7 +167,6 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
 	github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240312175655-ce0186ef32c1
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
