@@ -41,6 +41,9 @@ pub enum ContractError {
     #[error("Got a submessage reply with unknown id: {id} and variant: {variant:?}")]
     UnknownReply { id: u64, variant: SubMsgResult },
 
+    #[error("unable to send pfm forward packet: {err}")]
+    PfmSendPacketError { err: String },
+
     #[error("{0}")]
     Protocol(#[from] ProtocolError),
 

@@ -47,14 +47,16 @@ pub fn reply(
     reply: Reply,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match (reply.id, reply.result) {
+        // RECEIVE_REPLY_ID is associated with submessages emitted during handling of `ibc_packet_receive`
         (Ics20Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ics20Protocol::receive_error(err)))
         }
         (Ucs01Protocol::RECEIVE_REPLY_ID, SubMsgResult::Err(err)) => {
             Ok(to_response(Ucs01Protocol::receive_error(err)))
         }
+        // IBC_SEND_ID is associated with submessages emitted during handling of `send`, which is called via `execute_transfer`, which is used both in PFM and non-PFM contexts
         (IBC_SEND_ID, SubMsgResult::Ok(value)) => {
-            // REVIEW: Is an empty reply payload valid/ expected?
+            // this means this is not pfm
             if reply.payload.is_empty() {
                 return Ok(Response::new());
             }
@@ -86,6 +88,24 @@ pub fn reply(
                 Response::new()
                     .add_event(in_flight_packet.create_hop_event(send_response.sequence)),
             )
+        }
+        (IBC_SEND_ID, SubMsgResult::Err(err)) => {
+            // this means this is not pfm
+            if reply.payload.is_empty() {
+                return Err(ContractError::PfmSendPacketError { err });
+            }
+
+            // decode the payload to figure out the source channel
+            let in_flight_packet =
+                serde_json_wasm::from_slice::<InFlightPfmPacket>(reply.payload.as_slice())
+                    .expect("binary is type");
+
+            match &*in_flight_packet.origin_protocol_version {
+                Ucs01Protocol::VERSION => Ok(to_response(Ucs01Protocol::receive_error(err))),
+                Ics20Protocol::VERSION => Ok(to_response(Ics20Protocol::receive_error(err))),
+                // in_flight_packet.origin_protocol_version is only ever set by us, so if it is set incorrectly then it is a bug
+                version => unreachable!("unknown protocol version: {version}"),
+            }
         }
         (_, result) => Err(ContractError::UnknownReply {
             id: reply.id,

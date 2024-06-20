@@ -180,14 +180,14 @@ pub trait TransferProtocolExt<'a>:
             transfer_msg,
         )?;
 
-        let in_flight_packet = InFlightPfmPacket::new(
-            self.common().info.sender.clone(),
-            original_packet,
-            timeout,
-            forward.channel.value(),
-            forward.port.value(),
-            Self::VERSION.to_string(),
-        );
+        let in_flight_packet = InFlightPfmPacket {
+            origin_sender_addr: self.common().info.sender.clone(),
+            origin_packet: original_packet,
+            forward_timeout: timeout,
+            forward_src_channel_id: forward.channel.value(),
+            forward_src_port_id: forward.port.value(),
+            origin_protocol_version: Self::VERSION.to_string(),
+        };
 
         if let Some(reply_sub) = transfer
             .messages
