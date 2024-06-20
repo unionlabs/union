@@ -1,49 +1,47 @@
 #!/usr/bin/env bun
-import { http } from "viem"
-import { sepolia } from "viem/chains"
+import { erc20Abi, http } from "viem"
 import { parseArgs } from "node:util"
+import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
+import { berachainTestnetbArtio } from "viem/chains"
 import { createUnionClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { consola } from "scripts/logger"
 
-/* `bun playground/sepolia-to-union.ts --private-key "..."` */
+/* `bun playground/berachain-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: { "private-key": { type: "string" } }
 })
-
+erc20Abi
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
-const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
+const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
 
-const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
-const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
-const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
 
 try {
   /**
    * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
    */
   const {
-    data: [sepoliaInfo]
+    data: [beraInfo]
   } = await offchainQuery.chain({
-    chainId: "11155111",
+    chainId: "80084",
     includeContracts: true
   })
-  if (!sepoliaInfo) raise("Sepolia info not found")
+  if (!beraInfo) raise("Berachain info not found")
 
-  const ucsConfiguration = sepoliaInfo.ucs1_configurations
+  const ucsConfiguration = beraInfo.ucs1_configurations
     ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
     .at(0)
   if (!ucsConfiguration) raise("UCS configuration not found")
@@ -52,9 +50,11 @@ try {
 
   const client = createUnionClient({
     evm: {
-      chain: sepolia,
-      account: evmAccount,
-      transport: http("https://rpc2.sepolia.org")
+      account: berachainAccount,
+      chain: berachainTestnetbArtio,
+      transport: http(
+        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
+      )
     },
     cosmos: {
       account: cosmosAccount,
@@ -66,11 +66,11 @@ try {
   const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
     sourceChannel: channel_id,
-    network: sepoliaInfo.rpc_type,
+    network: beraInfo.rpc_type,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
+    denomAddress: "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae", // wBTC
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
@@ -84,11 +84,11 @@ try {
   const transfer = await client.transferAsset({
     amount: 1n,
     sourceChannel: channel_id,
-    network: sepoliaInfo.rpc_type,
+    network: beraInfo.rpc_type,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
+    denomAddress: "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae", // wBTC
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 

@@ -7,7 +7,6 @@ import { createUnionClient } from "#mod.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { consola } from "scripts/logger"
 
 /* `bun playground/union-to-union.ts --private-key "..."` */
 
@@ -26,44 +25,44 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   "union"
 )
 
-try {
-  const client = createUnionClient({
-    evm: {
-      chain: sepolia,
-      account: evmAccount,
-      transport: http("https://rpc2.sepolia.org")
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
-    }
-  })
-
-  const gasEstimationResponse = await client.simulateTransaction({
-    amount: 1n,
-    network: "cosmos",
-    denomAddress: "muno",
-    path: ["union-testnet-8", "union-testnet-8"],
-    recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-  })
-  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
-
-  if (!gasEstimationResponse.success) {
-    console.info("Transaction simulation failed")
-    process.exit(1)
+const client = createUnionClient({
+  evm: {
+    chain: sepolia,
+    account: evmAccount,
+    transport: http("https://rpc2.sepolia.org")
+  },
+  cosmos: {
+    account: cosmosAccount,
+    gasPrice: { amount: "0.025", denom: "muno" },
+    transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
   }
+})
 
-  // @ts-expect-error
-  const transfer = await client.transferAsset({
+try {
+  const unionToUnionGasCost = await client.simulateTransaction({
     amount: 1n,
     network: "cosmos",
     denomAddress: "muno",
+    cosmosSigner: cosmosAccount,
     path: ["union-testnet-8", "union-testnet-8"],
-    recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+    gasPrice: { amount: "0.025", denom: "muno" },
+    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
   })
 
-  console.info(transfer)
+  console.info("Union to Union gas cost:", unionToUnionGasCost)
+
+  const unionToSepoliaGasCost = await client.simulateTransaction({
+    amount: 1n,
+    network: "cosmos",
+    denomAddress: "muno",
+    sourceChannel: "channel-28",
+    path: ["union-testnet-8", "11155111"],
+    gasPrice: { amount: "0.025", denom: "muno" },
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+    relayContractAddress: "0xD0081080Ae8493cf7340458Eaf4412030df5FEEb"
+  })
+
+  console.info("Union to Sepolia gas cost:", unionToSepoliaGasCost)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)
