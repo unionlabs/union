@@ -517,6 +517,26 @@ type query_root {
   v0_transactions_by_pk(chain_id: Int!, hash: String!): v0_transactions
 
   """
+  fetch data from the table: "v0.transfer_forwards"
+  """
+  v0_transfer_forwards(
+    """distinct select on columns"""
+    distinct_on: [v0_transfer_forwards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfer_forwards_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfer_forwards_bool_exp
+  ): [v0_transfer_forwards!]!
+
+  """
   fetch data from the table: "v0.transfers"
   """
   v0_transfers(
@@ -1045,6 +1065,40 @@ type subscription_root {
   ): [v0_transactions!]!
 
   """
+  fetch data from the table: "v0.transfer_forwards"
+  """
+  v0_transfer_forwards(
+    """distinct select on columns"""
+    distinct_on: [v0_transfer_forwards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfer_forwards_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfer_forwards_bool_exp
+  ): [v0_transfer_forwards!]!
+
+  """
+  fetch data from the table in a streaming manner: "v0.transfer_forwards"
+  """
+  v0_transfer_forwards_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_transfer_forwards_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_transfer_forwards_bool_exp
+  ): [v0_transfer_forwards!]!
+
+  """
   fetch data from the table: "v0.transfers"
   """
   v0_transfers(
@@ -1144,6 +1198,7 @@ type v0_assets {
   chain_id: Int!
   decimals: Int
   denom: String!
+  display_name: String
   display_symbol: String
 
   """An array relationship"""
@@ -1163,6 +1218,7 @@ type v0_assets {
     """filter the rows returned"""
     where: v0_faucets_bool_exp
   ): [v0_faucets!]!
+  gas_token: Boolean!
   logo_uri: String
 }
 
@@ -1202,8 +1258,10 @@ input v0_assets_bool_exp {
   chain_id: Int_comparison_exp
   decimals: Int_comparison_exp
   denom: String_comparison_exp
+  display_name: String_comparison_exp
   display_symbol: String_comparison_exp
   faucets: v0_faucets_bool_exp
+  gas_token: Boolean_comparison_exp
   logo_uri: String_comparison_exp
 }
 
@@ -1214,6 +1272,7 @@ input v0_assets_max_order_by {
   chain_id: order_by
   decimals: order_by
   denom: order_by
+  display_name: order_by
   display_symbol: order_by
   logo_uri: order_by
 }
@@ -1225,6 +1284,7 @@ input v0_assets_min_order_by {
   chain_id: order_by
   decimals: order_by
   denom: order_by
+  display_name: order_by
   display_symbol: order_by
   logo_uri: order_by
 }
@@ -1235,8 +1295,10 @@ input v0_assets_order_by {
   chain_id: order_by
   decimals: order_by
   denom: order_by
+  display_name: order_by
   display_symbol: order_by
   faucets_aggregate: v0_faucets_aggregate_order_by
+  gas_token: order_by
   logo_uri: order_by
 }
 
@@ -1254,7 +1316,13 @@ enum v0_assets_select_column {
   denom
 
   """column name"""
+  display_name
+
+  """column name"""
   display_symbol
+
+  """column name"""
+  gas_token
 
   """column name"""
   logo_uri
@@ -1300,7 +1368,9 @@ input v0_assets_stream_cursor_value_input {
   chain_id: Int
   decimals: Int
   denom: String
+  display_name: String
   display_symbol: String
+  gas_token: Boolean
   logo_uri: String
 }
 
@@ -3311,6 +3381,206 @@ input v0_transactions_variance_order_by {
 }
 
 """
+columns and relationships of "v0.transfer_forwards"
+"""
+type v0_transfer_forwards {
+  """An object relationship"""
+  chain: v0_chains
+  chain_id: Int
+  channel: String
+  port: String
+  receiver: String
+  retries: String
+  source_transaction_hash: String
+  source_transaction_index: String
+  timeout: String
+}
+
+"""
+order by aggregate values of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_aggregate_order_by {
+  avg: v0_transfer_forwards_avg_order_by
+  count: order_by
+  max: v0_transfer_forwards_max_order_by
+  min: v0_transfer_forwards_min_order_by
+  stddev: v0_transfer_forwards_stddev_order_by
+  stddev_pop: v0_transfer_forwards_stddev_pop_order_by
+  stddev_samp: v0_transfer_forwards_stddev_samp_order_by
+  sum: v0_transfer_forwards_sum_order_by
+  var_pop: v0_transfer_forwards_var_pop_order_by
+  var_samp: v0_transfer_forwards_var_samp_order_by
+  variance: v0_transfer_forwards_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_avg_order_by {
+  chain_id: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.transfer_forwards". All fields are combined with a logical 'AND'.
+"""
+input v0_transfer_forwards_bool_exp {
+  _and: [v0_transfer_forwards_bool_exp!]
+  _not: v0_transfer_forwards_bool_exp
+  _or: [v0_transfer_forwards_bool_exp!]
+  chain: v0_chains_bool_exp
+  chain_id: Int_comparison_exp
+  channel: String_comparison_exp
+  port: String_comparison_exp
+  receiver: String_comparison_exp
+  retries: String_comparison_exp
+  source_transaction_hash: String_comparison_exp
+  source_transaction_index: String_comparison_exp
+  timeout: String_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_max_order_by {
+  chain_id: order_by
+  channel: order_by
+  port: order_by
+  receiver: order_by
+  retries: order_by
+  source_transaction_hash: order_by
+  source_transaction_index: order_by
+  timeout: order_by
+}
+
+"""
+order by min() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_min_order_by {
+  chain_id: order_by
+  channel: order_by
+  port: order_by
+  receiver: order_by
+  retries: order_by
+  source_transaction_hash: order_by
+  source_transaction_index: order_by
+  timeout: order_by
+}
+
+"""Ordering options when selecting data from "v0.transfer_forwards"."""
+input v0_transfer_forwards_order_by {
+  chain: v0_chains_order_by
+  chain_id: order_by
+  channel: order_by
+  port: order_by
+  receiver: order_by
+  retries: order_by
+  source_transaction_hash: order_by
+  source_transaction_index: order_by
+  timeout: order_by
+}
+
+"""
+select columns of table "v0.transfer_forwards"
+"""
+enum v0_transfer_forwards_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  channel
+
+  """column name"""
+  port
+
+  """column name"""
+  receiver
+
+  """column name"""
+  retries
+
+  """column name"""
+  source_transaction_hash
+
+  """column name"""
+  source_transaction_index
+
+  """column name"""
+  timeout
+}
+
+"""
+order by stddev() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_stddev_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_stddev_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_stddev_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+Streaming cursor of the table "v0_transfer_forwards"
+"""
+input v0_transfer_forwards_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_transfer_forwards_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_transfer_forwards_stream_cursor_value_input {
+  chain_id: Int
+  channel: String
+  port: String
+  receiver: String
+  retries: String
+  source_transaction_hash: String
+  source_transaction_index: String
+  timeout: String
+}
+
+"""
+order by sum() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_sum_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_var_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_var_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+order by variance() on columns of table "v0.transfer_forwards"
+"""
+input v0_transfer_forwards_variance_order_by {
+  chain_id: order_by
+}
+
+"""
 columns and relationships of "v0.transfers"
 """
 type v0_transfers {
@@ -3338,6 +3608,24 @@ type v0_transfers {
   destination_timestamp: timestamptz
   destination_transaction_hash: String
   destination_transaction_index: String
+
+  """An array relationship"""
+  forwards(
+    """distinct select on columns"""
+    distinct_on: [v0_transfer_forwards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfer_forwards_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfer_forwards_bool_exp
+  ): [v0_transfer_forwards!]!
 
   """An object relationship"""
   hop: v0_transfers
@@ -3409,6 +3697,7 @@ input v0_transfers_bool_exp {
   destination_timestamp: timestamptz_comparison_exp
   destination_transaction_hash: String_comparison_exp
   destination_transaction_index: String_comparison_exp
+  forwards: v0_transfer_forwards_bool_exp
   hop: v0_transfers_bool_exp
   normalized_receiver: String_comparison_exp
   normalized_sender: String_comparison_exp
@@ -3451,6 +3740,7 @@ input v0_transfers_order_by {
   destination_timestamp: order_by
   destination_transaction_hash: order_by
   destination_transaction_index: order_by
+  forwards_aggregate: v0_transfer_forwards_aggregate_order_by
   hop: v0_transfers_order_by
   normalized_receiver: order_by
   normalized_sender: order_by

@@ -25,11 +25,20 @@ let chains = chainsQuery()
 let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   if (!($transfers.isSuccess && $chains.isSuccess)) return []
   return $transfers.data.map(transfer => {
+
+    let destinationChainId: string | null;  
+
+    if (transfer.forwards !== null && transfer.forwards.length > 0) {
+      destinationChainId = transfer.forwards.at(-1)?.chain?.chain_id ?? transfer.destination_chain_id; 
+    } else {
+      destinationChainId = transfer.destination_chain_id
+    }
+  
     const sourceDisplayName = $chains.data.find(
       chain => chain.chain_id === transfer.source_chain_id
     )?.display_name
     const destinationDisplayName = $chains.data.find(
-      chain => chain.chain_id === transfer.destination_chain_id
+      chain => chain.chain_id === destinationChainId
     )?.display_name
 
     return {
