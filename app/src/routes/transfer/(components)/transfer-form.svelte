@@ -390,7 +390,8 @@ $: buttonText =
 
 
 {#if $transferState === "PRE_TRANSFER"}
-<Card.Root>
+<div class="flex flex-col py-6 px-3">
+<Card.Root class="max-w-xl self-center">
   <Card.Header>
     <Card.Title>Transfers</Card.Title>
   </Card.Header>
@@ -453,7 +454,7 @@ $: buttonText =
   </section>
   <section>
     <CardSectionHeading>Recipient</CardSectionHeading>
-    <div class="text-muted-foreground font-mono">{$recipient}</div>
+    <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
   </section>
 </Card.Content>
 <Card.Footer class="flex flex-col gap-4 items-start">
@@ -474,11 +475,12 @@ $: buttonText =
   >
     {buttonText}
   </Button>
-  <div class="text-muted-foreground">
+  <div class="text-muted-foreground text-xs sm:text-base">
     Will transfer {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
   </div>
 </Card.Footer>
 </Card.Root>
+</div>
 {:else}
   <div class="text-muted-foreground">
     Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
