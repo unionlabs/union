@@ -96,6 +96,7 @@ const handleSubmit = () => {
     <Card.Root class="w-full max-w-lg">
       <Card.Header>
         <Card.Title>UNO Faucet</Card.Title>
+        <Card.Description>Official faucet for Union's native gas token.</Card.Description>
       </Card.Header>
       <Card.Content>
         <form class="space-y-8" on:submit|preventDefault={handleSubmit}>

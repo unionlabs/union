@@ -29,7 +29,7 @@ let filterAndOrderAssets = (assets: Chain["assets"]): Chain["assets"] => {
   <Card.Root class="w-full max-w-lg">
       <Card.Header>
         <Card.Title>Faucets on {chain.display_name}</Card.Title>
-        <p class="text-sm">Faucets on {chain.display_name} are provided by third parties and listed here for your convenience.</p>
+        <Card.Description>Faucets on {chain.display_name} are provided by third parties and listed here for your convenience.</Card.Description>
       </Card.Header>
       <Card.Content class="flex flex-col gap-4">
       {#each filterAndOrderAssets(chain.assets) as assetWithFaucet}
