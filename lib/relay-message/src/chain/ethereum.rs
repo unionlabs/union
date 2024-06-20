@@ -11,6 +11,7 @@ use contracts::ibc_handler::{
     UpdateClientCall,
 };
 use ethers::{
+    self,
     abi::{AbiDecode, AbiEncode},
     contract::{ContractError, EthCall},
     providers::{Middleware, ProviderError},
@@ -24,7 +25,7 @@ use queue_msg::{
     data, effect, fetch, queue_msg, void, wait, Op,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, error_span, info};
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, Encode, EncodeAs, EthAbi},
@@ -51,7 +52,7 @@ use unionlabs::{
     never::Never,
     traits::{Chain, ClientIdOf, ClientState, ClientStateOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
-    MaybeRecoverableError,
+    ErrorReporter, MaybeRecoverableError,
 };
 
 use crate::{
@@ -353,28 +354,42 @@ where
                         }
                     }
                 }
-                Err(ContractError::Revert(revert)) => {
-                    error!(
-                        msg = %msg_name,
-                        ?revert,
-                        "evm transaction failed"
-                    );
-
-                    let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
-                        .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
-
-                    error!(
-                        msg = %msg_name,
-                        ?revert,
-                        ?err,
-                        "evm estimation failed"
-                    );
-
-                    Ok(())
-                }
                 Err(err) => {
-                    warn!(error = %err, "evm estimation non-recoverable failure");
-                    Err(TxSubmitError::Contract(err))
+                    let _span = error_span!(
+                        "tx error",
+                        msg = %msg_name,
+                        err = %ErrorReporter(&err)
+                    );
+
+                    match err {
+                        ContractError::Revert(revert) => {
+                            error!(?revert, "evm gas estimation failed");
+
+                            match <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(&revert) {
+                                Ok(known_err) => {
+                                    // REVIEW: Are any of these recoverable?
+                                    // match known_err {
+                                    //     IbcHandlerErrors::PacketErrors(_) => todo!(),
+                                    //     IbcHandlerErrors::ConnectionErrors(_) => todo!(),
+                                    //     IbcHandlerErrors::ChannelErrors(_) => todo!(),
+                                    //     IbcHandlerErrors::ClientErrors(_) => todo!(),
+                                    //     IbcHandlerErrors::CometblsClientErrors(_) => todo!(),
+                                    // }
+
+                                    error!(?revert, ?known_err, "evm estimation failed");
+                                }
+                                Err(_) => {
+                                    error!("evm estimation failed with unknown revert code");
+                                }
+                            }
+
+                            Ok(())
+                        }
+                        _ => {
+                            error!("evm tx recoverable error");
+                            panic!();
+                        }
+                    }
                 }
             }
         }
@@ -1044,6 +1059,7 @@ where
     )
 }
 
+// REVIEW: Does this function exist anywhere else?
 fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
     height.into().div(C::PERIOD::U64)
 }
