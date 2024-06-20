@@ -1,4 +1,4 @@
-import { raise } from "#utilities/index.js"
+import { raise } from "./utilities/index.ts"
 import type { Ucs1Configuration } from "./query/off-chain.ts"
 
 export const createPfmMemo = ({

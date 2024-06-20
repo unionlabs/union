@@ -10,11 +10,15 @@ import { createCosmosSdkClient, cosmosHttp, offchainQuery } from "#mod.ts"
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: { "private-key": { type: "string" } }
+  options: {
+    "private-key": { type: "string" },
+    "estimate-gas": { type: "boolean", default: false }
+  }
 })
 
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
+const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
@@ -45,7 +49,9 @@ try {
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "uosmo" },
-      transport: cosmosHttp("https://rpc.osmo.test.yieldpay.finance")
+      transport: cosmosHttp(
+        osmosisTestnetInfo.rpcs?.at(0)?.url ?? "https://rpc.osmo.test.yieldpay.finance"
+      )
     }
   })
 
@@ -60,6 +66,8 @@ try {
   })
 
   console.info(`Gas cost: ${gasCostResponse.data}`)
+
+  if (ONLY_ESTIMATE_GAS) process.exit(0)
 
   const transfer = await client.transferAsset({
     amount: 1n,

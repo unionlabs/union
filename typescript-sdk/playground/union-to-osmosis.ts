@@ -3,10 +3,10 @@ import "#patch.ts"
 import { parseArgs } from "node:util"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
-import { timestamp } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
+import { consola, timestamp } from "../scripts/logger.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createCosmosSdkClient, offchainQuery, type TransferAssetsParamters } from "#mod.ts"
 
 /**
  *
@@ -20,11 +20,15 @@ import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: { "private-key": { type: "string" } }
+  options: {
+    "private-key": { type: "string" },
+    "estimate-gas": { type: "boolean", default: false }
+  }
 })
 
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
+const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
@@ -61,7 +65,7 @@ try {
     }
   })
 
-  const hash = await client.transferAsset({
+  const transactionObject = {
     amount: 1n,
     network: "cosmos",
     denomAddress: "muno",
@@ -69,8 +73,18 @@ try {
     relayContractAddress: ucsConfiguration.contract_address,
     recipient: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
-  })
-  console.info(hash)
+  } satisfies TransferAssetsParamters
+
+  console.info(transactionObject)
+
+  const gasCostResponse = await client.simulateTransaction(transactionObject)
+
+  console.info(`Gas cost: ${gasCostResponse.data}`)
+
+  if (ONLY_ESTIMATE_GAS) process.exit(0)
+
+  const hash = await client.transferAsset(transactionObject)
+  consola.info(hash)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)

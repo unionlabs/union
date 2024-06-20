@@ -5,11 +5,11 @@ import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
+import { timestamp } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { timestamp } from "../scripts/logger.ts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
 /* `bun playground/union-to-sepolia.ts --private-key "..."` */
 

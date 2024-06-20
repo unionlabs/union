@@ -80,6 +80,7 @@ export async function ibcTransferSimulate({
   cosmosSigner: CosmosOfflineSigner
   messageTransfers: Array<MessageTransferWithOptionals>
 }): Promise<TransactionResponse> {
+  console.info("ibcTransferSimulate")
   try {
     const signingClient = await SigningStargateClient.connectWithSigner(
       cosmosRpcUrl,
@@ -148,6 +149,10 @@ export async function cosmwasmTransfer({
   }
 }
 
+/**
+ * TODO: fix - currently not working:
+ *  "Query failed with (6): rpc error: code = Unknown desc = sender: empty address string is not allowed [CosmWasm/wasmd@v0.51.0/x/wasm/types/tx.go:123] with gas used: '1168': unknown request"
+ */
 export async function cosmwasmTransferSimulate({
   gasPrice,
   instructions,

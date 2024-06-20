@@ -2,22 +2,26 @@
 import { http } from "viem"
 import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
+import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
-import { createCosmosSdkClient } from "#mod.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { consola } from "scripts/logger"
+import { createCosmosSdkClient, type TransferAssetsParamters } from "#mod.ts"
 
 /* `bun playground/union-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: { "private-key": { type: "string" } }
+  options: {
+    "private-key": { type: "string" },
+    "estimate-gas": { type: "boolean", default: false }
+  }
 })
 
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
+const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
@@ -40,13 +44,15 @@ try {
     }
   })
 
-  const gasEstimationResponse = await client.simulateTransaction({
+  const transferAssetsParameters = {
     amount: 1n,
     network: "cosmos",
     denomAddress: "muno",
     path: ["union-testnet-8", "union-testnet-8"],
     recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-  })
+  } satisfies TransferAssetsParamters
+
+  const gasEstimationResponse = await client.simulateTransaction(transferAssetsParameters)
   consola.info(`Gas cost: ${gasEstimationResponse.data}`)
 
   if (!gasEstimationResponse.success) {
@@ -54,14 +60,9 @@ try {
     process.exit(1)
   }
 
-  // @ts-expect-error
-  const transfer = await client.transferAsset({
-    amount: 1n,
-    network: "cosmos",
-    denomAddress: "muno",
-    path: ["union-testnet-8", "union-testnet-8"],
-    recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-  })
+  if (ONLY_ESTIMATE_GAS) process.exit(0)
+
+  const transfer = await client.transferAsset(transferAssetsParameters)
 
   console.info(transfer)
 } catch (error) {

@@ -8,9 +8,9 @@ import {
   type ContractFunctionRevertedErrorType
 } from "viem"
 import { ucs01RelayAbi } from "../abi/ucs-01.ts"
+import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import type { TransactionResponse } from "../types.ts"
-import { sleep, timestamp } from "../utilities/index.ts"
 
 /**
  * TODO:
@@ -62,8 +62,7 @@ export async function transferAssetFromEvm(
 
     if (!approveHash) return { success: false, data: "Approval failed" }
     const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
-    console.info(`Approval transaction hash: ${receipt.transactionHash}`)
-    await sleep(300)
+    console.info(`[transferAssetFromEvm] Approval transaction hash: ${receipt.transactionHash}`)
 
     memo ||= timestamp()
 
@@ -152,8 +151,9 @@ export async function transferAssetFromEvmSimulate(
     })
     if (!approveHash) return { success: false, data: "Approval failed" }
     const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
-    console.info(`Approval transaction hash: ${receipt.transactionHash}`)
-    await sleep(300)
+    console.info(
+      `[transferAssetFromEvmSimulate] Approval transaction hash: ${receipt.transactionHash}`
+    )
 
     memo ||= timestamp()
     const gasCostEstimation = await client.estimateContractGas({

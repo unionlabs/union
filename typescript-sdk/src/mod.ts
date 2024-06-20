@@ -52,6 +52,21 @@ export interface CosmosClientParameters {
   transport: ReturnType<typeof cosmosHttp> | Array<ReturnType<typeof cosmosHttp>>
 }
 
+export interface TransferAssetsParamters {
+  memo?: string
+  amount: bigint
+  recipient: string
+  sourcePort?: string
+  denomAddress: string
+  sourceChannel?: string
+  path: [string, string]
+  network: "cosmos" | "evm"
+  cosmosSigner?: OfflineSigner
+  relayContractAddress?: string
+  gasPrice?: { amount: string; denom: string }
+  evmSigner?: `0x${string}` | Account | undefined
+}
+
 export function createCosmosSdkClient({
   evm,
   cosmos
@@ -124,20 +139,7 @@ export function createCosmosSdkClient({
         gasPrice = cosmos.gasPrice,
         cosmosSigner = cosmos.account,
         memo = timestamp()
-      }: {
-        memo?: string
-        amount: bigint
-        recipient: string
-        sourcePort?: string
-        denomAddress: string
-        sourceChannel: string
-        path: [string, string]
-        network: "cosmos" | "evm"
-        cosmosSigner?: OfflineSigner
-        relayContractAddress?: string
-        gasPrice?: { amount: string; denom: string }
-        evmSigner?: `0x${string}` | Account | undefined
-      }): Promise<TransactionResponse> => {
+      }: TransferAssetsParamters): Promise<TransactionResponse> => {
         try {
           if (!path.includes("union-testnet-8")) {
             return {
@@ -149,6 +151,7 @@ export function createCosmosSdkClient({
           const [sourceChainId, destinationChainId] = path
 
           if (network === "evm") {
+            if (!sourceChannel) return { success: false, data: "Source channel not found" }
             if (!relayContractAddress) {
               return { success: false, data: "Relay contract address not found" }
             }
@@ -204,6 +207,7 @@ export function createCosmosSdkClient({
           const stamp = timestamp()
 
           if (network === "cosmos" && sourceChainId === "union-testnet-8") {
+            if (!sourceChannel) return { success: false, data: "Source channel not found" }
             if (!relayContractAddress) {
               return { success: false, data: "Relay contract address not found" }
             }
@@ -230,7 +234,7 @@ export function createCosmosSdkClient({
           }
 
           if (network === "cosmos" && destinationChainId === "union-testnet-8") {
-            if (!sourcePort) return { success: false, data: "Source port not found" }
+            if (!sourceChannel) return { success: false, data: "Source channel not found" }
 
             const [account] = await cosmosSigner.getAccounts()
             if (!account) return { success: false, data: "No account found" }
@@ -281,20 +285,7 @@ export function createCosmosSdkClient({
         evmSigner = evm.account,
         gasPrice = cosmos.gasPrice,
         cosmosSigner = cosmos.account
-      }: {
-        memo?: string
-        amount: bigint
-        recipient: string
-        sourcePort?: string
-        denomAddress: string
-        sourceChannel?: string
-        path: [string, string]
-        network: "cosmos" | "evm"
-        cosmosSigner?: OfflineSigner
-        relayContractAddress?: string
-        gasPrice?: { amount: string; denom: string }
-        evmSigner?: `0x${string}` | Account | undefined
-      }): Promise<TransactionResponse> => {
+      }: TransferAssetsParamters): Promise<TransactionResponse> => {
         if (!path.includes("union-testnet-8")) {
           return {
             success: false,
@@ -378,14 +369,12 @@ export function createCosmosSdkClient({
         }
 
         if (destinationChainId === "union-testnet-8") {
-          if (!sourcePort) return { success: false, data: "Source port not found" }
           if (!sourceChannel) return { success: false, data: "Source channel not found" }
 
           const [account] = await cosmosSigner.getAccounts()
           if (!account) return { success: false, data: "No account found" }
 
           sourcePort ||= "transfer"
-
           const stamp = timestamp()
 
           return await ibcTransferSimulate({
