@@ -1,9 +1,9 @@
 <script lang="ts">
 import { truncate } from "$lib/utilities/format"
-import type {  Chain } from "$lib/types"
+import type { Chain } from "$lib/types"
 import { Button } from "$lib/components/ui/button/index.ts"
 import Precise from "$lib/components/precise.svelte"
-import {  findAsset } from "$lib/utilities/helpers.ts"
+import { findAsset } from "$lib/utilities/helpers.ts"
 
 //Create correct type here
 export let asset: { symbol: string; balance: string | bigint; denom: string }
@@ -20,11 +20,11 @@ $: supportedAsset = findAsset(chain, asset.denom)
     <div class="asset-card asset-card asset-card--show-side my-4">
       <div class="asset-card__side">
         <div class="uppercase font-bold">{truncate(supportedAsset.display_symbol, 6)}</div>
-        <div><Precise {supportedAsset} {balance} /></div>
+        <div><Precise {supportedAsset} {asset} /></div>
       </div>
       <div class="asset-card__front flex flex-col">
         <div class="uppercase font-bold">{truncate(supportedAsset.display_symbol, 8)}</div>
-        <div class="flex-1 text-xl font-mono"><Precise {supportedAsset}  {balance} showToolTip /></div>
+        <div class="flex-1 text-xl font-mono"><Precise {supportedAsset}  {asset} showToolTip /></div>
         <Button
           href={`/transfer?source=${encodeURIComponent(chain.chain_id)}&asset=${encodeURIComponent(supportedAsset.denom)}`}
           variant="default"
