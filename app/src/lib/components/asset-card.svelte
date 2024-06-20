@@ -3,7 +3,7 @@ import { truncate } from "$lib/utilities/format"
 import type { Chain } from "$lib/types"
 import { Button } from "$lib/components/ui/button/index.ts"
 import Precise from "$lib/components/precise.svelte"
-import { findAsset } from "$lib/utilities/helpers.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
 //Create correct type here
 export let asset: { symbol: string; balance: string | bigint; denom: string }
@@ -12,7 +12,7 @@ const { balance } = asset
 
 //Finds the asset in chains.assets and checks if whitelisted,
 //not sure if these can be combined (only keep whitelisted assets in chain.assets ? )
-$: supportedAsset = findAsset(chain, asset.denom)
+$: supportedAsset = getSupportedAsset(chain, asset.denom)
 </script>
 
 {#if supportedAsset}
