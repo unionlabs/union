@@ -11,15 +11,13 @@ import NotConnected from "$lib/components/not-connected.svelte"
   <title>Union | Send</title>
 </svelte:head>
 
-<main class="overflow-auto flex items-center p-4 max-h-full sm:py-8 max-w-lg w-full mx-auto">
-    <ChainsGate let:chains>
-      <WalletGate>
-        <div slot="connected" let:userAddr>
-          <TransferForm {chains} {userAddr} />
-        </div>
-        <div class="flex items-center w-full" slot="disconnected">
-          <NotConnected />
-        </div>
-      </WalletGate>
-    </ChainsGate>
-</main>
+<ChainsGate let:chains>
+  <WalletGate>
+    <div slot="connected" let:userAddr>
+      <TransferForm {chains} {userAddr} />
+    </div>
+    <div class="flex items-center w-full" slot="disconnected">
+      <NotConnected />
+    </div>
+  </WalletGate>
+</ChainsGate>
