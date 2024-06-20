@@ -18,6 +18,44 @@ pub struct MerklePathItem {
     pub direction: Direction,
 }
 
+impl From<MerklePathItem> for protos::union::ibc::lightclients::near::v1::MerklePathItem {
+    fn from(value: MerklePathItem) -> Self {
+        Self {
+            hash: value.hash.into(),
+            direction: value.direction as u64,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
+pub enum TryFromMerklePathItemError {
+    #[error("invalid hash")]
+    Hash,
+    #[error("invalid direction ({0})")]
+    Direction(u64),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::near::v1::MerklePathItem> for MerklePathItem {
+    type Error = TryFromMerklePathItemError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::near::v1::MerklePathItem,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            hash: value
+                .hash
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromMerklePathItemError::Hash)?,
+            direction: match value.direction {
+                1 => Direction::Left,
+                2 => Direction::Right,
+                v => return Err(TryFromMerklePathItemError::Direction(v)),
+            },
+        })
+    }
+}
+
 pub type MerklePath = Vec<MerklePathItem>;
 
 #[derive(
@@ -69,6 +107,38 @@ impl core::str::FromStr for EpochId {
 pub enum PublicKey {
     Ed25519([u8; 32]),
     Secp256k1([u8; 64]),
+}
+
+impl From<PublicKey>
+    for protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey
+{
+    fn from(value: PublicKey) -> Self {
+        match value {
+            PublicKey::Ed25519(val) => Self::Ed25519(val.to_vec()),
+            PublicKey::Secp256k1(val) => Self::Secp256k1(val.to_vec()),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
+pub enum TryFromPublicKeyError {
+    #[error("invalid length")]
+    InvalidLength,
+}
+
+impl TryFrom<protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey>
+    for PublicKey
+{
+    type Error = TryFromPublicKeyError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey,
+    ) -> Result<Self, Self::Error> {
+        Ok(match value {
+            protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey::Ed25519(val) => Self::Ed25519(val.try_into().map_err(|_| TryFromPublicKeyError::InvalidLength)?),
+            protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey::Secp256k1(val) => Self::Secp256k1(val.try_into().map_err(|_| TryFromPublicKeyError::InvalidLength)?),
+        })
+    }
 }
 
 impl FromStr for KeyType {
@@ -300,6 +370,28 @@ impl BorshDeserialize for PublicKey {
 pub enum Signature {
     Ed25519(Vec<u8>),
     Secp256k1(Vec<u8>),
+}
+
+impl From<Signature> for protos::union::ibc::lightclients::near::v1::signature::Signature {
+    fn from(value: Signature) -> Self {
+        match value {
+            Signature::Ed25519(val) => Self::Ed25519(val),
+            Signature::Secp256k1(val) => Self::Secp256k1(val),
+        }
+    }
+}
+
+impl From<protos::union::ibc::lightclients::near::v1::signature::Signature> for Signature {
+    fn from(value: protos::union::ibc::lightclients::near::v1::signature::Signature) -> Self {
+        match value {
+            protos::union::ibc::lightclients::near::v1::signature::Signature::Ed25519(val) => {
+                Self::Ed25519(val)
+            }
+            protos::union::ibc::lightclients::near::v1::signature::Signature::Secp256k1(val) => {
+                Self::Secp256k1(val)
+            }
+        }
+    }
 }
 
 #[derive(

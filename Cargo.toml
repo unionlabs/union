@@ -74,7 +74,8 @@ members = [
   "near/dummy-ibc-app",
 
   "drip",
-  "near/near-ibc-tests", "light-clients/near/ics08-near",
+  "near/near-ibc-tests",
+  "light-clients/near/ics08-near",
 ]
 
 [workspace.package]

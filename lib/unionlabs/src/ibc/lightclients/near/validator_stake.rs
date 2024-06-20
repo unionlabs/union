@@ -1,8 +1,13 @@
+use core::str::FromStr;
+
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_primitives_core::types::Balance;
+use near_primitives_core::{account::id::ParseAccountError, types::Balance};
 use near_sdk::AccountId;
 
-use crate::near::types::PublicKey;
+use crate::{
+    errors::{required, MissingField},
+    near::types::{PublicKey, TryFromPublicKeyError},
+};
 
 #[derive(
     BorshSerialize,
@@ -34,4 +39,46 @@ pub struct ValidatorStakeViewV1 {
     pub public_key: PublicKey,
     // TODO(aeryz): #[serde(with = "dec_format")]
     pub stake: Balance,
+}
+
+impl From<ValidatorStakeView> for protos::union::ibc::lightclients::near::v1::ValidatorStakeView {
+    fn from(value: ValidatorStakeView) -> Self {
+        let ValidatorStakeView::V1(value) = value;
+        Self {
+            account_id: value.account_id.to_string(),
+            public_key: Some(value.public_key.into()),
+            // TODO(aeryz): make this a u128
+            balance: value.stake.try_into().unwrap(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
+pub enum TryFromValidatorStakeView {
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error(transparent)]
+    AccountId(#[from] ParseAccountError),
+    #[error(transparent)]
+    PublicKey(#[from] TryFromPublicKeyError),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::near::v1::ValidatorStakeView>
+    for ValidatorStakeView
+{
+    type Error = TryFromValidatorStakeView;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::near::v1::ValidatorStakeView,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self::V1(ValidatorStakeViewV1 {
+            account_id: AccountId::from_str(&value.account_id)
+                .map_err(TryFromValidatorStakeView::AccountId)?,
+            public_key: required!(value.public_key)?
+                .try_into()
+                .map_err(TryFromValidatorStakeView::PublicKey)?,
+            // TODO(aeryz): make this a u128
+            stake: value.balance.try_into().unwrap(),
+        }))
+    }
 }

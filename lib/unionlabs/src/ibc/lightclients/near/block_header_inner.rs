@@ -4,7 +4,7 @@ use near_primitives_core::{
     types::{BlockHeight, MerkleHash},
 };
 
-use crate::near::types::EpochId;
+use crate::{errors::MissingField, near::types::EpochId};
 
 #[derive(
     PartialEq,
@@ -28,6 +28,88 @@ pub struct BlockHeaderInnerLiteView {
     pub timestamp_nanosec: u64,
     pub next_bp_hash: CryptoHash,
     pub block_merkle_root: CryptoHash,
+}
+
+impl From<BlockHeaderInnerLiteView>
+    for protos::union::ibc::lightclients::near::v1::BlockHeaderInnerLiteView
+{
+    fn from(value: BlockHeaderInnerLiteView) -> Self {
+        Self {
+            height: value.height,
+            epoch_id: value.epoch_id.into(),
+            next_epoch_id: value.next_epoch_id.into(),
+            prev_state_root: value.prev_state_root.into(),
+            outcome_root: value.outcome_root.into(),
+            timestamp: value.timestamp,
+            timestamp_nanosec: value.timestamp_nanosec,
+            next_bp_hash: value.next_bp_hash.into(),
+            block_merkle_root: value.block_merkle_root.into(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+pub enum TryFromBlockHeaderInnerLiteViewError {
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid epoch id")]
+    EpochId,
+    #[error("invalid next epoch id")]
+    NextEpochId,
+    #[error("invalid prev state root")]
+    PrevStateRoot,
+    #[error("invalid outcome root")]
+    OutcomeRoot,
+    #[error("next bp hash")]
+    NextBpHash,
+    #[error("block merkle root")]
+    BlockMerkleRoot,
+}
+
+impl TryFrom<protos::union::ibc::lightclients::near::v1::BlockHeaderInnerLiteView>
+    for BlockHeaderInnerLiteView
+{
+    type Error = TryFromBlockHeaderInnerLiteViewError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::near::v1::BlockHeaderInnerLiteView,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            height: value.height,
+            epoch_id: value
+                .epoch_id
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromBlockHeaderInnerLiteViewError::EpochId)?,
+            next_epoch_id: value
+                .next_epoch_id
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromBlockHeaderInnerLiteViewError::NextEpochId)?,
+            prev_state_root: value
+                .prev_state_root
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromBlockHeaderInnerLiteViewError::PrevStateRoot)?,
+            outcome_root: value
+                .outcome_root
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromBlockHeaderInnerLiteViewError::OutcomeRoot)?,
+            timestamp: value.timestamp,
+            timestamp_nanosec: value.timestamp_nanosec,
+            next_bp_hash: value
+                .next_bp_hash
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromBlockHeaderInnerLiteViewError::NextBpHash)?,
+            block_merkle_root: value
+                .block_merkle_root
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromBlockHeaderInnerLiteViewError::BlockMerkleRoot)?,
+        })
+    }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, serde::Serialize, Debug, Clone, Eq, PartialEq)]

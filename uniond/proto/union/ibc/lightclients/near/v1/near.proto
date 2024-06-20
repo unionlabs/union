@@ -6,14 +6,14 @@ import "ibc/core/client/v1/client.proto";
 
 message Header {
   LightClientBlockView new_state = 1;
-  int64 trusted_height = 2;
+  uint64 trusted_height = 2;
   repeated MerklePathItem prev_state_root_proof = 3;
   bytes prev_state_root= 4;
 }
 
 message MerklePathItem {
   bytes hash = 1;
-  int64 direction = 2;
+  uint64 direction = 2;
 }
 
 message LightClientBlockView {
@@ -26,15 +26,20 @@ message LightClientBlockView {
 }
 
 message Signature {
-  bytes ed25519 = 1;
-  bytes secp256k1 = 2;
+  oneof signature {
+    bytes ed25519 = 1;
+    bytes secp256k1 = 2;
+  }
 }
 
 message ValidatorStakeView {
   string account_id = 1;
-  PublicKey public_key = 2;
+  oneof public_key {
+    bytes ed25519 = 2;
+    bytes secp256k1 = 3;
+  }
   // TODO(aeryz): u128
-  int64 balance = 3;
+  uint64 balance = 4;
 }
 
 message PublicKey {
@@ -43,13 +48,13 @@ message PublicKey {
 }
 
 message BlockHeaderInnerLiteView {
-  bytes height = 1;
+  uint64 height = 1;
   bytes epoch_id = 2;
   bytes next_epoch_id = 3;
   bytes prev_state_root = 4;
   bytes outcome_root = 5;
-  int64 timestamp = 6;
-  int64 timestamp_nanosec = 7;
+  uint64 timestamp = 6;
+  uint64 timestamp_nanosec = 7;
   bytes next_bp_hash = 8;
   bytes block_merkle_root = 9;
 }
