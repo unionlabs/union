@@ -78,7 +78,9 @@ onMount(() => {
   <Toaster position="bottom-right" />
 
   <Header />
+  <div class="flex-1 overflow-y-auto">
   <slot />
+  </div>
   <Footer />
   <SvelteQueryDevtools
     position="bottom"
