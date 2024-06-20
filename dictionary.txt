@@ -494,6 +494,9 @@ genutil
 genutilcli
 genutils
 genutiltypes
+gesturechange
+gestureend
+gesturestart
 getenv
 githook
 gitopia

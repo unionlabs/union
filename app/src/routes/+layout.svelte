@@ -15,7 +15,7 @@ import LoadingBar from "$lib/components/loading-bar.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-import {disablePinchToZoom} from '$lib/utilities/disable-pinch-to-zoom.ts'
+import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
