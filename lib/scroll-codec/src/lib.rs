@@ -130,7 +130,7 @@ pub fn commit_batch(
     }
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum CommitBatchError {
     #[error("error decoding parent batch header")]
     ParentBatchHeaderDecode(#[from] BatchHeaderDecodeError),

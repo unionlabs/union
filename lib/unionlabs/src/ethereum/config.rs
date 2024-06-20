@@ -85,7 +85,7 @@ macro_rules! consts_traits {
     ($($CONST:ident $(,)?),+) => {
         $(
             #[allow(non_camel_case_types)]
-            pub trait $CONST: 'static {
+            pub trait $CONST: Send + Sync + Unpin + 'static {
                 // Extra traits are required because the builtin derives bound all generic
                 // types unconditionally
                 type $CONST: Unsigned + NonZero + Debug + Clone + PartialEq + Send + Sync + Unpin;

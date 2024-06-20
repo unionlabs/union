@@ -12,7 +12,7 @@ use unionlabs::{
 
 use crate::client::BerachainLightClient;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("unimplemented")]
     Unimplemented,

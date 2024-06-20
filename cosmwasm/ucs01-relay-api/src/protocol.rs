@@ -86,7 +86,6 @@ pub trait TransferProtocol {
     /// Must be unique per Protocol
     const VERSION: &'static str;
     const ORDERING: IbcOrder;
-    /// Must be unique per Protocol
     const RECEIVE_REPLY_ID: u64;
 
     type Packet: Decode<Self::Encoding> + Encode<Self::Encoding> + TransferPacket;
@@ -173,7 +172,7 @@ pub trait TransferProtocol {
         };
 
         let tokens = packet.tokens();
-        let sub = SubMsg::reply_on_success(
+        let sub = SubMsg::reply_always(
             IbcMsg::SendPacket {
                 channel_id: self.channel_endpoint().channel_id.clone(),
                 data: packet.encode().into(),

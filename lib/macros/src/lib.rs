@@ -10,9 +10,9 @@ use syn::{
     parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, Generics, Ident, Item, ItemEnum,
-    ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant, WhereClause,
-    WherePredicate,
+    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
+    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant,
+    WhereClause, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -479,7 +479,12 @@ impl DebugMeta {
 }
 
 fn mk_proto(
-    FromRawAttrs { raw, into, from }: FromRawAttrs,
+    FromRawAttrs {
+        raw,
+        into,
+        from,
+        no_static_assert,
+    }: FromRawAttrs,
     ident: &Ident,
     generics: &Generics,
 ) -> proc_macro2::TokenStream {
@@ -504,7 +509,7 @@ fn mk_proto(
             #ident #ty_generics: TryFrom<#raw>
         ));
         from_where_clause.predicates.push(parse_quote!(
-            <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug
+            <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug + ::core::marker::Send + ::core::marker::Sync
         ));
     }
 
@@ -515,6 +520,20 @@ fn mk_proto(
             }
         }
     };
+
+    let assert_impl_generics = &generics
+        .params
+        .clone()
+        .into_iter()
+        .map(|mut param| {
+            match &mut param {
+                GenericParam::Type(param) => param.default = None,
+                GenericParam::Const(param) => param.default = None,
+                _ => {}
+            };
+            param
+        })
+        .collect::<Punctuated<GenericParam, Token![,]>>();
 
     if into {
         output.extend(quote! {
@@ -533,6 +552,12 @@ fn mk_proto(
                 }
             }
         });
+
+        if !no_static_assert {
+            output.extend(quote! {
+                ::static_assertions::assert_impl!(for(#assert_impl_generics) <#ident #ty_generics as TryFrom<#raw>>::Error: (::core::marker::Send) & (::core::marker::Sync) & (::core::fmt::Debug));
+            });
+        }
     }
 
     if from {
@@ -550,7 +575,12 @@ fn mk_proto(
 }
 
 fn mk_ethabi(
-    FromRawAttrs { raw, into, from }: FromRawAttrs,
+    FromRawAttrs {
+        raw,
+        into,
+        from,
+        no_static_assert: _,
+    }: FromRawAttrs,
     ident: &Ident,
     generics: &Generics,
 ) -> proc_macro2::TokenStream {
@@ -575,7 +605,7 @@ fn mk_ethabi(
             #ident #ty_generics: TryFrom<#raw>
         ));
         from_where_clause.predicates.push(parse_quote!(
-            <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug
+            <#ident #ty_generics as TryFrom<#raw>>::Error: ::core::fmt::Debug + ::core::marker::Send + ::core::marker::Sync
         ));
     }
 
@@ -793,6 +823,8 @@ struct FromRawAttrs {
     raw: Path,
     into: bool,
     from: bool,
+    // TODO: This is a stop gap solution until i figure out a better way to do these assertions with a custom bound
+    no_static_assert: bool,
 }
 
 impl Parse for FromRawAttrs {
@@ -804,6 +836,7 @@ impl Parse for FromRawAttrs {
         let mut raw = None;
         let mut into = false;
         let mut from = false;
+        let mut no_static_assert = false;
 
         for meta in meta {
             match meta {
@@ -826,10 +859,19 @@ impl Parse for FromRawAttrs {
                         } else {
                             from = true;
                         }
+                    } else if path.is_ident("no_static_assert") {
+                        if no_static_assert {
+                            return Err(syn::Error::new_spanned(
+                                path,
+                                "duplicate `no_static_assert` attribute",
+                            ));
+                        } else {
+                            no_static_assert = true;
+                        }
                     } else {
                         return Err(syn::Error::new_spanned(
                             path,
-                            "invalid attribute, valid attributes are `raw(...)`, `into`, `from`",
+                            "invalid attribute, valid attributes are `raw(...)`, `into`, `from`, `no_static_assert`",
                         ));
                     }
                 }
@@ -841,7 +883,7 @@ impl Parse for FromRawAttrs {
                     if !path.is_ident("raw") {
                         return Err(syn::Error::new_spanned(
                             path,
-                            "invalid attribute, must be `raw = path::to::raw::Type`",
+                            "invalid attribute, must be `raw(path::to::raw::Type)`",
                         ));
                     } else if raw.is_some() {
                         return Err(syn::Error::new_spanned(
@@ -855,14 +897,19 @@ impl Parse for FromRawAttrs {
                 _ => {
                     return Err(syn::Error::new_spanned(
                         meta,
-                        "invalid attribute, valid attributes are `raw(...)`, `into`, `from`",
+                        "invalid attribute, valid attributes are `raw(...)`, `into`, `from`, `no_static_assert`",
                     ))
                 }
             }
         }
 
         if let Some(raw) = raw {
-            Ok(FromRawAttrs { raw, into, from })
+            Ok(FromRawAttrs {
+                raw,
+                into,
+                from,
+                no_static_assert,
+            })
         } else {
             Err(syn::Error::new(meta_span, "`raw(...)` is required"))
         }

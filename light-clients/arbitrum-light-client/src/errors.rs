@@ -10,7 +10,7 @@ use unionlabs::{
 
 use crate::client::ArbitrumLightClient;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("unable to decode storage proof")]
     StorageProofDecode(

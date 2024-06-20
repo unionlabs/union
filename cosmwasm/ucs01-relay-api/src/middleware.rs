@@ -66,6 +66,7 @@ pub struct PacketId {
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct InFlightPfmPacket {
     pub origin_sender_addr: Addr,
+    /// This is the protocol of the channel between A -> B, such that if there is a failure between B -> C then we know how to write the acknowledgement for the origin channel.
     pub origin_protocol_version: String,
     pub origin_packet: IbcPacket,
     pub forward_src_channel_id: String,
@@ -75,24 +76,6 @@ pub struct InFlightPfmPacket {
 }
 
 impl InFlightPfmPacket {
-    pub fn new(
-        origin_sender_addr: Addr,
-        origin_packet: IbcPacket,
-        timeout: u64,
-        forward_src_channel_id: String,
-        forward_src_port_id: String,
-        origin_protocol_version: String,
-    ) -> Self {
-        Self {
-            origin_sender_addr,
-            origin_packet,
-            forward_timeout: timeout,
-            forward_src_channel_id,
-            forward_src_port_id,
-            origin_protocol_version,
-        }
-    }
-
     pub fn create_hop_event(&self, sent_sequence: u64) -> Event {
         Event::new(PFM_HOP_EVENT)
             .add_attribute(RECV_SEQUENCE_ATTR, self.origin_packet.sequence.to_string())

@@ -43,7 +43,9 @@ use unionlabs::{
     uint::U256,
 };
 
-use crate::{private_key::PrivateKey, Pool};
+use crate::keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, KeyringEntry, SignerBalance};
+
+pub type EthereumKeyring = ConcurrentKeyring<H160, IBCHandler<EthereumSignerMiddleware>>;
 
 pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
@@ -113,7 +115,7 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub ibc_handlers: S::Out,
+    pub keyring: S::Out,
     pub provider: Arc<Provider<Ws>>,
     pub beacon_api_client: BeaconApiClient<C>,
 }
@@ -127,7 +129,7 @@ pub struct Config<S: EthereumSignersConfig = ReadWrite> {
     /// The signer that will be used to submit transactions by voyager.
     // TODO: Write a custom ser/de implementation for this struct to avoid this hackery
     #[serde(skip_serializing_if = "is_unit", default)]
-    pub signers: S::Config,
+    pub keyring: S::Config,
 
     /// The RPC endpoint for the execution chain.
     pub eth_rpc_api: String,
@@ -138,6 +140,42 @@ pub struct Config<S: EthereumSignersConfig = ReadWrite> {
 // lol
 fn is_unit<T: 'static>(_: &T) -> bool {
     std::any::TypeId::of::<T>() == std::any::TypeId::of::<()>()
+}
+
+impl<C: ChainSpec> ChainKeyring for Ethereum<C, ReadWrite> {
+    type Address = H160;
+
+    type Signer = IBCHandler<EthereumSignerMiddleware>;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        &self.keyring
+    }
+
+    async fn balances(&self) -> Vec<SignerBalance<Self::Address>> {
+        balance_of_signers(&self.keyring, &self.provider).await
+    }
+}
+
+pub async fn balance_of_signers(
+    keyring: &EthereumKeyring,
+    provider: &Provider<Ws>,
+) -> Vec<SignerBalance<H160>> {
+    let mut out_vec = vec![];
+
+    for (key_name, &address) in keyring.keys() {
+        out_vec.push(SignerBalance {
+            key_name: key_name.to_owned(),
+            address,
+            balance: provider
+                .get_balance(ethers::types::H160::from(address), None)
+                .await
+                .unwrap()
+                .as_u128(),
+            denom: "".to_owned(),
+        });
+    }
+
+    out_vec
 }
 
 pub trait EthereumSignersConfig: Send + Sync + 'static {
@@ -171,8 +209,8 @@ impl EthereumSignersConfig for Readonly {
 pub enum ReadWrite {}
 
 impl EthereumSignersConfig for ReadWrite {
-    type Config = Vec<PrivateKey<ecdsa::SigningKey>>;
-    type Out = Pool<IBCHandler<EthereumSignerMiddleware>>;
+    type Config = KeyringConfig;
+    type Out = EthereumKeyring;
 
     fn new(
         config: Self::Config,
@@ -180,19 +218,30 @@ impl EthereumSignersConfig for ReadWrite {
         chain_id: u64,
         provider: Provider<Ws>,
     ) -> Self::Out {
-        Pool::new(config.into_iter().map(|signer| {
-            let signing_key: ecdsa::SigningKey = signer.value();
-            let address = secret_key_to_address(&signing_key);
+        ConcurrentKeyring::new(
+            config.name,
+            config.keys.into_iter().map(|config| {
+                let signing_key = <ecdsa::SigningKey as bip32::PrivateKey>::from_bytes(
+                    &config.value().as_slice().try_into().unwrap(),
+                )
+                .unwrap();
 
-            let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
+                let address = secret_key_to_address(&signing_key);
 
-            let signer_middleware = Arc::new(SignerMiddleware::new(
-                NonceManagerMiddleware::new(provider.clone(), address),
-                wallet.clone(),
-            ));
+                let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
 
-            IBCHandler::new(ibc_handler_address, signer_middleware.clone())
-        }))
+                let signer_middleware = Arc::new(SignerMiddleware::new(
+                    NonceManagerMiddleware::new(provider.clone(), address),
+                    wallet.clone(),
+                ));
+
+                KeyringEntry {
+                    name: config.name(),
+                    address: address.into(),
+                    signer: IBCHandler::new(ibc_handler_address, signer_middleware.clone()),
+                }
+            }),
+        )
     }
 }
 
@@ -477,8 +526,8 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
 
         Ok(Self {
             chain_id: U256(chain_id),
-            ibc_handlers: S::new(
-                config.signers,
+            keyring: S::new(
+                config.keyring,
                 config.ibc_handler_address,
                 chain_id.as_u64(),
                 provider.clone(),

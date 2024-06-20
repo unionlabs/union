@@ -1,3 +1,5 @@
+use alloc::sync::Arc;
+
 use macros::model;
 use uint::FromDecStrErr;
 
@@ -43,7 +45,7 @@ impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::ClientState> for Cl
             chain_id: value
                 .chain_id
                 .parse()
-                .map_err(TryFromClientStateError::ChainId)?,
+                .map_err(|err| TryFromClientStateError::ChainId(Arc::new(err)))?,
             l1_latest_slot: value.l1_latest_slot,
             l1_contract_address: value
                 .l1_contract_address
@@ -66,14 +68,14 @@ impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::ClientState> for Cl
     }
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
     #[error(transparent)]
     MissingField(MissingField),
     #[error("invalid l1 client id")]
     L1ClientId(#[source] <ClientIdValidator as Validate<String>>::Error),
     #[error("invalid l1 contract address")]
-    ChainId(#[source] FromDecStrErr),
+    ChainId(#[source] Arc<FromDecStrErr>),
     #[error("invalid l1 latest confirmed slot")]
     L1ContractAddress(#[source] InvalidLength),
     #[error("invalid l1 nodes slot")]

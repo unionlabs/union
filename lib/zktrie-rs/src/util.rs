@@ -99,7 +99,7 @@ pub fn to_secure_key<H: HashScheme>(key: &[u8]) -> Result<Fr, Error> {
     word.hash::<H>().map_err(Error::NotInField)
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     ReachedMaxLevel,
     EntryIndexAlreadyExists,

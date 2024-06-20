@@ -14,7 +14,7 @@ use unionlabs::{
 
 use crate::client::LineaLightClient;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("unable to decode storage proof")]
     InclusionProofDecode(#[source] DecodeErrorOf<Proto, InclusionProof>),

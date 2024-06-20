@@ -32,7 +32,7 @@ scroll-verifier          = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
-static_assertions        = "1.1.0"
+static_assertions        = { workspace = true }
 tendermint               = { workspace = true }
 tendermint-proto         = { workspace = true }
 tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client"] }

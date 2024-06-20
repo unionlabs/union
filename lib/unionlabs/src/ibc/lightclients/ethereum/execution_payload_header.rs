@@ -13,11 +13,12 @@ use crate::{
 };
 
 #[derive(Ssz)]
-#[model(proto(
-    raw(protos::union::ibc::lightclients::ethereum::v1::AccountUpdate),
-    into,
-    from
-))]
+#[model]
+// #[model(proto(
+//     raw(protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader),
+//     into,
+//     from
+// ))]
 pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
     pub fee_recipient: H160,

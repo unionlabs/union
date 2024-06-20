@@ -206,7 +206,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextClientSequencePath {
     type Value = u64;
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum PathParseError {
     #[error("invalid static segment, expected `{expected}` but found `{found}`")]
     InvalidStaticSegment {

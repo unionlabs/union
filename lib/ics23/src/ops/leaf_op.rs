@@ -9,7 +9,7 @@ use crate::{
     proof_specs::{self, IAVL_PROOF_SPEC},
 };
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
     #[error("unexpected hash op ({0:?})")]
     UnexpectedHashOp(HashOp),
@@ -31,7 +31,7 @@ pub enum SpecMismatchError {
     ValidateIavlOps(ValidateIavlOpsError),
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ApplyError {
     #[error("key needed")]
     KeyNeeded,

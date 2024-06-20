@@ -11,7 +11,7 @@ use crate::{
 
 pub const SDK_SPECS: [ProofSpec; 2] = [IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC];
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyMembershipError {
     #[error("root calculation ({0})")]
     RootCalculation(existence_proof::CalculateRootError),

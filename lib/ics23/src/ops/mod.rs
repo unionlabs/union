@@ -3,7 +3,7 @@ pub mod inner_op;
 pub mod leaf_op;
 pub mod length_op;
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ValidateIavlOpsError {
     #[error("height ({height}) is smaller than the minimum height ({min_height})")]
     HeightTooShort { height: i64, min_height: i64 },

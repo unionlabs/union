@@ -1,15 +1,19 @@
 use std::{fmt::Debug, marker::PhantomData};
 
-use chain_utils::cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt};
+use chain_utils::{
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    keyring::ChainKeyring,
+};
+use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use queue_msg::{data, fetch, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
-    encoding::{Decode, DecodeAs, Encode, Proto},
+    encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
     ibc::core::client::height::IsHeight,
     ics24::{ClientStatePath, Path},
     signer::CosmosSigner,
-    traits::{ClientStateOf, ConsensusStateOf, HeightOf},
+    traits::{Chain, ClientStateOf, ConsensusStateOf, HeightOf},
     TypeUrl,
 };
 
@@ -45,11 +49,12 @@ pub async fn do_msg<Hc, Tr>(
     mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
 ) -> Result<(), BroadcastTxCommitError>
 where
-    Hc: CosmosSdkChainSealed<
-        MsgError = BroadcastTxCommitError,
-        SelfConsensusState: Encode<Proto> + TypeUrl,
-        SelfClientState: Encode<Proto> + TypeUrl,
-    >,
+    Hc: ChainKeyring<Signer = CosmosSigner>
+        + CosmosSdkChainSealed<
+            MsgError = BroadcastTxCommitError,
+            SelfConsensusState: Encode<Proto> + TypeUrl,
+            SelfClientState: Encode<Proto> + TypeUrl,
+        >,
     Tr: ChainExt<
         SelfConsensusState: Encode<Proto> + TypeUrl,
         SelfClientState: Encode<Proto> + TypeUrl,
@@ -58,11 +63,11 @@ where
         StateProof: Encode<Proto>,
     >,
 {
-    hc.signers()
-        .with(|signer| async {
+    hc.keyring()
+        .with(|signer| async move {
             let msgs = process_msgs(
                 msg.clone(),
-                &signer,
+                signer,
                 mk_create_client_states,
                 mk_client_message,
             );
@@ -268,8 +273,14 @@ where
     Hc: CosmosSdkChainSealed
         + ChainExt<
             StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
-            StoredClientState<Tr>: Decode<Proto>,
-            StoredConsensusState<Tr>: Decode<Proto>,
+            StoredClientState<Tr>: Decode<
+                Proto,
+                Error: Debug + Clone + PartialEq + std::error::Error,
+            >,
+            StoredConsensusState<Tr>: Decode<
+                Proto,
+                Error: Debug + Clone + PartialEq + std::error::Error,
+            >,
             Fetch<Tr>: From<FetchAbciQuery<Hc, Tr>>,
         >,
 
@@ -282,6 +293,8 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
+    type QueryUnfinalizedTrustedClientStateError = FetchAbciQueryError<Hc, Tr>;
+
     fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> Op<RelayMessage> {
         seq([
             wait(id(
@@ -306,7 +319,7 @@ where
     async fn query_unfinalized_trusted_client_state(
         hc: &Hc,
         client_id: Hc::ClientId,
-    ) -> Hc::StoredClientState<Tr> {
+    ) -> Result<Hc::StoredClientState<Tr>, Self::QueryUnfinalizedTrustedClientStateError> {
         let height = hc.query_latest_height().await.unwrap();
 
         let Op::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
@@ -315,15 +328,19 @@ where
             height,
             AbciQueryType::State,
         )
-        .await
+        .await?
         else {
             panic!()
         };
 
-        Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(relayer_msg)
+        Ok(
+            Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(
+                relayer_msg,
+            )
             .unwrap()
             .t
-            .state
+            .state,
+        )
     }
 }
 
@@ -360,13 +377,19 @@ pub async fn fetch_abci_query<Hc, Tr>(
     path: Path<Hc::ClientId, Tr::Height>,
     height: HeightOf<Hc>,
     ty: AbciQueryType,
-) -> Op<RelayMessage>
+) -> Result<Op<RelayMessage>, FetchAbciQueryError<Hc, Tr>>
 where
     Hc: CosmosSdkChain
         + ChainExt<
             StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
-            StoredClientState<Tr>: Decode<Proto>,
-            StoredConsensusState<Tr>: Decode<Proto>,
+            StoredClientState<Tr>: Decode<
+                Proto,
+                Error: Debug + Clone + PartialEq + std::error::Error,
+            >,
+            StoredConsensusState<Tr>: Decode<
+                Proto,
+                Error: Debug + Clone + PartialEq + std::error::Error,
+            >,
         >,
     Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
@@ -417,14 +440,14 @@ where
         "fetched abci query"
     );
 
-    match ty {
+    Ok(match ty {
         AbciQueryType::State => match path {
             Path::ClientState(path) => data(id::<Hc, Tr, _>(
                 c.chain_id(),
                 IbcState::<ClientStatePath<Hc::ClientId>, Hc, Tr> {
                     height,
                     state: Hc::StoredClientState::<Tr>::decode_as::<Proto>(&query_result.value)
-                        .unwrap(),
+                        .map_err(FetchAbciQueryError::ClientStateDecode)?,
                     path,
                 },
             )),
@@ -432,7 +455,9 @@ where
                 c.chain_id(),
                 IbcState {
                     height,
-                    state: Hc::StoredConsensusState::<Tr>::decode(&query_result.value).unwrap(),
+                    state: Hc::StoredConsensusState::<Tr>::decode(&query_result.value)
+                        .map_err(FetchAbciQueryError::ConsensusStateDecode)?,
+
                     path,
                 },
             )),
@@ -651,7 +676,26 @@ where
                 )),
             }
         }
-    }
+    })
+}
+
+#[derive(macros::Debug, PartialEqNoBound, CloneNoBound, thiserror::Error)]
+pub enum FetchAbciQueryError<Hc, Tr>
+where
+    Hc: Chain<
+        StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
+        StoredClientState<Tr>: Decode<Proto, Error: Debug + Clone + PartialEq + std::error::Error>,
+        StoredConsensusState<Tr>: Decode<
+            Proto,
+            Error: Debug + Clone + PartialEq + std::error::Error,
+        >,
+    >,
+    Tr: Chain,
+{
+    #[error("unable to decode client state")]
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, Hc::StoredClientState<Tr>>),
+    #[error("unable to decode consensus state")]
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, Hc::StoredConsensusState<Tr>>),
 }
 
 pub mod fetch {
@@ -1045,6 +1089,7 @@ pub mod wasm {
     use chain_utils::{
         cosmos::Cosmos,
         cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain},
+        keyring::ChainKeyring,
         union::Union,
         wasm::Wasm,
     };
@@ -1055,6 +1100,7 @@ pub mod wasm {
         google::protobuf::any::{Any, IntoAny},
         hash::H256,
         ibc::lightclients::wasm,
+        signer::CosmosSigner,
         traits::ClientState,
         TypeUrl,
     };
@@ -1154,13 +1200,15 @@ pub mod wasm {
 
     impl<Hc, Tr> DoMsg<Wasm<Hc>, Tr> for Wasm<Hc>
     where
-        Wasm<Hc>: ChainExt<
-            SelfConsensusState: Encode<Proto> + TypeUrl,
-            SelfClientState: Encode<Proto> + TypeUrl,
-            MsgError = BroadcastTxCommitError,
-            Config = WasmConfig,
-        >,
-        Hc: CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
+        Wasm<Hc>: ChainKeyring<Signer = CosmosSigner>
+            + ChainExt<
+                SelfConsensusState: Encode<Proto> + TypeUrl,
+                SelfClientState: Encode<Proto> + TypeUrl,
+                MsgError = BroadcastTxCommitError,
+                Config = WasmConfig,
+            >,
+        Hc: ChainKeyring<Signer = CosmosSigner>
+            + CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
         Tr: ChainExt<
             StoredClientState<Wasm<Hc>>: IntoAny,
             StateProof: Encode<Proto>,

@@ -8,18 +8,17 @@ use unionlabs::{
     google::protobuf::any::Any,
     hash::H256,
     iter,
-    signer::CosmosSigner,
     traits::{Chain, FromStrExact},
     WasmClientType,
 };
 
 use crate::{
     cosmos_sdk::{CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
-    Pool,
+    keyring::{ChainKeyring, ConcurrentKeyring, SignerBalance},
 };
 
 #[derive(Debug, Clone)]
-pub struct Wasm<C: Chain>(pub C);
+pub struct Wasm<C>(pub C);
 
 pub trait Wraps<T: Chain>: Chain {
     fn inner(&self) -> &T;
@@ -28,10 +27,6 @@ pub trait Wraps<T: Chain>: Chain {
 impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
     fn gas_config(&self) -> &GasConfig {
         self.0.gas_config()
-    }
-
-    fn signers(&self) -> &Pool<CosmosSigner> {
-        self.0.signers()
     }
 
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
@@ -94,6 +89,20 @@ impl<Hc: Chain> FromStrExact for WasmChainType<Hc> {
             Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
         }
     };
+}
+
+impl<Hc: ChainKeyring> ChainKeyring for Wasm<Hc> {
+    type Address = Hc::Address;
+
+    type Signer = Hc::Signer;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        self.0.keyring()
+    }
+
+    fn balances(&self) -> impl Future<Output = Vec<SignerBalance<Self::Address>>> {
+        self.0.balances()
+    }
 }
 
 impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {

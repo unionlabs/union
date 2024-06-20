@@ -20,11 +20,14 @@ pub struct ConsensusState {
     pub next_validators_hash: H256,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromConsensusStateError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Root(TryFromMerkleRootError),
-    NextValidatorsHash(InvalidLength),
+    #[error("invalid root")]
+    Root(#[from] TryFromMerkleRootError),
+    #[error("invalid next validators hash")]
+    NextValidatorsHash(#[from] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for ConsensusState {

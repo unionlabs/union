@@ -16,10 +16,12 @@ pub struct BaseAccount {
     pub sequence: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromBaseAccountError {
+    #[error(transparent)]
     MissingField(MissingField),
-    PubKey(TryFromAnyPubKeyError),
+    #[error("unable to decode pub key")]
+    PubKey(#[from] TryFromAnyPubKeyError),
 }
 
 impl TryFrom<protos::cosmos::auth::v1beta1::BaseAccount> for BaseAccount {
@@ -28,10 +30,7 @@ impl TryFrom<protos::cosmos::auth::v1beta1::BaseAccount> for BaseAccount {
     fn try_from(value: protos::cosmos::auth::v1beta1::BaseAccount) -> Result<Self, Self::Error> {
         Ok(Self {
             address: value.address,
-            pub_key: value
-                .pub_key
-                .map(|pk| pk.try_into().map_err(TryFromBaseAccountError::PubKey))
-                .transpose()?,
+            pub_key: value.pub_key.map(TryInto::try_into).transpose()?,
             account_number: value.account_number,
             sequence: value.sequence,
         })

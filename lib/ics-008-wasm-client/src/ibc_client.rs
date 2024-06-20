@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, StdError};
-use frame_support_procedural::{DebugNoBound, PartialEqNoBound};
+use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Encoding, Proto},
     google::protobuf::any::Any,
@@ -37,7 +37,8 @@ pub enum StorageState {
     Empty,
 }
 
-#[derive(DebugNoBound, PartialEqNoBound, thiserror::Error)]
+// TODO: Add #[source] to all variants
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, thiserror::Error)]
 pub enum DecodeError<T: IbcClient> {
     #[error("unable to decode header")]
     Header(DecodeErrorOf<T::Encoding, T::Header>),
@@ -79,18 +80,20 @@ pub type WasmConsensusStateOf<T> =
     wasm::consensus_state::ConsensusState<<T as IbcClient>::ConsensusState>;
 
 pub trait IbcClient: Sized {
-    type Error: std::error::Error + PartialEq + Into<IbcClientError<Self>>;
+    type Error: std::error::Error + PartialEq + Clone + Into<IbcClientError<Self>>;
     type CustomQuery: cosmwasm_std::CustomQuery;
-    type Header: Decode<Self::Encoding, Error: PartialEq> + Debug;
-    type Misbehaviour: Decode<Self::Encoding, Error: PartialEq> + Debug;
-    type ClientState: Decode<Self::Encoding, Error: PartialEq>
-        + Decode<Proto, Error: PartialEq>
+    type Header: Decode<Self::Encoding, Error: PartialEq + Clone> + Debug + 'static;
+    type Misbehaviour: Decode<Self::Encoding, Error: PartialEq + Clone> + Debug + 'static;
+    type ClientState: Decode<Self::Encoding, Error: PartialEq + Clone>
+        + Decode<Proto, Error: PartialEq + Clone + std::error::Error>
         + Encode<Proto>
-        + Debug;
-    type ConsensusState: Decode<Self::Encoding, Error: PartialEq>
-        + Decode<Proto, Error: PartialEq>
+        + Debug
+        + 'static;
+    type ConsensusState: Decode<Self::Encoding, Error: PartialEq + Clone>
+        + Decode<Proto, Error: PartialEq + Clone + std::error::Error>
         + Encode<Proto>
-        + Debug;
+        + Debug
+        + 'static;
     type Encoding: Encoding;
 
     fn sudo(

@@ -53,18 +53,23 @@ impl HandleFetch<RelayMessage> for AnyLightClientIdentified<AnyFetch> {
                 Ok(store
                     .with_chain(&fetch.chain_id, move |c| async move { fetch.t.handle(c).await })
                     .map_err(|e| QueueError::Fatal(Box::new(e)))?
-                    .await)
+                    .await
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?)
             }
         }
     }
 }
 
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = Op<RelayMessage>>;
+    type Error: Debug + Clone + PartialEq + std::error::Error + Send + Sync;
+
+    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = Result<Op<RelayMessage>, Self::Error>>;
 }
 
 impl<Hc: ChainExt> DoFetch<Hc> for Never {
-    async fn do_fetch(_: &Hc, this: Self) -> Op<RelayMessage> {
+    type Error = Never;
+
+    async fn do_fetch(_: &Hc, this: Self) -> Result<Op<RelayMessage>, Never> {
         match this {}
     }
 }
@@ -122,26 +127,26 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
-    pub async fn handle(self, c: Hc) -> Op<RelayMessage> {
+    pub async fn handle(self, c: Hc) -> Result<Op<RelayMessage>, FetchError> {
         match self {
-            Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
+            Fetch::Proof(msg) => Ok(Hc::proof(&c, msg.at, msg.path)),
             Fetch::State(msg) => match msg.at {
-                QueryHeight::Latest => fetch(id(
+                QueryHeight::Latest => Ok(fetch(id(
                     c.chain_id(),
                     FetchState {
                         at: QueryHeight::Specific(c.query_latest_height().await.unwrap()),
                         path: msg.path,
                     },
-                )),
-                QueryHeight::Specific(at) => Hc::state(&c, at, msg.path),
+                ))),
+                QueryHeight::Specific(at) => Ok(Hc::state(&c, at, msg.path)),
             },
-            Fetch::LatestHeight(FetchLatestHeight { __marker: _ }) => data(id(
+            Fetch::LatestHeight(FetchLatestHeight { __marker: _ }) => Ok(data(id(
                 c.chain_id(),
                 LatestHeight {
                     height: c.query_latest_height().await.unwrap(),
                     __marker: PhantomData,
                 },
-            )),
+            ))),
             Fetch::UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState {
                 client_id,
                 __marker: _,
@@ -167,13 +172,13 @@ where
                     QueryHeight::Specific(h) => h,
                 };
 
-                data(id::<Hc, Tr, _>(
+                Ok(data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     SelfClientState {
                         self_client_state: c.self_client_state(height).await,
                         __marker: PhantomData,
                     },
-                ))
+                )))
             }
             Fetch::SelfConsensusState(FetchSelfConsensusState {
                 at: height,
@@ -185,32 +190,62 @@ where
                     QueryHeight::Specific(h) => h,
                 };
 
-                data(id::<Hc, Tr, _>(
+                Ok(data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     SelfConsensusState {
                         self_consensus_state: c.self_consensus_state(height).await,
                         __marker: PhantomData,
                     },
-                ))
+                )))
             }
             Fetch::UpdateHeaders(fetch_update_headers) => {
-                Hc::fetch_update_headers(&c, fetch_update_headers)
+                Ok(Hc::fetch_update_headers(&c, fetch_update_headers))
             }
-            Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => c.do_fetch(fetch).await,
+            Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => {
+                Hc::Fetch::do_fetch(&c, fetch)
+                    .await
+                    .map_err(|err| FetchError::LightClientSpecific(Box::new(err)))
+            }
         }
     }
+}
+
+/// NOTE: The following is the ideal implementation of this error type:
+///
+/// ```
+/// #[derive(macros::Debug, PartialEqNoBound, CloneNoBound, thiserror::Error)]
+/// pub enum FetchError<Hc: ChainExt, Tr: ChainExt>
+/// where
+///     Hc::Fetch<Tr>: DoFetch<Hc>,
+/// {
+///     LightClientSpecific(<Hc::Fetch<Tr> as DoFetch<Hc>>::Error),
+/// }
+
+/// pub enum AnyFetchError {}
+/// impl crate::AnyLightClient for AnyFetchError {
+///     type Inner<Hc: ChainExt, Tr: ChainExt> = FetchError<Hc, Tr>;
+/// }
+/// ```
+///
+/// However, due to limitations in rust's type system, this isn't possible - we need to add an extra constraint on `Self::Inner`, which can't be expressed without non lifetime binders: https://github.com/rust-lang/rust/issues/108185. As such, we have to type-erase here via box dyn error.
+#[derive(macros::Debug, thiserror::Error)]
+pub enum FetchError {
+    #[error(transparent)]
+    LightClientSpecific(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 #[cfg(test)]
 mod tests {
     use chain_utils::{cosmos::Cosmos, union::Union, wasm::Wasm};
+    use static_assertions::assert_impl_all;
 
-    use super::*;
-    use crate::chain::union::UnionFetch;
+    use crate::{
+        chain::union::UnionFetch,
+        fetch::{DoFetch, FetchError},
+        DoFetchState,
+    };
 
-    #[test]
-    fn sanity_check() {
-        static_assertions::assert_impl_all!(Union: DoFetchState<Union, Wasm<Cosmos>>);
-        static_assertions::assert_impl_all!(UnionFetch<Union, Wasm<Cosmos>>: DoFetch<Union>);
-    }
+    assert_impl_all!(Union: DoFetchState<Union, Wasm<Cosmos>>);
+    assert_impl_all!(UnionFetch<Union, Wasm<Cosmos>>: DoFetch<Union>);
+    assert_impl_all!(FetchError: std::error::Error);
 }

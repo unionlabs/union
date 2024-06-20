@@ -16,7 +16,10 @@
 
 //! Nibble-orientated view onto byte-slice, allowing nibble-precision offsets.
 
-use std::{cmp::*, fmt};
+use std::{
+    cmp::{min, Eq, Ord, Ordering, PartialEq, PartialOrd},
+    fmt,
+};
 
 /// Nibble-orientated view onto byte-slice, allowing nibble-precision offsets.
 ///

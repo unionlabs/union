@@ -1,123 +1,103 @@
 {
   "chain": {
-    "scroll-testnet": {
-      "enabled": false,
-      "chain_type": "scroll",
-      "ibc_handler_address": "0x915eccda242f8353f901e26466a54e67396653c0",
-      "signers": [
-        {
-          "raw": "0x227bfab7b601429981d3fbffb1b7625fb13464965cd4368ae48090c8d44b417e"
-        }
-      ],
-      "scroll_eth_rpc_api": "wss://sepolia-rpc.scroll.io",
-      "rollup_contract_address": "0x2D567EcE699Eabe5afCd141eDB7A4f2D0D6ce8a0",
-      "rollup_finalized_state_roots_slot": "158",
-      "rollup_last_finalized_batch_index_slot": "156",
-      "rollup_message_queue_slot": "152",
-      "rollup_committed_batches_slot": "157",
-      "l1_client_id": "08-wasm-0",
-      "l1": {
-        "chain_type": "ethereum",
-        "preset_base": "mainnet",
-        "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
-        "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/6PCr1n8dJeYbE2Z9LrXScs05hLTYiVFl",
-        "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
-      },
-      "scroll_api": "https://sepolia-api-re.scroll.io/",
-      "union_grpc_url": "https://grpc.testnet.bonlulu.uno:443",
-      "ibc_commitment_slot": "0"
-    },
     "ethereum-devnet": {
-      "enabled": false,
+      "enabled": true,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
       "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
-      "signers": [
-        {
-          "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-        },
-        {
-          "raw": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-        },
-        {
-          "raw": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
-        },
-        {
-          "raw": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
-        },
-        {
-          "raw": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
-        }
-      ],
+      "keyring": {
+        "name": "ethereum-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "dev-key0",
+            "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+          },
+          {
+            "type": "raw",
+            "name": "dev-key1",
+            "key": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+          },
+          {
+            "type": "raw",
+            "name": "eth-key-2",
+            "key": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
+          },
+          {
+            "type": "raw",
+            "name": "eth-key-3",
+            "key": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
+          },
+          {
+            "type": "raw",
+            "name": "eth-key-4",
+            "key": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
+          }
+        ]
+      },
       "eth_rpc_api": "ws://localhost:8546",
       "eth_beacon_rpc_api": "http://localhost:9596"
     },
     "berachain-devnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "berachain",
       "ibc_commitment_slot": "0",
       "ibc_handler_address": "0x9664d804589c1c9f573288edc2b9027661d624fa",
-      "signers": [
-        {
-          "raw": "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306"
-        }
-      ],
+      "keyring": {
+        "name": "berachain-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "berachain-dev-key",
+            "key": "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306"
+          }
+        ]
+      },
       "eth_rpc_api": "ws://localhost:8546",
       "ws_url": "ws://localhost:26657/websocket"
-    },
-    "sepolia": {
-      "enabled": false,
-      "chain_type": "ethereum",
-      "preset_base": "mainnet",
-      "ibc_commitment_slot": "0",
-      "ibc_handler_address": "0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb",
-      "signers": [
-        {
-          "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-        },
-        {
-          "raw": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-        },
-        {
-          "raw": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
-        },
-        {
-          "raw": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
-        },
-        {
-          "raw": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
-        }
-      ],
-      "eth_rpc_api": "wss://sepolia.drpc.org",
-      "eth_beacon_rpc_api": "https://lodestar-sepolia.chainsafe.io"
     },
     "union-devnet": {
       "chain_type": "union",
       "enabled": true,
-      "signers": [
-        {
-          "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-        },
-        {
-          "raw": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
-        },
-        {
-          "raw": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
-        },
-        {
-          "raw": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
-        },
-        {
-          "raw": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
-        },
-        {
-          "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        }
-      ],
-      "ws_url": "ws://localhost:36657/websocket",
+      "keyring": {
+        "name": "union-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+          },
+          {
+            "type": "raw",
+            "name": "bob",
+            "key": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+          },
+          {
+            "type": "raw",
+            "name": "charlie",
+            "key": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+          },
+          {
+            "type": "raw",
+            "name": "dave",
+            "key": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+          },
+          {
+            "type": "raw",
+            "name": "erin",
+            "key": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
+          },
+          {
+            "type": "raw",
+            "name": "frank",
+            "key": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
+          }
+        ]
+      },
+      "ws_url": "ws://localhost:26657/websocket",
       "prover_endpoint": "http://localhost:9999",
-      "grpc_url": "http://localhost:19090",
+      "grpc_url": "http://localhost:9090",
       "gas_config": {
         "gas_price": "1.0",
         "gas_denom": "muno",
@@ -125,47 +105,44 @@
         "max_gas": 400000
       }
     },
-    "union-testnet": {
-      "chain_type": "union",
-      "enabled": false,
-      "signers": [
-        {
-          "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-        }
-      ],
-      "gas_config": {
-        "gas_price": "1.0",
-        "gas_denom": "muno",
-        "gas_multiplier": "1.1",
-        "max_gas": 400000
-      },
-      "ws_url": "wss://rpc.testnet.bonlulu.uno:443/websocket",
-      "prover_endpoint": "http://localhost:9999",
-      "grpc_url": "https://grpc.testnet.bonlulu.uno:443"
-    },
     "simd-devnet": {
       "chain_type": "cosmos",
       "enabled": false,
-      "signers": [
-        {
-          "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-        },
-        {
-          "raw": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
-        },
-        {
-          "raw": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
-        },
-        {
-          "raw": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
-        },
-        {
-          "raw": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
-        },
-        {
-          "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        }
-      ],
+      "keyring": {
+        "name": "simd-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+          },
+          {
+            "type": "raw",
+            "name": "bob",
+            "key": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+          },
+          {
+            "type": "raw",
+            "name": "charlie",
+            "key": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+          },
+          {
+            "type": "raw",
+            "name": "dave",
+            "key": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+          },
+          {
+            "type": "raw",
+            "name": "erin",
+            "key": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
+          },
+          {
+            "type": "raw",
+            "name": "frank",
+            "key": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
+          }
+        ]
+      },
       "gas_config": {
         "gas_price": "1.0",
         "gas_denom": "stake",
@@ -178,26 +155,41 @@
     "osmosis-devnet": {
       "chain_type": "cosmos",
       "enabled": false,
-      "signers": [
-        {
-          "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-        },
-        {
-          "raw": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
-        },
-        {
-          "raw": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
-        },
-        {
-          "raw": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
-        },
-        {
-          "raw": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
-        },
-        {
-          "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        }
-      ],
+      "keyring": {
+        "name": "osmosis-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+          },
+          {
+            "type": "raw",
+            "name": "bob",
+            "key": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+          },
+          {
+            "type": "raw",
+            "name": "charlie",
+            "key": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+          },
+          {
+            "type": "raw",
+            "name": "dave",
+            "key": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+          },
+          {
+            "type": "raw",
+            "name": "erin",
+            "key": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
+          },
+          {
+            "type": "raw",
+            "name": "frank",
+            "key": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
+          }
+        ]
+      },
       "gas_config": {
         "gas_price": "1.0",
         "gas_denom": "uosmo",
@@ -210,26 +202,41 @@
     "stargaze-devnet": {
       "chain_type": "cosmos",
       "enabled": false,
-      "signers": [
-        {
-          "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-        },
-        {
-          "raw": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
-        },
-        {
-          "raw": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
-        },
-        {
-          "raw": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
-        },
-        {
-          "raw": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
-        },
-        {
-          "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
-        }
-      ],
+      "keyring": {
+        "name": "stargaze-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+          },
+          {
+            "type": "raw",
+            "name": "bob",
+            "key": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+          },
+          {
+            "type": "raw",
+            "name": "charlie",
+            "key": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+          },
+          {
+            "type": "raw",
+            "name": "dave",
+            "key": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+          },
+          {
+            "type": "raw",
+            "name": "erin",
+            "key": "0x40c30853b7f3e6d7ec997fc72c78aef65fce2e82d5b71032a98cb8efaa4710ca"
+          },
+          {
+            "type": "raw",
+            "name": "frank",
+            "key": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
+          }
+        ]
+      },
       "gas_config": {
         "gas_price": "1.0",
         "gas_denom": "ustars",

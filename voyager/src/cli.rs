@@ -61,14 +61,14 @@ pub enum LogFormat {
 }
 
 #[derive(Debug)]
-pub struct Handshake {
+pub struct HandshakeCmd {
     pub chain_a: String,
     pub chain_b: String,
 
     pub ty: HandshakeType,
 }
 
-impl Args for Handshake {
+impl Args for HandshakeCmd {
     fn augment_args(cmd: clap::Command) -> clap::Command {
         HandshakeRaw::augment_args(cmd)
     }
@@ -78,7 +78,7 @@ impl Args for Handshake {
     }
 }
 
-impl Handshake {
+impl HandshakeCmd {
     pub fn from_raw(mut raw: HandshakeRaw) -> Result<Self, clap::Error> {
         use HandshakeType::*;
 
@@ -217,7 +217,7 @@ pub enum HandshakeType {
     },
 }
 
-impl FromArgMatches for Handshake {
+impl FromArgMatches for HandshakeCmd {
     fn from_arg_matches(matches: &clap::ArgMatches) -> Result<Self, clap::Error> {
         HandshakeRaw::from_arg_matches(matches).and_then(Self::from_raw)
     }
@@ -326,7 +326,7 @@ impl HandshakeRaw {
 pub enum Command {
     RunMigrations,
     PrintConfig,
-    Handshake(Handshake),
+    Handshake(HandshakeCmd),
     InitFetch {
         on: String,
     },
@@ -335,6 +335,8 @@ pub enum Command {
     Queue(QueueCmd),
     #[command(subcommand)]
     Util(UtilCmd),
+    #[command(subcommand)]
+    Signer(SignerCmd),
     Query {
         #[arg(long)]
         on: String,
@@ -706,6 +708,15 @@ pub enum UtilCmd {
     Arbitrum(ArbitrumCmd),
     #[command(subcommand)]
     Berachain(BerachainCmd),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SignerCmd {
+    /// Fetch the balances of all of the configured signers for all enabled chains. If --on is specified, only fetch the signers of that chain, whether the chain is enabled or not.
+    Balances {
+        #[arg(long)]
+        on: Option<String>,
+    },
 }
 
 #[derive(Debug, Subcommand)]

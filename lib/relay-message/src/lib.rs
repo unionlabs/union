@@ -23,7 +23,7 @@ use crate::{
     data::AnyData,
     effect::{AnyEffect, Effect},
     event::AnyEvent,
-    fetch::{AnyFetch, DoFetch, FetchUpdateHeaders},
+    fetch::{AnyFetch, FetchUpdateHeaders},
     wait::AnyWait,
 };
 
@@ -48,16 +48,6 @@ pub trait ChainExt: Chain {
 
     /// The config required to create a light client on this chain.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
-
-    fn do_fetch<Tr: ChainExt>(
-        &self,
-        msg: Self::Fetch<Tr>,
-    ) -> impl Future<Output = Op<RelayMessage>> + '_
-    where
-        Self::Fetch<Tr>: DoFetch<Self>,
-    {
-        DoFetch::do_fetch(self, msg)
-    }
 }
 
 pub enum RelayMessage {}
@@ -183,12 +173,10 @@ pub(crate) use any_enum;
 pub type PathOf<Hc, Tr> = ics24::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
 
 pub trait AnyLightClient {
-    type Inner<Hc: ChainExt, Tr: ChainExt>: Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary;
+    type Inner<Hc: ChainExt, Tr: ChainExt>: Debug + Clone + PartialEq;
+    // + Serialize
+    // + for<'de> Deserialize<'de>
+    // + MaybeArbitrary;
 }
 
 pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
@@ -211,7 +199,10 @@ macro_rules! lc {
 #[serde(
     from = "AnyLightClientIdentifiedSerde<T>",
     into = "AnyLightClientIdentifiedSerde<T>",
-    bound(serialize = "", deserialize = "")
+    bound(
+        serialize = "AnyLightClientIdentifiedSerde<T>: Serialize",
+        deserialize = "AnyLightClientIdentifiedSerde<T>: Deserialize<'de>"
+    )
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
@@ -265,7 +256,58 @@ impl<T: AnyLightClient> AnyLightClientIdentified<T> {
 }
 
 #[derive(Serialize, Deserialize, enumorph::Enumorph)]
-#[serde(bound(serialize = "", deserialize = ""), untagged, deny_unknown_fields)]
+#[serde(
+    bound(
+        serialize = "
+            Inner<Wasm<Union>, Ethereum<Mainnet>, lc!(Ethereum<Mainnet> => Wasm<Union>)>: Serialize,
+            Inner<Ethereum<Mainnet>, Wasm<Union>, lc!(Wasm<Union> => Ethereum<Mainnet>)>: Serialize,
+            Inner<Wasm<Union>, Ethereum<Minimal>, lc!(Ethereum<Minimal> => Wasm<Union>)>: Serialize,
+
+            Inner<Ethereum<Minimal>, Wasm<Union>, lc!(Wasm<Union> => Ethereum<Minimal>)>: Serialize,
+
+            Inner<Wasm<Union>, Scroll, lc!(Scroll => Wasm<Union>)>: Serialize,
+            Inner<Scroll, Wasm<Union>, lc!(Wasm<Union> => Scroll)>: Serialize,
+
+            Inner<Wasm<Union>, Arbitrum, lc!(Arbitrum => Wasm<Union>)>: Serialize,
+            Inner<Arbitrum, Wasm<Union>, lc!(Wasm<Union> => Arbitrum)>: Serialize,
+
+            Inner<Wasm<Union>, Berachain, lc!(Berachain => Wasm<Union>)>: Serialize,
+            Inner<Berachain, Wasm<Union>, lc!(Wasm<Union> => Berachain)>: Serialize,
+            Inner<Union, Wasm<Cosmos>, lc!(Wasm<Cosmos> => Union)>: Serialize,
+            Inner<Wasm<Cosmos>, Union, lc!(Union => Wasm<Cosmos>)>: Serialize,
+
+            Inner<Union, Cosmos, lc!(Cosmos => Union)>: Serialize,
+            Inner<Cosmos, Union, lc!(Union => Cosmos)>: Serialize,
+
+            Inner<Cosmos, Cosmos, lc!(Cosmos => Cosmos)>: Serialize,
+        ",
+        deserialize = "
+            Inner<Wasm<Union>, Ethereum<Mainnet>, lc!(Ethereum<Mainnet> => Wasm<Union>)>: Deserialize<'de>,
+            Inner<Ethereum<Mainnet>, Wasm<Union>, lc!(Wasm<Union> => Ethereum<Mainnet>)>: Deserialize<'de>,
+            Inner<Wasm<Union>, Ethereum<Minimal>, lc!(Ethereum<Minimal> => Wasm<Union>)>: Deserialize<'de>,
+
+            Inner<Ethereum<Minimal>, Wasm<Union>, lc!(Wasm<Union> => Ethereum<Minimal>)>: Deserialize<'de>,
+
+            Inner<Wasm<Union>, Scroll, lc!(Scroll => Wasm<Union>)>: Deserialize<'de>,
+            Inner<Scroll, Wasm<Union>, lc!(Wasm<Union> => Scroll)>: Deserialize<'de>,
+
+            Inner<Wasm<Union>, Arbitrum, lc!(Arbitrum => Wasm<Union>)>: Deserialize<'de>,
+            Inner<Arbitrum, Wasm<Union>, lc!(Wasm<Union> => Arbitrum)>: Deserialize<'de>,
+
+            Inner<Wasm<Union>, Berachain, lc!(Berachain => Wasm<Union>)>: Deserialize<'de>,
+            Inner<Berachain, Wasm<Union>, lc!(Wasm<Union> => Berachain)>: Deserialize<'de>,
+            Inner<Union, Wasm<Cosmos>, lc!(Wasm<Cosmos> => Union)>: Deserialize<'de>,
+            Inner<Wasm<Cosmos>, Union, lc!(Union => Wasm<Cosmos>)>: Deserialize<'de>,
+
+            Inner<Union, Cosmos, lc!(Cosmos => Union)>: Deserialize<'de>,
+            Inner<Cosmos, Union, lc!(Union => Cosmos)>: Deserialize<'de>,
+
+            Inner<Cosmos, Cosmos, lc!(Cosmos => Cosmos)>: Deserialize<'de>,
+        "
+    ),
+    untagged,
+    deny_unknown_fields
+)]
 #[allow(clippy::large_enum_variant)]
 enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
     EthereumMainnetOnUnion(
@@ -416,13 +458,22 @@ impl<Hc: Chain, Tr> DoAggregate for Identified<Hc, Tr, Never> {
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
+    type QueryUnfinalizedTrustedClientStateError: Debug
+        + Clone
+        + PartialEq
+        + std::error::Error
+        + Send
+        + Sync;
+
     fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> Op<RelayMessage>;
 
     // SEE: <https://github.com/unionlabs/union/issues/1813>
     fn query_unfinalized_trusted_client_state(
         hc: &Hc,
         client_id: Hc::ClientId,
-    ) -> impl Future<Output = Hc::StoredClientState<Tr>> + '_;
+    ) -> impl Future<
+        Output = Result<Hc::StoredClientState<Tr>, Self::QueryUnfinalizedTrustedClientStateError>,
+    > + '_;
 }
 
 pub trait DoFetchProof<Hc: ChainExt, Tr: ChainExt>: ChainExt {

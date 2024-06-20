@@ -1,6 +1,5 @@
 use std::{error::Error, sync::Arc};
 
-use bip32::secp256k1::ecdsa;
 use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use futures::{FutureExt, TryFutureExt};
@@ -18,13 +17,13 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, Ethereum, EthereumChain, EthereumConsensusChain, EthereumInitError,
-        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
+        self, balance_of_signers, Ethereum, EthereumChain, EthereumConsensusChain,
+        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
+        ReadWrite, Readonly,
     },
-    private_key::PrivateKey,
+    keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
     wasm::Wasm,
-    Pool,
 };
 
 pub const SCROLL_REVISION_NUMBER: u64 = 0;
@@ -36,7 +35,7 @@ pub struct Scroll {
     /// The provider on scroll chain.
     pub provider: Arc<Provider<Ws>>,
 
-    pub ibc_handlers: Pool<IBCHandler<EthereumSignerMiddleware>>,
+    pub keyring: EthereumKeyring,
 
     /// The address of the `IBCHandler` smart contract deployed on scroll.
     pub ibc_handler_address: H160,
@@ -64,8 +63,8 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    /// The signer that will be used to submit transactions by voyager.
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    /// The signers that will be used to submit transactions by voyager.
+    pub keyring: KeyringConfig,
 
     /// The RPC endpoint for the execution (scroll) chain.
     pub scroll_eth_rpc_api: String,
@@ -80,6 +79,20 @@ pub struct Config {
     pub l1: ethereum::Config<Readonly>,
     pub scroll_api: String,
     pub union_grpc_url: String,
+}
+
+impl ChainKeyring for Scroll {
+    type Address = H160;
+
+    type Signer = IBCHandler<EthereumSignerMiddleware>;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        &self.keyring
+    }
+
+    async fn balances(&self) -> Vec<SignerBalance<Self::Address>> {
+        balance_of_signers(&self.keyring, &self.provider).await
+    }
 }
 
 impl EthereumChain for Scroll {
@@ -150,8 +163,8 @@ impl Scroll {
 
         Ok(Self {
             chain_id: U256(chain_id),
-            ibc_handlers: ReadWrite::new(
-                config.signers,
+            keyring: ReadWrite::new(
+                config.keyring,
                 config.ibc_handler_address,
                 chain_id.as_u64(),
                 provider.clone(),

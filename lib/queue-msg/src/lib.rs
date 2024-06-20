@@ -25,7 +25,7 @@ pub use queue_msg_macro::queue_msg;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use tracing::{debug, error, info, info_span, trace, warn, Instrument};
-use unionlabs::{never::Never, MaybeArbitrary};
+use unionlabs::{never::Never, ErrorReporter, MaybeArbitrary};
 
 use crate::{
     aggregation::{HListTryFromIterator, UseAggregate},
@@ -1003,8 +1003,9 @@ impl<T: QueueMessage> Engine<T> {
                     }
                     Ok(msg) => (None, Ok(msg.into_iter().collect())),
                     Err(QueueError::Fatal(fatal)) => {
-                        error!(error = %fatal.to_string(), "unrecoverable error");
-                        (None, Err(fatal.to_string()))
+                        let full_err = ErrorReporter(&*fatal);
+                        error!(error = %full_err, "unrecoverable error");
+                        (None, Err(full_err.to_string()))
                     }
                     Err(QueueError::Retry(retry)) => panic!("{retry:?}"),
                 }

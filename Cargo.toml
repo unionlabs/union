@@ -189,6 +189,7 @@ serde_with               = { version = "3.7.0", default-features = false, featur
 sha2                     = { version = "0.10.7", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }
+static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
 subtle-encoding          = { version = "0.5.1", default-features = false }
 thiserror                = { version = "1.0.0", default-features = false }
 time                     = { version = "0.3.36", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..

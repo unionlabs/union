@@ -1,10 +1,11 @@
-use std::{collections::VecDeque, marker::PhantomData};
+use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 
 use chain_utils::{
     cosmos::Cosmos,
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain},
     wasm::Wraps,
 };
+use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
@@ -38,7 +39,7 @@ use crate::{
             fetch_untrusted_validators, FetchAbciQuery, FetchTrustedCommit, FetchTrustedValidators,
             FetchUntrustedCommit, FetchUntrustedValidators,
         },
-        fetch_abci_query, CosmosSdkChainSealed,
+        fetch_abci_query, CosmosSdkChainSealed, FetchAbciQueryError,
     },
     data::{AnyData, Data, IbcState},
     effect::{AnyEffect, Effect, MsgUpdateClientData},
@@ -174,8 +175,14 @@ where
             StateProof = MerkleProof,
             Data<Tr> = CosmosDataMsg<Hc, Tr>,
             Fetch<Tr> = CosmosFetch<Hc, Tr>,
-            StoredClientState<Tr>: Decode<Proto>,
-            StoredConsensusState<Tr>: Decode<Proto>,
+            StoredClientState<Tr>: Decode<
+                Proto,
+                Error: Debug + Clone + PartialEq + std::error::Error,
+            >,
+            StoredConsensusState<Tr>: Decode<
+                Proto,
+                Error: Debug + Clone + PartialEq + std::error::Error,
+            >,
         >,
     Tr: ChainExt,
 
@@ -185,8 +192,10 @@ where
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> Op<RelayMessage> {
-        match msg {
+    type Error = CosmosDoFetchError<Hc, Tr>;
+
+    async fn do_fetch(hc: &Hc, msg: Self) -> Result<Op<RelayMessage>, Self::Error> {
+        Ok(match msg {
             Self::FetchTrustedCommit(FetchTrustedCommit {
                 height,
                 __marker: _,
@@ -204,10 +213,27 @@ where
                 __marker: _,
             }) => fetch_untrusted_validators(hc, height).await,
             Self::AbciQuery(FetchAbciQuery { path, height, ty }) => {
-                fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await
+                fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await?
             }
-        }
+        })
     }
+}
+
+#[derive(macros::Debug, PartialEqNoBound, CloneNoBound, thiserror::Error)]
+pub enum CosmosDoFetchError<Hc, Tr>
+where
+    Hc: Chain<
+        StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
+        StoredClientState<Tr>: Decode<Proto, Error: Debug + Clone + PartialEq + std::error::Error>,
+        StoredConsensusState<Tr>: Decode<
+            Proto,
+            Error: Debug + Clone + PartialEq + std::error::Error,
+        >,
+    >,
+    Tr: Chain,
+{
+    #[error("error fetching abci query")]
+    FetchAbciQuery(#[from] FetchAbciQueryError<Hc, Tr>),
 }
 
 #[queue_msg]

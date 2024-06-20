@@ -21,7 +21,7 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::scroll::v1::Cons
     }
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromConsensusStateError {
     #[error("invalid ibc storage root")]
     IbcStorageRoot(#[source] InvalidLength),

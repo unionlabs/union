@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, trace};
-use unionlabs::traits::{Chain, ClientState, FromStrExact};
+use unionlabs::traits::{Chain, FromStrExact};
 use voyager_message::VoyagerMessage;
 
 use crate::config::{ChainConfig, Config};
@@ -409,20 +409,14 @@ impl Voyager {
 pub async fn chains_from_config(
     config: BTreeMap<String, ChainConfig>,
 ) -> Result<Chains, AnyChainTryFromConfigError> {
-    let mut union = HashMap::new();
-    let mut cosmos = HashMap::new();
-    let mut ethereum_minimal = HashMap::new();
-    let mut ethereum_mainnet = HashMap::new();
-    let mut scroll = HashMap::new();
-    let mut arbitrum = HashMap::new();
-    let mut berachain = HashMap::new();
+    let mut chains = HashMap::new();
 
-    fn insert_into_chain_map<C: Chain>(
-        map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
+    fn insert_into_chain_map<C: Chain + Into<AnyChain>>(
+        map: &mut HashMap<String, AnyChain>,
         chain: C,
     ) {
         let chain_id = chain.chain_id();
-        map.insert(chain_id.clone(), chain);
+        map.insert(chain_id.to_string(), chain.into());
 
         info!(
             %chain_id,
@@ -441,38 +435,30 @@ pub async fn chains_from_config(
 
         match chain {
             AnyChain::Union(c) => {
-                insert_into_chain_map(&mut union, c);
+                insert_into_chain_map(&mut chains, c);
             }
             AnyChain::Cosmos(c) => {
-                insert_into_chain_map(&mut cosmos, c);
+                insert_into_chain_map(&mut chains, c);
             }
             AnyChain::EthereumMainnet(c) => {
-                insert_into_chain_map(&mut ethereum_mainnet, c);
+                insert_into_chain_map(&mut chains, c);
             }
             AnyChain::EthereumMinimal(c) => {
-                insert_into_chain_map(&mut ethereum_minimal, c);
+                insert_into_chain_map(&mut chains, c);
             }
             AnyChain::Scroll(c) => {
-                insert_into_chain_map(&mut scroll, c);
+                insert_into_chain_map(&mut chains, c);
             }
             AnyChain::Arbitrum(c) => {
-                insert_into_chain_map(&mut arbitrum, c);
+                insert_into_chain_map(&mut chains, c);
             }
             AnyChain::Berachain(c) => {
-                insert_into_chain_map(&mut berachain, c);
+                insert_into_chain_map(&mut chains, c);
             }
         }
     }
 
-    Ok(Chains {
-        scroll,
-        ethereum_minimal,
-        ethereum_mainnet,
-        union,
-        cosmos,
-        arbitrum,
-        berachain,
-    })
+    Ok(Chains { chains })
 }
 
 #[derive(Debug)]

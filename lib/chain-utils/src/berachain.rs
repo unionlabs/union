@@ -4,6 +4,7 @@ use std::{
 };
 
 use cometbft_rpc::AbciQueryResponse;
+use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use ics23::ibc_api::SDK_SPECS;
 use serde::{Deserialize, Serialize};
@@ -33,8 +34,12 @@ use unionlabs::{
     uint::U256,
 };
 
-use crate::ethereum::{
-    self, EthereumChain, EthereumConsensusChain, EthereumSignersConfig, ReadWrite,
+use crate::{
+    ethereum::{
+        self, balance_of_signers, EthereumChain, EthereumConsensusChain, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite,
+    },
+    keyring::{ChainKeyring, ConcurrentKeyring, SignerBalance},
 };
 
 // FLOW:
@@ -59,7 +64,7 @@ pub struct Berachain {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub ibc_handlers: <ReadWrite as EthereumSignersConfig>::Out,
+    pub keyring: Arc<<ReadWrite as EthereumSignersConfig>::Out>,
 
     // tendermint
     pub tm_client: cometbft_rpc::Client,
@@ -78,7 +83,21 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub signers: <ReadWrite as EthereumSignersConfig>::Config,
+    pub keyring: <ReadWrite as EthereumSignersConfig>::Config,
+}
+
+impl ChainKeyring for Berachain {
+    type Address = H160;
+
+    type Signer = IBCHandler<EthereumSignerMiddleware>;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        &self.keyring
+    }
+
+    async fn balances(&self) -> Vec<SignerBalance<Self::Address>> {
+        balance_of_signers(&self.keyring, &self.provider).await
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -290,12 +309,12 @@ impl Berachain {
             consensus_chain_id,
             execution_chain_id: execution_chain_id.into(),
             ibc_handler_address: config.ibc_handler_address,
-            ibc_handlers: ReadWrite::new(
-                config.signers,
+            keyring: Arc::new(ReadWrite::new(
+                config.keyring,
                 config.ibc_handler_address,
                 execution_chain_id.as_u64(),
                 provider.clone(),
-            ),
+            )),
             provider: Arc::new(provider),
             consensus_chain_revision,
         })

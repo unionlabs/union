@@ -25,6 +25,7 @@ use unionlabs::{
         },
     },
     ics24::ClientStatePath,
+    never::Never,
     traits::{Chain, ClientStateOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
 };
@@ -66,7 +67,7 @@ where
     >,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<(), Self::MsgError> {
-        do_msg(&self.ibc_handlers, msg, true).await
+        do_msg(&self.keyring, msg, true).await
     }
 }
 
@@ -89,7 +90,9 @@ where
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Scroll, Tr>)>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Scroll, Tr>) -> Op<RelayMessage> {
+    type QueryUnfinalizedTrustedClientStateError = Never;
+
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
@@ -99,13 +102,14 @@ where
     async fn query_unfinalized_trusted_client_state(
         hc: &Self,
         client_id: Self::ClientId,
-    ) -> Self::StoredClientState<Tr> {
-        let latest_scroll_height = hc.provider.get_block_number().await.unwrap().as_u64();
+    ) -> Result<Self::StoredClientState<Tr>, Self::QueryUnfinalizedTrustedClientStateError> {
+        let latest_execution_height = hc.provider.get_block_number().await.unwrap().as_u64();
 
-        hc.ibc_handler()
-            .ibc_state_read::<_, Scroll, Tr>(latest_scroll_height, ClientStatePath { client_id })
+        Ok(hc
+            .ibc_handler()
+            .ibc_state_read::<_, Self, Tr>(latest_execution_height, ClientStatePath { client_id })
             .await
-            .unwrap()
+            .unwrap())
     }
 }
 
@@ -190,7 +194,9 @@ where
         SelfConsensusState: Decode<IbcStateEncodingOf<Scroll>> + Encode<EthAbi>,
     >,
 {
-    async fn do_fetch(scroll: &Scroll, msg: Self) -> Op<RelayMessage> {
+    type Error = Never;
+
+    async fn do_fetch(scroll: &Scroll, msg: Self) -> Result<Op<RelayMessage>, Self::Error> {
         let msg = match msg {
             Self::FetchGetProof(get_proof) => fetch_get_proof(scroll, get_proof).await,
             Self::FetchIbcState(ibc_state) => fetch_ibc_state(scroll, ibc_state).await,
@@ -465,7 +471,7 @@ where
             }
         };
 
-        data(id::<Scroll, Tr, _>(scroll.chain_id, msg))
+        Ok(data(id::<Scroll, Tr, _>(scroll.chain_id, msg)))
     }
 }
 

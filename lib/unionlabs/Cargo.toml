@@ -45,7 +45,7 @@ serde_json               = { workspace = true }
 sha2                     = { workspace = true }
 sha3.workspace           = true
 ssz                      = { workspace = true }
-static_assertions        = "1.1.0"
+static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 tracing                  = { workspace = true }

@@ -18,12 +18,16 @@ pub struct ConsensusState {
     pub next_validators_hash: H256,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromConsensusStateError {
+    #[error(transparent)]
     MissingField(MissingField),
-    Root(TryFromMerkleRootError),
-    NextValidatorsHash(InvalidLength),
-    Timestamp(TryFromTimestampError),
+    #[error("invalid root")]
+    Root(#[from] TryFromMerkleRootError),
+    #[error("invalid next validators hash")]
+    NextValidatorsHash(#[from] InvalidLength),
+    #[error("invalid timestamp")]
+    Timestamp(#[from] TryFromTimestampError),
 }
 
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::ConsensusState> for ConsensusState {

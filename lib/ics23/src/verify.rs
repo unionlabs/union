@@ -14,7 +14,7 @@ use crate::{
     ops::hash_op::{do_hash, HashError},
 };
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyError {
     #[error("spec mismatch ({0})")]
     SpecMismatch(SpecMismatchError),
@@ -57,7 +57,7 @@ pub enum VerifyError {
     Hash(#[from] HashError),
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyMembershipError {
     #[error("existence proof verification failed, ({0})")]
     ExistenceProofVerify(VerifyError),
@@ -65,7 +65,7 @@ pub enum VerifyMembershipError {
     ProofDoesNotExist,
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum NeighborSearchError {
     #[error("invalid branch {branch} (order length: {order_len})")]
     InvalidBranch { branch: usize, order_len: usize },
