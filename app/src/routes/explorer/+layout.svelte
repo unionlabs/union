@@ -76,7 +76,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 
 <!-- mobile layout !-->
-<div class="flex flex-row">
+<div class="flex flex-row divide-x">
   <nav class={cn("bg-muted h-full overflow-y-auto", explorerRoute === null ? "" : "")}>
     <Menu tableRoutes={data.tables} isCollapsed={false} />
   </nav>
