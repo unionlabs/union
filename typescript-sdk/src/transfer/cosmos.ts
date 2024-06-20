@@ -229,10 +229,18 @@ export async function cosmosSameChainTransfer({
       { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
     )
 
-    const response = await signingClient.sendTokens(
+    const response = await signingClient.signAndBroadcast(
       account.address,
-      recipient,
-      [asset],
+      [
+        {
+          typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+          value: {
+            fromAddress: account.address,
+            toAddress: recipient,
+            amount: [asset]
+          }
+        }
+      ],
       "auto",
       `${timestamp()} Sending ${asset.amount} ${asset.denom} to ${recipient}`
     )

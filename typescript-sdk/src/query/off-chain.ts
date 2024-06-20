@@ -84,6 +84,13 @@ export interface Ucs1Configuration {
     display_name: string
     logo_uri: string | null
   }
+  forward: {
+    port: string
+    channel_id: string
+    destination_chain: {
+      chain_id: string
+    }
+  }
 }
 
 export interface Chain<
