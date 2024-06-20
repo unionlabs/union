@@ -1,6 +1,6 @@
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use static_assertions::{assert_impl, assert_impl_all};
+use static_assertions::assert_impl_all;
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 

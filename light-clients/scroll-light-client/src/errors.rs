@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
 use scroll_codec::{
@@ -14,7 +16,7 @@ use unionlabs::{
 
 use crate::client::ScrollLightClient;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("unable to decode storage proof")]
     StorageProofDecode(
@@ -88,7 +90,7 @@ pub enum Error {
 
     // TODO: Condense all of these together?
     #[error("error decoding commit batch calldata")]
-    CommitBatchDecode(#[from] ethers_core::abi::AbiError),
+    CommitBatchDecode(#[source] Arc<ethers_core::abi::AbiError>),
     #[error("empty batch")]
     EmptyBatch,
     #[error("error decoding v0 chunk")]

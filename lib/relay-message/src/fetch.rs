@@ -1,11 +1,9 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::GetChain;
-use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, queue_msg, BoxDynError, HandleFetch, Op, QueueError, QueueMessage};
-use static_assertions::assert_impl_all;
+use queue_msg::{data, fetch, queue_msg, HandleFetch, Op, QueueError, QueueMessage};
 use tracing::instrument;
 use unionlabs::{
     ics24,

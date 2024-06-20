@@ -23,7 +23,7 @@ use crate::{
     data::AnyData,
     effect::{AnyEffect, Effect},
     event::AnyEvent,
-    fetch::{AnyFetch, DoFetch, FetchUpdateHeaders},
+    fetch::{AnyFetch, FetchUpdateHeaders},
     wait::AnyWait,
 };
 

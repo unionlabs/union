@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use unionlabs::cosmos::ics23::length_op::LengthOp;
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ApplyError {
     #[error("required 32 bytes, found ({0})")]
     Required32Bytes(usize),

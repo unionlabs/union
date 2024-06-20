@@ -2,7 +2,7 @@ use unionlabs::cosmos::ics23::{existence_proof::ExistenceProof, proof_spec::Proo
 
 use crate::ops::{inner_op, leaf_op};
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
     #[error("leaf spec mismatch ({0})")]
     LeafSpecMismatch(leaf_op::SpecMismatchError),
@@ -14,7 +14,7 @@ pub enum SpecMismatchError {
     InnerDepthTooLong { path_len: usize, max_depth: usize },
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum CalculateRootError {
     #[error("leaf op hash ({0})")]
     LeafOpHash(leaf_op::ApplyError),

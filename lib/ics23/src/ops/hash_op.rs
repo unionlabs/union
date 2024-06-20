@@ -1,7 +1,7 @@
 use sha2::Digest;
 use unionlabs::cosmos::ics23::hash_op::HashOp;
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum HashError {
     #[error(
         "supported hash ops are ([Sha256, Sha512, Ripemd160, Bitcoin, Sha512256]) but found ({0})"

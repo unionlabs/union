@@ -8,7 +8,7 @@ use crate::{
     proof_specs::{self, IAVL_PROOF_SPEC},
 };
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
     #[error("unexpected hash op ({0:?})")]
     UnexpectedHashOp(HashOp),
@@ -32,7 +32,7 @@ pub enum SpecMismatchError {
     BadPrefix(usize),
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ApplyError {
     #[error("inner op needs a child value")]
     InnerOpNeedsChildValue,

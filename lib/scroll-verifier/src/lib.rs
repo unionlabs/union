@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use std::sync::Arc;
 
 use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
 use ethers_core::abi::{AbiDecode, AbiError};
@@ -12,18 +13,18 @@ use unionlabs::{
 };
 use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, TrieData, ZkTrie};
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     InvalidContractAddressProof(ethereum_verifier::error::Error),
     #[error("{0}")]
     InvalidRollupProof(ethereum_verifier::error::Error),
-    #[error("invalid zktrie")]
+    #[error("invalid zktrie ({0:?})")]
     ZkTrie(zktrie::Error),
     #[error("node value mismatch")]
     ValueMismatch,
     #[error("unable to decode commit batch calldata")]
-    CommitBatchCallDecode(#[from] AbiError),
+    CommitBatchCallDecode(#[source] Arc<AbiError>),
     #[error("error while calculating batch hash")]
     CommitBatch(#[from] CommitBatchError),
 }
@@ -64,7 +65,8 @@ pub fn verify_header(
     .map_err(Error::InvalidRollupProof)?;
 
     let batch_hash = scroll_codec::commit_batch(
-        <scroll_codec::CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)?,
+        <scroll_codec::CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)
+            .map_err(|err| Error::CommitBatchCallDecode(Arc::new(err)))?,
         header.blob_versioned_hash,
         header.l1_message_hashes,
     )?;

@@ -10,7 +10,7 @@ use unionlabs::{
 
 use crate::client::TendermintLightClient;
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 // TODO: Use an error reporter at the top level of ics008-wasm-client so we don't have to include the sources manually in the display impl
 pub enum Error {
     #[error(transparent)]
@@ -61,7 +61,7 @@ pub enum Error {
     InvalidHostTimestamp(#[from] InvalidHostTimestamp),
 }
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum InvalidHeaderError {
     #[error("signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})")]
     SignedHeaderHeightMustBeMoreRecent {
@@ -84,7 +84,7 @@ pub enum InvalidHeaderError {
     },
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum MigrateClientStoreError {
     #[error("substitute client is frozen")]
     SubstituteClientFrozen,
@@ -93,11 +93,11 @@ pub enum MigrateClientStoreError {
     MigrateFieldsChanged,
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("trusted validators hash ({0}) does not match the saved one ({1})")]
 pub struct TrustedValidatorsMismatch(pub H256, pub H256);
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("trusted revision number ({trusted_revision_number}) does not match the header ({header_revision_number})")]
 pub struct RevisionNumberMismatch {
     pub trusted_revision_number: u64,

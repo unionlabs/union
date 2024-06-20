@@ -189,7 +189,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     InvalidPublicInput,
     InvalidPoint,

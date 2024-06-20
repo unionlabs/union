@@ -1,6 +1,5 @@
 use std::{fs::read_to_string, sync::Arc};
 
-use chain_utils::{cosmos_sdk::CosmosSdkChainExt, union::Union};
 use clap::Parser;
 use cli::Ethereum;
 use contracts::{

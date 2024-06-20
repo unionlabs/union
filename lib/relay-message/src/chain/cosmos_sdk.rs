@@ -5,8 +5,8 @@ use chain_utils::{
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
-use queue_msg::{data, fetch, noop, seq, wait, Op};
-use tracing::{debug, info, warn};
+use queue_msg::{data, fetch, seq, wait, Op};
+use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},

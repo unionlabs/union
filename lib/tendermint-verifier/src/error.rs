@@ -5,7 +5,7 @@ use unionlabs::{
     tendermint::types::block_id::BlockId,
 };
 
-#[derive(Debug, thiserror::Error, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("integer overflow")]
     IntegerOverflow,

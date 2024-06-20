@@ -266,6 +266,7 @@ berachain's
 bhapi
 bigdecimal
 bigtestnet
+bimap
 binaryen
 bindgen
 bindingstypes

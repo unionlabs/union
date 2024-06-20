@@ -10,7 +10,7 @@ use unionlabs::{
     uint::U256,
 };
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("invalid rollup contract proof {0}")]
     InvalidRollupContractProof(ethereum_verifier::error::Error),

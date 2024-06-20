@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use ethers_core::abi::AbiDecode;
@@ -134,7 +136,7 @@ impl IbcClient for ScrollLightClient {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
         let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)
-            .map_err(Error::CommitBatchDecode)?;
+            .map_err(|err| Error::CommitBatchDecode(Arc::new(err)))?;
 
         let timestamp = match BatchHeader::decode(call.parent_batch_header)
             .map_err(Error::BatchHeaderDecode)?

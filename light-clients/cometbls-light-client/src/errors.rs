@@ -10,7 +10,7 @@ use unionlabs::{
 
 use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum InvalidHeaderError {
     #[error("signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})")]
     SignedHeaderHeightMustBeMoreRecent {
@@ -33,7 +33,7 @@ pub enum InvalidHeaderError {
     InvalidValidatorsHash { expected: H256, actual: H256 },
 }
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum Error {
     #[error("math operation with overflow")]
     MathOverflow,

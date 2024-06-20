@@ -17,7 +17,7 @@ use unionlabs::{
 
 use crate::client::EthereumLightClient;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
@@ -101,7 +101,7 @@ pub enum Error {
     MisbehaviourCannotExist(u64, u64),
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum CanonicalizeStoredValueError {
     #[error("the proof path {0} is unknown")]
     UnknownIbcPath(String),
@@ -119,14 +119,14 @@ pub enum CanonicalizeStoredValueError {
     ),
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 #[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
 pub struct InvalidCommitmentKey {
     pub expected: U256,
     pub found: U256,
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("expected value ({expected}) and stored value ({stored}) don't match")]
 pub struct StoredValueMismatch {
     pub expected: H256,
