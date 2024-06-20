@@ -40,9 +40,16 @@ let fromChainId = writable("union-testnet-8")
 let toChainId = writable("11155111")
 let assetSymbol = writable("")
 
-type TransferStates = "PRE_TRANSFER" | "ADDING_CHAIN" | "SWITCHING_TO_CHAIN" | "APPROVING_ASSET" | "SIMULATING_TRANSFER" | "CONFIRMING_TRANSFER" | "TRANSFERING";
+type TransferStates =
+  | "PRE_TRANSFER"
+  | "ADDING_CHAIN"
+  | "SWITCHING_TO_CHAIN"
+  | "APPROVING_ASSET"
+  | "SIMULATING_TRANSFER"
+  | "CONFIRMING_TRANSFER"
+  | "TRANSFERRING"
 
-let transferState: Writable<TransferStates> = writable("PRE_TRANSFER");
+let transferState: Writable<TransferStates> = writable("PRE_TRANSFER")
 
 let amount = ""
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
@@ -50,7 +57,7 @@ $: {
   amount = amount.replaceAll(amountRegex, "")
 }
 
-const REDIRECT_DELAY_MS = 5000;
+const REDIRECT_DELAY_MS = 5000
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
@@ -194,10 +201,10 @@ const transfer = async () => {
       rpcUrl: `https://${rpcUrl}`
     })
 
-    transferState.set("CONFIRMING_TRANSFER");
+    transferState.set("CONFIRMING_TRANSFER")
     toast.info("Confirming transfer")
 
-    let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0];
+    let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
     if (ucs1_configuration.contract_address === "ics20") {
       transferAssetsMessage = {
         kind: "ibc",
@@ -232,16 +239,14 @@ const transfer = async () => {
       }
     }
 
-
-    const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage);
-    transferState.set("TRANSFERING");
+    const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
+    transferState.set("TRANSFERRING")
     toast.info("Transferring assets")
-    await sleep(REDIRECT_DELAY_MS);
+    await sleep(REDIRECT_DELAY_MS)
     goto(`/explorer/transfers/${cosmosTransfer.transactionHash}`)
-    
   } else if ($fromChain.rpc_type === "evm") {
-    transferState.set("ADDING_CHAIN");
-  
+    transferState.set("ADDING_CHAIN")
+
     const rpcUrls = $fromChain.rpcs.filter(c => c.type === "rpc").map(c => `https://${c.url}`)
 
     if (rpcUrls.length === 0) return toast.error(`No RPC url for ${$fromChain.display_name}`)
@@ -282,13 +287,13 @@ const transfer = async () => {
     toast.info(`Adding chain ${$fromChain.display_name} to your wallet`)
     await walletClient.addChain({ chain })
 
-    transferState.set("SWITCHING_TO_CHAIN");
+    transferState.set("SWITCHING_TO_CHAIN")
     toast.info(`Switching wallet to chain ${$fromChain.display_name}`)
     await walletClient.switchChain({ id: chain.id })
 
     const ucs01address = ucs1_configuration.contract_address as Address
 
-    transferState.set("APPROVING_ASSET");
+    transferState.set("APPROVING_ASSET")
     toast.info("submitting approval")
     const approveContractSimulation = await walletClient.writeContract({
       account: userAddr.evm.canonical,
@@ -300,7 +305,7 @@ const transfer = async () => {
 
     toast.info("Submitting approval")
 
-    transferState.set("SIMULATING_TRANSFER");
+    transferState.set("SIMULATING_TRANSFER")
     toast.info("Simulating UCS01 contract call")
     const { request } = await publicClient.simulateContract({
       abi: ucs01abi,
@@ -317,13 +322,13 @@ const transfer = async () => {
       ]
     })
 
-    transferState.set("CONFIRMING_TRANSFER");
+    transferState.set("CONFIRMING_TRANSFER")
     toast.info("Submitting UCS01 contract call")
     const hash = await walletClient.writeContract(request)
 
-    transferState.set("TRANSFERING");
+    transferState.set("TRANSFERRING")
     toast.info("Transferring assets")
-    await sleep(REDIRECT_DELAY_MS);
+    await sleep(REDIRECT_DELAY_MS)
     goto(`/explorer/transfers/${hash}`)
   } else {
     console.error("invalid rpc type")
@@ -463,7 +468,7 @@ $: buttonText =
 </Card.Root>
 {:else}
   <div class="text-muted-foreground">
-    Transfering {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
+    Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
   </div>
   <pre>{$transferState}</pre>
 {/if}
