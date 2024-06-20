@@ -391,6 +391,26 @@ type query_root {
   ): [v0_connections!]!
 
   """
+  fetch data from the table: "v0.faucets"
+  """
+  v0_faucets(
+    """distinct select on columns"""
+    distinct_on: [v0_faucets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_faucets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_faucets_bool_exp
+  ): [v0_faucets!]!
+
+  """
   fetch data from the table: "v0.index_status"
   """
   v0_index_status(
@@ -815,6 +835,40 @@ type subscription_root {
   ): [v0_connections!]!
 
   """
+  fetch data from the table: "v0.faucets"
+  """
+  v0_faucets(
+    """distinct select on columns"""
+    distinct_on: [v0_faucets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_faucets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_faucets_bool_exp
+  ): [v0_faucets!]!
+
+  """
+  fetch data from the table in a streaming manner: "v0.faucets"
+  """
+  v0_faucets_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_faucets_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_faucets_bool_exp
+  ): [v0_faucets!]!
+
+  """
   fetch data from the table: "v0.index_status"
   """
   v0_index_status(
@@ -1091,6 +1145,24 @@ type v0_assets {
   decimals: Int
   denom: String!
   display_symbol: String
+
+  """An array relationship"""
+  faucets(
+    """distinct select on columns"""
+    distinct_on: [v0_faucets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_faucets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_faucets_bool_exp
+  ): [v0_faucets!]!
   logo_uri: String
 }
 
@@ -1131,6 +1203,7 @@ input v0_assets_bool_exp {
   decimals: Int_comparison_exp
   denom: String_comparison_exp
   display_symbol: String_comparison_exp
+  faucets: v0_faucets_bool_exp
   logo_uri: String_comparison_exp
 }
 
@@ -1163,6 +1236,7 @@ input v0_assets_order_by {
   decimals: order_by
   denom: order_by
   display_symbol: order_by
+  faucets_aggregate: v0_faucets_aggregate_order_by
   logo_uri: order_by
 }
 
@@ -2187,6 +2261,166 @@ input v0_connections_stream_cursor_value_input {
   source_client_id: String
   source_connection_id: String
   status: String
+}
+
+"""
+columns and relationships of "v0.faucets"
+"""
+type v0_faucets {
+  chain_id: Int!
+  denom: String!
+  display_name: String!
+  url: String!
+}
+
+"""
+order by aggregate values of table "v0.faucets"
+"""
+input v0_faucets_aggregate_order_by {
+  avg: v0_faucets_avg_order_by
+  count: order_by
+  max: v0_faucets_max_order_by
+  min: v0_faucets_min_order_by
+  stddev: v0_faucets_stddev_order_by
+  stddev_pop: v0_faucets_stddev_pop_order_by
+  stddev_samp: v0_faucets_stddev_samp_order_by
+  sum: v0_faucets_sum_order_by
+  var_pop: v0_faucets_var_pop_order_by
+  var_samp: v0_faucets_var_samp_order_by
+  variance: v0_faucets_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.faucets"
+"""
+input v0_faucets_avg_order_by {
+  chain_id: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.faucets". All fields are combined with a logical 'AND'.
+"""
+input v0_faucets_bool_exp {
+  _and: [v0_faucets_bool_exp!]
+  _not: v0_faucets_bool_exp
+  _or: [v0_faucets_bool_exp!]
+  chain_id: Int_comparison_exp
+  denom: String_comparison_exp
+  display_name: String_comparison_exp
+  url: String_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.faucets"
+"""
+input v0_faucets_max_order_by {
+  chain_id: order_by
+  denom: order_by
+  display_name: order_by
+  url: order_by
+}
+
+"""
+order by min() on columns of table "v0.faucets"
+"""
+input v0_faucets_min_order_by {
+  chain_id: order_by
+  denom: order_by
+  display_name: order_by
+  url: order_by
+}
+
+"""Ordering options when selecting data from "v0.faucets"."""
+input v0_faucets_order_by {
+  chain_id: order_by
+  denom: order_by
+  display_name: order_by
+  url: order_by
+}
+
+"""
+select columns of table "v0.faucets"
+"""
+enum v0_faucets_select_column {
+  """column name"""
+  chain_id
+
+  """column name"""
+  denom
+
+  """column name"""
+  display_name
+
+  """column name"""
+  url
+}
+
+"""
+order by stddev() on columns of table "v0.faucets"
+"""
+input v0_faucets_stddev_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.faucets"
+"""
+input v0_faucets_stddev_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.faucets"
+"""
+input v0_faucets_stddev_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+Streaming cursor of the table "v0_faucets"
+"""
+input v0_faucets_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_faucets_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_faucets_stream_cursor_value_input {
+  chain_id: Int
+  denom: String
+  display_name: String
+  url: String
+}
+
+"""
+order by sum() on columns of table "v0.faucets"
+"""
+input v0_faucets_sum_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.faucets"
+"""
+input v0_faucets_var_pop_order_by {
+  chain_id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.faucets"
+"""
+input v0_faucets_var_samp_order_by {
+  chain_id: order_by
+}
+
+"""
+order by variance() on columns of table "v0.faucets"
+"""
+input v0_faucets_variance_order_by {
+  chain_id: order_by
 }
 
 """

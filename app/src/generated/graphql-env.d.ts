@@ -1450,6 +1450,72 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "v0_faucets",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_faucets"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_faucets_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_faucets_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_faucets_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
             "name": "v0_index_status",
             "type": {
               "kind": "NON_NULL",
@@ -2968,6 +3034,121 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "v0_faucets",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_faucets"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_faucets_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_faucets_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_faucets_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v0_faucets_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_faucets"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int"
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_faucets_stream_cursor_input"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_faucets_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
             "name": "v0_index_status",
             "type": {
               "kind": "NON_NULL",
@@ -4010,6 +4191,72 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "faucets",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_faucets"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_faucets_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_faucets_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_faucets_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
             "name": "logo_uri",
             "type": {
               "kind": "SCALAR",
@@ -4199,6 +4446,13 @@ export type introspection = {
             }
           },
           {
+            "name": "faucets",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_bool_exp"
+            }
+          },
+          {
             "name": "logo_uri",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -4329,6 +4583,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "faucets_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_aggregate_order_by"
             }
           },
           {
@@ -8299,6 +8560,511 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_faucets",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_avg_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_faucets_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_faucets_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_faucets_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_max_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_min_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v0_faucets_select_column",
+        "enumValues": [
+          {
+            "name": "chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "isDeprecated": false
+          },
+          {
+            "name": "url",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_faucets_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_sum_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_faucets_variance_order_by",
+        "inputFields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
             }
           }
         ],

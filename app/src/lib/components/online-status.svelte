@@ -4,18 +4,13 @@ import { cn, flyAndScale } from "$lib/utilities/shadcn.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import * as Tooltip from "$lib/components/ui/tooltip/index.ts"
 
-/**
- * TODO:
- * - Split checks into two: app status and block height status
- */
-
 $: blockHeightStore = blockHeightQuery()
 $: blockHeight = $blockHeightStore.data
 $: appStatus = Number.isSafeInteger(Number(blockHeight)) ? "online" : "offline"
 </script>
 
 <Tooltip.Root>
-  <Tooltip.Trigger let:builder class="ml-0.25 mb-16 lg:mb-0.5 my-a fixed bottom-0 z-50 w-18">
+  <Tooltip.Trigger let:builder class="backdrop-blur-sm ml-1 mb-16 md:mb-1 my-a fixed bottom-0 z-50 w-18">
     <Button
       variant="outline"
       builders={[builder]}
@@ -32,14 +27,14 @@ $: appStatus = Number.isSafeInteger(Number(blockHeight)) ? "online" : "offline"
     sideOffset={8}
     transition={flyAndScale}
     class={cn(
-      'top-0 fixed mt-2 z-40',
+      'top-0 fixed mt-2 z-40 bg-primary-foreground',
       appStatus === 'online' ? 'border-cyan-300/30' : 'border-rose-500/30',
     )}
     transitionConfig={{ y: 8, duration: 150 }}
   >
     <div
       class={cn(
-        'flex flex-col items-start justify-center p-3 text-sm font-medium border-solid rounded-md',
+        'flex flex-col items-start justify-center p-1 text-sm font-medium border-solid rounded-md',
       )}
     >
       <span>App is {appStatus}</span>
