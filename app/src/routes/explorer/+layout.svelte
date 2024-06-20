@@ -76,11 +76,11 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 
 <!-- mobile layout !-->
-<div class="flex flex-row divide-x">
+<div class="flex flex-row divide-x overflow-x-none max-w-full w-full">
   <nav class={cn("bg-muted h-full overflow-y-auto", explorerRoute === null ? "" : "")}>
     <Menu tableRoutes={data.tables} isCollapsed={false} />
   </nav>
-  <main class="overflow-auto flex-1">
+  <main class="overflow-auto flex-1 w-full">
     <a
       class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot"
       href={$page.route.id?.split('/').slice(0, -1).join('/')}
@@ -89,7 +89,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
       <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
     </a>
 
-      <slot/>
+    <slot/>
   </main>
 </div>
 
