@@ -23,11 +23,11 @@ import {
   watchConnectors
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
-import { readable, writable } from "svelte/store"
-import { sepolia } from "@wagmi/core/chains"
 import { KEY } from "$lib/constants/keys.ts"
+import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { walletConnect, injected } from "@wagmi/connectors"
+import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
@@ -38,21 +38,29 @@ export type ConnectedWallet = Wallet & { status: "connected" }
 export type ConnectorType = "injected" | "walletConnect"
 
 export const config = createConfig({
-  chains: [sepolia],
+  chains: [sepolia, berachainTestnetbArtio],
   cacheTime: 4_000,
   pollingInterval: 4_000,
   batch: { multicall: true },
   transports: {
     [sepolia.id]: fallback([
+      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
       unstable_connector(injected, {
         key: "unstable_connector-injected",
         retryCount: 3,
         retryDelay: 100
       }),
-      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`)
+      http(sepolia.rpcUrls.default.http.at(0))
+    ]),
+    [berachainTestnetbArtio.id]: fallback([
+      http(berachainTestnetbArtio.rpcUrls.default.http.at(0)),
+      unstable_connector(injected, {
+        key: "unstable_connector-injected",
+        retryCount: 3,
+        retryDelay: 100
+      })
     ])
   },
-
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,
   storage: createWagmiStorage({
@@ -101,6 +109,7 @@ config.subscribe(
 )
 
 export function createSepoliaStore(
+  // @ts-expect-error
   previousState: ChainWalletStore<"evm"> = {
     chain: "sepolia",
     hoverState: "none",
@@ -200,6 +209,7 @@ export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 
 watchAccount(config, {
   onChange: account =>
+    // @ts-expect-error
     sepoliaStore.set({
       chain: account.chain?.name ?? "sepolia",
       hoverState: "none",
