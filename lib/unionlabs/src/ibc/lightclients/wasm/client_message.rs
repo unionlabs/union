@@ -2,7 +2,12 @@ use macros::model;
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 
-#[model(proto(raw(protos::ibc::lightclients::wasm::v1::ClientMessage), into, from))]
+#[model(proto(
+    raw(protos::ibc::lightclients::wasm::v1::ClientMessage),
+    into,
+    from,
+    no_static_assert
+))]
 pub struct ClientMessage<Data> {
     pub data: Data,
 }

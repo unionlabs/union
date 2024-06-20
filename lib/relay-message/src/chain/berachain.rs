@@ -30,6 +30,7 @@ use unionlabs::{
         },
     },
     ics24::ClientStatePath,
+    never::Never,
     traits::{Chain, HeightOf, IbcStateEncodingOf},
 };
 
@@ -257,8 +258,10 @@ where
     >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Berachain, Tr>)>,
 {
-    async fn do_fetch(c: &Berachain, fetch: Self) -> Op<RelayMessage> {
-        match fetch {
+    type Error = Never;
+
+    async fn do_fetch(c: &Berachain, fetch: Self) -> Result<Op<RelayMessage>, Self::Error> {
+        Ok(match fetch {
             Self::FetchIbcState(fetch) => data(id(c.chain_id(), fetch_ibc_state(c, fetch).await)),
             Self::FetchGetProof(fetch) => data(id(c.chain_id(), fetch_get_proof(c, fetch).await)),
 
@@ -415,7 +418,7 @@ where
                     }),
                 ))
             }
-        }
+        })
     }
 }
 
@@ -440,24 +443,26 @@ where
     Tr: ChainExt<SelfClientState: Decode<IbcStateEncodingOf<Berachain>> + Encode<EthAbi>>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Berachain, Tr>)>,
 {
+    type QueryUnfinalizedTrustedClientStateError = Never;
+
     fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
-            Fetch::specific(FetchIbcState { path, height: at }),
+            Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
         ))
     }
 
     async fn query_unfinalized_trusted_client_state(
         hc: &Self,
         client_id: Self::ClientId,
-    ) -> Tr::SelfClientState {
-        hc.ibc_handler()
-            .ibc_state_read::<_, Berachain, Tr>(
-                hc.provider.get_block_number().await.unwrap().as_u64(),
-                ClientStatePath { client_id },
-            )
+    ) -> Result<Self::StoredClientState<Tr>, Self::QueryUnfinalizedTrustedClientStateError> {
+        let latest_execution_height = hc.provider.get_block_number().await.unwrap().as_u64();
+
+        Ok(hc
+            .ibc_handler()
+            .ibc_state_read::<_, Self, Tr>(latest_execution_height, ClientStatePath { client_id })
             .await
-            .unwrap()
+            .unwrap())
     }
 }
 

@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, trace};
-use unionlabs::traits::{Chain, ClientState, FromStrExact};
+use unionlabs::traits::{Chain, FromStrExact};
 use voyager_message::VoyagerMessage;
 
 use crate::config::{ChainConfig, Config};

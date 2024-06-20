@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use core::{fmt::Debug, str::FromStr};
 
 use macros::model;
@@ -58,12 +59,13 @@ impl From<ClientState> for protos::union::ibc::lightclients::linea::v1::ClientSt
     }
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
-    #[error("unable to parse chain id")]
-    ChainId(#[source] FromDecStrErr),
     #[error(transparent)]
     MissingField(MissingField),
+    // y no clone?!??
+    #[error("unable to parse chain id")]
+    ChainId(#[source] Arc<FromDecStrErr>),
     #[error("invalid l1 latest height")]
     L1LatestHeight,
     #[error("invalid rollup contract address")]
@@ -88,7 +90,8 @@ impl TryFrom<protos::union::ibc::lightclients::linea::v1::ClientState> for Clien
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             l1_client_id: value.l1_client_id,
-            chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
+            chain_id: U256::from_str(&value.chain_id)
+                .map_err(|err| TryFromClientStateError::ChainId(Arc::new(err)))?,
             l1_latest_height: required!(value.l1_latest_height)?.into(),
             l1_rollup_contract_address: value
                 .l1_rollup_contract_address

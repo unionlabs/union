@@ -43,7 +43,9 @@ impl HandleWait<RelayMessage> for AnyLightClientIdentified<AnyWait> {
                 Ok(store
                     .with_chain(&wait.chain_id, move |c| async move { wait.t.handle(&c).await })
                     .map_err(|e: ChainNotFoundError<Hc>| QueueError::Fatal(Box::new(e)))?
-                    .await)
+                    .await
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                )
             }
         }
     }
@@ -57,21 +59,21 @@ where
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: &Hc) -> Op<RelayMessage> {
+    pub async fn handle(self, c: &Hc) -> Result<Op<RelayMessage>, WaitError> {
         match self {
             Wait::Height(WaitForHeight { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
                 if chain_height >= height {
-                    noop()
+                    Ok(noop())
                 } else {
-                    seq([
+                    Ok(seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer_absolute(now() + 1),
                         wait(id::<Hc, Tr, _>(
                             c.chain_id(),
                             WaitForHeight { height, __marker },
                         )),
-                    ])
+                    ]))
                 }
             }
             // REVIEW: Perhaps remove, unused
@@ -81,7 +83,7 @@ where
             }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
 
-                wait(id::<Hc, Tr, _>(
+                Ok(wait(id::<Hc, Tr, _>(
                     c.chain_id(),
                     WaitForHeight {
                         height: Height {
@@ -91,7 +93,7 @@ where
                         .into(),
                         __marker: PhantomData,
                     },
-                ))
+                )))
             }
             Wait::Timestamp(WaitForTimestamp {
                 timestamp,
@@ -101,15 +103,15 @@ where
 
                 if chain_ts >= timestamp {
                     // TODO: Figure out a way to fetch a height at a specific timestamp
-                    data(id(
+                    Ok(data(id(
                         c.chain_id(),
                         LatestHeight::<Hc, Tr> {
                             height: c.query_latest_height().await.unwrap(),
                             __marker: PhantomData,
                         },
-                    ))
+                    )))
                 } else {
-                    seq([
+                    Ok(seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer_absolute(now() + 1),
                         wait(id::<Hc, Tr, _>(
@@ -120,7 +122,7 @@ where
                             }
                             .into(),
                         )),
-                    ])
+                    ]))
                 }
             }
             Wait::TrustedHeight(WaitForTrustedHeight {
@@ -130,7 +132,11 @@ where
                 height,
             }) => {
                 let trusted_client_state =
-                    Hc::query_unfinalized_trusted_client_state(c, client_id.clone()).await;
+                    Hc::query_unfinalized_trusted_client_state(c, client_id.clone())
+                        .await
+                        .map_err(|err| {
+                            WaitError::FetchUnfinalizedTrustedClientState(Box::new(err))
+                        })?;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
                     debug!(
@@ -140,7 +146,7 @@ where
                     );
 
                     // the height has been reached, fetch the counterparty client state on `Tr` at the trusted height
-                    fetch(id(
+                    Ok(fetch(id(
                         counterparty_chain_id,
                         FetchState::<Tr, Hc> {
                             at: QueryHeight::Specific(trusted_client_state.height()),
@@ -149,9 +155,9 @@ where
                             }
                             .into(),
                         },
-                    ))
+                    )))
                 } else {
-                    seq([
+                    Ok(seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would require a new method on chain
                         defer_absolute(now() + 1),
                         wait(id(
@@ -163,11 +169,20 @@ where
                                 counterparty_chain_id,
                             },
                         )),
-                    ])
+                    ]))
                 }
             }
         }
     }
+}
+
+/// See docs on `FetchError` for more information about the design of this type.
+#[derive(macros::Debug, thiserror::Error)]
+pub enum WaitError {
+    #[error("error fetching unfinalized trusted client state")]
+    FetchUnfinalizedTrustedClientState(
+        #[source] Box<dyn std::error::Error + Send + Sync + 'static>,
+    ),
 }
 
 #[queue_msg]

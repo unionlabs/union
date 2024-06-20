@@ -13,6 +13,7 @@ extern crate alloc;
 
 use core::{
     fmt::{self, Debug, Display},
+    iter,
     ptr::addr_of,
     str::FromStr,
 };
@@ -107,7 +108,7 @@ pub enum TryFromProtoBytesError<E> {
     #[error("unable to convert from the raw prost type")]
     TryFromProto(#[source] E),
     #[error("unable to decode from raw proto bytes")]
-    Decode(prost::DecodeError),
+    Decode(#[source] prost::DecodeError),
 }
 
 pub trait TypeUrl {
@@ -326,6 +327,20 @@ where
 
 pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
     expr.then_some(()).ok_or(err)
+}
+
+pub struct ErrorReporter<T: std::error::Error>(pub T);
+
+impl<T: std::error::Error> Display for ErrorReporter<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)?;
+
+        for e in iter::successors(self.0.source(), |e| (*e).source()) {
+            write!(f, ": {e}")?;
+        }
+
+        Ok(())
+    }
 }
 
 pub trait ByteArrayExt<const N: usize> {

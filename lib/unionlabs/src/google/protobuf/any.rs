@@ -149,17 +149,19 @@ impl<T: Encode<Proto> + TypeUrl> Encode<Proto> for Any<T> {
 // }
 
 #[derive(DebugNoBound, thiserror::Error)]
-pub enum TryFromAnyError<T: Decode<Proto> + TypeUrl> {
+pub enum TryFromAnyError<T: Decode<Proto, Error: std::error::Error> + TypeUrl> {
     #[error(
         "incorrect type url, expected `{expected}` but found `{found}`",
         expected = T::type_url()
     )]
     IncorrectTypeUrl { found: String },
     #[error("unable to decode inner type")]
-    Decode(DecodeErrorOf<Proto, T>),
+    Decode(#[source] DecodeErrorOf<Proto, T>),
 }
 
-impl<T: Decode<Proto, Error: PartialEq> + TypeUrl> PartialEq for TryFromAnyError<T> {
+impl<T: Decode<Proto, Error: std::error::Error + PartialEq> + TypeUrl> PartialEq
+    for TryFromAnyError<T>
+{
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (
@@ -172,9 +174,20 @@ impl<T: Decode<Proto, Error: PartialEq> + TypeUrl> PartialEq for TryFromAnyError
     }
 }
 
+impl<T: Decode<Proto, Error: std::error::Error + Clone> + TypeUrl> Clone for TryFromAnyError<T> {
+    fn clone(&self) -> Self {
+        match self {
+            TryFromAnyError::IncorrectTypeUrl { found } => TryFromAnyError::IncorrectTypeUrl {
+                found: found.clone(),
+            },
+            TryFromAnyError::Decode(err) => TryFromAnyError::Decode(err.clone()),
+        }
+    }
+}
+
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
 where
-    T: Decode<Proto> + TypeUrl,
+    T: Decode<Proto, Error: std::error::Error> + TypeUrl,
 {
     type Error = TryFromAnyError<T>;
 
@@ -193,7 +206,7 @@ where
 
 impl<T> Decode<Proto> for Any<T>
 where
-    T: Decode<Proto> + TypeUrl,
+    T: Decode<Proto, Error: std::error::Error> + TypeUrl,
 {
     type Error = TryFromProtoBytesError<TryFromAnyError<T>>;
 

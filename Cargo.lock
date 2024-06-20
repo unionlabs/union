@@ -1830,7 +1830,7 @@ dependencies = [
  "serde",
  "serde-json-wasm 0.5.2",
  "sha2 0.10.8",
- "static_assertions",
+ "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -1852,7 +1852,7 @@ dependencies = [
  "serde",
  "serde-json-wasm 1.0.1",
  "sha2 0.10.8",
- "static_assertions",
+ "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -3489,7 +3489,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
 dependencies = [
- "static_assertions",
+ "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3502,7 +3502,7 @@ dependencies = [
  "byteorder",
  "rand 0.8.5",
  "rustc-hex",
- "static_assertions",
+ "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -7401,7 +7401,7 @@ dependencies = [
  "queue-msg-macro",
  "serde",
  "serde_json",
- "static_assertions",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -7697,7 +7697,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "static_assertions",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "tendermint",
  "tendermint-proto",
  "tendermint-rpc",
@@ -9078,6 +9078,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "git+https://github.com/nvzqz/static-assertions#a867e97a1b3c2e0c76b7a154abdf4e422b78e5f2"
+
+[[package]]
 name = "string_cache"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10275,7 +10280,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "digest 0.10.7",
  "rand 0.8.5",
- "static_assertions",
+ "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -10391,7 +10396,7 @@ dependencies = [
  "byteorder",
  "crunchy",
  "hex",
- "static_assertions",
+ "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -10503,7 +10508,7 @@ dependencies = [
  "sha2 0.10.8",
  "sha3",
  "ssz",
- "static_assertions",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subtle-encoding",
  "thiserror",
  "tracing",

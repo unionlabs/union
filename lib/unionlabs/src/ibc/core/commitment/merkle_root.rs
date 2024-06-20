@@ -24,9 +24,10 @@ impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromMerkleRootError {
-    Hash(InvalidLength),
+    #[error("invalid hash")]
+    Hash(#[from] InvalidLength),
 }
 
 impl TryFrom<protos::ibc::core::commitment::v1::MerkleRoot> for MerkleRoot {
@@ -57,10 +58,7 @@ impl TryFrom<IbcCoreCommitmentV1MerkleRootData> for MerkleRoot {
 
     fn try_from(value: IbcCoreCommitmentV1MerkleRootData) -> Result<Self, Self::Error> {
         Ok(Self {
-            hash: value
-                .hash
-                .try_into()
-                .map_err(TryFromMerkleRootError::Hash)?,
+            hash: value.hash.try_into()?,
         })
     }
 }

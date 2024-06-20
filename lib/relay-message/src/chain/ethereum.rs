@@ -48,6 +48,7 @@ use unionlabs::{
         },
     },
     ics24::{ClientStatePath, NextSequenceAckPath, NextSequenceSendPath, Path},
+    never::Never,
     traits::{Chain, ClientIdOf, ClientState, ClientStateOf, HeightOf, IbcStateEncodingOf},
     uint::U256,
     MaybeRecoverableError,
@@ -393,24 +394,26 @@ where
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Ethereum<C>, Tr>) -> Op<RelayMessage> {
+    type QueryUnfinalizedTrustedClientStateError = Never;
+
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Self, Tr>) -> Op<RelayMessage> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
-            Fetch::specific(FetchIbcState { path, height: at }),
+            Fetch::<Self, Tr>::specific(FetchIbcState { path, height: at }),
         ))
     }
 
     async fn query_unfinalized_trusted_client_state(
         hc: &Self,
         client_id: Self::ClientId,
-    ) -> Tr::SelfClientState {
-        hc.ibc_handler()
-            .ibc_state_read::<_, Ethereum<C>, Tr>(
-                hc.provider.get_block_number().await.unwrap().as_u64(),
-                ClientStatePath { client_id },
-            )
+    ) -> Result<Self::StoredClientState<Tr>, Self::QueryUnfinalizedTrustedClientStateError> {
+        let latest_execution_height = hc.provider.get_block_number().await.unwrap().as_u64();
+
+        Ok(hc
+            .ibc_handler()
+            .ibc_state_read::<_, Self, Tr>(latest_execution_height, ClientStatePath { client_id })
             .await
-            .unwrap()
+            .unwrap())
     }
 }
 
@@ -448,7 +451,9 @@ where
     >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
 {
-    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> Op<RelayMessage> {
+    type Error = Never;
+
+    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> Result<Op<RelayMessage>, Self::Error> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
             Self::FetchFinalityUpdate(FetchFinalityUpdate {}) => Data::specific(FinalityUpdate {
@@ -542,7 +547,7 @@ where
             Self::FetchIbcState(ibc_state) => fetch_ibc_state(ethereum, ibc_state).await,
         };
 
-        data(id::<Ethereum<C>, Tr, _>(ethereum.chain_id, msg))
+        Ok(data(id::<Ethereum<C>, Tr, _>(ethereum.chain_id, msg)))
     }
 }
 

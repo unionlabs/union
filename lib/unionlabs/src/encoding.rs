@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-pub trait Encoding {}
+pub trait Encoding: Send + Sync {}
 
 pub enum EthAbi {}
 impl Encoding for EthAbi {}
@@ -42,7 +42,8 @@ pub trait Encode<Enc: Encoding>: Sized {
 }
 
 pub trait Decode<Enc: Encoding>: Sized {
-    type Error: Debug;
+    // if you have non-thread-safe errors wtf are you doing
+    type Error: Debug + Send + Sync;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error>;
 }

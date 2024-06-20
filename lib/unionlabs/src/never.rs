@@ -12,3 +12,5 @@ impl Display for Never {
         match *self {}
     }
 }
+
+impl std::error::Error for Never {}
