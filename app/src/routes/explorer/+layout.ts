@@ -1,4 +1,3 @@
-import { redirect } from "@sveltejs/kit"
 import type { LayoutLoad } from "./$types.ts"
 import type { SvelteComponent } from "svelte"
 

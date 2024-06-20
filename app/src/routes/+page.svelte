@@ -6,7 +6,7 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
 import NotConnected from "$lib/components/not-connected.svelte"
 </script>
 
-
+<div class="max-w-full">
   <ChainsGate let:chains>
     <WalletGate>
       <div let:userAddr slot="connected">
@@ -17,6 +17,7 @@ import NotConnected from "$lib/components/not-connected.svelte"
       </div>
     </WalletGate>
   </ChainsGate>
+</div>
 
 
 

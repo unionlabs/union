@@ -95,8 +95,7 @@ const handleSubmit = () => {
   <title>Union | Faucet</title>
 </svelte:head>
 
-<ScrollArea orientation="both">
-  <main class="flex flex-col gap-6 items-center max-h-full px-4 py-8">
+  <main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
     <Card.Root class="w-full max-w-lg">
       <Card.Header>
         <Card.Title>UNO Faucet</Card.Title>
@@ -189,4 +188,3 @@ const handleSubmit = () => {
       <ExternalFaucets {chains}/>
     </ChainsGate>
   </main>
-</ScrollArea>
