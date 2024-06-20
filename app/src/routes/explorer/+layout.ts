@@ -1,7 +1,6 @@
 import type { LayoutLoad } from "./$types.ts"
 import type { SvelteComponent } from "svelte"
 
-//import UserTransfersIcon from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
 import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
 import BlocksIcon from "$lib/components/union-icons/color/icon-blocks-color.svelte"
 import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
@@ -25,11 +24,6 @@ export const load = (loadEvent => {
         icon: TransfersIcon,
         description: "All UCS-01 transfers"
       },
-      // {
-      //   route: "user-transfers",
-      //   icon: UserTransfersIcon,
-      //   description: "Your UCS-01 transfers"
-      // },
       {
         route: "blocks",
         icon: BlocksIcon,

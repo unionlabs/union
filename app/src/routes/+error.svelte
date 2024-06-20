@@ -10,7 +10,7 @@ import { page } from "$app/stores"
   <p class="text-8xl font-black tracking-wider">{$page.status}</p>
   <p class="text-xl font-semibold text-center">{$page.error?.message}</p>
   {#if $page.error && 'errorId' in $page.error}
-    <div class="text-white/70 text-center">
+    <div class="text-black/70 text-center">
       <p>error id</p>
       <p class="">{$page.error?.['errorId']}</p>
     </div>

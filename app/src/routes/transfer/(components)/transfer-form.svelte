@@ -307,6 +307,7 @@ const transfer = async () => {
     const approveContractSimulation = await walletClient.writeContract({
       account: userAddr.evm.canonical,
       abi: erc20Abi,
+      // @ts-expect-error TODO: fix this type
       address: $asset.address as Address,
       functionName: "approve",
       args: [ucs01address, BigInt(amount)]
@@ -328,6 +329,7 @@ const transfer = async () => {
       args: [
         ucs1_configuration.channel_id,
         userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
+        // @ts-expect-error TODO: fix this type
         [{ denom: $asset.address.toLowerCase() as Address, amount: BigInt(amount) }],
         pfmMemo ?? "", // memo
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
@@ -385,7 +387,9 @@ $: buttonText =
     ? BigInt(amount) < BigInt($asset.balance)
       ? "transfer"
       : "insufficient balance"
-    : "select asset and enter amount"
+    : $asset && !amount
+      ? "enter amount"
+      : "select asset and enter amount"
 </script>
 
 

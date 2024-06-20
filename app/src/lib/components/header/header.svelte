@@ -27,6 +27,7 @@ import { routes } from "$lib/components/navigation/index.ts"
   </Button>
   <nav class="hidden md:flex items-center justify-end space-x-0 sm:space-x-2 w-full">
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
+      {@const currentRoute = $page.route.id?.split('/')[1] === path.split('/').at(1)}
       <Button
         size="default"
         href={path}

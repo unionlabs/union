@@ -6,9 +6,7 @@ import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { writable } from "svelte/store"
-import CellDurationText from "../(components)/cell-duration-text.svelte"
 import CellStatus from "../(components)/cell-status.svelte"
-import { DurationUnits } from "svelte-ux"
 
 $: channels = createQuery({
   queryKey: ["channels"],

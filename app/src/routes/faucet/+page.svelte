@@ -15,11 +15,8 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import CosmosBalance from "./(components)/cosmos-balance.svelte"
-import { ScrollArea } from "$lib/components/ui/scroll-area/index.ts"
-import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
-import NotConnected from "$lib/components/not-connected.svelte"
+import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 
 let userInput = false
 let address: string = $cosmosStore.address ?? ""

@@ -37,14 +37,29 @@ let buttons = [
       variant="ghost"
       name={button.displayName}
       aria-label="Home page link"
-      class={cn('flex flex-col text-xs gap-px h-16 w-full', isCurrentPage(button.href) ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground' : 'bg-transparent')}
+      class={cn(
+        'flex flex-col text-xs gap-px h-16 w-full',
+        isCurrentPage(button.href)
+          ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground'
+          : 'bg-transparent',
+      )}
     >
-      <svelte:component this={button.icon} class="size-7 min-w-6 dark:hover:text-white text-zinc-accent" />
+      <svelte:component
+        this={button.icon}
+        class="size-7 min-w-6 dark:hover:text-white text-zinc-accent"
+      />
       <div>{button.displayName}</div>
     </Button>
   {/each}
 
-  <Button class="flex flex-col text-xs gap-px h-16 w-full" size="icon" name="wallet" type="button" variant="ghost" on:click={() => onWalletClick()}>
+  <Button
+    class="flex flex-col text-xs gap-px h-16 w-full"
+    size="icon"
+    name="wallet"
+    type="button"
+    variant="ghost"
+    on:click={() => onWalletClick()}
+  >
     <WalletMinimalIcon class={navigationIconStyle} />
     Wallet
   </Button>

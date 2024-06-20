@@ -30,6 +30,7 @@
     "evm",
     "**/*.pb.go",
     "**/testdata",
+    "app/src/lib/constants/keys.ts",
     "networks/genesis/union-testnet-2/**",
     "networks/genesis/union-testnet-3/**",
     "networks/genesis/union-testnet-4/**",
