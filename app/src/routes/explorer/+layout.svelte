@@ -86,7 +86,10 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
   </nav>
   <main class={cn("overflow-auto flex-1 w-full", explorerRoute === null ? "hidden sm:block" : "")}>
     <a
-      class="sm:hidden font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot"
+      class={cn(" font-bold  text-lg p-4 flex flex-row gap-2 items-center font-supermolot", 
+      
+      ($page.route.id?.split('/').length ?? 0) > 3 ? "" : "sm:hidden"      
+      )}
       href={$page.route.id?.split('/').slice(0, -1).join('/')}
     >
       <ArrowLeftIcon />
@@ -94,7 +97,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
     </a>
 
     <div class="p-2 pt-0 sm:p-6 flex flex-col min-h-full">
-      <div class={cn($page.route.id?.split('/').length !== 2 ? "" : "hidden")}>
+      <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
         <h2 class="text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot">
           {explorerRoute?.replaceAll('-', ' ')}
         </h2>
