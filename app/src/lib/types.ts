@@ -14,6 +14,17 @@ export type UserAddresses = {
   }
 }
 
+export type ChainAsset = {
+  denom: string
+  display_symbol: string
+  display_name: string | null
+  decimals: number
+  faucets: Array<{
+    url: string
+    display_name: string
+  }>
+}
+
 export type Chain = {
   chain_id: string
   display_name: string
@@ -38,14 +49,5 @@ export type Chain = {
     }
   >
   addr_prefix: string
-  assets: Array<{
-    denom: string
-    display_symbol: string
-    display_name: string | null
-    decimals: number
-    faucets: Array<{
-      url: string
-      display_name: string
-    }>
-  }>
+  assets: Array<ChainAsset>
 }
