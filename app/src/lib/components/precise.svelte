@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
+import { bigint } from "valibot"
 
-//Takes supportedAsset info from chain and a asset to construct formatted balance
+// Takes supportedAsset info from chain and an asset to construct formatted balance
 
 export let asset: any
 export let supportedAsset: any
@@ -9,9 +10,22 @@ export let displayDecimals = 2
 export let showToolTip = false
 export let showSymbol = false
 
-const formatBalance = (balance: any, decimals: number, abbreviate = false): string => {
-  if (balance === undefined || balance === null || Number.isNaN(Number(balance))) return "0.00"
-  const num = BigInt(balance)
+const formatBalance = (
+  balance: bigint | string,
+  decimals: number | undefined,
+  abbreviate = false
+): string => {
+  if (balance === undefined || balance === null) return "0.00"
+  if (decimals === undefined) decimals = 0
+
+  let num: bigint
+  if (typeof balance === "string") {
+    if (Number.isNaN(Number(balance))) return "0.00"
+    num = BigInt(balance)
+  } else {
+    num = balance
+  }
+
   const divisor = BigInt(10 ** decimals)
   const rawNumber = num / divisor
   const remainder = num % divisor
@@ -35,7 +49,7 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-$: balance = asset.balance
+$: balance = asset.balance ?? BigInt(0)
 $: decimals = supportedAsset.decimals
 $: symbol = supportedAsset.display_symbol
 
@@ -48,7 +62,8 @@ $: precise = formatBalance(balance, decimals, false)
     <Tooltip.Root>
       <Tooltip.Trigger>
         <span class="cursor-crosshair">
-          {formatted} {showSymbol ? symbol : ''}</span>
+          {formatted} {showSymbol ? symbol : ''}
+        </span>
       </Tooltip.Trigger>
       <Tooltip.Content>
         <p>{precise}</p>
@@ -58,4 +73,3 @@ $: precise = formatBalance(balance, decimals, false)
     <span>{formatted} {showSymbol ? symbol : ''}</span>
   {/if}
 {/key}
-
