@@ -29,7 +29,15 @@ import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { erc20Abi, createWalletClient, createPublicClient, http, custom, defineChain, publicActions } from "viem"
+import {
+  erc20Abi,
+  createWalletClient,
+  createPublicClient,
+  http,
+  custom,
+  defineChain,
+  publicActions
+} from "viem"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -283,7 +291,7 @@ const transfer = async () => {
       chain,
       // @ts-ignore
       transport: custom(window.ethereum)
-    });
+    })
 
     toast.info(`Adding chain ${$fromChain.display_name} to your wallet`)
     await walletClient.addChain({ chain })
@@ -308,8 +316,7 @@ const transfer = async () => {
     transferState.set("AWAITING_APPROVAL_RECEIPT")
     const approvalReceipt = await publicClient.waitForTransactionReceipt({
       hash: approveContractSimulation
-    });
-
+    })
 
     toast.info("Simulating UCS01 contract call")
     transferState.set("SIMULATING_TRANSFER")
