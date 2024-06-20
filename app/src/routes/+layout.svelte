@@ -15,19 +15,13 @@ import LoadingBar from "$lib/components/loading-bar.svelte"
 import { partytownSnippet } from "@builder.io/partytown/integration"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
+import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 onMount(() => {
-  /* fix for iOS Safari viewport zooming on input focus */
-  if (navigator.userAgent.indexOf("iPhone") === -1) return
-  const metaElement = document.querySelector("meta[name=viewport]")
-  if (!metaElement) return
-  metaElement.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1")
-})
-
-onMount(() => {
+  disablePinchToZoom()
   const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
   if (
     lastConnectedWallet &&
@@ -78,7 +72,9 @@ onMount(() => {
   <Toaster position="bottom-right" />
 
   <Header />
+  <div class="flex-1 overflow-y-auto bg-background">
   <slot />
+  </div>
   <Footer />
   <SvelteQueryDevtools
     position="bottom"

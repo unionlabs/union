@@ -7,8 +7,6 @@ import NotConnected from "$lib/components/not-connected.svelte"
 </script>
 
 
-<main
-  class="overflow-auto flex p-4 sm:py-8 w-full">
   <ChainsGate let:chains>
     <WalletGate>
       <div let:userAddr slot="connected">
@@ -19,7 +17,6 @@ import NotConnected from "$lib/components/not-connected.svelte"
       </div>
     </WalletGate>
   </ChainsGate>
-</main>
 
 
 

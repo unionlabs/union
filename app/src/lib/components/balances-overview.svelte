@@ -14,8 +14,8 @@ let userBalances = userBalancesQuery({
 </script>
 
 {#each $userBalances as balance, index}
-  <div>
-    <div class="pl-6 pb-3 flex items-baseline gap-3">
+  <div class="pt-6">
+    <div class="pl-6 flex items-baseline gap-3">
       <h3 class="font-bold font-supermolot text-2xl">{chains[index].display_name}</h3>
       <div class="text-xs font-mono text-muted-foreground">
         {userAddr.evm.canonical}
@@ -27,7 +27,7 @@ let userBalances = userBalancesQuery({
       <p class="text-red-500">{balance.error}</p>
     {:else if balance.isSuccess}
       <ScrollArea orientation="horizontal">
-        <div class="flex gap-4 px-6">
+        <div class="flex gap-4 px-6 overflow-x-scroll">
           {#if !(balance.data instanceof Error)}
             {#each balance.data as asset}
               <AssetCard {asset} chain={chains[index]} />
