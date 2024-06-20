@@ -93,7 +93,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
       <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
     </a>
 
-    <div class="p-2 pt-0 sm:p-6">
+    <div class="p-2 pt-0 sm:p-6 flex flex-col min-h-full">
       <div class={cn($page.route.id?.split('/').length !== 2 ? "" : "hidden")}>
         <h2 class="text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot">
           {explorerRoute?.replaceAll('-', ' ')}
