@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
 
 use bech32::FromBase32;
 use chain_utils::{
@@ -21,7 +21,7 @@ use ethers::{
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
-use hex::encode as hex_encode;
+use hex::{self, encode as hex_encode};
 use prost::Message;
 use protos::{google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer};
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -123,10 +123,6 @@ pub trait IbcListen: Send + Sync {
             tracing::error!("Failed to decode Ucs01Ack");
             return false;
         }
-
-        // If both decoding attempts fail, return false
-        tracing::error!("Failed to decode ack_hex as either Ics20Ack or Ucs01Ack.");
-        false
     }
 
     async fn handle_ibc_event(
@@ -140,7 +136,7 @@ pub trait IbcListen: Send + Sync {
         &'a self,
         ibc_event: IbcEvent,
         shared_map: &'a SharedMap,
-        block_number: u64,
+        _block_number: u64,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
         Box::pin(async move {
             let (packet_sequence, key) = match &ibc_event {
@@ -184,25 +180,35 @@ pub trait IbcListen: Send + Sync {
                 match ibc_event {
                     IbcEvent::SendPacket(_) => {
                         sequence_entry.insert(0, true);
-                        tracing::info!("SendPacket event recorded for sequence {}", sequence);
+                        tracing::info!(
+                            "SendPacket event recorded for sequence {}. key: {}",
+                            sequence,
+                            key
+                        );
                     }
                     IbcEvent::RecvPacket(_) => {
                         if !sequence_entry.get(&0).unwrap_or(&false) {
                             tracing::warn!(
-                                "RecvPacket event received without SendPacket for sequence {}",
-                                sequence
+                                "RecvPacket event received without SendPacket for sequence {}. key: {}",
+                                sequence,
+                                key
                             );
                             entry.remove(&sequence);
                         } else {
                             sequence_entry.insert(1, true);
-                            tracing::info!("RecvPacket event recorded for sequence {}", sequence);
+                            tracing::info!(
+                                "RecvPacket event recorded for sequence {}. key: {}",
+                                sequence,
+                                key
+                            );
                         }
                     }
                     IbcEvent::WriteAcknowledgement(ref e) => {
                         if !sequence_entry.get(&0).unwrap_or(&false) {
                             tracing::warn!(
-                                "RecvPacket event received without SendPacket for sequence {}",
-                                sequence
+                                "RecvPacket event received without SendPacket for sequence {}. key: {}",
+                                sequence,
+                                key
                             );
                             entry.remove(&sequence);
                         } else {
@@ -211,14 +217,16 @@ pub trait IbcListen: Send + Sync {
                             {
                                 sequence_entry.insert(2, true);
                                 tracing::info!(
-                                    "WriteAcknowledgement event recorded for sequence {}",
-                                    sequence
+                                    "WriteAcknowledgement event recorded for sequence {}. key: {}",
+                                    sequence,
+                                    key
                                 );
                             } else {
                                 tracing::error!(
-                                    "WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}",
+                                    "WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}, key: {}",
                                     sequence,
-                                    e.packet_ack_hex.clone()
+                                    e.packet_ack_hex.clone(),
+                                    key
                                 );
                                 // Here remove it from the map
                                 entry.remove(&sequence);
@@ -231,15 +239,17 @@ pub trait IbcListen: Send + Sync {
                             || !sequence_entry.get(&2).unwrap_or(&false)
                         {
                             tracing::warn!(
-                                "AcknowledgePacket event received out of order for sequence {}",
-                                sequence
+                                "AcknowledgePacket event received out of order for sequence: {}. key: {}",
+                                sequence,
+                                key
                             );
                             entry.remove(&sequence);
                         } else {
                             sequence_entry.insert(3, true);
                             tracing::info!(
-                                "AcknowledgePacket event recorded for sequence {}",
-                                sequence
+                                "AcknowledgePacket event recorded for sequence {}. key: {}",
+                                sequence,
+                                key
                             );
 
                             if sequence_entry.values().all(|&v| v) {
@@ -378,13 +388,13 @@ impl IbcListen for Ethereum {
         loop {
             let provider = self.rpc.provider.clone();
 
-            let mut latest_block = provider.get_block_number().await.unwrap().as_u64();
+            let latest_block = provider.get_block_number().await.unwrap().as_u64();
             if latest_checked_block == latest_block {
                 tokio::time::sleep(Duration::from_secs(5)).await;
                 continue;
             }
             latest_checked_block = latest_block;
-            tracing::info!("latest_block {:?}.", latest_block);
+            tracing::info!("Fetched Ethereum latest_block {:?}.", latest_block);
             // Update the filter to fetch logs from the latest block processed + 1
             let filter = Filter::new()
                 .address(ethers::types::H160::from(self.rpc.ibc_handler_address))
@@ -404,7 +414,6 @@ impl IbcListen for Ethereum {
                     Some(raw_log)
                 })
                 .for_each_concurrent(None, |raw_log| async move {
-                    let decoded_log = IBCHandlerEvents::decode_log(&raw_log);
                     let ibc_event =
                         ibchandler_events_to_ibc_event(raw_log, &self.rpc, latest_block).await;
 
@@ -412,21 +421,8 @@ impl IbcListen for Ethereum {
                         self.handle_ibc_event(ibc_event, &shared_map, latest_block)
                             .await;
                     }
-                    // let packet_event = IBCPacketEvents::try_from(raw_log).unwrap();
-                    // tracing::info!("Packet event: {:?}", packet_event);
                 })
                 .await;
-
-            // Update the latest block to the most recent block fetched
-            if let Some(last_log) = logs.last() {
-                latest_block = last_log.block_number.unwrap().as_u64() + 1;
-            } else {
-                // If no logs were found, just increment the block number to avoid getting stuck
-                latest_block += 1;
-            }
-
-            // TODO: 6 seconds for new block fetching?
-            tokio::time::sleep(Duration::from_secs(6)).await;
         }
     }
 
@@ -453,13 +449,12 @@ impl IbcListen for Cosmos {
                 Some(event_result) = subs.next() => {
                     match event_result {
                         Ok(event) => {
-                            let mut block_number: u64 = 0;
                             // tracing::info!("Received event_result: {:?}", event.clone());
                             if let Some(ref events) = event.events {
                                 if let Some(heights) = events.get("tx.height") {
                                     if let Some(height) = heights.first() {
-                                        block_number = height.parse().expect("Failed to parse block number");
-                                        tracing::info!("Block number: {}", block_number);
+                                        let block_number: u64 = height.parse().expect("Failed to parse block number");
+                                        tracing::info!("Fetched cosmos Block number: {}", block_number);
                                     }
                                 }
                             }
@@ -514,7 +509,7 @@ impl IbcTransfer for Ethereum {
     async fn send_ibc_transfer(
         &self,
         protocol: Protocol,
-        channel: ChannelId,
+        _channel: ChannelId,
         destination_channel: ChannelId,
         denom: String,
         amount: u64,
@@ -527,26 +522,34 @@ impl IbcTransfer for Ethereum {
         let signer_middleware = &self.signer_middlewares[index];
         let msg_sender = self.msg_senders[index];
 
-        let denom: String = format!(
-            "{}/{}/{}",
-            self.ucs01_contract.to_lowercase(),
-            destination_channel,
-            denom
-        );
-        tracing::info!("denom: {:?}", denom);
+        let denom_address = match ethers::types::H160::from_str(&denom) {
+            Ok(address) => address,
+            Err(_) => {
+                let formatted_denom = format!(
+                    "{}/{}/{}",
+                    self.ucs01_contract.to_lowercase(),
+                    destination_channel,
+                    denom
+                );
 
-        let denom_address = relay
-            .get_denom_address(destination_channel.clone().to_string(), denom.clone())
-            .call()
-            .await
-            .unwrap();
+                relay
+                    .get_denom_address(
+                        destination_channel.clone().to_string(),
+                        formatted_denom.clone(),
+                    )
+                    .call()
+                    .await
+                    .unwrap()
+            }
+        };
+
         if denom_address == ethers::types::H160::zero() {
             tracing::warn!("Denom address not found");
             return;
         }
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
         let balance = erc_contract.balance_of(msg_sender).await.unwrap();
-        tracing::info!("balance: {}, amount: {}", balance, amount);
+        tracing::info!("ETH Token balance: {}. Sending amount: {}", balance, amount);
         if balance < amount.into() {
             tracing::warn!("Insufficient balance");
             return;
@@ -556,14 +559,13 @@ impl IbcTransfer for Ethereum {
             .allowance(msg_sender, self.relay_addr)
             .await
             .unwrap();
-        tracing::info!("allowance: {}", allowance);
         if allowance < amount.into() {
-            erc_contract
+            let _ = erc_contract
                 .approve(self.relay_addr, (U256::MAX / U256::from(2)).into())
                 .send()
                 .await;
-        } else {
-            tracing::info!("Already approved");
+            tracing::info!("We can not transfer after approve, returning now.");
+            return;
         }
 
         match protocol {
@@ -575,26 +577,31 @@ impl IbcTransfer for Ethereum {
                 let index = rng.gen_range(0..receivers.len()); // Select a random index
 
                 let receiver = &receivers[index];
-                tracing::info!(
-                    "Sending IBC transfer via Ethereum: {:?}, {:?}, {}, {}",
-                    receiver,
-                    contract,
-                    denom,
-                    amount
-                );
 
-                if receiver == "invalid_receiver" {
-                } else {
+                let mut final_receiver = receiver.encode_to_vec().into();
+
+                if memo.is_empty() {
                     let (_hrp, data, _variant) =
                         bech32::decode(&receiver).expect("Invalid Bech32 address");
 
-                    let receiver: Vec<u8> =
+                    let bytes: Vec<u8> =
                         Vec::<u8>::from_base32(&data).expect("Invalid base32 data");
+
+                    final_receiver = bytes.into();
                 }
+
+                tracing::info!(
+                    "[Ethereum] -> Sending IBC transfer. memo: {}. Sending denom: {}. To: {}. Amount: {}, contract: {}",
+                    memo,
+                    denom,
+                    final_receiver,
+                    amount,
+                    contract
+                );
                 let _tx_rcp: Option<ethers::types::TransactionReceipt> = match relay
                     .send(
                         destination_channel.clone().to_string(),
-                        receiver.encode_to_vec().into(),
+                        final_receiver,
                         [LocalToken {
                             denom: denom_address,
                             amount: amount as u128,
@@ -624,11 +631,14 @@ impl IbcTransfer for Ethereum {
                     }
                 };
                 tracing::info!(
-                    "Transaction sent successfully from eth. Tx: {:?}",
+                    "Transaction sent successfully from ETHEREUM. Tx Hash: {:?}",
                     _tx_rcp.unwrap().transaction_hash
                 );
             }
-            Protocol::Ics20 { receivers, module } => {
+            Protocol::Ics20 {
+                receivers: _,
+                module: _,
+            } => {
                 unimplemented!("Ics20 protocol not implemented"); // TODO: Do we even have this case?
             }
         }
@@ -708,95 +718,124 @@ impl IbcTransfer for Cosmos {
     async fn send_ibc_transfer(
         &self,
         protocol: Protocol,
-        channel: ChannelId,
+        _channel: ChannelId,
         destination_channel: ChannelId,
         denom: String,
         amount: u64,
         memo: String,
     ) {
-        self.chain
-            .signers
-            .with(|signer| async move {
-                let transfer_msg = match protocol {
-                    Protocol::Ics20 { receivers, module } => {
-                        let mut rng = StdRng::from_entropy();
-                        let index = rng.gen_range(0..receivers.len()); // Select a random index
+        self.chain.signers.with(|signer| async move {
+            let transfer_msg = match protocol {
+                Protocol::Ics20 { receivers, module } => {
+                    let mut rng = StdRng::from_entropy();
+                    let index = rng.gen_range(0..receivers.len()); // Select a random index
 
-                        let receiver = &receivers[index];
-                        tracing::info!(
-                            "Sending ibc transfer from: {:?}. Receiver: {:?}. amount: {:?}",
-                            signer.to_string(),
-                            receiver,
-                            amount
-                        );
-                        let msg = MsgTransfer {
-                            source_port: "transfer".into(),
-                            source_channel: destination_channel.to_string(),
-                            token: Some(
-                                (Coin {
-                                    denom: denom.to_string(),
-                                    amount: amount as u128,
-                                })
-                                .into(),
-                            ),
-                            sender: signer.to_string(),
-                            receiver: receiver.to_string(),
-                            timeout_height: None,
-                            timeout_timestamp: u64::MAX / 2,
-                            memo: memo,
-                        };
+                    let receiver = &receivers[index];
 
-                        Any {
-                            type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
-                            value: msg.encode_to_vec().into(),
-                        }
-                    }
-                    Protocol::Ucs01 {
-                        receivers,
-                        contract,
-                    } => {
-                        let mut rng = StdRng::from_entropy();
-                        let index = rng.gen_range(0..receivers.len()); // Select a random index
-                        let receiver = &receivers[index];
-                        tracing::info!(
-                            "Sending ibc transfer from: {:?}. Receiver: {:?}. amount: {:?}",
-                            signer.to_string(),
-                            receiver,
-                            amount
-                        );
-
-                        let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
-                            channel: destination_channel.to_string(),
-                            receiver: receiver[2..].to_string(),
-                            memo: memo,
-                            timeout: None,
-                        });
-
-                        let transfer_msg_bytes = serde_json::to_vec(&transfer_msg).unwrap();
-
-                        any::Any(MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: contract.clone(),
-                            msg: transfer_msg_bytes,
-                            funds: vec![Coin {
+                    let msg = MsgTransfer {
+                        source_port: "transfer".into(),
+                        source_channel: destination_channel.to_string(),
+                        token: Some(
+                            (Coin {
                                 denom: denom.to_string(),
                                 amount: amount as u128,
-                            }],
-                        })
-                        .into()
-                    }
-                };
+                            }).into()
+                        ),
+                        sender: signer.to_string(),
+                        receiver: receiver.to_string(),
+                        timeout_height: None,
+                        timeout_timestamp: u64::MAX / 2,
+                        memo: memo.clone(),
+                    };
 
-                match self.chain.broadcast_tx_commit(signer, [transfer_msg]).await {
-                    Ok(tx_hash) => {
-                        tracing::info!("Transaction sent successfully. Hash: {:?}", tx_hash);
-                    }
-                    Err(e) => {
-                        tracing::error!("Failed to submit tx!{:?}", e.to_string());
+                    tracing::info!(
+                        "[Cosmos Ics20] -> Sending IBC transfer from: {}. memo: {}. Sending denom: {}. To: {}. Amount: {}, module: {:?}",
+                        signer.to_string(),
+                        memo,
+                        denom,
+                        receiver,
+                        amount,
+                        module
+                    );
+
+                    Any {
+                        type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
+                        value: msg.encode_to_vec().into(),
                     }
                 }
-            })
-            .await;
+                Protocol::Ucs01 { receivers, contract } => {
+                    let mut rng = StdRng::from_entropy();
+                    let index = rng.gen_range(0..receivers.len()); // Select a random index
+                    let receiver = &receivers[index];
+
+                    let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
+                        channel: destination_channel.to_string(),
+                        receiver: receiver[2..].to_string(),
+                        memo: memo.clone(),
+                        timeout: None,
+                    });
+
+                    // TODO(caglankaan): This part is not clear right now. For the first version
+                    // It would be better to get denom directly as smth like
+                    // `factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9`
+                    // for USDC for example. The code below works but it would be hard to check if its native or smth else.
+                    // For next version(s) we can add a feature to calculate this with like
+                    // "token": {
+                    //     "protocol": "union",
+                    //     "type": "native",
+                    //     "denom": "muno"
+                    // }
+
+                    // let foreign_denom = format!(
+                    //     "wasm.{}/{}/{}",
+                    //     contract,
+                    //     destination_channel.to_string(),
+                    //     denom.to_lowercase()
+                    // );
+                    // let hashed_foreign_denom = hash_denom_str(&foreign_denom);
+
+                    // let final_denom = format!(
+                    //     "factory/{}/{}",
+                    //     contract.to_string(),
+                    //     hashed_foreign_denom
+                    // );
+
+                    let transfer_msg_bytes = serde_json::to_vec(&transfer_msg).unwrap();
+
+                    tracing::info!(
+                        "[Cosmos] -> Sending IBC transfer from: {}. memo: {}. Sending denom: {}. To: {}. Amount: {}, contract: {}",
+                        signer.to_string(),
+                        memo,
+                        denom,
+                        receiver,
+                        amount,
+                        contract
+                    );
+
+                    any::Any(MsgExecuteContract {
+                        sender: signer.to_string(),
+                        contract: contract.clone(),
+                        msg: transfer_msg_bytes,
+                        funds: vec![Coin {
+                            denom: denom.to_string(),
+                            amount: amount as u128,
+                        }],
+                    }).into()
+                }
+            };
+
+            match self.chain.broadcast_tx_commit(signer, [transfer_msg]).await {
+                Ok(tx_hash) => {
+                    tracing::info!(
+                        "Transaction sent successfully from COSMOS. Tx Hash: {:?}",
+                        tx_hash
+                    );
+                }
+                Err(e) => {
+                    tracing::error!("Failed to submit tx!{:?}", e.to_string());
+                }
+            }
+        }).await;
     }
 }
 
@@ -912,10 +951,28 @@ async fn ibchandler_events_to_ibc_event(
             };
             return ibc_event;
         }
-        Err(e) => {
+        Err(_) => {
             // tracing::warn!("Could not decode Ethereum log event: {}", e);
             // tracing::warn!("Could not decode Ethereum log: {:?}", log);
         }
     }
     return None;
 }
+
+// fn create_normalized_foreign_denom(
+//     contract: &str,
+//     destination_channel: &str,
+//     denom: &str
+// ) -> String {
+//     let foreign_denom = format!("{}/{}/{}", contract, destination_channel, denom);
+//     tracing::info!("foreign_denom: {:?}", foreign_denom);
+//     let mut hasher = Sha256::new();
+//     hasher.update(foreign_denom);
+
+//     // let hash = Sha256::digest(foreign_denom.as_bytes());
+//     // tracing::info!("hash: {:?}", hash);
+//     // tracing::info!("hash: {:?}", hash.len());
+//     let data = hasher.finalize()[..21].try_into().expect("impossible");
+//     // format!("0x{}", hex::encode(hash_denom(denom)));
+//     format!("0x{}", hex::encode(data))
+// }
