@@ -29,7 +29,7 @@ import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { erc20Abi, createWalletClient, createPublicClient, http, custom, defineChain } from "viem"
+import { erc20Abi, createWalletClient, createPublicClient, http, custom, defineChain, publicActions } from "viem"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -45,6 +45,7 @@ type TransferStates =
   | "ADDING_CHAIN"
   | "SWITCHING_TO_CHAIN"
   | "APPROVING_ASSET"
+  | "AWAITING_APPROVAL_RECEIPT"
   | "SIMULATING_TRANSFER"
   | "CONFIRMING_TRANSFER"
   | "TRANSFERRING"
@@ -282,7 +283,7 @@ const transfer = async () => {
       chain,
       // @ts-ignore
       transport: custom(window.ethereum)
-    })
+    });
 
     toast.info(`Adding chain ${$fromChain.display_name} to your wallet`)
     await walletClient.addChain({ chain })
@@ -303,10 +304,15 @@ const transfer = async () => {
       args: [ucs01address, BigInt(amount)]
     })
 
-    toast.info("Submitting approval")
+    toast.info("awaiting approval receipt")
+    transferState.set("AWAITING_APPROVAL_RECEIPT")
+    const approvalReceipt = await publicClient.waitForTransactionReceipt({
+      hash: approveContractSimulation
+    });
 
-    transferState.set("SIMULATING_TRANSFER")
+
     toast.info("Simulating UCS01 contract call")
+    transferState.set("SIMULATING_TRANSFER")
     const { request } = await publicClient.simulateContract({
       abi: ucs01abi,
       account: userAddr.evm.canonical,
