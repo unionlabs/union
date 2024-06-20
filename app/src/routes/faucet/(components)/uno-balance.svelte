@@ -2,18 +2,22 @@
 import { formatUnits } from "viem"
 import { userBalancesQuery } from "$lib/queries/balance"
 import type { Chain, UserAddresses } from "$lib/types.ts"
+import Precise from "$lib/components/precise.svelte"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
 
+let chain = chains.filter(c => c.chain_id === "union-testnet-8")
 $: userBalances = userBalancesQuery({
   userAddr: userAddr,
-  chains: chains.filter(c => c.chain_id === "union-testnet-8")
+  chains: chain
 })
 $: unionBalances = $userBalances.at(0)?.data ?? []
-$: munoBalance = unionBalances.find(balance => balance.symbol.toLowerCase() === "muno")
+$: asset = unionBalances.find(balance => balance.symbol.toLowerCase() === "muno")
+$: supportedAsset = getSupportedAsset(chain[0], asset?.address)
 </script>
 
-{#if munoBalance}
-  <span class="">{Number(formatUnits(BigInt(munoBalance.balance), 6)).toFixed(2)} UNO</span>
+{#if asset}
+  <span class=""><Precise {supportedAsset} {asset} showSymbol showToolTip /></span>
 {/if}
