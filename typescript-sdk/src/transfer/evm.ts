@@ -45,14 +45,20 @@ export async function transferAssetFromEvm(
     /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
     relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
-    const approve = await client.writeContract({
+    const approveWriteContractParameters = {
       abi: erc20Abi,
       account: account,
       chain: client.chain,
       address: denomAddress,
       functionName: "approve",
       args: [relayContractAddress, amount]
-    })
+    } as const
+
+    const { request: approveRequest } = await client
+      .extend(publicActions)
+      .simulateContract(approveWriteContractParameters)
+    const approve = await client.writeContract(approveRequest)
+
     if (!approve) return { success: false, data: "Approval failed" }
 
     memo ||= timestamp()

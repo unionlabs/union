@@ -1,6 +1,6 @@
 import {
   GasPrice,
-  // defaultRegistryTypes,
+  defaultRegistryTypes,
   SigningStargateClient,
   assertIsDeliverTxSuccess,
   type MsgTransferEncodeObject
@@ -10,10 +10,10 @@ import type {
   MessageTransferWithOptionals,
   OfflineSigner as CosmosOfflineSigner
 } from "../types.ts"
-// import { Registry } from "@cosmjs/proto-signing"
+import { Registry } from "@cosmjs/proto-signing"
 import { timestamp } from "../utilities/index.ts"
 import type { TransactionResponse } from "../types.ts"
-// import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx"
+import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx"
 import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 
 /**
@@ -148,55 +148,55 @@ export async function cosmwasmTransfer({
   }
 }
 
-// export async function cosmwasmTransferSimulate({
-//   gasPrice,
-//   instructions,
-//   cosmosSigner,
-//   cosmosRpcUrl
-// }: {
-//   cosmosRpcUrl: string
-//   cosmosSigner: CosmosOfflineSigner
-//   instructions: Array<ExecuteInstruction>
-//   gasPrice: { amount: string; denom: string }
-// }): Promise<TransactionResponse> {
-//   try {
-//     const registry = new Registry([
-//       ...defaultRegistryTypes,
-//       ["/cosmwasm.wasm.v1.MsgExecuteContract", MsgExecuteContract]
-//     ])
+export async function cosmwasmTransferSimulate({
+  gasPrice,
+  instructions,
+  cosmosSigner,
+  cosmosRpcUrl
+}: {
+  cosmosRpcUrl: string
+  cosmosSigner: CosmosOfflineSigner
+  instructions: Array<ExecuteInstruction>
+  gasPrice: { amount: string; denom: string }
+}): Promise<TransactionResponse> {
+  try {
+    const registry = new Registry([
+      ...defaultRegistryTypes,
+      ["/cosmwasm.wasm.v1.MsgExecuteContract", MsgExecuteContract]
+    ])
 
-//     const signingClient = await SigningCosmWasmClient.connectWithSigner(
-//       cosmosRpcUrl,
-//       cosmosSigner,
-//       {
-//         registry,
-//         gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-//       }
-//     )
+    const signingClient = await SigningCosmWasmClient.connectWithSigner(
+      cosmosRpcUrl,
+      cosmosSigner,
+      {
+        registry,
+        gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+      }
+    )
 
-//     const [account] = await cosmosSigner.getAccounts()
-//     if (!account) return { success: false, data: "No account found" }
+    const [account] = await cosmosSigner.getAccounts()
+    if (!account) return { success: false, data: "No account found" }
 
-//     const gas = await signingClient.simulate(
-//       account.address,
-//       instructions.map(instruction => ({
-//         // @ts-expect-error - TODO: why is it not happy?
-//         value: MsgExecuteContract.fromPartial(instruction),
-//         typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract"
-//       })),
-//       "auto"
-//     )
+    const gas = await signingClient.simulate(
+      account.address,
+      instructions.map(instruction => ({
+        // @ts-expect-error - TODO: why is it not happy?
+        value: MsgExecuteContract.fromPartial(instruction),
+        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract"
+      })),
+      "auto"
+    )
 
-//     signingClient.disconnect()
-//     return { success: true, data: gas.toString() }
-//   } catch (error) {
-//     console.error(error)
-//     return {
-//       success: false,
-//       data: error instanceof Error ? error.message : "An unknown error occurred"
-//     }
-//   }
-// }
+    signingClient.disconnect()
+    return { success: true, data: gas.toString() }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      data: error instanceof Error ? error.message : "An unknown error occurred"
+    }
+  }
+}
 
 /**
  * Transfer tokens where where source and destination are the same chain
