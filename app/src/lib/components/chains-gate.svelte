@@ -63,6 +63,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       rpc_type,
       rpcs: chain.rpcs,
       addr_prefix,
+      testnet: !!chain.testnet,
       // this as statement should no longer be required in the next typescript release
       assets: chain.assets.filter(
         asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null

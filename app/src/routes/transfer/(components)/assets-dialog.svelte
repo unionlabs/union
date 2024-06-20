@@ -18,7 +18,7 @@ export let dialogOpen = false
 export let assets: Array<{
   address: string
   balance: bigint
-  decimals: number
+  decimals?: number
   symbol: string
 }>
 
