@@ -1,11 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use ecdsa::SigningKey;
-use ethers::{core::k256::ecdsa, signers::LocalWallet, utils::secret_key_to_address};
-use hex::{decode as hex_decode, encode as hex_encode, FromHex};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
 use tokio::{sync::Mutex, task::JoinHandle, time::interval};
-use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
 use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
@@ -28,11 +24,16 @@ impl Context {
 
         for (chain_name, chain) in config.chain_configs {
             match chain {
-                AnyChainConfig::Cosmos(cosmos) => {
+                AnyChainConfig::Cosmos(cosmos) if cosmos.enabled => {
+                    tracing::info!("Initializing Cosmos chain: {}", chain_name);
                     chains.insert(chain_name, Chain::Cosmos(Cosmos::new(cosmos).await));
                 }
-                AnyChainConfig::Ethereum(ethereum) => {
+                AnyChainConfig::Ethereum(ethereum) if ethereum.enabled => {
+                    tracing::info!("Initializing Ethereum chain: {}", chain_name);
                     chains.insert(chain_name, Chain::Ethereum(Ethereum::new(ethereum).await));
+                }
+                _ => {
+                    // Handle cases where the chain is not enabled or other configurations
                 }
             }
         }
@@ -68,13 +69,70 @@ impl Context {
         }
         handles
     }
+    // ... other methods ...
+
+    pub async fn do_single_transaction(&self, interaction: IbcInteraction) -> JoinHandle<()> {
+        let source_chain = self.chains.get(&interaction.source.chain).cloned().unwrap();
+
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(interaction.send_packet_interval));
+
+            interval.tick().await;
+            let mut rng = StdRng::from_entropy();
+
+            let amount = rng.gen_range(interaction.amount_min..=interaction.amount_max);
+
+            let send_memo = rng.gen_bool(interaction.sending_memo_probability);
+            let memo = if send_memo {
+                interaction.memo.clone()
+            } else {
+                String::new()
+            };
+
+            // selecting denom randomly
+            let denom = interaction.denoms.choose(&mut rng).unwrap().to_string();
+            // tracing::info!(
+            //     "[{:?}] -> Sending memo: {}, with probability: {}. Sending denom: {}",
+            //     interaction.source.chain,
+            //     memo,
+            //     interaction.sending_memo_probability,
+            //     denom
+            // );
+            match &source_chain {
+                Chain::Ethereum(ethereum) => {
+                    ethereum
+                        .send_ibc_transfer(
+                            interaction.protocol.clone(),
+                            interaction.source.channel.clone(),
+                            interaction.destination.channel.clone(),
+                            denom,
+                            amount,
+                            memo,
+                        )
+                        .await;
+                }
+                Chain::Cosmos(cosmos) => {
+                    cosmos
+                        .send_ibc_transfer(
+                            interaction.protocol.clone(),
+                            interaction.source.channel.clone(),
+                            interaction.destination.channel.clone(),
+                            denom,
+                            amount,
+                            memo,
+                        )
+                        .await;
+                }
+            }
+        })
+    }
 
     pub async fn do_transactions(self) -> Vec<JoinHandle<()>> {
         let mut handles = vec![];
 
         for interaction in self.interactions {
             let source_chain = self.chains.get(&interaction.source.chain).cloned().unwrap();
-            let destination_chain = self
+            let _destination_chain = self
                 .chains
                 .get(&interaction.destination.chain)
                 .cloned()
@@ -89,6 +147,24 @@ impl Context {
 
                     let amount = rng.gen_range(interaction.amount_min..=interaction.amount_max);
 
+                    // Determine memo based on sending_memo_probability
+                    let send_memo = rng.gen_bool(interaction.sending_memo_probability);
+                    let memo = if send_memo {
+                        interaction.memo.clone()
+                    } else {
+                        String::new()
+                    };
+
+                    // selecting denom randomly
+                    let denom = interaction.denoms.choose(&mut rng).unwrap().to_string();
+
+                    // tracing::info!(
+                    //     "[{:?}] -> Sending memo: {}, with probability: {}. Sending denom: {}",
+                    //     interaction.source.chain,
+                    //     memo,
+                    //     interaction.sending_memo_probability,
+                    //     denom
+                    // );
                     match &source_chain {
                         Chain::Ethereum(ethereum) => {
                             ethereum
@@ -96,9 +172,9 @@ impl Context {
                                     interaction.protocol.clone(),
                                     interaction.source.channel.clone(),
                                     interaction.destination.channel.clone(),
-                                    "muno".to_string(),
+                                    denom,
                                     amount,
-                                    interaction.memo.clone(),
+                                    memo,
                                 )
                                 .await;
                         }
@@ -108,9 +184,9 @@ impl Context {
                                     interaction.protocol.clone(),
                                     interaction.source.channel.clone(),
                                     interaction.destination.channel.clone(),
-                                    "muno".to_string(),
+                                    denom,
                                     amount,
-                                    interaction.memo.clone(),
+                                    memo,
                                 )
                                 .await;
                         }

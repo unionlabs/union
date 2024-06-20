@@ -2,13 +2,12 @@
   "chain_configs": {
     "ethereum": {
       "ethereum": {
+        "enabled": true,
         "ibc_handler_address": "0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb",
         "signers": [
-          { "raw": "0xc7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff" },
-          { "raw": "0x1419fbc200ea996170f89684d523637cdbf50db4e5285fde8da6d34558fb354a" },
-          { "raw": "0xcfa3f41ac6bd7998c36306b91a754776f819fd0c748bb47c3b9accf13a90d2a3" },
-          { "raw": "0xc320c1b772abf58d1fab7ea6757b42021764c1f8c470d7baaff48b4f12535808" },
-          { "raw": "0x7d12d4554b073cc4bcbc5a82b97cf85e24b4eb8f449b2362bbe0a85f1e5e3b09" }
+          {
+            "raw": "0xf2e42670eb5083a1def99dcf2fbc685d8fd6e5bb9c94a8885e031c3e6a1e4529"
+          }
         ],
         "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB",
         "transfer_module": {
@@ -19,9 +18,12 @@
     },
     "osmosis": {
       "cosmos": {
+        "enabled": false,
         "chain_config": {
           "signers": [
-            { "raw": "0x1503e463998e28b130a2d4876632c80462bbd5e0d9eb7ce6ed5f6210f02a2913" }
+            {
+              "raw": "0x1503e463998e28b130a2d4876632c80462bbd5e0d9eb7ce6ed5f6210f02a2913"
+            }
           ],
           "gas_config": {
             "gas_price": "1.0",
@@ -33,14 +35,19 @@
           "ws_url": "wss://rpc.osmo.test.yieldpay.finance/websocket",
           "grpc_url": "https://grpc.osmo.test.yieldpay.finance:443"
         },
-        "transfer_module": { "type": "native" }
+        "transfer_module": {
+          "type": "native"
+        }
       }
     },
     "union": {
       "cosmos": {
+        "enabled": true,
         "chain_config": {
           "signers": [
-            { "raw": "0xe6b7f3906f38ea3547c91ed2f5eab850d27dd5672424fa4759e471be45598860" }
+            {
+              "raw": "0xe6b7f3906f38ea3547c91ed2f5eab850d27dd5672424fa4759e471be45598860"
+            }
           ],
           "gas_config": {
             "gas_price": "1.0",
@@ -62,44 +69,79 @@
   },
   "interactions": [
     {
-      "source": { "chain": "ethereum", "channel": "channel-71" },
-      "destination": { "chain": "union", "channel": "channel-67" },
-      "protocol": {
-        "Ucs01": {
-          "receivers": [
-            "union1z2u7cveszcmcx8lxmwalf4zve482wflafdm37w",
-            "union1vv8l5eh0j0yemkljwhdxssw5a8yhs7p65vt0s7",
-            "union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq",
-            "union1hv627uvztsuadzh8nmqytpzaspscd4tna9nc79",
-            "union1xwxwcgx7t8auvup2ts9cyx8ug2cwadrkrlrerz"
-          ],
-          "contract": "union177jpkxrhvzca0dhr7p05ty595ucdgdl6k4wv67500jxcu6t5hppqemdy20"
-        }
+      "source": {
+        "chain": "ethereum",
+        "channel": "channel-78"
       },
-      "send_packet_interval": 50,
-      "expect_full_cycle": 300,
-      "amount_min": 1,
-      "amount_max": 50
-    },
-    {
-      "source": { "chain": "union", "channel": "channel-67" },
-      "destination": { "chain": "ethereum", "channel": "channel-71" },
+      "destination": {
+        "chain": "union",
+        "channel": "channel-83"
+      },
       "protocol": {
         "Ucs01": {
-          "receivers": [
-            "0xfbf2b6f136feb11b738592c7c5cf63b83825ff46",
-            "0x2014EAb6A7cB0D230D80F45B28F08d51C65a9278",
-            "0x912b19bb1C9E1D1d0BADfE518A33682599c726e5",
-            "0x7A360dd229c558Fca5b7890b60ee8fd8b6F1c183",
-            "0xc67ac1B083660f23b3eBe003beb8368c28A6B5B1"
-          ],
+          "receivers": ["union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq"],
           "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
         }
       },
+      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-70\"}}",
+      "sending_memo_probability": 0.5,
+      "denoms": ["0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", "muno"],
       "send_packet_interval": 50,
       "expect_full_cycle": 300,
       "amount_min": 1,
-      "amount_max": 50
+      "amount_max": 3
+    },
+    {
+      "source": {
+        "chain": "union",
+        "channel": "channel-83"
+      },
+      "destination": {
+        "chain": "ethereum",
+        "channel": "channel-78"
+      },
+      "protocol": {
+        "Ucs01": {
+          "receivers": ["0x84cB5E16918547aD6181fe6513861a7eA476f2EC"],
+          "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+        }
+      },
+      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-78\"}}",
+      "sending_memo_probability": 0.0,
+      "denoms": [
+        "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9",
+        "muno"
+      ],
+      "send_packet_interval": 50,
+      "expect_full_cycle": 600,
+      "amount_min": 1,
+      "amount_max": 3
     }
-  ]
+  ],
+  "single_interaction": {
+    "source": {
+      "chain": "ethereum",
+      "channel": "channel-78"
+    },
+    "destination": {
+      "chain": "union",
+      "channel": "channel-83"
+    },
+    "protocol": {
+      "Ucs01": {
+        "receivers": ["0x08210f9170f89ab7658f0b5e3ff39b0e03c594d4"],
+        "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+      }
+    },
+    "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-78\"}}",
+    "sending_memo_probability": 1,
+    "denoms": [
+      "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9",
+      "muno"
+    ],
+    "send_packet_interval": 1,
+    "expect_full_cycle": 1,
+    "amount_min": 1,
+    "amount_max": 1
+  }
 }
