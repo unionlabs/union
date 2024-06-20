@@ -76,12 +76,26 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 
 <!-- mobile layout !-->
-<main class="bg-muted h-full overflow-auto">
-  <Menu tableRoutes={data.tables} isCollapsed={false} />
-</main>
+<div class="flex flex-row">
+  <nav class={cn("bg-muted h-full overflow-y-auto", explorerRoute === null ? "" : "")}>
+    <Menu tableRoutes={data.tables} isCollapsed={false} />
+  </nav>
+  <main class="overflow-auto flex-1">
+    <a
+      class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot"
+      href={$page.route.id?.split('/').slice(0, -1).join('/')}
+    >
+      <ArrowLeftIcon />
+      <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
+    </a>
+
+      <slot/>
+  </main>
+</div>
 
 
 <!-- desktop layout !-->
+<!--
 <main class={cn('hidden sm:flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
   {#if mainExplorerPage}
     <Resizable.PaneGroup
@@ -141,3 +155,4 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
     </ScrollArea>
   {/if}
 </main>
+!-->
