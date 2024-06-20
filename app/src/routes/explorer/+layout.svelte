@@ -56,11 +56,12 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
   document.cookie = `PaneForge:collapsed=${false}`
 }
 
-let explorerRoute = $page.route.id?.split("/").at(2)
-$: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute)[0].description
+let explorerRoute = $page.route.id?.split("/").at(2) ?? null
+$: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null
+
 onNavigate(navigation => {
   if (navigation.to?.route.id?.split("/").at(1) === "explorer") {
-    explorerRoute = navigation.to?.route.id?.split("/").at(2)
+    explorerRoute = navigation.to?.route.id?.split("/").at(2) ?? null
   }
 })
 
@@ -72,7 +73,16 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
   <title>Union - Explorer</title>
 </svelte:head>
 
-<main class={cn('flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
+
+
+<!-- mobile layout !-->
+<main class="bg-muted h-full overflow-auto">
+  <Menu tableRoutes={data.tables} isCollapsed={false} />
+</main>
+
+
+<!-- desktop layout !-->
+<main class={cn('hidden sm:flex flex-1 overflow-hidden', mainExplorerPage ? 'flex-row' : 'flex-col')}>
   {#if mainExplorerPage}
     <Resizable.PaneGroup
       class="w-full"
@@ -122,7 +132,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
       href={$page.route.id?.split('/').slice(0, 3).join('/')}
     >
       <ArrowLeftIcon />
-      <span class="uppercase">{$page.route.id?.split('/')[2]}</span>
+      <span class="uppercase">{$page.route.id?.split('/').at(2)}</span>
     </a>
     <ScrollArea class="flex-1" orientation="both">
       <div class="p-4 sm:p-6 flex items-center justify-center">

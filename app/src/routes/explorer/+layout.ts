@@ -19,9 +19,6 @@ export interface Table {
 }
 
 export const load = (loadEvent => {
-  // Redirect if the user is visiting /explorer
-  if (loadEvent.url.pathname === "/explorer") throw redirect(302, "/explorer/transfers")
-
   return {
     tables: [
       {
