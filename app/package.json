@@ -26,14 +26,14 @@
     "@tanstack/svelte-table": "^8.17.3",
     "@tanstack/svelte-virtual": "^3.5.1",
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.19",
-    "@wagmi/connectors": "^5.0.9",
-    "@wagmi/core": "^2.10.5",
+    "@wagmi/connectors": "^5.0.15",
+    "@wagmi/core": "^2.11.3",
     "bech32": "^2.0.0",
     "bits-ui": "^0.21.10",
     "cmdk-sv": "^0.0.17",
     "formsnap": "^1.0.0",
     "gql.tada": "^1.7.5",
-    "graphql-request": "^7.0.1",
+    "graphql-request": "7.1.0-next.12",
     "mode-watcher": "^0.3.0",
     "paneforge": "^0.0.4",
     "svelte-french-toast": "^1.2.0",
@@ -46,7 +46,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.31.1",
     "vaul-svelte": "^0.3.1",
-    "viem": "^2.13.7"
+    "viem": "^2.15.1"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.7",
