@@ -22,35 +22,34 @@ let transfers = createQuery({
 
 let chains = chainsQuery()
 
+
 let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   if (!($transfers.isSuccess && $chains.isSuccess)) return []
-  return $transfers.data.map(transfer => {
+  return $transfers.data.map(tx => {
 
-    let destinationChainId = transfer.destination_chain_id;  
-    let receiver = transfer.receiver;
+    let destinationChainId = tx.destination_chain_id;  
+    let receiver = tx.receiver;
 
     // overwrite destination and receiver if to last forward
-    const lastForward = transfer.forwards?.at(-1)
+    const lastForward = tx.forwards?.at(-1)
     if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
       receiver = lastForward.receiver;
       destinationChainId = lastForward.chain.chain_id;
     } 
   
     const sourceDisplayName = $chains.data.find(
-      chain => chain.chain_id === transfer.source_chain_id
+      chain => chain.chain_id === tx.source_chain_id
     )?.display_name
     const destinationDisplayName = $chains.data.find(
       chain => chain.chain_id === destinationChainId
     )?.display_name
 
     return {
+      ...tx,
       source: sourceDisplayName,
       destination: destinationDisplayName,
-      sender: transfer.sender,
+      timestamp: tx.source_timestamp,
       receiver,
-      assets: transfer.assets,
-      timestamp: transfer.source_timestamp,
-      source_transaction_hash: transfer.source_transaction_hash
     }
   })
 })

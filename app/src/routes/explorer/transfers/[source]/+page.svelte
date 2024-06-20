@@ -33,6 +33,18 @@ let processedTransfers = derived(transfers, $transfers => {
 
     let hop_chain = null
     let hop_chain_id = null
+
+    let destinationChainId = tx.destination_chain_id;  
+    let receiver = tx.receiver;
+
+    // overwrite destination and receiver if to last forward
+    const lastForward = tx.forwards?.at(-1)
+    if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
+      receiver = lastForward.receiver;
+      destinationChainId = lastForward.chain.chain_id;
+    } 
+
+    
     if (tx.hop !== null) {
       hop_chain = tx.destination_chain
       hop_chain_id = tx.destination_chain_id

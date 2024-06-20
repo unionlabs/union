@@ -14,6 +14,8 @@ export const allTransfersQueryDocument = graphql(/* GraphQL */ `
         chain {
           chain_id
         }
+        port
+        channel
         receiver
       }
     }
@@ -70,6 +72,13 @@ query TransfersBySourceHash($source_transaction_hash: String!) {
     assets
     source_timestamp
     destination_timestamp
+    forwards {
+      chain {
+        chain_id
+      }
+      channel
+      receiver
+    }
     traces(order_by: {timestamp: asc}) {
       timestamp
       chain {
