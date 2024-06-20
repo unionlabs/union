@@ -391,9 +391,9 @@ $: buttonText =
 
 {#if $transferState === "PRE_TRANSFER"}
 <div class="flex flex-col py-6 px-3">
-<Card.Root class="max-w-xl self-center">
+<Card.Root class="max-w-lg self-center">
   <Card.Header>
-    <Card.Title>Transfers</Card.Title>
+    <Card.Title>Transfer</Card.Title>
   </Card.Header>
 <Card.Content class={cn('flex flex-col gap-4')}>
   <section>
