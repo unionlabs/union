@@ -74,7 +74,8 @@ query TransfersBySourceHash($source_transaction_hash: String!) {
     destination_timestamp
     forwards {
       chain {
-        chain_id
+        chain_id,
+        display_name
       }
       channel
       receiver

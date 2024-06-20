@@ -29,31 +29,35 @@ let processedTransfers = derived(transfers, $transfers => {
     return null
   }
   return $transfers.data.map(transfer => {
+    console.log(transfer)
     let tx = structuredClone(transfer)
 
     let hop_chain = null
     let hop_chain_id = null
 
-    let destinationChainId = tx.destination_chain_id;  
-    let receiver = tx.receiver;
-
     // overwrite destination and receiver if to last forward
     const lastForward = tx.forwards?.at(-1)
     if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
-      receiver = lastForward.receiver;
-      destinationChainId = lastForward.chain.chain_id;
-    } 
-
-    
-    if (tx.hop !== null) {
       hop_chain = tx.destination_chain
       hop_chain_id = tx.destination_chain_id
+      tx.destination_chain = lastForward.chain
+      tx.destination_chain_id = lastForward.chain.chain_id
 
-      tx.destination_chain = tx.hop.destination_chain
-      tx.destination_chain_id = tx.hop.destination_chain_id
-      tx.destination_connection_id = tx.hop.destination_connection_id
-      tx.destination_channel_id = tx.hop.destination_channel_id
-      tx.receiver = tx.hop.receiver
+      tx.destination_connection_id = "unknown"
+      tx.destination_channel_id = "unknown"
+      tx.receiver = lastForward.receiver
+      tx.normalized_receiver = lastForward.receiver
+    }
+
+    if (tx.hop !== null) {
+      // hop_chain = tx.destination_chain
+      // hop_chain_id = tx.destination_chain_id
+
+      // tx.destination_chain = tx.hop.destination_chain
+      // tx.destination_chain_id = tx.hop.destination_chain_id
+      // tx.destination_connection_id = tx.hop.destination_connection_id
+      // tx.destination_channel_id = tx.hop.destination_channel_id
+      // tx.receiver = tx.hop.receiver
       tx.normalized_receiver = tx.hop.normalized_receiver
       tx.traces.push.apply(tx.traces, tx.hop.traces)
       tx.traces.sort((a, b) => {

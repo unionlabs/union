@@ -22,21 +22,19 @@ let transfers = createQuery({
 
 let chains = chainsQuery()
 
-
 let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   if (!($transfers.isSuccess && $chains.isSuccess)) return []
   return $transfers.data.map(tx => {
-
-    let destinationChainId = tx.destination_chain_id;  
-    let receiver = tx.receiver;
+    let destinationChainId = tx.destination_chain_id
+    let receiver = tx.receiver
 
     // overwrite destination and receiver if to last forward
     const lastForward = tx.forwards?.at(-1)
     if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
-      receiver = lastForward.receiver;
-      destinationChainId = lastForward.chain.chain_id;
-    } 
-  
+      receiver = lastForward.receiver
+      destinationChainId = lastForward.chain.chain_id
+    }
+
     const sourceDisplayName = $chains.data.find(
       chain => chain.chain_id === tx.source_chain_id
     )?.display_name
@@ -49,7 +47,7 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
       source: sourceDisplayName,
       destination: destinationDisplayName,
       timestamp: tx.source_timestamp,
-      receiver,
+      receiver
     }
   })
 })
