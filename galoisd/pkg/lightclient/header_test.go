@@ -3,7 +3,7 @@ package lightclient
 import (
 	"crypto/sha256"
 	"fmt"
-	g2 "github.com/unionlabs/union/galoisd/pkg/emulated"
+	g2 "galois/pkg/emulated"
 	"math/big"
 	"math/rand"
 	"testing"

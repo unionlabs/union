@@ -2,8 +2,8 @@ package lightclient
 
 import (
 	"fmt"
-	"github.com/unionlabs/union/galoisd/pkg/bls"
-	"github.com/unionlabs/union/galoisd/pkg/merkle"
+	"galois/pkg/bls"
+	"galois/pkg/merkle"
 
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"

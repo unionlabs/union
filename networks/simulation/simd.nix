@@ -6,7 +6,7 @@
           name = "simd";
           src = builtins.fetchGit {
             url = "git@github.com:unionlabs/wasmd.git";
-            rev = "97e87bb428b84571d3712429bc54a081c80067a6";
+            rev = "4080ba9f5023a945dc9dec45ba0ec60524b632d7";
           };
           vendorHash = null;
           doCheck = false;

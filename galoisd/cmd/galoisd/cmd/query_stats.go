@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	provergrpc "github.com/unionlabs/union/galoisd/grpc/api/v3"
+	provergrpc "galois/grpc/api/v3"
 	"log"
 
 	"github.com/spf13/cobra"

@@ -1,4 +1,4 @@
-module github.com/unionlabs/union/galoisd
+module galois
 
 go 1.21
 

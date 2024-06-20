@@ -1,7 +1,7 @@
 package nonadjacent
 
 import (
-	"github.com/unionlabs/union/galoisd/pkg/lightclient"
+	"galois/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"

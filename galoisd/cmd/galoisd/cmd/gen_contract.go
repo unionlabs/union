@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	provergrpc "github.com/unionlabs/union/galoisd/grpc/api/v3"
+	provergrpc "galois/grpc/api/v3"
 	"log"
 	"os"
 
