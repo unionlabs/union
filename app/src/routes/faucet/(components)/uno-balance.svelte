@@ -13,7 +13,6 @@ $: userBalances = userBalancesQuery({
   chains: chain
 })
 $: balance = $userBalances.at(0)?.data ?? []
-$: console.log(balance)
 $: asset = balance.find(balance => balance.symbol.toLowerCase() === "muno")
 $: supportedAsset = getSupportedAsset(chain[0], "muno")
 </script>

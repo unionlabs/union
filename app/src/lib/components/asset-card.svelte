@@ -13,7 +13,6 @@ export let chain: Chain
 //not sure if these can be combined (only keep whitelisted assets in chain.assets ? )
 const identifier = asset.denom ? asset.denom : asset.address
 $: supportedAsset = getSupportedAsset(chain, identifier)
-$: console.log(supportedAsset)
 </script>
 
 {#if supportedAsset}
