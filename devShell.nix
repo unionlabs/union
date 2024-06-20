@@ -29,6 +29,8 @@
 
               echo "Checking spelling"
               nix build .\#checks.${pkgs.system}.spellcheck -L
+
+              echo "Running biome lint"
               nix build .\#checks.${pkgs.system}.biome-lint -L
             '';
           };
