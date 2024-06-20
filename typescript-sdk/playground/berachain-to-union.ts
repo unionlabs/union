@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { erc20Abi, http } from "viem"
 import { parseArgs } from "node:util"
+import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
@@ -73,7 +74,7 @@ try {
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
-  console.info("Berachain to Union gas cost:", gasEstimationResponse)
+  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
 
   if (!gasEstimationResponse.success) {
     console.info("Transaction simulation failed")
