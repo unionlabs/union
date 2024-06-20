@@ -18,7 +18,7 @@ use unionlabs::{
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
     },
-    near::types::HeaderUpdate,
+    near::types::Header,
     validated::ValidateT,
 };
 use utils::convert_block_producers;
@@ -323,7 +323,7 @@ async fn update_client(
 
     let update = UpdateClient {
         client_id: client_id.to_string(),
-        client_msg: borsh::to_vec(&HeaderUpdate {
+        client_msg: borsh::to_vec(&Header {
             new_state: convert_light_client_block_view(light_client_block),
             trusted_height: latest_height.revision_height,
             prev_state_root_proof,

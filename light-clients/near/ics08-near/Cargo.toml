@@ -1,0 +1,37 @@
+[package]
+name = "ics08-near"
+authors = ["Union Labs"]
+version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytes                     = { workspace = true }
+cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
+dlmalloc                  = { workspace = true, features = ["global"] }
+hex                       = { workspace = true }
+prost                     = { workspace = true }
+protos                    = { workspace = true, features = ["proto_full", "std"] }
+ripemd                    = { workspace = true }
+schemars                  = { workspace = true }
+serde                     = { workspace = true, features = ["derive"] }
+serde-json-wasm           = { workspace = true }
+serde-utils               = { workspace = true }
+sha2                      = { workspace = true }
+sha3                      = { workspace = true }
+thiserror                 = { workspace = true }
+
+ics008-wasm-client = { workspace = true }
+unionlabs          = { workspace = true }
+
+[dev-dependencies]
+base64      = { workspace = true }
+lazy_static = "1.4.0"
+serde_json  = { workspace = true }

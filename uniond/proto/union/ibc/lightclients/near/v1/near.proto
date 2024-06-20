@@ -1,0 +1,55 @@
+syntax = "proto3";
+package union.ibc.lightclients.near.v1;
+
+option go_package = "union/ibc/lightclients/near";
+import "ibc/core/client/v1/client.proto";
+
+message Header {
+  LightClientBlockView new_state = 1;
+  int64 trusted_height = 2;
+  repeated MerklePathItem prev_state_root_proof = 3;
+  bytes prev_state_root= 4;
+}
+
+message MerklePathItem {
+  bytes hash = 1;
+  int64 direction = 2;
+}
+
+message LightClientBlockView {
+    bytes prev_block_hash = 1;
+    bytes next_block_inner_hash = 2;
+    BlockHeaderInnerLiteView inner_lite = 3;
+    bytes inner_rest_hash = 4;
+    repeated ValidatorStakeView next_bps = 5;
+    repeated Signature approvals_after_next = 6;
+}
+
+message Signature {
+  bytes ed25519 = 1;
+  bytes secp256k1 = 2;
+}
+
+message ValidatorStakeView {
+  string account_id = 1;
+  PublicKey public_key = 2;
+  // TODO(aeryz): u128
+  int64 balance = 3;
+}
+
+message PublicKey {
+  bytes ed25519 = 1;
+  bytes secp256k1 = 2;
+}
+
+message BlockHeaderInnerLiteView {
+  bytes height = 1;
+  bytes epoch_id = 2;
+  bytes next_epoch_id = 3;
+  bytes prev_state_root = 4;
+  bytes outcome_root = 5;
+  int64 timestamp = 6;
+  int64 timestamp_nanosec = 7;
+  bytes next_bp_hash = 8;
+  bytes block_merkle_root = 9;
+}

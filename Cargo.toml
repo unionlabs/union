@@ -70,11 +70,11 @@ members = [
   "unionvisor",
   "voyager",
   "near/near-ibc",
-  "near/near-light-client",
+  "light-clients/near/near-light-client",
   "near/dummy-ibc-app",
-  "near/near-ibc-tests",
 
   "drip",
+  "near/near-ibc-tests", "light-clients/near/ics08-near",
 ]
 
 [workspace.package]

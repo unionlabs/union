@@ -4698,6 +4698,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "ics08-near"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "bytes",
+ "cosmwasm-std 1.5.2",
+ "dlmalloc",
+ "hex",
+ "ics008-wasm-client",
+ "lazy_static",
+ "prost 0.12.6",
+ "protos",
+ "ripemd",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "ics23"
 version = "0.1.0"
 dependencies = [

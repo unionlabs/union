@@ -12,7 +12,7 @@ use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_path::MerklePath},
     id::ClientId,
     near::types::{
-        ApprovalInner, BlockHeaderInnerLite, BlockHeaderInnerLiteView, HeaderUpdate,
+        ApprovalInner, BlockHeaderInnerLite, BlockHeaderInnerLiteView, Header,
         LightClientBlockView, PublicKey, Signature, ValidatorStakeView,
     },
 };
@@ -138,7 +138,7 @@ impl Contract {
 
     // TODO(aeryz): client_msg can be Misbehaviour or Header
     pub fn verify_client_message(&self, client_msg: Vec<u8>) -> bool {
-        let header_update: HeaderUpdate = borsh::from_slice(&client_msg).unwrap();
+        let header_update: Header = borsh::from_slice(&client_msg).unwrap();
 
         let consensus_state = self
             .consensus_states
@@ -164,7 +164,7 @@ impl Contract {
     }
 
     pub fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {
-        let header_update: HeaderUpdate = borsh::from_slice(&client_msg).unwrap();
+        let header_update: Header = borsh::from_slice(&client_msg).unwrap();
         let new_consensus_state = ConsensusState {
             state: header_update.new_state.inner_lite.clone(),
             chunk_prev_state_root: header_update.prev_state_root,
