@@ -57,7 +57,8 @@ const onExpand: Resizable.PaneProps["onExpand"] = () => {
 }
 
 let explorerRoute = $page.route.id?.split("/").at(2) ?? null
-$: explorerPageDescription = data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null
+$: explorerPageDescription =
+  data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null
 
 onNavigate(navigation => {
   if (navigation.to?.route.id?.split("/").at(1) === "explorer") {
