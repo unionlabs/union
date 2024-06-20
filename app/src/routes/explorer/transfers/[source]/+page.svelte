@@ -39,6 +39,8 @@ let processedTransfers = derived(transfers, $transfers => {
 
       tx.destination_chain = tx.hop.destination_chain
       tx.destination_chain_id = tx.hop.destination_chain_id
+      tx.destination_connection_id = tx.hop.destination_connection_id
+      tx.destination_channel_id = tx.hop.destination_channel_id
       tx.receiver = tx.hop.receiver
       tx.normalized_receiver = tx.hop.normalized_receiver
       tx.traces.push.apply(tx.traces, tx.hop.traces)

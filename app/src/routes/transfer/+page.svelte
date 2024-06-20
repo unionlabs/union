@@ -11,6 +11,7 @@ import NotConnected from "$lib/components/not-connected.svelte"
   <title>Union | Send</title>
 </svelte:head>
 
+<div class="flex flex-col items-center w-full">
 <ChainsGate let:chains>
   <WalletGate>
     <div slot="connected" let:userAddr>
@@ -21,3 +22,4 @@ import NotConnected from "$lib/components/not-connected.svelte"
     </div>
   </WalletGate>
 </ChainsGate>
+</div>

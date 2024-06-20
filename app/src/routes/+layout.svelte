@@ -72,7 +72,7 @@ onMount(() => {
   <Toaster position="bottom-right" />
 
   <Header />
-  <div class="flex-1 overflow-y-auto bg-background">
+  <div class="flex flex-1 overflow-y-auto bg-background">
   <slot />
   </div>
   <Footer />
