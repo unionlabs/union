@@ -6,10 +6,10 @@ import { findAsset } from "$lib/utilities/helpers.ts"
 export let asset: any
 export let chain: Chain
 export let displayDecimals = 2
-export let toolTip = false
-export let symbol = false
+export let showToolTip = false
+export let showSymbol = false
 
-const format = (balance: string | bigint, decimals: number, abbreviate: boolean): string => {
+const formatBalance = (balance: bigint, decimals: number, abbreviate = false): string => {
   if (!balance || Number.isNaN(Number(balance))) return "0.00"
   const num = BigInt(balance)
   const divisor = BigInt(10 ** decimals)
@@ -22,10 +22,12 @@ const format = (balance: string | bigint, decimals: number, abbreviate: boolean)
     baseFormattedNumber += `.${fractionalPart}`
   }
 
-  return abbreviate ? abbreviateNumber(Number.parseFloat(baseFormattedNumber)) : baseFormattedNumber
+  return abbreviate
+    ? abbreviateNumber(Number.parseFloat(baseFormattedNumber), displayDecimals)
+    : baseFormattedNumber
 }
 
-const abbreviateNumber = (num: number): string => {
+const abbreviateNumber = (num: number, displayDecimals: number): string => {
   if (num >= 1e12) return `${(num / 1e12).toFixed(displayDecimals)}T`
   if (num >= 1e9) return `${(num / 1e9).toFixed(displayDecimals)}B`
   if (num >= 1e6) return `${(num / 1e6).toFixed(displayDecimals)}M`
@@ -33,24 +35,25 @@ const abbreviateNumber = (num: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-$: console.log(chain, asset)
-$: info = findAsset(chain, asset.denom)
-$: formatted = format(asset.balance, info ? info.decimals : asset.decimals, true)
-$: precise = format(asset.balance, info ? info.decimals : asset.decimals, false)
+$: assetOnChain = findAsset(chain, asset.denom)
+$: decimals = assetOnChain ? assetOnChain.decimals : asset.decimals
+$: symbol = assetOnChain ? assetOnChain.display_symbol : asset.symbol
+$: formatted = formatBalance(asset.balance, decimals, true)
+$: precise = formatBalance(asset.balance, decimals, false)
 </script>
 
 {#key formatted}
-  {#if toolTip}
+  {#if showToolTip}
     <Tooltip.Root>
       <Tooltip.Trigger>
         <span class="cursor-crosshair">
-          {formatted} {symbol ? info ? info.display_symbol : asset.symbol : ''}</span>
+          {formatted} {showSymbol ? symbol : ''}</span>
       </Tooltip.Trigger>
       <Tooltip.Content>
         <p>{precise}</p>
       </Tooltip.Content>
     </Tooltip.Root>
   {:else}
-    <span>{formatted} {symbol ? info ? info.display_symbol : asset.symbol : ''}</span>
+    <span>{formatted} {showSymbol ? symbol : ''}</span>
   {/if}
 {/key}
