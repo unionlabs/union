@@ -91,7 +91,7 @@ let processedTransfers = derived(transfers, $transfers => {
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col divide-y max-w-8xl  justify-self-center">
+  <Card.Root class="flex flex-col  justify-self-center">
     <Card.Header class="font-bold text-md text-center text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
