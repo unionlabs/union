@@ -77,12 +77,12 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
 
 <!-- mobile layout !-->
 <div class="flex flex-row divide-x overflow-x-none max-w-full w-full">
-  <nav class={cn("bg-muted h-full overflow-y-auto", explorerRoute === null ? "" : "")}>
+  <nav class={cn("bg-muted h-full overflow-y-auto", explorerRoute === null ? "flex-1" : "hidden sm:block")}>
     <Menu tableRoutes={data.tables} isCollapsed={false} />
   </nav>
-  <main class="overflow-auto flex-1 w-full">
+  <main class={cn("overflow-auto flex-1 w-full", explorerRoute === null ? "hidden sm:block" : "")}>
     <a
-      class="font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot"
+      class="sm:hidden font-bold font- text-lg p-4 flex flex-row gap-2 items-center font-supermolot"
       href={$page.route.id?.split('/').slice(0, -1).join('/')}
     >
       <ArrowLeftIcon />
