@@ -18,7 +18,7 @@ export async function evmGasBalance({
   const chain = config.chains.find(chain => String(chain.id) === chainId)
   if (!chain) raise(`chain with id ${chainId} not found`)
   const viemClient = getPublicClient(config, {
-    chainId: chain.id 
+    chainId: chain.id
   })
   const balance = await viemClient.getBalance({ address: validAddress })
   return { gasToken: true, ...chain.nativeCurrency, chainId, balance }
