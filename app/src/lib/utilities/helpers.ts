@@ -1,8 +1,8 @@
 import type { Chain } from "$lib/types.ts"
 
-export const getSupportedAsset = (chain: Chain, denom: any) => {
+export const getSupportedAsset = (chain: Chain, identifier: string) => {
   for (const supportedAsset of chain.assets) {
-    if (supportedAsset.denom === denom) {
+    if (supportedAsset.denom === identifier) {
       if (checkWhitelisted()) return supportedAsset
     }
   }

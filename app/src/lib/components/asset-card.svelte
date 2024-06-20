@@ -6,13 +6,14 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
 //Create correct type here
-export let asset: { symbol: string; balance: string | bigint; denom: string }
+export let asset: { symbol: string; balance: string | bigint; denom: string; address: string }
 export let chain: Chain
-const { balance } = asset
 
 //Finds the asset in chains.assets and checks if whitelisted,
 //not sure if these can be combined (only keep whitelisted assets in chain.assets ? )
-$: supportedAsset = getSupportedAsset(chain, asset.denom)
+const identifier = asset.denom ? asset.denom : asset.address
+$: supportedAsset = getSupportedAsset(chain, identifier)
+$: console.log(supportedAsset)
 </script>
 
 {#if supportedAsset}
