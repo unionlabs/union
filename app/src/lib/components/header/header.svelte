@@ -28,14 +28,14 @@ import { routes } from "$lib/components/navigation/index.ts"
   <nav class="hidden md:flex items-center justify-end space-x-0 sm:space-x-2 w-full">
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
       <Button
-        size="sm"
+        size="default"
         href={path}
         variant="link"
         class={cn(
           draft
             ? 'hidden'
             : [
-                'py-2 px-4 text-md no-underline font-supermolot font-bold decoration-transparent hover:outline-zinc-400/30 dark:hover:bg-zinc-800/70 uppercase',
+                '',
                 $page.route.id?.split('/')[1] === path.split('/')[1] &&
                   'bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground',
               ],
