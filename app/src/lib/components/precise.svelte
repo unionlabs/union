@@ -1,10 +1,10 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
-import type { Chain } from "$lib/types.ts"
-import { findAsset } from "$lib/utilities/helpers.ts"
 
-export let asset: any
-export let chain: Chain
+//Takes supportedAsset info and a balance to construct formatted balance
+
+export let balance: string | bigint
+export let supportedAsset: any
 export let displayDecimals = 2
 export let showToolTip = false
 export let showSymbol = false
@@ -35,11 +35,10 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-$: assetOnChain = findAsset(chain, asset.denom)
-$: decimals = assetOnChain ? assetOnChain.decimals : asset.decimals
-$: symbol = assetOnChain ? assetOnChain.display_symbol : asset.symbol
-$: formatted = formatBalance(asset.balance, decimals, true)
-$: precise = formatBalance(asset.balance, decimals, false)
+$: decimals = supportedAsset.decimals
+$: symbol = supportedAsset.display_symbol
+$: formatted = formatBalance(balance, decimals, true)
+$: precise = formatBalance(balance, decimals, false)
 </script>
 
 {#key formatted}
