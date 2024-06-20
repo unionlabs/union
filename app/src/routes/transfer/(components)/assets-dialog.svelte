@@ -1,59 +1,66 @@
 <script lang="ts">
-import * as Tooltip from "$lib/components/ui/tooltip"
+import { formatUnits } from "viem"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { truncate } from "$lib/utilities/format"
+import * as Dialog from "$lib/components/ui/dialog"
+import { Button } from "$lib/components/ui/button/index.js"
 
-// Takes supportedAsset info from chain and an asset to construct formatted balance
-export let asset: any
-export let supportedAsset: any
-export let displayDecimals = 2
-export let showToolTip = false
-export let showSymbol = false
+/**
+ * TODO: format the balance to a readable format - in order to do that properly, need:
+ *  - the balance,
+ *  - the decimals,
+ *  - whether it's evm or cosmos:
+ *    - if evm then `Number(formatUnits(balance, decimals)).toFixed(2)`, - the 2 can be a 4 if you want more precision
+ *    - if cosmos then: TBD
+ */
 
-const formatBalance = (balance: any, decimals: number, abbreviate = false): string => {
-  if (balance === undefined || balance === null || Number.isNaN(Number(balance))) return "0.00"
+export let dialogOpen = false
+export let assets: Array<{
+  address: string
+  balance: bigint
+  decimals: number
+  symbol: string
+}>
 
-  const num = BigInt(balance)
-  const divisor = BigInt(10 ** decimals)
-  const rawNumber = num / divisor
-  const remainder = num % divisor
-
-  let baseFormattedNumber = rawNumber.toString()
-  if (remainder !== BigInt(0)) {
-    const fractionalPart = remainder.toString().padStart(decimals, "0").slice(0, decimals)
-    baseFormattedNumber += `.${fractionalPart}`
-  }
-
-  return abbreviate
-    ? abbreviateNumber(Number.parseFloat(baseFormattedNumber), displayDecimals)
-    : baseFormattedNumber
-}
-
-const abbreviateNumber = (num: number, displayDecimals: number): string => {
-  if (num >= 1e12) return `${(num / 1e12).toFixed(displayDecimals)}T`
-  if (num >= 1e9) return `${(num / 1e9).toFixed(displayDecimals)}B`
-  if (num >= 1e6) return `${(num / 1e6).toFixed(displayDecimals)}M`
-  if (num >= 1e3) return `${(num / 1e3).toFixed(displayDecimals)}K`
-  return num.toFixed(displayDecimals)
-}
-$: balance = asset ? asset.balance : BigInt(0)
-$: decimals = supportedAsset ? supportedAsset.decimals : 0
-$: symbol = supportedAsset ? supportedAsset.display_symbol : ""
-$: formatted = formatBalance(balance, decimals, true)
-$: precise = formatBalance(balance, decimals, false)
+export let onAssetSelect: (asset: string) => void
 </script>
 
-{#key formatted}
-  {#if showToolTip}
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <span class="cursor-crosshair">
-          {formatted} {showSymbol ? symbol : ''}</span>
-      </Tooltip.Trigger>
-      <Tooltip.Content>
-        <p>{precise}</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
-  {:else}
-    <span>{formatted} {showSymbol ? symbol : ''}</span>
-  {/if}
-{/key}
-
+<Dialog.Root
+  closeOnEscape={true}
+  preventScroll={true}
+  bind:open={dialogOpen}
+  closeOnOutsideClick={true}
+>
+  <Dialog.Content
+    class="max-w-[90%] sm:max-w-[450px]  overflow-auto px-0 pt-4 pb-2 flex flex-col items-start"
+  >
+    <Dialog.Header class="max-h-min h-8 p-2">
+      <Dialog.Title class="px-2">Select Asset</Dialog.Title>
+    </Dialog.Header>
+    <Dialog.Description class="size-full">
+      <ul class="">
+        {#each assets as { address, symbol, decimals, balance }, index}
+          <li
+            class={cn(
+              'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
+            )}
+          >
+            <Button
+              variant="ghost"
+              class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
+              on:click={() => {
+                onAssetSelect(symbol)
+                dialogOpen = false
+              }}
+            >
+              <div class="size-full flex flex-col items-start">
+                {truncate(symbol, 12)}
+              </div>
+              <p class="mb-auto text-lg font-black">{balance}</p>
+            </Button>
+          </li>
+        {/each}
+      </ul>
+    </Dialog.Description>
+  </Dialog.Content>
+</Dialog.Root>

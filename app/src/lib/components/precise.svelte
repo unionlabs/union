@@ -9,8 +9,8 @@ export let displayDecimals = 2
 export let showToolTip = false
 export let showSymbol = false
 
-const formatBalance = (balance: bigint, decimals: number, abbreviate = false): string => {
-  if (!balance || Number.isNaN(Number(balance))) return "0.00"
+const formatBalance = (balance: any, decimals: number, abbreviate = false): string => {
+  if (balance === undefined || balance === null || Number.isNaN(Number(balance))) return "0.00"
   const num = BigInt(balance)
   const divisor = BigInt(10 ** decimals)
   const rawNumber = num / divisor
