@@ -84,6 +84,7 @@ let processedTransfers = derived(transfers, $transfers => {
 {#if $transfers.isLoading}
   <LoadingLogo class="size-16"/>
 {:else if $transfers.isSuccess && $processedTransfers !== null}
+<div class="max-h-auto min-w-full flex flex-col items-center">
   {#each $processedTransfers as transfer}
 
     <!--
@@ -164,5 +165,6 @@ let processedTransfers = derived(transfers, $transfers => {
     </Card.Footer>
   </Card.Root>
   {/each}
+</div>
 {/if}
 

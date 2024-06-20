@@ -84,7 +84,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
     </h2>
     <Menu tableRoutes={data.tables} isCollapsed={false} />
   </nav>
-  <main class={cn("overflow-auto flex-1 w-full", explorerRoute === null ? "hidden sm:block" : "")}>
+  <main class={cn("overflow-auto flex flex-col flex-1 w-full", explorerRoute === null ? "hidden sm:block" : "")}>
     <a
       class={cn(" font-bold  text-lg p-4 flex flex-row gap-2 items-center font-supermolot", 
       
@@ -96,7 +96,7 @@ $: mainExplorerPage = $page.route.id?.split("/").length <= 3
       <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
     </a>
 
-    <div class="p-2 pt-0 sm:p-6 flex flex-col min-h-full">
+    <div class="p-2 pt-0 sm:p-6 flex flex-col flex-1">
       <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
         <h2 class="text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot">
           {explorerRoute?.replaceAll('-', ' ')}
