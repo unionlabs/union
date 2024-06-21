@@ -83,7 +83,7 @@ let collapsibleOpen = true
       chainWalletsInformation={cosmosWalletsInformation}
       connectedWalletId={$cosmosStore.connectedWallet}
     />
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center space-x-2 mt-auto">
       <Switch id="unsupported-assets" bind:checked={$showUnsupported}/>
       <Label for="unsupported-assets">Show unsupported assets</Label>
     </div>
