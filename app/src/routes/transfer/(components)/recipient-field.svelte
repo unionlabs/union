@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Writable } from "svelte/store"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { sepoliaStore } from "$lib/wallet/evm"
+import { evmStore } from "$lib/wallet/evm"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import LockLockedIcon from "virtual:icons/lucide/lock"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
@@ -14,7 +14,7 @@ let recipientInputState: "locked" | "unlocked" | "invalid" = "unlocked"
 
 const recipientAddressByChainId = (chainId?: string | null) => {
   if (!chainId) return ""
-  if (chainId === "11155111") return $sepoliaStore.address
+  if (chainId === "11155111") return $evmStore.address
   return $cosmosStore.rawAddress
 }
 

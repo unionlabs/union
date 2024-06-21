@@ -1,6 +1,6 @@
 export {
   evmConnect,
-  sepoliaStore,
+  evmStore,
   type EvmWalletId,
   type EvmWalletName,
   evmWalletsInformation

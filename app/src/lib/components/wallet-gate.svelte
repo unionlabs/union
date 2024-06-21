@@ -1,21 +1,21 @@
 <script lang="ts">
 import { rawToHex } from "$lib/utilities/address"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { sepoliaStore } from "$lib/wallet/evm"
+import { evmStore } from "$lib/wallet/evm"
 import { derived, type Readable } from "svelte/store"
 import type { UserAddresses } from "$lib/types"
 import type { Address } from "viem"
 
 let userAddr: Readable<UserAddresses | null> = derived(
-  [cosmosStore, sepoliaStore],
-  ([$cosmosStore, $sepoliaStore]) => {
-    if (!($cosmosStore?.rawAddress && $cosmosStore?.address && $sepoliaStore?.address)) return null
+  [cosmosStore, evmStore],
+  ([$cosmosStore, $evmStore]) => {
+    if (!($cosmosStore?.rawAddress && $cosmosStore?.address && $evmStore?.address)) return null
 
     // sometimes rawAddress is truthy but does not yield a raw hex addr
     const cosmos_normalized = rawToHex($cosmosStore.rawAddress)
     if (!cosmos_normalized) return null
 
-    const evm_normalized = $sepoliaStore.address.slice(2).toLowerCase()
+    const evm_normalized = $evmStore.address.slice(2).toLowerCase()
 
     return {
       cosmos: {
@@ -25,7 +25,7 @@ let userAddr: Readable<UserAddresses | null> = derived(
         normalized_prefixed: `0x${cosmos_normalized}` as Address
       },
       evm: {
-        canonical: $sepoliaStore.address,
+        canonical: $evmStore.address,
         normalized: evm_normalized,
         normalized_prefixed: `0x${evm_normalized}` as Address
       }
@@ -61,6 +61,3 @@ let confirmedUserAddr: Readable<UserAddresses> = derived(userAddr, $userAddr => 
     <span>Connect your wallets to continue</span>
   </slot>
 {/if}
-
-
-

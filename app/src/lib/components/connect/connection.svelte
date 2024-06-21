@@ -41,6 +41,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   tabindex={0}
   {...$$restProps}
   id={`${chain}-connect`}
+  data-button-wallet-address
   on:click={_event => onCopyClick()}
   variant={connectStatus === 'connected' ? 'default' : 'ghost'}
   builders={[{ action: node => copyTextAction(node, { text: address }) }]}
@@ -53,12 +54,10 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   <div
     class={cn(
       'w-full text-left font-mono',
-      connectText === 'EVM' || connectText === 'Cosmos'
-        ? 'hidden'
-        : 'text-sm sm:text-[15.5px]',
+      connectText === 'EVM' || connectText === 'Cosmos' ? 'hidden' : 'text-sm sm:text-[15.5px]',
     )}
   >
-    {connectText}
+    <span class="wallet-address">{connectText}</span>
   </div>
   {#if connectStatus === 'connected' && address?.length}
     {#if copyClicked}
@@ -91,7 +90,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
           'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
           connectStatus === 'connected' && connectedWalletId === id && 'border-border',
           (connectStatus === 'disconnected' || connectStatus == undefined) &&
-            'opacity-60 hover:opacity-100',
+            'opacity-75 hover:opacity-100',
           hoverState === 'hover' &&
             connectedWalletId === id &&
             'hover:text-destructive border-destructive hover:bg-transparent',
@@ -123,3 +122,9 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
     </div>
   {/each}
 </div>
+
+<style lang="postcss">
+  :global(button[data-button-wallet-address]) {
+    text-transform: unset;
+  }
+</style>
