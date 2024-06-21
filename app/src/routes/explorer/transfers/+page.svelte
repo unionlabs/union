@@ -16,6 +16,7 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 
 let transfers = createQuery({
   queryKey: ["transfers"],
+  placeholderData: (previousData, _) => previousData,
   refetchInterval: 3_000,
   queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
 })

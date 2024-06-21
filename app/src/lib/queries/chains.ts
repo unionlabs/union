@@ -7,6 +7,7 @@ import { URLS } from "$lib/constants"
 export const chainsQuery = () =>
   createQuery({
     queryKey: ["chains"],
+    placeholderData: (previousData, _) => previousData,
     queryFn: async () => (await request(URLS.GRAPHQL, chainsQueryDocument, {})).v0_chains,
     enabled: true,
     refetchInterval: 6_000,

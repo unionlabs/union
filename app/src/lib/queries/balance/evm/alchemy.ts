@@ -1,7 +1,6 @@
 import * as v from "valibot"
 import type { Address } from "viem"
 import { raise } from "$lib/utilities"
-import { getEvmTokensInfo } from "$lib/queries/token-info"
 
 const alchemyTokenBalancesSchema = v.object({
   jsonrpc: v.string(),
@@ -48,13 +47,11 @@ export async function getBalancesFromAlchemy({
 
   if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
 
-  const tokensInfo = await getEvmTokensInfo(
-    result.output.result.tokenBalances.map(({ contractAddress }) => contractAddress)
-  )
-  return tokensInfo.map((token, index) => ({
-    ...token,
-    gasToken: false,
-    balance: BigInt(result.output.result.tokenBalances[index].tokenBalance),
-    address: token.address as Address
+  return result.output.result.tokenBalances.map(token => ({
+    name: token.contractAddress,
+    symbol: token.contractAddress,
+    address: token.contractAddress as Address,
+    balance: token.tokenBalance,
+    gasToken: false
   }))
 }
