@@ -7,8 +7,12 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
+
+/**
+ * WIP
+ */
 
 /* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
 
@@ -32,15 +36,9 @@ const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
 try {
-  /**
-   * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
-   */
   const {
     data: [sepoliaInfo]
-  } = await offchainQuery.chain({
-    chainId: "11155111",
-    includeContracts: true
-  })
+  } = await offchainQuery.chains({ includeContracts: true })
   if (!sepoliaInfo) raise("Sepolia info not found")
 
   const ucsConfiguration = sepoliaInfo.ucs1_configurations

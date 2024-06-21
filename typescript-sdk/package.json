@@ -40,7 +40,7 @@
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.12.4",
     "patch-package": "^8.0.0",
-    "tsx": "^4.15.6",
+    "tsx": "^4.15.7",
     "typescript": "^5.5.2",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^1.6.0"

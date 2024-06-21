@@ -60,6 +60,24 @@ export interface Rpc {
   type: "rpc" | "rest" | "grpc"
 }
 
+interface Asset {
+  denom: string
+  decimals: number
+  gas_token: boolean
+  display_symbol: string
+  display_name: string | null
+}
+
+interface Forward {
+  port: string
+  channel_id: string
+  connection_id: string
+  contract_address: string
+  destination_chain: {
+    chain_id: string
+  }
+}
+
 export interface Ucs1Configuration {
   channel_id: string
   connection_id: string
@@ -84,13 +102,7 @@ export interface Ucs1Configuration {
     display_name: string
     logo_uri: string | null
   }
-  forward: {
-    port: string
-    channel_id: string
-    destination_chain: {
-      chain_id: string
-    }
-  }
+  forward: Array<Forward>
 }
 
 export interface Chain<
@@ -98,9 +110,11 @@ export interface Chain<
   IncludeContracts extends boolean | undefined = undefined
 > {
   id: number
+  testnet: boolean
   chain_id: string
   enabled: boolean
   addr_prefix: string
+  assets: Array<Asset>
   display_name: string
   logo_uri: string | null
   rpc_type: "evm" | "cosmos"
