@@ -3,6 +3,7 @@ import type { Chain, UserAddresses } from "$lib/types"
 import { userBalancesQuery } from "$lib/queries/balance"
 import AssetCard from "$lib/components/asset-card.svelte"
 import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
+import LoadingLogo from "./loading-logo.svelte"
 
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
@@ -21,11 +22,7 @@ let userBalances = userBalancesQuery({
         {userAddr.evm.canonical}
       </div>
     </div>
-    {#if balance.isLoading}
-      <p class="text-muted-foreground">Loading...</p>
-    {:else if balance.isError}
-      <p class="text-red-500">{balance.error}</p>
-    {:else if balance.isSuccess}
+    {#if !!balance.data}
       <ScrollArea orientation="horizontal">
         <div class="flex gap-4 px-3 sm:px-6 overflow-x-scroll">
           {#if !(balance.data instanceof Error)}
@@ -35,6 +32,12 @@ let userBalances = userBalancesQuery({
           {/if}
         </div>
       </ScrollArea>
+    {:else if balance.isLoading}
+      <div class="h-[192px] flex items-center">
+        <LoadingLogo/>
+      </div>
+    {:else if balance.isError}
+      <p class="text-red-500">{balance.error}</p>
     {/if}
   </div>
 {/each}

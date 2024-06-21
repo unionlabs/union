@@ -30,7 +30,7 @@ let transfers = createQuery({
     ).v0_transfers
 })
 let processedTransfers = derived(transfers, $transfers => {
-  if (!$transfers.isSuccess) {
+  if (!$transfers.data) {
     return null
   }
   return $transfers.data.map(transfer => {
@@ -99,7 +99,7 @@ let tracesAndHops = createQuery({
 })
 
 let processedTraces = derived(tracesAndHops, $tracesAndHops => {
-  if (!$tracesAndHops.isSuccess) {
+  if (!$tracesAndHops.data) {
     return null
   }
   return $tracesAndHops.data.map(tx => {

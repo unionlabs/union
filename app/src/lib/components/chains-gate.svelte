@@ -74,10 +74,10 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 })
 </script>
 
-{#if $chains.isLoading}
+{#if !!$chains.data}
+  <slot chains={$checkedChains}/>
+{:else if $chains.isLoading}
   <LoadingLogo class="size-16"/>
 {:else if $chains.isError}
   Error loading chains.
-{:else if $chains.isSuccess}
-  <slot chains={$checkedChains}/>
 {/if}

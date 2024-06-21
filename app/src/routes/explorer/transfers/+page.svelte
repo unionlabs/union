@@ -93,11 +93,13 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-{#if $transfers.isLoading}
-  <LoadingLogo class="size-16"/>
-{:else if $transfers.isSuccess}
+{#if !!$transfers.data}
   <Table bind:dataStore={transfersData} {columns} onClick={(x) => {
     // @ts-ignore
     goto(`/explorer/transfers/${x.source_transaction_hash}`)}
   }/>
+{:else if $transfers.isLoading}
+  <LoadingLogo class="size-16"/>
+{:else if $transfers.isError}
+  Error fetching transfers...
 {/if}
