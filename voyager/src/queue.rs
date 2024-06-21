@@ -4,6 +4,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     error::Error,
     fmt::{Debug, Display},
+    net::SocketAddr,
     sync::Arc,
     time::Duration,
 };
@@ -32,7 +33,10 @@ use tracing::{debug, error, info, trace};
 use unionlabs::traits::{Chain, FromStrExact};
 use voyager_message::VoyagerMessage;
 
-use crate::config::{ChainConfig, Config};
+use crate::{
+    config::{ChainConfig, Config},
+    signer_balances,
+};
 
 type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
@@ -40,6 +44,7 @@ type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 pub struct Voyager {
     pub chains: Arc<Chains>,
     num_workers: u16,
+    pub laddr: SocketAddr,
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
 }
@@ -263,6 +268,7 @@ impl Voyager {
         Ok(Self {
             chains: Arc::new(chains),
             num_workers: config.voyager.num_workers,
+            laddr: config.voyager.laddr,
             queue,
         })
     }
@@ -279,6 +285,13 @@ impl Voyager {
             .route("/msg", post(msg))
             .route("/msgs", post(msgs))
             .route("/health", get(|| async move { StatusCode::OK }))
+            .route(
+                "/signer/balances",
+                get({
+                    let chains = self.chains.clone();
+                    || async move { Json(signer_balances(&chains).await) }
+                }),
+            )
             .with_state(queue_tx.clone());
 
         // #[axum::debug_handler]
@@ -286,7 +299,6 @@ impl Voyager {
             State(mut sender): State<UnboundedSender<Op<T>>>,
             Json(msg): Json<Op<T>>,
         ) -> StatusCode {
-            info!(?msg, "received msg");
             sender.send(msg).await.expect("receiver should not close");
 
             StatusCode::OK
@@ -297,7 +309,6 @@ impl Voyager {
             State(mut sender): State<UnboundedSender<Op<T>>>,
             Json(msgs): Json<Vec<Op<T>>>,
         ) -> StatusCode {
-            info!(?msgs, "received msgs");
             for msg in msgs {
                 sender.send(msg).await.expect("receiver should not close");
             }
@@ -305,11 +316,7 @@ impl Voyager {
             StatusCode::OK
         }
 
-        tokio::spawn(
-            // TODO: Make this configurable
-            axum::Server::bind(&"0.0.0.0:65534".parse().expect("valid SocketAddr; qed;"))
-                .serve(app.into_make_service()),
-        );
+        tokio::spawn(axum::Server::bind(&self.laddr).serve(app.into_make_service()));
 
         let mut join_set = JoinSet::<Result<(), BoxDynError>>::new();
 

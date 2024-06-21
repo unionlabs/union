@@ -196,17 +196,60 @@ pub enum AnyChain {
     Berachain(Berachain),
 }
 
+impl AnyChain {
+    pub fn downcast<T: TryFrom<Self, Error = Self> + Chain>(
+        self,
+    ) -> Result<T, IncorrectChainTypeError> {
+        self.try_into().map_err(|c| {
+            any_chain!(|c| IncorrectChainTypeError {
+                found_chain_name: c.chain_id().to_string(),
+                found_chain_type: <Hc as Chain>::ChainType::EXPECTING,
+                expected_chain_type: T::ChainType::EXPECTING
+            })
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("chain `{found_chain_name}` is of type `{found_chain_type}` but `{expected_chain_type}` was expected")]
+pub struct IncorrectChainTypeError {
+    pub found_chain_name: String,
+    pub found_chain_type: &'static str,
+    pub expected_chain_type: &'static str,
+}
+
 #[macro_export]
 macro_rules! any_chain {
     (|$c:ident| $expr:expr) => {
         match $c {
-            AnyChain::Union($c) => $expr,
-            AnyChain::Cosmos($c) => $expr,
-            AnyChain::EthereumMainnet($c) => $expr,
-            AnyChain::EthereumMinimal($c) => $expr,
-            AnyChain::Scroll($c) => $expr,
-            AnyChain::Arbitrum($c) => $expr,
-            AnyChain::Berachain($c) => $expr,
+            AnyChain::Union($c) => {
+                type Hc = $crate::union::Union;
+                $expr
+            }
+            AnyChain::Cosmos($c) => {
+                type Hc = $crate::cosmos::Cosmos;
+                $expr
+            }
+            AnyChain::EthereumMainnet($c) => {
+                type Hc = $crate::ethereum::Ethereum<Mainnet>;
+                $expr
+            }
+            AnyChain::EthereumMinimal($c) => {
+                type Hc = $crate::ethereum::Ethereum<Minimal>;
+                $expr
+            }
+            AnyChain::Scroll($c) => {
+                type Hc = $crate::scroll::Scroll;
+                $expr
+            }
+            AnyChain::Arbitrum($c) => {
+                type Hc = $crate::arbitrum::Arbitrum;
+                $expr
+            }
+            AnyChain::Berachain($c) => {
+                type Hc = $crate::berachain::Berachain;
+                $expr
+            }
         }
     };
 }
