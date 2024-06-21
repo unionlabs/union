@@ -1,9 +1,17 @@
+import { toast } from "svelte-sonner"
 import { browser } from "$app/environment"
-import { MutationCache, QueryClient } from "@tanstack/svelte-query"
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/svelte-query"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 
 export function createQueryClient() {
   const queryClient: QueryClient = new QueryClient({
+    queryCache: new QueryCache({
+      onError: (error, query) => {
+        if (query.state.data !== undefined) {
+          toast.error(`tanstack query error: ${error.message}`)
+        }
+      }
+    }),
     defaultOptions: {
       queries: {
         enabled: browser,

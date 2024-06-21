@@ -1,3 +1,9 @@
+export type DeepNonNullable<T> = T extends object
+  ? {
+      [P in keyof T]: DeepNonNullable<NonNullable<T[P]>>
+    }
+  : NonNullable<T>
+
 export type LooseAutocomplete<T> = {
   [K in keyof T]: T[K]
 } & {

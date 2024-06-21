@@ -29,7 +29,6 @@ let processedTransfers = derived(transfers, $transfers => {
     return null
   }
   return $transfers.data.map(transfer => {
-    console.log(transfer)
     let tx = structuredClone(transfer)
 
     let hop_chain = null
