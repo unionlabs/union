@@ -1,73 +1,73 @@
 <script lang="ts">
-  import {
-    flexRender,
-    type FilterFn,
-    type ColumnDef,
-    getCoreRowModel,
-    type TableOptions,
-    createSvelteTable,
-    getFilteredRowModel,
-    getPaginationRowModel,
-  } from '@tanstack/svelte-table'
-  import { derived } from 'svelte/store'
-  import type { MaybePromise } from 'valibot'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import * as Table from '$lib/components/ui/table'
-  import { writable, type Readable } from 'svelte/store'
-  import * as Card from '$lib/components/ui/card/index.ts'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import { createVirtualizer } from '@tanstack/svelte-virtual'
-  import type { FormInputEvent } from '$lib/components/ui/input'
+import {
+  flexRender,
+  type FilterFn,
+  type ColumnDef,
+  getCoreRowModel,
+  type TableOptions,
+  createSvelteTable,
+  getFilteredRowModel,
+  getPaginationRowModel
+} from "@tanstack/svelte-table"
+import { derived } from "svelte/store"
+import type { MaybePromise } from "valibot"
+import { cn } from "$lib/utilities/shadcn.ts"
+import * as Table from "$lib/components/ui/table"
+import { writable, type Readable } from "svelte/store"
+import * as Card from "$lib/components/ui/card/index.ts"
+import Input from "$lib/components/ui/input/input.svelte"
+import { createVirtualizer } from "@tanstack/svelte-virtual"
+import type { FormInputEvent } from "$lib/components/ui/input"
 
-  type DataRow = $$Generic
+type DataRow = $$Generic
 
-  export let enableFiltering = false
-  export let tableName: string | undefined = undefined
-  export let globalFilter: string | undefined = undefined
-  export let fuzzyFilter: FilterFn<DataRow> | undefined = undefined
-  export let columns: Array<ColumnDef<DataRow>>
-  export let dataStore: Readable<Array<DataRow>>
-  export let onClick: undefined | ((row: DataRow) => MaybePromise<void>) = undefined
+export let enableFiltering = false
+export let tableName: string | undefined = undefined
+export let globalFilter: string | undefined = undefined
+export let fuzzyFilter: FilterFn<DataRow> | undefined = undefined
+export let columns: Array<ColumnDef<DataRow>>
+export let dataStore: Readable<Array<DataRow>>
+export let onClick: undefined | ((row: DataRow) => MaybePromise<void>) = undefined
 
-  const options = writable<TableOptions<DataRow>>({
-    columns,
-    data: $dataStore,
-    enableHiding: true,
-    enableFilters: true,
-    autoResetPageIndex: true,
-    enableColumnFilters: true,
-    enableColumnResizing: true,
-    enableMultiRowSelection: true,
-    enableGlobalFilter: !!globalFilter,
-    globalFilterFn: fuzzyFilter,
-    filterFns: fuzzyFilter ? { fuzzy: fuzzyFilter } : undefined,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  })
+const options = writable<TableOptions<DataRow>>({
+  columns,
+  data: $dataStore,
+  enableHiding: true,
+  enableFilters: true,
+  autoResetPageIndex: true,
+  enableColumnFilters: true,
+  enableColumnResizing: true,
+  enableMultiRowSelection: true,
+  enableGlobalFilter: !!globalFilter,
+  globalFilterFn: fuzzyFilter,
+  filterFns: fuzzyFilter ? { fuzzy: fuzzyFilter } : undefined,
+  getCoreRowModel: getCoreRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
+  getPaginationRowModel: getPaginationRowModel()
+})
 
-  let virtualListElement: HTMLDivElement
+let virtualListElement: HTMLDivElement
 
-  const table = createSvelteTable(options)
-  const rows = derived(table, $t => $t.getRowModel().rows)
+const table = createSvelteTable(options)
+const rows = derived(table, $t => $t.getRowModel().rows)
 
-  const handleKeyUp = (event: FormInputEvent<KeyboardEvent>) => {
-    // @ts-expect-error
-    $table.setGlobalFilter(String(event?.target['value']))
-  }
+const handleKeyUp = (event: FormInputEvent<KeyboardEvent>) => {
+  // @ts-expect-error
+  $table.setGlobalFilter(String(event?.target["value"]))
+}
 
-  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
-    overscan: 20,
-    count: $rows.length,
-    estimateSize: () => 34,
-    getScrollElement: () => virtualListElement,
-  })
+$: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+  overscan: 20,
+  count: $rows.length,
+  estimateSize: () => 34,
+  getScrollElement: () => virtualListElement
+})
 
-  $: dataStore.subscribe(() => {
-    if (!$dataStore) return
-    $table.setPageSize($dataStore.length)
-    options.update(options => ({ ...options, data: $dataStore as unknown as Array<DataRow> }))
-  })
+$: dataStore.subscribe(() => {
+  if (!$dataStore) return
+  $table.setPageSize($dataStore.length)
+  options.update(options => ({ ...options, data: $dataStore as unknown as Array<DataRow> }))
+})
 </script>
 
 {#if enableFiltering}
