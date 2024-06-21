@@ -185,8 +185,8 @@ const transfer = async () => {
     )
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
-  transferState.set("FLIPPING");
-  await sleep(1200);
+  transferState.set("FLIPPING")
+  await sleep(1200)
 
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url

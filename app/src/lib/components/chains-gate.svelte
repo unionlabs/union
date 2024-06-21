@@ -2,7 +2,7 @@
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
 import type { Chain } from "$lib/types"
-    import LoadingLogo from "./loading-logo.svelte";
+import LoadingLogo from "./loading-logo.svelte"
 
 let chains = chainsQuery()
 
