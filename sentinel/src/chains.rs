@@ -2,9 +2,10 @@ use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
 
 use bech32::FromBase32;
 use chain_utils::{
-    cosmos_sdk::CosmosSdkChainExt,
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChainExt},
     ethereum::{EthereumExecutionRpcs, EthereumExecutionRpcsExt, IBCHandlerEvents},
 };
+use chrono::Utc;
 use contracts::{
     erc20,
     ibc_packet::IBCPacketEvents,
@@ -120,7 +121,7 @@ pub trait IbcListen: Send + Sync {
             );
             return val == Ucs01Ack::Success;
         } else {
-            tracing::error!("Failed to decode Ucs01Ack");
+            tracing::warn!("Failed to decode ack_hex: {:?}", ack_hex);
             return false;
         }
     }
@@ -171,15 +172,15 @@ pub trait IbcListen: Send + Sync {
 
                 let sequence_entry = entry.entry(sequence).or_insert_with(|| {
                     let mut event_map = HashMap::new();
-                    event_map.insert(0, false);
-                    event_map.insert(1, false);
-                    event_map.insert(2, false);
-                    event_map.insert(3, false);
+                    event_map.insert(0, (false, None));
+                    event_map.insert(1, (false, None));
+                    event_map.insert(2, (false, None));
+                    event_map.insert(3, (false, None));
                     event_map
                 });
                 match ibc_event {
                     IbcEvent::SendPacket(_) => {
-                        sequence_entry.insert(0, true);
+                        sequence_entry.insert(0, (true, Some(Utc::now())));
                         tracing::info!(
                             "SendPacket event recorded for sequence {}. key: {}",
                             sequence,
@@ -187,7 +188,7 @@ pub trait IbcListen: Send + Sync {
                         );
                     }
                     IbcEvent::RecvPacket(_) => {
-                        if !sequence_entry.get(&0).unwrap_or(&false) {
+                        if !sequence_entry.get(&0).unwrap_or(&(false, None)).0 {
                             tracing::warn!(
                                 "RecvPacket event received without SendPacket for sequence {}. key: {}",
                                 sequence,
@@ -195,7 +196,7 @@ pub trait IbcListen: Send + Sync {
                             );
                             entry.remove(&sequence);
                         } else {
-                            sequence_entry.insert(1, true);
+                            sequence_entry.insert(1, (true, Some(Utc::now())));
                             tracing::info!(
                                 "RecvPacket event recorded for sequence {}. key: {}",
                                 sequence,
@@ -204,7 +205,7 @@ pub trait IbcListen: Send + Sync {
                         }
                     }
                     IbcEvent::WriteAcknowledgement(ref e) => {
-                        if !sequence_entry.get(&0).unwrap_or(&false) {
+                        if !sequence_entry.get(&0).unwrap_or(&(false, None)).0 {
                             tracing::warn!(
                                 "RecvPacket event received without SendPacket for sequence {}. key: {}",
                                 sequence,
@@ -215,7 +216,7 @@ pub trait IbcListen: Send + Sync {
                             if self
                                 .write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone())
                             {
-                                sequence_entry.insert(2, true);
+                                sequence_entry.insert(2, (true, Some(Utc::now())));
                                 tracing::info!(
                                     "WriteAcknowledgement event recorded for sequence {}. key: {}",
                                     sequence,
@@ -223,7 +224,7 @@ pub trait IbcListen: Send + Sync {
                                 );
                             } else {
                                 tracing::error!(
-                                    "WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}, key: {}",
+                                    "[SENTINEL ERROR] WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}, key: {}",
                                     sequence,
                                     e.packet_ack_hex.clone(),
                                     key
@@ -234,9 +235,9 @@ pub trait IbcListen: Send + Sync {
                         }
                     }
                     IbcEvent::AcknowledgePacket(_) => {
-                        if !sequence_entry.get(&0).unwrap_or(&false)
-                            || !sequence_entry.get(&1).unwrap_or(&false)
-                            || !sequence_entry.get(&2).unwrap_or(&false)
+                        if !sequence_entry.get(&0).unwrap_or(&(false, None)).0
+                            || !sequence_entry.get(&1).unwrap_or(&(false, None)).0
+                            || !sequence_entry.get(&2).unwrap_or(&(false, None)).0
                         {
                             tracing::warn!(
                                 "AcknowledgePacket event received out of order for sequence: {}. key: {}",
@@ -245,14 +246,14 @@ pub trait IbcListen: Send + Sync {
                             );
                             entry.remove(&sequence);
                         } else {
-                            sequence_entry.insert(3, true);
+                            sequence_entry.insert(3, (true, Some(Utc::now())));
                             tracing::info!(
                                 "AcknowledgePacket event recorded for sequence {}. key: {}",
                                 sequence,
                                 key
                             );
 
-                            if sequence_entry.values().all(|&v| v) {
+                            if sequence_entry.values().all(|&(v, _)| v) {
                                 tracing::info!(
                                     "All events completed for sequence {}: {:?}",
                                     sequence,
@@ -565,9 +566,10 @@ impl IbcTransfer for Ethereum {
                 .send()
                 .await;
             tracing::info!("We can not transfer after approve, returning now.");
-            return;
+            // return;
         }
 
+        let mut debug_msg;
         match protocol {
             Protocol::Ucs01 {
                 receivers,
@@ -590,8 +592,8 @@ impl IbcTransfer for Ethereum {
                     final_receiver = bytes.into();
                 }
 
-                tracing::info!(
-                    "[Ethereum] -> Sending IBC transfer. memo: {}. Sending denom: {}. To: {}. Amount: {}, contract: {}",
+                debug_msg = format!(
+                    "[Ethereum] -> Sent IBC transfer. memo: {}. Sending denom: {}. To: {}. Amount: {}, contract: {}",
                     memo,
                     denom,
                     final_receiver,
@@ -625,15 +627,27 @@ impl IbcTransfer for Ethereum {
                             return;
                         }
                     },
+                    Err(ethers::contract::ContractError::MiddlewareError { e }) => {
+                        if e.to_string().contains("replacement transaction underprice") {
+                            tracing::warn!("Replacement transaction underprice.");
+                        } else {
+                            tracing::error!(
+                                "Failed to send transaction eth->union: {:?}",
+                                e.to_string()
+                            );
+                        }
+                        return;
+                    }
                     Err(e) => {
                         tracing::error!("Failed to send transaction eth->union: {:?}", e);
                         return;
                     }
                 };
-                tracing::info!(
-                    "Transaction sent successfully from ETHEREUM. Tx Hash: {:?}",
+                debug_msg.push_str(&format!(
+                    " Tx Hash: {:?}",
                     _tx_rcp.unwrap().transaction_hash
-                );
+                ));
+                tracing::info!(debug_msg);
             }
             Protocol::Ics20 {
                 receivers: _,
@@ -725,6 +739,7 @@ impl IbcTransfer for Cosmos {
         memo: String,
     ) {
         self.chain.signers.with(|signer| async move {
+            let mut debug_msg;
             let transfer_msg = match protocol {
                 Protocol::Ics20 { receivers, module } => {
                     let mut rng = StdRng::from_entropy();
@@ -748,8 +763,8 @@ impl IbcTransfer for Cosmos {
                         memo: memo.clone(),
                     };
 
-                    tracing::info!(
-                        "[Cosmos Ics20] -> Sending IBC transfer from: {}. memo: {}. Sending denom: {}. To: {}. Amount: {}, module: {:?}",
+                    debug_msg = format!(
+                        "[Cosmos Ics20] -> SENT IBC transfer from: {}. memo: {}. denom: {}. To: {}. Amount: {}, module: {:?}",
                         signer.to_string(),
                         memo,
                         denom,
@@ -802,8 +817,8 @@ impl IbcTransfer for Cosmos {
 
                     let transfer_msg_bytes = serde_json::to_vec(&transfer_msg).unwrap();
 
-                    tracing::info!(
-                        "[Cosmos] -> Sending IBC transfer from: {}. memo: {}. Sending denom: {}. To: {}. Amount: {}, contract: {}",
+                    debug_msg = format!(
+                        "[Cosmos] -> SENT IBC transfer from: {}. memo: {}. denom: {}. To: {}. Amount: {}, contract: {}",
                         signer.to_string(),
                         memo,
                         denom,
@@ -826,10 +841,15 @@ impl IbcTransfer for Cosmos {
 
             match self.chain.broadcast_tx_commit(signer, [transfer_msg]).await {
                 Ok(tx_hash) => {
-                    tracing::info!(
-                        "Transaction sent successfully from COSMOS. Tx Hash: {:?}",
-                        tx_hash
-                    );
+                    debug_msg.push_str(&format!(" Tx Hash: {:?}", tx_hash));
+                    tracing::info!(debug_msg);
+                }
+                Err(BroadcastTxCommitError::SimulateTx(e)) => {
+                    if e.contains("account sequence mismatch") {
+                        tracing::warn!("Account sequence mismatch.");
+                    } else {
+                        tracing::error!("Failed to simulate tx!{:?}", e.to_string());
+                    }
                 }
                 Err(e) => {
                     tracing::error!("Failed to submit tx!{:?}", e.to_string());
@@ -857,7 +877,6 @@ async fn ibchandler_events_to_ibc_event(
 ) -> Option<IbcEvent> {
     match IBCHandlerEvents::decode_log(&log) {
         Ok(event) => {
-            // tracing::info!("Decoded Ethereum log event: {:?}", event);
             // Handle the decoded event similarly to Tendermint events
             let ibc_event: Option<IbcEvent> = match event {
                 IBCHandlerEvents::PacketEvent(packet_event) => match packet_event {
@@ -953,7 +972,6 @@ async fn ibchandler_events_to_ibc_event(
         }
         Err(_) => {
             // tracing::warn!("Could not decode Ethereum log event: {}", e);
-            // tracing::warn!("Could not decode Ethereum log: {:?}", log);
         }
     }
     return None;

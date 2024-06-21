@@ -5,10 +5,20 @@ use config::Config;
 use context::Context;
 use futures::future::try_join_all;
 use tokio::signal;
+use tracing_subscriber::EnvFilter;
 
 pub mod chains;
 pub mod config;
 pub mod context;
+
+#[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
+pub enum LogFormat {
+    #[default]
+    #[display(fmt = "text")]
+    Text,
+    #[display(fmt = "json")]
+    Json,
+}
 
 /// Arguments provided to the top-level command.
 #[derive(Debug, Parser, Clone)]
@@ -33,14 +43,29 @@ pub struct AppArgs {
     /// Perform a single interaction from the provided config.
     #[arg(long, global = true)]
     pub single_interaction: bool,
+
+    #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
+    pub log_format: LogFormat,
 }
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    tracing_subscriber::fmt::init();
-
     let args = AppArgs::parse();
     let config: Config = serde_json::from_str(&fs::read_to_string(args.config).unwrap()).unwrap();
+
+    match args.log_format {
+        LogFormat::Text => {
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .init();
+        }
+        LogFormat::Json => {
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .json()
+                .init();
+        }
+    }
 
     let context = Context::new(config.clone()).await.unwrap();
 
