@@ -2,7 +2,10 @@
 import { page } from "$app/stores"
 import request from "graphql-request"
 import ChainsGate from "$lib/components/chains-gate.svelte"
-import { transfersBySourceHashBaseQueryDocument, transfersBySourceHashTracesAndHopsQueryDocument } from "$lib/graphql/documents/transfers.ts"
+import {
+  transfersBySourceHashBaseQueryDocument,
+  transfersBySourceHashTracesAndHopsQueryDocument
+} from "$lib/graphql/documents/transfers.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
@@ -11,7 +14,7 @@ import { truncate } from "$lib/utilities/format"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { derived } from "svelte/store"
-import { toDisplayName } from '$lib/utilities/chains.ts'
+import { toDisplayName } from "$lib/utilities/chains.ts"
 
 const source = $page.params.source
 
@@ -42,8 +45,8 @@ let processedTransfers = derived(transfers, $transfers => {
     const lastForward = tx.forwards?.at(-1)
     if (lastForward) {
       hop_chain_id = tx.destination_chain_id
-      hop_chain_destination_connection_id = tx.destination_connection_id     
-      hop_chain_destination_channel_id = tx.destination_channel_id     
+      hop_chain_destination_connection_id = tx.destination_connection_id
+      hop_chain_destination_channel_id = tx.destination_channel_id
       hop_chain_source_connection_id = lastForward.source_connection_id
       hop_chain_source_channel_id = lastForward.source_channel_id
       tx.destination_chain_id = lastForward.chain?.chain_id ?? "unknown"
@@ -79,39 +82,37 @@ let processedTransfers = derived(transfers, $transfers => {
       hop_chain_source_channel_id,
       ...tx
     }
-    })
   })
+})
 
-  let tracesAndHops = createQuery({
-    queryKey: ["transfers-by-source-traces-and-hops", source],
-    refetchInterval: 1_000,
-    queryFn: async () =>
-      (
-        await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
-          source_transaction_hash: source
-        })
-      ).v0_transfers
-  })
+let tracesAndHops = createQuery({
+  queryKey: ["transfers-by-source-traces-and-hops", source],
+  refetchInterval: 1_000,
+  queryFn: async () =>
+    (
+      await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
+        source_transaction_hash: source
+      })
+    ).v0_transfers
+})
 
-  let processedTraces = derived(tracesAndHops, $tracesAndHops => {
-    if (!$tracesAndHops.isSuccess) {
-      return null
+let processedTraces = derived(tracesAndHops, $tracesAndHops => {
+  if (!$tracesAndHops.isSuccess) {
+    return null
+  }
+  return $tracesAndHops.data.map(tx => {
+    if (tx.hop !== null) {
+      tx.traces.push.apply(tx.traces, tx.hop.traces)
+      tx.traces.sort((a, b) => {
+        // @ts-ignore timestamp is guaranteed to be a date
+        // biome-ignore lint/nursery/useDateNow: this is a biome bug
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      })
     }
-    return $tracesAndHops.data.map(tx => {
 
-      if (tx.hop !== null) {
-        tx.traces.push.apply(tx.traces, tx.hop.traces)
-        tx.traces.sort((a, b) => {
-          // @ts-ignore timestamp is guaranteed to be a date
-          // biome-ignore lint/nursery/useDateNow: this is a biome bug
-          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        })
-      }
-
-      return tx.traces
-
-    })
-  });
+    return tx.traces
+  })
+})
 </script>
 
 <!--
