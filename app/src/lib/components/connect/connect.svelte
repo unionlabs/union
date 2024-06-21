@@ -14,26 +14,28 @@ import ThemeSwitch from "$lib/components/header/theme-switch.svelte"
 import { evmStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 
-$: buttonText =
-  $evmStore.connectionStatus === "connected" || $cosmosStore.connectionStatus === "connected"
-    ? "Connected"
-    : "Connect Wallet"
+$: buttonText = ""
+
+$: if (
+  $evmStore.connectionStatus === "connected" &&
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected"
+} else {
+  buttonText = "Connect Wallet"
+}
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
 </script>
 
-<Sheet.Root open={true}>
+<Sheet.Root bind:open={sheetOpen}>
   <Sheet.Trigger asChild let:builder class="w-full">
     <Button
       size="sm"
       builders={[builder]}
       on:click={() => (sheetOpen = !sheetOpen)}
-      class={cn(
-        'space-x-2 text-md bg-accent text-black hover:bg-cyan-300/90',
-        $evmStore.connectionStatus === 'connected' &&
-          $cosmosStore.connectionStatus === 'connected',
-      )}
+      class={cn('space-x-2 text-md bg-accent text-black hover:bg-cyan-300/90')}
     >
       <WalletIcon class="size-4 text-black" />
       <span class="font-supermolot font-bold uppercase">{buttonText}</span>
@@ -45,9 +47,7 @@ $: if ($navigating) sheetOpen = false
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
-        <Avatar.Root
-          class={cn('size-10', $evmStore.connectionStatus !== 'connected' && 'hidden')}
-        >
+        <Avatar.Root class={cn('size-10', $evmStore.connectionStatus !== 'connected' && 'hidden')}>
           <Avatar.Image
             alt="ethereum avatar"
             src={$evmStore.address

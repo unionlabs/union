@@ -133,7 +133,9 @@ export default (<Config>{
       }),
       width: _ => ({
         "7xl": "80rem",
-        26: "6.5rem"
+        26: "6.5rem",
+        46: "11.5rem",
+        56: "14rem"
       }),
       maxWidth: _ => ({
         26: "6.5rem",
