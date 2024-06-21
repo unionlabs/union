@@ -12,9 +12,7 @@
       voyager-dev = pkgs.lib.warn
         "voyager-dev is not intended to be used in production"
         crane.buildWorkspaceMember
-        (attrs // {
-          dev = true;
-        });
+        (attrs // { dev = true; });
     in
     {
       packages = voyager.packages // {
@@ -85,6 +83,11 @@
           default = null;
           example = 20971520;
         };
+        laddr = mkOption {
+          type = types.str;
+          default = "0.0.0.0:65534";
+          example = "0.0.0.0:65534";
+        };
       };
 
       config =
@@ -93,6 +96,7 @@
             chain = cfg.chains;
             voyager = {
               num_workers = cfg.workers;
+              laddr = cfg.laddr;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;
@@ -105,44 +109,46 @@
           });
         in
         mkIf cfg.enable {
-          systemd.services.voyager-migration = {
-            wantedBy = [ "multi-user.target" ];
-            after = [ "network.target" ];
-            description = "Voyager Migration";
-            serviceConfig = {
-              Type = "oneshot";
-              ExecStart = ''
-                ${pkgs.lib.meta.getExe cfg.package} \
-                  --config-file-path ${configJson} \
-                  -l ${cfg.log-format} \
-                  run-migrations
-              '';
+          systemd.services = {
+            voyager-migration = {
+              wantedBy = [ "multi-user.target" ];
+              after = [ "network.target" ];
+              description = "Voyager Migration";
+              serviceConfig = {
+                Type = "oneshot";
+                ExecStart = ''
+                  ${pkgs.lib.meta.getExe cfg.package} \
+                    --config-file-path ${configJson} \
+                    -l ${cfg.log-format} \
+                    run-migrations
+                '';
+              };
+              environment = {
+                RUST_LOG = "debug";
+                RUST_BACKTRACE = "full";
+              };
             };
-            environment = {
-              RUST_LOG = "debug";
-              RUST_BACKTRACE = "full";
-            };
-          };
-          systemd.services.voyager = {
-            wantedBy = [ "multi-user.target" ];
-            after = [ "voyager-migration.service" ];
-            partOf = [ "voyager-migration.service" ];
-            requires = [ "voyager-migration.service" ];
-            description = "Voyager";
-            serviceConfig = {
-              Type = "simple";
-              ExecStart = ''
-                ${pkgs.lib.getExe cfg.package} \
-                  --config-file-path ${configJson} \
-                  -l ${cfg.log-format} ${pkgs.lib.optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"} \
-                  relay
-              '';
-              Restart = mkForce "always";
-              RestartSec = 10;
-              RuntimeMaxSec = cfg.runtime-max-secs;
-            };
-            environment = {
-              RUST_LOG = "${cfg.log-level}";
+            voyager = {
+              wantedBy = [ "multi-user.target" ];
+              after = [ "voyager-migration.service" ];
+              partOf = [ "voyager-migration.service" ];
+              requires = [ "voyager-migration.service" ];
+              description = "Voyager";
+              serviceConfig = {
+                Type = "simple";
+                ExecStart = ''
+                  ${pkgs.lib.getExe cfg.package} \
+                    --config-file-path ${configJson} \
+                    -l ${cfg.log-format} ${pkgs.lib.optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"} \
+                    relay
+                '';
+                Restart = mkForce "always";
+                RestartSec = 10;
+                RuntimeMaxSec = cfg.runtime-max-secs;
+              };
+              environment = {
+                RUST_LOG = "${cfg.log-level}";
+              };
             };
           };
         };

@@ -29,7 +29,8 @@ use chain_utils::{
     scroll::Scroll,
     union::Union,
     wasm::Wasm,
-    AnyChain, ChainConfigType, Chains, EthereumChainConfig, LightClientType,
+    AnyChain, ChainConfigType, Chains, EthereumChainConfig, IncorrectChainTypeError,
+    LightClientType,
 };
 use clap::Parser;
 use queue_msg::{
@@ -149,6 +150,8 @@ pub enum VoyagerError {
     Run(#[from] RunError),
     #[error("unable to run command")]
     Command(#[source] Box<dyn Error>),
+    #[error("chain was not of expected type")]
+    IncorrectChainType(#[from] IncorrectChainTypeError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -178,22 +181,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
     match args.command {
         Command::RunMigrations => {
-            let AnyQueueConfig::PgQueue(PgQueueConfig { database_url, .. }) =
-                voyager_config.voyager.queue
-            else {
-                return Err(VoyagerError::Migrations(
-                    MigrationsError::IncorrectQueueConfig,
-                ));
-            };
-
-            let pool = PgPool::connect(&database_url)
-                .await
-                .map_err(MigrationsError::Sqlx)?;
-
-            pg_queue::MIGRATOR
-                .run(&pool)
-                .await
-                .map_err(MigrationsError::Migrate)?;
+            run_migrations(voyager_config).await?;
         }
         Command::PrintConfig => {
             print_json(&voyager_config);
@@ -209,141 +197,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             cmd,
             tracking,
         } => {
-            let on = voyager_config.get_chain(&on_name).await?;
-            let tracking = voyager_config
-                .chain
-                .get(&tracking)
-                .expect("chain not found in config")
-                .clone();
-
-            let chains = Arc::new(
-                chains_from_config(
-                    [voyager_config.chain.remove_entry(&on_name).unwrap()]
-                        .into_iter()
-                        .collect(),
-                )
-                .await
-                .unwrap(),
-            );
-
-            match cmd {
-                QueryCmd::IbcPath(path) => {
-                    let json = match (on, &tracking.ty) {
-                        (AnyChain::Union(union), ChainConfigType::Cosmos(_)) => {
-                            // NOTE: ChainSpec is arbitrary
-                            any_state_proof_to_json::<Union, Wasm<Cosmos>>(chains, path, union, at)
-                                .await
-                        }
-                        (
-                            AnyChain::Union(union),
-                            ChainConfigType::Ethereum(EthereumChainConfig {
-                                preset_base: PresetBaseKind::Mainnet,
-                                ..
-                            }),
-                        ) => {
-                            any_state_proof_to_json::<Wasm<Union>, Ethereum<Mainnet>>(
-                                chains,
-                                path,
-                                Wasm(union),
-                                at,
-                            )
-                            .await
-                        }
-                        (AnyChain::Union(union), ChainConfigType::Scroll(_)) => {
-                            any_state_proof_to_json::<Wasm<Union>, Scroll>(
-                                chains,
-                                path,
-                                Wasm(union),
-                                at,
-                            )
-                            .await
-                        }
-                        (AnyChain::Union(union), ChainConfigType::Arbitrum(_)) => {
-                            any_state_proof_to_json::<Wasm<Union>, Arbitrum>(
-                                chains,
-                                path,
-                                Wasm(union),
-                                at,
-                            )
-                            .await
-                        }
-                        (
-                            AnyChain::Union(union),
-                            ChainConfigType::Ethereum(EthereumChainConfig {
-                                preset_base: PresetBaseKind::Minimal,
-                                ..
-                            }),
-                        ) => {
-                            any_state_proof_to_json::<Wasm<Union>, Ethereum<Minimal>>(
-                                chains,
-                                path,
-                                Wasm(union),
-                                at,
-                            )
-                            .await
-                        }
-                        (AnyChain::Union(union), ChainConfigType::Berachain(_)) => {
-                            any_state_proof_to_json::<Wasm<Union>, Berachain>(
-                                chains,
-                                path,
-                                Wasm(union),
-                                at,
-                            )
-                            .await
-                        }
-                        (AnyChain::Cosmos(cosmos), ChainConfigType::Union(_)) => {
-                            // NOTE: ChainSpec is arbitrary
-                            any_state_proof_to_json::<Wasm<Cosmos>, Union>(
-                                chains,
-                                path,
-                                Wasm(cosmos),
-                                at,
-                            )
-                            .await
-                        }
-                        (AnyChain::EthereumMainnet(ethereum), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Ethereum<Mainnet>, Wasm<Union>>(
-                                chains, path, ethereum, at,
-                            )
-                            .await
-                        }
-
-                        (AnyChain::EthereumMinimal(ethereum), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Ethereum<Minimal>, Wasm<Union>>(
-                                chains, path, ethereum, at,
-                            )
-                            .await
-                        }
-
-                        (AnyChain::Scroll(scroll), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Scroll, Wasm<Union>>(chains, path, scroll, at)
-                                .await
-                        }
-
-                        (AnyChain::Arbitrum(arbitrum), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Arbitrum, Wasm<Union>>(
-                                chains, path, arbitrum, at,
-                            )
-                            .await
-                        }
-
-                        (AnyChain::Berachain(berachain), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Berachain, Wasm<Union>>(
-                                chains, path, berachain, at,
-                            )
-                            .await
-                        }
-                        (AnyChain::Cosmos(cosmos), ChainConfigType::Cosmos(_)) => {
-                            any_state_proof_to_json::<Cosmos, Cosmos>(chains, path, cosmos, at)
-                                .await
-                        }
-
-                        _ => panic!("unsupported"),
-                    };
-
-                    print_json(&json);
-                }
-            }
+            query(&mut voyager_config, on_name, tracking, cmd, at).await?;
         }
         Command::Queue(cli_msg) => {
             let db = match voyager_config.voyager.queue {
@@ -476,15 +330,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
         Command::InitFetch { on } => {
             let on = voyager_config.get_chain(&on).await?;
 
-            let msg = match on {
-                AnyChain::Union(on) => mk_init_fetch::<Union>(&on).await,
-                AnyChain::Cosmos(on) => mk_init_fetch::<Cosmos>(&on).await,
-                AnyChain::EthereumMainnet(on) => mk_init_fetch::<Ethereum<Mainnet>>(&on).await,
-                AnyChain::EthereumMinimal(on) => mk_init_fetch::<Ethereum<Minimal>>(&on).await,
-                AnyChain::Scroll(on) => mk_init_fetch::<Scroll>(&on).await,
-                AnyChain::Arbitrum(on) => mk_init_fetch::<Arbitrum>(&on).await,
-                AnyChain::Berachain(on) => mk_init_fetch::<Berachain>(&on).await,
-            };
+            let msg = any_chain!(|on| mk_init_fetch::<Hc>(&on).await);
 
             print_json(&msg);
         }
@@ -492,6 +338,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             UtilCmd::QueryLatestHeight { on } => {
                 let on = voyager_config.get_chain(&on).await?;
 
+                // TODO: Figure out how to use `any_chain!` here
                 let height = match on {
                     AnyChain::Union(on) => on
                         .query_latest_height()
@@ -528,61 +375,67 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             UtilCmd::QuerySelfConsensusState { on, height } => {
                 let on = voyager_config.get_chain(&on).await?;
 
-                any_chain! {
-                    |on| {
-                        let height = match height {
-                            QueryHeight::Latest => on.query_latest_height().await.unwrap(),
-                            QueryHeight::Specific(height) => height,
-                        };
+                any_chain!(|on| {
+                    let height = match height {
+                        QueryHeight::Latest => on.query_latest_height().await.unwrap(),
+                        QueryHeight::Specific(height) => height,
+                    };
 
-                        print_json(&on.self_consensus_state(height).await)
-                    }
-                };
+                    print_json(&on.self_consensus_state(height).await)
+                });
             }
             UtilCmd::QuerySelfClientState { on, height } => {
                 let on = voyager_config.get_chain(&on).await?;
 
-                any_chain! {
-                    |on| {
-                        let height = match height {
-                            QueryHeight::Latest => on.query_latest_height().await.unwrap(),
-                            QueryHeight::Specific(height) => height,
-                        };
+                any_chain!(|on| {
+                    let height = match height {
+                        QueryHeight::Latest => on.query_latest_height().await.unwrap(),
+                        QueryHeight::Specific(height) => height,
+                    };
 
-                        print_json(&on.self_client_state(height).await)
-                    }
-                };
+                    print_json(&on.self_client_state(height).await)
+                });
             }
             UtilCmd::Arbitrum(cmd) => match cmd {
                 ArbitrumCmd::LatestConfirmedAtBeaconSlot { on, slot } => print_json(
-                    &Arbitrum::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
-                        .expect("chain not found in config")
+                    &voyager_config
+                        .get_chain(&on.to_string())
+                        .await?
+                        .downcast::<Arbitrum>()?
                         .latest_confirmed_at_beacon_slot(slot)
                         .await,
                 ),
                 ArbitrumCmd::ExecutionHeightOfBeaconSlot { on, slot } => print_json(
-                    &Arbitrum::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
-                        .expect("chain not found in config")
+                    &voyager_config
+                        .get_chain(&on.to_string())
+                        .await?
+                        .downcast::<Arbitrum>()?
                         .execution_height_of_beacon_slot(slot)
                         .await,
                 ),
             },
             UtilCmd::Berachain(cmd) => match cmd {
                 BerachainCmd::ExecutionHeightOfBeaconSlot { on, slot } => print_json(
-                    &Berachain::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
-                        .expect("chain not found in config")
+                    &voyager_config
+                        .get_chain(&on.to_string())
+                        .await?
+                        .downcast::<Berachain>()?
                         .execution_height_of_beacon_slot(slot)
                         .await,
                 ),
                 BerachainCmd::ExecutionHeaderAtBeaconSlot { on, slot } => print_json(
-                    &Berachain::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
-                        .expect("chain not found in config")
+                    &voyager_config
+                        .get_chain(&on.to_string())
+                        .await?
+                        .downcast::<Berachain>()?
                         .execution_header_at_beacon_slot(slot)
                         .await,
                 ),
                 BerachainCmd::BeaconHeaderAtBeaconSlot { on, slot } => print_json(
-                    &Berachain::try_from(voyager_config.get_chain(&on.to_string()).await.unwrap())
-                        .expect("chain not found in config")
+                    &voyager_config
+                        .get_chain(&on.to_string())
+                        .await?
+                        .downcast::<Berachain>()?
                         .beacon_block_header_at_beacon_slot(slot)
                         .await,
                 ),
@@ -600,22 +453,169 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 None => {
                     let chains = chains_from_config(voyager_config.chain).await.unwrap();
 
-                    let mut balances = HashMap::new();
-
-                    for (chain_id, chain) in chains.chains {
-                        any_chain!(|chain| {
-                            balances.insert(
-                                chain_id,
-                                serde_json::to_value(chain.balances().await).unwrap(),
-                            );
-                        });
-                    }
+                    let balances = signer_balances(&chains).await;
 
                     print_json(&balances);
                 }
             },
         },
     }
+
+    Ok(())
+}
+
+async fn signer_balances(chains: &Chains) -> HashMap<String, serde_json::Value> {
+    let mut balances = HashMap::new();
+
+    for (chain_id, chain) in &chains.chains {
+        any_chain!(|chain| {
+            balances.insert(
+                chain_id.to_string(),
+                serde_json::to_value(chain.balances().await).unwrap(),
+            );
+        });
+    }
+
+    balances
+}
+
+async fn query(
+    voyager_config: &mut Config,
+    on_name: String,
+    tracking: String,
+    cmd: QueryCmd,
+    at: QueryHeight<unionlabs::ibc::core::client::height::Height>,
+) -> Result<(), VoyagerError> {
+    let on = voyager_config.get_chain(&on_name).await?;
+    let tracking = voyager_config
+        .chain
+        .get(&tracking)
+        .expect("chain not found in config")
+        .clone();
+
+    let chains = Arc::new(
+        chains_from_config(
+            [voyager_config
+                .chain
+                .remove_entry(&on_name)
+                .expect("chain is present as it was retrieved previously")]
+            .into_iter()
+            .collect(),
+        )
+        .await
+        .unwrap(),
+    );
+    match cmd {
+        QueryCmd::IbcPath(path) => {
+            let json = match (on, &tracking.ty) {
+                (AnyChain::Union(union), ChainConfigType::Cosmos(_)) => {
+                    any_state_proof_to_json::<Union, Wasm<Cosmos>>(chains, path, union, at).await
+                }
+                (
+                    AnyChain::Union(union),
+                    ChainConfigType::Ethereum(EthereumChainConfig {
+                        preset_base: PresetBaseKind::Mainnet,
+                        ..
+                    }),
+                ) => {
+                    // NOTE: ChainSpec is arbitrary
+                    any_state_proof_to_json::<Wasm<Union>, Ethereum<Mainnet>>(
+                        chains,
+                        path,
+                        Wasm(union),
+                        at,
+                    )
+                    .await
+                }
+                (AnyChain::Union(union), ChainConfigType::Scroll(_)) => {
+                    any_state_proof_to_json::<Wasm<Union>, Scroll>(chains, path, Wasm(union), at)
+                        .await
+                }
+                (AnyChain::Union(union), ChainConfigType::Arbitrum(_)) => {
+                    any_state_proof_to_json::<Wasm<Union>, Arbitrum>(chains, path, Wasm(union), at)
+                        .await
+                }
+                (
+                    AnyChain::Union(union),
+                    ChainConfigType::Ethereum(EthereumChainConfig {
+                        preset_base: PresetBaseKind::Minimal,
+                        ..
+                    }),
+                ) => {
+                    any_state_proof_to_json::<Wasm<Union>, Ethereum<Minimal>>(
+                        chains,
+                        path,
+                        Wasm(union),
+                        at,
+                    )
+                    .await
+                }
+                (AnyChain::Union(union), ChainConfigType::Berachain(_)) => {
+                    any_state_proof_to_json::<Wasm<Union>, Berachain>(chains, path, Wasm(union), at)
+                        .await
+                }
+                (AnyChain::Cosmos(cosmos), ChainConfigType::Union(_)) => {
+                    // NOTE: ChainSpec is arbitrary
+                    any_state_proof_to_json::<Wasm<Cosmos>, Union>(chains, path, Wasm(cosmos), at)
+                        .await
+                }
+                (AnyChain::EthereumMainnet(ethereum), ChainConfigType::Union(_)) => {
+                    any_state_proof_to_json::<Ethereum<Mainnet>, Wasm<Union>>(
+                        chains, path, ethereum, at,
+                    )
+                    .await
+                }
+
+                (AnyChain::EthereumMinimal(ethereum), ChainConfigType::Union(_)) => {
+                    any_state_proof_to_json::<Ethereum<Minimal>, Wasm<Union>>(
+                        chains, path, ethereum, at,
+                    )
+                    .await
+                }
+
+                (AnyChain::Scroll(scroll), ChainConfigType::Union(_)) => {
+                    any_state_proof_to_json::<Scroll, Wasm<Union>>(chains, path, scroll, at).await
+                }
+
+                (AnyChain::Arbitrum(arbitrum), ChainConfigType::Union(_)) => {
+                    any_state_proof_to_json::<Arbitrum, Wasm<Union>>(chains, path, arbitrum, at)
+                        .await
+                }
+
+                (AnyChain::Berachain(berachain), ChainConfigType::Union(_)) => {
+                    any_state_proof_to_json::<Berachain, Wasm<Union>>(chains, path, berachain, at)
+                        .await
+                }
+                (AnyChain::Cosmos(cosmos), ChainConfigType::Cosmos(_)) => {
+                    any_state_proof_to_json::<Cosmos, Cosmos>(chains, path, cosmos, at).await
+                }
+
+                _ => panic!("unsupported"),
+            };
+
+            print_json(&json);
+        }
+    };
+
+    Ok(())
+}
+
+async fn run_migrations(voyager_config: Config) -> Result<(), VoyagerError> {
+    let AnyQueueConfig::PgQueue(PgQueueConfig { database_url, .. }) = voyager_config.voyager.queue
+    else {
+        return Err(VoyagerError::Migrations(
+            MigrationsError::IncorrectQueueConfig,
+        ));
+    };
+
+    let pool = PgPool::connect(&database_url)
+        .await
+        .map_err(MigrationsError::Sqlx)?;
+
+    pg_queue::MIGRATOR
+        .run(&pool)
+        .await
+        .map_err(MigrationsError::Migrate)?;
 
     Ok(())
 }

@@ -15,7 +15,6 @@ serde-utils = { workspace = true }
 unionlabs   = { workspace = true, features = ["default"] }
 
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
-bimap                    = "0.6.3"
 bip32                    = { workspace = true, features = ["secp256k1"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 cometbft-rpc             = { workspace = true }
