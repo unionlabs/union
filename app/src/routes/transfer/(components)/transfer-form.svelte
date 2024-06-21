@@ -393,7 +393,7 @@ $: buttonText =
 </script>
 
 
-<div class="cube-scene-dummy"></div>
+<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 <div class="cube-scene">
   <div class={cn("cube", $transferState !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
     <Card.Root class="cube-front">
@@ -496,9 +496,6 @@ $: buttonText =
 
 
 
-  <div class="text-muted-foreground text-xs sm:text-base">
-    Will transfer {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
-  </div>
 
 
 <ChainDialog
