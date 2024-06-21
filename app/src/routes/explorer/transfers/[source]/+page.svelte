@@ -21,6 +21,7 @@ const source = $page.params.source
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
   refetchInterval: 1_000,
+  placeholderData: (previousData, _) => previousData,
   queryFn: async () =>
     (
       await request(URLS.GRAPHQL, transfersBySourceHashBaseQueryDocument, {
@@ -29,7 +30,7 @@ let transfers = createQuery({
     ).v0_transfers
 })
 let processedTransfers = derived(transfers, $transfers => {
-  if (!$transfers.isSuccess) {
+  if (!$transfers.data) {
     return null
   }
   return $transfers.data.map(transfer => {
@@ -88,6 +89,7 @@ let processedTransfers = derived(transfers, $transfers => {
 let tracesAndHops = createQuery({
   queryKey: ["transfers-by-source-traces-and-hops", source],
   refetchInterval: 1_000,
+  placeholderData: (previousData, _) => previousData,
   queryFn: async () =>
     (
       await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
@@ -97,7 +99,7 @@ let tracesAndHops = createQuery({
 })
 
 let processedTraces = derived(tracesAndHops, $tracesAndHops => {
-  if (!$tracesAndHops.isSuccess) {
+  if (!$tracesAndHops.data) {
     return null
   }
   return $tracesAndHops.data.map(tx => {
@@ -123,6 +125,8 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
 <ChainsGate let:chains>
 {#if $transfers.isLoading}
   <LoadingLogo class="size-16"/>
+{:else if $transfers.isError}
+  Error loading transfer data
 {:else if $transfers.isSuccess && $processedTransfers !== null}
 <div class="max-h-auto min-w-full flex flex-col items-center">
   {#each $processedTransfers as transfer, transferIndex}

@@ -1,6 +1,5 @@
 import { raise } from "$lib/utilities/index.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
-import { evmGasBalance } from "./evm/gas-balance.ts"
 import { createQueries } from "@tanstack/svelte-query"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -25,25 +24,26 @@ export function userBalancesQuery({
           const rpc = chain.rpcs
             .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
             .at(0)
-          if (rpc === undefined)
+          if (rpc === undefined) {
             raise(`no alchemy or routescan rpc available for chain ${chain.chain_id}`)
-          const gasBalance = await evmGasBalance({
-            address: userAddr.evm.canonical,
-            chainId: chain.chain_id
-          })
+          }
+          // broken, should use the chains' rpcs
+          //
+          // const gasBalance = await evmGasBalance({
+          //   address: userAddr.evm.canonical,
+          //   chainId: chain.chain_id
+          // })
           if (rpc.type === "alchemy") {
-            const tokenBalances = await getBalancesFromAlchemy({
+            return await getBalancesFromAlchemy({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
-            return [gasBalance, ...tokenBalances]
           }
           if (rpc.type === "routescan") {
-            const tokenBalances = await getBalancesFromRoutescan({
+            return await getBalancesFromRoutescan({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
-            return [gasBalance, ...tokenBalances]
           }
         }
 

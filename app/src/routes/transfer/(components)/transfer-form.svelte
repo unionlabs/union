@@ -324,7 +324,7 @@ const transfer = async () => {
 
     toast.info("Simulating UCS01 contract call")
     transferState.set("SIMULATING_TRANSFER")
-    const { request } = await publicClient.simulateContract({
+    const simulationResult = await publicClient.simulateContract({
       abi: ucs01abi,
       account: userAddr.evm.canonical,
       functionName: "send",
@@ -332,17 +332,17 @@ const transfer = async () => {
       args: [
         ucs1_configuration.channel_id,
         userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
-        // @ts-expect-error TODO: fix this type
         [{ denom: $asset.address.toLowerCase() as Address, amount: BigInt(amount) }],
         pfmMemo ?? "", // memo
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
         0n
       ]
     })
+    console.log("simulation result", simulationResult)
 
     transferState.set("CONFIRMING_TRANSFER")
     toast.info("Submitting UCS01 contract call")
-    const hash = await walletClient.writeContract(request)
+    const hash = await walletClient.writeContract(simulationResult.request)
 
     transferState.set("TRANSFERRING")
     toast.info("Transferring assets")
@@ -538,7 +538,7 @@ $: buttonText =
     @apply absolute -my-6 py-6 z-20;
     top: calc(50% - (var(--height) / 2));
     --width: calc(min(500px, (100dvw - 32px)));
-    --height: calc(min(650px, (100dvh - 164px)));
+    --height: calc(min(700px, (100dvh - 164px)));
     --depth: 80px;
     --speed: 2s;
     width: var(--width);
