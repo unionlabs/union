@@ -18,14 +18,14 @@ $: packets = createQuery({
 
 $: packetsData = $packets?.data?.v0_packets ?? []
 
-type Packet = (typeof packetsData)[number]
+type DataRow = (typeof packetsData)[number]
 
-$: packetsStore = writable<Array<Packet>>(packetsData as Array<Packet>)
+$: packetsStore = writable<Array<DataRow>>(packetsData as Array<DataRow>)
 $: if (packets) {
   packetsStore.update(packets => packets)
 }
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source_chain_id",
     header: () => "Source Chain",
@@ -98,4 +98,4 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-<Table bind:dataStore={packetsStore} {columns} />
+<Table bind:dataStore={packetsStore} {columns} tableName="Packets" />

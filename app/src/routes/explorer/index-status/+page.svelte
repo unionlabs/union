@@ -23,11 +23,11 @@ $: indexStatus = createQuery({
 
 $: indexStatusData = $indexStatus?.data ?? []
 
-type IndexStatus = (typeof indexStatusData)[number]
+type DataRow = (typeof indexStatusData)[number]
 
-$: indexStatusStore = writable<Array<IndexStatus>>(indexStatusData as Array<IndexStatus>)
+$: indexStatusStore = writable<Array<DataRow>>(indexStatusData as Array<DataRow>)
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "display_name",
     header: () => "Chain",
@@ -58,4 +58,4 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-<Table bind:dataStore={indexStatusStore} {columns} />
+<Table bind:dataStore={indexStatusStore} {columns} tableName="Index Status" />

@@ -1,12 +1,13 @@
 <script lang="ts">
 import request from "graphql-request"
-import { channelsQuery } from "$lib/graphql/documents/channels.ts"
-import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
-import Table from "../(components)/table.svelte"
-import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { writable } from "svelte/store"
+import Table from "../(components)/table.svelte"
+import { createQuery } from "@tanstack/svelte-query"
+import { rankItem } from "@tanstack/match-sorter-utils"
 import CellStatus from "../(components)/cell-status.svelte"
+import { channelsQuery } from "$lib/graphql/documents/channels.ts"
+import { flexRender, type ColumnDef, type FilterFn } from "@tanstack/svelte-table"
 
 $: channels = createQuery({
   queryKey: ["channels"],
@@ -16,54 +17,75 @@ $: channels = createQuery({
 
 $: channelsData = $channels?.data?.v0_channel_map ?? []
 
-type Channel = (typeof channelsData)[number]
+type DataRow = (typeof channelsData)[number]
 
-$: channelsStore = writable<Array<Channel>>(channelsData as Array<Channel>)
+$: channelsStore = writable<Array<DataRow>>(channelsData as Array<DataRow>)
 $: if (channels) {
   channelsStore.update(channels => channels)
 }
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+let globalFilter = ""
+const fuzzyFilter = ((row, columnId, value, addMeta) => {
+  const itemRank = rankItem(row.getValue(columnId), value)
+  addMeta({ itemRank })
+  return itemRank.passed
+}) satisfies FilterFn<DataRow>
+
+const columns: Array<ColumnDef<DataRow>> = [
   {
+    size: 200,
     accessorKey: "from_chain_id",
     header: () => "From Chain ID",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.from_chain_id,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "from_connection_id",
     header: () => "From Connection ID",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.from_connection_id,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "from_channel_id",
-    header: () => "From Channel ID",
-    size: 200,
+    header: () => "From DataRow ID",
+    filterFn: "includesString",
+    accessorFn: row => row.from_channel_id,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "to_chain_id",
     header: () => "To Chain ID",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.to_chain_id,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "to_connection_id",
     header: () => "To Connection ID",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.to_connection_id,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "to_channel_id",
-    header: () => "To Channel ID",
-    size: 200,
+    header: () => "To DataRow ID",
+    filterFn: "includesString",
+    accessorFn: row => row.to_channel_id,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "status",
     header: () => "Status",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.status,
     cell: info =>
       flexRender(CellStatus, {
         value: info.getValue()
@@ -72,4 +94,10 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-<Table bind:dataStore={channelsStore} {columns} />
+<Table
+  {columns}
+  {fuzzyFilter}
+  {globalFilter}
+  tableName="Channels"
+  bind:dataStore={channelsStore}
+/>

@@ -107,11 +107,8 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 
 {#if !$cosmosStore?.rawAddress || !$sepoliaStore.address}
   <div>Connect your wallets to continue</div>
-
-{:else}
-  {#if $transfers.isLoading}
-    <LoadingLogo class="size-16" />
-  {:else if $transfers.isSuccess}
-    <Table bind:dataStore={transfersData} {columns} />
-  {/if}
+{:else if $transfers.isLoading}
+  <LoadingLogo class="size-16" />
+{:else if $transfers.isSuccess}
+  <Table bind:dataStore={transfersData} {columns} />
 {/if}

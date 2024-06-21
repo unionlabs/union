@@ -1,26 +1,27 @@
 <script lang="ts">
 import request from "graphql-request"
-import { allTransfersQueryDocument } from "$lib/graphql/documents/transfers.ts"
-import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
-import Table from "../(components)/table.svelte"
-import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { derived, writable } from "svelte/store"
-import CellOrigin from "../(components)/cell-origin.svelte"
-import CellAssets from "../(components)/cell-assets.svelte"
-import CellDuration from "../(components)/cell-duration-text.svelte"
-import { chainsQuery } from "$lib/queries/chains"
-import { truncate } from "$lib/utilities/format"
 import { goto } from "$app/navigation"
+import Table from "../(components)/table.svelte"
+import { derived, writable } from "svelte/store"
+import { truncate } from "$lib/utilities/format"
+import { chainsQuery } from "$lib/queries/chains"
+import { createQuery } from "@tanstack/svelte-query"
+import { rankItem } from "@tanstack/match-sorter-utils"
+import CellAssets from "../(components)/cell-assets.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
+import CellPlainText from "../(components)/cell-plain-text.svelte"
+import CellDuration from "../(components)/cell-duration-text.svelte"
+import { allTransfersQueryDocument } from "$lib/graphql/documents/transfers.ts"
+import { flexRender, type ColumnDef, type FilterFn } from "@tanstack/svelte-table"
+
+let chains = chainsQuery()
 
 let transfers = createQuery({
   queryKey: ["transfers"],
   refetchInterval: 3_000,
   queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
 })
-
-let chains = chainsQuery()
 
 let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   if (!($transfers.isSuccess && $chains.isSuccess)) return []
@@ -52,51 +53,90 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   })
 })
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+type DataRow = (typeof $transfersData)[number]
+
+let globalFilter = ""
+const fuzzyFilter = ((row, columnId, value, addMeta) => {
+  const itemRank = rankItem(row.getValue(columnId), value)
+  addMeta({ itemRank })
+  return itemRank.passed
+}) satisfies FilterFn<DataRow>
+
+const columns: Array<ColumnDef<DataRow>> = [
   {
+    size: 200,
     accessorKey: "source",
     header: () => "Source",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.source,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "destination",
     header: () => "Destination",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.destination,
     cell: info => info.getValue()
   },
   {
+    size: 200,
     accessorKey: "sender",
     header: () => "Sender",
-    size: 200,
-    cell: info => truncate(info.getValue(), 8)
+    filterFn: "includesString",
+    accessorFn: row => row.sender,
+    cell: info => truncate(String(info.getValue()), 8)
   },
   {
+    size: 200,
     accessorKey: "receiver",
     header: () => "Receiver",
-    size: 200,
-    cell: info => truncate(info.getValue(), 8)
+    filterFn: "includesString",
+    accessorFn: row => row.receiver,
+    cell: info => truncate(String(info.getValue()), 8)
   },
   {
+    size: 0,
+    id: "hidden",
+    header: () => "",
+    enableHiding: true,
+    filterFn: "includesString",
+    accessorKey: "source_transaction_hash",
+    accessorFn: row => row.source_transaction_hash,
+    cell: info =>
+      flexRender(CellPlainText, {
+        value: info.getValue(),
+        class: "hidden invisible size-0"
+      })
+  },
+  {
+    size: 200,
     accessorKey: "assets",
     header: () => "Assets",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.assets,
     cell: info => flexRender(CellAssets, { value: info.getValue() })
   },
   {
+    size: 200,
     accessorKey: "timestamp",
     header: () => "Time",
-    size: 200,
+    filterFn: "includesString",
+    accessorFn: row => row.timestamp,
     cell: info => flexRender(CellDuration, { value: info.getValue() })
   }
 ]
 </script>
 
 {#if $transfers.isLoading}
-  <LoadingLogo class="size-16"/>
+  <LoadingLogo class="size-16" />
 {:else if $transfers.isSuccess}
-  <Table bind:dataStore={transfersData} {columns} onClick={(x) => {
-    // @ts-ignore
-    goto(`/explorer/transfers/${x.source_transaction_hash}`)}
-  }/>
+  <Table
+    {columns}
+    {fuzzyFilter}
+    {globalFilter}
+    tableName="Transfers"
+    bind:dataStore={transfersData}
+    onClick={x => goto(`/explorer/transfers/${x.source_transaction_hash}`)}
+  />
 {/if}
