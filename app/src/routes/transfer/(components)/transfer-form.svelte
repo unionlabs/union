@@ -538,7 +538,7 @@ $: buttonText =
     @apply absolute -my-6 py-6 z-20;
     top: calc(50% - (var(--height) / 2));
     --width: calc(min(500px, (100dvw - 32px)));
-    --height: calc(min(650px, (100dvh - 164px)));
+    --height: calc(min(700px, (100dvh - 164px)));
     --depth: 80px;
     --speed: 2s;
     width: var(--width);
