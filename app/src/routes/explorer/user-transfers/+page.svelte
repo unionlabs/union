@@ -12,7 +12,7 @@ import { chainsQuery } from "$lib/queries/chains"
 import { truncate } from "$lib/utilities/format"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { rawToHex } from "$lib/utilities/address"
-import { evmStore } from "$lib/wallet/evm"
+import { sepoliaStore } from "$lib/wallet/evm"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 
 let transfers = createQuery({
@@ -20,7 +20,7 @@ let transfers = createQuery({
   refetchInterval: 3_000,
   queryFn: async () => {
     const cosmosAddr = $cosmosStore?.rawAddress
-    const evmAddr = $evmStore?.address
+    const evmAddr = $sepoliaStore?.address
     if (cosmosAddr === undefined || evmAddr === undefined) {
       return []
     }
@@ -105,7 +105,7 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-{#if !$cosmosStore?.rawAddress || !$evmStore.address}
+{#if !$cosmosStore?.rawAddress || !$sepoliaStore.address}
   <div>Connect your wallets to continue</div>
 {:else if $transfers.isLoading}
   <LoadingLogo class="size-16" />
