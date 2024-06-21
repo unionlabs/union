@@ -231,11 +231,11 @@ macro_rules! any_chain {
                 $expr
             }
             AnyChain::EthereumMainnet($c) => {
-                type Hc = $crate::ethereum::Ethereum<Mainnet>;
+                type Hc = $crate::ethereum::Ethereum<::unionlabs::ethereum::config::Mainnet>;
                 $expr
             }
             AnyChain::EthereumMinimal($c) => {
-                type Hc = $crate::ethereum::Ethereum<Minimal>;
+                type Hc = $crate::ethereum::Ethereum<::unionlabs::ethereum::config::Minimal>;
                 $expr
             }
             AnyChain::Scroll($c) => {

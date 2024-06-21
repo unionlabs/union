@@ -1193,10 +1193,10 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                             res,
                             &mut optimizer_queue,
                             &mut ready,
-                            // no parents
                             |parent_idxs: Vec<usize>| {
+                                // all new items are from the item that was just processed
                                 assert_eq!(parent_idxs, [0]);
-                                vec![]
+                                vec![id]
                             },
                         );
 

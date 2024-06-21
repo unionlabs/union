@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO queue (item, status)\n            VALUES\n              ($1, $2::status) RETURNING id\n            ",
+  "query": "\n            INSERT INTO queue (item, status, parents)\n            VALUES\n              ($1, $2::status, $3) RETURNING id\n            ",
   "describe": {
     "columns": [
       {
@@ -24,12 +24,13 @@
               ]
             }
           }
-        }
+        },
+        "Int8Array"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "f627626afe9341184d8a3b0cb73498147e6e32800bb3537036a313e273f30f1f"
+  "hash": "42b84218b1d9da68667c8feb7314f54cd36367e39ddce01128878bd2dcab52a9"
 }
