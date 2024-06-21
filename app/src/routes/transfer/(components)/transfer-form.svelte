@@ -50,6 +50,7 @@ let assetSymbol = writable("")
 
 type TransferStates =
   | "PRE_TRANSFER"
+  | "FLIPPING"
   | "ADDING_CHAIN"
   | "SWITCHING_TO_CHAIN"
   | "APPROVING_ASSET"
@@ -184,6 +185,8 @@ const transfer = async () => {
     )
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
+  transferState.set("FLIPPING");
+  await sleep(1200);
 
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
@@ -490,7 +493,7 @@ $: buttonText =
         </div>
       <pre>{$transferState}</pre>
     </Card.Root>
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION UNION UNION</div>
+    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>
 </div>
 
@@ -532,10 +535,10 @@ $: buttonText =
 <style global lang="postcss">
 
   .cube-scene {
-    @apply absolute my-6 z-20;
+    @apply absolute -my-6 py-6 z-20;
     top: calc(50% - (var(--height) / 2));
-    --width: 500px;
-    --height: 702px;
+    --width: calc(min(500px, (100dvw - 32px)));
+    --height: calc(min(702px, (100dvh - 164px)));
     --depth: 80px;
     --speed: 2s;
     width: var(--width);
@@ -558,7 +561,7 @@ $: buttonText =
   }
 
   .cube-front, .cube-back {
-    @apply absolute;
+    @apply absolute overflow-auto;
 
     width: var(--width);
     height: var(--height);
