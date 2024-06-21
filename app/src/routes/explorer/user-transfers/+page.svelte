@@ -12,7 +12,7 @@ import { chainsQuery } from "$lib/queries/chains"
 import { truncate } from "$lib/utilities/format"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { rawToHex } from "$lib/utilities/address"
-import { sepoliaStore } from "$lib/wallet/evm"
+import { evmStore } from "$lib/wallet/evm"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 
 let transfers = createQuery({
@@ -20,7 +20,7 @@ let transfers = createQuery({
   refetchInterval: 3_000,
   queryFn: async () => {
     const cosmosAddr = $cosmosStore?.rawAddress
-    const evmAddr = $sepoliaStore?.address
+    const evmAddr = $evmStore?.address
     if (cosmosAddr === undefined || evmAddr === undefined) {
       return []
     }
@@ -71,7 +71,9 @@ let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   })
 })
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+type DataRow = (typeof $transfersData)[number]
+
+const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source",
     header: () => "Source",
@@ -88,13 +90,13 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
     accessorKey: "sender",
     header: () => "Sender",
     size: 200,
-    cell: info => truncate(info.getValue(), 8)
+    cell: info => truncate(String(info.getValue()), 8)
   },
   {
     accessorKey: "receiver",
     header: () => "Receiver",
     size: 200,
-    cell: info => truncate(info.getValue(), 8)
+    cell: info => truncate(String(info.getValue()), 8)
   },
   {
     accessorKey: "assets",
@@ -105,7 +107,7 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-{#if !$cosmosStore?.rawAddress || !$sepoliaStore.address}
+{#if !$cosmosStore?.rawAddress || !$evmStore.address}
   <div>Connect your wallets to continue</div>
 
 {:else}
