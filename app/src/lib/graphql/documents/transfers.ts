@@ -48,73 +48,54 @@ export const userTransfersQueryDocument = graphql(/* Graphql */ `
   }
 `)
 
-export const transfersBySourceHashQueryDocument = graphql(/* GraphQL */ `
-query TransfersBySourceHash($source_transaction_hash: String!) {
+export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
+query TransfersBySourceHashBase($source_transaction_hash: String!) @cached(ttl: 1) {
   v0_transfers(where: {source_transaction_hash: {_eq: $source_transaction_hash}}) {
     sender
     normalized_sender
     source_chain_id
-    source_chain {
-      display_name
-    }
     source_connection_id
     source_channel_id
     source_transaction_hash
     receiver
     normalized_receiver
     destination_chain_id
-    destination_chain {
-      display_name
-    }
     destination_connection_id
     destination_channel_id
-    destination_transaction_hash
     assets
     source_timestamp
     destination_timestamp
     forwards {
       chain {
-        chain_id,
-        display_name
+        chain_id
       }
+      source_connection_id
+      source_channel_id
+      destination_connection_id
+      destination_channel_id
       channel
       receiver
     }
+  }
+}
+`)
+
+export const transfersBySourceHashTracesAndHopsQueryDocument = graphql(/* GraphQL */ `
+query TransfersBySourceHashTracesAndHops($source_transaction_hash: String!) @cached(ttl: 1) {
+  v0_transfers(where: {source_transaction_hash: {_eq: $source_transaction_hash}}) {
     traces(order_by: {timestamp: asc}) {
       timestamp
       chain {
-        display_name
         chain_id
       }
       type
       transaction_hash
+      height
     }
     hop {
-      sender
-      normalized_sender
-      source_chain_id
-      source_chain {
-        display_name
-      }
-      source_connection_id
-      source_channel_id
-      source_transaction_hash
-      receiver
-      normalized_receiver
-      destination_chain_id
-      destination_chain {
-        display_name
-      }
-      destination_connection_id
-      destination_channel_id
-      destination_transaction_hash
-      assets
-      source_timestamp
-      destination_timestamp
       traces(order_by: {timestamp: asc}) {
         timestamp
         chain {
-          display_name
           chain_id
         }
         type

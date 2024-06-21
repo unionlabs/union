@@ -9341,6 +9341,15 @@ export type introspection = {
         "name": "v0_index_status",
         "fields": [
           {
+            "name": "chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_chains"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "chain_id",
             "type": {
               "kind": "SCALAR",
@@ -9444,6 +9453,13 @@ export type introspection = {
             }
           },
           {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_bool_exp"
+            }
+          },
+          {
             "name": "chain_id",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -9499,6 +9515,13 @@ export type introspection = {
         "kind": "INPUT_OBJECT",
         "name": "v0_index_status_order_by",
         "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_chains_order_by"
+            }
+          },
           {
             "name": "chain_id",
             "type": {
@@ -12676,6 +12699,42 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "port",
             "type": {
               "kind": "SCALAR",
@@ -12703,6 +12762,42 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "source_transaction_hash",
             "type": {
               "kind": "SCALAR",
@@ -12721,7 +12816,25 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "timeout",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "version",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -12826,6 +12939,20 @@ export type introspection = {
               "kind": "ENUM",
               "name": "order_by"
             }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
         "isOneOf": false
@@ -12889,6 +13016,34 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "port",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -12910,6 +13065,34 @@ export type introspection = {
             }
           },
           {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "source_transaction_hash",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -12924,7 +13107,21 @@ export type introspection = {
             }
           },
           {
+            "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "timeout",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "version",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
@@ -12952,6 +13149,34 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "port",
             "type": {
               "kind": "ENUM",
@@ -12973,6 +13198,34 @@ export type introspection = {
             }
           },
           {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "source_transaction_hash",
             "type": {
               "kind": "ENUM",
@@ -12987,7 +13240,21 @@ export type introspection = {
             }
           },
           {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "timeout",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "version",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13015,6 +13282,34 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "port",
             "type": {
               "kind": "ENUM",
@@ -13036,6 +13331,34 @@ export type introspection = {
             }
           },
           {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "source_transaction_hash",
             "type": {
               "kind": "ENUM",
@@ -13050,7 +13373,21 @@ export type introspection = {
             }
           },
           {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "timeout",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "version",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13085,6 +13422,34 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "port",
             "type": {
               "kind": "ENUM",
@@ -13106,6 +13471,34 @@ export type introspection = {
             }
           },
           {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "source_transaction_hash",
             "type": {
               "kind": "ENUM",
@@ -13120,7 +13513,21 @@ export type introspection = {
             }
           },
           {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "timeout",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "version",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13142,6 +13549,22 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "destination_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "isDeprecated": false
+          },
+          {
             "name": "port",
             "isDeprecated": false
           },
@@ -13154,6 +13577,22 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "source_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "isDeprecated": false
+          },
+          {
             "name": "source_transaction_hash",
             "isDeprecated": false
           },
@@ -13162,7 +13601,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "status",
+            "isDeprecated": false
+          },
+          {
             "name": "timeout",
+            "isDeprecated": false
+          },
+          {
+            "name": "version",
             "isDeprecated": false
           }
         ]
@@ -13173,6 +13620,20 @@ export type introspection = {
         "inputFields": [
           {
             "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13191,6 +13652,20 @@ export type introspection = {
               "kind": "ENUM",
               "name": "order_by"
             }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
         "isOneOf": false
@@ -13201,6 +13676,20 @@ export type introspection = {
         "inputFields": [
           {
             "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13252,6 +13741,34 @@ export type introspection = {
             }
           },
           {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
             "name": "port",
             "type": {
               "kind": "SCALAR",
@@ -13273,6 +13790,34 @@ export type introspection = {
             }
           },
           {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
             "name": "source_transaction_hash",
             "type": {
               "kind": "SCALAR",
@@ -13287,7 +13832,21 @@ export type introspection = {
             }
           },
           {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
             "name": "timeout",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "version",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -13306,6 +13865,20 @@ export type introspection = {
               "kind": "ENUM",
               "name": "order_by"
             }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
         "isOneOf": false
@@ -13316,6 +13889,20 @@ export type introspection = {
         "inputFields": [
           {
             "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13334,6 +13921,20 @@ export type introspection = {
               "kind": "ENUM",
               "name": "order_by"
             }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
           }
         ],
         "isOneOf": false
@@ -13344,6 +13945,20 @@ export type introspection = {
         "inputFields": [
           {
             "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -13528,6 +14143,69 @@ export type introspection = {
                     "kind": "OBJECT",
                     "name": "v0_transfer_forwards"
                   }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_transfer_forwards_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_transfer_forwards_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_transfer_forwards_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "forwards_2",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "v0_transfer_forwards"
                 }
               }
             },
@@ -14005,6 +14683,13 @@ export type introspection = {
             }
           },
           {
+            "name": "forwards_2",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_transfer_forwards_bool_exp"
+            }
+          },
+          {
             "name": "hop",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -14275,6 +14960,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "forwards_2_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_transfer_forwards_aggregate_order_by"
             }
           },
           {
