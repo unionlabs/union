@@ -100,6 +100,7 @@ query TransfersBySourceHashTracesAndHops($source_transaction_hash: String!) @cac
         }
         type
         transaction_hash
+        height
       }
     }
   }

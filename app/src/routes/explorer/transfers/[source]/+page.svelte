@@ -25,13 +25,11 @@ let transfers = createQuery({
       })
     ).v0_transfers
 })
-
 let processedTransfers = derived(transfers, $transfers => {
   if (!$transfers.isSuccess) {
     return null
   }
   return $transfers.data.map(transfer => {
-    console.log(transfer)
     let tx = structuredClone(transfer)
 
     let hop_chain_id = null
@@ -81,8 +79,39 @@ let processedTransfers = derived(transfers, $transfers => {
       hop_chain_source_channel_id,
       ...tx
     }
+    })
   })
-})
+
+  let tracesAndHops = createQuery({
+    queryKey: ["transfers-by-source-traces-and-hops", source],
+    refetchInterval: 1_000,
+    queryFn: async () =>
+      (
+        await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
+          source_transaction_hash: source
+        })
+      ).v0_transfers
+  })
+
+  let processedTraces = derived(tracesAndHops, $tracesAndHops => {
+    if (!$tracesAndHops.isSuccess) {
+      return null
+    }
+    return $tracesAndHops.data.map(tx => {
+
+      if (tx.hop !== null) {
+        tx.traces.push.apply(tx.traces, tx.hop.traces)
+        tx.traces.sort((a, b) => {
+          // @ts-ignore timestamp is guaranteed to be a date
+          // biome-ignore lint/nursery/useDateNow: this is a biome bug
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        })
+      }
+
+      return tx.traces
+
+    })
+  });
 </script>
 
 <!--
@@ -95,7 +124,7 @@ let processedTransfers = derived(transfers, $transfers => {
   <LoadingLogo class="size-16"/>
 {:else if $transfers.isSuccess && $processedTransfers !== null}
 <div class="max-h-auto min-w-full flex flex-col items-center">
-  {#each $processedTransfers as transfer}
+  {#each $processedTransfers as transfer, transferIndex}
 
     <!--
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
@@ -163,12 +192,12 @@ let processedTransfers = derived(transfers, $transfers => {
       {#if typeof transfer.source_timestamp === 'string' }
       <div class="mt-6 font-bold text-md">{toIsoString(new Date(transfer.source_timestamp)).split('T')[0]}</div>
       {/if}
-      <!--
-      <div class="flex flex-col gap-4 w-full">
-        {#each transfer.traces as trace}
+      {@const pTrace = $processedTraces?.at(transferIndex) ?? null } 
+      {#if pTrace }
+        {#each pTrace as trace}
           <div>
             {#if trace.timestamp}
-            <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {trace.chain?.display_name}</p>
+            <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {trace.height}</p>
             {/if}
             <h3 class="text-md font-bold capitalize">{trace.type}</h3>
             {#if trace.transaction_hash}
@@ -176,8 +205,9 @@ let processedTransfers = derived(transfers, $transfers => {
             {/if}
           </div>
         {/each}
-      </div>
-      !-->
+      {:else}
+        <LoadingLogo/>
+      {/if}
     </Card.Footer>
   </Card.Root>
   {/each}
