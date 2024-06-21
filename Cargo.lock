@@ -1280,6 +1280,7 @@ dependencies = [
  "beacon-api",
  "bimap",
  "bip32",
+ "bip39",
  "chrono",
  "cometbft-rpc",
  "contracts",

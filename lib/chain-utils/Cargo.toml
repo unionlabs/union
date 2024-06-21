@@ -33,7 +33,7 @@ prost                    = { workspace = true }
 reqwest                  = { workspace = true }
 scroll-api               = { workspace = true }
 scroll-rpc               = { workspace = true }
-serde                    = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 sha2                     = { workspace = true }
 tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client", "default"] }
@@ -41,6 +41,7 @@ thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
+bip39 = { version = "2.0.0", features = ["serde"] }
 
 [features]
 arbitrary = ["dep:arbitrary"]
