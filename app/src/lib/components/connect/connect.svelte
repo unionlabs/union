@@ -17,10 +17,21 @@ import { Switch } from "$lib/components/ui/switch"
 import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
 
-$: buttonText =
-  $sepoliaStore.connectionStatus === "connected" || $cosmosStore.connectionStatus === "connected"
-    ? "Connected"
-    : "Connect Wallet"
+let buttonText: string
+
+$: if (
+  $sepoliaStore.connectionStatus === "connected" &&
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected"
+} else if (
+  $sepoliaStore.connectionStatus === "connected" ||
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected (1/2)"
+} else {
+  buttonText = "Connect Wallets"
+}
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
