@@ -83,6 +83,11 @@
           default = null;
           example = 20971520;
         };
+        laddr = mkOption {
+          type = types.str;
+          default = "0.0.0.0:65534";
+          example = "0.0.0.0:65534";
+        };
       };
 
       config =
@@ -91,6 +96,7 @@
             chain = cfg.chains;
             voyager = {
               num_workers = cfg.workers;
+              laddr = cfg.laddr;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;
