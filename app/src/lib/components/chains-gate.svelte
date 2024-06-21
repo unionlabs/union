@@ -2,6 +2,7 @@
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
 import type { Chain } from "$lib/types"
+import LoadingLogo from "./loading-logo.svelte"
 
 let chains = chainsQuery()
 
@@ -74,7 +75,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 </script>
 
 {#if $chains.isLoading}
-  Loading chains...
+  <LoadingLogo class="size-16"/>
 {:else if $chains.isError}
   Error loading chains.
 {:else if $chains.isSuccess}

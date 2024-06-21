@@ -50,6 +50,7 @@ let assetSymbol = writable("")
 
 type TransferStates =
   | "PRE_TRANSFER"
+  | "FLIPPING"
   | "ADDING_CHAIN"
   | "SWITCHING_TO_CHAIN"
   | "APPROVING_ASSET"
@@ -184,6 +185,8 @@ const transfer = async () => {
     )
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
+  transferState.set("FLIPPING")
+  await sleep(1200)
 
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
@@ -393,104 +396,109 @@ $: buttonText =
 </script>
 
 
-{#if $transferState === "PRE_TRANSFER"}
-<div class="flex flex-col py-6 px-3">
-<Card.Root class="max-w-lg self-center">
-  <Card.Header>
-    <Card.Title>Transfer</Card.Title>
-  </Card.Header>
-<Card.Content class={cn('flex flex-col gap-4')}>
-  <section>
-    <CardSectionHeading>From</CardSectionHeading>
-    <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
-      {$fromChain?.display_name}
-    </ChainButton>
+<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+<div class="cube-scene">
+  <div class={cn("cube", $transferState !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
+    <Card.Root class="cube-front">
+      <Card.Header>
+        <Card.Title>Transfer</Card.Title>
+      </Card.Header>
+    <Card.Content class={cn('flex flex-col gap-4')}>
+      <section>
+        <CardSectionHeading>From</CardSectionHeading>
+        <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
+          {$fromChain?.display_name}
+        </ChainButton>
 
-    <div class="flex flex-col items-center pt-4 -mb-6">
-      <Button size="icon" variant="outline" on:click={swapChainsClick}>
-        <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
-      </Button>
-    </div>
+        <div class="flex flex-col items-center pt-4 -mb-6">
+          <Button size="icon" variant="outline" on:click={swapChainsClick}>
+            <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
+          </Button>
+        </div>
 
-    <CardSectionHeading>To</CardSectionHeading>
-    <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
-      {$toChain?.display_name}
-    </ChainButton>
-  </section>
-  <section>
-    <CardSectionHeading>Asset</CardSectionHeading>
-    {#if $sendableBalances === null}
-      Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-    {:else if $sendableBalances.length === 0}
-      You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
-    {:else}
+        <CardSectionHeading>To</CardSectionHeading>
+        <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
+          {$toChain?.display_name}
+        </ChainButton>
+      </section>
+      <section>
+        <CardSectionHeading>Asset</CardSectionHeading>
+        {#if $sendableBalances === null}
+          Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+        {:else if $sendableBalances.length === 0}
+          You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
+        {:else}
+          <Button
+            class="size-full"
+            variant="outline"
+            on:click={() => (dialogOpenToken = !dialogOpenToken)}
+          >
+            <div class="flex-1 text-left">{truncate($assetSymbol, 12)}</div>
+
+            <Chevron />
+          </Button>
+        {/if}
+        {#if $assetSymbol !== '' && $sendableBalances !== null}
+          <div class="mt-4 text-xs text-muted-foreground">
+            <b>{truncate($assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
+            <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>
+          </div>
+        {/if}
+      </section>
+
+      <section>
+        <CardSectionHeading>Amount</CardSectionHeading>
+        <Input
+          minlength={1}
+          maxlength={64}
+          placeholder="0.00"
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          bind:value={amount}
+          autocapitalize="none"
+          pattern="^[0-9]*[.,]?[0-9]*$"
+        />
+      </section>
+      <section>
+        <CardSectionHeading>Recipient</CardSectionHeading>
+        <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
+      </section>
+    </Card.Content>
+    <Card.Footer class="flex flex-col gap-4 items-start">
       <Button
-        class="size-full"
-        variant="outline"
-        on:click={() => (dialogOpenToken = !dialogOpenToken)}
+        type="button"
+        disabled={!amount ||
+          !$asset ||
+          !$toChainId ||
+          !$recipient ||
+          !$assetSymbol ||
+          !$fromChainId ||
+          // >= because need some sauce for gas
+          BigInt(amount) >= BigInt($asset.balance)}
+        on:click={async event => {
+          event.preventDefault()
+          transfer()
+        }}
       >
-        <div class="flex-1 text-left">{truncate($assetSymbol, 12)}</div>
-
-        <Chevron />
+        {buttonText}
       </Button>
-    {/if}
-    {#if $assetSymbol !== '' && $sendableBalances !== null}
-      <div class="mt-4 text-xs text-muted-foreground">
-        <b>{truncate($assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
-        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>
-      </div>
-    {/if}
-  </section>
+    </Card.Footer>
+    </Card.Root>
 
-  <section>
-    <CardSectionHeading>Amount</CardSectionHeading>
-    <Input
-      minlength={1}
-      maxlength={64}
-      placeholder="0.00"
-      autocorrect="off"
-      autocomplete="off"
-      spellcheck="false"
-      bind:value={amount}
-      autocapitalize="none"
-      pattern="^[0-9]*[.,]?[0-9]*$"
-    />
-  </section>
-  <section>
-    <CardSectionHeading>Recipient</CardSectionHeading>
-    <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
-  </section>
-</Card.Content>
-<Card.Footer class="flex flex-col gap-4 items-start">
-  <Button
-    type="button"
-    disabled={!amount ||
-      !$asset ||
-      !$toChainId ||
-      !$recipient ||
-      !$assetSymbol ||
-      !$fromChainId ||
-      // >= because need some sauce for gas
-      BigInt(amount) >= BigInt($asset.balance)}
-    on:click={async event => {
-      event.preventDefault()
-      transfer()
-    }}
-  >
-    {buttonText}
-  </Button>
-  <div class="text-muted-foreground text-xs sm:text-base">
-    Will transfer {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
+    <Card.Root class="cube-back p-6">
+
+        <div class="text-muted-foreground">
+          Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
+        </div>
+      <pre>{$transferState}</pre>
+    </Card.Root>
+    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>
-</Card.Footer>
-</Card.Root>
 </div>
-{:else}
-  <div class="text-muted-foreground">
-    Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
-  </div>
-  <pre>{$transferState}</pre>
-{/if}
+
+
+
 
 
 <ChainDialog
@@ -522,3 +530,57 @@ $: buttonText =
     bind:dialogOpen={dialogOpenToken}
   />
 {/if}
+
+
+<style global lang="postcss">
+
+  .cube-scene {
+    @apply absolute -my-6 py-6 z-20;
+    top: calc(50% - (var(--height) / 2));
+    --width: calc(min(500px, (100dvw - 32px)));
+    --height: calc(min(702px, (100dvh - 164px)));
+    --depth: 80px;
+    --speed: 2s;
+    width: var(--width);
+    height: var(--height);
+    perspective: 1000px;
+  }
+
+  .cube {
+    @apply relative;
+    width: var(--width);
+    height: var(--height);
+    transform-style: preserve-3d;
+    transition: transform var(--speed);
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
+  }
+
+  .cube--flipped {
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+
+  }
+
+  .cube-front, .cube-back {
+    @apply absolute overflow-auto;
+
+    width: var(--width);
+    height: var(--height);
+  }
+
+  .cube-left {
+    @apply absolute bg-card border;
+    width: var(--height);
+    height: var(--depth);
+    top: calc((var(--height) / 2) - (var(--depth) / 2));
+    right: calc((var(--width) / 2) - (var(--height) / 2));
+    transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+  }
+
+  .cube-front {
+    transform: translateZ(calc(var(--depth) * 0.5));
+  }
+  .cube-back {
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg) ;
+  }
+
+</style>
