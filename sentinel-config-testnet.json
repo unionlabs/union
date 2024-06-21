@@ -84,10 +84,14 @@
         }
       },
       "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-70\"}}",
-      "sending_memo_probability": 0.5,
-      "denoms": ["0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", "muno"],
+      "sending_memo_probability": 1,
+      "denoms": [
+        "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
+        "muno",
+        "0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4"
+      ],
       "send_packet_interval": 50,
-      "expect_full_cycle": 300,
+      "expect_full_cycle": 35,
       "amount_min": 1,
       "amount_max": 3
     },
@@ -102,7 +106,7 @@
       },
       "protocol": {
         "Ucs01": {
-          "receivers": ["0x84cB5E16918547aD6181fe6513861a7eA476f2EC"],
+          "receivers": ["0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"],
           "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
         }
       },
@@ -110,10 +114,11 @@
       "sending_memo_probability": 0.0,
       "denoms": [
         "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9",
+        "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0x742f7232c73bea91be2828fa14129f68015c3f895b",
         "muno"
       ],
       "send_packet_interval": 50,
-      "expect_full_cycle": 600,
+      "expect_full_cycle": 35,
       "amount_min": 1,
       "amount_max": 3
     }
@@ -129,15 +134,14 @@
     },
     "protocol": {
       "Ucs01": {
-        "receivers": ["0x08210f9170f89ab7658f0b5e3ff39b0e03c594d4"],
+        "receivers": ["union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq"],
         "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
       }
     },
-    "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-78\"}}",
-    "sending_memo_probability": 1,
+    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-79\"}}",
+    "sending_memo_probability": 0,
     "denoms": [
-      "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9",
-      "muno"
+      "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0x742f7232c73bea91be2828fa14129f68015c3f895b"
     ],
     "send_packet_interval": 1,
     "expect_full_cycle": 1,

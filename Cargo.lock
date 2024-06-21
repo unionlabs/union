@@ -8333,7 +8333,6 @@ name = "sentinel"
 version = "0.1.0"
 dependencies = [
  "bech32",
- "block-message",
  "chain-utils",
  "chrono",
  "clap 4.5.4",

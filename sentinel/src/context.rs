@@ -7,7 +7,7 @@ use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
     config::{AnyChainConfig, Config, IbcInteraction},
 };
-type InnerInnerMap = HashMap<i32, bool>;
+type InnerInnerMap = HashMap<i32, (bool, Option<chrono::DateTime<chrono::Utc>>)>;
 type InnerMap = HashMap<i32, InnerInnerMap>;
 pub type SharedMap = Arc<Mutex<HashMap<String, InnerMap>>>;
 
@@ -69,7 +69,6 @@ impl Context {
         }
         handles
     }
-    // ... other methods ...
 
     pub async fn do_single_transaction(&self, interaction: IbcInteraction) -> JoinHandle<()> {
         let source_chain = self.chains.get(&interaction.source.chain).cloned().unwrap();
@@ -91,13 +90,7 @@ impl Context {
 
             // selecting denom randomly
             let denom = interaction.denoms.choose(&mut rng).unwrap().to_string();
-            // tracing::info!(
-            //     "[{:?}] -> Sending memo: {}, with probability: {}. Sending denom: {}",
-            //     interaction.source.chain,
-            //     memo,
-            //     interaction.sending_memo_probability,
-            //     denom
-            // );
+
             match &source_chain {
                 Chain::Ethereum(ethereum) => {
                     ethereum
@@ -158,13 +151,6 @@ impl Context {
                     // selecting denom randomly
                     let denom = interaction.denoms.choose(&mut rng).unwrap().to_string();
 
-                    // tracing::info!(
-                    //     "[{:?}] -> Sending memo: {}, with probability: {}. Sending denom: {}",
-                    //     interaction.source.chain,
-                    //     memo,
-                    //     interaction.sending_memo_probability,
-                    //     denom
-                    // );
                     match &source_chain {
                         Chain::Ethereum(ethereum) => {
                             ethereum
@@ -198,11 +184,11 @@ impl Context {
         handles
     }
     pub async fn check_packet_sequence(&self, expect_full_cycle: u64, key: &str) -> JoinHandle<()> {
-        let shared_map = Arc::clone(&self.shared_map); // Clone the Arc to extend its lifetime
+        let shared_map = Arc::clone(&self.shared_map);
         let key = key.to_string(); // Clone the key to extend its lifetime
 
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(expect_full_cycle));
+            let mut interval = interval(Duration::from_secs(10)); // TODO: Make this configurable (?)
 
             loop {
                 interval.tick().await;
@@ -211,15 +197,13 @@ impl Context {
 
                 if let Some(inner_map) = shared_map.get_mut(&key) {
                     // Use get_mut to get a mutable reference
-                    tracing::info!("Checking packet sequences for chain flow: {}", key);
 
                     let sequences_to_remove: Vec<i32> = inner_map
                         .iter()
                         .filter_map(|(&sequence, event_map)| {
                             let mut all_events_received = true;
-                            tracing::info!("    Sequence: {}", sequence);
-                            for (event_index, status) in event_map.iter() {
-                                let event_name = match event_index {
+                            for (event_index, (status, _date)) in event_map.iter() {
+                                let _event_name = match event_index {
                                     0 => "SendPacket",
                                     1 => "RecvPacket",
                                     2 => "WriteAcknowledgement",
@@ -229,19 +213,34 @@ impl Context {
                                 if !status {
                                     all_events_received = false;
                                 }
-                                tracing::info!("      {}: {}", event_name, status);
                             }
 
                             if all_events_received {
                                 tracing::info!("All events received for sequence: {}", sequence);
                                 Some(sequence)
                             } else {
-                                tracing::error!(
-                                    "Not all events received for sequence: {} after {} seconds",
-                                    sequence,
-                                    expect_full_cycle
-                                );
-                                None
+                                if let Some((_, Some(send_packet_time))) = event_map.get(&0) {
+                                    let now = chrono::Utc::now();
+                                    let duration = now.signed_duration_since(*send_packet_time);
+
+                                    if duration.num_seconds() >= (expect_full_cycle as i64) {
+                                        tracing::error!(
+                                            "[SENTINEL ERROR] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
+                                            sequence,
+                                            duration.num_seconds(),
+                                            event_map
+                                        );
+                                        Some(sequence)
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    tracing::error!(
+                                        "Not all events received for sequence: {} and no SendPacket timestamp found",
+                                        sequence
+                                    );
+                                    None
+                                }
                             }
                         })
                         .collect();

@@ -57,7 +57,7 @@
             after = [ "network.target" ];
             serviceConfig = {
               Type = "simple";
-              ExecStart = "${pkgs.lib.getExe cfg.package} --config ${configJson}";
+              ExecStart = "${pkgs.lib.getExe cfg.package} --config ${configJson} -l ${cfg.log-format}";
               Restart = "always";
               RestartSec = 10;
               # User = "sentinel";
