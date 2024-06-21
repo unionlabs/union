@@ -98,4 +98,4 @@ const columns: Array<ColumnDef<DataRow>> = [
 ]
 </script>
 
-<Table enableFiltering={false} bind:dataStore={packetsStore} {columns} tableName="Packets" />
+<Table bind:dataStore={packetsStore} {columns} tableName="Packets" />

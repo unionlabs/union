@@ -99,6 +99,5 @@ const columns: Array<ColumnDef<DataRow>> = [
   {fuzzyFilter}
   {globalFilter}
   tableName="Channels"
-  enableFiltering={true}
   bind:dataStore={channelsStore}
 />

@@ -15,13 +15,13 @@ import CellDuration from "../(components)/cell-duration-text.svelte"
 import { allTransfersQueryDocument } from "$lib/graphql/documents/transfers.ts"
 import { flexRender, type ColumnDef, type FilterFn } from "@tanstack/svelte-table"
 
+let chains = chainsQuery()
+
 let transfers = createQuery({
   queryKey: ["transfers"],
   refetchInterval: 3_000,
   queryFn: async () => (await request(URLS.GRAPHQL, allTransfersQueryDocument, {})).v0_transfers
 })
-
-let chains = chainsQuery()
 
 let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
   if (!($transfers.isSuccess && $chains.isSuccess)) return []
@@ -136,7 +136,6 @@ const columns: Array<ColumnDef<DataRow>> = [
     {fuzzyFilter}
     {globalFilter}
     tableName="Transfers"
-    enableFiltering={true}
     bind:dataStore={transfersData}
     onClick={x => goto(`/explorer/transfers/${x.source_transaction_hash}`)}
   />

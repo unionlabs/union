@@ -98,7 +98,6 @@ const columns: Array<ColumnDef<DataRow>> = [
   {columns}
   {fuzzyFilter}
   {globalFilter}
-  enableFiltering={true}
   tableName="Connections"
   bind:dataStore={connectionsStore}
 />

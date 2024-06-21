@@ -21,7 +21,6 @@ import type { FormInputEvent } from "$lib/components/ui/input"
 
 type DataRow = $$Generic
 
-export let enableFiltering = false
 export let tableName: string | undefined = undefined
 export let globalFilter: string | undefined = undefined
 export let fuzzyFilter: FilterFn<DataRow> | undefined = undefined
@@ -38,7 +37,7 @@ const options = writable<TableOptions<DataRow>>({
   enableColumnFilters: true,
   enableColumnResizing: true,
   enableMultiRowSelection: true,
-  enableGlobalFilter: !!globalFilter,
+  enableGlobalFilter: true,
   globalFilterFn: fuzzyFilter,
   filterFns: fuzzyFilter ? { fuzzy: fuzzyFilter } : undefined,
   getCoreRowModel: getCoreRowModel(),
@@ -70,15 +69,18 @@ $: dataStore.subscribe(() => {
 })
 </script>
 
-{#if enableFiltering}
-  <Input
-    type="text"
-    on:keyup={handleKeyUp}
-    bind:value={globalFilter}
-    placeholder={`Search ${tableName || 'for any column'}`}
-    class={cn('border w-full py-1 px-2.5', 'focus:outline-none focus-visible:ring-0')}
-  />
-{/if}
+<Input
+  type="text"
+  autocorrect="off"
+  autocomplete="off"
+  spellcheck="false"
+  autocapitalize="off"
+  on:keyup={handleKeyUp}
+  bind:value={globalFilter}
+  placeholder={`Search ${tableName || 'for any column'}`}
+  class={cn('border w-full py-1 px-2.5', 'focus:outline-none focus-visible:ring-0')}
+/>
+
 <Card.Root>
   <div bind:this={virtualListElement}>
     <Table.Root>
