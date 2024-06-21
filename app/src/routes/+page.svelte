@@ -7,7 +7,7 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
 
 <ChainsGate let:chains>
   <WalletGate>
-    <div let:userAddr slot="connected">
+    <div class="max-w-full" let:userAddr slot="connected">
       <BalancesOverview {chains} {userAddr}/>
     </div>
     <div class="flex items-center justify-center w-full h-full" slot="disconnected">
