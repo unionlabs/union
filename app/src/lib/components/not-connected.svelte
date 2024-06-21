@@ -26,7 +26,7 @@ $: if (
 }
 </script>
 
-<section class="max-w-lg mx-auto">
+<section class="max-w-lg">
   <Card.Root>
     <Card.Header>
       <Card.Title>

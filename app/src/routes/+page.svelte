@@ -5,15 +5,13 @@ import NotConnected from "$lib/components/not-connected.svelte"
 import BalancesOverview from "$lib/components/balances-overview.svelte"
 </script>
 
-<div class="max-w-full">
-  <ChainsGate let:chains>
-    <WalletGate>
-      <div let:userAddr slot="connected">
-        <BalancesOverview {chains} {userAddr}/>
-      </div>
-      <div class="flex items-center w-full" slot="disconnected">
-        <NotConnected/>
-      </div>
-    </WalletGate>
-  </ChainsGate>
-</div>
+<ChainsGate let:chains>
+  <WalletGate>
+    <div class="max-w-full" let:userAddr slot="connected">
+      <BalancesOverview {chains} {userAddr}/>
+    </div>
+    <div class="flex items-center justify-center w-full h-full" slot="disconnected">
+      <NotConnected/>
+    </div>
+  </WalletGate>
+</ChainsGate>
