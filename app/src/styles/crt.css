@@ -3,67 +3,67 @@
 @media screen and (prefers-reduced-motion: no-preference) {
 @keyframes flicker {
   0% {
-    opacity: calc(0.27861 / 6);
+    opacity: calc(0.27861 / 3);
   }
   5% {
-    opacity: calc(0.34769 / 6);
+    opacity: calc(0.34769 / 3);
   }
   10% {
-    opacity: calc(0.23604 / 6);
+    opacity: calc(0.23604 / 3);
   }
   15% {
-    opacity: calc(0.90626 / 6);
+    opacity: calc(0.90626 / 3);
   }
   20% {
-    opacity: calc(0.18128 / 6);
+    opacity: calc(0.18128 / 3);
   }
   25% {
-    opacity: calc(0.83891 / 6);
+    opacity: calc(0.83891 / 3);
   }
   30% {
-    opacity: calc(0.65583 / 6);
+    opacity: calc(0.65583 / 3);
   }
   35% {
-    opacity: calc(0.67807 / 6);
+    opacity: calc(0.67807 / 3);
   }
   40% {
-    opacity: calc(0.26559 / 6);
+    opacity: calc(0.26559 / 3);
   }
   45% {
-    opacity: calc(0.84693 / 6);
+    opacity: calc(0.84693 / 3);
   }
   50% {
-    opacity: calc(0.96019 / 6);
+    opacity: calc(0.96019 / 3);
   }
   55% {
-    opacity: calc(0.08594 / 6);
+    opacity: calc(0.08594 / 3);
   }
   60% {
-    opacity: calc(0.20313 / 6);
+    opacity: calc(0.20313 / 3);
   }
   65% {
-    opacity: calc(0.71988 / 6);
+    opacity: calc(0.71988 / 3);
   }
   70% {
-    opacity: calc(0.53455 / 6);
+    opacity: calc(0.53455 / 3);
   }
   75% {
-    opacity: calc(0.37288 / 6);
+    opacity: calc(0.37288 / 3);
   }
   80% {
-    opacity: calc(0.71428 / 6);
+    opacity: calc(0.71428 / 3);
   }
   85% {
-    opacity: calc(0.70419 / 6);
+    opacity: calc(0.70419 / 3);
   }
   90% {
-    opacity: calc(0.7003; / 6)
+    opacity: calc(0.70030 / 3)
   }
   95% {
-    opacity: calc(0.36108 / 6);
+    opacity: calc(0.36108 / 3);
   }
   100% {
-    opacity: calc(0.24387 / 6);
+    opacity: calc(0.24387 / 3);
   }
 }
 @keyframes textShadow {
@@ -153,7 +153,7 @@
   left: 0;
   bottom: 0;
   right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.10) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
   z-index: 2;
   background-size: 100% 2px, 3px 100%;
   pointer-events: none;
