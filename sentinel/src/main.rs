@@ -72,7 +72,7 @@ async fn main() {
     let mut handles = vec![];
 
     if args.single_interaction {
-        if let Some(single_interaction) = config.clone().single_interaction.clone() {
+        if let Some(single_interaction) = config.single_interaction.clone() {
             handles.push(
                 context
                     .clone()

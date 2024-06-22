@@ -25,7 +25,7 @@ use futures::StreamExt;
 use hex::{self, encode as hex_encode};
 use prost::Message;
 use protos::{google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{event::EventData, SubscriptionClient};
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
@@ -37,7 +37,10 @@ use unionlabs::{
     events::{AcknowledgePacket, RecvPacket, SendPacket, WriteAcknowledgement},
     google::protobuf::any,
     hash::H160,
-    ibc::core::{channel::channel::Channel, client::height::Height},
+    ibc::core::{
+        channel::channel::{self, Channel},
+        client::height::Height,
+    },
     id::{ChannelId, ClientId},
     tendermint::abci::{event::Event as TendermintEvent, event_attribute::EventAttribute},
     uint::U256,
@@ -115,13 +118,10 @@ pub trait IbcListen: Send + Sync {
         if let Ok(val) = Ucs01Ack::decode_as::<encoding::EthAbi>(
             cosmwasm_std::Binary::from(ack_hex.clone()).as_slice(),
         ) {
-            tracing::info!(
-                "Ucs01Ack:: successfully decoded: {}",
-                val == Ucs01Ack::Success
-            );
+            tracing::info!("Ucs01Ack:: successfully decoded. ");
             return val == Ucs01Ack::Success;
         } else {
-            tracing::warn!("Failed to decode ack_hex: {:?}", ack_hex);
+            tracing::warn!("Failed to decode ack_hex: {:?} ", ack_hex);
             return false;
         }
     }
@@ -172,44 +172,50 @@ pub trait IbcListen: Send + Sync {
 
                 let sequence_entry = entry.entry(sequence).or_insert_with(|| {
                     let mut event_map = HashMap::new();
-                    event_map.insert(0, (false, None));
-                    event_map.insert(1, (false, None));
-                    event_map.insert(2, (false, None));
-                    event_map.insert(3, (false, None));
+                    event_map.extend(
+                        [
+                            (0, (false, None)),
+                            (1, (false, None)),
+                            (2, (false, None)),
+                            (3, (false, None)),
+                        ]
+                        .into_iter()
+                        .collect::<HashMap<_, _>>(), // Specify the type here
+                    );
                     event_map
                 });
                 match ibc_event {
-                    IbcEvent::SendPacket(_) => {
+                    IbcEvent::SendPacket(event) => {
                         sequence_entry.insert(0, (true, Some(Utc::now())));
                         tracing::info!(
-                            "SendPacket event recorded for sequence {}. key: {}",
-                            sequence,
-                            key
+                            sequence = sequence,
+                            key = key,
+                            "SendPacket event recorded. "
                         );
                     }
                     IbcEvent::RecvPacket(_) => {
                         if !sequence_entry.get(&0).unwrap_or(&(false, None)).0 {
                             tracing::warn!(
-                                "RecvPacket event received without SendPacket for sequence {}. key: {}",
-                                sequence,
-                                key
+                                sequence = sequence,
+                                key = key,
+                                "RecvPacket event received without SendPacket. "
                             );
                             entry.remove(&sequence);
                         } else {
                             sequence_entry.insert(1, (true, Some(Utc::now())));
                             tracing::info!(
-                                "RecvPacket event recorded for sequence {}. key: {}",
-                                sequence,
-                                key
+                                sequence = sequence,
+                                key = key,
+                                "RecvPacket event recorded. "
                             );
                         }
                     }
                     IbcEvent::WriteAcknowledgement(ref e) => {
                         if !sequence_entry.get(&0).unwrap_or(&(false, None)).0 {
                             tracing::warn!(
-                                "RecvPacket event received without SendPacket for sequence {}. key: {}",
-                                sequence,
-                                key
+                                sequence = sequence,
+                                key = key,
+                                "RecvPacket event received without SendPacket. "
                             );
                             entry.remove(&sequence);
                         } else {
@@ -218,16 +224,16 @@ pub trait IbcListen: Send + Sync {
                             {
                                 sequence_entry.insert(2, (true, Some(Utc::now())));
                                 tracing::info!(
-                                    "WriteAcknowledgement event recorded for sequence {}. key: {}",
-                                    sequence,
-                                    key
+                                    sequence = sequence,
+                                    key = key,
+                                    "WriteAcknowledgement event recorded. "
                                 );
                             } else {
                                 tracing::error!(
-                                    "[SENTINEL ERROR] WriteAcknowledgement indicates failure. Sequence: {}, packet_hack_hex: {:?}, key: {}",
-                                    sequence,
-                                    e.packet_ack_hex.clone(),
-                                    key
+                                    sequence = sequence,
+                                    key = key,
+                                    "[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}",
+                                    e.packet_ack_hex.clone()
                                 );
                                 // Here remove it from the map
                                 entry.remove(&sequence);
@@ -240,6 +246,8 @@ pub trait IbcListen: Send + Sync {
                             || !sequence_entry.get(&2).unwrap_or(&(false, None)).0
                         {
                             tracing::warn!(
+                                sequence = sequence,
+                                key = key,
                                 "AcknowledgePacket event received out of order for sequence: {}. key: {}",
                                 sequence,
                                 key
@@ -248,15 +256,15 @@ pub trait IbcListen: Send + Sync {
                         } else {
                             sequence_entry.insert(3, (true, Some(Utc::now())));
                             tracing::info!(
-                                "AcknowledgePacket event recorded for sequence {}. key: {}",
-                                sequence,
-                                key
+                                sequence = sequence,
+                                key = key,
+                                "AcknowledgePacket event recorded. "
                             );
 
                             if sequence_entry.values().all(|&(v, _)| v) {
                                 tracing::info!(
-                                    "All events completed for sequence {}: {:?}",
-                                    sequence,
+                                    sequence = sequence,
+                                    "All events completed. sequence_entry: {:?}",
                                     sequence_entry
                                 );
                                 entry.remove(&sequence);
@@ -389,18 +397,18 @@ impl IbcListen for Ethereum {
         loop {
             let provider = self.rpc.provider.clone();
 
-            let latest_block = provider.get_block_number().await.unwrap().as_u64();
-            if latest_checked_block == latest_block {
-                tokio::time::sleep(Duration::from_secs(5)).await;
+            let latest_block: u64 = provider.get_block_number().await.unwrap().as_u64();
+            if latest_checked_block >= latest_block {
+                tokio::time::sleep(Duration::from_secs(1)).await;
                 continue;
             }
             latest_checked_block = latest_block;
-            tracing::info!("Fetched Ethereum latest_block {:?}.", latest_block);
+            tracing::info!(block = latest_block, "Fetching Ethereum latest_block.");
             // Update the filter to fetch logs from the latest block processed + 1
             let filter = Filter::new()
                 .address(ethers::types::H160::from(self.rpc.ibc_handler_address))
                 .from_block(latest_block)
-                .to_block(latest_block); //TODO(caglankaan): How can we make here subscribe like instead of latest_block
+                .to_block(latest_block);
 
             let logs = provider.get_logs(&filter).await.unwrap();
 
@@ -545,14 +553,18 @@ impl IbcTransfer for Ethereum {
         };
 
         if denom_address == ethers::types::H160::zero() {
-            tracing::warn!("Denom address not found");
+            tracing::error!("Denom address not found");
             return;
         }
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
         let balance = erc_contract.balance_of(msg_sender).await.unwrap();
         tracing::info!("ETH Token balance: {}. Sending amount: {}", balance, amount);
         if balance < amount.into() {
-            tracing::warn!("Insufficient balance");
+            tracing::warn!(
+                "Insufficient balance: {}. Requested amount: {}",
+                balance,
+                amount
+            );
             return;
         }
 
@@ -566,7 +578,7 @@ impl IbcTransfer for Ethereum {
                 .send()
                 .await;
             tracing::info!("We can not transfer after approve, returning now.");
-            // return;
+            return;
         }
 
         let mut debug_msg;
@@ -600,7 +612,7 @@ impl IbcTransfer for Ethereum {
                     amount,
                     contract
                 );
-                let _tx_rcp: Option<ethers::types::TransactionReceipt> = match relay
+                let tx_rcp: Option<ethers::types::TransactionReceipt> = match relay
                     .send(
                         destination_channel.clone().to_string(),
                         final_receiver,
@@ -643,7 +655,7 @@ impl IbcTransfer for Ethereum {
                         return;
                     }
                 };
-                let tx_hash = _tx_rcp.unwrap().transaction_hash.to_string();
+                let tx_hash = tx_rcp.unwrap().transaction_hash.to_string();
                 debug_msg.push_str(&format!(" Tx Hash: {:?}", tx_hash));
 
                 tracing::info!(debug_msg);
@@ -742,9 +754,14 @@ impl IbcTransfer for Cosmos {
             let transfer_msg = match protocol {
                 Protocol::Ics20 { receivers, module } => {
                     let mut rng = StdRng::from_entropy();
-                    let index = rng.gen_range(0..receivers.len()); // Select a random index
 
-                    let receiver = &receivers[index];
+                    let receiver = match receivers.choose(&mut rng) {
+                        Some(receiver) => receiver,
+                        None => {
+                            tracing::error!("No receiver found.");
+                            return;
+                        }
+                    };
 
                     let msg = MsgTransfer {
                         source_port: "transfer".into(),
@@ -779,8 +796,13 @@ impl IbcTransfer for Cosmos {
                 }
                 Protocol::Ucs01 { receivers, contract } => {
                     let mut rng = StdRng::from_entropy();
-                    let index = rng.gen_range(0..receivers.len()); // Select a random index
-                    let receiver = &receivers[index];
+                    let receiver = match receivers.choose(&mut rng) {
+                        Some(receiver) => receiver,
+                        None => {
+                            tracing::error!("No receiver found.");
+                            return;
+                        }
+                    };
 
                     let transfer_msg = ExecuteMsg::Transfer(TransferMsg {
                         channel: destination_channel.to_string(),
@@ -870,7 +892,28 @@ impl Cosmos {
     }
 }
 
-// TODO: Are there any other similar function to this? It's not good.
+async fn get_channel_for_eth_ack_packet(
+    eth_rpcs: &EthereumRpc,
+    port_id: String,
+    channel_id: String,
+    block_number: u64,
+) -> Channel {
+    tracing::info!(
+        "Fetching channel for port: {}, channel: {}",
+        port_id,
+        channel_id
+    );
+    let channel: Channel = eth_rpcs
+        .ibc_handler()
+        .get_channel(port_id, channel_id)
+        .block(block_number)
+        .await
+        .unwrap()
+        .try_into()
+        .unwrap();
+    channel
+}
+
 async fn ibchandler_events_to_ibc_event(
     log: RawLog,
     eth_rpcs: &EthereumRpc,
@@ -882,23 +925,18 @@ async fn ibchandler_events_to_ibc_event(
             let ibc_event: Option<IbcEvent> = match event {
                 IBCHandlerEvents::PacketEvent(packet_event) => match packet_event {
                     IBCPacketEvents::SendPacketFilter(event) => {
-                        let channel: Channel = eth_rpcs
-                            .ibc_handler()
-                            .get_channel(
-                                event.source_port.parse().unwrap(),
-                                event.source_channel.parse().unwrap(),
-                            )
-                            .block(block_number)
-                            .await
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
-                        tracing::info!("channel: {:?}", channel);
+                        let channel = get_channel_for_eth_ack_packet(
+                            eth_rpcs,
+                            event.source_port.clone(),
+                            event.source_channel.clone(),
+                            block_number,
+                        )
+                        .await;
                         Some(IbcEvent::SendPacket(SendPacket {
                             packet_sequence: event.sequence.try_into().unwrap(),
                             packet_src_port: event.source_port.parse().unwrap(),
                             packet_src_channel: event.source_channel.parse().unwrap(),
-                            packet_dst_port: "RANDOM_VALUE".to_string().parse().unwrap(),
+                            packet_dst_port: channel.counterparty.port_id,
                             packet_dst_channel: channel
                                 .counterparty
                                 .channel_id
@@ -908,12 +946,18 @@ async fn ibchandler_events_to_ibc_event(
                             packet_timeout_height: event.timeout_height.into(),
                             packet_timeout_timestamp: event.timeout_timestamp,
                             packet_data_hex: hex_encode(event.data).into(),
-                            packet_channel_ordering:
-                                unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
-                            connection_id: "connection-0".to_string().validate().unwrap(),
+                            packet_channel_ordering: channel.ordering,
+                            connection_id: channel.connection_hops[0].clone(),
                         }))
                     }
                     IBCPacketEvents::RecvPacketFilter(event) => {
+                        let channel = get_channel_for_eth_ack_packet(
+                            eth_rpcs,
+                            event.packet.source_port.clone(),
+                            event.packet.source_channel.clone(),
+                            block_number,
+                        )
+                        .await;
                         Some(IbcEvent::RecvPacket(RecvPacket {
                             packet_sequence: event.packet.sequence.try_into().unwrap(),
                             packet_src_port: event.packet.source_port.parse().unwrap(),
@@ -923,29 +967,42 @@ async fn ibchandler_events_to_ibc_event(
                             packet_timeout_height: event.packet.timeout_height.into(),
                             packet_timeout_timestamp: event.packet.timeout_timestamp,
                             packet_data_hex: hex_encode(event.packet.data).into(),
-                            packet_channel_ordering:
-                                unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
-                            connection_id: "connection-0".to_string().validate().unwrap(),
+                            packet_channel_ordering: channel.ordering,
+                            connection_id: channel.connection_hops[0].clone(),
                         }))
                     }
                     IBCPacketEvents::AcknowledgePacketFilter(event) => {
+                        let channel = get_channel_for_eth_ack_packet(
+                            eth_rpcs,
+                            event.packet.source_port.clone(),
+                            event.packet.source_channel.clone(),
+                            block_number,
+                        )
+                        .await;
                         Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
                             packet_sequence: event.packet.sequence.try_into().unwrap(),
-                            packet_src_port: "RANDOM_VALUE".to_string().parse().unwrap(),
+                            packet_src_port: event.packet.source_port.parse().unwrap(),
                             packet_src_channel: event.packet.source_channel.parse().unwrap(),
                             packet_dst_port: event.packet.destination_port.parse().unwrap(),
                             packet_dst_channel: event.packet.destination_channel.parse().unwrap(),
                             packet_timeout_height: event.packet.timeout_height.into(),
                             packet_timeout_timestamp: event.packet.timeout_timestamp,
-                            packet_channel_ordering:
-                                unionlabs::ibc::core::channel::order::Order::NoneUnspecified,
-                            connection_id: "connection-0".to_string().validate().unwrap(),
+                            packet_channel_ordering: channel.ordering,
+                            connection_id: channel.connection_hops[0].clone(),
                         }))
                     }
                     IBCPacketEvents::WriteAcknowledgementFilter(event) => {
+                        let channel = get_channel_for_eth_ack_packet(
+                            eth_rpcs,
+                            event.packet.source_port.clone(),
+                            event.packet.source_channel.clone(),
+                            block_number,
+                        )
+                        .await;
+
                         Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
                             packet_sequence: event.packet.sequence.try_into().unwrap(),
-                            packet_src_port: "RANDOM_VALUE".to_string().parse().unwrap(),
+                            packet_src_port: event.packet.source_port.to_string().parse().unwrap(),
                             packet_src_channel: event.packet.source_channel.parse().unwrap(),
                             packet_dst_port: event.packet.destination_port.parse().unwrap(),
                             packet_dst_channel: event.packet.destination_channel.parse().unwrap(),
@@ -954,9 +1011,9 @@ async fn ibchandler_events_to_ibc_event(
                                 revision_height: 0,
                             },
                             packet_ack_hex: event.acknowledgement.to_vec(),
-                            packet_data_hex: hex_encode("RANDOM_VALUE").into(),
+                            packet_data_hex: hex_encode(event.packet.data).into(),
                             packet_timeout_timestamp: 0,
-                            connection_id: "connection-0".to_string().validate().unwrap(),
+                            connection_id: channel.connection_hops[0].clone(),
                         }))
                     }
                     _ => {

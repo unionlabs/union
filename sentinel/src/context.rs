@@ -225,7 +225,7 @@ impl Context {
 
                                     if duration.num_seconds() >= (expect_full_cycle as i64) {
                                         tracing::error!(
-                                            "[SENTINEL ERROR] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
+                                            "[TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
                                             sequence,
                                             duration.num_seconds(),
                                             event_map
