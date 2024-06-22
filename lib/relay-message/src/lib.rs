@@ -485,7 +485,10 @@ pub trait DoFetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt>: ChainExt {
 }
 
 pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn msg(&self, msg: Effect<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
+    fn msg(
+        &self,
+        msg: Effect<Hc, Tr>,
+    ) -> impl Future<Output = Result<Op<RelayMessage>, Self::MsgError>> + '_;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

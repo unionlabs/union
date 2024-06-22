@@ -90,8 +90,12 @@ where
         StoredClientState<Union>: IntoAny,
         StateProof: Encode<Proto>,
     >,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Union, Tr>)>,
 {
-    async fn msg(&self, msg: Effect<Union, Tr>) -> Result<(), BroadcastTxCommitError> {
+    async fn msg(
+        &self,
+        msg: Effect<Union, Tr>,
+    ) -> Result<Op<RelayMessage>, BroadcastTxCommitError> {
         do_msg(
             self,
             msg,
