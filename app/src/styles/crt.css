@@ -3,67 +3,67 @@
 @media screen and (prefers-reduced-motion: no-preference) {
 @keyframes flicker {
   0% {
-    opacity: 0.27861;
+    opacity: calc(0.27861 / 6);
   }
   5% {
-    opacity: 0.34769;
+    opacity: calc(0.34769 / 6);
   }
   10% {
-    opacity: 0.23604;
+    opacity: calc(0.23604 / 6);
   }
   15% {
-    opacity: 0.90626;
+    opacity: calc(0.90626 / 6);
   }
   20% {
-    opacity: 0.18128;
+    opacity: calc(0.18128 / 6);
   }
   25% {
-    opacity: 0.83891;
+    opacity: calc(0.83891 / 6);
   }
   30% {
-    opacity: 0.65583;
+    opacity: calc(0.65583 / 6);
   }
   35% {
-    opacity: 0.67807;
+    opacity: calc(0.67807 / 6);
   }
   40% {
-    opacity: 0.26559;
+    opacity: calc(0.26559 / 6);
   }
   45% {
-    opacity: 0.84693;
+    opacity: calc(0.84693 / 6);
   }
   50% {
-    opacity: 0.96019;
+    opacity: calc(0.96019 / 6);
   }
   55% {
-    opacity: 0.08594;
+    opacity: calc(0.08594 / 6);
   }
   60% {
-    opacity: 0.20313;
+    opacity: calc(0.20313 / 6);
   }
   65% {
-    opacity: 0.71988;
+    opacity: calc(0.71988 / 6);
   }
   70% {
-    opacity: 0.53455;
+    opacity: calc(0.53455 / 6);
   }
   75% {
-    opacity: 0.37288;
+    opacity: calc(0.37288 / 6);
   }
   80% {
-    opacity: 0.71428;
+    opacity: calc(0.71428 / 6);
   }
   85% {
-    opacity: 0.70419;
+    opacity: calc(0.70419 / 6);
   }
   90% {
-    opacity: 0.7003;
+    opacity: calc(0.7003; / 6)
   }
   95% {
-    opacity: 0.36108;
+    opacity: calc(0.36108 / 6);
   }
   100% {
-    opacity: 0.24387;
+    opacity: calc(0.24387 / 6);
   }
 }
 @keyframes textShadow {
