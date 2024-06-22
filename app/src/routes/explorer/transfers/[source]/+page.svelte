@@ -21,7 +21,8 @@ const source = $page.params.source
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
-  refetchInterval: 2_000,
+  retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
+  refetchInterval: (query) => query.state.data?.length === 0 ? 1_000 : false, // fetch every second until we have the transaction
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
     const response = await request(URLS.GRAPHQL, transfersBySourceHashBaseQueryDocument, {
