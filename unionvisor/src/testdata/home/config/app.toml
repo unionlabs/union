@@ -17,8 +17,8 @@ minimum-gas-prices = "0stake"
 pruning = "default"
 
 # These are applied if and only if the pruning strategy is custom.
+pruning-interval    = "0"
 pruning-keep-recent = "0"
-pruning-interval = "0"
 
 # HaltHeight contains a non-zero block height at which a node will gracefully
 # halt and shutdown that can be used to assist upgrades and testing.
@@ -107,8 +107,7 @@ prometheus-retention-time = 0
 #
 # Example:
 # [["chain_id", "cosmoshub-1"]]
-global-labels = [
-]
+global-labels = []
 
 ###############################################################################
 ###                           API Configuration                             ###
@@ -236,9 +235,9 @@ streamers = []
 
 [streamers]
 [streamers.file]
-keys = ["*", ]
+keys      = ["*"]
+prefix    = ""
 write_dir = ""
-prefix = ""
 
 # output-metadata specifies if output the metadata file which includes the abci request/responses 
 # during processing the block.
