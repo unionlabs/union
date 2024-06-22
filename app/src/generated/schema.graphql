@@ -119,6 +119,23 @@ scalar UInt64
 
 scalar Void
 
+scalar bigint
+
+"""
+Boolean expression to compare columns of type "bigint". All fields are combined with logical 'AND'.
+"""
+input bigint_comparison_exp {
+  _eq: bigint
+  _gt: bigint
+  _gte: bigint
+  _in: [bigint!]
+  _is_null: Boolean
+  _lt: bigint
+  _lte: bigint
+  _neq: bigint
+  _nin: [bigint!]
+}
+
 """ordering argument of a cursor"""
 enum cursor_ordering {
   """ascending ordering of the cursor"""
@@ -409,6 +426,31 @@ type query_root {
     """filter the rows returned"""
     where: v0_faucets_bool_exp
   ): [v0_faucets!]!
+
+  """
+  execute function "v0.get_transfer_forwards" which returns "v0.transfer_forwards"
+  """
+  v0_get_transfer_forwards(
+    """
+    input parameters for function "v0_get_transfer_forwards"
+    """
+    args: v0_get_transfer_forwards_args!
+
+    """distinct select on columns"""
+    distinct_on: [v0_transfer_forwards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfer_forwards_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfer_forwards_bool_exp
+  ): [v0_transfer_forwards!]!
 
   """
   fetch data from the table: "v0.index_status"
@@ -889,6 +931,31 @@ type subscription_root {
   ): [v0_faucets!]!
 
   """
+  execute function "v0.get_transfer_forwards" which returns "v0.transfer_forwards"
+  """
+  v0_get_transfer_forwards(
+    """
+    input parameters for function "v0_get_transfer_forwards"
+    """
+    args: v0_get_transfer_forwards_args!
+
+    """distinct select on columns"""
+    distinct_on: [v0_transfer_forwards_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfer_forwards_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfer_forwards_bool_exp
+  ): [v0_transfer_forwards!]!
+
+  """
   fetch data from the table: "v0.index_status"
   """
   v0_index_status(
@@ -1188,6 +1255,8 @@ input timestamptz_comparison_exp {
   _neq: timestamptz
   _nin: [timestamptz!]
 }
+
+scalar transfers_scalar
 
 """
 columns and relationships of "v0.assets"
@@ -2493,6 +2562,10 @@ input v0_faucets_variance_order_by {
   chain_id: order_by
 }
 
+input v0_get_transfer_forwards_args {
+  transfer: transfers_scalar
+}
+
 """
 columns and relationships of "v0.index_status"
 """
@@ -2995,6 +3068,7 @@ type v0_traces {
     """JSON select path"""
     path: String
   ): jsonb
+  height: bigint
   initiating_transaction_hash: String
   timestamp: timestamptz
   transaction_hash: String
@@ -3026,6 +3100,7 @@ order by avg() on columns of table "v0.traces"
 """
 input v0_traces_avg_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3038,6 +3113,7 @@ input v0_traces_bool_exp {
   chain: v0_chains_bool_exp
   chain_id: Int_comparison_exp
   data: jsonb_comparison_exp
+  height: bigint_comparison_exp
   initiating_transaction_hash: String_comparison_exp
   timestamp: timestamptz_comparison_exp
   transaction_hash: String_comparison_exp
@@ -3050,6 +3126,7 @@ order by max() on columns of table "v0.traces"
 """
 input v0_traces_max_order_by {
   chain_id: order_by
+  height: order_by
   initiating_transaction_hash: order_by
   timestamp: order_by
   transaction_hash: order_by
@@ -3061,6 +3138,7 @@ order by min() on columns of table "v0.traces"
 """
 input v0_traces_min_order_by {
   chain_id: order_by
+  height: order_by
   initiating_transaction_hash: order_by
   timestamp: order_by
   transaction_hash: order_by
@@ -3072,6 +3150,7 @@ input v0_traces_order_by {
   chain: v0_chains_order_by
   chain_id: order_by
   data: order_by
+  height: order_by
   initiating_transaction_hash: order_by
   timestamp: order_by
   transaction_hash: order_by
@@ -3088,6 +3167,9 @@ enum v0_traces_select_column {
 
   """column name"""
   data
+
+  """column name"""
+  height
 
   """column name"""
   initiating_transaction_hash
@@ -3107,6 +3189,7 @@ order by stddev() on columns of table "v0.traces"
 """
 input v0_traces_stddev_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3114,6 +3197,7 @@ order by stddev_pop() on columns of table "v0.traces"
 """
 input v0_traces_stddev_pop_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3121,6 +3205,7 @@ order by stddev_samp() on columns of table "v0.traces"
 """
 input v0_traces_stddev_samp_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3138,6 +3223,7 @@ input v0_traces_stream_cursor_input {
 input v0_traces_stream_cursor_value_input {
   chain_id: Int
   data: jsonb
+  height: bigint
   initiating_transaction_hash: String
   timestamp: timestamptz
   transaction_hash: String
@@ -3149,6 +3235,7 @@ order by sum() on columns of table "v0.traces"
 """
 input v0_traces_sum_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3156,6 +3243,7 @@ order by var_pop() on columns of table "v0.traces"
 """
 input v0_traces_var_pop_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3163,6 +3251,7 @@ order by var_samp() on columns of table "v0.traces"
 """
 input v0_traces_var_samp_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3170,6 +3259,7 @@ order by variance() on columns of table "v0.traces"
 """
 input v0_traces_variance_order_by {
   chain_id: order_by
+  height: order_by
 }
 
 """
@@ -3759,8 +3849,19 @@ type v0_transfers {
 
   """An object relationship"""
   hop: v0_transfers
+  is_initiating: Boolean
   normalized_receiver: String
   normalized_sender: String
+  packet_data_jsonb(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  pfm_destination_channel: String
+  pfm_destination_port: String
+  pfm_recv_sequence: Int
+  pfm_sent_sequence: Int
+  pfm_source_channel: String
+  pfm_source_port: String
   receiver: String
   sender: String
   source_block_hash: String
@@ -3802,6 +3903,7 @@ type v0_transfers {
     """filter the rows returned"""
     where: v0_traces_bool_exp
   ): [v0_traces!]!
+  transaction_hash: String
 }
 
 """
@@ -3830,8 +3932,16 @@ input v0_transfers_bool_exp {
   forwards: v0_transfer_forwards_bool_exp
   forwards_2: v0_transfer_forwards_bool_exp
   hop: v0_transfers_bool_exp
+  is_initiating: Boolean_comparison_exp
   normalized_receiver: String_comparison_exp
   normalized_sender: String_comparison_exp
+  packet_data_jsonb: jsonb_comparison_exp
+  pfm_destination_channel: String_comparison_exp
+  pfm_destination_port: String_comparison_exp
+  pfm_recv_sequence: Int_comparison_exp
+  pfm_sent_sequence: Int_comparison_exp
+  pfm_source_channel: String_comparison_exp
+  pfm_source_port: String_comparison_exp
   receiver: String_comparison_exp
   sender: String_comparison_exp
   source_block_hash: String_comparison_exp
@@ -3851,6 +3961,7 @@ input v0_transfers_bool_exp {
   source_transaction_index: String_comparison_exp
   status: String_comparison_exp
   traces: v0_traces_bool_exp
+  transaction_hash: String_comparison_exp
 }
 
 """Ordering options when selecting data from "v0.transfers"."""
@@ -3874,8 +3985,16 @@ input v0_transfers_order_by {
   forwards_2_aggregate: v0_transfer_forwards_aggregate_order_by
   forwards_aggregate: v0_transfer_forwards_aggregate_order_by
   hop: v0_transfers_order_by
+  is_initiating: order_by
   normalized_receiver: order_by
   normalized_sender: order_by
+  packet_data_jsonb: order_by
+  pfm_destination_channel: order_by
+  pfm_destination_port: order_by
+  pfm_recv_sequence: order_by
+  pfm_sent_sequence: order_by
+  pfm_source_channel: order_by
+  pfm_source_port: order_by
   receiver: order_by
   sender: order_by
   source_block_hash: order_by
@@ -3895,6 +4014,7 @@ input v0_transfers_order_by {
   source_transaction_index: order_by
   status: order_by
   traces_aggregate: v0_traces_aggregate_order_by
+  transaction_hash: order_by
 }
 
 """
@@ -3947,10 +4067,34 @@ enum v0_transfers_select_column {
   destination_transaction_index
 
   """column name"""
+  is_initiating
+
+  """column name"""
   normalized_receiver
 
   """column name"""
   normalized_sender
+
+  """column name"""
+  packet_data_jsonb
+
+  """column name"""
+  pfm_destination_channel
+
+  """column name"""
+  pfm_destination_port
+
+  """column name"""
+  pfm_recv_sequence
+
+  """column name"""
+  pfm_sent_sequence
+
+  """column name"""
+  pfm_source_channel
+
+  """column name"""
+  pfm_source_port
 
   """column name"""
   receiver
@@ -4002,6 +4146,9 @@ enum v0_transfers_select_column {
 
   """column name"""
   status
+
+  """column name"""
+  transaction_hash
 }
 
 """
@@ -4032,8 +4179,16 @@ input v0_transfers_stream_cursor_value_input {
   destination_timestamp: timestamptz
   destination_transaction_hash: String
   destination_transaction_index: String
+  is_initiating: Boolean
   normalized_receiver: String
   normalized_sender: String
+  packet_data_jsonb: jsonb
+  pfm_destination_channel: String
+  pfm_destination_port: String
+  pfm_recv_sequence: Int
+  pfm_sent_sequence: Int
+  pfm_source_channel: String
+  pfm_source_port: String
   receiver: String
   sender: String
   source_block_hash: String
@@ -4051,6 +4206,7 @@ input v0_transfers_stream_cursor_value_input {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+  transaction_hash: String
 }
 
 """
