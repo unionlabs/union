@@ -20,11 +20,16 @@
       "cosmos": {
         "enabled": false,
         "chain_config": {
-          "signers": [
-            {
-              "raw": "0x1503e463998e28b130a2d4876632c80462bbd5e0d9eb7ce6ed5f6210f02a2913"
-            }
-          ],
+          "keyring": {
+            "name": "osmosis-testnet",
+            "keys": [
+              {
+                "type": "raw",
+                "name": "osmosis-testnet-key0",
+                "key": "0x1503e463998e28b130a2d4876632c80462bbd5e0d9eb7ce6ed5f6210f02a2913"
+              }
+            ]
+          },
           "gas_config": {
             "gas_price": "1.0",
             "gas_denom": "uosmo",
@@ -44,11 +49,16 @@
       "cosmos": {
         "enabled": true,
         "chain_config": {
-          "signers": [
-            {
-              "raw": "0xe6b7f3906f38ea3547c91ed2f5eab850d27dd5672424fa4759e471be45598860"
-            }
-          ],
+          "keyring": {
+            "name": "union-testnet",
+            "keys": [
+              {
+                "type": "raw",
+                "name": "union-testnet-key0",
+                "key": "0xe6b7f3906f38ea3547c91ed2f5eab850d27dd5672424fa4759e471be45598860"
+              }
+            ]
+          },
           "gas_config": {
             "gas_price": "1.0",
             "gas_denom": "muno",
