@@ -10,6 +10,7 @@ use contracts::ibc_handler::{
     ConnectionOpenTryCall, CreateClientCall, IBCHandler, RecvPacketCall, TimeoutPacketCall,
     UpdateClientCall,
 };
+use ethereum_verifier::utils::validate_signature_supermajority;
 use ethers::{
     self,
     abi::{AbiDecode, AbiEncode},
@@ -22,7 +23,7 @@ use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, effect, fetch, queue_msg, void, wait, Op,
+    data, defer_relative, effect, fetch, queue_msg, void, wait, Op,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, error_span, info};
@@ -473,62 +474,96 @@ where
         SelfConsensusState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
     >,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
     type Error = Never;
 
     async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> Result<Op<RelayMessage>, Self::Error> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
-            Self::FetchFinalityUpdate(FetchFinalityUpdate {}) => Data::specific(FinalityUpdate {
-                finality_update: ethereum
+            Self::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
+                let finality_update = ethereum
                     .beacon_api_client
                     .finality_update()
                     .await
                     .unwrap()
-                    .data,
-                __marker: PhantomData,
-            }),
+                    .data;
+
+                if !validate_signature_supermajority::<C>(
+                    &finality_update.sync_aggregate.sync_committee_bits,
+                ) {
+                    info!(
+                        signature_slot = finality_update.signature_slot,
+                        "signature supermajority not hit"
+                    );
+
+                    seq([
+                        defer_relative(3),
+                        fetch(id(
+                            ethereum.chain_id(),
+                            Fetch::specific(FetchFinalityUpdate {}),
+                        )),
+                    ])
+                } else {
+                    data(id::<Ethereum<C>, Tr, _>(
+                        ethereum.chain_id,
+                        Data::specific(FinalityUpdate {
+                            finality_update,
+                            __marker: PhantomData,
+                        }),
+                    ))
+                }
+            }
             Self::FetchLightClientUpdates(FetchLightClientUpdates {
                 trusted_period,
                 target_period,
-            }) => Data::specific(LightClientUpdates {
-                light_client_updates: ethereum
-                    .beacon_api_client
-                    .light_client_updates(trusted_period + 1, target_period - trusted_period)
-                    .await
-                    .unwrap()
-                    .0
-                    .into_iter()
-                    .map(|x| x.data)
-                    .collect(),
-                __marker: PhantomData,
-            }),
-            Self::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
-                Data::specific(LightClientUpdate {
-                    update: ethereum
+            }) => data(id::<Ethereum<C>, Tr, _>(
+                ethereum.chain_id,
+                Data::specific(LightClientUpdates {
+                    light_client_updates: ethereum
                         .beacon_api_client
-                        .light_client_updates(period, 1)
+                        .light_client_updates(trusted_period + 1, target_period - trusted_period)
                         .await
                         .unwrap()
                         .0
                         .into_iter()
                         .map(|x| x.data)
-                        .collect::<Vec<light_client_update::LightClientUpdate<_>>>()
-                        .pop()
-                        .unwrap(),
+                        .collect(),
                     __marker: PhantomData,
-                })
+                }),
+            )),
+            Self::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
+                data(id::<Ethereum<C>, Tr, _>(
+                    ethereum.chain_id,
+                    Data::specific(LightClientUpdate {
+                        update: ethereum
+                            .beacon_api_client
+                            .light_client_updates(period, 1)
+                            .await
+                            .unwrap()
+                            .0
+                            .into_iter()
+                            .map(|x| x.data)
+                            .collect::<Vec<light_client_update::LightClientUpdate<_>>>()
+                            .pop()
+                            .unwrap(),
+                        __marker: PhantomData,
+                    }),
+                ))
             }
-            Self::FetchBootstrap(FetchBootstrap { slot }) => Data::specific(BootstrapData {
-                slot,
-                bootstrap: ethereum
-                    .beacon_api_client
-                    .bootstrap_for_slot(slot)
-                    .await
-                    .unwrap()
-                    .data,
-                __marker: PhantomData,
-            }),
+            Self::FetchBootstrap(FetchBootstrap { slot }) => data(id::<Ethereum<C>, Tr, _>(
+                ethereum.chain_id,
+                Data::specific(BootstrapData {
+                    slot,
+                    bootstrap: ethereum
+                        .beacon_api_client
+                        .bootstrap_for_slot(slot)
+                        .await
+                        .unwrap()
+                        .data,
+                    __marker: PhantomData,
+                }),
+            )),
             Self::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
                 let execution_height = ethereum
                     .beacon_api_client
@@ -547,30 +582,42 @@ where
                     .await
                     .unwrap();
 
-                Data::specific(AccountUpdateData {
-                    slot,
-                    update: AccountUpdate {
-                        account_proof: AccountProof {
-                            storage_root: account_update.storage_hash.into(),
-                            proof: account_update
-                                .account_proof
-                                .into_iter()
-                                .map(|x| x.to_vec())
-                                .collect(),
+                data(id::<Ethereum<C>, Tr, _>(
+                    ethereum.chain_id,
+                    Data::specific(AccountUpdateData {
+                        slot,
+                        update: AccountUpdate {
+                            account_proof: AccountProof {
+                                storage_root: account_update.storage_hash.into(),
+                                proof: account_update
+                                    .account_proof
+                                    .into_iter()
+                                    .map(|x| x.to_vec())
+                                    .collect(),
+                            },
                         },
-                    },
-                    __marker: PhantomData,
-                })
+                        __marker: PhantomData,
+                    }),
+                ))
             }
-            Self::FetchBeaconGenesis(_) => Data::specific(BeaconGenesisData {
-                genesis: ethereum.beacon_api_client.genesis().await.unwrap().data,
-                __marker: PhantomData,
-            }),
-            Self::FetchGetProof(get_proof) => fetch_get_proof(ethereum, get_proof).await,
-            Self::FetchIbcState(ibc_state) => fetch_ibc_state(ethereum, ibc_state).await,
+            Self::FetchBeaconGenesis(_) => data(id::<Ethereum<C>, Tr, _>(
+                ethereum.chain_id,
+                Data::specific(BeaconGenesisData {
+                    genesis: ethereum.beacon_api_client.genesis().await.unwrap().data,
+                    __marker: PhantomData,
+                }),
+            )),
+            Self::FetchGetProof(get_proof) => data(id::<Ethereum<C>, Tr, _>(
+                ethereum.chain_id,
+                fetch_get_proof(ethereum, get_proof).await,
+            )),
+            Self::FetchIbcState(ibc_state) => data(id::<Ethereum<C>, Tr, _>(
+                ethereum.chain_id,
+                fetch_ibc_state(ethereum, ibc_state).await,
+            )),
         };
 
-        Ok(data(id::<Ethereum<C>, Tr, _>(ethereum.chain_id, msg)))
+        Ok(msg)
     }
 }
 
