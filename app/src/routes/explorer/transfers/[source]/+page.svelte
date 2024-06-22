@@ -123,11 +123,7 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
 !-->
 
 <ChainsGate let:chains>
-{#if $transfers.isLoading}
-  <LoadingLogo class="size-16"/>
-{:else if $transfers.isError}
-  Error loading transfer data
-{:else if $transfers.isSuccess && $processedTransfers !== null}
+{#if !!$transfers.data && $processedTransfers !== null}
 <div class="max-h-auto min-w-full flex flex-col items-center">
   {#each $processedTransfers as transfer, transferIndex}
 
@@ -217,6 +213,10 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
   </Card.Root>
   {/each}
 </div>
+{:else if $transfers.isLoading}
+  <LoadingLogo class="size-16"/>
+{:else if $transfers.isError}
+  Error loading transfer data
 {/if}
 </ChainsGate>
 
