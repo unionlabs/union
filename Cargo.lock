@@ -2461,7 +2461,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6ee87af31d84ef885378aebca32be3d682b0e0dc119d5b4860a2c5bb5046730"
 dependencies = [
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -6793,7 +6793,7 @@ checksum = "13f4d162ecaaa1467de5afbe62d597757b674b51da8bb4e587430c5fdb2af7aa"
 dependencies = [
  "fallible-iterator",
  "scroll 0.10.2",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -8339,10 +8339,11 @@ dependencies = [
  "contracts",
  "cosmwasm-std 2.0.3",
  "csv",
+ "derive_more",
  "ethers",
  "futures",
  "hex",
- "prost",
+ "prost 0.12.6",
  "protos",
  "queue-msg",
  "rand 0.8.5",
@@ -8356,7 +8357,7 @@ dependencies = [
  "tendermint-rpc",
  "tokio",
  "tokio-stream",
- "tonic",
+ "tonic 0.10.2",
  "tracing",
  "tracing-subscriber",
  "ucs01-relay",
@@ -9289,7 +9290,7 @@ dependencies = [
  "debugid",
  "memmap2",
  "stable_deref_trait",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]

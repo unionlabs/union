@@ -125,6 +125,7 @@ ssz-derive                = { path = "lib/ssz-derive", default-features = false 
 tendermint-light-client   = { path = "light-clients/tendermint-light-client", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }
 token-factory-api         = { path = "cosmwasm/token-factory-api", default-features = false }
+ucs01-relay               = { path = "cosmwasm/ucs01-relay", default-features = false }
 ucs01-relay-api           = { path = "cosmwasm/ucs01-relay-api", default-features = false }
 unionlabs                 = { path = "lib/unionlabs", default-features = false }
 voyager-message           = { path = "lib/voyager-message", default-features = false }

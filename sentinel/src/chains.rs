@@ -643,10 +643,9 @@ impl IbcTransfer for Ethereum {
                         return;
                     }
                 };
-                debug_msg.push_str(&format!(
-                    " Tx Hash: {:?}",
-                    _tx_rcp.unwrap().transaction_hash
-                ));
+                let tx_hash = _tx_rcp.unwrap().transaction_hash.to_string();
+                debug_msg.push_str(&format!(" Tx Hash: {:?}", tx_hash));
+
                 tracing::info!(debug_msg);
             }
             Protocol::Ics20 {
@@ -738,7 +737,7 @@ impl IbcTransfer for Cosmos {
         amount: u64,
         memo: String,
     ) {
-        self.chain.signers.with(|signer| async move {
+        self.chain.keyring.with(|signer| async move {
             let mut debug_msg;
             let transfer_msg = match protocol {
                 Protocol::Ics20 { receivers, module } => {
@@ -841,7 +840,9 @@ impl IbcTransfer for Cosmos {
 
             match self.chain.broadcast_tx_commit(signer, [transfer_msg]).await {
                 Ok(tx_hash) => {
-                    debug_msg.push_str(&format!(" Tx Hash: {:?}", tx_hash));
+                    debug_msg.push_str(
+                        &format!(" Tx Hash: {}", tx_hash.to_string()[2..].to_ascii_uppercase())
+                    );
                     tracing::info!(debug_msg);
                 }
                 Err(BroadcastTxCommitError::SimulateTx(e)) => {
