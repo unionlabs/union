@@ -14,11 +14,13 @@ import { truncate } from "$lib/utilities/format"
 import { goto } from "$app/navigation"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
     import { raise } from "$lib/utilities";
+    import { onMount } from "svelte";
 
 let transfers = createQuery({
   queryKey: ["transfers"],
   placeholderData: (previousData, _) => previousData,
-  refetchInterval: 2_000,
+  retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
+  refetchInterval: 5_000,
   queryFn: async () => {
     const response = await request(URLS.GRAPHQL, allTransfersQueryDocument, { });
     if (response.v0_transfers === undefined || response.v0_transfers === null) raise("error fetching transfers");
