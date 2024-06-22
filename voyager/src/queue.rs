@@ -14,7 +14,7 @@ use axum::{
     routing::{get, post},
     Json,
 };
-use chain_utils::{AnyChain, AnyChainTryFromConfigError, Chains};
+use chain_utils::{any_chain, AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{
     channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryFutureExt, TryStreamExt,
@@ -200,12 +200,14 @@ impl<T: QueueMessage> Queue<T> for PgQueue<T> {
 
             for (_, msg) in res.optimize_further {
                 self.0
-                    .enqueue(&self.1, msg, EnqueueStatus::Optimize)
+                    .enqueue(&self.1, msg, vec![], EnqueueStatus::Optimize)
                     .await?
             }
 
             for (_, msg) in res.ready {
-                self.0.enqueue(&self.1, msg, EnqueueStatus::Ready).await?
+                self.0
+                    .enqueue(&self.1, msg, vec![], EnqueueStatus::Ready)
+                    .await?
             }
 
             Ok(())
@@ -440,29 +442,9 @@ pub async fn chains_from_config(
 
         let chain = AnyChain::try_from_config(chain_config.ty).await?;
 
-        match chain {
-            AnyChain::Union(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-            AnyChain::Cosmos(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-            AnyChain::EthereumMainnet(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-            AnyChain::EthereumMinimal(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-            AnyChain::Scroll(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-            AnyChain::Arbitrum(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-            AnyChain::Berachain(c) => {
-                insert_into_chain_map(&mut chains, c);
-            }
-        }
+        any_chain!(|chain| {
+            insert_into_chain_map(&mut chains, chain);
+        });
     }
 
     Ok(Chains { chains })

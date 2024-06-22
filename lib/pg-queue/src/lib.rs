@@ -1,5 +1,9 @@
 use std::{
+    borrow::Borrow,
+    cmp::Eq,
+    collections::HashMap,
     future::Future,
+    hash::Hash,
     marker::PhantomData,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -48,6 +52,7 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         &self,
         conn: A,
         item: T,
+        parents: Vec<i64>,
         status: EnqueueStatus,
     ) -> Result<(), sqlx::Error>
     where
@@ -57,12 +62,13 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         let row = query!(
             "
-            INSERT INTO queue (item, status)
+            INSERT INTO queue (item, status, parents)
             VALUES
-              ($1, $2::status) RETURNING id
+              ($1, $2::status, $3) RETURNING id
             ",
             Json(item) as _,
-            status as EnqueueStatus
+            status as EnqueueStatus,
+            &parents
         )
         .fetch_one(tx.as_mut())
         .await?;
@@ -174,13 +180,14 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                     Ok(new_msgs) => {
                         let (optimize_further, ready) = post_process(new_msgs);
 
-                        for (_, new_msg) in optimize_further {
-                            self.enqueue(&mut tx, new_msg, EnqueueStatus::Optimize)
+                        for (_parents, new_msg) in optimize_further {
+                            self.enqueue(&mut tx, new_msg, vec![row.id], EnqueueStatus::Optimize)
                                 .await?;
                         }
 
-                        for (_, new_msg) in ready {
-                            self.enqueue(&mut tx, new_msg, EnqueueStatus::Ready).await?;
+                        for (_parents, new_msg) in ready {
+                            self.enqueue(&mut tx, new_msg, vec![row.id], EnqueueStatus::Ready)
+                                .await?;
                         }
 
                         tx.commit().await?;
@@ -274,13 +281,13 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
             .await
             .map_err(Either::Right)?;
 
-        debug!(
+        trace!(
             ready = ready.len(),
             optimize_further = optimize_further.len(),
             "optimized items"
         );
 
-        let get_parent_ids = |parent_idxs: Vec<usize>| {
+        let get_parent_ids = |parent_idxs: &[usize]| {
             ids.iter()
                 .enumerate()
                 .filter_map(|(idx, id)| parent_idxs.contains(&idx).then_some(*id))
@@ -288,7 +295,8 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         };
 
         for (parent_idxs, new_msg) in optimize_further {
-            let parents = get_parent_ids(parent_idxs);
+            let parents = get_parent_ids(&parent_idxs);
+            debug!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
             let new_row = query!(
                 "
@@ -307,11 +315,8 @@ impl<T: Clone + DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         }
 
         for (parent_idxs, new_msg) in ready {
-            let parents = ids
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, id)| parent_idxs.contains(&idx).then_some(*id))
-                .collect::<Vec<_>>();
+            let parents = get_parent_ids(&parent_idxs);
+            debug!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
             let new_row = query!(
                 "
@@ -349,4 +354,27 @@ fn de<T: DeserializeOwned>(s: &str) -> Result<T, serde_json::Error> {
     let deserializer = serde_stacker::Deserializer::new(&mut deserializer);
     let json = T::deserialize(deserializer)?;
     Ok(json)
+}
+
+pub trait MapExt<K, V> {
+    fn get_many<'a, Q>(&'a self, ks: impl IntoIterator<Item = &'a Q>) -> Vec<&'a V>
+    where
+        K: Borrow<Q>,
+        Q: ?Sized + Hash + Eq + 'a;
+}
+
+impl<K: Hash + Eq, V> MapExt<K, V> for HashMap<K, V> {
+    fn get_many<'a, Q>(&'a self, ks: impl IntoIterator<Item = &'a Q>) -> Vec<&'a V>
+    where
+        K: Borrow<Q>,
+        Q: ?Sized + Hash + Eq + 'a,
+    {
+        let mut out = vec![];
+
+        for k in ks {
+            out.extend(self.get(k));
+        }
+
+        out
+    }
 }
