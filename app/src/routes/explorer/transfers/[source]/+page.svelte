@@ -43,7 +43,7 @@ let processedTransfers = derived(transfers, $transfers => {
     let hop_chain_source_channel_id = null
 
     // overwrite destination and receiver if to last forward
-    const lastForward = tx.forwards?.at(-1)
+    const lastForward = tx.forwards_2?.at(-1)
     if (lastForward) {
       hop_chain_id = tx.destination_chain_id
       hop_chain_destination_connection_id = tx.destination_connection_id
