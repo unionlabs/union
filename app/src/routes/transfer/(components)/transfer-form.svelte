@@ -5,7 +5,7 @@ import { sepolia } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { sleep } from "$lib/utilities/index.ts"
+import { raise, sleep } from "$lib/utilities/index.ts"
 import { getWalletClient } from "@wagmi/core"
 import { type Writable, writable, derived } from "svelte/store"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
@@ -399,6 +399,100 @@ $: buttonText =
 
 let supportedAsset: any
 $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
+
+
+let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
+  if ($fromChain?.rpc_type === "evm") {
+    // TODO: Refactor this by implementing Ord for transferState
+    return [
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+            ? "PENDING" :
+          $transferState === "ADDING_CHAIN" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Adding ${$fromChain.display_name}`,
+        description: "Click 'Add Chain' in your wallet."
+      },
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+          || $transferState === "ADDING_CHAIN" 
+            ? "PENDING" :
+          $transferState === "SWITCHING_TO_CHAIN" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Switching to ${$fromChain.display_name}`,
+        description: "Click 'Switch to Chain' in your wallet."
+      },
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+          || $transferState === "ADDING_CHAIN" 
+          || $transferState === "SWITCHING_TO_CHAIN" 
+            ? "PENDING" :
+          $transferState === "APPROVING_ASSET" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Approving ERC20`,
+        description: "Click 'Next' in your wallet."
+      },
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+          || $transferState === "ADDING_CHAIN" 
+          || $transferState === "SWITCHING_TO_CHAIN" 
+          || $transferState === "APPROVING_ASSET" 
+            ? "PENDING" :
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Awaiting approval receipt`,
+        description: `Waiting on ${$fromChain.display_name}`
+      },
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+          || $transferState === "ADDING_CHAIN" 
+          || $transferState === "SWITCHING_TO_CHAIN" 
+          || $transferState === "APPROVING_ASSET" 
+          || $transferState === "AWAITING_APPROVAL_RECEIPT" 
+            ? "PENDING" :
+          $transferState === "SIMULATING_TRANSFER" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Simulating transfer`,
+        description: `Waiting on ${$fromChain.display_name}`
+      },
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+          || $transferState === "ADDING_CHAIN" 
+          || $transferState === "SWITCHING_TO_CHAIN" 
+          || $transferState === "APPROVING_ASSET" 
+          || $transferState === "AWAITING_APPROVAL_RECEIPT" 
+          || $transferState === "SIMULATING_TRANSFER" 
+            ? "PENDING" :
+          $transferState === "CONFIRMING_TRANSFER" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Confirm your transfer`,
+        description: `Click 'Confirm' in your wallet`
+      },
+    ]
+  } 
+  if ($fromChain?.rpc_type === "cosmos") {
+    return [
+      { 
+        status: "PENDING",
+        title: "yeah",
+        description: "whatever"
+      }
+    ]
+  }
+  raise("trying to make stepper for unsupported chain")
+});
 </script>
 
 
@@ -499,7 +593,7 @@ $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $ass
           Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
         </div>
       <pre>{$transferState}</pre>
-      <Stepper/>
+      <Stepper steps={$stepperSteps}/>
     </Card.Root>
     <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>

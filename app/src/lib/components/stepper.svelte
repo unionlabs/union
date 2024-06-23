@@ -11,28 +11,7 @@ type Step = {
 
 type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR";
 
-let steps: Array<Step> = [
-  { 
-    status: "PENDING",
-    title: "Awaiting receipt",
-    description: "Awaiting your receipt"
-  },
-  { 
-    status: "IN_PROGRESS",
-    title: "Awaiting receipt",
-    description: ""
-  },
-  { 
-    status: "COMPLETED",
-    title: "Awaiting receipt",
-    description: ""
-  },
-  { 
-    status: "ERROR",
-    title: "Awaiting receipt",
-    description: ""
-  }
-]
+export let steps: Array<Step>;
 </script>
 
 
