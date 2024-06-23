@@ -246,7 +246,7 @@ async fn fetch_and_insert_blocks(
         )
     } else {
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
-        match client.block(min).await {
+        match client.commit(min).await {
             Err(err) => {
                 if is_height_exceeded_error(&err) {
                     return Ok(None);
@@ -254,7 +254,7 @@ async fn fetch_and_insert_blocks(
                     return Err(err.into());
                 }
             }
-            Ok(val) => Either::Right(std::iter::once(val.block.header)),
+            Ok(val) => Either::Right(std::iter::once(val.signed_header.header)),
         }
     };
 
