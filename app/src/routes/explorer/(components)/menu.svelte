@@ -36,7 +36,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
               'px-1 text-center mb-2 w-full flex py-0 hover:no-underline hover:bg-muted',
             )}
           >
-            <svelte:component this={icon} class="block size-5 text-muted-foreground" />
+            <svelte:component this={icon} class="min-w-[14px] block size-5 text-muted-foreground" />
             <span class="sr-only">{route}</span>
           </Button>
         </Tooltip.Trigger>

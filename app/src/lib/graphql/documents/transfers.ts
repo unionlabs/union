@@ -65,7 +65,7 @@ query TransfersBySourceHashBase($source_transaction_hash: String!) @cached(ttl: 
     assets
     source_timestamp
     destination_timestamp
-    forwards {
+    forwards_2 {
       chain {
         chain_id
       }

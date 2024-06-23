@@ -1,5 +1,6 @@
 <script lang="ts" generics="T extends object" >
 import { derived, get } from "svelte/store"
+import { onDestroy, onMount } from "svelte"
 import {
   flexRender,
   type ColumnDef,
@@ -54,6 +55,14 @@ $: dataStore.subscribe(() => {
   $table.setPageSize($dataStore.length)
   options.update(options => ({ ...options, data: $dataStore as unknown as Array<T> }))
 })
+
+const unsubscribe = dataStore.subscribe(() => {
+  if (!$dataStore) return
+  $table.setPageSize($dataStore.length)
+  options.update(options => ({ ...options, data: $dataStore as unknown as Array<T> }))
+})
+
+onDestroy(unsubscribe)
 </script>
 
 <Card.Root>

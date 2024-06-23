@@ -1,0 +1,232 @@
+
+/* disable crt/flicker effects for people with vision issues */
+@media screen and (prefers-reduced-motion: no-preference) {
+@keyframes flicker {
+  0% {
+    opacity: calc(0.27861 / 4);
+  }
+  5% {
+    opacity: calc(0.34769 / 4);
+  }
+  10% {
+    opacity: calc(0.23604 / 4);
+  }
+  15% {
+    opacity: calc(0.90626 / 4);
+  }
+  20% {
+    opacity: calc(0.18128 / 4);
+  }
+  25% {
+    opacity: calc(0.83891 / 4);
+  }
+  30% {
+    opacity: calc(0.65583 / 4);
+  }
+  35% {
+    opacity: calc(0.67807 / 4);
+  }
+  40% {
+    opacity: calc(0.26559 / 4);
+  }
+  45% {
+    opacity: calc(0.84693 / 4);
+  }
+  50% {
+    opacity: calc(0.96019 / 4);
+  }
+  55% {
+    opacity: calc(0.08594 / 4);
+  }
+  60% {
+    opacity: calc(0.20313 / 4);
+  }
+  65% {
+    opacity: calc(0.71988 / 4);
+  }
+  70% {
+    opacity: calc(0.53455 / 4);
+  }
+  75% {
+    opacity: calc(0.37288 / 4);
+  }
+  80% {
+    opacity: calc(0.71428 / 4);
+  }
+  85% {
+    opacity: calc(0.70419 / 4);
+  }
+  90% {
+    opacity: calc(0.70030 / 4)
+  }
+  95% {
+    opacity: calc(0.36108 / 4);
+  }
+  100% {
+    opacity: calc(0.24387 / 4);
+  }
+}
+@keyframes textShadow {
+  0% {
+    text-shadow: 0.4389924193300864px 0 1px rgba(0,30,255,0.5), -0.4389924193300864px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  5% {
+    text-shadow: 2.7928974010788217px 0 1px rgba(0,30,255,0.5), -2.7928974010788217px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  10% {
+    text-shadow: 0.02956275843481219px 0 1px rgba(0,30,255,0.5), -0.02956275843481219px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  15% {
+    text-shadow: 0.40218538552878136px 0 1px rgba(0,30,255,0.5), -0.40218538552878136px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  20% {
+    text-shadow: 3.4794037899852017px 0 1px rgba(0,30,255,0.5), -3.4794037899852017px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  25% {
+    text-shadow: 1.6125630401149584px 0 1px rgba(0,30,255,0.5), -1.6125630401149584px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  30% {
+    text-shadow: 0.7015590085143956px 0 1px rgba(0,30,255,0.5), -0.7015590085143956px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  35% {
+    text-shadow: 3.896914047650351px 0 1px rgba(0,30,255,0.5), -3.896914047650351px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  40% {
+    text-shadow: 3.870905614848819px 0 1px rgba(0,30,255,0.5), -3.870905614848819px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  45% {
+    text-shadow: 2.231056963361899px 0 1px rgba(0,30,255,0.5), -2.231056963361899px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  50% {
+    text-shadow: 0.08084290417898504px 0 1px rgba(0,30,255,0.5), -0.08084290417898504px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  55% {
+    text-shadow: 2.3758461067427543px 0 1px rgba(0,30,255,0.5), -2.3758461067427543px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  60% {
+    text-shadow: 2.202193051050636px 0 1px rgba(0,30,255,0.5), -2.202193051050636px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  65% {
+    text-shadow: 2.8638780614874975px 0 1px rgba(0,30,255,0.5), -2.8638780614874975px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  70% {
+    text-shadow: 0.48874025155497314px 0 1px rgba(0,30,255,0.5), -0.48874025155497314px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  75% {
+    text-shadow: 1.8948491305757957px 0 1px rgba(0,30,255,0.5), -1.8948491305757957px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  80% {
+    text-shadow: 0.0833037308038857px 0 1px rgba(0,30,255,0.5), -0.0833037308038857px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  85% {
+    text-shadow: 0.09769827255241735px 0 1px rgba(0,30,255,0.5), -0.09769827255241735px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  90% {
+    text-shadow: 3.443339761481782px 0 1px rgba(0,30,255,0.5), -3.443339761481782px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  95% {
+    text-shadow: 2.1841838852799786px 0 1px rgba(0,30,255,0.5), -2.1841838852799786px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+  100% {
+    text-shadow: 2.6208764473832513px 0 1px rgba(0,30,255,0.5), -2.6208764473832513px 0 1px rgba(255,0,80,0.3), 0 0 3px;
+  }
+}
+.crt::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(18, 16, 16, 0.1);
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+.crt::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+.crt {
+  /* animation: textShadow 1.6s infinite; */
+}
+
+
+  .scanlines {
+    --height: 2px;
+  }
+
+
+  .scanlines:before, .scanlines:after {
+    display: block;
+    pointer-events: none;
+    content: "";
+    position: absolute;
+  }
+  .scanlines:before {
+    width: 100%;
+    height: var(--height);
+    z-index: 2147483649;
+    background: rgba(0, 0, 0, 0.2);
+    opacity: 0.75;
+    -webkit-animation: scanline 6s linear infinite;
+            animation: scanline 6s linear infinite;
+  }
+  .scanlines:after {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2147483648;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.1) 51%);
+    background-size: 100% 4px;
+    -webkit-animation: scanlines 0.2s steps(120) infinite;
+            animation: scanlines 0.2s steps(120) infinite;
+  }
+
+  /* ANIMATE UNIQUE SCANLINE */
+  @-webkit-keyframes scanline {
+    0% {
+      transform: translate3d(0, 200000%, 0);
+    }
+  }
+  @keyframes scanline {
+    0% {
+      transform: translate3d(0, 200000%, 0);
+    }
+  }
+  @-webkit-keyframes scanlines {
+    0% {
+      background-position: 0 calc(var(--height) * -4);
+    }
+  }
+  @keyframes scanlines {
+    0% {
+      background-position: 0 calc(var(--height) * -4);
+    }
+  }
+}
+
+/* .jpg { */
+  /* background: url("https://pompompom.mehdi.cc/crt-art-for-scanlines.jpg") no-repeat; */
+  /* background-size: cover; */
+/* } */
+
+/* body { */
+  /* position: relative; */
+  /* background: #1b1b1b; */
+  /* color: #c8c8c8; */
+  /* text-shadow: 2px 2px 2px #333; */
+  /* overflow-x: scroll; */
+/* } */

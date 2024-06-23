@@ -15,19 +15,25 @@ import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { derived } from "svelte/store"
 import { toDisplayName } from "$lib/utilities/chains.ts"
+import { raise } from "$lib/utilities"
 
 const source = $page.params.source
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
-  refetchInterval: 1_000,
+  retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
+  refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
   placeholderData: (previousData, _) => previousData,
-  queryFn: async () =>
-    (
-      await request(URLS.GRAPHQL, transfersBySourceHashBaseQueryDocument, {
-        source_transaction_hash: source
-      })
-    ).v0_transfers
+  queryFn: async () => {
+    const response = await request(URLS.GRAPHQL, transfersBySourceHashBaseQueryDocument, {
+      source_transaction_hash: source
+    })
+
+    if (response.v0_transfers === undefined || response.v0_transfers === null)
+      raise("error fetching transfers")
+
+    return response.v0_transfers
+  }
 })
 let processedTransfers = derived(transfers, $transfers => {
   if (!$transfers.data) {
@@ -43,7 +49,7 @@ let processedTransfers = derived(transfers, $transfers => {
     let hop_chain_source_channel_id = null
 
     // overwrite destination and receiver if to last forward
-    const lastForward = tx.forwards?.at(-1)
+    const lastForward = tx.forwards_2?.at(-1)
     if (lastForward) {
       hop_chain_id = tx.destination_chain_id
       hop_chain_destination_connection_id = tx.destination_connection_id
@@ -123,11 +129,7 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
 !-->
 
 <ChainsGate let:chains>
-{#if $transfers.isLoading}
-  <LoadingLogo class="size-16"/>
-{:else if $transfers.isError}
-  Error loading transfer data
-{:else if $transfers.isSuccess && $processedTransfers !== null}
+{#if !!$transfers.data && $processedTransfers !== null}
 <div class="max-h-auto min-w-full flex flex-col items-center">
   {#each $processedTransfers as transfer, transferIndex}
 
@@ -217,6 +219,10 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
   </Card.Root>
   {/each}
 </div>
+{:else if $transfers.isLoading}
+  <LoadingLogo class="size-16"/>
+{:else if $transfers.isError}
+  Error loading transfer data
 {/if}
 </ChainsGate>
 
