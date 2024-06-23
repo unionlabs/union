@@ -5,7 +5,7 @@ import { sepolia } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { sleep } from "$lib/utilities/index.ts"
+import { raise, sleep } from "$lib/utilities/index.ts"
 import { getWalletClient } from "@wagmi/core"
 import { type Writable, writable, derived } from "svelte/store"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
@@ -25,6 +25,7 @@ import { page } from "$app/stores"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
+import Stepper from "$lib/components/stepper.svelte"
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -59,6 +60,7 @@ type TransferStates =
   | "AWAITING_APPROVAL_RECEIPT"
   | "SIMULATING_TRANSFER"
   | "CONFIRMING_TRANSFER"
+  | "AWAITING_TRANSFER_RECEIPT"
   | "TRANSFERRING"
 
 let transferState: Writable<TransferStates> = writable("PRE_TRANSFER")
@@ -216,7 +218,6 @@ const transfer = async () => {
     })
 
     transferState.set("CONFIRMING_TRANSFER")
-    toast.info("Confirming transfer")
 
     let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
     if (ucs1_configuration.contract_address === "ics20") {
@@ -255,7 +256,6 @@ const transfer = async () => {
 
     const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
     transferState.set("TRANSFERRING")
-    toast.info("Transferring assets")
     await sleep(REDIRECT_DELAY_MS)
     goto(`/explorer/transfers/${cosmosTransfer.transactionHash}`)
   } else if ($fromChain.rpc_type === "evm") {
@@ -298,17 +298,14 @@ const transfer = async () => {
       transport: custom(window.ethereum)
     })
 
-    toast.info(`Adding chain ${$fromChain.display_name} to your wallet`)
     await walletClient.addChain({ chain })
 
     transferState.set("SWITCHING_TO_CHAIN")
-    toast.info(`Switching wallet to chain ${$fromChain.display_name}`)
     await walletClient.switchChain({ id: chain.id })
 
     const ucs01address = ucs1_configuration.contract_address as Address
 
     transferState.set("APPROVING_ASSET")
-    toast.info("submitting approval")
     const approveContractSimulation = await walletClient.writeContract({
       account: userAddr.evm.canonical,
       abi: erc20Abi,
@@ -318,13 +315,11 @@ const transfer = async () => {
       args: [ucs01address, BigInt(amount)]
     })
 
-    toast.info("awaiting approval receipt")
     transferState.set("AWAITING_APPROVAL_RECEIPT")
     const approvalReceipt = await publicClient.waitForTransactionReceipt({
       hash: approveContractSimulation
     })
 
-    toast.info("Simulating UCS01 contract call")
     transferState.set("SIMULATING_TRANSFER")
     const simulationResult = await publicClient.simulateContract({
       abi: ucs01abi,
@@ -343,13 +338,16 @@ const transfer = async () => {
     console.log("simulation result", simulationResult)
 
     transferState.set("CONFIRMING_TRANSFER")
-    toast.info("Submitting UCS01 contract call")
-    const hash = await walletClient.writeContract(simulationResult.request)
+    const transferHash = await walletClient.writeContract(simulationResult.request)
+
+    transferState.set("AWAITING_TRANSFER_RECEIPT")
+    const transferReceipt = await publicClient.waitForTransactionReceipt({
+      hash: transferHash
+    })
 
     transferState.set("TRANSFERRING")
-    toast.info("Transferring assets")
     await sleep(REDIRECT_DELAY_MS)
-    goto(`/explorer/transfers/${hash}`)
+    goto(`/explorer/transfers/${transferHash}`)
   } else {
     console.error("invalid rpc type")
   }
@@ -398,6 +396,156 @@ $: buttonText =
 
 let supportedAsset: any
 $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
+
+let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
+  if ($fromChain?.rpc_type === "evm") {
+    // TODO: Refactor this by implementing Ord for transferState
+    return [
+      {
+        status:
+          $transferState === "PRE_TRANSFER" || $transferState === "FLIPPING"
+            ? "PENDING"
+            : $transferState === "ADDING_CHAIN"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Adding ${$fromChain.display_name}`,
+        description: "Click 'Add Chain' in your wallet."
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN"
+            ? "PENDING"
+            : $transferState === "SWITCHING_TO_CHAIN"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Switching to ${$fromChain.display_name}`,
+        description: "Click 'Switch to Chain' in your wallet."
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN"
+            ? "PENDING"
+            : $transferState === "APPROVING_ASSET"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Approving ERC20`,
+        description: "Click 'Next' and 'Approve' in wallet."
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET"
+            ? "PENDING"
+            : $transferState === "AWAITING_APPROVAL_RECEIPT"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Awaiting approval receipt`,
+        description: `Waiting on ${$fromChain.display_name}`
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT"
+            ? "PENDING"
+            : $transferState === "SIMULATING_TRANSFER"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Simulating transfer`,
+        description: `Waiting on ${$fromChain.display_name}`
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
+          $transferState === "SIMULATING_TRANSFER"
+            ? "PENDING"
+            : $transferState === "CONFIRMING_TRANSFER"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Confirm your transfer`,
+        description: `Click 'Confirm' in your wallet`
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
+          $transferState === "SIMULATING_TRANSFER" ||
+          $transferState === "CONFIRMING_TRANSFER"
+            ? "PENDING"
+            : $transferState === "AWAITING_TRANSFER_RECEIPT"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Awaiting transfer receipt`,
+        description: `Waiting on ${$fromChain.display_name}`
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
+          $transferState === "SIMULATING_TRANSFER" ||
+          $transferState === "CONFIRMING_TRANSFER" ||
+          $transferState === "AWAITING_TRANSFER_RECEIPT"
+            ? "PENDING"
+            : $transferState === "TRANSFERRING"
+              ? "COMPLETED"
+              : "ERROR",
+        title: `Transferring your assets`,
+        description: `Successfully initiated transfer`
+      }
+    ]
+  }
+  if ($fromChain?.rpc_type === "cosmos") {
+    return [
+      {
+        status:
+          $transferState === "PRE_TRANSFER" || $transferState === "FLIPPING"
+            ? "PENDING"
+            : $transferState === "CONFIRMING_TRANSFER"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
+        title: `Approving transfer`,
+        description: "Click 'Approve' in your wallet."
+      },
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "CONFIRMING_TRANSFER"
+            ? "PENDING"
+            : $transferState === "TRANSFERRING"
+              ? "COMPLETED"
+              : "ERROR",
+        title: `Transferring your assets`,
+        description: "Successfully initiated transfer"
+      }
+    ]
+  }
+  raise("trying to make stepper for unsupported chain")
+})
 </script>
 
 
@@ -493,11 +641,7 @@ $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $ass
     </Card.Root>
 
     <Card.Root class="cube-back p-6">
-
-        <div class="text-muted-foreground">
-          Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
-        </div>
-      <pre>{$transferState}</pre>
+      <Stepper steps={$stepperSteps}/>
     </Card.Root>
     <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>

@@ -50,12 +50,6 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
   getScrollElement: () => virtualListElement
 })
 
-$: dataStore.subscribe(() => {
-  if (!$dataStore) return
-  $table.setPageSize($dataStore.length)
-  options.update(options => ({ ...options, data: $dataStore as unknown as Array<T> }))
-})
-
 const unsubscribe = dataStore.subscribe(() => {
   if (!$dataStore) return
   $table.setPageSize($dataStore.length)
