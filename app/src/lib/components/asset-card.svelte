@@ -20,11 +20,11 @@ $: supportedAsset = getSupportedAsset(chain, identifier)
     <div class="asset-card asset-card asset-card--show-side my-4">
       <div class="asset-card__side" style="background-color: {supportedAsset ? '' : 'darkgray'}">
         <div class="uppercase font-bold">{truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}</div>
-        <div><Precise supportedAsset={supportedAsset ? supportedAsset : asset} {asset} /></div>
+        <div><Precise {asset} {chain} /></div>
       </div>
       <div class="asset-card__front flex flex-col" style="background-color: {supportedAsset ? '' : 'darkgray'}">
         <div class="uppercase font-bold">{truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 8)}</div>
-        <div class="flex-1 text-xl font-mono"><Precise supportedAsset={supportedAsset ? supportedAsset : asset}  {asset} showToolTip /></div>
+        <div class="flex-1 text-xl font-mono"><Precise {asset} {chain} showToolTip /></div>
         <Button
           href={`/transfer?source=${encodeURIComponent(chain.chain_id)}&asset=${encodeURIComponent(asset.symbol)}`}
           variant="default"

@@ -1,11 +1,10 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
-import { bigint } from "valibot"
+import type { Chain } from "$lib/types.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
-// Takes supportedAsset info from chain and an asset to construct formatted balance
-
+export let chain: Chain
 export let asset: any
-export let supportedAsset: any
 export let displayDecimals = 2
 export let showToolTip = false
 export let showSymbol = false
@@ -49,9 +48,11 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
   return num.toFixed(displayDecimals)
 }
 
+$: supportedAsset = getSupportedAsset(chain, asset.address)
+
 $: balance = asset.balance ?? BigInt(0)
-$: decimals = supportedAsset.decimals
-$: symbol = supportedAsset.display_symbol
+$: decimals = supportedAsset ? supportedAsset.decimals : asset.decimals
+$: symbol = supportedAsset ? supportedAsset.display_symbol : asset.symbol
 
 $: formatted = formatBalance(balance, decimals, true)
 $: precise = formatBalance(balance, decimals, false)

@@ -38,6 +38,8 @@ import {
   defineChain,
   publicActions
 } from "viem"
+import Precise from "$lib/components/precise.svelte"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -393,6 +395,9 @@ $: buttonText =
     : $asset && !amount
       ? "enter amount"
       : "select asset and enter amount"
+
+let supportedAsset: any
+$: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
 </script>
 
 
@@ -433,15 +438,16 @@ $: buttonText =
             variant="outline"
             on:click={() => (dialogOpenToken = !dialogOpenToken)}
           >
-            <div class="flex-1 text-left">{truncate($assetSymbol, 12)}</div>
+            <div class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</div>
 
             <Chevron />
           </Button>
         {/if}
         {#if $assetSymbol !== '' && $sendableBalances !== null}
           <div class="mt-4 text-xs text-muted-foreground">
-            <b>{truncate($assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
-            <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>
+            <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
+            <Precise chain={$fromChain} asset={$asset} showToolTip/>
+<!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
           </div>
         {/if}
       </section>
@@ -523,6 +529,7 @@ $: buttonText =
 
 {#if $sendableBalances !== null}
   <AssetsDialog
+    chain={$fromChain}
     assets={$sendableBalances}
     onAssetSelect={newSelectedAsset => {
       assetSymbol.set(newSelectedAsset)

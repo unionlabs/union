@@ -4,6 +4,10 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Dialog from "$lib/components/ui/dialog"
 import { Button } from "$lib/components/ui/button/index.js"
+import type { Chain } from "$lib/types.ts"
+import Precise from "$lib/components/precise.svelte"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import { showUnsupported } from "$lib/stores/user.ts"
 
 /**
  * TODO: format the balance to a readable format - in order to do that properly, need:
@@ -15,6 +19,7 @@ import { Button } from "$lib/components/ui/button/index.js"
  */
 
 export let dialogOpen = false
+export let chain: Chain
 export let assets: Array<{
   address: string
   balance: bigint
@@ -26,10 +31,10 @@ export let onAssetSelect: (asset: string) => void
 </script>
 
 <Dialog.Root
-  closeOnEscape={true}
-  preventScroll={true}
   bind:open={dialogOpen}
+  closeOnEscape={true}
   closeOnOutsideClick={true}
+  preventScroll={true}
 >
   <Dialog.Content
     class="max-w-[90%] sm:max-w-[450px]  overflow-auto px-0 pt-4 pb-2 flex flex-col items-start"
@@ -39,26 +44,31 @@ export let onAssetSelect: (asset: string) => void
     </Dialog.Header>
     <Dialog.Description class="size-full">
       <ul class="">
-        {#each assets as { address, symbol, decimals, balance }, index}
-          <li
-            class={cn(
+        {#each assets as asset, index}
+          {@const supportedAsset = getSupportedAsset(chain, asset.address)}
+          {#if $showUnsupported || supportedAsset}
+            <li
+              class={cn(
               'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
             )}
-          >
-            <Button
-              variant="ghost"
-              class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
-              on:click={() => {
-                onAssetSelect(symbol)
+            >
+              <Button
+                variant="ghost"
+                class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
+                on:click={() => {
+                onAssetSelect(asset.symbol)
                 dialogOpen = false
               }}
-            >
-              <div class="size-full flex flex-col items-start">
-                {truncate(symbol, 12)}
-              </div>
-              <p class="mb-auto text-lg font-black">{balance}</p>
-            </Button>
-          </li>
+              >
+                <div class="size-full flex flex-col items-start" class:opacity-30={!supportedAsset}>
+                  {truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}
+                </div>
+                <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
+                  <Precise {chain} {asset} showToolTip/>
+                </p>
+              </Button>
+            </li>
+          {/if}
         {/each}
       </ul>
     </Dialog.Description>

@@ -99,10 +99,10 @@ laddr = "tcp://127.0.0.1:26657"
 cors_allowed_origins = []
 
 # A list of methods the client is allowed to use with cross-domain requests
-cors_allowed_methods = ["HEAD", "GET", "POST", ]
+cors_allowed_methods = ["HEAD", "GET", "POST"]
 
 # A list of non simple headers the client is allowed to use with cross-domain requests
-cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time", ]
+cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time"]
 
 # TCP or UNIX socket address for the gRPC server to listen on
 # NOTE: This server only supports /broadcast_tx_commit
@@ -267,8 +267,8 @@ private_peer_ids = ""
 allow_duplicate_ip = false
 
 # Peer connection configuration.
+dial_timeout      = "3s"
 handshake_timeout = "20s"
-dial_timeout = "3s"
 
 #######################################################
 ###          Mempool Configuration Option          ###
@@ -280,9 +280,9 @@ dial_timeout = "3s"
 #   2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 version = "v0"
 
-recheck = true
 broadcast = true
-wal_dir = ""
+recheck   = true
+wal_dir   = ""
 
 # Maximum number of transactions in the mempool
 size = 5000
@@ -342,9 +342,9 @@ enable = false
 #
 # For Cosmos SDK-based chains, trust_period should usually be about 2/3 of the unbonding time (~2
 # weeks) during which they can be financially punished (slashed) for misbehavior.
-rpc_servers = ""
+rpc_servers  = ""
+trust_hash   = ""
 trust_height = 0
-trust_hash = ""
 trust_period = "168h0m0s"
 
 # Time to spend discovering snapshots before initiating a restore.
@@ -408,11 +408,11 @@ double_sign_check_height = 0
 skip_timeout_commit = false
 
 # EmptyBlocks mode and possible interval between empty blocks
-create_empty_blocks = true
+create_empty_blocks          = true
 create_empty_blocks_interval = "0s"
 
 # Reactor sleep duration parameters
-peer_gossip_sleep_duration = "100ms"
+peer_gossip_sleep_duration      = "100ms"
 peer_query_maj23_sleep_duration = "2s"
 
 #######################################################
