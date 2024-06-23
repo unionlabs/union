@@ -25,7 +25,7 @@ import { page } from "$app/stores"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import Stepper from '$lib/components/stepper.svelte'
+import Stepper from "$lib/components/stepper.svelte"
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -397,147 +397,155 @@ $: buttonText =
 let supportedAsset: any
 $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
 
-
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-            ? "PENDING" :
-          $transferState === "ADDING_CHAIN" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" || $transferState === "FLIPPING"
+            ? "PENDING"
+            : $transferState === "ADDING_CHAIN"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Adding ${$fromChain.display_name}`,
         description: "Click 'Add Chain' in your wallet."
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-            ? "PENDING" :
-          $transferState === "SWITCHING_TO_CHAIN" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN"
+            ? "PENDING"
+            : $transferState === "SWITCHING_TO_CHAIN"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Switching to ${$fromChain.display_name}`,
         description: "Click 'Switch to Chain' in your wallet."
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-          || $transferState === "SWITCHING_TO_CHAIN" 
-            ? "PENDING" :
-          $transferState === "APPROVING_ASSET" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN"
+            ? "PENDING"
+            : $transferState === "APPROVING_ASSET"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Approving ERC20`,
         description: "Click 'Next' and 'Approve' in wallet."
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-          || $transferState === "SWITCHING_TO_CHAIN" 
-          || $transferState === "APPROVING_ASSET" 
-            ? "PENDING" :
-          $transferState === "AWAITING_APPROVAL_RECEIPT" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET"
+            ? "PENDING"
+            : $transferState === "AWAITING_APPROVAL_RECEIPT"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Awaiting approval receipt`,
         description: `Waiting on ${$fromChain.display_name}`
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-          || $transferState === "SWITCHING_TO_CHAIN" 
-          || $transferState === "APPROVING_ASSET" 
-          || $transferState === "AWAITING_APPROVAL_RECEIPT" 
-            ? "PENDING" :
-          $transferState === "SIMULATING_TRANSFER" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT"
+            ? "PENDING"
+            : $transferState === "SIMULATING_TRANSFER"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Simulating transfer`,
         description: `Waiting on ${$fromChain.display_name}`
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-          || $transferState === "SWITCHING_TO_CHAIN" 
-          || $transferState === "APPROVING_ASSET" 
-          || $transferState === "AWAITING_APPROVAL_RECEIPT" 
-          || $transferState === "SIMULATING_TRANSFER" 
-            ? "PENDING" :
-          $transferState === "CONFIRMING_TRANSFER" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
+          $transferState === "SIMULATING_TRANSFER"
+            ? "PENDING"
+            : $transferState === "CONFIRMING_TRANSFER"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Confirm your transfer`,
         description: `Click 'Confirm' in your wallet`
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-          || $transferState === "SWITCHING_TO_CHAIN" 
-          || $transferState === "APPROVING_ASSET" 
-          || $transferState === "AWAITING_APPROVAL_RECEIPT" 
-          || $transferState === "SIMULATING_TRANSFER" 
-          || $transferState === "CONFIRMING_TRANSFER" 
-            ? "PENDING" :
-          $transferState === "AWAITING_TRANSFER_RECEIPT" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
+          $transferState === "SIMULATING_TRANSFER" ||
+          $transferState === "CONFIRMING_TRANSFER"
+            ? "PENDING"
+            : $transferState === "AWAITING_TRANSFER_RECEIPT"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Awaiting transfer receipt`,
         description: `Waiting on ${$fromChain.display_name}`
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "ADDING_CHAIN" 
-          || $transferState === "SWITCHING_TO_CHAIN" 
-          || $transferState === "APPROVING_ASSET" 
-          || $transferState === "AWAITING_APPROVAL_RECEIPT" 
-          || $transferState === "SIMULATING_TRANSFER" 
-          || $transferState === "CONFIRMING_TRANSFER" 
-          || $transferState === "AWAITING_TRANSFER_RECEIPT" 
-            ? "PENDING" :
-          $transferState === "TRANSFERRING" ? "COMPLETED" : "ERROR",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "ADDING_CHAIN" ||
+          $transferState === "SWITCHING_TO_CHAIN" ||
+          $transferState === "APPROVING_ASSET" ||
+          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
+          $transferState === "SIMULATING_TRANSFER" ||
+          $transferState === "CONFIRMING_TRANSFER" ||
+          $transferState === "AWAITING_TRANSFER_RECEIPT"
+            ? "PENDING"
+            : $transferState === "TRANSFERRING"
+              ? "COMPLETED"
+              : "ERROR",
         title: `Transferring your assets`,
-        description: `Succesfully initated transfer`
-      },
+        description: `Successfully initiated transfer`
+      }
     ]
-  } 
+  }
   if ($fromChain?.rpc_type === "cosmos") {
     return [
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-            ? "PENDING" :
-          $transferState === "CONFIRMING_TRANSFER" ? "IN_PROGRESS" :
-          "COMPLETED",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" || $transferState === "FLIPPING"
+            ? "PENDING"
+            : $transferState === "CONFIRMING_TRANSFER"
+              ? "IN_PROGRESS"
+              : "COMPLETED",
         title: `Approving transfer`,
         description: "Click 'Approve' in your wallet."
       },
-      { 
-        status: 
-          $transferState === "PRE_TRANSFER" 
-          || $transferState === "FLIPPING" 
-          || $transferState === "CONFIRMING_TRANSFER" 
-            ? "PENDING" :
-          $transferState === "TRANSFERRING" ? "COMPLETED" :
-          "ERROR",
+      {
+        status:
+          $transferState === "PRE_TRANSFER" ||
+          $transferState === "FLIPPING" ||
+          $transferState === "CONFIRMING_TRANSFER"
+            ? "PENDING"
+            : $transferState === "TRANSFERRING"
+              ? "COMPLETED"
+              : "ERROR",
         title: `Transferring your assets`,
-        description: "Succesfully initated transfer"
-      },
+        description: "Successfully initiated transfer"
+      }
     ]
   }
   raise("trying to make stepper for unsupported chain")
-});
+})
 </script>
 
 

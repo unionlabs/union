@@ -5,12 +5,11 @@ import { sepoliaStore } from "$lib/wallet/evm"
 import { derived, writable, type Readable } from "svelte/store"
 import type { UserAddresses } from "$lib/types"
 import type { Address } from "viem"
-import LoadingLogo from "./loading-logo.svelte";
-    import { onMount } from "svelte";
-    import { sleep } from "$lib/utilities";
+import LoadingLogo from "./loading-logo.svelte"
+import { onMount } from "svelte"
+import { sleep } from "$lib/utilities"
 
-
-let loading = writable(true); 
+let loading = writable(true)
 
 let userAddr: Readable<UserAddresses | null> = derived(
   [cosmosStore, sepoliaStore],
@@ -62,10 +61,10 @@ let confirmedUserAddr: Readable<UserAddresses> = derived(userAddr, $userAddr => 
 onMount(async () => {
   // we sleep 100ms to wait for the wallets to re-connect on refresh
   // as this prevents flashing the "connect wallet screen"
-  // this is how long it takes for the wallets to reconnect 
-  await sleep(100); 
-  loading.set(false);
-});
+  // this is how long it takes for the wallets to reconnect
+  await sleep(100)
+  loading.set(false)
+})
 </script>
 
 {#if $userAddr}

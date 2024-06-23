@@ -1,7 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utilities/shadcn";
-
-
+import { cn } from "$lib/utilities/shadcn"
 
 type Step = {
   status: StepStatus
@@ -9,9 +7,9 @@ type Step = {
   description: string
 }
 
-type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR";
+type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR"
 
-export let steps: Array<Step>;
+export let steps: Array<Step>
 </script>
 
 
