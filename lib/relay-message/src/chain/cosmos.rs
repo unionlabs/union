@@ -72,8 +72,12 @@ where
         StoredClientState<Cosmos>: IntoAny,
         StateProof: Encode<Proto>,
     >,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
-    async fn msg(&self, msg: Effect<Cosmos, Tr>) -> Result<(), BroadcastTxCommitError> {
+    async fn msg(
+        &self,
+        msg: Effect<Cosmos, Tr>,
+    ) -> Result<Op<RelayMessage>, BroadcastTxCommitError> {
         do_msg(
             self,
             msg,

@@ -80,20 +80,10 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
     pub async fn with<'a, F: FnOnce(&'a S) -> Fut + 'a, Fut: Future<Output: 'static> + 'a>(
         &'a self,
         f: F,
-    ) -> Fut::Output {
-        let address = loop {
-            match self.addresses_buffer.pop() {
-                Some(t) => break t,
-                None => {
-                    const RETRY_SECONDS: u64 = 3;
-
-                    warn!(keyring = %self.name, "high traffic in keyring");
-
-                    tokio::time::sleep(std::time::Duration::from_secs(RETRY_SECONDS)).await;
-
-                    continue;
-                }
-            }
+    ) -> Option<Fut::Output> {
+        let Some(address) = self.addresses_buffer.pop() else {
+            warn!(keyring = %self.name, "high traffic in keyring");
+            return None;
         };
 
         let key_name = self
@@ -116,7 +106,7 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
             .ok()
             .expect("no additional items are added; qed;");
 
-        r
+        Some(r)
     }
 }
 

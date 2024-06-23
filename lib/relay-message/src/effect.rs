@@ -1,6 +1,6 @@
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{noop, queue_msg, HandleEffect, Op, QueueError, QueueMessage};
+use queue_msg::{queue_msg, HandleEffect, Op, QueueError, QueueMessage};
 use tracing::instrument;
 use unionlabs::{
     ibc::core::{
@@ -66,7 +66,6 @@ impl HandleEffect<RelayMessage> for AnyLightClientIdentified<AnyEffect> {
                 .map_err(|e| QueueError::Fatal(Box::new(e)))?
                 .await
                 .map_err(|e: <Hc as ChainExt>::MsgError| if e.is_recoverable() {QueueError::Retry(Box::new(e))} else {QueueError::Fatal(Box::new(e))})
-                .map(|()| noop())
             }
         }
     }
@@ -77,7 +76,7 @@ where
     Hc: ChainExt + DoMsg<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: &Hc) -> Result<(), Hc::MsgError> {
+    pub async fn handle(self, c: &Hc) -> Result<Op<RelayMessage>, Hc::MsgError> {
         <Hc as DoMsg<Hc, Tr>>::msg(c, self).await
     }
 }

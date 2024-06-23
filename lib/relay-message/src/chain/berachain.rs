@@ -432,9 +432,10 @@ where
         StateProof: Encode<EthAbi>,
     >,
     Self::SelfClientState: Encode<Tr::IbcStateEncoding>,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
-    async fn msg(&self, msg: Effect<Berachain, Tr>) -> Result<(), Self::MsgError> {
-        ethereum::do_msg(&self.keyring, msg, false).await
+    async fn msg(&self, msg: Effect<Berachain, Tr>) -> Result<Op<RelayMessage>, Self::MsgError> {
+        ethereum::do_msg(self.chain_id(), &self.keyring, msg, false).await
     }
 }
 

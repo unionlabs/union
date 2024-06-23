@@ -5,7 +5,7 @@ use chain_utils::{
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
-use queue_msg::{data, fetch, seq, wait, Op};
+use queue_msg::{data, defer_relative, effect, fetch, noop, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
@@ -21,10 +21,11 @@ use crate::{
     chain::cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
     data::{AnyData, Data, IbcProof, IbcState},
     effect::{
-        BatchMsg, Effect, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
-        MsgChannelOpenInitData, MsgChannelOpenTryData, MsgConnectionOpenAckData,
-        MsgConnectionOpenConfirmData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
-        MsgCreateClientData, MsgRecvPacketData, MsgTimeoutData, MsgUpdateClientData,
+        AnyEffect, BatchMsg, Effect, MsgAckPacketData, MsgChannelOpenAckData,
+        MsgChannelOpenConfirmData, MsgChannelOpenInitData, MsgChannelOpenTryData,
+        MsgConnectionOpenAckData, MsgConnectionOpenConfirmData, MsgConnectionOpenInitData,
+        MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData, MsgTimeoutData,
+        MsgUpdateClientData,
     },
     fetch::{AnyFetch, Fetch},
     id, identified,
@@ -47,7 +48,7 @@ pub async fn do_msg<Hc, Tr>(
     )
         -> (protos::google::protobuf::Any, protos::google::protobuf::Any),
     mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
-) -> Result<(), BroadcastTxCommitError>
+) -> Result<Op<RelayMessage>, BroadcastTxCommitError>
 where
     Hc: ChainKeyring<Signer = CosmosSigner>
         + CosmosSdkChainSealed<
@@ -62,29 +63,35 @@ where
         StoredClientState<Hc>: IntoAny,
         StateProof: Encode<Proto>,
     >,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Hc, Tr>)>,
 {
-    hc.keyring()
-        .with(|signer| async move {
-            let msgs = process_msgs(
-                msg.clone(),
-                signer,
-                mk_create_client_states,
-                mk_client_message,
-            );
+    let res = hc
+        .keyring()
+        .with(|signer| {
+            let msg = msg.clone();
 
-            let msg_names = msgs
-                .iter()
-                .map(|x| &*x.type_url)
-                .collect::<Vec<_>>()
-                .join(" ");
+            async move {
+                let msgs = process_msgs(msg, signer, mk_create_client_states, mk_client_message);
 
-            let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
+                let msg_names = msgs
+                    .iter()
+                    .map(|x| &*x.type_url)
+                    .collect::<Vec<_>>()
+                    .join(" ");
 
-            info!(%tx_hash, msgs = %msg_names, "cosmos tx");
+                let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
 
-            Ok(())
+                info!(%tx_hash, msgs = %msg_names, "cosmos tx");
+
+                Ok(())
+            }
         })
-        .await
+        .await;
+
+    match res {
+        Some(res) => res.map(|()| noop()),
+        None => Ok(seq([defer_relative(3), effect(id(hc.chain_id(), msg))])),
+    }
 }
 
 fn process_msgs<Hc, Tr>(
@@ -1114,9 +1121,9 @@ pub mod wasm {
             },
             union::{ProveResponse, UnionAggregateMsg, UnionDataMsg, UnionFetch},
         },
-        effect::Effect,
+        effect::{AnyEffect, Effect},
         fetch::FetchUpdateHeaders,
-        ChainExt, DoFetchUpdateHeaders, DoMsg, RelayMessage,
+        identified, AnyLightClientIdentified, ChainExt, DoFetchUpdateHeaders, DoMsg, RelayMessage,
     };
 
     impl ChainExt for Wasm<Union> {
@@ -1216,8 +1223,9 @@ pub mod wasm {
             SelfClientState: Encode<Proto> + TypeUrl,
             Header: Encode<Proto> + TypeUrl,
         >,
+        AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Wasm<Hc>, Tr>)>,
     {
-        async fn msg(&self, msg: Effect<Wasm<Hc>, Tr>) -> Result<(), Self::MsgError> {
+        async fn msg(&self, msg: Effect<Wasm<Hc>, Tr>) -> Result<Op<RelayMessage>, Self::MsgError> {
             do_msg(
                 self,
                 msg,

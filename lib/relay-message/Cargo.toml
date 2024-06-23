@@ -16,6 +16,7 @@ chain-utils              = { workspace = true }
 contracts                = { workspace = true, features = ["providers"] }
 dashmap                  = { workspace = true }
 enumorph                 = { workspace = true }
+ethereum-verifier        = { workspace = true }
 ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
 frunk                    = { workspace = true }

@@ -7673,6 +7673,7 @@ dependencies = [
  "contracts",
  "dashmap",
  "enumorph",
+ "ethereum-verifier",
  "ethers",
  "frame-support-procedural",
  "frunk",
