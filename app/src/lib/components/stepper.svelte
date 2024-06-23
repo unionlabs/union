@@ -23,7 +23,7 @@ export let steps: Array<Step>;
       <div class={cn("w-1 flex-1", index !== 0 ?  "bg-black" : "")}></div>
       <!-- stepper icon !-->
       <div class={cn(
-        "size-12 border-4 flex items-center justify-center",
+        "size-12 border-4 flex items-center justify-center transition-colors",
         step.status === "PENDING" ? "bg-white" : 
         step.status === "IN_PROGRESS" ? "bg-muted" :
         step.status === "COMPLETED" ? "bg-accent" :
