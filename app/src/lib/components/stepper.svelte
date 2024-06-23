@@ -5,6 +5,8 @@
 
 type Step = {
   status: StepStatus
+  title: string
+  description: string
 }
 
 type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR";
@@ -12,15 +14,23 @@ type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR";
 let steps: Array<Step> = [
   { 
     status: "PENDING",
+    title: "Awaiting receipt",
+    description: "Awaiting your receipt"
   },
   { 
     status: "IN_PROGRESS",
+    title: "Awaiting receipt",
+    description: ""
   },
   { 
     status: "COMPLETED",
+    title: "Awaiting receipt",
+    description: ""
   },
   { 
     status: "ERROR",
+    title: "Awaiting receipt",
+    description: ""
   }
 ]
 </script>
@@ -34,22 +44,21 @@ let steps: Array<Step> = [
       <div class={cn("w-1 flex-1", index !== 0 ?  "bg-black" : "")}></div>
       <!-- stepper icon !-->
       <div class={cn(
-        "w-12 h-12 border-4 flex items-center justify-center",
+        "size-12 border-4 flex items-center justify-center",
         step.status === "PENDING" ? "bg-white" : 
         step.status === "IN_PROGRESS" ? "bg-muted" :
         step.status === "COMPLETED" ? "bg-accent" :
         step.status === "ERROR" ? "bg-black" : ""
       )}>
-        <div class="rounded-full bg-black w-3 h-3"></div>
+        <div class="rounded-full bg-black size-3"></div>
       </div>
       <!-- bottom step connector !-->
       <div class={cn("w-1 flex-1", index !== steps.length - 1 ?  "bg-black" : "")}></div>
     </div>
-    <div class="font-bold py-4">
-    {step.status}
+    <div class="font-bold py-4 flex flex-col">
+      <div>{step.title}</div>
+      {#if step.description}<div class="font-normal">{step.description}</div>{/if}
     </div>
-
-
   </li>
 {/each}
 </ol>
