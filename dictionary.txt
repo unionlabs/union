@@ -922,6 +922,8 @@ rustup
 sandboxed
 sarahkc
 sbox
+scanline
+scanlines
 schemars
 schnorr
 scrollbars

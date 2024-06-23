@@ -15,23 +15,24 @@ import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { derived } from "svelte/store"
 import { toDisplayName } from "$lib/utilities/chains.ts"
-    import { raise } from "$lib/utilities";
+import { raise } from "$lib/utilities"
 
 const source = $page.params.source
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
-  refetchInterval: (query) => query.state.data?.length === 0 ? 1_000 : false, // fetch every second until we have the transaction
+  refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
     const response = await request(URLS.GRAPHQL, transfersBySourceHashBaseQueryDocument, {
-        source_transaction_hash: source
-    });
+      source_transaction_hash: source
+    })
 
-    if (response.v0_transfers === undefined || response.v0_transfers === null) raise("error fetching transfers");
+    if (response.v0_transfers === undefined || response.v0_transfers === null)
+      raise("error fetching transfers")
 
-    return response.v0_transfers;
+    return response.v0_transfers
   }
 })
 let processedTransfers = derived(transfers, $transfers => {
