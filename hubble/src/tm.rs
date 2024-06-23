@@ -123,9 +123,9 @@ impl Config {
                             bail!("node {chain_id} has stopped providing new blocks");
                         }
                         retry_count += 1;
+                        tx.rollback().await?;
                         debug!("caught up indexing, sleeping for 1 second");
                         sleep(Duration::from_millis(1000)).await;
-                        tx.rollback().await?;
                         continue;
                     }
                 }
