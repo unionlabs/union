@@ -25,6 +25,7 @@ import { page } from "$app/stores"
 import type { Address } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
+import Stepper from '$lib/components/stepper.svelte'
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -498,6 +499,7 @@ $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $ass
           Transferring {#if amount}<b>{amount} {truncate($assetSymbol, 6)}</b>{/if} from <b>{$fromChain?.display_name}</b> to {#if $recipient}<span class="font-bold font-mono">{$recipient}</span>{/if} on <b>{$toChain?.display_name}</b><span>{#if $hopChain}&nbsp;by forwarding through <b class="m-0">{$hopChain.display_name.trim()}</b>{/if}</span>. 
         </div>
       <pre>{$transferState}</pre>
+      <Stepper/>
     </Card.Root>
     <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>
