@@ -514,10 +514,26 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   if ($fromChain?.rpc_type === "cosmos") {
     return [
       { 
-        status: "PENDING",
-        title: "yeah",
-        description: "whatever"
-      }
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+            ? "PENDING" :
+          $transferState === "CONFIRMING_TRANSFER" ? "IN_PROGRESS" :
+          "COMPLETED",
+        title: `Approving transfer`,
+        description: "Click 'Approve' in your wallet."
+      },
+      { 
+        status: 
+          $transferState === "PRE_TRANSFER" 
+          || $transferState === "FLIPPING" 
+          || $transferState === "CONFIRMING_TRANSFER" 
+            ? "PENDING" :
+          $transferState === "TRANSFERRING" ? "COMPLETED" :
+          "ERROR",
+        title: `Transferring your assets`,
+        description: "Succesfully initated transfer"
+      },
     ]
   }
   raise("trying to make stepper for unsupported chain")
