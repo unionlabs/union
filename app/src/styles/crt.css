@@ -3,67 +3,67 @@
 @media screen and (prefers-reduced-motion: no-preference) {
 @keyframes flicker {
   0% {
-    opacity: calc(0.27861 / 3);
+    opacity: calc(0.27861 / 4);
   }
   5% {
-    opacity: calc(0.34769 / 3);
+    opacity: calc(0.34769 / 4);
   }
   10% {
-    opacity: calc(0.23604 / 3);
+    opacity: calc(0.23604 / 4);
   }
   15% {
-    opacity: calc(0.90626 / 3);
+    opacity: calc(0.90626 / 4);
   }
   20% {
-    opacity: calc(0.18128 / 3);
+    opacity: calc(0.18128 / 4);
   }
   25% {
-    opacity: calc(0.83891 / 3);
+    opacity: calc(0.83891 / 4);
   }
   30% {
-    opacity: calc(0.65583 / 3);
+    opacity: calc(0.65583 / 4);
   }
   35% {
-    opacity: calc(0.67807 / 3);
+    opacity: calc(0.67807 / 4);
   }
   40% {
-    opacity: calc(0.26559 / 3);
+    opacity: calc(0.26559 / 4);
   }
   45% {
-    opacity: calc(0.84693 / 3);
+    opacity: calc(0.84693 / 4);
   }
   50% {
-    opacity: calc(0.96019 / 3);
+    opacity: calc(0.96019 / 4);
   }
   55% {
-    opacity: calc(0.08594 / 3);
+    opacity: calc(0.08594 / 4);
   }
   60% {
-    opacity: calc(0.20313 / 3);
+    opacity: calc(0.20313 / 4);
   }
   65% {
-    opacity: calc(0.71988 / 3);
+    opacity: calc(0.71988 / 4);
   }
   70% {
-    opacity: calc(0.53455 / 3);
+    opacity: calc(0.53455 / 4);
   }
   75% {
-    opacity: calc(0.37288 / 3);
+    opacity: calc(0.37288 / 4);
   }
   80% {
-    opacity: calc(0.71428 / 3);
+    opacity: calc(0.71428 / 4);
   }
   85% {
-    opacity: calc(0.70419 / 3);
+    opacity: calc(0.70419 / 4);
   }
   90% {
-    opacity: calc(0.70030 / 3)
+    opacity: calc(0.70030 / 4)
   }
   95% {
-    opacity: calc(0.36108 / 3);
+    opacity: calc(0.36108 / 4);
   }
   100% {
-    opacity: calc(0.24387 / 3);
+    opacity: calc(0.24387 / 4);
   }
 }
 @keyframes textShadow {
