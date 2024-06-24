@@ -2499,7 +2499,7 @@ where
             noop()
         } else {
             seq([
-                defer_relative(3),
+                defer_relative(1),
                 aggregate(
                     [fetch(id(
                         this_chain_id.clone(),
@@ -2689,7 +2689,7 @@ where
             noop()
         } else {
             seq([
-                defer_relative(3),
+                defer_relative(1),
                 aggregate(
                     [fetch(id(
                         this_chain_id.clone(),
@@ -2746,7 +2746,7 @@ where
             noop()
         } else {
             seq([
-                defer_relative(3),
+                defer_relative(1),
                 aggregate(
                     [fetch(id(
                         this_chain_id.clone(),
@@ -2806,7 +2806,7 @@ where
             noop()
         } else {
             seq([
-                defer_relative(3),
+                defer_relative(1),
                 aggregate(
                     [fetch(id(
                         this_chain_id.clone(),

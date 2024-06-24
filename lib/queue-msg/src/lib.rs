@@ -358,7 +358,7 @@ impl<T: QueueMessage> Op<T> {
                     None => Ok(None),
                 },
                 Self::Retry { remaining, msg } => {
-                    const RETRY_DELAY_SECONDS: u64 = 3;
+                    const RETRY_DELAY_SECONDS: u64 = 1;
 
                     match msg.clone().handle(store, depth + 1).await {
                         Ok(ok) => Ok(ok),

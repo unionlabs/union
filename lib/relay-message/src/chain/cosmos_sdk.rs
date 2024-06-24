@@ -90,7 +90,7 @@ where
 
     match res {
         Some(res) => res.map(|()| noop()),
-        None => Ok(seq([defer_relative(3), effect(id(hc.chain_id(), msg))])),
+        None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
     }
 }
 

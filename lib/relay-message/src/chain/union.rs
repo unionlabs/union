@@ -233,7 +233,7 @@ where
 
         seq([
             // REVIEW: How long should we wait between polls?
-            defer_relative(3),
+            defer_relative(1),
             fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
                 Fetch::specific(FetchProveRequest { request }),
