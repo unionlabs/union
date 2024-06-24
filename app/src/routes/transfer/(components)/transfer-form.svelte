@@ -22,11 +22,22 @@ import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
-import { type Address, parseUnits, SwitchChainError, ResourceUnavailableRpcError, type SimulateContractReturnType  } from "viem"
+import {
+  type Address,
+  parseUnits,
+  SwitchChainError,
+  ResourceUnavailableRpcError,
+  type SimulateContractReturnType
+} from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import Stepper from "$lib/components/stepper.svelte"
-import { type TransferState, chainToViemChain, transferStep, stepBefore } from '$lib/transfer/transfer.ts';
+import {
+  type TransferState,
+  chainToViemChain,
+  transferStep,
+  stepBefore
+} from "$lib/transfer/transfer.ts"
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -43,7 +54,7 @@ import {
 } from "viem"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
-    import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers";
+import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -54,7 +65,7 @@ let fromChainId = writable("union-testnet-8")
 let toChainId = writable("11155111")
 let assetSymbol = writable("")
 
-let transferState: Writable<TransferState> = writable({kind: "PRE_TRANSFER"})
+let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 let amount = ""
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
@@ -195,7 +206,7 @@ const transfer = async () => {
   let formattedAmount = parseUnits(amount, $fromChain.assets[0].decimals)
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
-  transferState.set({kind: "FLIPPING"})
+  transferState.set({ kind: "FLIPPING" })
   await sleep(1200)
 
   if ($fromChain.rpc_type === "cosmos") {
@@ -223,7 +234,7 @@ const transfer = async () => {
       rpcUrl: `https://${rpcUrl}`
     })
 
-    transferState.set({kind: "CONFIRMING_TRANSFER"})
+    transferState.set({ kind: "CONFIRMING_TRANSFER" })
 
     let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
     if (ucs1_configuration.contract_address === "ics20") {
@@ -261,54 +272,54 @@ const transfer = async () => {
     }
 
     const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
-    transferState.set({kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash})
+    transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
     await sleep(REDIRECT_DELAY_MS)
     goto(`/explorer/transfers/${cosmosTransfer.transactionHash}`)
   } else if ($fromChain.rpc_type === "evm") {
-    const viemChain = chainToViemChain($fromChain);
+    const viemChain = chainToViemChain($fromChain)
     const ucs01address = ucs1_configuration.contract_address as Address
     const publicClient = createPublicClient({
       chain: viemChain,
-      transport: fallback($fromChain.rpcs.filter(c => c.type === "rpc").map(c => http(`https://${c.url}`)))
+      transport: fallback(
+        $fromChain.rpcs.filter(c => c.type === "rpc").map(c => http(`https://${c.url}`))
+      )
     })
 
-    if (window.ethereum === undefined) raise('no ethereum browser extension');
+    if (window.ethereum === undefined) raise("no ethereum browser extension")
     const walletClient = createWalletClient({
       chain: viemChain,
       transport: custom(window.ethereum)
     })
 
-
     if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
-      transferState.set({kind: "ADDING_CHAIN"})
+      transferState.set({ kind: "ADDING_CHAIN" })
       try {
-        await walletClient.addChain({chain:viemChain})
-      } catch(error) {
+        await walletClient.addChain({ chain: viemChain })
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "ADDING_CHAIN", error})
+          transferState.set({ kind: "ADDING_CHAIN", error })
         }
-        return;
+        return
       }
-      transferState.set({kind: "SWITCHING_TO_CHAIN"})
+      transferState.set({ kind: "SWITCHING_TO_CHAIN" })
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
       try {
         await walletClient.switchChain({ id: Number($fromChain.chain_id) })
-      } catch(error) {
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "SWITCHING_TO_CHAIN", error})
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
         }
-        return;
+        return
       }
-      transferState.set({kind: "APPROVING_ASSET"})
+      transferState.set({ kind: "APPROVING_ASSET" })
     }
 
     if ($transferState.kind === "APPROVING_ASSET") {
-      let hash: `0x${string}` | null = null;
+      let hash: `0x${string}` | null = null
 
       try {
-
         hash = await walletClient.writeContract({
           account: userAddr.evm.canonical,
           abi: erc20Abi,
@@ -316,14 +327,14 @@ const transfer = async () => {
           functionName: "approve",
           args: [ucs01address, formattedAmount]
         })
-      } catch(error) {
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "APPROVING_ASSET", error})
+          transferState.set({ kind: "APPROVING_ASSET", error })
         }
-        return;
+        return
       }
 
-      transferState.set({kind: "AWAITING_APPROVAL_RECEIPT", hash})
+      transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
     }
 
     if ($transferState.kind === "AWAITING_APPROVAL_RECEIPT") {
@@ -331,15 +342,14 @@ const transfer = async () => {
         await publicClient.waitForTransactionReceipt({
           hash: $transferState.hash
         })
-      } catch(error) {
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "AWAITING_APPROVAL_RECEIPT", hash: $transferState.hash, error})
+          transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash: $transferState.hash, error })
         }
-        return;
+        return
       }
-      transferState.set({kind: "SIMULATING_TRANSFER"})
+      transferState.set({ kind: "SIMULATING_TRANSFER" })
     }
-
 
     if ($transferState.kind === "SIMULATING_TRANSFER") {
       try {
@@ -358,41 +368,49 @@ const transfer = async () => {
           ]
         })
         // @ts-ignore
-        transferState.set({kind: "CONFIRMING_TRANSFER", simulationResult})
-      } catch(error) {
+        transferState.set({ kind: "CONFIRMING_TRANSFER", simulationResult })
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "SIMULATING_TRANSFER", error})
+          transferState.set({ kind: "SIMULATING_TRANSFER", error })
         }
-        return;
+        return
       }
     }
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
         // @ts-ignore
-        const transferHash = await walletClient.writeContract($transferState.simulationResult.request)
-        transferState.set({kind: "AWAITING_TRANSFER_RECEIPT", transferHash});
-      } catch(error) {
+        const transferHash = await walletClient.writeContract(
+          $transferState.simulationResult.request
+        )
+        transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "CONFIRMING_TRANSFER", simulationResult: $transferState.simulationResult, error})
+          transferState.set({
+            kind: "CONFIRMING_TRANSFER",
+            simulationResult: $transferState.simulationResult,
+            error
+          })
         }
       }
     }
-
 
     if ($transferState.kind === "AWAITING_TRANSFER_RECEIPT") {
       try {
         await publicClient.waitForTransactionReceipt({
           hash: $transferState.transferHash
         })
-        transferState.set({kind: "TRANSFERRING", transferHash: $transferState.transferHash});
-      } catch(error) {
+        transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
+      } catch (error) {
         if (error instanceof Error) {
-          transferState.set({kind: "AWAITING_TRANSFER_RECEIPT", transferHash: $transferState.transferHash, error})
+          transferState.set({
+            kind: "AWAITING_TRANSFER_RECEIPT",
+            transferHash: $transferState.transferHash,
+            error
+          })
         }
       }
     }
-
 
     if ($transferState.kind === "TRANSFERRING") {
       await sleep(REDIRECT_DELAY_MS)
@@ -452,66 +470,76 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     // TODO: Refactor this by implementing Ord for transferState
     return [
       {
-        status: stepBefore($transferState, "ADDING_CHAIN") ? "PENDING"
-          : $transferState.kind === "ADDING_CHAIN" ? 
-              $transferState.error !== undefined ? "ERROR" : "IN_PROGRESS"
-          : "COMPLETED",
+        status: stepBefore($transferState, "ADDING_CHAIN")
+          ? "PENDING"
+          : $transferState.kind === "ADDING_CHAIN"
+            ? $transferState.error !== undefined
+              ? "ERROR"
+              : "IN_PROGRESS"
+            : "COMPLETED",
         title: `Adding ${$fromChain.display_name}`,
         description: "Click 'Approve' in your wallet."
       },
       {
-        status:
-            stepBefore($transferState, "SWITCHING_TO_CHAIN") ? "PENDING"
-          : $transferState.kind === "SWITCHING_TO_CHAIN" ? "IN_PROGRESS"
-          : "COMPLETED",
+        status: stepBefore($transferState, "SWITCHING_TO_CHAIN")
+          ? "PENDING"
+          : $transferState.kind === "SWITCHING_TO_CHAIN"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Switching to ${$fromChain.display_name}`,
         description: "Click 'Switch to Chain' in your wallet."
       },
       {
-        status:
-            stepBefore($transferState, "APPROVING_ASSET") ? "PENDING"
-          : $transferState.kind === "APPROVING_ASSET" ? "IN_PROGRESS"
-          : "COMPLETED",
+        status: stepBefore($transferState, "APPROVING_ASSET")
+          ? "PENDING"
+          : $transferState.kind === "APPROVING_ASSET"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Approving ERC20`,
         description: "Click 'Next' and 'Approve' in wallet."
       },
       {
-        status:
-            stepBefore($transferState, "AWAITING_APPROVAL_RECEIPT") ? "PENDING"
-          : $transferState.kind === "AWAITING_APPROVAL_RECEIPT" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "AWAITING_APPROVAL_RECEIPT")
+          ? "PENDING"
+          : $transferState.kind === "AWAITING_APPROVAL_RECEIPT"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Awaiting approval receipt`,
         description: `Waiting on ${$fromChain.display_name}`
       },
       {
-        status:
-            stepBefore($transferState, "SIMULATING_TRANSFER") ? "PENDING"
-          : $transferState.kind === "SIMULATING_TRANSFER" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "SIMULATING_TRANSFER")
+          ? "PENDING"
+          : $transferState.kind === "SIMULATING_TRANSFER"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Simulating transfer`,
         description: `Waiting on ${$fromChain.display_name}`
       },
       {
-        status:
-            stepBefore($transferState, "CONFIRMING_TRANSFER") ? "PENDING"
-          : $transferState.kind === "CONFIRMING_TRANSFER" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "CONFIRMING_TRANSFER")
+          ? "PENDING"
+          : $transferState.kind === "CONFIRMING_TRANSFER"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Confirm your transfer`,
         description: `Click 'Confirm' in your wallet`
       },
       {
-        status:
-            stepBefore($transferState, "AWAITING_TRANSFER_RECEIPT") ? "PENDING"
-          : $transferState.kind === "AWAITING_TRANSFER_RECEIPT" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "AWAITING_TRANSFER_RECEIPT")
+          ? "PENDING"
+          : $transferState.kind === "AWAITING_TRANSFER_RECEIPT"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Awaiting transfer receipt`,
         description: `Waiting on ${$fromChain.display_name}`
       },
       {
-        status:
-            stepBefore($transferState, "TRANSFERRING") ? "PENDING"
-          : $transferState.kind === "TRANSFERRING" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "TRANSFERRING")
+          ? "PENDING"
+          : $transferState.kind === "TRANSFERRING"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Transferring your assets`,
         description: `Successfully initiated transfer`
       }
@@ -520,18 +548,20 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   if ($fromChain?.rpc_type === "cosmos") {
     return [
       {
-        status:
-            stepBefore($transferState, "CONFIRMING_TRANSFER") ? "PENDING"
-          : $transferState.kind === "CONFIRMING_TRANSFER" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "CONFIRMING_TRANSFER")
+          ? "PENDING"
+          : $transferState.kind === "CONFIRMING_TRANSFER"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Confirm your transfer`,
         description: `Click 'Approve' in your wallet`
       },
       {
-        status:
-            stepBefore($transferState, "TRANSFERRING") ? "PENDING"
-          : $transferState.kind === "TRANSFERRING" ? "IN_PROGRESS"
-              : "COMPLETED",
+        status: stepBefore($transferState, "TRANSFERRING")
+          ? "PENDING"
+          : $transferState.kind === "TRANSFERRING"
+            ? "IN_PROGRESS"
+            : "COMPLETED",
         title: `Transferring your assets`,
         description: `Successfully initiated transfer`
       }
