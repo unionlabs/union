@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends object" >
+<script generics="T extends object" lang="ts">
 import { derived, get } from "svelte/store"
 import { onDestroy, onMount } from "svelte"
 import {
@@ -15,6 +15,8 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import * as Card from "$lib/components/ui/card/index.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import { showUnsupported } from "$lib/stores/user.ts"
 
 export let columns: Array<ColumnDef<any>>
 // https://github.com/TanStack/table/issues/4241
@@ -56,11 +58,15 @@ const unsubscribe = dataStore.subscribe(() => {
   options.update(options => ({ ...options, data: $dataStore as unknown as Array<T> }))
 })
 
+function hasInfoProperty(assets: Object) {
+  return !!Object.values(assets)[0].info
+}
+
 onDestroy(unsubscribe)
 </script>
 
 <Card.Root>
-  <div bind:this={virtualListElement} >
+  <div bind:this={virtualListElement}>
     <Table.Root>
       <Table.Header>
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -70,9 +76,9 @@ onDestroy(unsubscribe)
                 colspan={header.colSpan}
                 class={cn(`w-[${header.getSize()}px] whitespace-nowrap`)}
               >
-                  <svelte:component
-                    this={flexRender(header.column.columnDef.header, header.getContext())}
-                  />
+                <svelte:component
+                  this={flexRender(header.column.columnDef.header, header.getContext())}
+                />
               </Table.Head>
             {/each}
           </Table.Row>
@@ -80,20 +86,24 @@ onDestroy(unsubscribe)
       </Table.Header>
       <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]] whitespace-nowrap`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
-          <Table.Row
-            class={cn(onClick !== undefined ? 'cursor-pointer' : '',
+          {@const isSupported = hasInfoProperty($rows[row.index].original.assets)}
+          {#if isSupported || $showUnsupported}
+            <Table.Row
+              class={cn(onClick !== undefined ? 'cursor-pointer' : '',
               index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+              isSupported ? '' : 'opacity-50'
             )}
-             on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
-          >
-            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              <Table.Cell>
-                <svelte:component
-                  this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                />
-              </Table.Cell>
-            {/each}
-          </Table.Row>
+              on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
+            >
+              {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+                <Table.Cell>
+                  <svelte:component
+                    this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  />
+                </Table.Cell>
+              {/each}
+            </Table.Row>
+          {/if}
         {/each}
       </Table.Body>
     </Table.Root>
