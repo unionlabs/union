@@ -1,21 +1,22 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use dashmap::DashMap;
+use parking_lot::Mutex;
 use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
-use tokio::{sync::Mutex, task::JoinHandle, time::interval};
+use tokio::{task::JoinHandle, time::interval};
 
 use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
-    config::{AnyChainConfig, Config, IbcInteraction},
+    config::{AnyChainConfig, Config, EventTrackerConfig, IbcInteraction},
 };
-type InnerInnerMap = HashMap<i32, (bool, Option<chrono::DateTime<chrono::Utc>>)>;
-type InnerMap = HashMap<i32, InnerInnerMap>;
-pub type SharedMap = Arc<Mutex<HashMap<String, InnerMap>>>;
+
+pub type EventStateMap = Arc<DashMap<String, HashMap<i32, HashMap<u64, EventTrackerConfig>>>>;
 
 #[derive(Clone, Debug)]
 pub struct Context {
     pub chains: HashMap<String, Chain>,
     pub interactions: Vec<IbcInteraction>,
-    pub shared_map: SharedMap,
+    pub event_state_map: EventStateMap,
 }
 
 impl Context {
@@ -44,12 +45,12 @@ impl Context {
         );
 
         // Initialize the shared hashmap
-        let shared_map = Arc::new(Mutex::new(HashMap::new()));
+        let event_state_map = Arc::new(DashMap::new());
 
         Ok(Self {
             chains,
             interactions: config.interactions,
-            shared_map, // Set the shared_map field
+            event_state_map, // Set the event_state_map field
         })
     }
 
@@ -59,11 +60,11 @@ impl Context {
         for (chain_name, chain) in &self.chains {
             tracing::info!(%chain_name, "listening on chain");
 
-            let shared_map = self.shared_map.clone();
+            let event_state_map = self.event_state_map.clone();
             let chain = chain.clone();
 
             let handle = tokio::spawn(async move {
-                chain.listen(&shared_map).await;
+                chain.listen(&event_state_map).await;
             });
             handles.push(handle);
         }
@@ -184,7 +185,7 @@ impl Context {
         handles
     }
     pub async fn check_packet_sequence(&self, expect_full_cycle: u64, key: &str) -> JoinHandle<()> {
-        let shared_map = Arc::clone(&self.shared_map);
+        let event_state_map = Arc::clone(&self.event_state_map);
         let key = key.to_string(); // Clone the key to extend its lifetime
 
         tokio::spawn(async move {
@@ -193,24 +194,16 @@ impl Context {
             loop {
                 interval.tick().await;
 
-                let mut shared_map = shared_map.lock().await;
+                // let mut event_state_map = event_state_map.lock().await;
 
-                if let Some(inner_map) = shared_map.get_mut(&key) {
+                if let Some(mut inner_map) = event_state_map.get_mut(&key) {
                     // Use get_mut to get a mutable reference
-
                     let sequences_to_remove: Vec<i32> = inner_map
                         .iter()
                         .filter_map(|(&sequence, event_map)| {
                             let mut all_events_received = true;
-                            for (event_index, (status, _date)) in event_map.iter() {
-                                let _event_name = match event_index {
-                                    0 => "SendPacket",
-                                    1 => "RecvPacket",
-                                    2 => "WriteAcknowledgement",
-                                    3 => "AcknowledgePacket",
-                                    _ => "UnknownEvent",
-                                };
-                                if !status {
+                            for event_data in event_map.values() {
+                                if !event_data.arrived {
                                     all_events_received = false;
                                 }
                             }
@@ -219,24 +212,32 @@ impl Context {
                                 tracing::info!("All events received for sequence: {}", sequence);
                                 Some(sequence)
                             } else {
-                                if let Some((_, Some(send_packet_time))) = event_map.get(&0) {
-                                    let now = chrono::Utc::now();
-                                    let duration = now.signed_duration_since(*send_packet_time);
+                                if let Some(event_data) = event_map.get(&0) {
+                                    if let Some(send_packet_time) = event_data.arrived_time {
+                                        let now = chrono::Utc::now();
+                                        let duration = now.signed_duration_since(send_packet_time);
 
-                                    if duration.num_seconds() >= (expect_full_cycle as i64) {
+                                        if duration.num_seconds() >= (expect_full_cycle as i64) {
+                                            tracing::error!(
+                                                "[TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
+                                                sequence,
+                                                duration.num_seconds(),
+                                                event_map
+                                            );
+                                            Some(sequence)
+                                        } else {
+                                            None
+                                        }
+                                    } else {
                                         tracing::error!(
-                                            "[TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
-                                            sequence,
-                                            duration.num_seconds(),
-                                            event_map
+                                            "Not all events received for sequence: {} and no SendPacket timestamp found",
+                                            sequence
                                         );
                                         Some(sequence)
-                                    } else {
-                                        None
                                     }
                                 } else {
                                     tracing::error!(
-                                        "Not all events received for sequence: {} and no SendPacket timestamp found",
+                                        "SendPacket event not found for sequence: {}",
                                         sequence
                                     );
                                     None

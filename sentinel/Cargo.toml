@@ -17,10 +17,12 @@ clap               = { workspace = true, features = ["default", "derive", "env",
 contracts          = { workspace = true }
 cosmwasm-std       = { version = "2.0.0", features = ["stargate", "cosmwasm_1_3"] }
 csv                = "1.3.0"
+dashmap            = { workspace = true }
 derive_more        = { workspace = true }
 ethers             = { workspace = true, features = ["rustls", "ws"] }
 futures            = { workspace = true }
 hex                = { version = "0.4.3", default-features = false }
+parking_lot        = "0.11"
 prost              = { workspace = true }
 protos             = { workspace = true, features = ["default", "client"] }
 queue-msg          = { workspace = true }
