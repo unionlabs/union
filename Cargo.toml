@@ -75,7 +75,7 @@ members = [
 
   "drip",
   "near/near-ibc-tests",
-  "light-clients/near/ics08-near",
+  "light-clients/near/ics08-near", "lib/near-verifier",
 ]
 
 [workspace.package]
@@ -103,6 +103,7 @@ cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-fe
 contracts                 = { path = "generated/rust/contracts", default-features = false }
 ethereum-light-client     = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
+near-verifier         = { path = "lib/near-verifier", default-features = false }
 gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                = { path = "lib/gnark-mimc", default-features = false }
 ibc-vm-rs                 = { path = "lib/ibc-vm-rs", default-features = false }
