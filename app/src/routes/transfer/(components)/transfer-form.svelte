@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
-import { sepolia } from "viem/chains"
+import { sepolia, berachainTestnetbArtio } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -37,7 +37,8 @@ import {
   http,
   custom,
   defineChain,
-  publicActions
+  publicActions,
+  fallback
 } from "viem"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
@@ -285,26 +286,31 @@ const transfer = async () => {
     if (nativeCurrency === undefined)
       return toast.error(`No native currency for ${$fromChain.display_name}`)
 
-    const chain = defineChain({
-      name: $fromChain.display_name,
-      nativeCurrency: {
-        name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
-        /** 2-6 characters long */
-        symbol: nativeCurrency.display_symbol,
-        decimals: nativeCurrency.decimals
-      },
-      id: Number($fromChainId),
-      rpcUrls: {
-        default: {
-          http: rpcUrls
-        }
-      },
-      testnet: $fromChain.testnet
-    })
+    const chain =
+      $fromChainId === "11155111"
+        ? sepolia
+        : $fromChainId === "80084"
+          ? berachainTestnetbArtio
+          : defineChain({
+              name: $fromChain.display_name,
+              nativeCurrency: {
+                name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
+                /** 2-6 characters long */
+                symbol: nativeCurrency.display_symbol,
+                decimals: nativeCurrency.decimals
+              },
+              id: Number($fromChainId),
+              rpcUrls: {
+                default: {
+                  http: rpcUrls
+                }
+              },
+              testnet: $fromChain.testnet
+            })
 
     const publicClient = createPublicClient({
       chain,
-      transport: http()
+      transport: fallback(rpcUrls.map(url => http(url)))
     })
 
     const walletClient = createWalletClient({
@@ -324,7 +330,6 @@ const transfer = async () => {
     const approveContractSimulation = await walletClient.writeContract({
       account: userAddr.evm.canonical,
       abi: erc20Abi,
-      // @ts-expect-error TODO: fix this type
       address: $asset.address as Address,
       functionName: "approve",
       args: [ucs01address, formattedAmount]
