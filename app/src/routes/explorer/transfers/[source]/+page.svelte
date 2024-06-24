@@ -16,6 +16,7 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { derived } from "svelte/store"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { raise } from "$lib/utilities"
+import ExplorerPrecise from "$lib/components/explorer-precise.svelte"
 
 const source = $page.params.source
 
@@ -147,7 +148,11 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
       {#if transfer.assets}
         <ul class="text-foreground text-center  uppercase condenced font-bold text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
-            <li>{value.amount} {truncate(denom, 4)}</li>
+            {#if value.info}
+              <li><ExplorerPrecise amount={value.amount} decimals={value.info.decimals} showToolTip displayDecimals={8}/> {truncate(value.info.display_symbol, 8)}</li>
+              {:else}
+              <li>{value.amount} {truncate(denom, 4)}</li>
+              {/if}
           {/each}
         </ul>
       {:else}
