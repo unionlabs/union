@@ -74,15 +74,14 @@ $: {
 let balanceCoversAmount: boolean
 $: if ($fromChain && $asset && amount) {
   try {
-    const decimals = $fromChain.assets[0].decimals;
-    const inputAmount = parseUnits(amount.toString(), decimals);
-    const balance = BigInt($asset.balance.toString());
-    balanceCoversAmount = inputAmount <= balance;
+    const decimals = $fromChain.assets[0].decimals
+    const inputAmount = parseUnits(amount.toString(), decimals)
+    const balance = BigInt($asset.balance.toString())
+    balanceCoversAmount = inputAmount <= balance
   } catch (error) {
-    console.error('Error parsing amount or balance:', error);
+    console.error("Error parsing amount or balance:", error)
   }
 }
-
 
 const REDIRECT_DELAY_MS = 5000
 
