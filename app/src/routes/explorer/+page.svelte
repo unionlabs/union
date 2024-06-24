@@ -1,7 +1,7 @@
 <script lang="ts">
-import { onMount } from 'svelte'
-import { page } from '$app/stores'
-import { goto } from '$app/navigation'
+import { onMount } from "svelte"
+import { page } from "$app/stores"
+import { goto } from "$app/navigation"
 
 let innerWidth = window.innerWidth
 
@@ -10,14 +10,14 @@ $: shouldRedirect = innerWidth >= 640
 onMount(() => {
   if (!shouldRedirect) return
 
-  goto('/explorer/transfers', {
+  goto("/explorer/transfers", {
     keepFocus: true,
     replaceState: true,
-    state: { from: $page.route.id },
+    state: { from: $page.route.id }
   })
 })
 
-let text = shouldRedirect ? '' : 'Welcome to the Union Explorer'
+let text = shouldRedirect ? "" : "Welcome to the Union Explorer"
 </script>
 
 <svelte:window bind:innerWidth />
