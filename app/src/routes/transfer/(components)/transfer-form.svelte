@@ -22,7 +22,7 @@ import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
-import type { Address } from "viem"
+import { type Address, parseUnits } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import Stepper from "$lib/components/stepper.svelte"
@@ -188,6 +188,8 @@ const transfer = async () => {
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
     )
 
+  let formattedAmount = parseUnits(amount, $fromChain.assets[0].decimals)
+
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   transferState.set("FLIPPING")
   await sleep(1200)
@@ -227,7 +229,7 @@ const transfer = async () => {
           {
             sourcePort: "transfer",
             sourceChannel: ucs1_configuration.channel_id,
-            token: { denom: $assetSymbol, amount },
+            token: { denom: $assetSymbol, amount: formattedAmount.toString() },
             sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
             receiver: $recipient,
             memo: pfmMemo ?? "",
@@ -248,7 +250,7 @@ const transfer = async () => {
                 memo: pfmMemo ?? ""
               }
             },
-            funds: [{ denom: $assetSymbol, amount }]
+            funds: [{ denom: $assetSymbol, amount: formattedAmount.toString() }]
           }
         ]
       }
@@ -312,7 +314,7 @@ const transfer = async () => {
       // @ts-expect-error TODO: fix this type
       address: $asset.address as Address,
       functionName: "approve",
-      args: [ucs01address, BigInt(amount)]
+      args: [ucs01address, formattedAmount]
     })
 
     transferState.set("AWAITING_APPROVAL_RECEIPT")
@@ -329,7 +331,7 @@ const transfer = async () => {
       args: [
         ucs1_configuration.channel_id,
         userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
-        [{ denom: $asset.address.toLowerCase() as Address, amount: BigInt(amount) }],
+        [{ denom: $asset.address.toLowerCase() as Address, amount: formattedAmount }],
         pfmMemo ?? "", // memo
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
         0n
