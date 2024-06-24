@@ -465,23 +465,59 @@ $: buttonText =
 let supportedAsset: any
 $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
 
+const stateToStatus = <K extends TransferState["kind"]>(
+  state: TransferState,
+  kind: K,
+  pendingTitle: string,
+  completedTitle: string,
+  errorFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown,
+  progressFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown
+) =>
+  stepBefore(state, kind)
+    ? { status: "PENDING", title: pendingTitle }
+    : stepAfter(state, kind)
+      ? { status: "COMPLETED", title: completedTitle }
+      : // @ts-ignore
+        state.error !== undefined
+        ? errorFormatter(state as Extract<TransferState, { kind: K }>)
+        : progressFormatter(state as Extract<TransferState, { kind: K }>)
+
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
-      (stepBefore($transferState, "ADDING_CHAIN") ? {status: "PENDING", title: `Add ${$fromChain.display_name}`} : 
-       stepAfter($transferState, "ADDING_CHAIN") ? {status: "COMPLETED", title: `Added ${$fromChain.display_name}`} : 
-       ($transferState as Extract<TransferState, {kind:"ADDING_CHAIN"}>).error === undefined ? 
-      {
-        status: "IN_PROGRESS",
-        title: `Adding ${$fromChain.display_name}`,
-        description: `Click 'Approve' in wallet.`
-      } :
-      {
-        status: "ERROR",
-        title: `Error adding ${$fromChain.display_name}`,
-        description: `There was an issue adding ${$fromChain.display_name} to your wallet.`
-      }),
+      stateToStatus(
+        $transferState,
+        "ADDING_CHAIN",
+        `Add ${$fromChain.display_name}`,
+        `Added ${$fromChain.display_name}`,
+        () => ({
+          status: "IN_PROGRESS",
+          title: `Adding ${$fromChain.display_name}`,
+          description: `Click 'Approve' in wallet.`
+        }),
+        ts => ({
+          status: "ERROR",
+          title: `Error adding ${$fromChain.display_name}`,
+          description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "SWITCHING_TO_CHAIN",
+        `Switch to ${$fromChain.display_name}`,
+        `Switched to ${$fromChain.display_name}`,
+        () => ({
+          status: "IN_PROGRESS",
+          title: `Switching to ${$fromChain.display_name}`,
+          description: `Click 'Approve' in wallet.`
+        }),
+        ts => ({
+          status: "ERROR",
+          title: `Error switching to ${$fromChain.display_name}`,
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
+        })
+      ),
       {
         status: stepBefore($transferState, "SWITCHING_TO_CHAIN")
           ? "PENDING"
