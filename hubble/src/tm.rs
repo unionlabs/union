@@ -27,12 +27,13 @@ pub struct Config {
     /// The height from which we start indexing
     pub start_height: Option<u32>,
 
-    #[allow(dead_code)]
-    pub until: Option<u64>,
-
     /// Attempt to retry and fix bad states. This makes the process less responsive, as any call may take longer
     /// since retries are happening. Best for systemd services and long-running jobs.
+    #[serde(default)]
     pub harden: bool,
+
+    #[serde(default)]
+    pub mode: postgres::InsertMode,
 }
 
 /// Unit struct describing parametrization of associated types for CosmosSDK based chains.
@@ -58,7 +59,7 @@ impl Config {
             sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
     {
         let client = HttpClient::new(self.url.as_str()).unwrap();
-
+        let mode = self.mode;
         let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool).inspect_err(|e| debug!(?e, "error fetching meta")))
                 .retry(&crate::expo_backoff())
@@ -92,7 +93,7 @@ impl Config {
                         "fast syncing for batch: {}..{}", height, batch_end
                     );
                     let mut tx = pool.begin().await?;
-                    let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
+                    let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height, mode).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
                     tx.commit().await?;
                     info!(
                         "indexed blocks {}..{}",
@@ -110,7 +111,7 @@ impl Config {
                 // Regular sync protocol. This fetches blocks one-by-one.
                 retry_count += 1;
                 let mut tx = pool.begin().await?;
-                match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height).await? {
+                match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height, mode).await? {
                     Some(h) => {
                         info!("indexed block {}", &height);
                         height = h;
@@ -224,6 +225,7 @@ async fn fetch_and_insert_blocks(
     chain_id: ChainId,
     batch_size: u32,
     from: Height,
+    mode: postgres::InsertMode,
 ) -> Result<Option<Height>, Report> {
     use itertools::Either;
 
@@ -260,17 +262,16 @@ async fn fetch_and_insert_blocks(
 
     let submit_blocks = postgres::insert_batch_blocks(
         tx,
-        stream::iter(headers.clone().into_iter().map(|header| {
-            PgBlock {
-                chain_id,
-                hash: header.hash().to_string(),
-                height: header.height.value() as i32,
-                time: header.time.into(),
-                data: serde_json::to_value(&header)
-                    .unwrap()
-                    .replace_escape_chars(),
-            }
-        })),
+        headers.clone().into_iter().map(|header| PgBlock {
+            chain_id,
+            hash: header.hash().to_string(),
+            height: header.height.value() as i32,
+            time: header.time.into(),
+            data: serde_json::to_value(&header)
+                .unwrap()
+                .replace_escape_chars(),
+        }),
+        mode,
     );
 
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
@@ -358,8 +359,8 @@ async fn fetch_and_insert_blocks(
             );
             txs
         });
-    postgres::insert_batch_transactions(tx, stream::iter(transactions)).await?;
-    postgres::insert_batch_events(tx, stream::iter(events)).await?;
+    postgres::insert_batch_transactions(tx, transactions, mode).await?;
+    postgres::insert_batch_events(tx, events, mode).await?;
     Ok(Some((from.value() as u32 + headers.len() as u32).into()))
 }
 
