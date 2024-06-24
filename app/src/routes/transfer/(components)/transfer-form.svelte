@@ -74,7 +74,8 @@ $: {
 let balanceCoversAmount: boolean
 $: if ($fromChain && $asset && amount) {
   try {
-    const decimals = $fromChain.assets[0].decimals
+    const supported = getSupportedAsset($fromChain, $asset.address)
+    const decimals = supported ? supported?.decimals : 0
     const inputAmount = parseUnits(amount.toString(), decimals)
     const balance = BigInt($asset.balance.toString())
     balanceCoversAmount = inputAmount <= balance
