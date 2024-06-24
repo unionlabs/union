@@ -1123,14 +1123,12 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         item: Op<T>,
         pre_enqueue_passes: &'a O,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
-        let this = &self;
-        let item = item;
         debug!(?item, "enqueueing new item");
 
         let res = pre_enqueue_passes.run_pass_pure(vec![item]);
 
-        let mut optimizer_queue = this.optimizer_queue.lock().expect("mutex is poisoned");
-        let mut ready = this.ready.lock().expect("mutex is poisoned");
+        let mut optimizer_queue = self.optimizer_queue.lock().expect("mutex is poisoned");
+        let mut ready = self.ready.lock().expect("mutex is poisoned");
 
         self.requeue(
             res,

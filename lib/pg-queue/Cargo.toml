@@ -11,9 +11,11 @@ workspace = true
 test-include = []
 
 [dependencies]
+frame-support-procedural.workspace = true
+queue-msg.workspace = true
 serde         = { workspace = true }
 serde_json    = { workspace = true, features = ["unbounded_depth"] }
-serde_stacker = "0.1.11"
-sqlx          = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio"] }
+sqlx          = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio", "chrono"] }
 tokio         = { workspace = true, features = ["time"] }
+tokio-postgres = { version = "0.7.10", features = ["with-serde_json-1"] }
 tracing       = { workspace = true }

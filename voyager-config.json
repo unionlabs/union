@@ -1,7 +1,7 @@
 {
   "chain": {
     "ethereum-devnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
@@ -248,7 +248,7 @@
     }
   },
   "voyager": {
-    "num_workers": 20,
+    "num_workers": 90,
     "laddr": "0.0.0.0:65534",
     "queue": {
       "type": "pg-queue",

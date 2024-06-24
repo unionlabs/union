@@ -19,7 +19,7 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{
     channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryFutureExt, TryStreamExt,
 };
-use pg_queue::EnqueueStatus;
+use pg_queue::{EnqueueStatus, PgQueue, PgQueueConfig};
 use queue_msg::{
     optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
     Engine, InMemoryQueue, Op, Queue, QueueMessage,
@@ -157,97 +157,76 @@ impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
-pub struct PgQueue<T: QueueMessage>(pg_queue::Queue<Op<T>>, sqlx::PgPool);
+// #[derive(DebugNoBound, CloneNoBound)]
+// pub struct PgQueue<T: QueueMessage>(pg_queue::PgQueue<Op<T>>, sqlx::PgPool);
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct PgQueueConfig {
-    pub database_url: String,
-    pub max_connections: Option<u32>,
-    pub min_connections: Option<u32>,
-    pub idle_timeout: Option<Duration>,
-    pub max_lifetime: Option<Duration>,
-}
+// impl<T: QueueMessage> Queue<T> for PgQueue<T> {
+//     type Error = sqlx::Error;
 
-impl PgQueueConfig {
-    pub async fn into_pg_pool(self) -> sqlx::Result<PgPool> {
-        PgPoolOptions::new()
-            .max_connections(self.max_connections.unwrap_or(10))
-            .min_connections(self.min_connections.unwrap_or(0))
-            .idle_timeout(self.idle_timeout)
-            .max_lifetime(self.max_lifetime)
-            .connect(&self.database_url)
-            .await
-    }
-}
+//     type Config = PgQueueConfig;
 
-impl<T: QueueMessage> Queue<T> for PgQueue<T> {
-    type Error = sqlx::Error;
+//     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+//         async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
+//     }
 
-    type Config = PgQueueConfig;
+//     fn enqueue<'a, O: PurePass<T>>(
+//         &'a self,
+//         item: Op<T>,
+//         pre_enqueue_passes: &'a O,
+//     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
+//         async move {
+//             let res = pre_enqueue_passes.run_pass_pure(vec![item]);
 
-    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-        async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
-    }
+//             for (_, msg) in res.optimize_further {
+//                 self.0
+//                     .enqueue(&self.1, msg, vec![], EnqueueStatus::Optimize)
+//                     .await?
+//             }
 
-    fn enqueue<'a, O: PurePass<T>>(
-        &'a self,
-        item: Op<T>,
-        pre_enqueue_passes: &'a O,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
-        async move {
-            let res = pre_enqueue_passes.run_pass_pure(vec![item]);
+//             for (_, msg) in res.ready {
+//                 self.0
+//                     .enqueue(&self.1, msg, vec![], EnqueueStatus::Ready)
+//                     .await?
+//             }
 
-            for (_, msg) in res.optimize_further {
-                self.0
-                    .enqueue(&self.1, msg, vec![], EnqueueStatus::Optimize)
-                    .await?
-            }
+//             Ok(())
+//         }
+//     }
 
-            for (_, msg) in res.ready {
-                self.0
-                    .enqueue(&self.1, msg, vec![], EnqueueStatus::Ready)
-                    .await?
-            }
+//     fn process<'a, F, Fut, R, O>(
+//         &'a self,
+//         pre_reenqueue_passes: &'a O,
+//         f: F,
+//     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
+//     where
+//         F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
+//         Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
+//         R: Send + Sync + 'static,
+//         O: PurePass<T>,
+//     {
+//         async move {
+//             self.0
+//                 .process(&self.1, f, |msgs| {
+//                     let res = pre_reenqueue_passes.run_pass_pure(msgs);
 
-            Ok(())
-        }
-    }
+//                     (res.optimize_further, res.ready)
+//                 })
+//                 .await
+//         }
+//     }
 
-    fn process<'a, F, Fut, R, O>(
-        &'a self,
-        pre_reenqueue_passes: &'a O,
-        f: F,
-    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
-    where
-        F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
-        R: Send + Sync + 'static,
-        O: PurePass<T>,
-    {
-        async move {
-            self.0
-                .process(&self.1, f, |msgs| {
-                    let res = pre_reenqueue_passes.run_pass_pure(msgs);
-
-                    (res.optimize_further, res.ready)
-                })
-                .await
-        }
-    }
-
-    fn optimize<'a, O: Pass<T>>(
-        &'a self,
-        optimizer: &'a O,
-    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
-        self.0.optimize(&self.1, move |msgs| async move {
-            optimizer
-                .run_pass(msgs)
-                .map_ok(|x| (x.optimize_further, x.ready))
-                .await
-        })
-    }
-}
+//     fn optimize<'a, O: Pass<T>>(
+//         &'a self,
+//         optimizer: &'a O,
+//     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
+//         self.0.optimize(&self.1, move |msgs| async move {
+//             optimizer
+//                 .run_pass(msgs)
+//                 .map_ok(|x| (x.optimize_further, x.ready))
+//                 .await
+//         })
+//     }
+// }
 
 #[derive(Debug, thiserror::Error)]
 pub enum VoyagerInitError {
