@@ -603,6 +603,9 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
       <section>
         <CardSectionHeading>Amount</CardSectionHeading>
         <Input
+          disabled={
+          !$asset
+          }
           minlength={1}
           maxlength={64}
           placeholder="0.00"
