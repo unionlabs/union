@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use chain_utils::private_key::PrivateKey;
-use ethers::core::k256::ecdsa;
+use chrono::{DateTime, Utc};
+use ethers::{core::k256::ecdsa, types::H256};
 use serde::{Deserialize, Serialize};
 use unionlabs::{hash::H160, id::ChannelId};
 
@@ -12,6 +13,14 @@ pub struct Config {
     pub chain_configs: HashMap<String, AnyChainConfig>,
     pub interactions: Vec<IbcInteraction>,
     pub single_interaction: Option<IbcInteraction>, // This is just to send single transaction and close the program
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EventTrackerConfig {
+    pub idx: u64,      // 0: sendpacket, 1: recvpacket, 2:writeack, 3:acknowledge
+    pub arrived: bool, // is packet arrived or not
+    pub arrived_time: Option<DateTime<Utc>>, // time when packet arrived
+    pub tx_hash: Option<H256>, // hash of the transaction
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

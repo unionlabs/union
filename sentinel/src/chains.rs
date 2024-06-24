@@ -48,8 +48,8 @@ use unionlabs::{
 };
 
 use crate::{
-    config::{CosmosConfig, EthereumConfig, TransferModule},
-    context::SharedMap,
+    config::{CosmosConfig, EthereumConfig, EventTrackerConfig, TransferModule},
+    context::EventStateMap,
 };
 pub type IbcEvent = unionlabs::events::IbcEvent<ClientId, String, ClientId>;
 
@@ -66,7 +66,7 @@ pub trait IbcTransfer: Send + Sync {
 }
 
 pub trait IbcListen: Send + Sync {
-    async fn listen(&self, shared_map: &SharedMap);
+    async fn listen(&self, event_state_map: &EventStateMap);
 
     // TODO(caglankaan): How can i know the protocol type here? On listen we don't know what is the destination chain
     // It can be anything, if i am listening on union since there is only one listener for union there could be 2 different
@@ -129,7 +129,7 @@ pub trait IbcListen: Send + Sync {
     async fn handle_ibc_event(
         &self,
         ibc_event: IbcEvent,
-        shared_map: &SharedMap,
+        event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
     );
@@ -137,7 +137,7 @@ pub trait IbcListen: Send + Sync {
     fn handle_ibc_event_boxed<'a>(
         &'a self,
         ibc_event: IbcEvent,
-        shared_map: &'a SharedMap,
+        event_state_map: &'a EventStateMap,
         _block_number: u64,
         tx_hash: Option<H256>,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
@@ -165,112 +165,128 @@ pub trait IbcListen: Send + Sync {
                 }
             };
 
-            let sequence = packet_sequence.get() as i32;
-            {
-                let mut map = shared_map.lock().await;
+            let sequence: i32 = packet_sequence.get() as i32;
 
-                let entry = map.entry(key.clone()).or_insert_with(HashMap::new);
+            let mut entry = event_state_map
+                .entry(key.clone())
+                .or_insert_with(HashMap::new);
 
-                let sequence_entry = entry.entry(sequence).or_insert_with(|| {
-                    let mut event_map = HashMap::new();
-                    event_map.extend(
-                        [
-                            (0, (false, None)),
-                            (1, (false, None)),
-                            (2, (false, None)),
-                            (3, (false, None)),
-                        ]
-                        .into_iter()
-                        .collect::<HashMap<_, _>>(), // Specify the type here
+            let sequence_entry = entry.entry(sequence).or_insert_with(|| {
+                let mut event_map = HashMap::new();
+                for idx in 0..4 {
+                    event_map.insert(
+                        idx,
+                        EventTrackerConfig {
+                            idx,
+                            arrived: false,
+                            arrived_time: None,
+                            tx_hash: None,
+                        },
                     );
-                    event_map
-                });
-                match ibc_event {
-                    IbcEvent::SendPacket(event) => {
-                        sequence_entry.insert(0, (true, Some(Utc::now())));
+                }
+                event_map
+            });
+
+            match ibc_event {
+                IbcEvent::SendPacket(event) => {
+                    if let Some(event_data) = sequence_entry.get_mut(&0) {
+                        event_data.arrived = true;
+                        event_data.arrived_time = Some(chrono::Utc::now());
+                        event_data.tx_hash = tx_hash;
                         tracing::info!(
                             sequence = sequence,
                             key = key,
                             "SendPacket event recorded. Tx Hash: {:?}",
-                            tx_hash
+                            event_data.tx_hash
+                        );
+                    } else {
+                        tracing::warn!(
+                            "Unexpected error: Could not find event data for SendPacket."
                         );
                     }
-                    IbcEvent::RecvPacket(_) => {
-                        if !sequence_entry.get(&0).unwrap_or(&(false, None)).0 {
-                            tracing::warn!(
-                                sequence = sequence,
-                                key = key,
-                                "RecvPacket event received without SendPacket. Tx Hash: {:?}",
-                                tx_hash
-                            );
-                            entry.remove(&sequence);
-                        } else {
-                            sequence_entry.insert(1, (true, Some(Utc::now())));
+                }
+                IbcEvent::RecvPacket(_) => {
+                    if sequence_entry.get(&0).map_or(false, |e| e.arrived) {
+                        if let Some(event_data) = sequence_entry.get_mut(&1) {
+                            event_data.arrived = true;
+                            event_data.arrived_time = Some(chrono::Utc::now());
+                            event_data.tx_hash = tx_hash;
                             tracing::info!(
                                 sequence = sequence,
                                 key = key,
                                 "RecvPacket event recorded. Tx Hash: {:?}",
-                                tx_hash
+                                event_data.tx_hash
+                            );
+                        } else {
+                            tracing::warn!(
+                                "Unexpected error: Could not find event data for RecvPacket."
                             );
                         }
+                    } else {
+                        tracing::warn!(
+                            sequence = sequence,
+                            key = key,
+                            "RecvPacket event received without SendPacket. Tx Hash: {:?}",
+                            tx_hash
+                        );
+                        entry.remove(&sequence);
                     }
-                    IbcEvent::WriteAcknowledgement(ref e) => {
-                        if !sequence_entry.get(&0).unwrap_or(&(false, None)).0 {
-                            tracing::warn!(
-                                sequence = sequence,
-                                key = key,
-                                "RecvPacket event received without SendPacket. Tx Hash: {:?}",
-                                tx_hash
-                            );
-                            entry.remove(&sequence);
-                        } else {
-                            if self
-                                .write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone())
-                            {
-                                sequence_entry.insert(2, (true, Some(Utc::now())));
+                }
+                IbcEvent::WriteAcknowledgement(ref e) => {
+                    if sequence_entry.get(&0).map_or(false, |e| e.arrived) {
+                        if self.write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone()) {
+                            if let Some(event_data) = sequence_entry.get_mut(&2) {
+                                event_data.arrived = true;
+                                event_data.arrived_time = Some(chrono::Utc::now());
+                                event_data.tx_hash = tx_hash;
                                 tracing::info!(
                                     sequence = sequence,
                                     key = key,
                                     "WriteAcknowledgement event recorded. Tx Hash: {:?}",
-                                    tx_hash
+                                    event_data.tx_hash
                                 );
                             } else {
-                                tracing::error!(
-                                    sequence = sequence,
-                                    key = key,
-                                    "[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}. Tx Hash: {:?}",
-                                    e.packet_ack_hex.clone(),
-                                    tx_hash
+                                tracing::warn!(
+                                    "Unexpected error: Could not find event data for WriteAcknowledgement."
                                 );
-                                // Here remove it from the map
-                                entry.remove(&sequence);
                             }
-                        }
-                    }
-                    IbcEvent::AcknowledgePacket(_) => {
-                        if !sequence_entry.get(&0).unwrap_or(&(false, None)).0
-                            || !sequence_entry.get(&1).unwrap_or(&(false, None)).0
-                            || !sequence_entry.get(&2).unwrap_or(&(false, None)).0
-                        {
-                            tracing::warn!(
+                        } else {
+                            tracing::error!(
                                 sequence = sequence,
                                 key = key,
-                                "AcknowledgePacket event received out of order for sequence: {}. key: {} Tx Hash: {:?}",
-                                sequence,
-                                key,
+                                "[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}. Tx Hash: {:?}",
+                                e.packet_ack_hex.clone(),
                                 tx_hash
                             );
                             entry.remove(&sequence);
-                        } else {
-                            sequence_entry.insert(3, (true, Some(Utc::now())));
+                        }
+                    } else {
+                        tracing::warn!(
+                            sequence = sequence,
+                            key = key,
+                            "WriteAcknowledgement event received without SendPacket. Tx Hash: {:?}",
+                            tx_hash
+                        );
+                        entry.remove(&sequence);
+                    }
+                }
+                IbcEvent::AcknowledgePacket(_) => {
+                    if sequence_entry.get(&0).map_or(false, |e| e.arrived)
+                        && sequence_entry.get(&1).map_or(false, |e| e.arrived)
+                        && sequence_entry.get(&2).map_or(false, |e| e.arrived)
+                    {
+                        if let Some(event_data) = sequence_entry.get_mut(&3) {
+                            event_data.arrived = true;
+                            event_data.arrived_time = Some(chrono::Utc::now());
+                            event_data.tx_hash = tx_hash;
                             tracing::info!(
                                 sequence = sequence,
                                 key = key,
                                 "AcknowledgePacket event recorded. Tx Hash: {:?}",
-                                tx_hash
+                                event_data.tx_hash
                             );
 
-                            if sequence_entry.values().all(|&(v, _)| v) {
+                            if sequence_entry.values().all(|event_data| event_data.arrived) {
                                 tracing::info!(
                                     sequence = sequence,
                                     "All events completed. sequence_entry: {:?} Tx Hash: {:?}",
@@ -279,11 +295,25 @@ pub trait IbcListen: Send + Sync {
                                 );
                                 entry.remove(&sequence);
                             }
+                        } else {
+                            tracing::warn!(
+                                "Unexpected error: Could not find event data for AcknowledgePacket."
+                            );
                         }
+                    } else {
+                        tracing::warn!(
+                            sequence = sequence,
+                            key = key,
+                            "AcknowledgePacket event received out of order for sequence: {}. key: {} Tx Hash: {:?}",
+                            sequence,
+                            key,
+                            tx_hash
+                        );
+                        entry.remove(&sequence);
                     }
-                    _ => {
-                        return;
-                    }
+                }
+                _ => {
+                    return;
                 }
             }
         })
@@ -309,13 +339,13 @@ pub enum Chain {
 }
 
 impl IbcListen for Chain {
-    async fn listen(&self, shared_map: &SharedMap) {
+    async fn listen(&self, event_state_map: &EventStateMap) {
         match self {
             Chain::Ethereum(ethereum) => {
-                ethereum.listen(shared_map).await;
+                ethereum.listen(event_state_map).await;
             }
             Chain::Cosmos(cosmos) => {
-                cosmos.listen(shared_map).await;
+                cosmos.listen(event_state_map).await;
             }
         }
     }
@@ -323,19 +353,19 @@ impl IbcListen for Chain {
     async fn handle_ibc_event(
         &self,
         ibc_event: IbcEvent,
-        shared_map: &SharedMap,
+        event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
     ) {
         match self {
             Chain::Ethereum(ethereum) => {
                 ethereum
-                    .handle_ibc_event(ibc_event, shared_map, block_number, tx_hash)
+                    .handle_ibc_event(ibc_event, event_state_map, block_number, tx_hash)
                     .await;
             }
             Chain::Cosmos(cosmos) => {
                 cosmos
-                    .handle_ibc_event(ibc_event, shared_map, block_number, tx_hash)
+                    .handle_ibc_event(ibc_event, event_state_map, block_number, tx_hash)
                     .await;
             }
         }
@@ -403,7 +433,7 @@ impl EthereumExecutionRpcs for EthereumRpc {
 }
 
 impl IbcListen for Ethereum {
-    async fn listen(&self, shared_map: &SharedMap) {
+    async fn listen(&self, event_state_map: &EventStateMap) {
         let mut latest_checked_block = 0;
         loop {
             let provider = self.rpc.provider.clone();
@@ -459,7 +489,7 @@ impl IbcListen for Ethereum {
                         if let Some(ibc_event) = ibc_event {
                             self.handle_ibc_event(
                                 ibc_event,
-                                &shared_map,
+                                &event_state_map,
                                 latest_block,
                                 transaction_hash,
                             )
@@ -474,15 +504,16 @@ impl IbcListen for Ethereum {
     async fn handle_ibc_event(
         &self,
         ibc_event: IbcEvent,
-        shared_map: &SharedMap,
+        event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
     ) {
-        IbcListen::handle_ibc_event_boxed(self, ibc_event, shared_map, block_number, tx_hash).await;
+        IbcListen::handle_ibc_event_boxed(self, ibc_event, event_state_map, block_number, tx_hash)
+            .await;
     }
 }
 impl IbcListen for Cosmos {
-    async fn listen(&self, shared_map: &SharedMap) {
+    async fn listen(&self, event_state_map: &EventStateMap) {
         tracing::info!("Listening to Cosmos chain events");
         let mut subs = self
             .chain
@@ -521,7 +552,7 @@ impl IbcListen for Cosmos {
                                                             });
 
                                                             if let Some(Ok(ibc_event)) = some_event {
-                                                                self.handle_ibc_event(ibc_event, &shared_map, block_number, tx_hash.into()).await;
+                                                                self.handle_ibc_event(ibc_event, &event_state_map, block_number, tx_hash.into()).await;
                                                             }
                                                         }
                                                     }
@@ -548,11 +579,12 @@ impl IbcListen for Cosmos {
     async fn handle_ibc_event(
         &self,
         ibc_event: IbcEvent,
-        shared_map: &SharedMap,
+        event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
     ) {
-        IbcListen::handle_ibc_event_boxed(self, ibc_event, shared_map, block_number, tx_hash).await;
+        IbcListen::handle_ibc_event_boxed(self, ibc_event, event_state_map, block_number, tx_hash)
+            .await;
     }
 }
 
@@ -940,11 +972,7 @@ async fn get_channel_for_eth_ack_packet(
     channel_id: String,
     block_number: u64,
 ) -> Option<Channel> {
-    tracing::info!(
-        "Fetching channel for port: {}, channel: {}",
-        port_id,
-        channel_id
-    );
+    tracing::info!(port_id, channel_id, block_number);
 
     let channel_result = eth_rpcs
         .ibc_handler()
@@ -1009,12 +1037,13 @@ async fn ibchandler_events_to_ibc_event(
                     IBCPacketEvents::RecvPacketFilter(event) => {
                         if let Some(channel) = get_channel_for_eth_ack_packet(
                             eth_rpcs,
-                            event.packet.source_port.clone(),
-                            event.packet.source_channel.clone(),
+                            event.packet.destination_port.clone(),
+                            event.packet.destination_channel.clone(),
                             block_number,
                         )
                         .await
                         {
+                            tracing::info!("Found channel for packet: {:?}", channel);
                             Some(IbcEvent::RecvPacket(RecvPacket {
                                 packet_sequence: event.packet.sequence.try_into().unwrap(),
                                 packet_src_port: event.packet.source_port.parse().unwrap(),
@@ -1032,6 +1061,10 @@ async fn ibchandler_events_to_ibc_event(
                                 connection_id: channel.connection_hops[0].clone(),
                             }))
                         } else {
+                            tracing::error!(
+                                "Could not find channel for packet: {:?}",
+                                event.packet
+                            );
                             None
                         }
                     }
@@ -1066,8 +1099,8 @@ async fn ibchandler_events_to_ibc_event(
                     IBCPacketEvents::WriteAcknowledgementFilter(event) => {
                         if let Some(channel) = get_channel_for_eth_ack_packet(
                             eth_rpcs,
-                            event.packet.source_port.clone(),
-                            event.packet.source_channel.clone(),
+                            event.packet.destination_port.clone(),
+                            event.packet.destination_channel.clone(),
                             block_number,
                         )
                         .await
@@ -1080,7 +1113,11 @@ async fn ibchandler_events_to_ibc_event(
                                     .to_string()
                                     .parse()
                                     .unwrap(),
-                                packet_src_channel: event.packet.source_channel.parse().unwrap(),
+                                packet_src_channel: event
+                                    .packet
+                                    .destination_channel
+                                    .parse()
+                                    .unwrap(),
                                 packet_dst_port: event.packet.destination_port.parse().unwrap(),
                                 packet_dst_channel: event
                                     .packet
