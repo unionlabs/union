@@ -83,6 +83,8 @@ pub mod config;
 
 pub mod queue;
 
+pub mod passes;
+
 fn main() -> ExitCode {
     let args = AppArgs::parse();
 

@@ -35,6 +35,7 @@ frunk                     = { workspace = true }
 futures                   = { workspace = true }
 hex                       = { workspace = true }
 hex-literal               = { workspace = true }
+itertools = "0.13.0"
 num-bigint                = { workspace = true }
 pg-queue                  = { workspace = true }
 pin-utils                 = "0.1.0"

@@ -5,8 +5,8 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     net::SocketAddr,
+    num::NonZeroUsize,
     sync::Arc,
-    time::Duration,
 };
 
 use axum::{
@@ -16,10 +16,8 @@ use axum::{
 };
 use chain_utils::{any_chain, AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use futures::{
-    channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryFutureExt, TryStreamExt,
-};
-use pg_queue::{EnqueueStatus, PgQueue, PgQueueConfig};
+use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStreamExt};
+use pg_queue::{PgQueue, PgQueueConfig};
 use queue_msg::{
     optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
     Engine, InMemoryQueue, Op, Queue, QueueMessage,
@@ -27,7 +25,6 @@ use queue_msg::{
 use relay_message::RelayMessage;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, trace};
 use unionlabs::traits::{Chain, FromStrExact};
@@ -35,6 +32,7 @@ use voyager_message::VoyagerMessage;
 
 use crate::{
     config::{ChainConfig, Config},
+    passes::tx_batch::TxBatch,
     signer_balances,
 };
 
@@ -47,6 +45,7 @@ pub struct Voyager {
     pub laddr: SocketAddr,
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
+    pub max_batch_size: NonZeroUsize,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -251,6 +250,7 @@ impl Voyager {
             num_workers: config.voyager.num_workers,
             laddr: config.voyager.laddr,
             queue,
+            max_batch_size: config.voyager.max_batch_size,
         })
     }
 
@@ -345,15 +345,17 @@ impl Voyager {
             loop {
                 debug!("optimizing");
 
-                q.optimize(&Pure(NormalizeFinal::default()))
-                    .await
-                    .map_err(|e| {
-                        e.map_either::<_, _, BoxDynError, BoxDynError>(
-                            |x| Box::new(x),
-                            |x| Box::new(x),
-                        )
+                q.optimize(&Pure((
+                    TxBatch {
+                        size_limit: self.max_batch_size,
+                    },
+                    NormalizeFinal::default(),
+                )))
+                .await
+                .map_err(|e| {
+                    e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
                         .into_inner()
-                    })?;
+                })?;
 
                 tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             }

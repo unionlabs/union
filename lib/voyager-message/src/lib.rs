@@ -34,7 +34,7 @@ impl QueueMessage for VoyagerMessage {
     type Event = VoyagerEvent;
     type Data = VoyagerData;
     type Fetch = VoyagerFetch;
-    type Effect = VoyagerMsg;
+    type Effect = VoyagerEffect;
     type Wait = VoyagerWait;
     type Aggregate = VoyagerAggregate;
 
@@ -51,7 +51,7 @@ impl FromOp<RelayMessage> for VoyagerMessage {
             Op::Event(event) => Op::Event(VoyagerEvent::Relay(event)),
             Op::Data(data) => Op::Data(VoyagerData::Relay(data)),
             Op::Fetch(fetch) => Op::Fetch(VoyagerFetch::Relay(fetch)),
-            Op::Effect(msg) => Op::Effect(VoyagerMsg::Relay(msg)),
+            Op::Effect(msg) => Op::Effect(VoyagerEffect::Relay(msg)),
             Op::Wait(wait) => Op::Wait(VoyagerWait::Relay(wait)),
             Op::Defer(defer) => Op::Defer(defer),
             Op::Repeat { times, msg } => Op::Repeat {
@@ -128,12 +128,12 @@ impl FromOp<BlockMessage> for VoyagerMessage {
 }
 
 #[queue_msg]
-pub enum VoyagerMsg {
+pub enum VoyagerEffect {
     Block(<BlockMessage as QueueMessage>::Effect),
     Relay(<RelayMessage as QueueMessage>::Effect),
 }
 
-impl HandleEffect<VoyagerMessage> for VoyagerMsg {
+impl HandleEffect<VoyagerMessage> for VoyagerEffect {
     async fn handle(
         self,
         store: &<VoyagerMessage as QueueMessage>::Store,

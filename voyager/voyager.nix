@@ -88,6 +88,10 @@
           default = "0.0.0.0:65534";
           example = "0.0.0.0:65534";
         };
+        max-batch-size = mkOption {
+          type = types.number;
+          example = 10;
+        };
       };
 
       config =
@@ -97,6 +101,7 @@
             voyager = {
               num_workers = cfg.workers;
               laddr = cfg.laddr;
+              max-batch-size = cfg.max-batch-size;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;

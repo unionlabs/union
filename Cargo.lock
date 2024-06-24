@@ -10692,6 +10692,7 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
+ "itertools 0.13.0",
  "num-bigint 0.4.4",
  "pg-queue",
  "pin-utils",
