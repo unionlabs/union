@@ -1,18 +1,11 @@
 <script lang="ts">
+import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
-import type { LayoutData } from "./$types.ts"
-import { onMount, beforeUpdate } from "svelte"
-
-export let data: LayoutData
 
 let innerWidth = window.innerWidth
 
-$: shouldRedirect = innerWidth <= 500
-
-beforeUpdate(() => {
-  shouldRedirect = !data.sourceRoute.id.startsWith("/explorer/")
-})
+$: shouldRedirect = innerWidth >= 500
 
 onMount(() => {
   if (!shouldRedirect) return
