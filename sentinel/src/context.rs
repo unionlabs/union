@@ -250,8 +250,6 @@ impl Context {
                         inner_map.remove(&sequence);
                         tracing::info!("Removed sequence: {} from chain flow: {}", sequence, key);
                     }
-                } else {
-                    tracing::info!("No data found for chain flow: {}", key);
                 }
             }
         })

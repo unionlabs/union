@@ -81,19 +81,19 @@
     {
       "source": {
         "chain": "ethereum",
-        "channel": "channel-78"
+        "channel": "channel-81"
       },
       "destination": {
         "chain": "union",
-        "channel": "channel-83"
+        "channel": "channel-89"
       },
       "protocol": {
         "Ucs01": {
           "receivers": ["union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq"],
-          "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+          "contract": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
         }
       },
-      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-70\"}}",
+      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h\",\"channel\":\"channel-70\"}}",
       "sending_memo_probability": 1,
       "denoms": [
         "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
@@ -101,26 +101,26 @@
         "0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4"
       ],
       "send_packet_interval": 50,
-      "expect_full_cycle": 35,
+      "expect_full_cycle": 900,
       "amount_min": 1,
       "amount_max": 3
     },
     {
       "source": {
         "chain": "union",
-        "channel": "channel-83"
+        "channel": "channel-89"
       },
       "destination": {
         "chain": "ethereum",
-        "channel": "channel-78"
+        "channel": "channel-81"
       },
       "protocol": {
         "Ucs01": {
           "receivers": ["0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"],
-          "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+          "contract": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
         }
       },
-      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-78\"}}",
+      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-6\"}}",
       "sending_memo_probability": 0.0,
       "denoms": [
         "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9",
@@ -128,7 +128,7 @@
         "muno"
       ],
       "send_packet_interval": 50,
-      "expect_full_cycle": 35,
+      "expect_full_cycle": 900,
       "amount_min": 1,
       "amount_max": 3
     }
@@ -136,25 +136,23 @@
   "single_interaction": {
     "source": {
       "chain": "ethereum",
-      "channel": "channel-78"
+      "channel": "channel-81"
     },
     "destination": {
       "chain": "union",
-      "channel": "channel-83"
+      "channel": "channel-89"
     },
     "protocol": {
       "Ucs01": {
         "receivers": ["union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq"],
-        "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+        "contract": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
       }
     },
-    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-79\"}}",
+    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h\",\"channel\":\"channel-79\"}}",
     "sending_memo_probability": 0,
-    "denoms": [
-      "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0x742f7232c73bea91be2828fa14129f68015c3f895b"
-    ],
+    "denoms": ["0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"],
     "send_packet_interval": 1,
-    "expect_full_cycle": 1,
+    "expect_full_cycle": 900,
     "amount_min": 1,
     "amount_max": 1
   }
