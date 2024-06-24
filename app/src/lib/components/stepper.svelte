@@ -1,7 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn"
 import Button from "$lib/components/ui/button/button.svelte"
-import { type Readable, derived } from 'svelte/store';
+import { type Readable, derived } from "svelte/store"
 
 type Step = {
   status: StepStatus
@@ -13,10 +13,10 @@ type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR"
 
 export let steps: Readable<Array<Step>>
 
-let stepsUpToError = derived(steps, ($steps) => {
-  let errorIndex = $steps.findIndex(step => step.status === "ERROR");
-  return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex+1) 
-});
+let stepsUpToError = derived(steps, $steps => {
+  let errorIndex = $steps.findIndex(step => step.status === "ERROR")
+  return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
+})
 
 export let onRetry: () => void | undefined
 </script>

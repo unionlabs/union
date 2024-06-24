@@ -211,67 +211,73 @@ const transfer = async () => {
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
 
-    const cosmosOfflineSigner = (
-      $cosmosStore.connectedWallet === "keplr"
-        ? window?.keplr?.getOfflineSigner($fromChainId, {
-            disableBalanceCheck: false
-          })
-        : window.leap
-          ? window.leap.getOfflineSigner($fromChainId, {
-              disableBalanceCheck: false
-            })
-          : undefined
-    ) as OfflineSigner
-    let cosmosClient = new UnionClient({
-      cosmosOfflineSigner,
-      evmSigner: undefined,
-      bech32Prefix: $fromChain.addr_prefix,
-      chainId: $fromChain.chain_id,
-      gas: { denom: $assetSymbol, amount: "0.0025" },
-      rpcUrl: `https://${rpcUrl}`
-    })
+    if (stepBefore($transferState, "TRANSFERRING")) {
+      try {
+        const cosmosOfflineSigner = (
+          $cosmosStore.connectedWallet === "keplr"
+            ? window?.keplr?.getOfflineSigner($fromChainId, {
+                disableBalanceCheck: false
+              })
+            : window.leap
+              ? window.leap.getOfflineSigner($fromChainId, {
+                  disableBalanceCheck: false
+                })
+              : undefined
+        ) as OfflineSigner
+        let cosmosClient = new UnionClient({
+          cosmosOfflineSigner,
+          evmSigner: undefined,
+          bech32Prefix: $fromChain.addr_prefix,
+          chainId: $fromChain.chain_id,
+          gas: { denom: $assetSymbol, amount: "0.0025" },
+          rpcUrl: `https://${rpcUrl}`
+        })
 
-    transferState.set({ kind: "CONFIRMING_TRANSFER" })
-
-    let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
-    if (ucs1_configuration.contract_address === "ics20") {
-      transferAssetsMessage = {
-        kind: "ibc",
-        messageTransfers: [
-          {
-            sourcePort: "transfer",
-            sourceChannel: ucs1_configuration.channel_id,
-            token: { denom: $assetSymbol, amount: formattedAmount.toString() },
-            sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
-            receiver: $recipient,
-            memo: pfmMemo ?? "",
-            timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
-          }
-        ]
-      }
-    } else {
-      transferAssetsMessage = {
-        kind: "cosmwasm",
-        instructions: [
-          {
-            contractAddress: ucs1_configuration.contract_address,
-            msg: {
-              transfer: {
-                channel: ucs1_configuration.channel_id,
-                receiver: $recipient?.slice(2),
-                memo: pfmMemo ?? ""
+        let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
+        if (ucs1_configuration.contract_address === "ics20") {
+          transferAssetsMessage = {
+            kind: "ibc",
+            messageTransfers: [
+              {
+                sourcePort: "transfer",
+                sourceChannel: ucs1_configuration.channel_id,
+                token: { denom: $assetSymbol, amount: formattedAmount.toString() },
+                sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
+                receiver: $recipient,
+                memo: pfmMemo ?? "",
+                timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
               }
-            },
-            funds: [{ denom: $assetSymbol, amount: formattedAmount.toString() }]
+            ]
           }
-        ]
+        } else {
+          transferAssetsMessage = {
+            kind: "cosmwasm",
+            instructions: [
+              {
+                contractAddress: ucs1_configuration.contract_address,
+                msg: {
+                  transfer: {
+                    channel: ucs1_configuration.channel_id,
+                    receiver: $recipient?.slice(2),
+                    memo: pfmMemo ?? ""
+                  }
+                },
+                funds: [{ denom: $assetSymbol, amount: formattedAmount.toString() }]
+              }
+            ]
+          }
+        }
+
+        const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
+        transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
+      } catch (error) {
+        if (error instanceof Error) {
+          // @ts-ignore
+          transferState.set({ kind: "CONFIRMING_TRANSFER", error })
+        }
+        return
       }
     }
-
-    const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
-    transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
-    await sleep(REDIRECT_DELAY_MS)
-    goto(`/explorer/transfers/${cosmosTransfer.transactionHash}`)
   } else if ($fromChain.rpc_type === "evm") {
     const viemChain = chainToViemChain($fromChain)
     const ucs01address = ucs1_configuration.contract_address as Address
@@ -408,13 +414,13 @@ const transfer = async () => {
         }
       }
     }
-
-    if ($transferState.kind === "TRANSFERRING") {
-      await sleep(REDIRECT_DELAY_MS)
-      goto(`/explorer/transfers/${$transferState.transferHash}`)
-    }
   } else {
     console.error("invalid rpc type")
+  }
+
+  if ($transferState.kind === "TRANSFERRING") {
+    await sleep(REDIRECT_DELAY_MS)
+    goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
 onMount(() => {
@@ -497,7 +503,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: `Adding ${$fromChain.display_name}`,
           description: `Click 'Approve' in wallet.`
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
@@ -513,7 +519,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: `Switching to ${$fromChain.display_name}`,
           description: `Click 'Approve' in wallet.`
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
@@ -529,13 +535,13 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: "Approving ERC20",
           description: "Click 'Next' and 'Approve' in wallet."
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
         "AWAITING_APPROVAL_RECEIPT",
         "Wait for approval receipt",
-        "Received approvel receipt",
+        "Received approval receipt",
         ts => ({
           status: "ERROR",
           title: `Error waiting for approval receipt`,
@@ -545,7 +551,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: "Awaiting approval receipt",
           description: `Waiting on ${$fromChain.display_name}`
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
@@ -561,7 +567,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: "Simulating transfer",
           description: `Waiting on ${$fromChain.display_name}`
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
@@ -577,7 +583,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
           description: `Click 'Confirm' in your wallet`
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
@@ -593,7 +599,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: "Awaiting transfer receipt",
           description: `Waiting on ${$fromChain.display_name}`
-        }),
+        })
       ),
       stateToStatus(
         $transferState,
@@ -605,30 +611,40 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "IN_PROGRESS",
           title: "Transferring assets",
           description: `Successfully initiated transfer`
-        }),
+        })
       )
     ]
   }
   if ($fromChain?.rpc_type === "cosmos") {
     return [
-      {
-        status: stepBefore($transferState, "CONFIRMING_TRANSFER")
-          ? "PENDING"
-          : $transferState.kind === "CONFIRMING_TRANSFER"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Confirm your transfer`,
-        description: `Click 'Approve' in your wallet`
-      },
-      {
-        status: stepBefore($transferState, "TRANSFERRING")
-          ? "PENDING"
-          : $transferState.kind === "TRANSFERRING"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Transferring your assets`,
-        description: `Successfully initiated transfer`
-      }
+      stateToStatus(
+        $transferState,
+        "CONFIRMING_TRANSFER",
+        "Confirm transfer",
+        "Confirmed transfer",
+        ts => ({
+          status: "ERROR",
+          title: "Error confirming transfer",
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Confirming your transfer",
+          description: `Click 'Approve' in your wallet`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "TRANSFERRING",
+        "Transfer assets",
+        "Transferred assets",
+        () => ({}),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Transferring assets",
+          description: `Successfully initiated transfer`
+        })
+      )
     ]
   }
   raise("trying to make stepper for unsupported chain")
