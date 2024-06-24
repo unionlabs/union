@@ -1,15 +1,12 @@
 use core::fmt::Debug;
 use std::fmt;
 
-use futures::{Stream, StreamExt, TryStreamExt};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::{Acquire, Postgres, QueryBuilder};
+use sqlx::{Acquire, Postgres};
 use time::OffsetDateTime;
-use tracing::{debug, info};
+use tracing::info;
 use valuable::Valuable;
-
-pub const BIND_LIMIT: usize = 65535;
 
 /// A trait to describe the different parameters of a chain, used to instantiate types for insertion.
 pub trait ChainType {
@@ -94,47 +91,54 @@ impl<'a> ChainIdInner<'a> {
     }
 }
 
-pub async fn insert_batch_logs<C: ChainType, T: Serialize, B: Stream<Item = Log<C, T>>>(
+pub async fn insert_batch_logs<C: ChainType, T: Serialize>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    logs: B,
+    logs: impl IntoIterator<Item = Log<C, T>>,
+    mode: InsertMode,
 ) -> sqlx::Result<()>
 where
-    <C as ChainType>::BlockHeight:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Send + Debug,
-    <C as ChainType>::BlockHash:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Send + Debug + Clone,
+    <C as ChainType>::BlockHeight: Into<i32>,
+    <C as ChainType>::BlockHash: Into<String> + Debug,
 {
-    logs.chunks(BIND_LIMIT / 5)
-        .map(Ok::<_, sqlx::Error>)
-        .try_fold(tx.as_mut(), |tx, chunk| async {
-            let mut logs_query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-                // Note the trailing space; most calls to `QueryBuilder` don't automatically insert
-                // spaces as that might interfere with identifiers or quoted strings where exact
-                // values may matter.
-                "INSERT INTO v0.logs (chain_id, block_hash, data, height, time) ",
-            );
-            logs_query_builder.push_values(chunk.into_iter(), |mut b, log| {
-                debug!(
-                    chain_id = log.chain_id.canonical,
-                    height = ?log.height,
-                    block_hash = ?log.block_hash,
-                    "batch inserting log"
-                );
-                b.push_bind(log.chain_id.db)
-                    .push_bind(log.block_hash.clone())
-                    .push_bind(serde_json::to_value(&log.data).unwrap())
-                    .push_bind(log.height)
-                    .push_bind(log.time);
-            });
-            logs_query_builder
-                .build()
-                .persistent(true)
-                .execute(tx.as_mut())
-                .await?;
-            Ok(tx)
+    let (chain_ids, hashes, data, height, time): (
+        Vec<i32>,
+        Vec<String>,
+        Vec<_>,
+        Vec<i32>,
+        Vec<OffsetDateTime>,
+    ) = logs
+        .into_iter()
+        .map(|l| {
+            (
+                l.chain_id.db,
+                l.block_hash.into(),
+                serde_json::to_value(&l.data).expect("data should be json serializable"),
+                l.height.into(),
+                l.time,
+            )
         })
-        .await?;
+        .multiunzip();
 
+    if mode.is_insert() {
+        sqlx::query!("
+            INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+            ", &chain_ids, &hashes, &data, &height, &time)
+        .execute(tx.as_mut()).await?;
+    } else {
+        sqlx::query!("
+            INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+            ON CONFLICT (block_hash) DO 
+            UPDATE SET
+                chain_id = excluded.chain_id,
+                block_hash = excluded.block_hash,
+                data = excluded.data,
+                height = excluded.height,
+                time = excluded.time
+            ", &chain_ids, &hashes, &data, &height, &time)
+        .execute(tx.as_mut()).await?;
+    }
     Ok(())
 }
 
