@@ -101,7 +101,7 @@
             voyager = {
               num_workers = cfg.workers;
               laddr = cfg.laddr;
-              max-batch-size = cfg.max-batch-size;
+              max_batch_size = cfg.max-batch-size;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;
