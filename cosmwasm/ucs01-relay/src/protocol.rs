@@ -943,7 +943,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
                     .map_err(Into::into)
             },
             self.common.env.contract.address.as_str(),
-            &self.common.channel.counterparty_endpoint,
+            &self.common.channel.endpoint,
             token,
         )
     }
