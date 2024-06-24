@@ -14,7 +14,8 @@ CREATE TABLE queue(
 );
 
 CREATE TABLE optimize(
-    id BIGINT PRIMARY KEY,
+    -- TODO: Figure out how to do this properly
+    id BIGINT PRIMARY KEY DEFAULT nextval('queue_id_seq'::regclass),
     item JSONB NOT NULL,
     -- Can't have foreign key relations to hypertables, so recreate the constraints as best as possible
     parents BIGINT[] DEFAULT '{}' CHECK (0 < ALL (parents)),

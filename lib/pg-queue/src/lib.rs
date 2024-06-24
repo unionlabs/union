@@ -36,7 +36,7 @@ use tracing::{debug, info_span, trace, Instrument};
 /// ```
 #[derive(DebugNoBound, CloneNoBound)]
 pub struct PgQueue<T> {
-    lock: Arc<AtomicBool>,
+    // lock: Arc<AtomicBool>,
     // client: Arc<tokio_postgres::Client>,
     client: PgPool,
     __marker: PhantomData<fn() -> T>,
@@ -94,7 +94,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         // });
 
         Ok(Self {
-            lock: Arc::new(AtomicBool::new(false)),
+            // lock: Arc::new(AtomicBool::new(false)),
             client: config.into_pg_pool().await?,
             __marker: PhantomData,
         })
@@ -153,7 +153,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
 
         tx.commit().await?;
 
-        self.lock.store(false, Ordering::SeqCst);
+        // self.lock.store(false, Ordering::SeqCst);
 
         Ok(())
     }
@@ -171,10 +171,10 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
     {
         trace!("process");
 
-        if self.lock.swap(false, Ordering::SeqCst) {
-            trace!("queue is locked");
-            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        }
+        // if self.lock.swap(false, Ordering::SeqCst) {
+        //     trace!("queue is locked");
+        //     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        // }
 
         let mut tx = self.client.begin().await?;
 
@@ -298,10 +298,10 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
                 Ok(Some(r))
             }
             None => {
-                trace!("queue is empty");
+                // trace!("queue is empty");
 
-                self.lock.store(true, Ordering::SeqCst);
-                tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+                // self.lock.store(true, Ordering::SeqCst);
+                // tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
 
                 Ok(None)
             }
@@ -330,7 +330,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
                 SELECT
                   id
                 FROM
-                  queue
+                  optimize
                 ORDER BY
                   id ASC
                 FOR UPDATE
@@ -394,9 +394,9 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
 
             let new_row = sqlx::query(
                 "
-                INSERT INTO queue (item, parents, status)
+                INSERT INTO queue (item, parents)
                 VALUES
-                    ($1::JSONB, $2, 'optimize')
+                    ($1::JSONB, $2)
                 RETURNING id
                 ",
             )

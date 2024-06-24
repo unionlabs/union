@@ -19,7 +19,10 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStreamExt};
 use pg_queue::{PgQueue, PgQueueConfig};
 use queue_msg::{
-    optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
+    optimize::{
+        passes::{FinalPass, Normalize, NormalizeFinal},
+        Pass, Pure, PurePass,
+    },
     Engine, InMemoryQueue, Op, Queue, QueueMessage,
 };
 use relay_message::RelayMessage;
@@ -314,7 +317,7 @@ impl Voyager {
                         "received new message",
                     );
 
-                    q.enqueue(msg, &NormalizeFinal::default()).await?;
+                    q.enqueue(msg, &Normalize::default()).await?;
                 }
 
                 Ok(())
@@ -328,8 +331,18 @@ impl Voyager {
             let q = self.queue.clone();
 
             join_set.spawn(Box::pin(async move {
+                let passes = (
+                    Normalize::default(),
+                    (
+                        TxBatch {
+                            size_limit: self.max_batch_size,
+                        },
+                        FinalPass,
+                    ),
+                );
+
                 engine
-                    .run(&q, &NormalizeFinal::default())
+                    .run(&q, &passes)
                     .try_for_each(|data| async move {
                         info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
 
@@ -345,19 +358,17 @@ impl Voyager {
             loop {
                 debug!("optimizing");
 
-                q.optimize(&Pure((
-                    TxBatch {
-                        size_limit: self.max_batch_size,
-                    },
-                    NormalizeFinal::default(),
-                )))
-                .await
-                .map_err(|e| {
-                    e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
+                q.optimize(&Pure(NormalizeFinal::default()))
+                    .await
+                    .map_err(|e| {
+                        e.map_either::<_, _, BoxDynError, BoxDynError>(
+                            |x| Box::new(x),
+                            |x| Box::new(x),
+                        )
                         .into_inner()
-                })?;
+                    })?;
 
-                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                // tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             }
         });
 

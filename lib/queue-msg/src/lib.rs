@@ -1204,9 +1204,9 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                 }
             }
             None => {
-                trace!("queue is empty, sleeping for 1 second");
+                // trace!("queue is empty, sleeping for 1 second");
 
-                sleep(Duration::from_secs(1)).await;
+                // sleep(Duration::from_secs(1)).await;
 
                 Ok(None)
             }

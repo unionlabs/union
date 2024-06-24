@@ -59,11 +59,11 @@ impl PurePass<VoyagerMessage> for TxBatch {
                     }
                     e => {
                         opt_res
-                            .ready
+                            .optimize_further
                             .push((vec![idx], Op::Effect(VoyagerEffect::Relay(e))));
                     }
                 },
-                msg => opt_res.ready.push((vec![idx], msg)),
+                msg => opt_res.optimize_further.push((vec![idx], msg)),
             }
         }
 
