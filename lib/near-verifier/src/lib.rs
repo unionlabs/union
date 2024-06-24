@@ -4,7 +4,9 @@ use near_primitives_core::{
     hash::CryptoHash,
     types::MerkleHash,
 };
+use near_sdk::AccountId;
 use sha2::{Digest, Sha256};
+use state_proof::RawStateProof;
 use unionlabs::{
     ibc::lightclients::near::{
         approval::ApprovalInner,
@@ -16,95 +18,106 @@ use unionlabs::{
 };
 
 pub mod error;
+mod nibble_slice;
+pub mod state_proof;
 
-pub trait NearVerifier {
-    fn get_epoch_block_producers(&self, epoch_id: CryptoHash) -> Option<&Vec<ValidatorStakeView>>;
+pub trait NearVerifierCtx {
+    fn get_epoch_block_producers(&self, epoch_id: CryptoHash) -> Option<Vec<ValidatorStakeView>>;
 
     fn ed25519_verify(
         &self,
         public_key: &[u8],
         signature: &[u8],
         message: &[u8],
-    ) -> Result<bool, Error>;
+    ) -> Result<(), Error>;
+}
 
-    fn verify_header(
-        &self,
-        head: BlockHeaderInnerLiteView,
-        block_view: LightClientBlockView,
-    ) -> Result<(), Error> {
-        let (_current_block_hash, _next_block_hash, approval_message) =
-            reconstruct_light_client_block_view_fields(block_view.clone());
+pub fn verify_header<Ctx: NearVerifierCtx>(
+    ctx: &Ctx,
+    head: BlockHeaderInnerLiteView,
+    block_view: LightClientBlockView,
+) -> Result<(), Error> {
+    let (_current_block_hash, _next_block_hash, approval_message) =
+        reconstruct_light_client_block_view_fields(block_view.clone());
 
-        assert!(block_view.inner_lite.height > head.height, "false");
+    assert!(block_view.inner_lite.height > head.height, "false");
 
-        assert!(
-            [&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id),
-            "false"
-        );
+    assert!(
+        [&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id),
+        "false"
+    );
 
-        assert!(
-            !(block_view.inner_lite.epoch_id == head.next_epoch_id
-                && block_view.next_bps.is_none()),
-            "false"
-        );
+    assert!(
+        !(block_view.inner_lite.epoch_id == head.next_epoch_id && block_view.next_bps.is_none()),
+        "false"
+    );
 
-        let mut total_stake = 0;
-        let mut approved_stake = 0;
+    let mut total_stake = 0;
+    let mut approved_stake = 0;
 
-        let epoch_block_producers = self
-            .get_epoch_block_producers(block_view.inner_lite.epoch_id)
-            .ok_or(Error::EpochBlockProducersNotFound(
-                block_view.inner_lite.epoch_id,
-            ))?;
+    let epoch_block_producers = ctx
+        .get_epoch_block_producers(block_view.inner_lite.epoch_id)
+        .ok_or(Error::EpochBlockProducersNotFound(
+            block_view.inner_lite.epoch_id,
+        ))?;
 
-        for (maybe_signature, block_producer) in block_view
-            .approvals_after_next
-            .iter()
-            .zip(epoch_block_producers.iter())
-        {
-            let ValidatorStakeView::V1(block_producer) = block_producer.clone();
-            total_stake += block_producer.stake;
+    for (maybe_signature, block_producer) in block_view
+        .approvals_after_next
+        .iter()
+        .zip(epoch_block_producers.iter())
+    {
+        let ValidatorStakeView::V1(block_producer) = block_producer.clone();
+        total_stake += block_producer.stake;
 
-            if maybe_signature.is_none() {
-                continue;
-            }
-
-            match maybe_signature {
-                Some(signature) => {
-                    approved_stake += block_producer.stake;
-
-                    let PublicKey::Ed25519(pubkey) = block_producer.public_key else {
-                        return Err(Error::UnsupportedPublicKey);
-                    };
-
-                    let Signature::Ed25519(sig) = signature.as_ref() else {
-                        return Err(Error::UnsupportedSignature);
-                    };
-
-                    if !self.ed25519_verify(&pubkey[..], &sig, &approval_message)? {
-                        return Err(Error::VerificationFailure(
-                            pubkey.as_slice().into(),
-                            sig.clone(),
-                            approval_message,
-                        ));
-                    }
-                }
-                None => continue,
-            }
+        if maybe_signature.is_none() {
+            continue;
         }
 
-        let threshold = total_stake.checked_mul(2).unwrap().checked_div(3).unwrap();
-        assert!(approved_stake > threshold, "approved_stake <= threshold");
+        match maybe_signature {
+            Some(signature) => {
+                approved_stake += block_producer.stake;
 
-        if let Some(next_bps) = &block_view.next_bps {
-            assert!(
-                hash_borsh(next_bps) == block_view.inner_lite.next_bp_hash,
-                "next bps hash mismatch"
-            );
+                let PublicKey::Ed25519(pubkey) = block_producer.public_key else {
+                    return Err(Error::UnsupportedPublicKey);
+                };
+
+                let Signature::Ed25519(sig) = signature.as_ref() else {
+                    return Err(Error::UnsupportedSignature);
+                };
+
+                ctx.ed25519_verify(&pubkey[..], &sig, &approval_message)?;
+            }
+            None => continue,
         }
-
-        Ok(())
     }
+
+    let threshold = total_stake.checked_mul(2).unwrap().checked_div(3).unwrap();
+    assert!(approved_stake > threshold, "approved_stake <= threshold");
+
+    if let Some(next_bps) = &block_view.next_bps {
+        assert!(
+            hash_borsh(next_bps) == block_view.inner_lite.next_bp_hash,
+            "next bps hash mismatch"
+        );
+    }
+
+    Ok(())
+}
+
+pub fn verify_state(
+    raw_state_proof: RawStateProof,
+    state_root: &CryptoHash,
+    account_id: &AccountId,
+    key: &[u8],
+    value: Option<&[u8]>,
+) -> Result<(), Error> {
+    let state_proof = raw_state_proof.parse();
+
+    if !state_proof.verify(state_root, account_id, key, value) {
+        return Err(Error::StateVerificationFailure);
+    }
+
+    Ok(())
 }
 
 fn reconstruct_light_client_block_view_fields(
@@ -152,8 +165,16 @@ pub fn hash_borsh<T: BorshSerialize>(value: T) -> CryptoHash {
 }
 
 /// Verify merkle path for given item and corresponding path.
-pub fn verify_path<T: BorshSerialize>(root: MerkleHash, path: &MerklePath, item: T) -> bool {
-    verify_hash(root, path, CryptoHash::hash_borsh(item))
+pub fn verify_path<T: BorshSerialize>(
+    root: MerkleHash,
+    path: &MerklePath,
+    item: T,
+) -> Result<(), Error> {
+    if !verify_hash(root, path, CryptoHash::hash_borsh(item)) {
+        return Err(Error::MerkleVerificationFailure);
+    }
+
+    Ok(())
 }
 
 pub fn verify_hash(root: MerkleHash, path: &MerklePath, item_hash: MerkleHash) -> bool {

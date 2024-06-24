@@ -10,4 +10,9 @@ pub enum Error {
     UnsupportedSignature,
     #[error("signature verification failed for pubkey {0:?} signature {1:?} message {2:?}")]
     VerificationFailure(Vec<u8>, Vec<u8>, Vec<u8>),
+    // TODO(aeryz): add context
+    #[error("merkle verification failed")]
+    MerkleVerificationFailure,
+    #[error("state proof verification failed")]
+    StateVerificationFailure,
 }

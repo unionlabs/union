@@ -11,6 +11,9 @@ unionlabs          = { workspace = true, features = [ "near" ] }
 near-primitives-core = { version = "0.21" }
 thiserror       = { workspace = true }
 sha2            = { workspace = true }
+serde = { workspace = true }
+near-sdk = { workspace = true }
+borsh = { workspace = true }
 
 [lints]
 workspace = true

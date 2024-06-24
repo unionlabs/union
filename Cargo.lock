@@ -4704,10 +4704,13 @@ dependencies = [
  "base64 0.21.7",
  "bytes",
  "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
  "dlmalloc",
  "hex",
  "ics008-wasm-client",
  "lazy_static",
+ "near-primitives-core 0.21.2",
+ "near-verifier",
  "prost 0.12.6",
  "protos",
  "ripemd",
@@ -6415,6 +6418,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "near-verifier"
+version = "0.1.0"
+dependencies = [
+ "borsh 1.5.1",
+ "near-primitives-core 0.21.2",
+ "near-sdk",
+ "serde",
+ "sha2 0.10.8",
+ "thiserror",
+ "unionlabs",
 ]
 
 [[package]]
