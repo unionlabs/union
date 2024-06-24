@@ -5,7 +5,7 @@ import { goto } from "$app/navigation"
 
 let innerWidth = window.innerWidth
 
-$: shouldRedirect = innerWidth >= 500
+$: shouldRedirect = innerWidth >= 640
 
 onMount(() => {
   if (!shouldRedirect) return
