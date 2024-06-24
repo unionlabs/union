@@ -1,6 +1,11 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
 
+use contracts::erc20;
 use dashmap::DashMap;
+use ethers::{
+    providers::{Middleware, Provider, Ws},
+    types::U256,
+};
 use parking_lot::Mutex;
 use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
 use tokio::{task::JoinHandle, time::interval};
@@ -116,6 +121,132 @@ impl Context {
                             memo,
                         )
                         .await;
+                }
+            }
+        })
+    }
+
+    pub async fn check_balances(self) -> Vec<JoinHandle<()>> {
+        let min_eth_balance = U256::exp10(17); // 0.1 ETH
+                                               // let mut min_erc20_balances = HashMap::new();
+                                               // min_erc20_balances.insert(
+                                               //     "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238".to_string(), // todo change to actual token address.
+                                               //     U256::exp10(9) // 1000 Token
+                                               // ); // 1 token
+
+        let mut handles = vec![];
+
+        handles.push(
+            self.check_ethereum_balances(min_eth_balance /*min_erc20_balances*/)
+                .await,
+        );
+
+        handles
+    }
+
+    pub async fn check_ethereum_balances(
+        &self,
+        min_balance: U256, /*min_erc20_balances: HashMap<String, U256>*/
+    ) -> JoinHandle<()> {
+        let ethereum_chains: Vec<_> = self
+            .chains
+            .values()
+            .filter_map(|chain| {
+                if let Chain::Ethereum(eth) = chain {
+                    Some(eth)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect();
+
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(600)); // TODO: Make this configurable (?)
+
+            loop {
+                interval.tick().await;
+                for ethereum in &ethereum_chains {
+                    for signer_middleware in &ethereum.signer_middlewares {
+                        let address = signer_middleware.address();
+                        let provider: Arc<Provider<Ws>> = ethereum.rpc.provider.clone();
+
+                        let chain_id = provider
+                            .get_chainid()
+                            .await
+                            .expect("Failed to get chain ID")
+                            .as_u64();
+
+                        // Check native balance
+                        match provider.get_balance(address, None).await {
+                            Ok(balance) => {
+                                if balance < min_balance {
+                                    tracing::error!(
+                                        "[INSUFFICIENT BALANCE] Insufficient native balance for address {}. Balance: {}, Required: {}. Chain ID: {}",
+                                        address,
+                                        balance,
+                                        min_balance,
+                                        chain_id
+                                    );
+                                } else {
+                                    tracing::info!(
+                                        "Sufficient ETH balance for address {}. Balance: {}, Required: {}",
+                                        address,
+                                        balance,
+                                        min_balance
+                                    );
+                                }
+                            }
+                            Err(e) =>
+                                tracing::error!(
+                                    "Error checking native balance for address {}. Required: {}. Error: {:?}",
+                                    address,
+                                    min_balance,
+                                    e
+                                ),
+                        }
+                        // TODO (caglankaan): I think checking them here is not necessary and makes thing more complicated
+                        // We can check the erc20 balances in the send_ibc message anyway, right?
+
+                        // Check ERC20 balances
+                        // for (erc20_address, min_balance) in &min_erc20_balances {
+                        //     let erc20_contract = erc20::ERC20::new(
+                        //         ethers::types::H160
+                        //             ::from_str(erc20_address)
+                        //             .expect("Failed to parse transaction hash"),
+                        //         signer_middleware.clone()
+                        //     );
+                        //     match erc20_contract.balance_of(address).await {
+                        //         Ok(balance) => {
+                        //             if balance < *min_balance {
+                        //                 tracing::error!(
+                        //                     "[INSUFFICIENT BALANCE] Insufficient ERC20 balance for token {} on address {}. Balance: {}, Required: {}",
+                        //                     erc20_address,
+                        //                     address,
+                        //                     balance,
+                        //                     min_balance
+                        //                 );
+                        //             } else {
+                        //                 tracing::info!(
+                        //                     "Sufficient ERC20 balance for token {} on address {}. Balance: {}, Required: {}",
+                        //                     erc20_address,
+                        //                     address,
+                        //                     balance,
+                        //                     min_balance
+                        //                 );
+                        //             }
+                        //         }
+                        //         Err(e) =>
+                        //             tracing::error!(
+                        //                 "Error checking ERC20 balance for token {} on address {}. Required: {}. Error: {:?}",
+                        //                 erc20_address,
+                        //                 address,
+                        //                 min_balance,
+                        //                 e
+                        //             ),
+                        //     }
+                        // }
+                    }
                 }
             }
         })
