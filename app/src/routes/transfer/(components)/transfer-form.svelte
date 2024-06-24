@@ -71,6 +71,19 @@ $: {
   amount = amount.replaceAll(amountRegex, "")
 }
 
+let balanceCoversAmount: boolean
+$: if ($fromChain && $asset && amount) {
+  try {
+    const decimals = $fromChain.assets[0].decimals;
+    const inputAmount = parseUnits(amount.toString(), decimals);
+    const balance = BigInt($asset.balance.toString());
+    balanceCoversAmount = inputAmount <= balance;
+  } catch (error) {
+    console.error('Error parsing amount or balance:', error);
+  }
+}
+
+
 const REDIRECT_DELAY_MS = 5000
 
 let dialogOpenToken = false
@@ -389,7 +402,7 @@ function swapChainsClick(_event: MouseEvent) {
 
 $: buttonText =
   $asset && amount
-    ? BigInt(amount) < BigInt($asset.balance)
+    ? balanceCoversAmount
       ? "transfer"
       : "insufficient balance"
     : $asset && !amount
@@ -617,6 +630,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           bind:value={amount}
           autocapitalize="none"
           pattern="^[0-9]*[.,]?[0-9]*$"
+          class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
         />
       </section>
       <section>
@@ -634,7 +648,8 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           !$assetSymbol ||
           !$fromChainId ||
           // >= because need some sauce for gas
-          BigInt(amount) >= BigInt($asset.balance)}
+          !balanceCoversAmount
+          }
         on:click={async event => {
           event.preventDefault()
           transfer()
