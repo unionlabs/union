@@ -602,7 +602,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
         {:else}
           <Button
-            class="size-full"
+            class="w-full"
             variant="outline"
             on:click={() => (dialogOpenToken = !dialogOpenToken)}
           >
