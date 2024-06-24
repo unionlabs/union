@@ -130,9 +130,9 @@
             # };
             voyager = {
               wantedBy = [ "multi-user.target" ];
-              after = [ "voyager-migration.service" ];
-              partOf = [ "voyager-migration.service" ];
-              requires = [ "voyager-migration.service" ];
+              # after = [ "voyager-migration.service" ];
+              # partOf = [ "voyager-migration.service" ];
+              # requires = [ "voyager-migration.service" ];
               description = "Voyager";
               serviceConfig = {
                 Type = "simple";
