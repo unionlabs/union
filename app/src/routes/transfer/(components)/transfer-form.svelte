@@ -491,96 +491,125 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         "ADDING_CHAIN",
         `Add ${$fromChain.display_name}`,
         `Added ${$fromChain.display_name}`,
+        ts => ({
+          status: "ERROR",
+          title: `Error adding ${$fromChain.display_name}`,
+          description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
+        }),
         () => ({
           status: "IN_PROGRESS",
           title: `Adding ${$fromChain.display_name}`,
           description: `Click 'Approve' in wallet.`
         }),
-        ts => ({
-          status: "ERROR",
-          title: `Error adding ${$fromChain.display_name}`,
-          description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
-        })
       ),
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",
         `Switch to ${$fromChain.display_name}`,
         `Switched to ${$fromChain.display_name}`,
+        ts => ({
+          status: "ERROR",
+          title: `Error switching to ${$fromChain.display_name}`,
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
+        }),
         () => ({
           status: "IN_PROGRESS",
           title: `Switching to ${$fromChain.display_name}`,
           description: `Click 'Approve' in wallet.`
         }),
+      ),
+      stateToStatus(
+        $transferState,
+        "APPROVING_ASSET",
+        "Approve ERC20",
+        "Approved ERC20",
         ts => ({
           status: "ERROR",
-          title: `Error switching to ${$fromChain.display_name}`,
-          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
-        })
+          title: `Error approving ERC20`,
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Approving ERC20",
+          description: "Click 'Next' and 'Approve' in wallet."
+        }),
       ),
-      {
-        status: stepBefore($transferState, "SWITCHING_TO_CHAIN")
-          ? "PENDING"
-          : $transferState.kind === "SWITCHING_TO_CHAIN"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Switching to ${$fromChain.display_name}`,
-        description: "Click 'Switch to Chain' in your wallet."
-      },
-      {
-        status: stepBefore($transferState, "APPROVING_ASSET")
-          ? "PENDING"
-          : $transferState.kind === "APPROVING_ASSET"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Approving ERC20`,
-        description: "Click 'Next' and 'Approve' in wallet."
-      },
-      {
-        status: stepBefore($transferState, "AWAITING_APPROVAL_RECEIPT")
-          ? "PENDING"
-          : $transferState.kind === "AWAITING_APPROVAL_RECEIPT"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Awaiting approval receipt`,
-        description: `Waiting on ${$fromChain.display_name}`
-      },
-      {
-        status: stepBefore($transferState, "SIMULATING_TRANSFER")
-          ? "PENDING"
-          : $transferState.kind === "SIMULATING_TRANSFER"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Simulating transfer`,
-        description: `Waiting on ${$fromChain.display_name}`
-      },
-      {
-        status: stepBefore($transferState, "CONFIRMING_TRANSFER")
-          ? "PENDING"
-          : $transferState.kind === "CONFIRMING_TRANSFER"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Confirm your transfer`,
-        description: `Click 'Confirm' in your wallet`
-      },
-      {
-        status: stepBefore($transferState, "AWAITING_TRANSFER_RECEIPT")
-          ? "PENDING"
-          : $transferState.kind === "AWAITING_TRANSFER_RECEIPT"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Awaiting transfer receipt`,
-        description: `Waiting on ${$fromChain.display_name}`
-      },
-      {
-        status: stepBefore($transferState, "TRANSFERRING")
-          ? "PENDING"
-          : $transferState.kind === "TRANSFERRING"
-            ? "IN_PROGRESS"
-            : "COMPLETED",
-        title: `Transferring your assets`,
-        description: `Successfully initiated transfer`
-      }
+      stateToStatus(
+        $transferState,
+        "AWAITING_APPROVAL_RECEIPT",
+        "Wait for approval receipt",
+        "Received approvel receipt",
+        ts => ({
+          status: "ERROR",
+          title: `Error waiting for approval receipt`,
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Approving ERC20",
+          description: "Click 'Next' and 'Approve' in wallet."
+        }),
+      ),
+      stateToStatus(
+        $transferState,
+        "SIMULATING_TRANSFER",
+        "Simulate transfer",
+        "Simulated transfer",
+        ts => ({
+          status: "ERROR",
+          title: `Error simulating transfer on ${$fromChain.display_name}`,
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Simulating transfer",
+          description: `Waiting on ${$fromChain.display_name}`
+        }),
+      ),
+      stateToStatus(
+        $transferState,
+        "CONFIRMING_TRANSFER",
+        "Confirm transfer",
+        "Confirmed transfer",
+        ts => ({
+          status: "ERROR",
+          title: "Error confirming transfer",
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Confirming your transfer",
+          description: `Click 'Confirm' in your wallet`
+        }),
+      ),
+      stateToStatus(
+        $transferState,
+        "AWAITING_TRANSFER_RECEIPT",
+        "Confirm transfer",
+        "Confirmed transfer",
+        ts => ({
+          status: "ERROR",
+          title: "Error while waiting on transfer receipt",
+          description: `tx hash: ${ts.transferHash}, error: ${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Awaiting transfer receipt",
+          description: `Waiting on ${$fromChain.display_name}`
+        }),
+      ),
+      stateToStatus(
+        $transferState,
+        "TRANSFERRING",
+        "Transfer assets",
+        "Transferred assets",
+        () => ({}),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Transferring assets",
+          description: `Successfully initiated transfer`
+        }),
+      )
     ]
   }
   if ($fromChain?.rpc_type === "cosmos") {

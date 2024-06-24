@@ -32,7 +32,7 @@ export let steps: Array<Step>
       <!-- bottom step connector !-->
       <div class={cn("w-1 flex-1", index !== steps.length - 1 ?  "bg-black" : "")}></div>
     </div>
-    <div class="font-bold py-4 flex flex-col">
+    <div class="font-bold py-4 flex flex-col min-h-[80px] justify-center">
       <div>{step.title}</div>
       {#if step.description}<div class="font-normal">{step.description}</div>{/if}
     </div>
