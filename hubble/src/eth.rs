@@ -6,10 +6,7 @@ use ethers::{
     providers::{Http, Middleware, Provider},
     types::H256,
 };
-use futures::{
-    stream::{self, FuturesOrdered},
-    FutureExt, StreamExt, TryFutureExt,
-};
+use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
@@ -20,7 +17,7 @@ const DEFAULT_CHUNK_SIZE: usize = 200;
 
 use crate::{
     metrics,
-    postgres::{self, ChainId},
+    postgres::{self, ChainId, InsertMode},
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -34,6 +31,15 @@ pub struct Config {
 
     /// How many blocks to fetch at the same time
     pub chunk_size: Option<usize>,
+
+    /// Attempt to retry and fix bad states. This makes the process less responsive, as any call may take longer
+    /// since retries are happening. Best for systemd services and long-running jobs.
+    #[allow(dead_code)]
+    #[serde(default)]
+    pub harden: bool,
+
+    #[serde(default)]
+    pub mode: InsertMode,
 }
 
 /// Unit struct describing parametrization of associated types for Evm based chains.
@@ -54,6 +60,7 @@ pub struct Indexer {
     pool: PgPool,
     provider: Provider<Http>,
     chunk_size: usize,
+    mode: InsertMode,
 }
 
 impl Config {
@@ -107,6 +114,7 @@ impl Config {
                 pool,
                 provider,
                 chunk_size: self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
+                mode: self.mode,
             })
         }
         .instrument(indexing_span)
@@ -133,6 +141,7 @@ impl Indexer {
                     self.chain_id,
                     self.provider.clone(),
                     self.chunk_size,
+                    self.mode,
                 )
                 .in_current_span(),
             );
@@ -174,6 +183,7 @@ async fn index_blocks(
     chain_id: ChainId,
     provider: Provider<Http>,
     chunk_size: usize,
+    mode: InsertMode,
 ) -> Result<(), Report> {
     let err = match index_blocks_by_chunk(
         pool.clone(),
@@ -181,6 +191,7 @@ async fn index_blocks(
         chain_id,
         provider.clone(),
         chunk_size,
+        mode,
     )
     .await
     {
@@ -201,6 +212,7 @@ async fn index_blocks(
                 chain_id,
                 provider.clone(),
                 1,
+                mode,
             )
             .inspect_err(|e| {
                 debug!(
@@ -221,6 +233,7 @@ async fn index_blocks_by_chunk(
     chain_id: ChainId,
     provider: Provider<Http>,
     chunk_size: usize,
+    mode: InsertMode,
 ) -> Result<(), IndexBlockError> {
     let mut chunks = futures::stream::iter(range.into_iter()).chunks(chunk_size);
 
@@ -263,7 +276,7 @@ async fn index_blocks_by_chunk(
 
             let mut tx = pool.begin().await.map_err(Report::from)?;
 
-            match block.execute(&mut tx).await {
+            match block.execute(&mut tx, mode).await {
                 Err(err) => {
                     debug!(?err, "error executing block insert");
                     tx.rollback().await?;
@@ -479,7 +492,11 @@ impl BlockInsert {
     }
 
     /// Handles inserting the block data and transactions as a log.
-    async fn execute(self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<InsertInfo, Report> {
+    async fn execute(
+        self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        mode: InsertMode,
+    ) -> Result<InsertInfo, Report> {
         let num_tx = self.transactions.len();
         let num_events = self
             .transactions
@@ -498,7 +515,7 @@ impl BlockInsert {
             },
         };
 
-        postgres::insert_batch_logs(tx, stream::iter(Some(log))).await?;
+        postgres::insert_batch_logs(tx, std::iter::once(log), mode).await?;
 
         Ok(InsertInfo {
             height: self.height,
