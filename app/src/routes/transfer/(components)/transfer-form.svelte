@@ -206,9 +206,6 @@ const transfer = async () => {
   let formattedAmount = parseUnits(amount, $fromChain.assets[0].decimals)
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
-  transferState.set({ kind: "FLIPPING" })
-  await sleep(1200)
-
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
@@ -546,8 +543,8 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         }),
         () => ({
           status: "IN_PROGRESS",
-          title: "Approving ERC20",
-          description: "Click 'Next' and 'Approve' in wallet."
+          title: "Awaiting approval receipt",
+          description: `Waiting on ${$fromChain.display_name}`
         }),
       ),
       stateToStatus(
@@ -585,7 +582,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
       stateToStatus(
         $transferState,
         "AWAITING_TRANSFER_RECEIPT",
-        "Confirm transfer",
+        "Wait for transfer receipt",
         "Confirmed transfer",
         ts => ({
           status: "ERROR",
@@ -727,6 +724,8 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           }
         on:click={async event => {
           event.preventDefault()
+          transferState.set({ kind: "FLIPPING" })
+          await sleep(1200)
           transfer()
         }}
       >
@@ -736,7 +735,15 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     </Card.Root>
 
     <Card.Root class="cube-back p-6">
-      <Stepper steps={$stepperSteps}/>
+      <Stepper steps={stepperSteps} onRetry={() => {
+        transferState.update(ts => {
+          // @ts-ignore
+          ts.error = undefined; 
+          return ts
+        });
+
+        transfer()
+      }}/>
     </Card.Root>
     <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>
