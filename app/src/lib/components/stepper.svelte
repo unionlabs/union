@@ -18,7 +18,7 @@ let stepsUpToError = derived(steps, $steps => {
   return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
 })
 
-export let onRetry: () => void | undefined
+export let onRetry: (() => void) | undefined
 </script>
 
 <ol>
