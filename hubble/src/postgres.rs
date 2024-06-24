@@ -2,11 +2,13 @@ use core::fmt::Debug;
 use std::fmt;
 
 use futures::{Stream, StreamExt, TryStreamExt};
-use serde::Serialize;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use sqlx::{Acquire, Postgres, QueryBuilder};
 use time::OffsetDateTime;
 use tracing::{debug, info};
 use valuable::Valuable;
+
 pub const BIND_LIMIT: usize = 65535;
 
 /// A trait to describe the different parameters of a chain, used to instantiate types for insertion.
@@ -163,154 +165,198 @@ where
 //     Ok(())
 // }
 
-pub async fn insert_batch_blocks<C: ChainType, B: Stream<Item = Block<C>>>(
+#[derive(Copy, Clone, Debug, Default, Deserialize)]
+pub enum InsertMode {
+    #[default]
+    Insert,
+    Upsert,
+}
+
+impl InsertMode {
+    fn is_insert(&self) -> bool {
+        matches!(self, InsertMode::Insert)
+    }
+}
+
+pub async fn insert_batch_blocks<C: ChainType>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    blocks: B,
+    blocks: impl IntoIterator<Item = Block<C>>,
+    mode: InsertMode,
 ) -> sqlx::Result<()>
 where
-    <C as ChainType>::BlockHeight:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug,
-    <C as ChainType>::BlockHash:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug + Clone,
+    <C as ChainType>::BlockHeight: Into<i32>,
+    <C as ChainType>::BlockHash: Into<String> + Debug,
 {
-    blocks
-        .chunks(BIND_LIMIT / 5)
-        .map(Ok::<_, sqlx::Error>)
-        .try_fold(tx.as_mut(), |tx, chunk| async {
-            let mut blocks_query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-                // Note the trailing space; most calls to `QueryBuilder` don't automatically insert
-                // spaces as that might interfere with identifiers or quoted strings where exact
-                // values may matter.
-                "INSERT INTO v0.blocks (chain_id, hash, data, height, time) ",
-            );
-            blocks_query_builder.push_values(chunk.into_iter(), |mut b, block| {
-                debug!(
-                    chain_id = block.chain_id.canonical,
-                    height = ?block.height,
-                    block_hash = ?block.hash,
-                    "batch inserting block"
-                );
-                b.push_bind(block.chain_id.db)
-                    .push_bind(block.hash.clone())
-                    .push_bind(block.data.clone())
-                    .push_bind(block.height)
-                    .push_bind(block.time);
-            });
-            blocks_query_builder
-                .build()
-                .persistent(true)
-                .execute(tx.as_mut())
-                .await?;
-            Ok(tx)
+    let (chain_ids, hashes, data, height, time): (
+        Vec<i32>,
+        Vec<String>,
+        Vec<_>,
+        Vec<i32>,
+        Vec<OffsetDateTime>,
+    ) = blocks
+        .into_iter()
+        .map(|b| {
+            (
+                b.chain_id.db,
+                b.hash.into(),
+                b.data,
+                b.height.into(),
+                b.time,
+            )
         })
-        .await?;
+        .multiunzip();
 
+    if mode.is_insert() {
+        sqlx::query!("
+            INSERT INTO v0.blocks (chain_id, hash, data, height, time)
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+            ", &chain_ids, &hashes, &data, &height, &time)
+        .execute(tx.as_mut()).await?;
+    } else {
+        sqlx::query!("
+            INSERT INTO v0.blocks (chain_id, hash, data, height, time)
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+            ON CONFLICT (hash) DO 
+            UPDATE SET
+                chain_id = excluded.chain_id,
+                hash = excluded.hash,
+                data = excluded.data,
+                height = excluded.height,
+                time = excluded.time
+        ", &chain_ids, &hashes, &data, &height, &time)
+        .execute(tx.as_mut()).await?;
+    }
     Ok(())
 }
 
-pub async fn insert_batch_transactions<C: ChainType, B: Stream<Item = Transaction<C>>>(
+pub async fn insert_batch_transactions<C: ChainType>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    transactions: B,
+    transactions: impl IntoIterator<Item = Transaction<C>>,
+    mode: InsertMode,
 ) -> sqlx::Result<()>
 where
-    <C as ChainType>::BlockHeight:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug,
-    <C as ChainType>::BlockHash:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug + Clone,
-    <C as ChainType>::TransactionHash:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug + Clone,
+    <C as ChainType>::BlockHeight: Into<i32> + Debug,
+    <C as ChainType>::BlockHash: Into<String> + Debug,
+    <C as ChainType>::TransactionHash: Into<String> + Debug,
 {
-    // We insert all transactions in batched statements without their logs first.
-    transactions
-        .chunks(BIND_LIMIT / 6)
-        .map(Ok::<_, sqlx::Error>)
-        .try_fold(tx.as_mut(), |tx, chunk| async {
-            let mut tx_query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-                // Note the trailing space; most calls to `QueryBuilder` don't automatically insert
-                // spaces as that might interfere with identifiers or quoted strings where exact
-                // values may matter.
-                "INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index) ",
-            );
-            tx_query_builder.push_values(chunk.into_iter(), |mut b, transaction| {
-                debug!(
-                    chain_id = transaction.chain_id.canonical,
-                    height = ?transaction.block_height,
-                    block_hash = ?transaction.block_hash,
-                    transaction_hash = ?&transaction.hash,
-                    transaction_index = transaction.index,
-                    "batch inserting transaction"
-                );
-                b.push_bind(transaction.chain_id.db)
-                    .push_bind(transaction.block_hash)
-                    .push_bind(transaction.block_height)
-                    .push_bind(transaction.hash)
-                    .push_bind(transaction.data)
-                    .push_bind(transaction.index);
-            });
-            tx_query_builder
-                .build()
-                // Since there can be different amount of transactions in each block; we omit prepared statements,
-                // as that would fill up the query cache.
-                .persistent(false)
-                .execute(tx.as_mut())
-                .await?;
-            Ok(tx)
+    #![allow(clippy::type_complexity)]
+    let (chain_ids, block_hashes, heights, hashes, data, indexes): (
+        Vec<i32>,
+        Vec<String>,
+        Vec<i32>,
+        Vec<String>,
+        Vec<_>,
+        Vec<i32>,
+    ) = transactions
+        .into_iter()
+        .map(|t| {
+            (
+                t.chain_id.db,
+                t.block_hash.into(),
+                t.block_height.into(),
+                t.hash.into(),
+                t.data,
+                t.index,
+            )
         })
-        .await?;
+        .multiunzip();
+
+    if mode.is_insert() {
+        sqlx::query!("
+            INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index) 
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
+            ", 
+            &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
+        .execute(tx.as_mut()).await?;
+    } else {
+        sqlx::query!("
+            INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index)
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
+            ON CONFLICT (hash) DO
+            UPDATE SET
+                chain_id = excluded.chain_id,
+                block_hash = excluded.block_hash,
+                height = excluded.height,
+                hash = excluded.hash,
+                data = excluded.data,
+                index = excluded.index
+        ", 
+        &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
+        .execute(tx.as_mut()).await?;
+    }
     Ok(())
 }
 
-pub async fn insert_batch_events<C: ChainType, B: Stream<Item = Event<C>>>(
+pub async fn insert_batch_events<C: ChainType>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    events: B,
+    events: impl IntoIterator<Item = Event<C>>,
+    mode: InsertMode,
 ) -> sqlx::Result<()>
 where
-    <C as ChainType>::BlockHeight:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug,
-    <C as ChainType>::BlockHash:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug + Clone,
-    <C as ChainType>::TransactionHash:
-        for<'q> sqlx::Encode<'q, Postgres> + Send + sqlx::Type<Postgres> + Debug + Clone,
+    <C as ChainType>::BlockHeight: Into<i32> + Debug,
+    <C as ChainType>::BlockHash: Into<String> + Debug,
+    <C as ChainType>::TransactionHash: Into<String> + Debug,
 {
-    events
-    .chunks(BIND_LIMIT / 8)
-    .map(Ok::<_, sqlx::Error>)
-    .try_fold(tx.as_mut(), |tx, chunk| async {
-        let mut event_query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-        // Note the trailing space; most calls to `QueryBuilder` don't automatically insert
-        // spaces as that might interfere with identifiers or quoted strings where exact
-        // values may matter.
-        "INSERT INTO v0.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time) ",
-    );
-    event_query_builder.push_values(chunk.into_iter(), |mut b, event| {
-            debug!(
-                chain_id = event.chain_id.canonical,
-                height = ?event.block_height,
-                block_hash = ?event.block_hash,
-                transaction_hash = ?&event.transaction_hash,
-                transaction_index = event.transaction_index,
-                index = event.block_index,
-                "batch inserting event"
-            );
-            b.push_bind(event.chain_id.db)
-                .push_bind(event.block_hash)
-                .push_bind(event.block_height)
-                .push_bind(event.transaction_hash)
-                .push_bind(event.block_index)
-                .push_bind(event.transaction_index)
-                .push_bind(event.data)
-                .push_bind(event.time);
-        });
-        event_query_builder
-            .build()
-            // Since there can be different amount of events in each block; we omit prepared statements,
-            // as that would fill up the query cache.
-            .persistent(false)
-            .execute(tx.as_mut())
-            .await?;
-        Ok(tx)
-    })
-    .await?;
+    #![allow(clippy::type_complexity)]
+    let (
+        chain_ids,
+        block_hashes,
+        heights,
+        transaction_hashes,
+        indexes,
+        transaction_indexes,
+        data,
+        times,
+    ): (
+        Vec<i32>,
+        Vec<String>,
+        Vec<i32>,
+        Vec<Option<String>>,
+        Vec<i32>,
+        Vec<Option<i32>>,
+        Vec<_>,
+        Vec<OffsetDateTime>,
+    ) = events
+        .into_iter()
+        .map(|e| {
+            (
+                e.chain_id.db,
+                e.block_hash.into(),
+                e.block_height.into(),
+                e.transaction_hash.map(Into::into),
+                e.block_index,
+                e.transaction_index,
+                e.data,
+                e.time,
+            )
+        })
+        .multiunzip();
+
+    if mode.is_insert() {
+        sqlx::query!("
+            INSERT INTO v0.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
+            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
+            ", 
+            &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
+        .execute(tx.as_mut()).await?;
+    } else {
+        sqlx::query!("
+        INSERT INTO v0.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
+        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
+        ON CONFLICT (transaction_hash, index) DO
+        UPDATE SET
+            chain_id = excluded.chain_id,
+            block_hash = excluded.block_hash,
+            height = excluded.height,
+            transaction_hash = excluded.transaction_hash,
+            index = excluded.index,
+            transaction_index = excluded.transaction_index,
+            data = excluded.data,
+            time = excluded.time
+    ", 
+    &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
+    .execute(tx.as_mut()).await?;
+    }
     Ok(())
 }
 

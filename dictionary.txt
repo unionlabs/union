@@ -718,6 +718,7 @@ msvc
 muldefs
 multisigs
 multistep
+multiunzip
 muno
 muslc
 nanos
