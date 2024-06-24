@@ -2,7 +2,7 @@
   "chain_configs": {
     "ethereum": {
       "ethereum": {
-        "enabled": true,
+        "enabled": false,
         "ibc_handler_address": "0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb",
         "signers": [
           {
@@ -13,6 +13,22 @@
         "transfer_module": {
           "type": "contract",
           "address": "0xd0081080ae8493cf7340458eaf4412030df5feeb"
+        }
+      }
+    },
+    "bera": {
+      "ethereum": {
+        "enabled": true,
+        "ibc_handler_address": "0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc",
+        "signers": [
+          {
+            "raw": "0xc56de6bf91c78afb4757055a080e6c3a53f83e588750e39196f4e65931bc86a2"
+          }
+        ],
+        "eth_rpc_api": "wss://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1",
+        "transfer_module": {
+          "type": "contract",
+          "address": "0x0e7aee8a4109b1c1916281d25f43b937f103a409"
         }
       }
     },
@@ -78,6 +94,7 @@
     }
   },
   "interactions": [
+
     {
       "source": {
         "chain": "ethereum",
@@ -135,12 +152,12 @@
   ],
   "single_interaction": {
     "source": {
-      "chain": "ethereum",
-      "channel": "channel-81"
+      "chain": "bera",
+      "channel": "channel-80"
     },
     "destination": {
       "chain": "union",
-      "channel": "channel-89"
+      "channel": "channel-6"
     },
     "protocol": {
       "Ucs01": {
@@ -148,9 +165,9 @@
         "contract": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
       }
     },
-    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h\",\"channel\":\"channel-79\"}}",
+    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h\",\"channel\":\"channel-80\"}}",
     "sending_memo_probability": 0,
-    "denoms": ["0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"],
+    "denoms": ["0xa1d2D7AC1185DBC9554F51489BD648BBcA95e928"],
     "send_packet_interval": 1,
     "expect_full_cycle": 900,
     "amount_min": 1,

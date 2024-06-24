@@ -46,6 +46,10 @@ pub struct AppArgs {
 
     #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
     pub log_format: LogFormat,
+
+    // Check balances
+    #[arg(long, global = true)]
+    pub check_balances: bool,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -97,6 +101,10 @@ async fn main() {
         } else {
             tracing::info!("Listen functionality disabled");
         }
+    }
+
+    if args.check_balances {
+        handles.extend(context.clone().check_balances().await);
     }
 
     // Await all handles and handle panics
