@@ -164,6 +164,7 @@ Tada
 Tempdirs
 Tendermint
 Testcase
+TestnetbArtio
 Timestamptz
 Tioga
 Tjpl

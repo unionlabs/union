@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
-import { sepolia } from "viem/chains"
+import { sepolia, berachainTestnetbArtio } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -22,10 +22,22 @@ import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
-import { type Address, parseUnits } from "viem"
+import {
+  type Address,
+  parseUnits,
+  SwitchChainError,
+  ResourceUnavailableRpcError,
+  type SimulateContractReturnType
+} from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import Stepper from "$lib/components/stepper.svelte"
+import {
+  type TransferState,
+  chainToViemChain,
+  stepBefore,
+  stepAfter
+} from "$lib/transfer/transfer.ts"
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -37,10 +49,12 @@ import {
   http,
   custom,
   defineChain,
-  publicActions
+  publicActions,
+  fallback
 } from "viem"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -51,19 +65,7 @@ let fromChainId = writable("union-testnet-8")
 let toChainId = writable("11155111")
 let assetSymbol = writable("")
 
-type TransferStates =
-  | "PRE_TRANSFER"
-  | "FLIPPING"
-  | "ADDING_CHAIN"
-  | "SWITCHING_TO_CHAIN"
-  | "APPROVING_ASSET"
-  | "AWAITING_APPROVAL_RECEIPT"
-  | "SIMULATING_TRANSFER"
-  | "CONFIRMING_TRANSFER"
-  | "AWAITING_TRANSFER_RECEIPT"
-  | "TRANSFERRING"
-
-let transferState: Writable<TransferStates> = writable("PRE_TRANSFER")
+let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 let amount = ""
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
@@ -204,167 +206,221 @@ const transfer = async () => {
   let formattedAmount = parseUnits(amount, $fromChain.assets[0].decimals)
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
-  transferState.set("FLIPPING")
-  await sleep(1200)
-
   if ($fromChain.rpc_type === "cosmos") {
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
 
-    const cosmosOfflineSigner = (
-      $cosmosStore.connectedWallet === "keplr"
-        ? window?.keplr?.getOfflineSigner($fromChainId, {
-            disableBalanceCheck: false
-          })
-        : window.leap
-          ? window.leap.getOfflineSigner($fromChainId, {
-              disableBalanceCheck: false
-            })
-          : undefined
-    ) as OfflineSigner
-    let cosmosClient = new UnionClient({
-      cosmosOfflineSigner,
-      evmSigner: undefined,
-      bech32Prefix: $fromChain.addr_prefix,
-      chainId: $fromChain.chain_id,
-      gas: { denom: $assetSymbol, amount: "0.0025" },
-      rpcUrl: `https://${rpcUrl}`
-    })
+    if (stepBefore($transferState, "TRANSFERRING")) {
+      try {
+        const cosmosOfflineSigner = (
+          $cosmosStore.connectedWallet === "keplr"
+            ? window?.keplr?.getOfflineSigner($fromChainId, {
+                disableBalanceCheck: false
+              })
+            : window.leap
+              ? window.leap.getOfflineSigner($fromChainId, {
+                  disableBalanceCheck: false
+                })
+              : undefined
+        ) as OfflineSigner
+        let cosmosClient = new UnionClient({
+          cosmosOfflineSigner,
+          evmSigner: undefined,
+          bech32Prefix: $fromChain.addr_prefix,
+          chainId: $fromChain.chain_id,
+          gas: { denom: $assetSymbol, amount: "0.0025" },
+          rpcUrl: `https://${rpcUrl}`
+        })
 
-    transferState.set("CONFIRMING_TRANSFER")
-
-    let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
-    if (ucs1_configuration.contract_address === "ics20") {
-      transferAssetsMessage = {
-        kind: "ibc",
-        messageTransfers: [
-          {
-            sourcePort: "transfer",
-            sourceChannel: ucs1_configuration.channel_id,
-            token: { denom: $assetSymbol, amount: formattedAmount.toString() },
-            sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
-            receiver: $recipient,
-            memo: pfmMemo ?? "",
-            timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
-          }
-        ]
-      }
-    } else {
-      transferAssetsMessage = {
-        kind: "cosmwasm",
-        instructions: [
-          {
-            contractAddress: ucs1_configuration.contract_address,
-            msg: {
-              transfer: {
-                channel: ucs1_configuration.channel_id,
-                receiver: $recipient?.slice(2),
-                memo: pfmMemo ?? ""
+        let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
+        if (ucs1_configuration.contract_address === "ics20") {
+          transferAssetsMessage = {
+            kind: "ibc",
+            messageTransfers: [
+              {
+                sourcePort: "transfer",
+                sourceChannel: ucs1_configuration.channel_id,
+                token: { denom: $assetSymbol, amount: formattedAmount.toString() },
+                sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
+                receiver: $recipient,
+                memo: pfmMemo ?? "",
+                timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
               }
-            },
-            funds: [{ denom: $assetSymbol, amount: formattedAmount.toString() }]
+            ]
           }
-        ]
+        } else {
+          transferAssetsMessage = {
+            kind: "cosmwasm",
+            instructions: [
+              {
+                contractAddress: ucs1_configuration.contract_address,
+                msg: {
+                  transfer: {
+                    channel: ucs1_configuration.channel_id,
+                    receiver: $recipient?.slice(2),
+                    memo: pfmMemo ?? ""
+                  }
+                },
+                funds: [{ denom: $assetSymbol, amount: formattedAmount.toString() }]
+              }
+            ]
+          }
+        }
+
+        const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
+        transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
+      } catch (error) {
+        if (error instanceof Error) {
+          // @ts-ignore
+          transferState.set({ kind: "CONFIRMING_TRANSFER", error })
+        }
+        return
       }
     }
-
-    const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
-    transferState.set("TRANSFERRING")
-    await sleep(REDIRECT_DELAY_MS)
-    goto(`/explorer/transfers/${cosmosTransfer.transactionHash}`)
   } else if ($fromChain.rpc_type === "evm") {
-    transferState.set("ADDING_CHAIN")
-
-    const rpcUrls = $fromChain.rpcs.filter(c => c.type === "rpc").map(c => `https://${c.url}`)
-
-    if (rpcUrls.length === 0) return toast.error(`No RPC url for ${$fromChain.display_name}`)
-
-    const nativeCurrency = $fromChain.assets.filter(asset => asset.denom === "native").at(0)
-
-    if (nativeCurrency === undefined)
-      return toast.error(`No native currency for ${$fromChain.display_name}`)
-
-    const chain = defineChain({
-      name: $fromChain.display_name,
-      nativeCurrency: {
-        name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
-        /** 2-6 characters long */
-        symbol: nativeCurrency.display_symbol,
-        decimals: nativeCurrency.decimals
-      },
-      id: Number($fromChainId),
-      rpcUrls: {
-        default: {
-          http: rpcUrls
-        }
-      },
-      testnet: $fromChain.testnet
-    })
-
+    const viemChain = chainToViemChain($fromChain)
+    const ucs01address = ucs1_configuration.contract_address as Address
     const publicClient = createPublicClient({
-      chain,
-      transport: http()
+      chain: viemChain,
+      transport: fallback(
+        $fromChain.rpcs.filter(c => c.type === "rpc").map(c => http(`https://${c.url}`))
+      )
     })
 
+    if (window.ethereum === undefined) raise("no ethereum browser extension")
     const walletClient = createWalletClient({
-      chain,
-      // @ts-ignore
+      chain: viemChain,
       transport: custom(window.ethereum)
     })
 
-    await walletClient.addChain({ chain })
+    if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
+      transferState.set({ kind: "ADDING_CHAIN" })
+      try {
+        await walletClient.addChain({ chain: viemChain })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "ADDING_CHAIN", error })
+        }
+        return
+      }
+      transferState.set({ kind: "SWITCHING_TO_CHAIN" })
+    }
 
-    transferState.set("SWITCHING_TO_CHAIN")
-    await walletClient.switchChain({ id: chain.id })
+    if ($transferState.kind === "SWITCHING_TO_CHAIN") {
+      try {
+        await walletClient.switchChain({ id: Number($fromChain.chain_id) })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
+        }
+        return
+      }
+      transferState.set({ kind: "APPROVING_ASSET" })
+    }
 
-    const ucs01address = ucs1_configuration.contract_address as Address
+    if ($transferState.kind === "APPROVING_ASSET") {
+      let hash: `0x${string}` | null = null
 
-    transferState.set("APPROVING_ASSET")
-    const approveContractSimulation = await walletClient.writeContract({
-      account: userAddr.evm.canonical,
-      abi: erc20Abi,
-      // @ts-expect-error TODO: fix this type
-      address: $asset.address as Address,
-      functionName: "approve",
-      args: [ucs01address, formattedAmount]
-    })
+      try {
+        hash = await walletClient.writeContract({
+          account: userAddr.evm.canonical,
+          abi: erc20Abi,
+          address: $asset.address as Address,
+          functionName: "approve",
+          args: [ucs01address, formattedAmount]
+        })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "APPROVING_ASSET", error })
+        }
+        return
+      }
 
-    transferState.set("AWAITING_APPROVAL_RECEIPT")
-    const approvalReceipt = await publicClient.waitForTransactionReceipt({
-      hash: approveContractSimulation
-    })
+      transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
+    }
 
-    transferState.set("SIMULATING_TRANSFER")
-    const simulationResult = await publicClient.simulateContract({
-      abi: ucs01abi,
-      account: userAddr.evm.canonical,
-      functionName: "send",
-      address: ucs01address,
-      args: [
-        ucs1_configuration.channel_id,
-        userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
-        [{ denom: $asset.address.toLowerCase() as Address, amount: formattedAmount }],
-        pfmMemo ?? "", // memo
-        { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-        0n
-      ]
-    })
-    console.log("simulation result", simulationResult)
+    if ($transferState.kind === "AWAITING_APPROVAL_RECEIPT") {
+      try {
+        await publicClient.waitForTransactionReceipt({
+          hash: $transferState.hash
+        })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash: $transferState.hash, error })
+        }
+        return
+      }
+      transferState.set({ kind: "SIMULATING_TRANSFER" })
+    }
 
-    transferState.set("CONFIRMING_TRANSFER")
-    const transferHash = await walletClient.writeContract(simulationResult.request)
+    if ($transferState.kind === "SIMULATING_TRANSFER") {
+      try {
+        const simulationResult = await publicClient.simulateContract({
+          abi: ucs01abi,
+          account: userAddr.evm.canonical,
+          functionName: "send",
+          address: ucs01address,
+          args: [
+            ucs1_configuration.channel_id,
+            userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
+            [{ denom: $asset.address.toLowerCase() as Address, amount: formattedAmount }],
+            pfmMemo ?? "", // memo
+            { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+            0n
+          ]
+        })
+        // @ts-ignore
+        transferState.set({ kind: "CONFIRMING_TRANSFER", simulationResult })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "SIMULATING_TRANSFER", error })
+        }
+        return
+      }
+    }
 
-    transferState.set("AWAITING_TRANSFER_RECEIPT")
-    const transferReceipt = await publicClient.waitForTransactionReceipt({
-      hash: transferHash
-    })
+    if ($transferState.kind === "CONFIRMING_TRANSFER") {
+      try {
+        // @ts-ignore
+        const transferHash = await walletClient.writeContract(
+          $transferState.simulationResult.request
+        )
+        transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "CONFIRMING_TRANSFER",
+            simulationResult: $transferState.simulationResult,
+            error
+          })
+        }
+      }
+    }
 
-    transferState.set("TRANSFERRING")
-    await sleep(REDIRECT_DELAY_MS)
-    goto(`/explorer/transfers/${transferHash}`)
+    if ($transferState.kind === "AWAITING_TRANSFER_RECEIPT") {
+      try {
+        await publicClient.waitForTransactionReceipt({
+          hash: $transferState.transferHash
+        })
+        transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "AWAITING_TRANSFER_RECEIPT",
+            transferHash: $transferState.transferHash,
+            error
+          })
+        }
+      }
+    }
   } else {
     console.error("invalid rpc type")
+  }
+
+  if ($transferState.kind === "TRANSFERRING") {
+    await sleep(REDIRECT_DELAY_MS)
+    goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
 onMount(() => {
@@ -412,151 +468,183 @@ $: buttonText =
 let supportedAsset: any
 $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
 
+const stateToStatus = <K extends TransferState["kind"]>(
+  state: TransferState,
+  kind: K,
+  pendingTitle: string,
+  completedTitle: string,
+  errorFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown,
+  progressFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown
+) =>
+  stepBefore(state, kind)
+    ? { status: "PENDING", title: pendingTitle }
+    : stepAfter(state, kind)
+      ? { status: "COMPLETED", title: completedTitle }
+      : // @ts-ignore
+        state.error !== undefined
+        ? errorFormatter(state as Extract<TransferState, { kind: K }>)
+        : progressFormatter(state as Extract<TransferState, { kind: K }>)
+
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
-      {
-        status:
-          $transferState === "PRE_TRANSFER" || $transferState === "FLIPPING"
-            ? "PENDING"
-            : $transferState === "ADDING_CHAIN"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Adding ${$fromChain.display_name}`,
-        description: "Click 'Add Chain' in your wallet."
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN"
-            ? "PENDING"
-            : $transferState === "SWITCHING_TO_CHAIN"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Switching to ${$fromChain.display_name}`,
-        description: "Click 'Switch to Chain' in your wallet."
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN" ||
-          $transferState === "SWITCHING_TO_CHAIN"
-            ? "PENDING"
-            : $transferState === "APPROVING_ASSET"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Approving ERC20`,
-        description: "Click 'Next' and 'Approve' in wallet."
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN" ||
-          $transferState === "SWITCHING_TO_CHAIN" ||
-          $transferState === "APPROVING_ASSET"
-            ? "PENDING"
-            : $transferState === "AWAITING_APPROVAL_RECEIPT"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Awaiting approval receipt`,
-        description: `Waiting on ${$fromChain.display_name}`
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN" ||
-          $transferState === "SWITCHING_TO_CHAIN" ||
-          $transferState === "APPROVING_ASSET" ||
-          $transferState === "AWAITING_APPROVAL_RECEIPT"
-            ? "PENDING"
-            : $transferState === "SIMULATING_TRANSFER"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Simulating transfer`,
-        description: `Waiting on ${$fromChain.display_name}`
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN" ||
-          $transferState === "SWITCHING_TO_CHAIN" ||
-          $transferState === "APPROVING_ASSET" ||
-          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
-          $transferState === "SIMULATING_TRANSFER"
-            ? "PENDING"
-            : $transferState === "CONFIRMING_TRANSFER"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Confirm your transfer`,
-        description: `Click 'Confirm' in your wallet`
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN" ||
-          $transferState === "SWITCHING_TO_CHAIN" ||
-          $transferState === "APPROVING_ASSET" ||
-          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
-          $transferState === "SIMULATING_TRANSFER" ||
-          $transferState === "CONFIRMING_TRANSFER"
-            ? "PENDING"
-            : $transferState === "AWAITING_TRANSFER_RECEIPT"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Awaiting transfer receipt`,
-        description: `Waiting on ${$fromChain.display_name}`
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "ADDING_CHAIN" ||
-          $transferState === "SWITCHING_TO_CHAIN" ||
-          $transferState === "APPROVING_ASSET" ||
-          $transferState === "AWAITING_APPROVAL_RECEIPT" ||
-          $transferState === "SIMULATING_TRANSFER" ||
-          $transferState === "CONFIRMING_TRANSFER" ||
-          $transferState === "AWAITING_TRANSFER_RECEIPT"
-            ? "PENDING"
-            : $transferState === "TRANSFERRING"
-              ? "COMPLETED"
-              : "ERROR",
-        title: `Transferring your assets`,
-        description: `Successfully initiated transfer`
-      }
+      stateToStatus(
+        $transferState,
+        "ADDING_CHAIN",
+        `Add ${$fromChain.display_name}`,
+        `Added ${$fromChain.display_name}`,
+        ts => ({
+          status: "ERROR",
+          title: `Error adding ${$fromChain.display_name}`,
+          description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: `Adding ${$fromChain.display_name}`,
+          description: `Click 'Approve' in wallet.`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "SWITCHING_TO_CHAIN",
+        `Switch to ${$fromChain.display_name}`,
+        `Switched to ${$fromChain.display_name}`,
+        ts => ({
+          status: "ERROR",
+          title: `Error switching to ${$fromChain.display_name}`,
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: `Switching to ${$fromChain.display_name}`,
+          description: `Click 'Approve' in wallet.`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "APPROVING_ASSET",
+        "Approve ERC20",
+        "Approved ERC20",
+        ts => ({
+          status: "ERROR",
+          title: `Error approving ERC20`,
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Approving ERC20",
+          description: "Click 'Next' and 'Approve' in wallet."
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "AWAITING_APPROVAL_RECEIPT",
+        "Wait for approval receipt",
+        "Received approval receipt",
+        ts => ({
+          status: "ERROR",
+          title: `Error waiting for approval receipt`,
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Awaiting approval receipt",
+          description: `Waiting on ${$fromChain.display_name}`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "SIMULATING_TRANSFER",
+        "Simulate transfer",
+        "Simulated transfer",
+        ts => ({
+          status: "ERROR",
+          title: `Error simulating transfer on ${$fromChain.display_name}`,
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Simulating transfer",
+          description: `Waiting on ${$fromChain.display_name}`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "CONFIRMING_TRANSFER",
+        "Confirm transfer",
+        "Confirmed transfer",
+        ts => ({
+          status: "ERROR",
+          title: "Error confirming transfer",
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Confirming your transfer",
+          description: `Click 'Confirm' in your wallet`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "AWAITING_TRANSFER_RECEIPT",
+        "Wait for transfer receipt",
+        "Confirmed transfer",
+        ts => ({
+          status: "ERROR",
+          title: "Error while waiting on transfer receipt",
+          description: `tx hash: ${ts.transferHash}, error: ${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Awaiting transfer receipt",
+          description: `Waiting on ${$fromChain.display_name}`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "TRANSFERRING",
+        "Transfer assets",
+        "Transferred assets",
+        () => ({}),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Transferring assets",
+          description: `Successfully initiated transfer`
+        })
+      )
     ]
   }
   if ($fromChain?.rpc_type === "cosmos") {
     return [
-      {
-        status:
-          $transferState === "PRE_TRANSFER" || $transferState === "FLIPPING"
-            ? "PENDING"
-            : $transferState === "CONFIRMING_TRANSFER"
-              ? "IN_PROGRESS"
-              : "COMPLETED",
-        title: `Approving transfer`,
-        description: "Click 'Approve' in your wallet."
-      },
-      {
-        status:
-          $transferState === "PRE_TRANSFER" ||
-          $transferState === "FLIPPING" ||
-          $transferState === "CONFIRMING_TRANSFER"
-            ? "PENDING"
-            : $transferState === "TRANSFERRING"
-              ? "COMPLETED"
-              : "ERROR",
-        title: `Transferring your assets`,
-        description: "Successfully initiated transfer"
-      }
+      stateToStatus(
+        $transferState,
+        "CONFIRMING_TRANSFER",
+        "Confirm transfer",
+        "Confirmed transfer",
+        ts => ({
+          status: "ERROR",
+          title: "Error confirming transfer",
+          description: `${ts.error}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Confirming your transfer",
+          description: `Click 'Approve' in your wallet`
+        })
+      ),
+      stateToStatus(
+        $transferState,
+        "TRANSFERRING",
+        "Transfer assets",
+        "Transferred assets",
+        () => ({}),
+        () => ({
+          status: "IN_PROGRESS",
+          title: "Transferring assets",
+          description: `Successfully initiated transfer`
+        })
+      )
     ]
   }
   raise("trying to make stepper for unsupported chain")
@@ -564,9 +652,9 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 </script>
 
 
-<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 <div class="cube-scene">
-  <div class={cn("cube", $transferState !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
+  <div class={cn("cube", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
     <Card.Root class="cube-front">
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
@@ -597,7 +685,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
         {:else}
           <Button
-            class="size-full"
+            class="w-full"
             variant="outline"
             on:click={() => (dialogOpenToken = !dialogOpenToken)}
           >
@@ -652,6 +740,8 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           }
         on:click={async event => {
           event.preventDefault()
+          transferState.set({ kind: "FLIPPING" })
+          await sleep(1200)
           transfer()
         }}
       >
@@ -661,7 +751,15 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     </Card.Root>
 
     <Card.Root class="cube-back p-6">
-      <Stepper steps={$stepperSteps}/>
+      <Stepper steps={stepperSteps} onRetry={() => {
+        transferState.update(ts => {
+          // @ts-ignore
+          ts.error = undefined; 
+          return ts
+        });
+
+        transfer()
+      }}/>
     </Card.Root>
     <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>
