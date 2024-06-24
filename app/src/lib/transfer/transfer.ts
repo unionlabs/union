@@ -33,6 +33,7 @@ export type TransferState = DiscriminatedUnion<
 >
 
 export const transferStep = (state: TransferState): number => {
+  // biome-ignore lint/nursery/useDefaultSwitchClause: i want typescript to error if we forgot a case
   switch (state.kind) {
     case "PRE_TRANSFER":
       return 1
@@ -60,6 +61,10 @@ export const transferStep = (state: TransferState): number => {
 export const stepBefore = (state: TransferState, targetStateKind: TransferState["kind"]): boolean =>
   // @ts-ignore
   transferStep(state) < transferStep({ kind: targetStateKind })
+
+export const stepAfter = (state: TransferState, targetStateKind: TransferState["kind"]): boolean =>
+  // @ts-ignore
+  transferStep(state) > transferStep({ kind: targetStateKind })
 
 export const chainToViemChain = (chain: Chain): ViemChain => {
   const rpcUrls = chain.rpcs.filter(c => c.type === "rpc").map(c => `https://${c.url}`)

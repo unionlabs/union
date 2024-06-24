@@ -35,8 +35,8 @@ import Stepper from "$lib/components/stepper.svelte"
 import {
   type TransferState,
   chainToViemChain,
-  transferStep,
-  stepBefore
+  stepBefore,
+  stepAfter
 } from "$lib/transfer/transfer.ts"
 
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -469,17 +469,19 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
+      (stepBefore($transferState, "ADDING_CHAIN") ? {status: "PENDING", title: `Add ${$fromChain.display_name}`} : 
+       stepAfter($transferState, "ADDING_CHAIN") ? {status: "COMPLETED", title: `Added ${$fromChain.display_name}`} : 
+       ($transferState as Extract<TransferState, {kind:"ADDING_CHAIN"}>).error === undefined ? 
       {
-        status: stepBefore($transferState, "ADDING_CHAIN")
-          ? "PENDING"
-          : $transferState.kind === "ADDING_CHAIN"
-            ? $transferState.error !== undefined
-              ? "ERROR"
-              : "IN_PROGRESS"
-            : "COMPLETED",
+        status: "IN_PROGRESS",
         title: `Adding ${$fromChain.display_name}`,
-        description: "Click 'Approve' in your wallet."
-      },
+        description: `Click 'Approve' in wallet.`
+      } :
+      {
+        status: "ERROR",
+        title: `Error adding ${$fromChain.display_name}`,
+        description: `There was an issue adding ${$fromChain.display_name} to your wallet.`
+      }),
       {
         status: stepBefore($transferState, "SWITCHING_TO_CHAIN")
           ? "PENDING"
