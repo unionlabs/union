@@ -19,7 +19,3 @@ onMount(() => {
 </script>
 
 <svelte:window bind:innerWidth />
-
-<div class="flex-1 w-full">Welcome to the Union Explorer</div>
-
-<style lang="postcss"></style>
