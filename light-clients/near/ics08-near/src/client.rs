@@ -1,7 +1,7 @@
 use cosmwasm_std::{Deps, Empty};
 use ics008_wasm_client::{
-    storage_utils::{read_client_state, read_consensus_state},
-    IbcClient,
+    storage_utils::{read_client_state, read_consensus_state, save_consensus_state},
+    IbcClient, Status,
 };
 use near_primitives_core::hash::CryptoHash;
 use near_verifier::state_proof::RawStateProof;
@@ -103,81 +103,120 @@ impl IbcClient for NearLightClient {
     }
 
     fn verify_misbehaviour(
-        deps: Deps<Self::CustomQuery>,
-        env: cosmwasm_std::Env,
-        misbehaviour: Self::Misbehaviour,
+        _deps: Deps<Self::CustomQuery>,
+        _env: cosmwasm_std::Env,
+        _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), ics008_wasm_client::IbcClientError<Self>> {
         unimplemented!()
     }
 
     fn update_state(
-        deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
-        env: cosmwasm_std::Env,
+        mut deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
+        _env: cosmwasm_std::Env,
         header: Self::Header,
     ) -> Result<Vec<Height>, ics008_wasm_client::IbcClientError<Self>> {
-        todo!()
+        let update_height = header.new_state.inner_lite.height;
+
+        let new_consensus_state = ConsensusState {
+            state: header.new_state.inner_lite.clone(),
+            chunk_prev_state_root: header.prev_state_root,
+            timestamp: header.new_state.inner_lite.timestamp_nanosec,
+        };
+
+        save_consensus_state::<NearLightClient>(
+            deps.branch(),
+            WasmConsensusState {
+                data: new_consensus_state,
+            },
+            &height(update_height),
+        );
+
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+
+        if update_height > client_state.data.latest_height {
+            client_state.data.latest_height = update_height;
+        }
+
+        if let Some(next_bps) = header.new_state.next_bps {
+            EPOCH_BLOCK_PRODUCERS_MAP.save(
+                deps.storage,
+                header.new_state.inner_lite.next_epoch_id.0,
+                &next_bps,
+            )?;
+        }
+
+        Ok(vec![height(update_height)])
     }
 
     fn update_state_on_misbehaviour(
-        deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
-        env: cosmwasm_std::Env,
-        client_message: Vec<u8>,
+        _deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
+        _env: cosmwasm_std::Env,
+        _client_message: Vec<u8>,
     ) -> Result<(), ics008_wasm_client::IbcClientError<Self>> {
-        todo!()
+        unimplemented!()
     }
 
     fn check_for_misbehaviour_on_header(
-        deps: Deps<Self::CustomQuery>,
-        header: Self::Header,
+        _deps: Deps<Self::CustomQuery>,
+        _header: Self::Header,
     ) -> Result<bool, ics008_wasm_client::IbcClientError<Self>> {
-        todo!()
+        Ok(true)
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
-        deps: Deps<Self::CustomQuery>,
-        misbehaviour: Self::Misbehaviour,
+        _deps: Deps<Self::CustomQuery>,
+        _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, ics008_wasm_client::IbcClientError<Self>> {
-        todo!()
+        unimplemented!()
     }
 
     fn verify_upgrade_and_update_state(
-        deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
-        upgrade_client_state: Self::ClientState,
-        upgrade_consensus_state: Self::ConsensusState,
-        proof_upgrade_client: Vec<u8>,
-        proof_upgrade_consensus_state: Vec<u8>,
+        _deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
+        _upgrade_client_state: Self::ClientState,
+        _upgrade_consensus_state: Self::ConsensusState,
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), ics008_wasm_client::IbcClientError<Self>> {
         todo!()
     }
 
     fn migrate_client_store(
-        deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
+        _deps: cosmwasm_std::DepsMut<Self::CustomQuery>,
     ) -> Result<(), ics008_wasm_client::IbcClientError<Self>> {
         todo!()
     }
 
     fn status(
         deps: Deps<Self::CustomQuery>,
-        env: &cosmwasm_std::Env,
-    ) -> Result<ics008_wasm_client::Status, ics008_wasm_client::IbcClientError<Self>> {
-        todo!()
+        _env: &cosmwasm_std::Env,
+    ) -> Result<Status, ics008_wasm_client::IbcClientError<Self>> {
+        let client_state: WasmClientState = read_client_state(deps)?;
+
+        if client_state.data.frozen_height != 0 {
+            return Ok(Status::Frozen);
+        }
+
+        Ok(Status::Active)
     }
 
     fn export_metadata(
-        deps: Deps<Self::CustomQuery>,
-        env: &cosmwasm_std::Env,
+        _deps: Deps<Self::CustomQuery>,
+        _env: &cosmwasm_std::Env,
     ) -> Result<
         Vec<unionlabs::ibc::core::client::genesis_metadata::GenesisMetadata>,
         ics008_wasm_client::IbcClientError<Self>,
     > {
-        todo!()
+        unimplemented!()
     }
 
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,
     ) -> Result<u64, ics008_wasm_client::IbcClientError<Self>> {
-        todo!()
+        Ok(read_consensus_state::<Self>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height.revision_height))?
+            .data
+            .timestamp)
     }
 }
 

@@ -9,7 +9,7 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ibc::lightclients::cometbls::client_state::ClientState,
+    ibc::{core::client::height::Height, lightclients::near::client_state::ClientState},
 };
 
 use crate::{client::NearLightClient, errors::Error};
@@ -21,7 +21,34 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
-    unimplemented!()
+    let client_state =
+        ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
+
+    save_proto_consensus_state::<NearLightClient>(
+        deps.branch(),
+        ProtoConsensusState {
+            data: msg.consensus_state.into(),
+        },
+        &Height {
+            revision_number: 0,
+            revision_height: client_state.latest_height,
+        },
+    );
+    save_proto_client_state::<NearLightClient>(
+        deps,
+        ProtoClientState {
+            data: msg.client_state.into(),
+            checksum: msg.checksum.into(),
+            latest_height: Some(
+                Height {
+                    revision_number: 0,
+                    revision_height: client_state.latest_height,
+                }
+                .into(),
+            ),
+        },
+    );
+    Ok(Response::default())
 }
 
 define_cosmwasm_light_client_contract!(NearLightClient, Near);

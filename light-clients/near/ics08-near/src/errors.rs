@@ -1,6 +1,9 @@
-use cosmwasm_std::VerificationError;
 use ics008_wasm_client::IbcClientError;
 use near_primitives_core::hash::CryptoHash;
+use unionlabs::{
+    encoding::{DecodeErrorOf, Proto},
+    ibc::lightclients::near::{client_state::ClientState, consensus_state::ConsensusState},
+};
 
 use crate::client::NearLightClient;
 
@@ -12,10 +15,14 @@ pub enum Error {
     EpochBlockProducerNotFound(CryptoHash),
     #[error(transparent)]
     Verifier(#[from] near_verifier::error::Error),
+    #[error("unable to decode client state")]
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
+    #[error("unable to decode consensus state")]
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
 }
 
 impl From<Error> for IbcClientError<NearLightClient> {
-    fn from(_value: Error) -> Self {
-        todo!()
+    fn from(value: Error) -> Self {
+        IbcClientError::ClientSpecific(value)
     }
 }

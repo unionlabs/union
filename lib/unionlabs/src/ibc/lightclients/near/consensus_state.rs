@@ -14,6 +14,7 @@ use crate::errors::{required, MissingField};
 pub struct ConsensusState {
     pub state: BlockHeaderInnerLiteView,
     pub chunk_prev_state_root: CryptoHash,
+    pub timestamp: u64,
 }
 
 impl From<ConsensusState> for protos::union::ibc::lightclients::near::v1::ConsensusState {
@@ -50,6 +51,7 @@ impl TryFrom<protos::union::ibc::lightclients::near::v1::ConsensusState> for Con
                 .as_slice()
                 .try_into()
                 .map_err(|_| TryFromConsensusStateError::ChunkPrevStateRoot)?,
+            timestamp: 0,
         })
     }
 }

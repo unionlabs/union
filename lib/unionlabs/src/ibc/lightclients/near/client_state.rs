@@ -15,6 +15,7 @@ pub struct ClientState {
     pub latest_height: u64,
     pub ibc_account_id: AccountId,
     pub initial_block_producers: Option<Vec<ValidatorStakeView>>,
+    pub frozen_height: u64,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::near::v1::ClientState {
@@ -64,6 +65,7 @@ impl TryFrom<protos::union::ibc::lightclients::near::v1::ClientState> for Client
             } else {
                 None
             },
+            frozen_height: 0,
         })
     }
 }

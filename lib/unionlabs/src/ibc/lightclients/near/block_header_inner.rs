@@ -19,6 +19,7 @@ pub struct BlockHeaderInnerLiteView {
     pub next_epoch_id: CryptoHash,
     pub prev_state_root: CryptoHash,
     pub outcome_root: CryptoHash,
+    // TODO(aeryz): put deprecated?
     /// Legacy json number. Should not be used.
     pub timestamp: u64,
     // TODO(aeryz): #[serde(with = "dec_format")]
