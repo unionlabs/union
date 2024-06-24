@@ -27,9 +27,12 @@ serde-utils     = { workspace = true }
 sha2            = { workspace = true }
 sha3            = { workspace = true }
 thiserror       = { workspace = true }
+cw-storage-plus = { workspace = true }
 
 ics008-wasm-client = { workspace = true }
 unionlabs          = { workspace = true, features = [ "near" ] }
+near-primitives-core = { version = "0.21" }
+near-verifier = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

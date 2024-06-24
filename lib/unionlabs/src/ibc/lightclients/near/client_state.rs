@@ -12,9 +12,9 @@ use super::validator_stake::{TryFromValidatorStakeView, ValidatorStakeView};
 ))]
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct ClientState {
-    latest_height: u64,
-    ibc_account_id: AccountId,
-    initial_block_producers: Option<Vec<ValidatorStakeView>>,
+    pub latest_height: u64,
+    pub ibc_account_id: AccountId,
+    pub initial_block_producers: Option<Vec<ValidatorStakeView>>,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::near::v1::ClientState {

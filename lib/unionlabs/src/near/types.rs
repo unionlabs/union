@@ -372,6 +372,15 @@ pub enum Signature {
     Secp256k1(Vec<u8>),
 }
 
+impl Signature {
+    pub fn inner(&self) -> &[u8] {
+        match self {
+            Signature::Ed25519(val) => val.as_slice(),
+            Signature::Secp256k1(val) => val.as_slice(),
+        }
+    }
+}
+
 impl From<Signature> for protos::union::ibc::lightclients::near::v1::signature::Signature {
     fn from(value: Signature) -> Self {
         match value {
