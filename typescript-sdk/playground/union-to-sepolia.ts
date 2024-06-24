@@ -15,11 +15,15 @@ import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: { "private-key": { type: "string" } }
+  options: {
+    "private-key": { type: "string" },
+    "estimate-gas": { type: "boolean", default: false }
+  }
 })
 
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
+const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
@@ -27,6 +31,8 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
+
+// console.info(cosmosAccount)
 
 const stamp = timestamp()
 
@@ -70,6 +76,8 @@ try {
   })
 
   console.info("Union to Sepolia gas cost:", gasEstimationResponse)
+
+  if (ONLY_ESTIMATE_GAS) process.exit(0)
 
   if (!gasEstimationResponse.success) {
     console.info("Transaction simulation failed")

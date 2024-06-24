@@ -25,9 +25,11 @@ import {
   cosmosSameChainTransferSimulate
 } from "./transfer/cosmos.ts"
 import { sepolia } from "viem/chains"
+import { ibcActions } from "./ibc/actions.ts"
 import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/off-chain.ts"
 import { findPfmPath, createPfmMemo } from "./pfm.ts"
+import { cosmwasmActions } from "./cosmwasm/actions.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { transferAssetFromEvm, transferAssetFromEvmSimulate } from "./transfer/evm.ts"
@@ -79,6 +81,10 @@ export function createCosmosSdkClient({
 
   return createWalletClient({ ...evm, transport, chain, account: evm.account })
     .extend(publicActions)
+    .extend(() => ({
+      ibcActions,
+      cosmwasmActions
+    }))
     .extend(() => ({ offchainQuery }))
     .extend(() => ({
       bech32AddressToHex,

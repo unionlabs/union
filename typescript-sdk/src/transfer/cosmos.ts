@@ -15,14 +15,15 @@ import { timestamp } from "../utilities/index.ts"
 import type { TransactionResponse } from "../types.ts"
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx"
 import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
-
 /**
  * TODO:
  * - [ ] prefix logs with context to make it easier to debug
  */
 
 /**
- * Transfer tokens from ibc-enabled chain to another ibc-enabled chain
+ * Make ICS-20 transfer:
+ * - https://github.com/cosmos/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md
+ * - transfer tokens from ibc-enabled chain to another ibc-enabled chain
  */
 export async function ibcTransfer({
   gasPrice,
@@ -185,8 +186,11 @@ export async function cosmwasmTransferSimulate({
     const gas = await signingClient.simulate(
       account.address,
       instructions.map(instruction => ({
-        // @ts-expect-error - TODO: why is it not happy?
-        value: MsgExecuteContract.fromPartial(instruction),
+        value: MsgExecuteContract.fromPartial({
+          sender: account.address,
+          contract: instruction.contractAddress,
+          ...instruction
+        }),
         typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract"
       })),
       "auto"

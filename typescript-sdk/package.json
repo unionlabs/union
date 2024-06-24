@@ -27,7 +27,7 @@
     "@cosmjs/tendermint-rpc": "0.32.3",
     "ofetch": "^1.3.4",
     "valibot": "^0.33.3",
-    "viem": "^2.16.0"
+    "viem": "^2.16.1"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
