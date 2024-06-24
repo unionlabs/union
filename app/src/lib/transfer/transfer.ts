@@ -1,6 +1,6 @@
 import type { Chain } from "$lib/types";
 import { raise } from "$lib/utilities";
-import { type CustomTransportConfig, createPublicClient, createWalletClient, fallback, http, custom,  defineChain, type PublicClient, type Chain as ViemChain, type CustomTransport } from "viem";
+import { type CustomTransportConfig, createPublicClient, createWalletClient, fallback, http, custom,  defineChain, type PublicClient, type Chain as ViemChain, type CustomTransport, type SimulateContractReturnType } from "viem";
 import { berachainTestnetbArtio, sepolia } from "viem/chains";
 
 
@@ -14,11 +14,11 @@ export type TransferState = DiscriminatedUnion<"kind", {
   ADDING_CHAIN: { error?: Error },
   SWITCHING_TO_CHAIN: { error?: Error },
   APPROVING_ASSET: { error?: Error},
-  AWAITING_APPROVAL_RECEIPT: {},
-  SIMULATING_TRANSFER: {},
-  CONFIRMING_TRANSFER: {},
-  AWAITING_TRANSFER_RECEIPT: {},
-  TRANSFERRING: {}
+  AWAITING_APPROVAL_RECEIPT: { error?: Error, hash: `0x${string}` },
+  SIMULATING_TRANSFER: { error?: Error },
+  CONFIRMING_TRANSFER: { error?: Error, simulationResult: SimulateContractReturnType },
+  AWAITING_TRANSFER_RECEIPT: { error?: Error, transferHash: `0x${string}` },
+  TRANSFERRING: { transferHash: string}
 }>;
 
 export const transferStep = (state: TransferState): number => {
@@ -37,10 +37,8 @@ export const transferStep = (state: TransferState): number => {
 } 
 
 export const stepBefore = (state: TransferState, targetStateKind: TransferState['kind']): boolean =>
+  // @ts-ignore
   transferStep(state) < transferStep({ kind: targetStateKind})
-
-export const kindIs = (state: TransferState, targetStateKind: TransferState['kind']): boolean =>
-   state.kind === targetStateKind
 
 
 export const chainToViemChain = (chain: Chain): ViemChain => {
