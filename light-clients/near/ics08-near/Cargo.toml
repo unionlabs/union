@@ -29,7 +29,7 @@ sha3            = { workspace = true }
 thiserror       = { workspace = true }
 
 ics008-wasm-client = { workspace = true }
-unionlabs          = { workspace = true }
+unionlabs          = { workspace = true, features = [ "near" ] }
 
 [dev-dependencies]
 base64      = { workspace = true }

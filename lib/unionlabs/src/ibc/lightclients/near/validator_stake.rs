@@ -1,6 +1,7 @@
 use core::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
+use macros::model;
 use near_primitives_core::{account::id::ParseAccountError, types::Balance};
 use near_sdk::AccountId;
 
@@ -9,17 +10,12 @@ use crate::{
     near::types::{PublicKey, TryFromPublicKeyError},
 };
 
-#[derive(
-    BorshSerialize,
-    BorshDeserialize,
-    serde::Serialize,
-    serde::Deserialize,
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-)]
-#[serde(tag = "validator_stake_struct_version")]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::near::v1::ValidatorStakeView),
+    into,
+    from
+))]
+#[derive(BorshSerialize, BorshDeserialize, Eq)]
 pub enum ValidatorStakeView {
     V1(ValidatorStakeViewV1),
 }

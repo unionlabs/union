@@ -153,4 +153,36 @@ impl ::prost::Name for BlockHeaderInnerLiteView {
         ::prost::alloc::format!("union.ibc.lightclients.near.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClientState {
+    #[prost(uint64, tag = "1")]
+    pub latest_height: u64,
+    #[prost(string, tag = "2")]
+    pub account_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
+    pub iniitial_block_producers: ::prost::alloc::vec::Vec<ValidatorStakeView>,
+}
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.near.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.near.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusState {
+    #[prost(message, optional, tag = "1")]
+    pub state: ::core::option::Option<BlockHeaderInnerLiteView>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub chunk_prev_state_root: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.near.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.near.v1.{}", Self::NAME)
+    }
+}
 // @@protoc_insertion_point(module)

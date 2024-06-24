@@ -1,4 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
+use macros::model;
 use near_primitives_core::hash::CryptoHash;
 
 use super::{
@@ -10,16 +11,12 @@ use crate::{
     near::types::Signature,
 };
 
-#[derive(
-    PartialEq,
-    Eq,
-    Debug,
-    Clone,
-    BorshDeserialize,
-    BorshSerialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::near::v1::LightClientBlockView),
+    into,
+    from
+))]
+#[derive(Eq, BorshDeserialize, BorshSerialize)]
 pub struct LightClientBlockView {
     pub prev_block_hash: CryptoHash,
     pub next_block_inner_hash: CryptoHash,

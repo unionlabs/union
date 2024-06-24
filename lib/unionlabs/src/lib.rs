@@ -156,6 +156,7 @@ pub enum WasmClientType {
     Arbitrum,
     Linea,
     Berachain,
+    Near,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -204,6 +205,7 @@ impl FromStr for WasmClientType {
             "Arbitrum" => Ok(WasmClientType::Arbitrum),
             "Linea" => Ok(WasmClientType::Linea),
             "Berachain" => Ok(WasmClientType::Berachain),
+            "Near" => Ok(WasmClientType::Near),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
@@ -220,6 +222,7 @@ impl Display for WasmClientType {
             Self::Arbitrum => write!(f, "Arbitrum"),
             Self::Linea => write!(f, "Linea"),
             Self::Berachain => write!(f, "Berachain"),
+            Self::Near => write!(f, "Near"),
         }
     }
 }

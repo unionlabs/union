@@ -1,5 +1,11 @@
 use cosmwasm_std::Empty;
 use ics008_wasm_client::IbcClient;
+use unionlabs::{
+    encoding::Proto,
+    ibc::lightclients::near::{
+        client_state::ClientState, consensus_state::ConsensusState, header::Header,
+    },
+};
 
 use crate::errors::Error;
 
@@ -10,15 +16,15 @@ impl IbcClient for NearLightClient {
 
     type CustomQuery = Empty;
 
-    type Header;
+    type Header = Header;
 
-    type Misbehaviour;
+    type Misbehaviour = Header;
 
-    type ClientState;
+    type ClientState = ClientState;
 
-    type ConsensusState;
+    type ConsensusState = ConsensusState;
 
-    type Encoding;
+    type Encoding = Proto;
 
     fn verify_membership(
         deps: cosmwasm_std::Deps<Self::CustomQuery>,

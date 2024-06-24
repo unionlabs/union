@@ -58,3 +58,14 @@ message BlockHeaderInnerLiteView {
   bytes next_bp_hash = 8;
   bytes block_merkle_root = 9;
 }
+
+message ClientState {
+  uint64 latest_height = 1;
+  string account_id = 2;
+  repeated ValidatorStakeView iniitial_block_producers = 3;
+}
+
+message ConsensusState {
+    BlockHeaderInnerLiteView state = 1;
+    bytes chunk_prev_state_root = 2;
+}

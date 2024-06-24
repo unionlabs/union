@@ -16,7 +16,7 @@ use crate::{client::NearLightClient, errors::Error};
 
 #[entry_point]
 pub fn instantiate(
-    mut deps: DepsMut<CustomQueryOf<CometblsLightClient>>,
+    mut deps: DepsMut<CustomQueryOf<NearLightClient>>,
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
@@ -24,4 +24,4 @@ pub fn instantiate(
     unimplemented!()
 }
 
-define_cosmwasm_light_client_contract!(CometblsLightClient, Cometbls);
+define_cosmwasm_light_client_contract!(NearLightClient, Near);

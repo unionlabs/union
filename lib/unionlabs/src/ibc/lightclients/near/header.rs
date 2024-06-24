@@ -1,4 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
+use macros::model;
 use near_primitives_core::{hash::CryptoHash, types::BlockHeight};
 
 use super::light_client_block::{LightClientBlockView, TryFromLightClientBlockView};
@@ -7,7 +8,8 @@ use crate::{
     near::types::{MerklePath, TryFromMerklePathItemError},
 };
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[model(proto(raw(protos::union::ibc::lightclients::near::v1::Header), into, from))]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct Header {
     pub new_state: LightClientBlockView,
     pub trusted_height: BlockHeight,

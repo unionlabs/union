@@ -1,4 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
+use macros::model;
 use near_primitives_core::{
     hash::CryptoHash,
     types::{BlockHeight, MerkleHash},
@@ -6,16 +7,12 @@ use near_primitives_core::{
 
 use crate::{errors::MissingField, near::types::EpochId};
 
-#[derive(
-    PartialEq,
-    Eq,
-    Debug,
-    Clone,
-    BorshDeserialize,
-    BorshSerialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::near::v1::BlockHeaderInnerLiteView),
+    into,
+    from
+))]
+#[derive(Eq, BorshDeserialize, BorshSerialize)]
 pub struct BlockHeaderInnerLiteView {
     pub height: BlockHeight,
     pub epoch_id: CryptoHash,
