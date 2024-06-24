@@ -20,7 +20,7 @@ use queue_msg::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
 // use tokio_postgres::{types::Json, NoTls};
-use tracing::{debug, info_span, trace, Instrument};
+use tracing::{debug, debug_span, info_span, trace, Instrument};
 
 // pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 
@@ -326,7 +326,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
             DELETE FROM
               optimize
             WHERE
-              id = (
+              id = ANY(
                 SELECT
                   id
                 FROM
@@ -335,7 +335,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
                   id ASC
                 FOR UPDATE
                   SKIP LOCKED
-                LIMIT 1)
+              )
             RETURNING
               id,
               parents,
@@ -364,7 +364,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
             ready,
         } = optimizer
             .run_pass(msgs.clone())
-            .instrument(info_span!(
+            .instrument(debug_span!(
                 "optimizing items",
                 ids = ids
                     .iter()

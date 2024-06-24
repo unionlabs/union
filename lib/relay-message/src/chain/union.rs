@@ -212,7 +212,7 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
-    info!("submitting prove request");
+    debug!("submitting prove request");
 
     let response =
         union_prover_api_client::UnionProverApiClient::connect(hc.inner().prover_endpoint.clone())
@@ -226,10 +226,10 @@ where
             .await
             .map(|x| x.into_inner().try_into().unwrap());
 
-    info!("submitted prove request");
+    debug!("submitted prove request");
 
     let retry = || {
-        info!("proof pending, retrying in 3 seconds");
+        debug!("proof pending");
 
         seq([
             // REVIEW: How long should we wait between polls?

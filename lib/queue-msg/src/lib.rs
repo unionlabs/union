@@ -311,7 +311,7 @@ impl<T: QueueMessage> Op<T> {
                     // if we haven't hit the time yet, requeue the defer msg
                     if now() < seconds {
                         // TODO: Make the time configurable?
-                        sleep(Duration::from_secs(1)).await;
+                        sleep(Duration::from_millis(10)).await;
 
                         Ok(Some(defer_absolute(seconds)))
                     } else {

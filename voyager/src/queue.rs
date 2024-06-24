@@ -331,18 +331,18 @@ impl Voyager {
             let q = self.queue.clone();
 
             join_set.spawn(Box::pin(async move {
-                let passes = (
-                    Normalize::default(),
-                    (
-                        TxBatch {
-                            size_limit: self.max_batch_size,
-                        },
-                        FinalPass,
-                    ),
-                );
+                // let passes = (
+                //     Normalize::default(),
+                //     (
+                //         TxBatch {
+                //             size_limit: self.max_batch_size,
+                //         },
+                //         FinalPass,
+                //     ),
+                // );
 
                 engine
-                    .run(&q, &passes)
+                    .run(&q, &Normalize::default())
                     .try_for_each(|data| async move {
                         info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
 
@@ -355,20 +355,26 @@ impl Voyager {
         join_set.spawn(async move {
             let q = self.queue.clone();
 
+            let passes = (
+                Normalize::default(),
+                (
+                    TxBatch {
+                        max_batch_size: self.max_batch_size,
+                        min_batch_size: 1.try_into().unwrap(),
+                    },
+                    FinalPass,
+                ),
+            );
+
             loop {
                 debug!("optimizing");
 
-                q.optimize(&Pure(NormalizeFinal::default()))
-                    .await
-                    .map_err(|e| {
-                        e.map_either::<_, _, BoxDynError, BoxDynError>(
-                            |x| Box::new(x),
-                            |x| Box::new(x),
-                        )
+                q.optimize(&Pure(passes.clone())).await.map_err(|e| {
+                    e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
                         .into_inner()
-                    })?;
+                })?;
 
-                // tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                // tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
             }
         });
 
