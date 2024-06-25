@@ -31,8 +31,8 @@ let transfers = createQuery({
 
 let chains = chainsQuery()
 
-let transfersData = derived([transfers, chains], ([$transfers, $chains]) => {
-  if (!($transfers.isSuccess && $chains.isSuccess)) return []
+let processedTransfers = derived([transfers, chains], ([$transfers, $chains]) => {
+  if (!$transfers.data || !$chains.data) return undefined
   return $transfers.data.map(tx => {
     let destinationChainId = tx.destination_chain_id
     let receiver = tx.receiver
@@ -101,8 +101,8 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-{#if !!$transfers.data}
-  <Table bind:dataStore={transfersData} {columns} onClick={(x) => {
+{#if !!$transfers.data && !!$processedTransfers}
+  <Table bind:dataStore={processedTransfers} {columns} onClick={(x) => {
     // @ts-ignore
     goto(`/explorer/transfers/${x.source_transaction_hash}`)
   }}/>
