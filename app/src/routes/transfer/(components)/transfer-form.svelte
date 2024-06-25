@@ -3,10 +3,10 @@ import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import { sepolia, berachainTestnetbArtio } from "viem/chains"
 import Chevron from "./chevron.svelte"
-import { UnionClient } from "@union/client"
+import { UnionClient, createCosmosSdkClient, cosmosHttp } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
-import { getWalletClient } from "@wagmi/core"
+import { getConnectorClient, getWalletClient } from "@wagmi/core"
 import { type Writable, writable, derived } from "svelte/store"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
 import type { OfflineSigner } from "@leapwallet/types"
@@ -55,6 +55,7 @@ import {
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
+import Label from "$lib/components/ui/label/label.svelte"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 
@@ -189,6 +190,78 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
       receiver
     }
   })
+}
+
+$: transactionEstimatePayloadComplete =
+  !!amount &&
+  $asset?.address &&
+  $asset?.address?.length > 0 &&
+  $toChainId.length > 0 &&
+  !!$recipient &&
+  $recipient.length > 0 &&
+  $assetSymbol.length > 0 &&
+  $fromChainId.length > 0 &&
+  balanceCoversAmount
+
+let transactionGasCost = writable(0n)
+$: amount.length === 0 && transactionGasCost.set(0n)
+
+let gasCostText = derived(transactionGasCost, $transactionGasCost =>
+  $transactionGasCost === 0n ? "" : `Gas cost: ${$transactionGasCost} ${$assetSymbol}`
+)
+
+async function getTransactionEstimateCost() {
+  if (!($fromChain?.rpc_type && $toChain?.chain_id && $recipient && $asset?.address)) return
+  if (typeof window === "undefined" || typeof window.ethereum === "undefined") return
+  const cosmosOfflineSigner = (
+    $cosmosStore.connectedWallet === "keplr"
+      ? window?.keplr?.getOfflineSigner($fromChainId, {
+          disableBalanceCheck: false
+        })
+      : window.leap
+        ? window.leap.getOfflineSigner($fromChainId, {
+            disableBalanceCheck: false
+          })
+        : undefined
+  ) as OfflineSigner
+  let supported = getSupportedAsset($fromChain, $asset.address)
+  let decimals = supported?.decimals ?? 0
+  let parsedAmount = parseUnits(amount, decimals)
+  const connectorClient = await getConnectorClient(config)
+  const unionClient = createCosmosSdkClient({
+    evm: {
+      chain: connectorClient.chain,
+      account: connectorClient.account,
+      transport: custom(window.ethereum)
+    },
+    cosmos: {
+      account: cosmosOfflineSigner,
+      gasPrice: { amount: "0.025", denom: "muno" },
+      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+    }
+  })
+  const denomAddress = $fromChain.rpc_type === "cosmos" ? $assetSymbol : $asset.address.toString()
+  const gasRequest = await unionClient.simulateTransaction({
+    network: $fromChain.rpc_type,
+    recipient: $recipient,
+    amount: parsedAmount,
+    cosmosSigner: cosmosOfflineSigner,
+    denomAddress: denomAddress as Address,
+    evmSigner: connectorClient.account.address,
+    path: [$fromChain.chain_id, $toChain.chain_id],
+    memo: $ucs01Configuration?.pfmMemo ?? undefined,
+    sourcePort: $ucs01Configuration?.ucs1_configuration?.port,
+    sourceChannel: $ucs01Configuration?.ucs1_configuration.channel_id,
+    relayContractAddress: $ucs01Configuration?.ucs1_configuration.contract_address
+  })
+
+  console.info(JSON.stringify({ gasRequest }, undefined, 2))
+
+  transactionGasCost.set(BigInt(gasRequest.data))
+}
+
+$: if (transactionEstimatePayloadComplete) {
+  getTransactionEstimateCost()
 }
 
 const transfer = async () => {
@@ -351,7 +424,11 @@ const transfer = async () => {
         })
       } catch (error) {
         if (error instanceof Error) {
-          transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash: $transferState.hash, error })
+          transferState.set({
+            kind: "AWAITING_APPROVAL_RECEIPT",
+            hash: $transferState.hash,
+            error
+          })
         }
         return
       }
@@ -677,123 +754,129 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 })
 </script>
 
-
-<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+<div
+  class={cn(
+    'size-full duration-1000	 transition-colors bg-background',
+    $transferState.kind !== 'PRE_TRANSFER' ? 'bg-black/60' : '',
+  )}
+></div>
 <div class="cube-scene">
-  <div class={cn("cube", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
+  <div class={cn('cube', $transferState.kind !== 'PRE_TRANSFER' ? 'cube--flipped' : '')}>
     <Card.Root class="cube-front">
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-    <Card.Content class={cn('flex flex-col gap-4')}>
-      <section>
-        <CardSectionHeading>From</CardSectionHeading>
-        <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
-          {$fromChain?.display_name}
-        </ChainButton>
+      <Card.Content class={cn('flex flex-col gap-4')}>
+        <section>
+          <CardSectionHeading>From</CardSectionHeading>
+          <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
+            {$fromChain?.display_name}
+          </ChainButton>
 
-        <div class="flex flex-col items-center pt-4 -mb-6">
-          <Button size="icon" variant="outline" on:click={swapChainsClick}>
-            <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
-          </Button>
-        </div>
-
-        <CardSectionHeading>To</CardSectionHeading>
-        <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
-          {$toChain?.display_name}
-        </ChainButton>
-      </section>
-      <section>
-        <CardSectionHeading>Asset</CardSectionHeading>
-        {#if $sendableBalances === null}
-          Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-        {:else if $sendableBalances.length === 0}
-          You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
-        {:else}
-          <Button
-            class="w-full"
-            variant="outline"
-            on:click={() => (dialogOpenToken = !dialogOpenToken)}
-          >
-            <div class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</div>
-
-            <Chevron />
-          </Button>
-        {/if}
-        {#if $assetSymbol !== '' && $sendableBalances !== null}
-          <div class="mt-4 text-xs text-muted-foreground">
-            <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
-            <Precise chain={$fromChain} asset={$asset} showToolTip/>
-<!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
+          <div class="flex flex-col items-center pt-4 -mb-6">
+            <Button size="icon" variant="outline" on:click={swapChainsClick}>
+              <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
+            </Button>
           </div>
-        {/if}
-      </section>
 
-      <section>
-        <CardSectionHeading>Amount</CardSectionHeading>
-        <Input
-          disabled={
-          !$asset
-          }
-          minlength={1}
-          maxlength={64}
-          placeholder="0.00"
-          autocorrect="off"
-          autocomplete="off"
-          spellcheck="false"
-          bind:value={amount}
-          autocapitalize="none"
-          pattern="^[0-9]*[.,]?[0-9]*$"
-          class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
-        />
-      </section>
-      <section>
-        <CardSectionHeading>Recipient</CardSectionHeading>
-        <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
-      </section>
-    </Card.Content>
-    <Card.Footer class="flex flex-col gap-4 items-start">
-      <Button
-        type="button"
-        disabled={!amount ||
-          !$asset ||
-          !$toChainId ||
-          !$recipient ||
-          !$assetSymbol ||
-          !$fromChainId ||
-          // >= because need some sauce for gas
-          !balanceCoversAmount
-          }
-        on:click={async event => {
-          event.preventDefault()
-          transferState.set({ kind: "FLIPPING" })
-          await sleep(1200)
-          transfer()
-        }}
-      >
-        {buttonText}
-      </Button>
-    </Card.Footer>
+          <CardSectionHeading>To</CardSectionHeading>
+          <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
+            {$toChain?.display_name}
+          </ChainButton>
+        </section>
+        <section>
+          <CardSectionHeading>Asset</CardSectionHeading>
+          {#if $sendableBalances === null}
+            Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+          {:else if $sendableBalances.length === 0}
+            You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
+          {:else}
+            <Button
+              class="w-full"
+              variant="outline"
+              on:click={() => (dialogOpenToken = !dialogOpenToken)}
+            >
+              <div class="flex-1 text-left">
+                {truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}
+              </div>
+
+              <Chevron />
+            </Button>
+          {/if}
+          {#if $assetSymbol !== '' && $sendableBalances !== null}
+            <div class="mt-4 text-xs text-muted-foreground">
+              <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b>
+              balance on <b>{$fromChain?.display_name}</b> is
+              <Precise chain={$fromChain} asset={$asset} showToolTip />
+              <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
+            </div>
+          {/if}
+        </section>
+
+        <section>
+          <CardSectionHeading>Amount</CardSectionHeading>
+          <Input
+            disabled={!$asset}
+            minlength={1}
+            maxlength={64}
+            placeholder="0.00"
+            autocorrect="off"
+            autocomplete="off"
+            spellcheck="false"
+            bind:value={amount}
+            autocapitalize="none"
+            pattern="^[0-9]*[.,]?[0-9]*$"
+            class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
+          />
+        </section>
+        <section>
+          <CardSectionHeading>Recipient</CardSectionHeading>
+          <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
+        </section>
+      </Card.Content>
+      <Card.Footer class="flex flex-col gap-4 items-start">
+        <Label>{$gasCostText}</Label>
+        <Button
+          type="button"
+          disabled={!amount ||
+            !$asset ||
+            !$toChainId ||
+            !$recipient ||
+            !$assetSymbol ||
+            !$fromChainId ||
+            // >= because need some sauce for gas
+            !balanceCoversAmount}
+          on:click={async event => {
+            event.preventDefault()
+            transferState.set({ kind: 'FLIPPING' })
+            await sleep(1200)
+            transfer()
+          }}
+        >
+          {buttonText}
+        </Button>
+      </Card.Footer>
     </Card.Root>
 
     <Card.Root class="cube-back p-6">
-      <Stepper steps={stepperSteps} onRetry={() => {
-        transferState.update(ts => {
-          // @ts-ignore
-          ts.error = undefined; 
-          return ts
-        });
+      <Stepper
+        steps={stepperSteps}
+        onRetry={() => {
+          transferState.update(ts => {
+            // @ts-ignore
+            ts.error = undefined
+            return ts
+          })
 
-        transfer()
-      }}/>
+          transfer()
+        }}
+      />
     </Card.Root>
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
+    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">
+      UNION UNION UNION UNION UNION UNION UNION UNION
+    </div>
   </div>
 </div>
-
-
-
-
 
 <ChainDialog
   kind="from"
@@ -826,9 +909,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   />
 {/if}
 
-
 <style global lang="postcss">
-
   .cube-scene {
     @apply absolute -my-6 py-6 z-20;
     top: calc(50% - (var(--height) / 2));
@@ -852,10 +933,10 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 
   .cube--flipped {
     transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-
   }
 
-  .cube-front, .cube-back {
+  .cube-front,
+  .cube-back {
     @apply absolute overflow-auto;
 
     width: var(--width);
@@ -875,7 +956,6 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     transform: translateZ(calc(var(--depth) * 0.5));
   }
   .cube-back {
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg) ;
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
   }
-
 </style>
