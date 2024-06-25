@@ -31,10 +31,25 @@ struct Token {
 }
 
 struct RelayPacket {
+    // This is a convenient addition to avoid having to shift the body by 1 byte to eliminate the tag.
+    uint8 tag;
     bytes sender;
     bytes receiver;
     Token[] tokens;
     string extension;
+}
+
+struct TokenMetadata {
+    string denom;
+    string name;
+    string symbol;
+    uint8 decimals;
+}
+
+struct UpdateMetadataPacket {
+    // This is a convenient addition to avoid having to shift the body by 1 byte to eliminate the tag.
+    uint8 tag;
+    TokenMetadata[] tokensMetadata;
 }
 
 interface IRelay is IIBCModule {
@@ -67,6 +82,9 @@ library RelayLib {
     error ErrInvalidProtocolVersion();
     error ErrInvalidProtocolOrdering();
     error ErrInvalidCounterpartyProtocolVersion();
+    error ErrDenomNotFound();
+    error ErrUnknownPacketTag();
+    error ErrInvalidMetadataTimeout();
     error ErrUnstoppable();
 
     IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
@@ -75,6 +93,9 @@ library RelayLib {
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
+
+    uint8 public constant PACKET_TAG_RELAY = 0;
+    uint8 public constant PACKET_TAG_UPDATE_METADATA = 1;
 
     event DenomCreated(
         uint64 indexed packetSequence,
@@ -108,6 +129,26 @@ library RelayLib {
         string denom,
         address indexed token,
         uint256 amount
+    );
+
+    event TokenMetadataUpdate(
+        uint64 packetSequence,
+        string channelId,
+        address indexed token,
+        string indexed denom,
+        string name,
+        string symbol,
+        uint8 decimals
+    );
+
+    event TokenMetadataUpdated(
+        uint64 packetSequence,
+        string channelId,
+        address indexed token,
+        string indexed denom,
+        string name,
+        string symbol,
+        uint8 decimals
     );
 
     function isValidVersion(string memory version)
@@ -158,7 +199,11 @@ library RelayPacketLib {
         returns (bytes memory)
     {
         return abi.encode(
-            packet.sender, packet.receiver, packet.tokens, packet.extension
+            packet.tag,
+            packet.sender,
+            packet.receiver,
+            packet.tokens,
+            packet.extension
         );
     }
 
@@ -175,6 +220,28 @@ library RelayPacketLib {
     }
 }
 
+library UpdateMetadataPacketLib {
+    function encode(UpdateMetadataPacket memory packet)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(packet.tag, packet.tokensMetadata);
+    }
+
+    function decode(bytes calldata stream)
+        internal
+        pure
+        returns (UpdateMetadataPacket calldata)
+    {
+        UpdateMetadataPacket calldata packet;
+        assembly {
+            packet := stream.offset
+        }
+        return packet;
+    }
+}
+
 contract UCS01Relay is
     IBCAppBase,
     IRelay,
@@ -184,17 +251,19 @@ contract UCS01Relay is
     PausableUpgradeable
 {
     using RelayPacketLib for RelayPacket;
+    using UpdateMetadataPacketLib for UpdateMetadataPacket;
     using LibString for *;
     using strings for *;
 
     IIBCPacket private ibcHandler;
-
     // A mapping from remote denom to local ERC20 wrapper.
     mapping(string => mapping(string => address)) private denomToAddress;
     // A mapping from a local ERC20 wrapper to the remote denom.
     // Required to determine whether an ERC20 token is originating from a remote chain.
     mapping(string => mapping(address => string)) private addressToDenom;
     mapping(string => mapping(address => uint256)) private outstanding;
+    // Max number of a seconds for a metadata update packet to timeout.
+    uint64 updateMetadataMaxTimeout;
 
     constructor() {
         _disableInitializers();
@@ -206,6 +275,14 @@ contract UCS01Relay is
     ) public initializer {
         __Ownable_init(admin);
         ibcHandler = _ibcHandler;
+        updateMetadataMaxTimeout = 3600;
+    }
+
+    function setUpdateMetadataMaxTimeout(uint64 _updateMetadataMaxTimeout)
+        public
+        onlyOwner
+    {
+        updateMetadataMaxTimeout = _updateMetadataMaxTimeout;
     }
 
     function ibcAddress() public view virtual override returns (address) {
@@ -246,6 +323,50 @@ contract UCS01Relay is
         uint256 amount
     ) internal {
         outstanding[sourceChannel][token] -= amount;
+    }
+
+    // Dispatch a metadata update for the given tokens.
+    // The message will be handled by the counterparty protocol to update wrapped assets metadata.
+    function sendMetadataUpdate(
+        string calldata sourceChannel,
+        address[] calldata tokens,
+        uint64 timeoutTimestamp
+    ) public {
+        uint64 currentTimestamp = uint64(block.timestamp) * 1e9;
+        if (timeoutTimestamp - currentTimestamp > updateMetadataMaxTimeout) {
+            revert RelayLib.ErrInvalidMetadataTimeout();
+        }
+        uint256 tokensLength = tokens.length;
+        TokenMetadata[] memory tokensMetadata =
+            new TokenMetadata[](tokens.length);
+        for (uint256 i; i < tokensLength; i++) {
+            IERC20Denom token = IERC20Denom(tokens[i]);
+            tokensMetadata[i].denom = address(token).toHexString();
+            tokensMetadata[i].name = token.name();
+            tokensMetadata[i].symbol = token.symbol();
+            tokensMetadata[i].decimals = token.decimals();
+        }
+        UpdateMetadataPacket memory packet = UpdateMetadataPacket({
+            tag: RelayLib.PACKET_TAG_UPDATE_METADATA,
+            tokensMetadata: tokensMetadata
+        });
+        uint64 packetSequence = ibcHandler.sendPacket(
+            sourceChannel,
+            IbcCoreClientV1Height.Data({revision_number: 0, revision_height: 0}),
+            timeoutTimestamp,
+            packet.encode()
+        );
+        for (uint256 i; i < tokensLength; i++) {
+            emit RelayLib.TokenMetadataUpdate(
+                packetSequence,
+                sourceChannel,
+                tokens[i],
+                tokensMetadata[i].denom,
+                tokensMetadata[i].name,
+                tokensMetadata[i].symbol,
+                tokensMetadata[i].decimals
+            );
+        }
     }
 
     // Internal function
@@ -295,6 +416,7 @@ contract UCS01Relay is
             normalizedTokens[i].amount = localToken.amount;
         }
         RelayPacket memory packet = RelayPacket({
+            tag: RelayLib.PACKET_TAG_RELAY,
             sender: abi.encodePacked(msg.sender),
             receiver: receiver,
             tokens: normalizedTokens,
@@ -355,13 +477,59 @@ contract UCS01Relay is
         }
     }
 
-    function onRecvPacketProcessing(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address
-    ) public {
-        if (msg.sender != address(this)) {
-            revert RelayLib.ErrUnauthorized();
+    function onRecvUpdateMetadataPacket(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket
+    ) internal {
+        UpdateMetadataPacket calldata packet =
+            UpdateMetadataPacketLib.decode(ibcPacket.data);
+        uint256 packetTokensMetadataLength = packet.tokensMetadata.length;
+        for (uint256 i; i < packetTokensMetadataLength; i++) {
+            TokenMetadata calldata tokenMetadata = packet.tokensMetadata[i];
+            string memory denom = RelayLib.makeForeignDenom(
+                ibcPacket.destination_port,
+                ibcPacket.destination_channel,
+                tokenMetadata.denom
+            );
+            address denomAddress = getOrCreateWrapper(
+                ibcPacket.sequence,
+                ibcPacket.destination_channel,
+                denom
+            );
+            IERC20Denom(denomAddress).update(
+                tokenMetadata.name, tokenMetadata.symbol, tokenMetadata.decimals
+            );
+            emit RelayLib.TokenMetadataUpdated(
+                ibcPacket.sequence,
+                ibcPacket.destination_channel,
+                denomAddress,
+                tokenMetadata.denom,
+                tokenMetadata.name,
+                tokenMetadata.symbol,
+                tokenMetadata.decimals
+            );
         }
+    }
+
+    function getOrCreateWrapper(
+        uint64 packetSequence,
+        string memory sourceChannel,
+        string memory denom
+    ) internal returns (address) {
+        address denomAddress = denomToAddress[sourceChannel][denom];
+        if (denomAddress == address(0)) {
+            denomAddress = address(new ERC20Denom{salt: keccak256(bytes(denom))}(denom));
+            denomToAddress[sourceChannel][denom] = denomAddress;
+            addressToDenom[sourceChannel][denomAddress] = denom;
+            emit RelayLib.DenomCreated(
+                packetSequence, sourceChannel, denom, denomAddress
+            );
+        }
+        return denomAddress;
+    }
+
+    function onRecvRelayPacket(IbcCoreChannelV1Packet.Data calldata ibcPacket)
+        internal
+    {
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.source_port, ibcPacket.source_channel
@@ -369,18 +537,14 @@ contract UCS01Relay is
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
-            strings.slice memory denomSlice = token.denom.toSlice();
-            // This will trim the denom in-place IFF it is prefixed
-            strings.slice memory trimedDenom =
-                denomSlice.beyond(prefix.toSlice());
             address receiver = RelayLib.bytesToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
-            if (!denomSlice.equals(token.denom.toSlice())) {
+            if (token.denom.startsWith(prefix)) {
                 // In this branch the token was originating from
                 // this chain as it was prefixed by the local channel/port.
                 // We need to unescrow the amount.
-                denom = trimedDenom.toString();
+                denom = token.denom.toSlice().beyond(prefix.toSlice()).toString();
                 // It's an ERC20 string 0x prefixed hex address
                 denomAddress = Hex.hexToAddress(denom);
                 // The token must be outstanding.
@@ -396,21 +560,9 @@ contract UCS01Relay is
                     ibcPacket.destination_channel,
                     token.denom
                 );
-                denomAddress =
-                    denomToAddress[ibcPacket.destination_channel][denom];
-                if (denomAddress == address(0)) {
-                    denomAddress = address(new ERC20Denom(token.denom));
-                    denomToAddress[ibcPacket.destination_channel][denom] =
-                        denomAddress;
-                    addressToDenom[ibcPacket.destination_channel][denomAddress]
-                    = denom;
-                    emit RelayLib.DenomCreated(
-                        ibcPacket.sequence,
-                        ibcPacket.source_channel,
-                        denom,
-                        denomAddress
-                    );
-                }
+                denomAddress = getOrCreateWrapper(
+                    ibcPacket.sequence, ibcPacket.destination_channel, denom
+                );
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             }
             emit RelayLib.Received(
@@ -422,6 +574,23 @@ contract UCS01Relay is
                 denomAddress,
                 token.amount
             );
+        }
+    }
+
+    function onRecvPacketProcessing(
+        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        address
+    ) public {
+        if (msg.sender != address(this)) {
+            revert RelayLib.ErrUnauthorized();
+        }
+        uint8 tag = abi.decode(ibcPacket.data, (uint8));
+        if (tag == RelayLib.PACKET_TAG_RELAY) {
+            onRecvRelayPacket(ibcPacket);
+        } else if (tag == RelayLib.PACKET_TAG_UPDATE_METADATA) {
+            onRecvUpdateMetadataPacket(ibcPacket);
+        } else {
+            revert RelayLib.ErrUnknownPacketTag();
         }
     }
 
@@ -463,13 +632,16 @@ contract UCS01Relay is
         ) {
             revert RelayLib.ErrInvalidAcknowledgement();
         }
-        // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
-            refundTokens(
-                ibcPacket.sequence,
-                ibcPacket.source_channel,
-                RelayPacketLib.decode(ibcPacket.data)
-            );
+            uint8 tag = abi.decode(ibcPacket.data, (uint8));
+            // Counterparty failed to execute the transfer, we refund.
+            if (tag == RelayLib.PACKET_TAG_RELAY) {
+                refundTokens(
+                    ibcPacket.sequence,
+                    ibcPacket.source_channel,
+                    RelayPacketLib.decode(ibcPacket.data)
+                );
+            }
         }
     }
 
@@ -477,11 +649,14 @@ contract UCS01Relay is
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
-        refundTokens(
-            ibcPacket.sequence,
-            ibcPacket.source_channel,
-            RelayPacketLib.decode(ibcPacket.data)
-        );
+        uint8 tag = abi.decode(ibcPacket.data, (uint8));
+        if (tag == RelayLib.PACKET_TAG_RELAY) {
+            refundTokens(
+                ibcPacket.sequence,
+                ibcPacket.source_channel,
+                RelayPacketLib.decode(ibcPacket.data)
+            );
+        }
     }
 
     function onChanOpenInit(

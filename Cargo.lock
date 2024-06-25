@@ -6252,6 +6252,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-derive"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+]
+
+[[package]]
 name = "num-format"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9446,7 +9457,7 @@ source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a
 dependencies = [
  "bytes",
  "flex-error",
- "num-derive",
+ "num-derive 0.3.3",
  "num-traits",
  "prost 0.12.6",
  "prost-types 0.12.3",
@@ -10379,6 +10390,8 @@ dependencies = [
  "cosmwasm-std 2.0.3",
  "ethabi",
  "go-parse-duration",
+ "num-derive 0.4.2",
+ "num-traits",
  "prost 0.12.6",
  "protos",
  "serde",

@@ -8,7 +8,12 @@ contract ERC20Denom is ERC20, IERC20Denom {
 
     address public admin;
 
-    constructor(string memory name) ERC20(name, name) {
+    // Metadata updated via UCS01 governance
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
+
+    constructor(string memory denomName) ERC20(denomName, denomName) {
         admin = msg.sender;
     }
 
@@ -24,5 +29,45 @@ contract ERC20Denom is ERC20, IERC20Denom {
             revert ERC20Unauthorized();
         }
         _burn(from, amount);
+    }
+
+    function update(
+        string calldata newName,
+        string calldata newSymbol,
+        uint8 newDecimals
+    ) external {
+        if (msg.sender != admin) {
+            revert ERC20Unauthorized();
+        }
+        _name = newName;
+        _symbol = newSymbol;
+        _decimals = newDecimals;
+    }
+
+    function name()
+        public
+        view
+        override(ERC20, IERC20Metadata)
+        returns (string memory)
+    {
+        return _name;
+    }
+
+    function symbol()
+        public
+        view
+        override(ERC20, IERC20Metadata)
+        returns (string memory)
+    {
+        return _symbol;
+    }
+
+    function decimals()
+        public
+        view
+        override(ERC20, IERC20Metadata)
+        returns (uint8)
+    {
+        return _decimals;
     }
 }

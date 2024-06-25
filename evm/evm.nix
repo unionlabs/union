@@ -278,9 +278,9 @@
           buildInputs = [ wrappedForge ];
           buildPhase = ''
             forge --version
-            FOUNDRY_PROFILE=script forge build --sizes
+            FOUNDRY_PROFILE=script forge build
           '';
-          doCheck = false;
+          doCheck = true;
           checkPhase = ''
             FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
           '';
