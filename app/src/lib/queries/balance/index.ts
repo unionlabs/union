@@ -28,9 +28,7 @@ export function userBalancesQuery({
           if (rpc === undefined) {
             raise(`no alchemy or routescan rpc available for chain ${chain.chain_id}`)
           }
-          // broken, should use the chains' rpcs
-          //
-          // const client = getClient(config)
+
           if (rpc.type === "alchemy") {
             const gasBalance = await evmGasBalance({
               url: rpc.url,
