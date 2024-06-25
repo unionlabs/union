@@ -250,13 +250,18 @@ async fn fetch_and_insert_blocks(
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
         match client.commit(min).await {
             Err(err) => {
+                debug!("encountered height-exceeded error");
                 if is_height_exceeded_error(&err) {
                     return Ok(None);
                 } else {
                     return Err(err.into());
                 }
             }
-            Ok(val) => Either::Right(std::iter::once(val.signed_header.header)),
+            Ok(val) if val.canonical => Either::Right(std::iter::once(val.signed_header.header)),
+            _ => {
+                debug!("encountered non-canonical header");
+                return Ok(None);
+            }
         }
     };
 
