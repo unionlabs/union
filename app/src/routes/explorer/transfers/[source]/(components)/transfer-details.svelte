@@ -135,6 +135,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
 
     const onSourceTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
     const onSource = (eventType: string) => onSourceTrace(eventType) !== undefined
+    const onHopTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.hop_chain_id)
+    const onHop = (eventType: string) => onHopTrace(eventType) !== undefined
     const onDestinationTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.destination_chain_id)
     const onDestination = (eventType: string) => onDestinationTrace(eventType) !== undefined
 
@@ -146,7 +148,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
     const hopChainName = toDisplayName(transfer.hop_chain_id, chains);
     const destinationChainName = toDisplayName(transfer.destination_chain_id, chains);
 
-    const onHopTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.hop_chain_id)
 
     const traceDetails = (eventType: string, c: "source" | "hop" | "destination") => {
       let trace = c === "source" ? onSourceTrace(eventType) : c === "hop" ? onHopTrace(eventType) : c === "destination" ? onDestinationTrace(eventType) : undefined;
@@ -175,38 +176,125 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
       return [
         {
           status: onSource("SEND_PACKET") ? "COMPLETED" : 
-                  "IN_PROGRESS",
+            "IN_PROGRESS",
           title: `Send Packet`,
           description: `Sent on time at height with hash`,
           traceDetails: traceDetails("SEND_PACKET", "source")
         },
-        {
-          status: onDestination("LIGHTCLIENT_UPDATE") ?  "COMPLETED" : 
-                  onSource("SEND_PACKET") ? "IN_PROGRESS" : 
-                  "PENDING",
-          title: `Light Client Update`,
-          traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
-        },
-        {
-          status: onDestination("RECEIVE_PACKET") ? "COMPLETED" : 
-                  onSource("SEND_PACKET") && onDestination("LIGHTCLIENT_UPDATE") ? "IN_PROGRESS" : 
-                  "PENDING",
-          title: `Receive Packet`,
-          traceDetails: traceDetails("RECEIVE_PACKET", "destination")
-        },
-        {
-          status: onSource("ACKNOWLEDGE_PACKET") ? "COMPLETED" :
-                  onSource("SEND_PACKET") && onDestination("LIGHTCLIENT_UPDATE") && onDestination("RECEIVE_PACKET") ? "IN_PROGRESS" : 
-                  "PENDING",
-          title: `Acknowledge Packet`,
-          description: ``,
-          traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "source")
-        },
+        (() => { 
+          let status = onDestination("LIGHTCLIENT_UPDATE") ?  "COMPLETED" : 
+             onSource("SEND_PACKET") ? "IN_PROGRESS" : 
+             "PENDING" 
+          return {
+            status,
+            title: `Light Client Update`,
+            description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
+            traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
+          }
+        })(),
+        (() => { 
+          let status = onDestination("RECEIVE_PACKET") ? "COMPLETED" : 
+            onDestination("LIGHTCLIENT_UPDATE") ? "IN_PROGRESS" : 
+            "PENDING";
+          return {
+            status,
+            title: `Receive Packet`,
+            traceDetails: traceDetails("RECEIVE_PACKET", "destination")
+          }
+        })(),
+        (() => { 
+          let status = onSource("ACKNOWLEDGE_PACKET") ? "COMPLETED" :
+            onDestination("RECEIVE_PACKET") ? "IN_PROGRESS" : 
+            "PENDING"
+          return {
+            status,
+            title: `Acknowledge Packet`,
+            traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "source")
+          }
+        })(),
       ];
     }
 
 
     return [
+        {
+          status: onSource("SEND_PACKET") ? "COMPLETED" : "IN_PROGRESS",
+          title: `Send Packet`,
+          description: `Sent on time at height with hash`,
+          traceDetails: traceDetails("SEND_PACKET", "source")
+        },
+        (() => { 
+          let status = onHop("LIGHTCLIENT_UPDATE") ?  "COMPLETED" : 
+                       onSource("SEND_PACKET") ? "IN_PROGRESS" : 
+             "PENDING" 
+          return {
+            status,
+            title: `Hop: Light Client Update`,
+            description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
+            traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "hop")
+          }
+        })(),
+        (() => { 
+          let status = onHop("RECEIVE_PACKET") ? "COMPLETED" : 
+                       onHop("LIGHTCLIENT_UPDATE") ? "IN_PROGRESS" : 
+            "PENDING";
+          return {
+            status,
+            title: `Hop: Receive Packet`,
+            traceDetails: traceDetails("RECEIVE_PACKET", "hop")
+          }
+        })(),
+        (() => { 
+          let status = onHop("SEND_PACKET") ? "COMPLETED" : 
+                       onHop("RECEIVE_PACKET") ? "IN_PROGRESS" : 
+            "PENDING";
+          return {
+            status,
+            title: `Hop: Send Packet`,
+            traceDetails: traceDetails("SEND_PACKET", "hop")
+          }
+        })(),
+        (() => { 
+          let status = onDestination("LIGHTCLIENT_UPDATE") ?  "COMPLETED" : 
+                       onHop("SEND_PACKET") ? "IN_PROGRESS" : 
+             "PENDING" 
+          return {
+            status,
+            title: `Light Client Update`,
+            description: status === "IN_PROGRESS" ? `Waiting on ${hopChainName} finality` : "",
+            traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
+          }
+        })(),
+        (() => { 
+          let status = onDestination("RECEIVE_PACKET") ? "COMPLETED" : 
+                       onDestination("LIGHTCLIENT_UPDATE") ? "IN_PROGRESS" : 
+            "PENDING";
+          return {
+            status,
+            title: `Receive Packet`,
+            traceDetails: traceDetails("RECEIVE_PACKET", "destination")
+          }
+        })(),
+        (() => { 
+          let status = onHop("ACKNOWLEDGE_PACKET") ? "COMPLETED" :
+                  onDestination("RECEIVE_PACKET") ? "IN_PROGRESS" : 
+            "PENDING"
+          return {
+            status,
+            title: `Hop: Acknowledge Packet`,
+            traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "hop")
+          }
+        })(),
+        (() => { 
+          let status = onSource("ACKNOWLEDGE_PACKET") ? "COMPLETED" :
+                  onHop("ACKNOWLEDGE_PACKET") ? "IN_PROGRESS" : 
+            "PENDING"
+          return {
+            status,
+            title: `Acknowledge Packet`,
+            traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "source")
+          }
+        })(),
     
     ];
     
@@ -299,22 +387,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
       {@const traceSteps = $tracesSteps?.at(transferIndex) ?? null } 
       {#if pTrace && traceSteps }
         <Stepper steps={readable(traceSteps)}/>
-        {#each pTrace as trace}
-          {@const explorer = chains.find(c => c.chain_id === trace.chain?.chain_id)?.explorers?.at(0)}
-          <div>
-            {#if trace.timestamp}
-            <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {#if explorer !== undefined}<a class="underline" href={`${explorer.block_url}${trace.height}`}>{trace.height}</a>{:else}{trace.height}{/if}</p>
-            {/if}
-            <h3 class="text-md font-bold capitalize">{trace.type}</h3>
-            {#if trace.transaction_hash}
-              {#if explorer !== undefined}
-                <a href={`${explorer.tx_url}${trace.transaction_hash}`} class="block underline text-xs text-muted-foreground">{trace.transaction_hash}</a>
-              {:else}
-                <p class="text-xs text-muted-foreground">{trace.transaction_hash}</p>
-              {/if}
-            {/if}
-          </div>
-        {/each}
       {:else}
         <LoadingLogo/>
       {/if}
