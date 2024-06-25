@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, net::SocketAddr};
+use std::{collections::BTreeMap, net::SocketAddr, num::NonZeroUsize};
 
 use chain_utils::{AnyChain, AnyChainTryFromConfigError, ChainConfigType};
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,7 @@ pub struct VoyagerConfig {
     pub num_workers: u16,
     pub laddr: SocketAddr,
     pub queue: AnyQueueConfig,
+    pub max_batch_size: NonZeroUsize,
 }
 
 impl Config {

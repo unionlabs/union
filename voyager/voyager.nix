@@ -88,6 +88,10 @@
           default = "0.0.0.0:65534";
           example = "0.0.0.0:65534";
         };
+        max-batch-size = mkOption {
+          type = types.number;
+          example = 10;
+        };
       };
 
       config =
@@ -97,6 +101,7 @@
             voyager = {
               num_workers = cfg.workers;
               laddr = cfg.laddr;
+              max_batch_size = cfg.max-batch-size;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;
@@ -110,29 +115,29 @@
         in
         mkIf cfg.enable {
           systemd.services = {
-            voyager-migration = {
-              wantedBy = [ "multi-user.target" ];
-              after = [ "network.target" ];
-              description = "Voyager Migration";
-              serviceConfig = {
-                Type = "oneshot";
-                ExecStart = ''
-                  ${pkgs.lib.meta.getExe cfg.package} \
-                    --config-file-path ${configJson} \
-                    -l ${cfg.log-format} \
-                    run-migrations
-                '';
-              };
-              environment = {
-                RUST_LOG = "debug";
-                RUST_BACKTRACE = "full";
-              };
-            };
+            # voyager-migration = {
+            #   wantedBy = [ "multi-user.target" ];
+            #   after = [ "network.target" ];
+            #   description = "Voyager Migration";
+            #   serviceConfig = {
+            #     Type = "oneshot";
+            #     ExecStart = ''
+            #       ${pkgs.lib.meta.getExe cfg.package} \
+            #         --config-file-path ${configJson} \
+            #         -l ${cfg.log-format} \
+            #         run-migrations
+            #     '';
+            #   };
+            #   environment = {
+            #     RUST_LOG = "debug";
+            #     RUST_BACKTRACE = "full";
+            #   };
+            # };
             voyager = {
               wantedBy = [ "multi-user.target" ];
-              after = [ "voyager-migration.service" ];
-              partOf = [ "voyager-migration.service" ];
-              requires = [ "voyager-migration.service" ];
+              # after = [ "voyager-migration.service" ];
+              # partOf = [ "voyager-migration.service" ];
+              # requires = [ "voyager-migration.service" ];
               description = "Voyager";
               serviceConfig = {
                 Type = "simple";

@@ -10,7 +10,8 @@ const EMPTY_CHAINS: Array<Chain> = []
 
 let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   // this will never happen, but is needed to satisfy svelte's prop type checker
-  if (!$chains.isSuccess) return EMPTY_CHAINS
+  if ($chains.data === null || $chains.data === undefined || $chains.data === [])
+    return EMPTY_CHAINS
 
   return $chains.data.map(chain => {
     let display_name = ""
@@ -65,6 +66,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       rpcs: chain.rpcs,
       addr_prefix,
       testnet: !!chain.testnet,
+      explorers: chain.explorers,
       // this as statement should no longer be required in the next typescript release
       assets: chain.assets.filter(
         asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null

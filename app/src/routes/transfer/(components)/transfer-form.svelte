@@ -350,7 +350,7 @@ const transfer = async () => {
           address: ucs01address,
           args: [
             ucs1_configuration.channel_id,
-            userAddr.cosmos.normalized_prefixed,
+            userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
             [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
             pfmMemo ?? "", // memo
             { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },

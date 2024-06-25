@@ -49,7 +49,7 @@ use relay_message::{
     RelayMessage,
 };
 use serde::Serialize;
-use sqlx::{query_as, PgPool};
+use sqlx::query_as;
 use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
@@ -75,15 +75,15 @@ use crate::{
         HandshakeType, QueryCmd, SignerCmd, UtilCmd,
     },
     config::{Config, GetChainError},
-    queue::{
-        chains_from_config, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError,
-    },
+    queue::{chains_from_config, AnyQueueConfig, RunError, Voyager, VoyagerInitError},
 };
 
 pub mod cli;
 pub mod config;
 
 pub mod queue;
+
+pub mod passes;
 
 fn main() -> ExitCode {
     let args = AppArgs::parse();
@@ -600,24 +600,26 @@ async fn query(
     Ok(())
 }
 
-async fn run_migrations(voyager_config: Config) -> Result<(), VoyagerError> {
-    let AnyQueueConfig::PgQueue(PgQueueConfig { database_url, .. }) = voyager_config.voyager.queue
-    else {
-        return Err(VoyagerError::Migrations(
-            MigrationsError::IncorrectQueueConfig,
-        ));
-    };
+async fn run_migrations(_voyager_config: Config) -> Result<(), VoyagerError> {
+    // let AnyQueueConfig::PgQueue(PgQueueConfig { database_url, .. }) = voyager_config.voyager.queue
+    // else {
+    //     return Err(VoyagerError::Migrations(
+    //         MigrationsError::IncorrectQueueConfig,
+    //     ));
+    // };
 
-    let pool = PgPool::connect(&database_url)
-        .await
-        .map_err(MigrationsError::Sqlx)?;
+    // let pool = PgPool::connect(&database_url)
+    //     .await
+    //     .map_err(MigrationsError::Sqlx)?;
 
-    pg_queue::MIGRATOR
-        .run(&pool)
-        .await
-        .map_err(MigrationsError::Migrate)?;
+    // pg_queue::MIGRATOR
+    //     .run(&pool)
+    //     .await
+    //     .map_err(MigrationsError::Migrate)?;
 
-    Ok(())
+    // Ok(())
+
+    todo!()
 }
 
 fn print_json<T: Serialize>(t: &T) {

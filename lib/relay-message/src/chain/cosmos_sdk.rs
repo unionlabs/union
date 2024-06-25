@@ -5,7 +5,7 @@ use chain_utils::{
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
-use queue_msg::{data, defer_relative, effect, fetch, noop, seq, wait, Op};
+use queue_msg::{data, effect, fetch, noop, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
@@ -73,15 +73,16 @@ where
             async move {
                 let msgs = process_msgs(msg, signer, mk_create_client_states, mk_client_message);
 
+                let msg_count = msgs.len();
                 let msg_names = msgs
                     .iter()
                     .map(|x| &*x.type_url)
                     .collect::<Vec<_>>()
-                    .join(" ");
+                    .join(",");
 
                 let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
 
-                info!(%tx_hash, msgs = %msg_names, "cosmos tx");
+                info!(%tx_hash, batch_size = %msg_count, msgs = %msg_names, "cosmos tx");
 
                 Ok(())
             }
@@ -90,7 +91,8 @@ where
 
     match res {
         Some(res) => res.map(|()| noop()),
-        None => Ok(seq([defer_relative(3), effect(id(hc.chain_id(), msg))])),
+        // None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
+        None => Ok(effect(id(hc.chain_id(), msg))),
     }
 }
 
