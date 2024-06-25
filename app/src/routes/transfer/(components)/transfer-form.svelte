@@ -181,6 +181,8 @@ const transfer = async () => {
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
   if (!$recipient) return toast.error("Invalid recipient")
+  if (!userAddr.cosmos) return toast.error("No comsos wallet")
+  if (!userAddr.evm) return toast.error("No evm wallet ")
   if (!$ucs01Configuration)
     return toast.error(
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
@@ -426,6 +428,7 @@ onMount(() => {
 })
 
 $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
+  if(!$fromChainId) return
   const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
   const cosmosBalance = $userBalances[chainIndex]
   if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
@@ -688,7 +691,7 @@ const resetInput = () => {
           {#if $fromChain}
             {#if $sendableBalances === null}
               Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-            {:else if $sendableBalances.length === 0}
+            {:else if $sendableBalances && $sendableBalances.length === 0}
               You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
             {:else}
               <Button
@@ -698,7 +701,6 @@ const resetInput = () => {
               >
                 <div
                   class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</div>
-
                 <Chevron/>
               </Button>
             {/if}
