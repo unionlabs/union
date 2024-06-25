@@ -24,11 +24,11 @@ export const load = (loadEvent => ({
       icon: TransfersIcon,
       description: "All UCS-01 transfers"
     },
-    {
-      route: "blocks",
-      icon: BlocksIcon,
-      description: "Blocks from all chains indexed by Hubble"
-    },
+    // {
+    //   route: "blocks",
+    //   icon: BlocksIcon,
+    //   description: "Blocks from all chains indexed by Hubble"
+    // },
     {
       route: "connections",
       icon: ConnectionIcon,
