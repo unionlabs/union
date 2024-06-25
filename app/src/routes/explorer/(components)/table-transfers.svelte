@@ -8,6 +8,7 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { derived, writable } from "svelte/store"
 import CellAssets from "../(components)/cell-assets.svelte"
 import CellDuration from "../(components)/cell-duration-text.svelte"
+import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
 import { truncate } from "$lib/utilities/format"
 import { goto } from "$app/navigation"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
@@ -37,11 +38,17 @@ let transfers = createQuery({
       }
 
       return {
-        ...tx,
-        source: toDisplayName(tx.source_chain_id, chains),
-        destination: toDisplayName(destinationChainId, chains),
+        source: {
+          chain_display_name: toDisplayName(tx.source_chain_id, chains),
+          address: tx.sender || "unknown"
+        },
+        destination: {
+          chain_display_name: toDisplayName(tx.destination_chain_id, chains),
+          address: tx.receiver || "unknown"
+        },
+        assets: tx.assets,
         timestamp: tx.source_timestamp,
-        receiver
+        source_transaction_hash: tx.source_transaction_hash
       }
     })
 
@@ -55,25 +62,13 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
     accessorKey: "source",
     header: () => "Source",
     size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
   },
   {
     accessorKey: "destination",
     header: () => "Destination",
     size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "sender",
-    header: () => "Sender",
-    size: 200,
-    cell: info => truncate(info.getValue(), 8)
-  },
-  {
-    accessorKey: "receiver",
-    header: () => "Receiver",
-    size: 200,
-    cell: info => truncate(info.getValue(), 8)
+    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
   },
   {
     accessorKey: "assets",
