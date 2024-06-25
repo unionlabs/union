@@ -62,6 +62,10 @@ function hasInfoProperty(assets: Object) {
   return !!Object.values(assets)[0].info
 }
 
+function checkAndApply(rowData) {
+  return rowData ? hasInfoProperty(rowData) : false
+}
+
 onDestroy(unsubscribe)
 </script>
 
@@ -86,12 +90,31 @@ onDestroy(unsubscribe)
       </Table.Header>
       <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]] whitespace-nowrap`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
-          {@const isSupported = hasInfoProperty($rows[row.index].original.assets)}
-          {#if isSupported || $showUnsupported}
+          {@const containsAsset = $rows[row.index].original.assets}
+          {#if containsAsset}
+            {@const isSupported = hasInfoProperty(containsAsset)}
+            {#if $showUnsupported || isSupported}
+              <Table.Row
+                class={cn(onClick !== undefined ? 'cursor-pointer' : '',
+              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+              isSupported ? '' : 'opacity-50'
+
+            )}
+                on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
+              >
+                {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+                  <Table.Cell>
+                    <svelte:component
+                      this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    />
+                  </Table.Cell>
+                {/each}
+              </Table.Row>
+            {/if}
+          {:else}
             <Table.Row
               class={cn(onClick !== undefined ? 'cursor-pointer' : '',
               index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
-              isSupported ? '' : 'opacity-50'
             )}
               on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
             >
