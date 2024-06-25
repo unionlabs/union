@@ -210,7 +210,7 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
           {@const explorer = chains.find(c => c.chain_id === trace.chain?.chain_id)?.explorers?.at(0)}
           <div>
             {#if trace.timestamp}
-            <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {trace.height}</p>
+            <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {#if explorer !== undefined}<a class="underline" href={`${explorer.block_url}${trace.height}`}>{trace.height}</a>{:else}{trace.height}{/if}</p>
             {/if}
             <h3 class="text-md font-bold capitalize">{trace.type}</h3>
             {#if trace.transaction_hash}
