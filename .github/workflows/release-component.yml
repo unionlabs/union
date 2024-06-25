@@ -88,7 +88,7 @@ jobs:
           SYSTEM: ${{ matrix.system }}
         run: |
           mkdir "$SYSTEM"
-          nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$(jq -r '.packages."$SYSTEM"."$COMPONENT-image".outputs.out' result.json)" --extra-experimental-features nix-command
+          nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$(cat result.json | jq -r '.packages."$SYSTEM"."$COMPONENT-image".outputs.out')" --extra-experimental-features nix-command
           cat "$SYSTEM"/nar/*.nar.xz | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"-image
       - uses: actions/upload-artifact@v4
         with:
@@ -115,7 +115,7 @@ jobs:
         run: |
           mkdir "$SYSTEM"
           echo "Getting OUTPUT and NARINFO_NAME"
-          OUTPUT=$(jq -r '.packages."$SYSTEM"."$COMPONENT".outputs.out' result.json)
+          OUTPUT=$(cat result.json | jq -r '.packages."$SYSTEM"."$COMPONENT".outputs.out')
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
 
           echo "Copying $OUTPUT from nixbuild.net"
