@@ -105,7 +105,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: packages.${{ matrix.system }}.${{ needs.eval-tag.outputs.component }}
-      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nix-quick-install-action@v28
       - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -118,7 +118,7 @@ jobs:
           OUTPUT=$(jq -r '.packages."$SYSTEM"."$COMPONENT".outputs.out' result.json)
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
 
-          echo "Copying artifacts from nixbuild.net"
+          echo "Copying $OUTPUT from nixbuild.net"
           nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$OUTPUT" --extra-experimental-features nix-command
 
           echo "Get the NAR_URL"
