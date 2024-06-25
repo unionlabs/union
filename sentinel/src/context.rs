@@ -107,6 +107,7 @@ impl Context {
                             denom,
                             amount,
                             memo,
+                            interaction.max_retry,
                         )
                         .await;
                 }
@@ -119,6 +120,7 @@ impl Context {
                             denom,
                             amount,
                             memo,
+                            interaction.max_retry,
                         )
                         .await;
                 }
@@ -167,7 +169,9 @@ impl Context {
             loop {
                 interval.tick().await;
                 for ethereum in &ethereum_chains {
-                    for signer_middleware in &ethereum.signer_middlewares {
+                    for signer_middleware in &*ethereum.signer_middlewares {
+                        let signer_middleware = signer_middleware.lock().await;
+
                         let address = signer_middleware.address();
                         let provider: Arc<Provider<Ws>> = ethereum.rpc.provider.clone();
 
@@ -182,7 +186,7 @@ impl Context {
                             Ok(balance) => {
                                 if balance < min_balance {
                                     tracing::error!(
-                                        "[INSUFFICIENT BALANCE] Insufficient native balance for address {}. Balance: {}, Required: {}. Chain ID: {}",
+                                        "[INSUFFICIENT BALANCE] Insufficient native balance for address {:?}. Balance: {}, Required: {}. Chain ID: {}",
                                         address,
                                         balance,
                                         min_balance,
@@ -190,7 +194,7 @@ impl Context {
                                     );
                                 } else {
                                     tracing::info!(
-                                        "Sufficient ETH balance for address {}. Balance: {}, Required: {}",
+                                        "Sufficient ETH balance for address {:?}. Balance: {}, Required: {}",
                                         address,
                                         balance,
                                         min_balance
@@ -199,7 +203,7 @@ impl Context {
                             }
                             Err(e) =>
                                 tracing::error!(
-                                    "Error checking native balance for address {}. Required: {}. Error: {:?}",
+                                    "Error checking native balance for address {:?}. Required: {}. Error: {:?}",
                                     address,
                                     min_balance,
                                     e
@@ -293,6 +297,7 @@ impl Context {
                                     denom,
                                     amount,
                                     memo,
+                                    interaction.max_retry,
                                 )
                                 .await;
                         }
@@ -305,6 +310,7 @@ impl Context {
                                     denom,
                                     amount,
                                     memo,
+                                    interaction.max_retry,
                                 )
                                 .await;
                         }

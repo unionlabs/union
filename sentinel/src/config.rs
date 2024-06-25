@@ -58,6 +58,7 @@ pub struct IbcInteraction {
     pub memo: String,
     pub sending_memo_probability: f64,
     pub denoms: Vec<String>,
+    pub max_retry: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
