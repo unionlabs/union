@@ -7,7 +7,7 @@ import { cosmosHttp } from "#transport.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, type TransferAssetsParamters } from "#mod.ts"
+import { createCosmosSdkClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-union.ts --private-key "..."` */
 
@@ -50,7 +50,7 @@ try {
     denomAddress: "muno",
     path: ["union-testnet-8", "union-testnet-8"],
     recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-  } satisfies TransferAssetsParamters
+  } satisfies TransferAssetsParameters
 
   const gasEstimationResponse = await client.simulateTransaction(transferAssetsParameters)
   consola.info(`Gas cost: ${gasEstimationResponse.data}`)

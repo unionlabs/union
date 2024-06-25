@@ -6,7 +6,7 @@ import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { consola, timestamp } from "../scripts/logger.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParamters } from "#mod.ts"
+import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /**
  *
@@ -73,7 +73,7 @@ try {
     relayContractAddress: ucsConfiguration.contract_address,
     recipient: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
-  } satisfies TransferAssetsParamters
+  } satisfies TransferAssetsParameters
 
   console.info(transactionObject)
 

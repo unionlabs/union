@@ -54,7 +54,7 @@ export interface CosmosClientParameters {
   transport: ReturnType<typeof cosmosHttp> | Array<ReturnType<typeof cosmosHttp>>
 }
 
-export interface TransferAssetsParamters {
+export interface TransferAssetsParameters {
   memo?: string
   amount: bigint
   recipient: string
@@ -145,7 +145,7 @@ export function createCosmosSdkClient({
         gasPrice = cosmos.gasPrice,
         cosmosSigner = cosmos.account,
         memo = timestamp()
-      }: TransferAssetsParamters): Promise<TransactionResponse> => {
+      }: TransferAssetsParameters): Promise<TransactionResponse> => {
         try {
           if (!path.includes("union-testnet-8")) {
             return {
@@ -291,7 +291,7 @@ export function createCosmosSdkClient({
         evmSigner = evm.account,
         gasPrice = cosmos.gasPrice,
         cosmosSigner = cosmos.account
-      }: TransferAssetsParamters): Promise<TransactionResponse> => {
+      }: TransferAssetsParameters): Promise<TransactionResponse> => {
         if (!path.includes("union-testnet-8")) {
           return {
             success: false,
