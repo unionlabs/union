@@ -12,8 +12,6 @@ const routescanTokenBalancesSchema = v.object({
   )
 })
 
-export type EvmBalances = v.InferOutput<typeof routescanTokenBalancesSchema>
-
 export async function getBalancesFromRoutescan({
   url,
   walletAddress
