@@ -38,8 +38,8 @@ export type Chain = {
     }
   >
   explorers: Array<{
-    tx_url: string,
-    block_url: string,
+    tx_url: string
+    block_url: string
     address_url: string
   }>
   addr_prefix: string
