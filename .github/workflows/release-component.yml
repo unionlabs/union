@@ -118,6 +118,7 @@ jobs:
         run: |
           mkdir "$SYSTEM"
           echo "Getting OUTPUT and NARINFO_NAME"
+          jq --version
           OUTPUT=$(jq -r \
             --arg component "$COMPONENT" \
             --arg system "$SYSTEM" \
