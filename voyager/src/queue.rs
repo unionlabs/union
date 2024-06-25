@@ -5,8 +5,8 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     net::SocketAddr,
+    num::NonZeroUsize,
     sync::Arc,
-    time::Duration,
 };
 
 use axum::{
@@ -16,18 +16,18 @@ use axum::{
 };
 use chain_utils::{any_chain, AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use futures::{
-    channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryFutureExt, TryStreamExt,
-};
-use pg_queue::EnqueueStatus;
+use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStreamExt};
+use pg_queue::{PgQueue, PgQueueConfig};
 use queue_msg::{
-    optimize::{passes::NormalizeFinal, Pass, Pure, PurePass},
+    optimize::{
+        passes::{FinalPass, Normalize},
+        Pass, Pure, PurePass,
+    },
     Engine, InMemoryQueue, Op, Queue, QueueMessage,
 };
 use relay_message::RelayMessage;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, Either, PgPool};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, trace};
 use unionlabs::traits::{Chain, FromStrExact};
@@ -35,6 +35,7 @@ use voyager_message::VoyagerMessage;
 
 use crate::{
     config::{ChainConfig, Config},
+    passes::tx_batch::TxBatch,
     signer_balances,
 };
 
@@ -47,6 +48,7 @@ pub struct Voyager {
     pub laddr: SocketAddr,
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
+    pub max_batch_size: NonZeroUsize,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -157,97 +159,76 @@ impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
-pub struct PgQueue<T: QueueMessage>(pg_queue::Queue<Op<T>>, sqlx::PgPool);
+// #[derive(DebugNoBound, CloneNoBound)]
+// pub struct PgQueue<T: QueueMessage>(pg_queue::PgQueue<Op<T>>, sqlx::PgPool);
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct PgQueueConfig {
-    pub database_url: String,
-    pub max_connections: Option<u32>,
-    pub min_connections: Option<u32>,
-    pub idle_timeout: Option<Duration>,
-    pub max_lifetime: Option<Duration>,
-}
+// impl<T: QueueMessage> Queue<T> for PgQueue<T> {
+//     type Error = sqlx::Error;
 
-impl PgQueueConfig {
-    pub async fn into_pg_pool(self) -> sqlx::Result<PgPool> {
-        PgPoolOptions::new()
-            .max_connections(self.max_connections.unwrap_or(10))
-            .min_connections(self.min_connections.unwrap_or(0))
-            .idle_timeout(self.idle_timeout)
-            .max_lifetime(self.max_lifetime)
-            .connect(&self.database_url)
-            .await
-    }
-}
+//     type Config = PgQueueConfig;
 
-impl<T: QueueMessage> Queue<T> for PgQueue<T> {
-    type Error = sqlx::Error;
+//     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+//         async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
+//     }
 
-    type Config = PgQueueConfig;
+//     fn enqueue<'a, O: PurePass<T>>(
+//         &'a self,
+//         item: Op<T>,
+//         pre_enqueue_passes: &'a O,
+//     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
+//         async move {
+//             let res = pre_enqueue_passes.run_pass_pure(vec![item]);
 
-    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-        async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
-    }
+//             for (_, msg) in res.optimize_further {
+//                 self.0
+//                     .enqueue(&self.1, msg, vec![], EnqueueStatus::Optimize)
+//                     .await?
+//             }
 
-    fn enqueue<'a, O: PurePass<T>>(
-        &'a self,
-        item: Op<T>,
-        pre_enqueue_passes: &'a O,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
-        async move {
-            let res = pre_enqueue_passes.run_pass_pure(vec![item]);
+//             for (_, msg) in res.ready {
+//                 self.0
+//                     .enqueue(&self.1, msg, vec![], EnqueueStatus::Ready)
+//                     .await?
+//             }
 
-            for (_, msg) in res.optimize_further {
-                self.0
-                    .enqueue(&self.1, msg, vec![], EnqueueStatus::Optimize)
-                    .await?
-            }
+//             Ok(())
+//         }
+//     }
 
-            for (_, msg) in res.ready {
-                self.0
-                    .enqueue(&self.1, msg, vec![], EnqueueStatus::Ready)
-                    .await?
-            }
+//     fn process<'a, F, Fut, R, O>(
+//         &'a self,
+//         pre_reenqueue_passes: &'a O,
+//         f: F,
+//     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
+//     where
+//         F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
+//         Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
+//         R: Send + Sync + 'static,
+//         O: PurePass<T>,
+//     {
+//         async move {
+//             self.0
+//                 .process(&self.1, f, |msgs| {
+//                     let res = pre_reenqueue_passes.run_pass_pure(msgs);
 
-            Ok(())
-        }
-    }
+//                     (res.optimize_further, res.ready)
+//                 })
+//                 .await
+//         }
+//     }
 
-    fn process<'a, F, Fut, R, O>(
-        &'a self,
-        pre_reenqueue_passes: &'a O,
-        f: F,
-    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
-    where
-        F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
-        R: Send + Sync + 'static,
-        O: PurePass<T>,
-    {
-        async move {
-            self.0
-                .process(&self.1, f, |msgs| {
-                    let res = pre_reenqueue_passes.run_pass_pure(msgs);
-
-                    (res.optimize_further, res.ready)
-                })
-                .await
-        }
-    }
-
-    fn optimize<'a, O: Pass<T>>(
-        &'a self,
-        optimizer: &'a O,
-    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
-        self.0.optimize(&self.1, move |msgs| async move {
-            optimizer
-                .run_pass(msgs)
-                .map_ok(|x| (x.optimize_further, x.ready))
-                .await
-        })
-    }
-}
+//     fn optimize<'a, O: Pass<T>>(
+//         &'a self,
+//         optimizer: &'a O,
+//     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
+//         self.0.optimize(&self.1, move |msgs| async move {
+//             optimizer
+//                 .run_pass(msgs)
+//                 .map_ok(|x| (x.optimize_further, x.ready))
+//                 .await
+//         })
+//     }
+// }
 
 #[derive(Debug, thiserror::Error)]
 pub enum VoyagerInitError {
@@ -272,6 +253,7 @@ impl Voyager {
             num_workers: config.voyager.num_workers,
             laddr: config.voyager.laddr,
             queue,
+            max_batch_size: config.voyager.max_batch_size,
         })
     }
 
@@ -335,7 +317,7 @@ impl Voyager {
                         "received new message",
                     );
 
-                    q.enqueue(msg, &NormalizeFinal::default()).await?;
+                    q.enqueue(msg, &Normalize::default()).await?;
                 }
 
                 Ok(())
@@ -349,8 +331,18 @@ impl Voyager {
             let q = self.queue.clone();
 
             join_set.spawn(Box::pin(async move {
+                // let passes = (
+                //     Normalize::default(),
+                //     (
+                //         TxBatch {
+                //             size_limit: self.max_batch_size,
+                //         },
+                //         FinalPass,
+                //     ),
+                // );
+
                 engine
-                    .run(&q, &NormalizeFinal::default())
+                    .run(&q, &Normalize::default())
                     .try_for_each(|data| async move {
                         info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
 
@@ -363,20 +355,26 @@ impl Voyager {
         join_set.spawn(async move {
             let q = self.queue.clone();
 
+            let passes = (
+                Normalize::default(),
+                (
+                    TxBatch {
+                        max_batch_size: self.max_batch_size,
+                        min_batch_size: 1.try_into().unwrap(),
+                    },
+                    FinalPass,
+                ),
+            );
+
             loop {
                 debug!("optimizing");
 
-                q.optimize(&Pure(NormalizeFinal::default()))
-                    .await
-                    .map_err(|e| {
-                        e.map_either::<_, _, BoxDynError, BoxDynError>(
-                            |x| Box::new(x),
-                            |x| Box::new(x),
-                        )
+                q.optimize(&Pure(passes.clone())).await.map_err(|e| {
+                    e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
                         .into_inner()
-                    })?;
+                })?;
 
-                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                // tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
             }
         });
 

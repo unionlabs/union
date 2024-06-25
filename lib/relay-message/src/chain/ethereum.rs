@@ -423,7 +423,7 @@ where
 
     match ibc_handlers.with(f).await {
         Some(res) => res.map(|()| noop()),
-        None => Ok(seq([defer_relative(3), effect(id(chain_id, msg))])),
+        None => Ok(seq([defer_relative(1), effect(id(chain_id, msg))])),
     }
 }
 
@@ -526,7 +526,7 @@ where
                     );
 
                     seq([
-                        defer_relative(3),
+                        defer_relative(1),
                         fetch(id(
                             ethereum.chain_id(),
                             Fetch::specific(FetchFinalityUpdate {}),

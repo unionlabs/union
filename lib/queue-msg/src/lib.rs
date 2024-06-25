@@ -311,7 +311,7 @@ impl<T: QueueMessage> Op<T> {
                     // if we haven't hit the time yet, requeue the defer msg
                     if now() < seconds {
                         // TODO: Make the time configurable?
-                        sleep(Duration::from_secs(1)).await;
+                        sleep(Duration::from_millis(10)).await;
 
                         Ok(Some(defer_absolute(seconds)))
                     } else {
@@ -358,7 +358,7 @@ impl<T: QueueMessage> Op<T> {
                     None => Ok(None),
                 },
                 Self::Retry { remaining, msg } => {
-                    const RETRY_DELAY_SECONDS: u64 = 3;
+                    const RETRY_DELAY_SECONDS: u64 = 1;
 
                     match msg.clone().handle(store, depth + 1).await {
                         Ok(ok) => Ok(ok),
@@ -1123,14 +1123,12 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         item: Op<T>,
         pre_enqueue_passes: &'a O,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
-        let this = &self;
-        let item = item;
         debug!(?item, "enqueueing new item");
 
         let res = pre_enqueue_passes.run_pass_pure(vec![item]);
 
-        let mut optimizer_queue = this.optimizer_queue.lock().expect("mutex is poisoned");
-        let mut ready = this.ready.lock().expect("mutex is poisoned");
+        let mut optimizer_queue = self.optimizer_queue.lock().expect("mutex is poisoned");
+        let mut ready = self.ready.lock().expect("mutex is poisoned");
 
         self.requeue(
             res,
@@ -1206,9 +1204,9 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                 }
             }
             None => {
-                trace!("queue is empty, sleeping for 1 second");
+                // trace!("queue is empty, sleeping for 1 second");
 
-                sleep(Duration::from_secs(1)).await;
+                // sleep(Duration::from_secs(1)).await;
 
                 Ok(None)
             }
