@@ -82,7 +82,12 @@ where
 
                 let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
 
-                info!(%tx_hash, batch_size = %msg_count, msgs = %msg_names, "cosmos tx");
+                info!(
+                    %tx_hash,
+                    batch_size = %msg_count,
+                    msgs = %msg_names,
+                    "cosmos transaction submitted"
+                );
 
                 Ok(())
             }

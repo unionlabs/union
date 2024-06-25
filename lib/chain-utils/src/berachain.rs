@@ -4,7 +4,6 @@ use std::{
 };
 
 use cometbft_rpc::AbciQueryResponse;
-use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use ics23::ibc_api::SDK_SPECS;
 use serde::{Deserialize, Serialize};
@@ -64,6 +63,8 @@ pub struct Berachain {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
+    pub multicall3_address: Option<H160>,
+
     pub keyring: Arc<<ReadWrite as EthereumSignersConfig>::Out>,
 
     // tendermint
@@ -83,13 +84,16 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
+    #[serde(default)]
+    pub multicall3_address: Option<H160>,
+
     pub keyring: <ReadWrite as EthereumSignersConfig>::Config,
 }
 
 impl ChainKeyring for Berachain {
     type Address = H160;
 
-    type Signer = IBCHandler<EthereumSignerMiddleware>;
+    type Signer = EthereumSignerMiddleware;
 
     fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
         &self.keyring
@@ -242,6 +246,10 @@ impl EthereumChain for Berachain {
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
     }
+
+    fn multicall3_address(&self) -> Option<H160> {
+        self.multicall3_address
+    }
 }
 
 impl EthereumConsensusChain for Berachain {
@@ -309,9 +317,9 @@ impl Berachain {
             consensus_chain_id,
             execution_chain_id: execution_chain_id.into(),
             ibc_handler_address: config.ibc_handler_address,
+            multicall3_address: config.multicall3_address,
             keyring: Arc::new(ReadWrite::new(
                 config.keyring,
-                config.ibc_handler_address,
                 execution_chain_id.as_u64(),
                 provider.clone(),
             )),

@@ -40,6 +40,7 @@ thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
+static_assertions = "1.1.0"
 
 [features]
 arbitrary = ["dep:arbitrary"]

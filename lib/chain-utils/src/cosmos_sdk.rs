@@ -335,7 +335,11 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 
         debug!(%tx_hash);
 
-        info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
+        info!(
+            check_tx_code = ?response.code,
+            codespace = %response.codespace,
+            check_tx_log = %response.log
+        );
 
         if response.code.is_err() {
             let value = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(

@@ -1,6 +1,5 @@
 use std::{error::Error, sync::Arc};
 
-use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use futures::{FutureExt, TryFutureExt};
 use scroll_api::ScrollClient;
@@ -43,6 +42,8 @@ pub struct Scroll {
     pub scroll_rpc: scroll_rpc::JsonRpcClient,
     pub l1: Ethereum<Mainnet, Readonly>,
 
+    pub multicall3_address: Option<H160>,
+
     pub rollup_contract_address: H160,
     /// [ScrollChain.finalizedStateRoots](https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L159)
     pub rollup_finalized_state_roots_slot: U256,
@@ -69,6 +70,9 @@ pub struct Config {
     /// The RPC endpoint for the execution (scroll) chain.
     pub scroll_eth_rpc_api: String,
 
+    #[serde(default)]
+    pub multicall3_address: Option<H160>,
+
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
@@ -84,7 +88,7 @@ pub struct Config {
 impl ChainKeyring for Scroll {
     type Address = H160;
 
-    type Signer = IBCHandler<EthereumSignerMiddleware>;
+    type Signer = EthereumSignerMiddleware;
 
     fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
         &self.keyring
@@ -102,6 +106,10 @@ impl EthereumChain for Scroll {
 
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
+    }
+
+    fn multicall3_address(&self) -> Option<H160> {
+        self.multicall3_address
     }
 }
 
@@ -163,16 +171,12 @@ impl Scroll {
 
         Ok(Self {
             chain_id: U256(chain_id),
-            keyring: ReadWrite::new(
-                config.keyring,
-                config.ibc_handler_address,
-                chain_id.as_u64(),
-                provider.clone(),
-            ),
+            keyring: ReadWrite::new(config.keyring, chain_id.as_u64(), provider.clone()),
             ibc_handler_address: config.ibc_handler_address,
             provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
             l1: Ethereum::new(config.l1).await?,
+            multicall3_address: config.multicall3_address,
             rollup_contract_address: config.rollup_contract_address,
             rollup_finalized_state_roots_slot: config.rollup_finalized_state_roots_slot,
             rollup_last_finalized_batch_index_slot: config.rollup_last_finalized_batch_index_slot,

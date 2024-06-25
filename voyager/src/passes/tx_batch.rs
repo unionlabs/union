@@ -37,6 +37,17 @@ impl PurePass<VoyagerMessage> for TxBatch {
         let mut wasm_cosmos_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
         let mut cosmos_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
 
+        let mut union_on_ethereum_mainnet_batch =
+            Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut union_on_ethereum_minimal_batch =
+            Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut union_on_scroll_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut union_on_arbitrum_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut union_on_berachain_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut union_on_wasm_cosmos_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut union_on_cosmos_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut cosmos_on_cosmos_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+
         debug!(count = msgs.len(), "optimizing messages");
 
         for (idx, msg) in msgs.into_iter().enumerate() {
@@ -63,10 +74,29 @@ impl PurePass<VoyagerMessage> for TxBatch {
                     AnyLightClientIdentified::CosmosOnUnion(effect) => {
                         cosmos_on_union_batch.push(idx, effect)
                     }
-                    e => {
-                        opt_res
-                            .optimize_further
-                            .push((vec![idx], Op::Effect(VoyagerEffect::Relay(e))));
+                    AnyLightClientIdentified::UnionOnEthereumMainnet(effect) => {
+                        union_on_ethereum_mainnet_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::UnionOnEthereumMinimal(effect) => {
+                        union_on_ethereum_minimal_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::UnionOnScroll(effect) => {
+                        union_on_scroll_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::UnionOnArbitrum(effect) => {
+                        union_on_arbitrum_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::UnionOnBerachain(effect) => {
+                        union_on_berachain_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::UnionOnWasmCosmos(effect) => {
+                        union_on_wasm_cosmos_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::UnionOnCosmos(effect) => {
+                        union_on_cosmos_batch.push(idx, effect)
+                    }
+                    AnyLightClientIdentified::CosmosOnCosmos(effect) => {
+                        cosmos_on_cosmos_batch.push(idx, effect)
                     }
                 },
                 msg => opt_res.optimize_further.push((vec![idx], msg)),
@@ -94,11 +124,36 @@ impl PurePass<VoyagerMessage> for TxBatch {
         opt_res
             .ready
             .extend(cosmos_on_union_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_ethereum_mainnet_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_ethereum_minimal_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_scroll_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_arbitrum_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_berachain_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_wasm_cosmos_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_cosmos_batch.into_batch().ready);
+        opt_res
+            .ready
+            .extend(cosmos_on_cosmos_batch.into_batch().ready);
 
         opt_res
     }
 }
 
+#[must_use = "batch must be recommitted back to queue with `into_batch`"]
 struct Batcher<Hc: ChainExt, Tr: ChainExt> {
     // TODO: Make these per-chain-id mappings?
     #[allow(dead_code)]

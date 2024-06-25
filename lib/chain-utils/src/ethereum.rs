@@ -14,7 +14,7 @@ use ethers::{
     abi::{AbiDecode, AbiEncode},
     contract::{ContractError, EthLogDecode},
     core::k256::ecdsa,
-    middleware::{NonceManagerMiddleware, SignerMiddleware},
+    middleware::SignerMiddleware,
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::{LocalWallet, Wallet},
     utils::{keccak256, secret_key_to_address},
@@ -22,6 +22,7 @@ use ethers::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::Future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use static_assertions::assert_impl_all;
 use tracing::debug;
 use typenum::Unsigned;
 use unionlabs::{
@@ -45,10 +46,11 @@ use unionlabs::{
 
 use crate::keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, KeyringEntry, SignerBalance};
 
-pub type EthereumKeyring = ConcurrentKeyring<H160, IBCHandler<EthereumSignerMiddleware>>;
+pub type EthereumKeyring = ConcurrentKeyring<H160, EthereumSignerMiddleware>;
 
-pub type EthereumSignerMiddleware =
-    SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
+pub type EthereumSignerMiddleware = SignerMiddleware<Provider<Ws>, Wallet<ecdsa::SigningKey>>;
+
+assert_impl_all!(EthereumSignerMiddleware: Clone);
 
 // NOTE: ClientType bound is temporary until I figure out a better way to deal with client types
 /// A chain running the EVM and our solidity IBC stack. This can be any Ethereum L1 or L2, or a chain running the EVM in a different environment (such as Berachain).
@@ -58,6 +60,9 @@ pub trait EthereumChain: Chain<IbcStateEncoding = EthAbi, ClientType = String> {
 
     /// The address of the [`IBCHandler`] smart contract deployed natively on this chain.
     fn ibc_handler_address(&self) -> H160;
+
+    /// The address of [`Multicall3`](https://www.multicall3.com/) on this chain, if supported.
+    fn multicall3_address(&self) -> Option<H160>;
 }
 
 /// An Ethereum-based chain. This can be any chain that is based off of and settles on Ethereum (i.e. Ethereum mainnet/ Sepolia, L2s such as Scroll).
@@ -92,6 +97,10 @@ impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
     }
+
+    fn multicall3_address(&self) -> Option<H160> {
+        self.multicall3_address
+    }
 }
 
 impl<C: ChainSpec, S: EthereumSignersConfig> EthereumConsensusChain for Ethereum<C, S> {
@@ -115,6 +124,8 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
+    pub multicall3_address: Option<H160>,
+
     pub keyring: S::Out,
     pub provider: Arc<Provider<Ws>>,
     pub beacon_api_client: BeaconApiClient<C>,
@@ -125,6 +136,9 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
 pub struct Config<S: EthereumSignersConfig = ReadWrite> {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+
+    #[serde(default)]
+    pub multicall3_address: Option<H160>,
 
     /// The signer that will be used to submit transactions by voyager.
     // TODO: Write a custom ser/de implementation for this struct to avoid this hackery
@@ -144,8 +158,7 @@ fn is_unit<T: 'static>(_: &T) -> bool {
 
 impl<C: ChainSpec> ChainKeyring for Ethereum<C, ReadWrite> {
     type Address = H160;
-
-    type Signer = IBCHandler<EthereumSignerMiddleware>;
+    type Signer = EthereumSignerMiddleware;
 
     fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
         &self.keyring
@@ -182,12 +195,7 @@ pub trait EthereumSignersConfig: Send + Sync + 'static {
     type Config: Debug + Clone + Default + Serialize + DeserializeOwned + Send + Sync + 'static;
     type Out: Debug + Clone + Send + Sync + 'static;
 
-    fn new(
-        config: Self::Config,
-        ibc_handler_address: H160,
-        chain_id: u64,
-        provider: Provider<Ws>,
-    ) -> Self::Out;
+    fn new(config: Self::Config, chain_id: u64, provider: Provider<Ws>) -> Self::Out;
 }
 
 pub enum Readonly {}
@@ -196,12 +204,7 @@ impl EthereumSignersConfig for Readonly {
     type Config = ();
     type Out = ();
 
-    fn new(
-        config: Self::Config,
-        _ibc_handler_address: H160,
-        _chain_id: u64,
-        _provider: Provider<Ws>,
-    ) -> Self::Out {
+    fn new(config: Self::Config, _chain_id: u64, _provider: Provider<Ws>) -> Self::Out {
         config
     }
 }
@@ -212,12 +215,7 @@ impl EthereumSignersConfig for ReadWrite {
     type Config = KeyringConfig;
     type Out = EthereumKeyring;
 
-    fn new(
-        config: Self::Config,
-        ibc_handler_address: H160,
-        chain_id: u64,
-        provider: Provider<Ws>,
-    ) -> Self::Out {
+    fn new(config: Self::Config, chain_id: u64, provider: Provider<Ws>) -> Self::Out {
         ConcurrentKeyring::new(
             config.name,
             config.keys.into_iter().map(|config| {
@@ -230,15 +228,16 @@ impl EthereumSignersConfig for ReadWrite {
 
                 let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
 
-                let signer_middleware = Arc::new(SignerMiddleware::new(
-                    NonceManagerMiddleware::new(provider.clone(), address),
+                let signer_middleware = SignerMiddleware::new(
+                    provider.clone(),
+                    // NonceManagerMiddleware::new(provider.clone(), address),
                     wallet.clone(),
-                ));
+                );
 
                 KeyringEntry {
                     name: config.name(),
                     address: address.into(),
-                    signer: IBCHandler::new(ibc_handler_address, signer_middleware.clone()),
+                    signer: signer_middleware.clone(),
                 }
             }),
         )
@@ -526,13 +525,9 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
 
         Ok(Self {
             chain_id: U256(chain_id),
-            keyring: S::new(
-                config.keyring,
-                config.ibc_handler_address,
-                chain_id.as_u64(),
-                provider.clone(),
-            ),
+            keyring: S::new(config.keyring, chain_id.as_u64(), provider.clone()),
             ibc_handler_address: config.ibc_handler_address,
+            multicall3_address: config.multicall3_address,
             provider: Arc::new(provider),
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         })

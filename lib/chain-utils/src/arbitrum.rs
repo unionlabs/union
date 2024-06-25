@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use contracts::ibc_handler::IBCHandler;
 use ethers::{
     contract::EthEvent,
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
@@ -46,6 +45,8 @@ pub struct Arbitrum {
     pub ibc_handler_address: H160,
     pub ibc_commitment_slot: U256,
 
+    pub multicall3_address: Option<H160>,
+
     pub l1: Ethereum<Mainnet, Readonly>,
     pub l1_contract_address: H160,
     pub l1_latest_confirmed_slot: U256,
@@ -63,6 +64,9 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
     pub ibc_commitment_slot: U256,
+
+    #[serde(default)]
+    pub multicall3_address: Option<H160>,
 
     /// The signer that will be used to submit transactions by voyager.
     pub keyring: KeyringConfig,
@@ -84,7 +88,7 @@ pub struct Config {
 impl ChainKeyring for Arbitrum {
     type Address = H160;
 
-    type Signer = IBCHandler<EthereumSignerMiddleware>;
+    type Signer = EthereumSignerMiddleware;
 
     fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
         &self.keyring
@@ -113,16 +117,12 @@ impl Arbitrum {
 
         Ok(Self {
             chain_id: U256::from(chain_id),
-            keyring: ReadWrite::new(
-                config.keyring,
-                config.ibc_handler_address,
-                chain_id.as_u64(),
-                provider.clone(),
-            ),
+            keyring: ReadWrite::new(config.keyring, chain_id.as_u64(), provider.clone()),
             ibc_handler_address: config.ibc_handler_address,
             provider: Arc::new(provider),
             l1: Ethereum::new(config.l1).await?,
             l1_client_id: config.l1_client_id,
+            multicall3_address: config.multicall3_address,
             union_grpc_url: config.union_grpc_url,
             l1_contract_address: config.l1_contract_address,
             l1_latest_confirmed_slot: config.l1_latest_confirmed_slot,
@@ -162,6 +162,10 @@ impl EthereumChain for Arbitrum {
 
     fn ibc_handler_address(&self) -> H160 {
         self.ibc_handler_address
+    }
+
+    fn multicall3_address(&self) -> Option<H160> {
+        self.multicall3_address
     }
 }
 

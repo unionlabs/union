@@ -23,6 +23,7 @@ let
           --ws \
           --ws.api=eth,debug,net,web3,admin,engine,txpool \
           --ws.addr=0.0.0.0 \
+          --rpc.allow-unprotected-txs \
           --authrpc.vhosts="*" \
           --authrpc.addr=0.0.0.0 \
           --authrpc.jwtsecret=${config}/dev-jwt.prv \
