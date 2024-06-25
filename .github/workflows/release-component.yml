@@ -16,7 +16,7 @@ jobs:
     steps:
       - id: eval
         env:
-          TAG: "uniond-release/test"
+          TAG: "uniond/test"
         run: |
           component="${TAG%/*}"
           case $component in
@@ -36,8 +36,8 @@ jobs:
               echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
               build="(.attr == \"ucs01-relay\")"
               ;;
-            uniond-release)
-              echo "COMPONENT=uniond" >> $GITHUB_OUTPUT
+            uniond)
+              echo "COMPONENT=uniond-release" >> $GITHUB_OUTPUT
               echo "REPO=unionlabs/uniond-releases" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
               build="(.attr == \"uniond-release\" or .attr == \"uniond-release-image\")"
