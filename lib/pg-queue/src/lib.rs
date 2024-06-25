@@ -1,14 +1,5 @@
 use std::{
-    borrow::Borrow,
-    cmp::Eq,
-    collections::HashMap,
-    future::Future,
-    hash::Hash,
-    marker::PhantomData,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    borrow::Borrow, cmp::Eq, collections::HashMap, future::Future, hash::Hash, marker::PhantomData,
     time::Duration,
 };
 
@@ -19,7 +10,6 @@ use queue_msg::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
-// use tokio_postgres::{types::Json, NoTls};
 use tracing::{debug, debug_span, info_span, trace, Instrument};
 
 // pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
@@ -36,8 +26,6 @@ use tracing::{debug, debug_span, info_span, trace, Instrument};
 /// ```
 #[derive(DebugNoBound, CloneNoBound)]
 pub struct PgQueue<T> {
-    // lock: Arc<AtomicBool>,
-    // client: Arc<tokio_postgres::Client>,
     client: PgPool,
     __marker: PhantomData<fn() -> T>,
 }
@@ -94,7 +82,6 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         // });
 
         Ok(Self {
-            // lock: Arc::new(AtomicBool::new(false)),
             client: config.into_pg_pool().await?,
             __marker: PhantomData,
         })
@@ -153,8 +140,6 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
 
         tx.commit().await?;
 
-        // self.lock.store(false, Ordering::SeqCst);
-
         Ok(())
     }
 
@@ -170,11 +155,6 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         O: PurePass<T>,
     {
         trace!("process");
-
-        // if self.lock.swap(false, Ordering::SeqCst) {
-        //     trace!("queue is locked");
-        //     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        // }
 
         let mut tx = self.client.begin().await?;
 
@@ -436,275 +416,6 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
 
         Ok(())
     }
-
-    // /// Enqueues a new item for processing.
-    // async fn enqueue<'a, A>(
-    //     &self,
-    //     conn: A,
-    //     item: T,
-    //     parents: Vec<i64>,
-    //     status: EnqueueStatus,
-    // ) -> Result<(), sqlx::Error>
-    // where
-    //     A: Acquire<'a, Database = Postgres>,
-    // {
-    // }
-
-    // /// Processes the next value from the queue, calling `f` on the value. Dequeueing has the following properties:
-    // /// - if `f` returns an error, the item is requeued.
-    // /// - if `f` returns Err(why), the item is permanently marked as failed with `why`.
-    // /// - if `f` returns Ok(Some(msg)), the item is marked as processed and `msg` is queued.
-    // /// - if `f` returns Ok(None), the item is marked as processed.
-    // ///
-    // /// Database atomicity is used to ensure that the queue is always in a consistent state, meaning that an item
-    // /// process will always be retried until it reaches ProcessFlow::Fail or ProcessFlow::Success. `f` is responsible for
-    // /// storing metadata in the job to determine if retrying should fail permanently.
-    // ///
-    // /// If the queue is not empty, then Some(R) will be returned, otherwise None.
-    // pub async fn process<'a, 'b, F, Fut, R, A, P>(
-    //     &self,
-    //     conn: A,
-    //     f: F,
-    //     post_process: P,
-    // ) -> Result<Option<R>, sqlx::Error>
-    // where
-    //     F: (FnOnce(T) -> Fut) + 'b,
-    //     Fut: Future<Output = (R, Result<Vec<T>, String>)> + 'static,
-    //     A: Acquire<'a, Database = Postgres>,
-    //     // (optimize, ready)
-    //     P: FnOnce(Vec<T>) -> (Vec<(Vec<usize>, T)>, Vec<(Vec<usize>, T)>),
-    // {
-    //     if self.lock.swap(false, Ordering::SeqCst) {
-    //         trace!("queue is locked");
-    //         tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-    //     }
-
-    //     let mut tx = conn.begin().await?;
-
-    //     // #[derive(Debug)]
-    //     // struct Record<T> {
-    //     //     id: i64,
-    //     //     item: String,
-    //     // }
-
-    //     let row = query!(
-    //         r#"
-    //         DELETE FROM
-    //           queue
-    //         WHERE
-    //           id = (
-    //             SELECT
-    //               id
-    //             FROM
-    //               queue
-    //             WHERE
-    //               status = 'ready'::status
-    //             ORDER BY
-    //               id ASC
-    //             FOR UPDATE
-    //               SKIP LOCKED
-    //             LIMIT 1)
-    //         RETURNING
-    //           id,
-    //           parents,
-    //           item::text AS "item!: String",
-    //           created_at
-    //         "#,
-    //     )
-    //     .fetch_optional(tx.as_mut())
-    //     .await?;
-
-    //     match row {
-    //         Some(row) => {
-    //             let span = info_span!("processing item", id = row.id);
-
-    //             trace!(%row.item);
-
-    //             // really don't feel like defining a new error type right now
-    //             let json = de(&row.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-
-    //             let (r, res) = f(json).instrument(span).await;
-
-    //             match res {
-    //                 Err(error) => {
-    //                     // Insert error message in the queue
-    //                     query!(
-    //                         r#"
-    //                         INSERT INTO
-    //                           failed (id, parents, item, created_at, message)
-    //                           VALUES ($1, $2,      $3,   $4,         $5     )
-    //                         "#,
-    //                         row.id,
-    //                         row.parents,
-    //                         row.item,
-    //                         row.created_at,
-    //                         error,
-    //                     )
-    //                     .execute(tx.as_mut())
-    //                     .await?;
-    //                     tx.commit().await?;
-    //                 }
-    //                 Ok(new_msgs) => {
-    //                     let (optimize_further, ready) = post_process(new_msgs);
-
-    //                     for (_parents, new_msg) in optimize_further {
-    //                         self.enqueue(&mut tx, new_msg, vec![row.id], EnqueueStatus::Optimize)
-    //                             .await?;
-    //                     }
-
-    //                     for (_parents, new_msg) in ready {
-    //                         self.enqueue(&mut tx, new_msg, vec![row.id], EnqueueStatus::Ready)
-    //                             .await?;
-    //                     }
-
-    //                     tx.commit().await?;
-    //                 }
-    //             }
-
-    //             Ok(Some(r))
-    //         }
-    //         None => {
-    //             trace!("queue is empty");
-
-    //             self.lock.store(true, Ordering::SeqCst);
-    //             tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
-
-    //             Ok(None)
-    //         }
-    //     }
-    // }
-
-    // pub async fn optimize<'a, 'b, F, Fut, A, E>(
-    //     &self,
-    //     conn: A,
-    //     f: F,
-    // ) -> Result<(), Either<sqlx::Error, E>>
-    // where
-    //     F: (FnOnce(Vec<T>) -> Fut) + 'b,
-    //     // (optimize, ready)
-    //     Fut: Future<Output = Result<(Vec<(Vec<usize>, T)>, Vec<(Vec<usize>, T)>), E>> + 'b,
-    //     A: Acquire<'a, Database = Postgres>,
-    // {
-    //     // if self.lock.swap(false, Ordering::SeqCst) {
-    //     //     debug!("queue is locked");
-    //     //     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-    //     // }
-
-    //     let mut tx = conn.begin().await.map_err(Either::Left)?;
-
-    //     let msgs = sqlx::query!(
-    //         r#"
-    //         WITH _locked AS (
-    //             SELECT
-    //                 id
-    //             FROM
-    //                 queue
-    //             WHERE
-    //                 status = 'optimize'::status
-    //             ORDER BY
-    //                 id ASC
-    //             FOR UPDATE
-    //                 SKIP LOCKED)
-    //         UPDATE
-    //             queue
-    //         SET
-    //             status = 'done'::status
-    //         WHERE
-    //             id = ANY (
-    //                 SELECT
-    //                     id
-    //                 FROM
-    //                     _locked)
-    //             RETURNING
-    //                 id,
-    //                 item::text AS "item!: String"
-    //         "#,
-    //     )
-    //     .fetch_all(tx.as_mut())
-    //     .await
-    //     .map_err(Either::Left)?;
-
-    //     let (ids, msgs) = msgs
-    //         .into_iter()
-    //         .map(|r| {
-    //             Ok((
-    //                 r.id,
-    //                 de(&r.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?,
-    //             ))
-    //         })
-    //         .collect::<Result<(Vec<_>, Vec<_>), sqlx::Error>>()
-    //         .map_err(Either::Left)?;
-
-    //     let span = info_span!(
-    //         "optimizing items",
-    //         ids = ids
-    //             .iter()
-    //             .map(|id| id.to_string())
-    //             .collect::<Vec<_>>()
-    //             .join(",")
-    //     );
-    //     let (optimize_further, ready) = f(msgs.clone())
-    //         .instrument(span)
-    //         .await
-    //         .map_err(Either::Right)?;
-
-    //     trace!(
-    //         ready = ready.len(),
-    //         optimize_further = optimize_further.len(),
-    //         "optimized items"
-    //     );
-
-    //     let get_parent_ids = |parent_idxs: &[usize]| {
-    //         ids.iter()
-    //             .enumerate()
-    //             .filter_map(|(idx, id)| parent_idxs.contains(&idx).then_some(*id))
-    //             .collect::<Vec<_>>()
-    //     };
-
-    //     for (parent_idxs, new_msg) in optimize_further {
-    //         let parents = get_parent_ids(&parent_idxs);
-    //         debug!(parent_idxs = ?&parent_idxs, parents = ?&parents);
-
-    //         let new_row = query!(
-    //             "
-    //             INSERT INTO queue (item, parents, status)
-    //             VALUES
-    //                 ($1::JSONB, $2, 'optimize') RETURNING id
-    //             ",
-    //             Json(new_msg) as _,
-    //             &parents
-    //         )
-    //         .fetch_one(tx.as_mut())
-    //         .await
-    //         .map_err(Either::Left)?;
-
-    //         debug!(id = new_row.id, "inserted new optimizer message");
-    //     }
-
-    //     for (parent_idxs, new_msg) in ready {
-    //         let parents = get_parent_ids(&parent_idxs);
-    //         debug!(parent_idxs = ?&parent_idxs, parents = ?&parents);
-
-    //         let new_row = query!(
-    //             "
-    //             INSERT INTO queue (item, parents)
-    //             VALUES
-    //                 ($1::JSONB, $2) RETURNING id
-    //             ",
-    //             Json(new_msg) as _,
-    //             &parents
-    //         )
-    //         .fetch_one(tx.as_mut())
-    //         .await
-    //         .map_err(Either::Left)?;
-
-    //         debug!(id = new_row.id, "inserted new message");
-    //     }
-
-    //     tx.commit().await.map_err(Either::Left)?;
-
-    //     Ok(())
-    // }
 }
 
 #[derive(sqlx::Type)]

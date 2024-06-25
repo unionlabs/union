@@ -5,7 +5,7 @@ use chain_utils::{
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
-use queue_msg::{data, defer_relative, effect, fetch, noop, seq, wait, Op};
+use queue_msg::{data, effect, fetch, noop, seq, wait, Op};
 use tracing::{debug, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
