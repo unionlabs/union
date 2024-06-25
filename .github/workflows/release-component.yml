@@ -69,6 +69,7 @@ jobs:
       filter_builds: ${{ needs.eval-tag.outputs.build }}
 
   download-images:
+    if: ${{ needs.eval-tag.outputs.image-produced }}
     needs: [build, eval-tag]
     runs-on: ubuntu-latest
     strategy:
@@ -96,7 +97,6 @@ jobs:
 
   download-binaries:
     needs: [build, eval-tag]
-    if: ${{ needs.eval-tag.outputs.image-produced }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
