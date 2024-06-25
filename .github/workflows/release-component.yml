@@ -167,7 +167,7 @@ jobs:
               comp_x86_64="$COMPONENT-x86_64-linux"
               comp_x86_64_archive="$comp_x86_64.tar.gz"
               echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_x86_64_archive" && sha256sum "$comp_x86_64_archive")" >> release.md
-              echo "FILES=**/$comp_aarch64_archive\n**/$comp_x86_64_archive" >> $GITHUB_OUTPUT
+              echo "FILES=**/$COMPONENT-*.tar.gz" >> $GITHUB_OUTPUT
               ;;
             cometbls-light-client | ucs01-relay)
               comp_x86_64="$COMPONENT-x86_64-linux"
