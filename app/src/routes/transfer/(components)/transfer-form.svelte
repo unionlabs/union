@@ -41,7 +41,7 @@ import LockOpenIcon from "virtual:icons/lucide/lock-open"
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
 
-let userBalances = userBalancesQuery({ chains, userAddr })
+$: userBalances = userBalancesQuery({ chains, userAddr })
 
 // CURRENT FORM STATE
 let fromChainId = writable("")
@@ -712,7 +712,6 @@ const resetInput = () => {
               <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
               <b>{$fromChain?.display_name}</b> is
               <Precise chain={$fromChain} asset={$asset} showToolTip/>
-              <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
             </div>
           {/if}
         </section>
@@ -749,7 +748,7 @@ const resetInput = () => {
                   disabled={inputState === 'locked'}
                   id="address"
                   on:input={handleInput}
-                  placeholder="Enter address"
+                  placeholder="Select chain"
                   required={true}
                   spellcheck="false"
                   type="text"
@@ -767,18 +766,18 @@ const resetInput = () => {
                 {/if}
               </div>
             </div>
-            <Button
-              aria-label="Toggle address lock"
-              class="px-3"
-              on:click={onLockClick}
-              variant="ghost"
-            >
-              {#if inputState === 'locked'}
-                <LockLockedIcon class="size-4.5"/>
-              {:else}
-                <LockOpenIcon class="size-4.5"/>
-              {/if}
-            </Button>
+<!--            <Button-->
+<!--              aria-label="Toggle address lock"-->
+<!--              class="px-3"-->
+<!--              on:click={onLockClick}-->
+<!--              variant="ghost"-->
+<!--            >-->
+<!--              {#if inputState === 'locked'}-->
+<!--                <LockLockedIcon class="size-4.5"/>-->
+<!--              {:else}-->
+<!--                <LockOpenIcon class="size-4.5"/>-->
+<!--              {/if}-->
+<!--            </Button>-->
           </div>
         </section>
       </Card.Content>
