@@ -96,6 +96,7 @@ jobs:
 
   download-binaries:
     needs: [build, eval-tag]
+    if: ${{ needs.eval-tag.outputs.image-produced }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
