@@ -1,10 +1,10 @@
 ---
-title: "Tendermint"
+title: "Adding the Module"
 sidebar:
   order: 1
 ---
 
-Opening a connection from CosmosSDK-based chains is a straightforward process. Until the recent release of [wasm light clients](https://www.ibcprotocol.dev/blog/wasm-client), the traditional way of having a light client on a Cosmos-SDK chain was
+Opening a connection from a CometBFT-based chain is a straightforward process. Until the recent release of [wasm light clients](https://www.ibcprotocol.dev/blog/wasm-client), the traditional way of having a light client on a Cosmos-SDK chain was
 to implement a light client with Go and bundling it with the chain which meant modifying the light client code requires a binary upgrade to the chain. After IBC proved its capability
 to be extended into other platforms, [the wasm light client module](https://www.ibcprotocol.dev/blog/wasm-client) was introduced for chains to easily, deploy and modify
 light clients. Union supports a native, Golang-based light client, and a modular and flexible wasm light client.
