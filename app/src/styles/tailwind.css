@@ -61,8 +61,8 @@
     --muted: 220 4% 67%;
     --muted-foreground: 0 0% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
 
     --card: 217 10% 78%;
     --card-foreground: 240 10% 3.9%;
