@@ -4,6 +4,7 @@ import Button from "$lib/components/ui/button/button.svelte"
 import { type Readable, derived } from "svelte/store"
 import SpinnerSvg from "./spinner-svg.svelte"
 import type { Step, StepStatus } from '$lib/stepper-types.ts'
+import { toIsoString } from "$lib/utilities/date"
 
 export let steps: Readable<Array<Step>>
 
@@ -45,8 +46,21 @@ export let onRetry: (() => void) | undefined = undefined
       <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" ?  "bg-black" : "")}></div>
     </div>
     <div class="font-bold py-4 flex flex-col min-h-[80px] justify-center">
+      {#if step.traceDetails}
+        {@const trace = step.traceDetails}
+        <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {trace.chain_display_name} at {#if trace.block_url}<a class="underline" href={trace.block_url}>{trace.block}</a>{:else}{trace.block}{/if}</p>
+      {/if} 
       <div>{step.title}</div>
-      {#if step.description}<div class="font-normal">{step.description}</div>{/if}
+      {#if step.traceDetails}
+        {@const trace = step.traceDetails}
+        {#if trace.tx_url !== undefined}
+          <a href={trace.tx_url} class="block underline text-xs text-muted-foreground">{trace.tx}</a>
+        {:else}
+          <p class="text-xs text-muted-foreground">{trace.tx}</p>
+        {/if}
+      {:else if step.description}
+          <div class="font-normal">{step.description}</div>      
+      {/if} 
     </div>
   </li>
 {/each}

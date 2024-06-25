@@ -133,10 +133,43 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
 
   return zip($processedTransfers, $processedTraces).map(([transfer, traces]) => {
 
-    const onSource = (eventType: string) => traces.some(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
-    const onHop = (eventType: string) => traces.some(t => t.type === eventType && t.chain?.chain_id === transfer.hop_chain_id)
-    const onDestination = (eventType: string) => traces.some(t => t.type === eventType && t.chain?.chain_id === transfer.destination_chain_id)
+    const onSourceTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
+    const onSource = (eventType: string) => onSourceTrace(eventType) !== undefined
+    const onDestinationTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.destination_chain_id)
+    const onDestination = (eventType: string) => onDestinationTrace(eventType) !== undefined
 
+    const sourceChainExplorer = chains.find(c => c.chain_id === transfer.source_chain_id)?.explorers?.at(0)
+    const hopChainExplorer = chains.find(c => c.chain_id === transfer.hop_chain_id)?.explorers?.at(0)
+    const destinationChainExplorer = chains.find(c => c.chain_id === transfer.destination_chain_id)?.explorers?.at(0)
+
+    const sourceChainName = toDisplayName(transfer.source_chain_id, chains);
+    const hopChainName = toDisplayName(transfer.hop_chain_id, chains);
+    const destinationChainName = toDisplayName(transfer.destination_chain_id, chains);
+
+    const onHopTrace = (eventType: string) => traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.hop_chain_id)
+
+    const traceDetails = (eventType: string, c: "source" | "hop" | "destination") => {
+      let trace = c === "source" ? onSourceTrace(eventType) : c === "hop" ? onHopTrace(eventType) : c === "destination" ? onDestinationTrace(eventType) : undefined;
+      let explorer = c === "source" ? sourceChainExplorer : c === "hop" ? hopChainExplorer : c === "destination" ? destinationChainExplorer : undefined;
+      let chain_display_name = c === "source" ? sourceChainName : c === "hop" ? hopChainName : c === "destination" ? destinationChainName : undefined;
+
+      if (trace === undefined) return undefined;
+      
+      return explorer === undefined ? {
+        chain_display_name,
+        tx: trace.transaction_hash, 
+        block: trace.height, 
+        timestamp: trace.timestamp 
+      } : {
+        chain_display_name,
+        tx: trace.transaction_hash, 
+        tx_url: `${explorer.tx_url}${trace.transaction_hash}`,
+        block: trace.height, 
+        block_url: `${explorer.block_url}${trace.height}`,
+        timestamp: trace.timestamp 
+      };
+    }
+   
 
     if (transfer.hop_chain_id === null) {
       return [
@@ -145,20 +178,21 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
                   "IN_PROGRESS",
           title: `Send Packet`,
           description: `Sent on time at height with hash`,
+          traceDetails: traceDetails("SEND_PACKET", "source")
         },
         {
           status: onDestination("LIGHTCLIENT_UPDATE") ?  "COMPLETED" : 
                   onSource("SEND_PACKET") ? "IN_PROGRESS" : 
                   "PENDING",
           title: `Light Client Update`,
-          description: ``,
+          traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
         },
         {
           status: onDestination("RECEIVE_PACKET") ? "COMPLETED" : 
                   onSource("SEND_PACKET") && onDestination("LIGHTCLIENT_UPDATE") ? "IN_PROGRESS" : 
                   "PENDING",
           title: `Receive Packet`,
-          description: ``,
+          traceDetails: traceDetails("RECEIVE_PACKET", "destination")
         },
         {
           status: onSource("ACKNOWLEDGE_PACKET") ? "COMPLETED" :
@@ -166,12 +200,15 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
                   "PENDING",
           title: `Acknowledge Packet`,
           description: ``,
+          traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "source")
         },
       ];
     }
 
-      return [
-      ];
+
+    return [
+    
+    ];
     
   })
 });
@@ -261,7 +298,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived([processedTraces,
       {@const pTrace = $processedTraces?.at(transferIndex) ?? null } 
       {@const traceSteps = $tracesSteps?.at(transferIndex) ?? null } 
       {#if pTrace && traceSteps }
-        {JSON.stringify(traceSteps)}
         <Stepper steps={readable(traceSteps)}/>
         {#each pTrace as trace}
           {@const explorer = chains.find(c => c.chain_id === trace.chain?.chain_id)?.explorers?.at(0)}
