@@ -54,8 +54,8 @@ jobs:
           esac
 
           # TODO: maybe use printf
-          echo "BUILD=(.top_attr == \"packages\") \n
-            and (.system == \"x86_64-linux\" or .system == \"aarch64-linux\") \n
+          echo "BUILD=(.top_attr == \"packages\") \
+            and (.system == \"x86_64-linux\" or .system == \"aarch64-linux\") \
             and $build" >> $GITHUB_OUTPUT
           echo "VERSION=${TAG##*/}" >> $GITHUB_OUTPUT
 
