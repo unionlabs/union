@@ -180,7 +180,7 @@ jobs:
               echo "- $(cd "$comp_aarch64" && sha256sum "$comp_aarch64")" >> release.md
               comp_x86_64="$COMPONENT-x86_64-linux"
               echo "- $(cd "$comp_x86_64" && sha256sum "$comp_x86_64")" >> release.md
-              echo "FILES=**/$comp_aarch64/n**/$comp_x86_64" >> $GITHUB_OUTPUT
+              echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
               ;;
           esac
       - uses: softprops/action-gh-release@v2
