@@ -16,7 +16,7 @@ jobs:
     steps:
       - id: eval
         env:
-          TAG: "voyager/v0.1.0"
+          TAG: "uniond-release/test"
         run: |
           component="${TAG%/*}"
           case $component in
