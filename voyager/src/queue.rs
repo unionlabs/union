@@ -20,7 +20,7 @@ use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStr
 use pg_queue::{PgQueue, PgQueueConfig};
 use queue_msg::{
     optimize::{
-        passes::{FinalPass, Normalize, NormalizeFinal},
+        passes::{FinalPass, Normalize},
         Pass, Pure, PurePass,
     },
     Engine, InMemoryQueue, Op, Queue, QueueMessage,

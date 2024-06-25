@@ -49,7 +49,7 @@ use relay_message::{
     RelayMessage,
 };
 use serde::Serialize;
-use sqlx::{query_as, PgPool};
+use sqlx::query_as;
 use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
@@ -600,7 +600,7 @@ async fn query(
     Ok(())
 }
 
-async fn run_migrations(voyager_config: Config) -> Result<(), VoyagerError> {
+async fn run_migrations(_voyager_config: Config) -> Result<(), VoyagerError> {
     // let AnyQueueConfig::PgQueue(PgQueueConfig { database_url, .. }) = voyager_config.voyager.queue
     // else {
     //     return Err(VoyagerError::Migrations(

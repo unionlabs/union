@@ -101,6 +101,7 @@ impl PurePass<VoyagerMessage> for TxBatch {
 
 struct Batcher<Hc: ChainExt, Tr: ChainExt> {
     // TODO: Make these per-chain-id mappings?
+    #[allow(dead_code)]
     min_batch_size: NonZeroUsize,
     max_batch_size: NonZeroUsize,
     #[allow(clippy::type_complexity)] // leave me alone
