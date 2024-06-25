@@ -1,8 +1,9 @@
 import type { Address } from "viem"
 
 export type UserAddresses = {
-  cosmos: UserAddressCosmos
-  evm: UserAddressEvm
+  cosmos: UserAddressCosmos | null
+  evm: UserAddressEvm | null
+  [key: string]: UserAddressCosmos | UserAddressEvm | null
 }
 
 export type UserAddressCosmos = {

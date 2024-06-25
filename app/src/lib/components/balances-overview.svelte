@@ -8,7 +8,7 @@ import LoadingLogo from "./loading-logo.svelte"
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
 
-let userBalances = userBalancesQuery({
+$: userBalances = userBalancesQuery({
   chains,
   userAddr
 })
@@ -19,7 +19,7 @@ let userBalances = userBalancesQuery({
     <div class="pl-3 sm:pl-6 flex flex-col sm:flex-row items-baseline gap-3">
       <h3 class="font-bold font-supermolot text-2xl">{chains[index].display_name}</h3>
       <div class="text-xs font-mono text-muted-foreground">
-        {userAddr.evm.canonical}
+        {userAddr?.evm?.canonical}
       </div>
     </div>
     {#if !!balance.data}
