@@ -754,127 +754,117 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 })
 </script>
 
-<div
-  class={cn(
-    'size-full duration-1000	 transition-colors bg-background',
-    $transferState.kind !== 'PRE_TRANSFER' ? 'bg-black/60' : '',
-  )}
-></div>
+<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 <div class="cube-scene">
-  <div class={cn('cube', $transferState.kind !== 'PRE_TRANSFER' ? 'cube--flipped' : '')}>
+  <div class={cn("cube", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
     <Card.Root class="cube-front">
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-      <Card.Content class={cn('flex flex-col gap-4')}>
-        <section>
-          <CardSectionHeading>From</CardSectionHeading>
-          <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
-            {$fromChain?.display_name}
-          </ChainButton>
+    <Card.Content class={cn('flex flex-col gap-4')}>
+      <section>
+        <CardSectionHeading>From</CardSectionHeading>
+        <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
+          {$fromChain?.display_name}
+        </ChainButton>
 
-          <div class="flex flex-col items-center pt-4 -mb-6">
-            <Button size="icon" variant="outline" on:click={swapChainsClick}>
-              <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
-            </Button>
+        <div class="flex flex-col items-center pt-4 -mb-6">
+          <Button size="icon" variant="outline" on:click={swapChainsClick}>
+            <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
+          </Button>
+        </div>
+
+        <CardSectionHeading>To</CardSectionHeading>
+        <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
+          {$toChain?.display_name}
+        </ChainButton>
+      </section>
+      <section>
+        <CardSectionHeading>Asset</CardSectionHeading>
+        {#if $sendableBalances === null}
+          Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+        {:else if $sendableBalances.length === 0}
+          You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
+        {:else}
+          <Button
+            class="w-full"
+            variant="outline"
+            on:click={() => (dialogOpenToken = !dialogOpenToken)}
+          >
+            <div class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</div>
+
+            <Chevron />
+          </Button>
+        {/if}
+        {#if $assetSymbol !== '' && $sendableBalances !== null}
+          <div class="mt-4 text-xs text-muted-foreground">
+            <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
+            <Precise chain={$fromChain} asset={$asset} showToolTip/>
+<!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
           </div>
+        {/if}
+      </section>
 
-          <CardSectionHeading>To</CardSectionHeading>
-          <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
-            {$toChain?.display_name}
-          </ChainButton>
-        </section>
-        <section>
-          <CardSectionHeading>Asset</CardSectionHeading>
-          {#if $sendableBalances === null}
-            Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-          {:else if $sendableBalances.length === 0}
-            You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
-          {:else}
-            <Button
-              class="w-full"
-              variant="outline"
-              on:click={() => (dialogOpenToken = !dialogOpenToken)}
-            >
-              <div class="flex-1 text-left">
-                {truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}
-              </div>
-
-              <Chevron />
-            </Button>
-          {/if}
-          {#if $assetSymbol !== '' && $sendableBalances !== null}
-            <div class="mt-4 text-xs text-muted-foreground">
-              <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b>
-              balance on <b>{$fromChain?.display_name}</b> is
-              <Precise chain={$fromChain} asset={$asset} showToolTip />
-              <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
-            </div>
-          {/if}
-        </section>
-
-        <section>
-          <CardSectionHeading>Amount</CardSectionHeading>
-          <Input
-            disabled={!$asset}
-            minlength={1}
-            maxlength={64}
-            placeholder="0.00"
-            autocorrect="off"
-            autocomplete="off"
-            spellcheck="false"
-            bind:value={amount}
-            autocapitalize="none"
-            pattern="^[0-9]*[.,]?[0-9]*$"
-            class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
-          />
-        </section>
-        <section>
-          <CardSectionHeading>Recipient</CardSectionHeading>
-          <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
-        </section>
-      </Card.Content>
-      <Card.Footer class="flex flex-col gap-4 items-start">
-        <Label>{$gasCostText}</Label>
-        <Button
-          type="button"
-          disabled={!amount ||
-            !$asset ||
-            !$toChainId ||
-            !$recipient ||
-            !$assetSymbol ||
-            !$fromChainId ||
-            // >= because need some sauce for gas
-            !balanceCoversAmount}
-          on:click={async event => {
-            event.preventDefault()
-            transferState.set({ kind: 'FLIPPING' })
-            await sleep(1200)
-            transfer()
-          }}
-        >
-          {buttonText}
-        </Button>
-      </Card.Footer>
+      <section>
+        <CardSectionHeading>Amount</CardSectionHeading>
+        <Input
+          disabled={
+          !$asset
+          }
+          minlength={1}
+          maxlength={64}
+          placeholder="0.00"
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          bind:value={amount}
+          autocapitalize="none"
+          pattern="^[0-9]*[.,]?[0-9]*$"
+          class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
+        />
+      </section>
+      <section>
+        <CardSectionHeading>Recipient</CardSectionHeading>
+        <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
+      </section>
+    </Card.Content>
+    <Card.Footer class="flex flex-col gap-4 items-start">
+      <Label>{$gasCostText}</Label>
+      <Button
+        type="button"
+        disabled={!amount ||
+          !$asset ||
+          !$toChainId ||
+          !$recipient ||
+          !$assetSymbol ||
+          !$fromChainId ||
+          // >= because need some sauce for gas
+          !balanceCoversAmount
+          }
+        on:click={async event => {
+          event.preventDefault()
+          transferState.set({ kind: "FLIPPING" })
+          await sleep(1200)
+          transfer()
+        }}
+      >
+        {buttonText}
+      </Button>
+    </Card.Footer>
     </Card.Root>
 
     <Card.Root class="cube-back p-6">
-      <Stepper
-        steps={stepperSteps}
-        onRetry={() => {
-          transferState.update(ts => {
-            // @ts-ignore
-            ts.error = undefined
-            return ts
-          })
+      <Stepper steps={stepperSteps} onRetry={() => {
+        transferState.update(ts => {
+          // @ts-ignore
+          ts.error = undefined; 
+          return ts
+        });
 
-          transfer()
-        }}
-      />
+        transfer()
+      }}/>
     </Card.Root>
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">
-      UNION UNION UNION UNION UNION UNION UNION UNION
-    </div>
+    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
   </div>
 </div>
 
