@@ -203,7 +203,9 @@ const transfer = async () => {
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
     )
 
-  let formattedAmount = parseUnits(amount, $fromChain.assets[0].decimals)
+  let supported = getSupportedAsset($fromChain, $asset.address)
+  let decimals = supported?.decimals ?? 0
+  let parsedAmount = parseUnits(amount, decimals)
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
@@ -241,7 +243,7 @@ const transfer = async () => {
               {
                 sourcePort: "transfer",
                 sourceChannel: ucs1_configuration.channel_id,
-                token: { denom: $assetSymbol, amount: formattedAmount.toString() },
+                token: { denom: $assetSymbol, amount: parsedAmount.toString() },
                 sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
                 receiver: $recipient,
                 memo: pfmMemo ?? "",
@@ -262,7 +264,7 @@ const transfer = async () => {
                     memo: pfmMemo ?? ""
                   }
                 },
-                funds: [{ denom: $assetSymbol, amount: formattedAmount.toString() }]
+                funds: [{ denom: $assetSymbol, amount: parsedAmount.toString() }]
               }
             ]
           }
@@ -328,7 +330,7 @@ const transfer = async () => {
           abi: erc20Abi,
           address: $asset.address as Address,
           functionName: "approve",
-          args: [ucs01address, formattedAmount]
+          args: [ucs01address, parsedAmount]
         })
       } catch (error) {
         if (error instanceof Error) {
@@ -364,7 +366,7 @@ const transfer = async () => {
           args: [
             ucs1_configuration.channel_id,
             userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
-            [{ denom: $asset.address.toLowerCase() as Address, amount: formattedAmount }],
+            [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
             pfmMemo ?? "", // memo
             { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
             0n
