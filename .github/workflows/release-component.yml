@@ -91,7 +91,7 @@ jobs:
           nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$(cat result.json | jq -r \
             --arg component "$COMPONENT-image" \
             --arg system "$SYSTEM" \
-            '.packages.[$system][$component].outputs.out')" --extra-experimental-features nix-command
+            '.packages[$system][$component].outputs.out')" --extra-experimental-features nix-command
           cat "$SYSTEM"/nar/*.nar.xz | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"-image
       - uses: actions/upload-artifact@v4
         with:
@@ -121,7 +121,7 @@ jobs:
           OUTPUT=$(jq -r \
             --arg component "$COMPONENT" \
             --arg system "$SYSTEM" \
-            '.packages.[$system][$component].outputs.out' result.json)
+            '.packages[$system][$component].outputs.out' result.json)
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
 
           echo "Copying $OUTPUT from nixbuild.net"
