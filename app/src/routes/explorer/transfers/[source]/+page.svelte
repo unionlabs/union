@@ -131,8 +131,10 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
 
 <ChainsGate let:chains>
 {#if !!$transfers.data && $processedTransfers !== null}
-<div class="max-h-auto min-w-full flex flex-col items-center">
+<div class="max-h-auto min-w-full flex flex-col items-center gap-6">
   {#each $processedTransfers as transfer, transferIndex}
+    {@const sourceExplorer = chains.find(c => c.chain_id === transfer.source_chain_id)?.explorers?.at(0)}
+    {@const destinationExplorer = chains.find(c => c.chain_id === transfer.destination_chain_id)?.explorers?.at(0)}
 
     <!--
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
@@ -190,12 +192,12 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
     <section class="flex gap-8">
       <div class=" lex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
-        <p class="text-sm">{transfer.sender}</p>
+        {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline">{transfer.sender}</a>{:else}<p class="text-sm">{transfer.sender}</p>{/if}
         <p class="text-[10px]">normalized: {transfer.normalized_sender}</p>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
-        <p class="text-sm">{transfer.receiver}</p>
+        {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline">{transfer.receiver}</a>{:else}<p class="text-sm">{transfer.receiver}</p>{/if}
         <p class="text-[10px]">normalized: {transfer.normalized_receiver}</p>
       </div>
     </section>
