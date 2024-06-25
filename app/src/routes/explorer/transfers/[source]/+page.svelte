@@ -207,13 +207,18 @@ let processedTraces = derived(tracesAndHops, $tracesAndHops => {
       {@const pTrace = $processedTraces?.at(transferIndex) ?? null } 
       {#if pTrace }
         {#each pTrace as trace}
+          {@const explorer = chains.find(c => c.chain_id === trace.chain?.chain_id)?.explorers?.at(0)}
           <div>
             {#if trace.timestamp}
             <p class="text-sm text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {trace.height}</p>
             {/if}
             <h3 class="text-md font-bold capitalize">{trace.type}</h3>
             {#if trace.transaction_hash}
-              <p class="text-xs text-muted-foreground">{trace.transaction_hash}</p>
+              {#if explorer !== undefined}
+                <a href={`${explorer.tx_url}${trace.transaction_hash}`} class="block underline text-xs text-muted-foreground">{trace.transaction_hash}</a>
+              {:else}
+                <p class="text-xs text-muted-foreground">{trace.transaction_hash}</p>
+              {/if}
             {/if}
           </div>
         {/each}
