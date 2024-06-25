@@ -61,7 +61,7 @@ struct Record {
     id: i64,
     parents: Vec<i64>,
     item: String,
-    created_at: sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>,
+    created_at: sqlx::types::time::OffsetDateTime,
 }
 
 impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
