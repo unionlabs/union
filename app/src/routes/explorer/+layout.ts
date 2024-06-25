@@ -33,7 +33,7 @@ export const load = (loadEvent => ({
       route: "connections",
       icon: ConnectionIcon,
       description:
-        "IBC Connections based on on-chain handshake events. Status is only 'CONFIRM' if we have indexed the entire four-way handshake."
+        "Confirmed IBC Connections based on on-chain four-way handshake events."
     },
     { route: "channels", icon: ChannelsIcon, description: "Open IBC Channels" },
     { route: "packets", icon: PacketIcon, description: "Packets sent through Union" },

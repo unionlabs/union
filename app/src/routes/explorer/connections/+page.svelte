@@ -5,71 +5,54 @@ import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { writable } from "svelte/store"
-import CellStatus from "../(components)/cell-status.svelte"
+import { derived } from "svelte/store"
+import CellOriginConnection from "../(components)/cell-origin-connection.svelte"
+import { raise } from "$lib/utilities"
 
-$: connections = createQuery({
+
+let connections = createQuery({
   queryKey: ["connections"],
   refetchInterval: 5_000,
-  queryFn: async () => request(URLS.GRAPHQL, connectionsQuery, {})
+  queryFn: async () => { 
+    const response = await request(URLS.GRAPHQL, connectionsQuery, {})
+    if (!response.v0_connection_map) raise("error fetching transfers")
+
+    return response.v0_connection_map.map(connection => ({
+      source: {
+        chain_display_name: connection.from_chain_id ?? "unknown",
+        chain_id: connection.from_chain_id ?? "unknown",
+        connection_id: connection.from_connection_id ?? "unknown",
+        client_id: connection.from_client_id ?? "unknown",
+      },
+      destination: {
+        chain_display_name: connection.to_chain_id ?? "unknown",
+        chain_id: connection.to_chain_id ?? "unknown",
+        connection_id: connection.to_connection_id ?? "unknown",
+        client_id: connection.to_client_id ?? "unknown",
+      },
+      status: connection.status
+    }));
+  }
 })
 
-$: connectionsData = $connections?.data?.v0_connection_map ?? []
-
-type Connection = (typeof connectionsData)[number]
-
-$: connectionsStore = writable<Array<Connection>>(connectionsData as Array<Connection>)
-$: if (connections) {
-  connectionsStore.update(connections => connections)
-}
+let connectionsData = derived(connections, ($connections) =>  $connections.data ?? [] )
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {
-    accessorKey: "from_chain_id",
-    header: () => "From Chain ID",
+    accessorKey: "source",
+    header: () => "Source",
     size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellOriginConnection, { value: info.getValue() })
   },
   {
-    accessorKey: "from_client_id",
-    header: () => "From Client ID",
+    accessorKey: "destination",
+    header: () => "Destination",
     size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "from_connection_id",
-    header: () => "From Connection ID",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "to_chain_id",
-    header: () => "To Chain ID",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "to_client_id",
-    header: () => "To Client ID",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "to_connection_id",
-    header: () => "To Connection ID",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "status",
-    header: () => "Status",
-    size: 200,
-    cell: info =>
-      flexRender(CellStatus, {
-        value: info.getValue()
-      })
+    cell: info => flexRender(CellOriginConnection, { value: info.getValue() })
   }
 ]
 </script>
 
-<Table bind:dataStore={connectionsStore} {columns} />
+{#if $connections.data }
+  <Table bind:dataStore={connectionsData} {columns} />
+{/if}
