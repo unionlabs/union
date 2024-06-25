@@ -87,7 +87,9 @@ export async function transferAssetFromEvm(
        */
       args: [
         sourceChannel,
-        bech32AddressToHex({ address: recipient }),
+        recipient.startsWith("0x")
+          ? getAddress(recipient)
+          : bech32AddressToHex({ address: recipient }),
         [{ denom: denomAddress, amount }],
         memo,
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
@@ -127,37 +129,22 @@ export async function transferAssetFromEvmSimulate(
     memo?: string
     amount: bigint
     recipient: string
+    account?: Address
     denomAddress: Address
     sourceChannel: string
-    account?: Account | Address
     relayContractAddress: Address
   }
 ): Promise<TransactionResponse> {
   try {
-    account ||= client.account
     if (!account) return { success: false, data: "No account found" }
 
     denomAddress = getAddress(denomAddress)
     /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
     relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
-    const approveHash = await client.writeContract({
-      abi: erc20Abi,
-      account: account,
-      chain: client.chain,
-      address: denomAddress,
-      functionName: "approve",
-      args: [relayContractAddress, amount]
-    })
-    if (!approveHash) return { success: false, data: "Approval failed" }
-    const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
-    console.info(
-      `[transferAssetFromEvmSimulate] Approval transaction hash: ${receipt.transactionHash}`
-    )
-
     memo ||= timestamp()
     const gasCostEstimation = await client.estimateContractGas({
-      account: account,
+      account,
       abi: ucs01RelayAbi,
       functionName: "send",
       address: relayContractAddress,
@@ -171,7 +158,9 @@ export async function transferAssetFromEvmSimulate(
        */
       args: [
         sourceChannel,
-        bech32AddressToHex({ address: recipient }),
+        recipient.startsWith("0x")
+          ? getAddress(recipient)
+          : bech32AddressToHex({ address: recipient }),
         [{ denom: denomAddress, amount }],
         memo,
         { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },

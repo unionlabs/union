@@ -1,6 +1,8 @@
 export * from "./v0/mod.ts"
 import {
   http,
+  fallback,
+  erc20Abi,
   getAddress,
   type Address,
   type Account,
@@ -25,11 +27,9 @@ import {
   cosmosSameChainTransferSimulate
 } from "./transfer/cosmos.ts"
 import { sepolia } from "viem/chains"
-import { ibcActions } from "./ibc/actions.ts"
 import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/off-chain.ts"
 import { findPfmPath, createPfmMemo } from "./pfm.ts"
-import { cosmwasmActions } from "./cosmwasm/actions.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { transferAssetFromEvm, transferAssetFromEvmSimulate } from "./transfer/evm.ts"
@@ -77,14 +77,10 @@ export function createCosmosSdkClient({
   cosmos: CosmosClientParameters
 }) {
   const chain = evm.chain ?? sepolia
-  const transport: Transport = evm.transport ?? http("https://rpc2.sepolia.org")
+  const transport: Transport = fallback([evm.transport ?? http("https://rpc2.sepolia.org")])
 
   return createWalletClient({ ...evm, transport, chain, account: evm.account })
     .extend(publicActions)
-    .extend(() => ({
-      ibcActions,
-      cosmwasmActions
-    }))
     .extend(() => ({ offchainQuery }))
     .extend(() => ({
       bech32AddressToHex,
@@ -147,13 +143,6 @@ export function createCosmosSdkClient({
         memo = timestamp()
       }: TransferAssetsParameters): Promise<TransactionResponse> => {
         try {
-          if (!path.includes("union-testnet-8")) {
-            return {
-              success: false,
-              data: "Either source or destination chain ID is not union-testnet-8. Must be union-testnet-8 until PFM is implemented"
-            }
-          }
-
           const [sourceChainId, destinationChainId] = path
 
           if (network === "evm") {
@@ -228,8 +217,8 @@ export function createCosmosSdkClient({
                   msg: {
                     transfer: {
                       channel: sourceChannel,
-                      memo: `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`,
-                      receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
+                      receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
+                      memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
                     }
                   },
                   funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -257,9 +246,9 @@ export function createCosmosSdkClient({
                   sourceChannel,
                   sender: account.address,
                   token: { denom: denomAddress, amount: amount.toString() },
-                  memo: `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`,
                   timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-                  receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
+                  receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
+                  memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
                 }
               ]
             })
@@ -288,17 +277,45 @@ export function createCosmosSdkClient({
         denomAddress,
         sourceChannel,
         relayContractAddress,
-        evmSigner = evm.account,
         gasPrice = cosmos.gasPrice,
-        cosmosSigner = cosmos.account
+        cosmosSigner = cosmos.account,
+        evmSigner = typeof evm.account === "string" ? evm.account : client.account?.address
       }: TransferAssetsParameters): Promise<TransactionResponse> => {
-        if (!path.includes("union-testnet-8")) {
-          return {
-            success: false,
-            data: "Either source or destination chain ID is not union-testnet-8. Must be union-testnet-8 until PFM is implemented"
+        const [sourceChainId, destinationChainId] = path
+
+        if (network === "evm") {
+          evmSigner ||= client.account
+
+          if (!sourceChannel) return { success: false, data: "Source channel not found" }
+          if (!relayContractAddress) {
+            return { success: false, data: "Relay contract address not found" }
           }
+          evmSigner ||= client.account
+          if (sourceChainId === destinationChainId) {
+            const gas = await client.estimateContractGas({
+              abi: erc20Abi,
+              account: evmSigner,
+              functionName: "transfer",
+              address: getAddress(denomAddress),
+              args: [getAddress(recipient), amount]
+            })
+            return { success: true, data: gas.toString() }
+          }
+
+          return await transferAssetFromEvmSimulate(client, {
+            memo,
+            amount,
+            recipient,
+            sourceChannel,
+            denomAddress: getAddress(denomAddress),
+            relayContractAddress: getAddress(relayContractAddress),
+            account: typeof evmSigner === "string" ? evmSigner : evmSigner?.address
+          })
         }
 
+        if (!Object.hasOwn(cosmos, "transport")) {
+          return { success: false, data: "No cosmos transport found" }
+        }
         const cosmosRpcTransport = await rankCosmosRpcProviders({
           transports: Array.isArray(cosmos.transport)
             ? cosmos.transport.flatMap(t => t({}).value?.url).filter(Boolean)
@@ -308,25 +325,6 @@ export function createCosmosSdkClient({
           timeout: 1_000
         }).rank()
         if (!cosmosSigner) return { success: false, data: "No cosmos signer found" }
-
-        const [sourceChainId, destinationChainId] = path
-
-        if (network === "evm") {
-          if (!sourceChannel) return { success: false, data: "Source channel not found" }
-          if (!relayContractAddress) {
-            return { success: false, data: "Relay contract address not found" }
-          }
-          evmSigner ||= client.account
-          return await transferAssetFromEvmSimulate(client, {
-            memo,
-            amount,
-            recipient,
-            sourceChannel,
-            account: evmSigner,
-            denomAddress: getAddress(denomAddress),
-            relayContractAddress: getAddress(relayContractAddress)
-          })
-        }
 
         const cosmosRpcUrl = cosmosRpcTransport.at(0)?.rpcUrl
         if (!gasPrice) return { success: false, data: "No gas price found" }
@@ -354,6 +352,8 @@ export function createCosmosSdkClient({
             return { success: false, data: "Relay contract address not found" }
           }
 
+          const stamp = timestamp()
+
           return await cosmwasmTransferSimulate({
             gasPrice,
             cosmosRpcUrl,
@@ -363,9 +363,9 @@ export function createCosmosSdkClient({
                 contractAddress: relayContractAddress,
                 msg: {
                   transfer: {
-                    channel: sourceChainId,
-                    memo: "Simulating transfer",
-                    receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
+                    channel: sourceChannel,
+                    receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
+                    memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
                   }
                 },
                 funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -393,9 +393,9 @@ export function createCosmosSdkClient({
                 sourceChannel,
                 sender: account.address,
                 token: { denom: denomAddress, amount: amount.toString() },
-                memo: `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`,
                 timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-                receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient
+                receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
+                memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
               }
             ]
           })

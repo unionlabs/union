@@ -144,7 +144,6 @@ export function rankCosmosRpcProviders({
                 const timeoutSignal = AbortSignal.timeout(timeout)
                 await fetch(rpcUrl, {
                   method: "head",
-                  // @ts-expect-error
                   signal: AbortSignal.any([controller.signal, timeoutSignal])
                 })
 

@@ -26,7 +26,6 @@
     "@cosmjs/stargate": "0.32.3",
     "@cosmjs/tendermint-rpc": "0.32.3",
     "ofetch": "^1.3.4",
-    "valibot": "^0.34.0",
     "viem": "^2.16.2"
   },
   "devDependencies": {

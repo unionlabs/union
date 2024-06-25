@@ -62,9 +62,9 @@ try {
   })
 
   const pfmMemo = client.createPfmMemo({
-    channel: "channel-79",
-    receiver: "0x9149D5a2001a70446D7361a3d6D40ba15976421B",
-    port: "wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+    channel: "channel-80",
+    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+    port: "wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
   })
 
   const gasEstimationResponse = await client.simulateTransaction({
@@ -73,7 +73,7 @@ try {
     sourceChannel: channel_id,
     network: sepoliaInfo.rpc_type,
     relayContractAddress: contract_address,
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd", // "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
@@ -91,7 +91,7 @@ try {
     sourceChannel: channel_id,
     network: sepoliaInfo.rpc_type,
     relayContractAddress: contract_address,
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd", //"union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
     path: [source_chain.chain_id, destination_chain.chain_id]
   })

@@ -5,7 +5,9 @@ import { ofetch } from "ofetch"
  * - Figure out why graphql.union.build/api/rest/* gets a cloudflare challenge
  */
 
-const HUBBLE_URL = import.meta.env.HUBBLE_URL ?? "https://noble-pika-27.hasura.app"
+const HUBBLE_URL = import.meta.env
+  ? import.meta.env.HUBBLE_URL
+  : process.env.HUBBLE_URL ?? "https://noble-pika-27.hasura.app"
 
 const queryHeaders = new Headers({
   Accept: "application/json",

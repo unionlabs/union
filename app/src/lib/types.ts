@@ -26,6 +26,7 @@ export type Chain = {
   ucs1_configurations: Record<
     string,
     {
+      port: string
       contract_address: string
       channel_id: string
       forward: Record<

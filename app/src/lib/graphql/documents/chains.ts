@@ -14,6 +14,7 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
       type
     }
     ucs1_configurations {
+      port
       channel_id
       contract_address
       destination_chain {

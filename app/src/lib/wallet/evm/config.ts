@@ -29,7 +29,7 @@ import type { ChainWalletStore } from "$lib/wallet/types"
 import { walletConnect, injected } from "@wagmi/connectors"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
 
-const chains = [sepolia] as const
+const chains = [sepolia, berachainTestnetbArtio] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
 
 export type Wallet = GetAccountReturnType
@@ -184,13 +184,16 @@ export {
   provider as evmProvider
 }
 
+// https://portal.thirdweb.com/typescript/v5/supported-wallets#other-wallets
 const desiredWalletIds = [
   "injected",
   "io.metamask",
-  "app.phantom",
   "io.tokenary",
   "walletconnect",
-  "io.metamask.flask"
+  "io.metamask.flask",
+  "com.trustwallet.app",
+  "me.rainbow",
+  "app.phantom"
 ]
 
 export const evmWalletsInformation = config.connectors

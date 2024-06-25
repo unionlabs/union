@@ -1,4 +1,4 @@
-import { bech32AddressToHex, hexAddressToBech32 } from "#convert.ts"
+import { hexAddressToBech32 } from "#convert.ts"
 
 console.info(
   hexAddressToBech32({

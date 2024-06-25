@@ -1,6 +1,5 @@
 import {
   GasPrice,
-  defaultRegistryTypes,
   SigningStargateClient,
   assertIsDeliverTxSuccess,
   type MsgTransferEncodeObject
@@ -10,11 +9,10 @@ import type {
   MessageTransferWithOptionals,
   OfflineSigner as CosmosOfflineSigner
 } from "../types.ts"
-import { Registry } from "@cosmjs/proto-signing"
 import { timestamp } from "../utilities/index.ts"
 import type { TransactionResponse } from "../types.ts"
-import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx"
 import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
+
 /**
  * TODO:
  * - [ ] prefix logs with context to make it easier to debug
@@ -150,10 +148,6 @@ export async function cosmwasmTransfer({
   }
 }
 
-/**
- * TODO: fix - currently not working:
- *  "Query failed with (6): rpc error: code = Unknown desc = sender: empty address string is not allowed [CosmWasm/wasmd@v0.51.0/x/wasm/types/tx.go:123] with gas used: '1168': unknown request"
- */
 export async function cosmwasmTransferSimulate({
   gasPrice,
   instructions,
@@ -166,18 +160,10 @@ export async function cosmwasmTransferSimulate({
   gasPrice: { amount: string; denom: string }
 }): Promise<TransactionResponse> {
   try {
-    const registry = new Registry([
-      ...defaultRegistryTypes,
-      ["/cosmwasm.wasm.v1.MsgExecuteContract", MsgExecuteContract]
-    ])
-
     const signingClient = await SigningCosmWasmClient.connectWithSigner(
       cosmosRpcUrl,
       cosmosSigner,
-      {
-        registry,
-        gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-      }
+      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
     )
 
     const [account] = await cosmosSigner.getAccounts()
@@ -186,12 +172,16 @@ export async function cosmwasmTransferSimulate({
     const gas = await signingClient.simulate(
       account.address,
       instructions.map(instruction => ({
-        value: MsgExecuteContract.fromPartial({
+        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+        value: {
           sender: account.address,
           contract: instruction.contractAddress,
-          ...instruction
-        }),
-        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract"
+          msg: new TextEncoder().encode(JSON.stringify(instruction.msg)),
+          funds: instruction.funds?.map(fund => ({
+            denom: fund.denom,
+            amount: fund.amount.toString()
+          }))
+        }
       })),
       "auto"
     )

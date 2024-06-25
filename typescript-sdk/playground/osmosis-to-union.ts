@@ -47,7 +47,8 @@ try {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "uosmo" },
       transport: cosmosHttp(
-        osmosisTestnetInfo.rpcs?.at(0)?.url ?? "https://rpc.osmo.test.yieldpay.finance"
+        "https://rpc.testnet.osmosis.zone"
+        // osmosisTestnetInfo.rpcs?.at(0)?.url ?? "https://rpc.osmo.test.yieldpay.finance"
       )
     }
   })

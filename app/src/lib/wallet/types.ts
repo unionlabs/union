@@ -21,7 +21,7 @@ export type ChainWalletStore<TChainSource extends "cosmos" | "evm"> = {
   address: TChainSource extends "evm" ? EvmAddress | undefined : string | undefined
   rawAddress: TChainSource extends "evm" ? undefined : Uint8Array | undefined
   connectionStatus: State["status"]
-  connectedWallet: string | undefined
+  connectedWallet: "keplr" | "leap" | undefined
 }
 
 export type Msg = MsgSend
