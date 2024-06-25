@@ -115,8 +115,8 @@ jobs:
         run: |
           mkdir "$SYSTEM"
           echo "Getting OUTPUT and NARINFO_NAME"
-          echo "$(cat result.json | jq -r '.')"
-          OUTPUT=$(cat result.json | jq -r '.packages."$SYSTEM"."$COMPONENT".outputs.out')
+          echo "$(jq -r '.' result.json)"
+          OUTPUT=$(cat result.json | jq -r '.packages."$ENV.SYSTEM"."$ENV.COMPONENT".outputs.out')
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
 
           echo "Copying $OUTPUT from nixbuild.net"
