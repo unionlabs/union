@@ -428,7 +428,7 @@ onMount(() => {
 })
 
 $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
-  if(!$fromChainId) return
+  if (!$fromChainId) return
   const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
   const cosmosBalance = $userBalances[chainIndex]
   if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
