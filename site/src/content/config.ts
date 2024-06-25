@@ -26,6 +26,5 @@ const openApiCollection = defineCollection({
 export const collections = {
   blog: blogCollection,
   docs: defineCollection({ schema: docsSchema() }),
-  i18n: defineCollection({ type: "data", schema: i18nSchema() }),
-  "open-api": openApiCollection
+  i18n: defineCollection({ type: "data", schema: i18nSchema() })
 }

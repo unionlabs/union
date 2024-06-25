@@ -102,15 +102,9 @@ export default defineConfig({
           ]
         },
         {
-          label: "Integration",
+          label: "Integrations",
           autogenerate: {
-            directory: "/docs/integration"
-          }
-        },
-        {
-          label: "Demos",
-          autogenerate: {
-            directory: "/docs/demos"
+            directory: "/docs/integrations"
           }
         },
         {
@@ -118,12 +112,6 @@ export default defineConfig({
           collapsed: true,
           autogenerate: {
             directory: "/docs/joining-testnet"
-          }
-        },
-        {
-          label: "Style Guide",
-          autogenerate: {
-            directory: "/docs/style-guide"
           }
         }
       ],
