@@ -26,8 +26,8 @@ use unionlabs::{
 use crate::{
     ethereum::{
         self, balance_of_signers, get_proof, Ethereum, EthereumChain, EthereumConsensusChain,
-        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
-        ReadWrite, Readonly,
+        EthereumExecutionRpcs, EthereumInitError, EthereumKeyring, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite, Readonly,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
@@ -155,7 +155,7 @@ impl Arbitrum {
     }
 }
 
-impl EthereumChain for Arbitrum {
+impl EthereumExecutionRpcs for Arbitrum {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }

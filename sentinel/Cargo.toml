@@ -1,0 +1,46 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "sentinel"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+bech32             = "0.9.1"
+chain-utils        = { workspace = true }
+chrono             = { workspace = true, features = ["serde"] }
+clap               = { workspace = true, features = ["default", "derive", "env", "error-context"] }
+contracts          = { workspace = true }
+cosmwasm-std       = { version = "2.0.0", features = ["stargate", "cosmwasm_1_3"] }
+csv                = "1.3.0"
+dashmap            = { workspace = true }
+derive_more        = { workspace = true }
+ethers             = { workspace = true, features = ["rustls", "ws"] }
+futures            = { workspace = true }
+hex                = { version = "0.4.3", default-features = false }
+parking_lot        = "0.11"
+prost              = { workspace = true }
+protos             = { workspace = true, features = ["default", "client"] }
+queue-msg          = { workspace = true }
+rand               = "0.8"
+reqwest            = { workspace = true, features = ["json"] }
+serde              = { workspace = true, features = ["derive"] }
+serde-utils        = { workspace = true }
+serde_json         = { workspace = true }
+sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "chrono"] }
+tendermint         = { workspace = true }
+tendermint-proto   = { workspace = true }
+tendermint-rpc     = { workspace = true, features = ["http-client", "websocket-client"] }
+tokio              = { workspace = true, features = ["macros", "signal"] }
+tokio-stream       = { workspace = true }
+tonic              = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+ucs01-relay        = { workspace = true, features = ["library"] }
+ucs01-relay-api    = { workspace = true }
+unionlabs          = { workspace = true, features = ["ethabi"] }
+uuid               = { version = "1.5.0", features = ["serde", "v4"] }

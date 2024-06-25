@@ -1,8 +1,9 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use chain_utils::ethereum::{
-    Ethereum, EthereumChain, EthereumChainExt as _, EthereumConsensusChain, EthereumKeyring,
-    EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
+    Ethereum, EthereumChain, EthereumConsensusChain, EthereumExecutionRpcsExt as _,
+    EthereumKeyring, EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt,
+    ETHEREUM_REVISION_NUMBER,
 };
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
@@ -101,7 +102,6 @@ where
         StoredClientState<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
         StateProof: Encode<EthAbi>,
     >,
-
     ClientStateOf<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
@@ -443,7 +443,6 @@ impl<C, Tr> DoFetchState<Self, Tr> for Ethereum<C>
 where
     C: ChainSpec,
     Tr: ChainExt<SelfClientState: Decode<IbcStateEncodingOf<Ethereum<C>>> + Encode<EthAbi>>,
-
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
     type QueryUnfinalizedTrustedClientStateError = Never;
@@ -1044,18 +1043,15 @@ impl<C, Tr> DoAggregate for Identified<Ethereum<C>, Tr, EthereumAggregateMsg<C, 
 where
     C: ChainSpec,
     Tr: ChainExt<SelfClientState: Encode<EthAbi>>,
-
     Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, BootstrapData<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
-
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
-
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
@@ -1185,11 +1181,9 @@ impl<C, Tr> UseAggregate<RelayMessage> for Identified<Ethereum<C>, Tr, CreateUpd
 where
     C: ChainSpec,
     Tr: ChainExt,
-
     Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
     Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
-
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 {
@@ -1268,7 +1262,7 @@ where
                 req.counterparty_chain_id.clone(),
                 WaitForTimestamp {
                     timestamp: (genesis.genesis_time
-                        + (header.consensus_update.signature_slot * C::SECONDS_PER_SLOT::U64))
+                        + header.consensus_update.signature_slot * C::SECONDS_PER_SLOT::U64)
                         .try_into()
                         .unwrap(),
                     __marker: PhantomData,
@@ -1289,9 +1283,7 @@ impl<C, Tr> UseAggregate<RelayMessage> for Identified<Ethereum<C>, Tr, MakeCreat
 where
     C: ChainSpec,
     Tr: ChainExt,
-
     Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
-
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
@@ -1307,10 +1299,10 @@ where
             chain_id: bootstrap_chain_id,
             t: FinalityUpdate {
                 finality_update,
-                __marker: _
+                __marker: _,
             },
             __marker: _,
-        },]: Self::AggregatedData,
+        }]: Self::AggregatedData,
     ) -> Op<RelayMessage> {
         assert_eq!(chain_id, bootstrap_chain_id);
 
@@ -1320,9 +1312,9 @@ where
         let trusted_period = sync_committee_period::<_, C>(req.update_from.revision_height);
 
         assert!(
-        trusted_period <= target_period,
-        "trusted period {trusted_period} is behind target period {target_period}, something is wrong!",
-    );
+            trusted_period <= target_period,
+            "trusted period {trusted_period} is behind target period {target_period}, something is wrong!"
+        );
 
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
@@ -1352,16 +1344,13 @@ impl<C, Tr> UseAggregate<RelayMessage>
 where
     C: ChainSpec,
     Tr: ChainExt<SelfClientState: Encode<EthAbi>>,
-
     Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
-
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
-    // Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>:
-    //     TryFrom<AnyLightClientIdentified<AnyData>>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>, // Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>:
+                                                                                           //     TryFrom<AnyLightClientIdentified<AnyData>>,
 {
     type AggregatedData = HList![Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>];
 
@@ -1383,7 +1372,7 @@ where
                 __marker: _,
             },
             __marker: _,
-        },]: Self::AggregatedData,
+        }]: Self::AggregatedData,
     ) -> Op<RelayMessage> {
         assert_eq!(chain_id, light_client_updates_chain_id);
 

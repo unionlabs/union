@@ -43,7 +43,7 @@ use unionlabs::{
     },
     ics24::ChannelEndPath,
     id::ClientIdValidator,
-    traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
+    traits::{ChainIdOf, ClientIdOf, HeightOf},
     validated::ValidateT,
 };
 
@@ -54,7 +54,9 @@ use crate::{
     id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
-pub trait EthereumChainExt = ChainExt + chain_utils::ethereum::EthereumChainExt;
+pub trait EthereumChainExt = ChainExt
+    + chain_utils::ethereum::EthereumExecutionRpcsExt
+    + chain_utils::ethereum::EthereumChain;
 
 impl<C: ChainSpec> ChainExt for Ethereum<C> {
     type Data = EthereumData<C>;
