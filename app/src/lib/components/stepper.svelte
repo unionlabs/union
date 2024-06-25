@@ -2,6 +2,7 @@
 import { cn } from "$lib/utilities/shadcn"
 import Button from "$lib/components/ui/button/button.svelte"
 import { type Readable, derived } from "svelte/store"
+import SpinnerSvg from "./spinner-svg.svelte"
 
 type Step = {
   status: StepStatus
@@ -31,7 +32,7 @@ export let onRetry: (() => void) | undefined
       <div class={cn(
         "size-12 border-4 relative transition-all duration-300",
         step.status === "PENDING" ? "bg-white" : 
-        step.status === "IN_PROGRESS" ? "bg-muted" :
+        step.status === "IN_PROGRESS" ? "bg-white" :
         step.status === "COMPLETED" ? "bg-accent" :
         step.status === "ERROR" ? "bg-black" : ""
       )}>
@@ -43,6 +44,9 @@ export let onRetry: (() => void) | undefined
           step.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" : 
           step.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" : "w-2 h-2"
           )}></div>
+        {#if step.status === "IN_PROGRESS"}
+          <SpinnerSvg className="absolute text-accent w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"/>
+        {/if}
       </div>
       <!-- bottom step connector !-->
       <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" ?  "bg-black" : "")}></div>
