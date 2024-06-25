@@ -22,7 +22,7 @@ let indexStatus = createQuery({
   }
 })
 
-let indexStatusData = derived(indexStatus, $indexStatus => $indexStatus.data ?? []);
+let indexStatusData = derived(indexStatus, $indexStatus => $indexStatus.data ?? [])
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {

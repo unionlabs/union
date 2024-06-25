@@ -1,7 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Tooltip from "$lib/components/ui/tooltip"
-    import { truncate } from "$lib/utilities/format";
+import { truncate } from "$lib/utilities/format"
 
 export let value: {
   chain_display_name: string

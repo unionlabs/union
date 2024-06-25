@@ -17,7 +17,7 @@ import { raise, readableData } from "$lib/utilities"
 import { onMount } from "svelte"
 import type { Chain } from "$lib/types"
 
-export let chains: Array<Chain>;
+export let chains: Array<Chain>
 
 let transfers = createQuery({
   queryKey: ["transfers-all"],
@@ -51,11 +51,10 @@ let transfers = createQuery({
         source_transaction_hash: tx.source_transaction_hash
       }
     })
-
   }
 })
 
-let transfersData = derived(transfers, $transfers => $transfers.data ?? []);
+let transfersData = derived(transfers, $transfers => $transfers.data ?? [])
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {

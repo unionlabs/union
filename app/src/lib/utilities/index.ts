@@ -1,6 +1,6 @@
 import { derived } from "svelte/store"
 import type { CreateQueryResult } from "@tanstack/svelte-query"
-import type { Readable } from 'svelte'
+import type { Readable } from "svelte"
 
 export function raise(message?: string, opts?: ErrorOptions): never {
   throw new Error(message, opts)
@@ -82,6 +82,6 @@ export async function fetcher<T>(url: string, options?: RequestInit) {
   return data
 }
 
-
 // TODO: unfortunately does not work, typescript is not smart enough to infer the type, learn how to properly type this
-export const readableData = <T>(queryResult: CreateQueryResult<T>): Readable<T> => derived(queryResult, ($queryResult) =>  $queryResult.data  as T)
+export const readableData = <T>(queryResult: CreateQueryResult<T>): Readable<T> =>
+  derived(queryResult, $queryResult => $queryResult.data as T)

@@ -12,13 +12,13 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
 
-export let chains: Array<Chain>;
+export let chains: Array<Chain>
 
 let channels = createQuery({
   queryKey: ["channels"],
   refetchInterval: 5_000,
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
-  queryFn: async () => { 
+  queryFn: async () => {
     const response = await request(URLS.GRAPHQL, channelsQuery, {})
     if (!response.v0_channel_map) raise("error fetching transfers")
 
@@ -27,20 +27,20 @@ let channels = createQuery({
         chain_display_name: toDisplayName(channel.from_chain_id, chains),
         chain_id: channel.from_chain_id ?? "unknown",
         connection_id: channel.to_connection_id ?? "unknown",
-        channel_id: channel.from_channel_id ?? "unknown",
+        channel_id: channel.from_channel_id ?? "unknown"
       },
       destination: {
         chain_display_name: toDisplayName(channel.from_chain_id, chains),
         chain_id: channel.to_chain_id ?? "unknown",
         connection_id: channel.to_connection_id ?? "unknown",
-        channel_id: channel.to_channel_id ?? "unknown",
+        channel_id: channel.to_channel_id ?? "unknown"
       },
       status: channel.status
-    }));
+    }))
   }
 })
 
-let channelsData = derived(channels, $channels => $channels.data ?? []);
+let channelsData = derived(channels, $channels => $channels.data ?? [])
 
 const columns: Array<ColumnDef<{}>> = [
   {
