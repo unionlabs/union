@@ -27,6 +27,11 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
         port
       }
     }
+    explorers {
+      tx_url
+      block_url
+      address_url
+    }
     assets {
       denom
       display_symbol

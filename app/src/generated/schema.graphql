@@ -408,6 +408,29 @@ type query_root {
   ): [v0_connections!]!
 
   """
+  fetch data from the table: "v0.explorers"
+  """
+  v0_explorers(
+    """distinct select on columns"""
+    distinct_on: [v0_explorers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_explorers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_explorers_bool_exp
+  ): [v0_explorers!]!
+
+  """fetch data from the table: "v0.explorers" using primary key columns"""
+  v0_explorers_by_pk(id: Int!): v0_explorers
+
+  """
   fetch data from the table: "v0.faucets"
   """
   v0_faucets(
@@ -895,6 +918,43 @@ type subscription_root {
     """filter the rows returned"""
     where: v0_connections_bool_exp
   ): [v0_connections!]!
+
+  """
+  fetch data from the table: "v0.explorers"
+  """
+  v0_explorers(
+    """distinct select on columns"""
+    distinct_on: [v0_explorers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_explorers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_explorers_bool_exp
+  ): [v0_explorers!]!
+
+  """fetch data from the table: "v0.explorers" using primary key columns"""
+  v0_explorers_by_pk(id: Int!): v0_explorers
+
+  """
+  fetch data from the table in a streaming manner: "v0.explorers"
+  """
+  v0_explorers_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_explorers_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_explorers_bool_exp
+  ): [v0_explorers!]!
 
   """
   fetch data from the table: "v0.faucets"
@@ -1721,6 +1781,24 @@ type v0_chains {
   chain_id: String!
   display_name: String
   enabled: Boolean
+
+  """An array relationship"""
+  explorers(
+    """distinct select on columns"""
+    distinct_on: [v0_explorers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_explorers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_explorers_bool_exp
+  ): [v0_explorers!]!
   id: Int!
   logo_uri: String
   rpc_type: String
@@ -1794,6 +1872,7 @@ input v0_chains_bool_exp {
   chain_id: String_comparison_exp
   display_name: String_comparison_exp
   enabled: Boolean_comparison_exp
+  explorers: v0_explorers_bool_exp
   id: Int_comparison_exp
   logo_uri: String_comparison_exp
   rpc_type: String_comparison_exp
@@ -1811,6 +1890,7 @@ input v0_chains_order_by {
   chain_id: order_by
   display_name: order_by
   enabled: order_by
+  explorers_aggregate: v0_explorers_aggregate_order_by
   id: order_by
   logo_uri: order_by
   rpc_type: order_by
@@ -2400,6 +2480,222 @@ input v0_connections_stream_cursor_value_input {
   source_client_id: String
   source_connection_id: String
   status: String
+}
+
+"""Blockchain explorers and their info."""
+type v0_explorers {
+  address_url: String!
+  block_url: String!
+
+  """An object relationship"""
+  chain: v0_chains!
+  chain_id: Int!
+  description: String!
+  display_name: String!
+  home_url: String!
+  id: Int!
+  name: String!
+  tx_url: String!
+}
+
+"""
+order by aggregate values of table "v0.explorers"
+"""
+input v0_explorers_aggregate_order_by {
+  avg: v0_explorers_avg_order_by
+  count: order_by
+  max: v0_explorers_max_order_by
+  min: v0_explorers_min_order_by
+  stddev: v0_explorers_stddev_order_by
+  stddev_pop: v0_explorers_stddev_pop_order_by
+  stddev_samp: v0_explorers_stddev_samp_order_by
+  sum: v0_explorers_sum_order_by
+  var_pop: v0_explorers_var_pop_order_by
+  var_samp: v0_explorers_var_samp_order_by
+  variance: v0_explorers_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v0.explorers"
+"""
+input v0_explorers_avg_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v0.explorers". All fields are combined with a logical 'AND'.
+"""
+input v0_explorers_bool_exp {
+  _and: [v0_explorers_bool_exp!]
+  _not: v0_explorers_bool_exp
+  _or: [v0_explorers_bool_exp!]
+  address_url: String_comparison_exp
+  block_url: String_comparison_exp
+  chain: v0_chains_bool_exp
+  chain_id: Int_comparison_exp
+  description: String_comparison_exp
+  display_name: String_comparison_exp
+  home_url: String_comparison_exp
+  id: Int_comparison_exp
+  name: String_comparison_exp
+  tx_url: String_comparison_exp
+}
+
+"""
+order by max() on columns of table "v0.explorers"
+"""
+input v0_explorers_max_order_by {
+  address_url: order_by
+  block_url: order_by
+  chain_id: order_by
+  description: order_by
+  display_name: order_by
+  home_url: order_by
+  id: order_by
+  name: order_by
+  tx_url: order_by
+}
+
+"""
+order by min() on columns of table "v0.explorers"
+"""
+input v0_explorers_min_order_by {
+  address_url: order_by
+  block_url: order_by
+  chain_id: order_by
+  description: order_by
+  display_name: order_by
+  home_url: order_by
+  id: order_by
+  name: order_by
+  tx_url: order_by
+}
+
+"""Ordering options when selecting data from "v0.explorers"."""
+input v0_explorers_order_by {
+  address_url: order_by
+  block_url: order_by
+  chain: v0_chains_order_by
+  chain_id: order_by
+  description: order_by
+  display_name: order_by
+  home_url: order_by
+  id: order_by
+  name: order_by
+  tx_url: order_by
+}
+
+"""
+select columns of table "v0.explorers"
+"""
+enum v0_explorers_select_column {
+  """column name"""
+  address_url
+
+  """column name"""
+  block_url
+
+  """column name"""
+  chain_id
+
+  """column name"""
+  description
+
+  """column name"""
+  display_name
+
+  """column name"""
+  home_url
+
+  """column name"""
+  id
+
+  """column name"""
+  name
+
+  """column name"""
+  tx_url
+}
+
+"""
+order by stddev() on columns of table "v0.explorers"
+"""
+input v0_explorers_stddev_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v0.explorers"
+"""
+input v0_explorers_stddev_pop_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v0.explorers"
+"""
+input v0_explorers_stddev_samp_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+Streaming cursor of the table "v0_explorers"
+"""
+input v0_explorers_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_explorers_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_explorers_stream_cursor_value_input {
+  address_url: String
+  block_url: String
+  chain_id: Int
+  description: String
+  display_name: String
+  home_url: String
+  id: Int
+  name: String
+  tx_url: String
+}
+
+"""
+order by sum() on columns of table "v0.explorers"
+"""
+input v0_explorers_sum_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v0.explorers"
+"""
+input v0_explorers_var_pop_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v0.explorers"
+"""
+input v0_explorers_var_samp_order_by {
+  chain_id: order_by
+  id: order_by
+}
+
+"""
+order by variance() on columns of table "v0.explorers"
+"""
+input v0_explorers_variance_order_by {
+  chain_id: order_by
+  id: order_by
 }
 
 """
