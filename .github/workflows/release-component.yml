@@ -1,0 +1,280 @@
+name: Release Component
+
+on:
+  push:
+    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
+
+jobs:
+  eval-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      component: ${{ steps.eval.outputs.COMPONENT }}
+      image-produced: ${{ steps.eval.outputs.IMAGE_PRODUCED}}
+      build: ${{ steps.eval.outputs.BUILD }}
+    steps:
+      - id: eval
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          component="${TAG%/*}"
+          case $component in
+            bunde-testnet-8)
+              echo "COMPONENT=unionvisor-bundles" >> $GITHUB_OUTPUT
+              echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
+              build="(.attr == \"bundle-testnet-8\" or .attr == \"bundle-testnet-8-image\")"
+              ;;
+            cometbls-light-client)
+              echo "COMPONENT=cometbls-light-client" >> $GITHUB_OUTPUT
+              build="(.attr == \"cometbls-light-client\")"
+              ;;
+            ucs01-relay)
+              echo "COMPONENT=ucs01-relay" >> $GITHUB_OUTPUT
+              build="(.attr == \"ucs01-relay\")"
+              ;;
+            uniond-release)
+              echo "COMPONENT=uniond" >> $GITHUB_OUTPUT
+              echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
+              build="(.attr == \"uniond-release\" or .attr == \"uniond-release-image\")"
+              ;;
+            voyager)
+              echo "COMPONENT=voyager" >> $GITHUB_OUTPUT
+              build="(.attr == \"voyager\")"
+              ;;
+            *)
+              echo "Invalid tag $TAG"
+              exit 1
+              ;;
+          esac
+
+          # TODO: maybe use printf
+          echo "BUILD=(.top_attr == \"packages\") \n
+            and (.system == \"x86_64-linux\" or .system == \"aarch64-linux\") \n
+            and $build" >> $GITHUB_OUTPUT
+
+  build:
+    needs: eval-tag
+    uses: unionlabs/workflows/.github/workflows/build.yml@7c5ff7677d51d9b6d9a62701a6cf8de96510cc8b
+    secrets:
+      nixbuild_token: ${{ secrets.nixbuild_token }}
+      access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
+    with:
+      filter_builds: ${{ needs.eval-tag.outputs.build }}
+
+  download-images:
+    needs: [build, eval-tag]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        system: [aarch64-linux, x86_64-linux]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages.${{ matrix.system }}.${{ needs.eval-tag.outputs.component }}-image
+      - uses: nixbuild/nix-quick-install-action@v28
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
+        with:
+          nixbuild_token: ${{ secrets.nixbuild_token }}
+      - env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          mkdir "$SYSTEM"
+          nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$(jq -r '.packages."$SYSTEM"."$COMPONENT-image".outputs.out' result.json)" --extra-experimental-features nix-command
+          cat "$SYSTEM"/nar/*.nar.xz | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"-image
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.system }}.${{ needs.eval-tag.outputs.component }}-image
+          path: ${{ matrix.system }}.${{ needs.eval-tag.outputs.component }}-image
+
+  download-binaries:
+    needs: [build, eval-tag]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        system: [aarch64-linux, x86_64-linux]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages.${{ matrix.system }}.${{ needs.eval-tag.outputs.component }}
+      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
+        with:
+          nixbuild_token: ${{ secrets.nixbuild_token }}
+      - run: mkdir ${{ matrix.system }}
+      - env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          mkdir "$SYSTEM"
+          echo "Getting OUTPUT and NARINFO_NAME"
+          OUTPUT=$(jq -r '.packages."$SYSTEM"."$COMPONENT".outputs.out' result.json)
+          NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
+
+          echo "Copying artifacts from nixbuild.net"
+          nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$OUTPUT" --extra-experimental-features nix-command
+
+          echo "Get the NAR_URL"
+          nar_url_line=$(cat "./$SYSTEM/$NARINFO_NAME.narinfo" | grep "URL:")
+          NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
+
+          echo "Restore the package from the NAR_URL archive"
+          cat "$SYSTEM/$NAR_URL" | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"
+
+          if [[ "$COMPONENT" =~ uniond-release ]]
+          then
+            mv "$SYSTEM.$COMPONENT"/bin/uniond "$COMPONENT-$SYSTEM"
+          elif [[ "$COMPONENT" =~ bundle-testnet-8 || "$COMPONENT" =~ cometbls-light-client || "$COMPONENT" =~ ucs01-relay ]]
+          then
+            ls -la
+            tar -zcf "$COMPONENT-$SYSTEM" "$SYSTEM.$COMPONENT"
+          else
+            mv "$SYSTEM.$COMPONENT/bin/$COMPONENT" "$COMPONENT-$SYSTEM"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.eval-tag.outputs.component }}-${{ matrix.system }}
+          path: ${{ needs.eval-tag.outputs.component }}-${{ matrix.system }}
+
+  # TODO: Convert to individual releases
+  public-release:
+    needs: [download-binaries, eval-tag]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - run: |
+          echo "# sha256 Checksums" >> release.md
+          for artifact in \
+            bundle-testnet-8-aarch64-linux \
+            bundle-testnet-8-x86_64-linux \
+            cometbls-light-client-x86_64-linux \
+            ucs01-relay-x86_64-linux 
+          do
+            echo "- $(cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)" >> release.md
+          done
+
+          for artifact in \
+            uniond-release-aarch64-linux \
+            uniond-release-x86_64-linux \
+            voyager-aarch64-linux \
+            voyager-x86_64-linux 
+          do
+            echo "- $(cd $artifact && sha256sum $artifact)" >> release.md
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release.md
+          prerelease: false
+          repository: unionlabs/union-releases
+          token: ${{ secrets.UNION_RELEASES_PAT }}
+          tag_name: ${{github.ref_name}}
+          fail_on_unmatched_files: true
+          files: |
+            **/bundle-testnet-8-aarch64-linux.tar.gz
+            **/bundle-testnet-8-x86_64-linux.tar.gz
+            **/cometbls-light-client-x86_64-linux.tar.gz
+            **/ucs01-relay-x86_64-linux.tar.gz
+            **/uniond-release-aarch64-linux
+            **/uniond-release-x86_64-linux
+            **/voyager-aarch64-linux
+            **/voyager-x86_64-linux 
+
+  release-images:
+    needs: [download-images, eval-tag]
+    if: ${{ needs.eval-tag.outputs.image-produced }}
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
+        uses: actions/download-artifact@v4
+        with:
+          name: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
+      - name: Download x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
+        uses: actions/download-artifact@v4
+        with:
+          name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
+      - name: Tag Docker Images
+        env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          # TODO: seperate and output tag from eval-tag
+          TAG: ${{ needs.eval-tag.outputs.tag }}
+        run: |
+          echo "Entering for loop"
+          for arch in 'aarch64-linux' 'x86_64-linux'
+          do
+            echo "Tagging $COMPONENT for $arch"
+            dockerstring=$(docker load < $arch.$COMPONENT-image)
+            dockerstring=$(echo ${dockerstring##*':'})
+
+            echo "Getting image ID for $dockerstring"
+            imageid=$(docker images --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
+            imageid=$(echo ${imageid%%':'*})
+
+            echo "Tagging image"
+            docker tag "$imageid" "localhost:5000/unionlabs/$COMPONENT:$TAG-$arch"
+            echo "$COMPONENT for $arch is tagged"
+
+            docker push "localhost:5000/unionlabs/$COMPONENT:$TAG-$arch"
+
+            echo "localhost:5000/unionlabs/$COMPONENT:$TAG-$arch is pushed"
+          done
+      - name: Create Manifest
+        env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          # TODO: seperate and output tag from eval-tag
+          TAG: ${{ needs.eval-tag.outputs.tag }}
+        run: |
+          docker pull "localhost:5000/unionlabs/$COMPONENT:$TAG-aarch64-linux"
+          docker pull "localhost:5000/unionlabs/$COMPONENT:$TAG-x86_64-linux"
+          docker manifest create --insecure \
+          "localhost:5000/unionlabs/$COMPONENT:$TAG" \
+          --amend "localhost:5000/unionlabs/$COMPONENT:$TAG-aarch64-linux" \
+          --amend "localhost:5000/unionlabs/$COMPONENT:$TAG-x86_64-linux" \
+      - name: Push Manifest to Local Registry
+        env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          # TODO: seperate and output tag from eval-tag
+          TAG: ${{ needs.eval-tag.outputs.tag }}
+        run: docker manifest push "localhost:5000/unionlabs/$COMPONENT:$TAG"
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Annotate Manifest
+        env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          # TODO: seperate and output tag from eval-tag
+          TAG: ${{ needs.eval-tag.outputs.tag }}
+        run: |
+          curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 >regctl
+          chmod 755 regctl && sudo cp ./regctl /usr/bin
+          echo "downloaded & installed regctl"
+
+          regctl registry set --tls disabled localhost:5000
+          regctl image mod "localhost:5000/unionlabs/$COMPONENT:$TAG" --to-oci --create "$TAG" --annotation org.opencontainers.image.description="$(cat "$GITHUB_WORKSPACE/.github/container-descriptions/$COMPONENT.txt")"
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy Manifest to GHCR
+        env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          # TODO: seperate and output tag from eval-tag
+          TAG: ${{ needs.eval-tag.outputs.tag }}
+        run: |
+          wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
+          chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
+          echo "downloaded & installed skopeo"
+
+          skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/$COMPONENT:$TAG" "docker://ghcr.io/unionlabs/$COMPONENT:$TAG"
+          echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
