@@ -26,7 +26,6 @@ export let chains: Array<Chain>
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
-  retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
   refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
@@ -433,10 +432,11 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       {#if typeof transfer.source_timestamp === 'string' }
       <div class="mt-6 font-bold text-md">{toIsoString(new Date(transfer.source_timestamp)).split('T')[0]}</div>
       {/if}
+      <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
       {@const pTrace = $processedTraces?.at(transferIndex) ?? null } 
-      {@const traceSteps = $tracesSteps?.at(transferIndex) ?? null } 
-      {#if pTrace && traceSteps }
-        <Stepper steps={readable(traceSteps)}/>
+      {@const ts = derived(tracesSteps, ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []) } 
+      {#if pTrace }
+        <Stepper steps={ts}/>
       {:else}
         <LoadingLogo/>
       {/if}
