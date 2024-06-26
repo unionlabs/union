@@ -435,13 +435,13 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <section class="flex flex-col lg:flex-row gap-8">
       <div class=" lex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
-        {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline">{transfer.sender}</a>{:else}<p class="text-sm">{transfer.sender}</p>{/if}
-        <p class="text-[10px]">normalized: {transfer.normalized_sender}</p>
+        {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline break-words">{transfer.sender}</a>{:else}<p class="text-sm break-words">{transfer.sender}</p>{/if}
+        <p class="text-[10px] break-words">normalized: {transfer.normalized_sender}</p>
       </div>
       <div class="flex-1 lg:text-right flex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
-        {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline">{transfer.receiver}</a>{:else}<p class="text-sm">{transfer.receiver}</p>{/if}
-        <p class="text-[10px]">normalized: {transfer.normalized_receiver}</p>
+        {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline break-words">{transfer.receiver}</a>{:else}<p class="text-sm break-words">{transfer.receiver}</p>{/if}
+        <p class="text-[10px] break-words">normalized: {transfer.normalized_receiver}</p>
       </div>
     </section>
     </Card.Content>
