@@ -10,7 +10,7 @@ export let value: {
 </script>
 
 <div  class={cn("flex flex-col items-start")} {...$$restProps}>
-  <div class="font-bold">{value.chain_display_name}</div>
+  {#if value.chain_display_name}<div class="font-bold">{value.chain_display_name}</div>{/if}
   <Tooltip.Root>
     <Tooltip.Trigger>
       <div>{truncate(value.address,8)}</div>
