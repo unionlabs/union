@@ -97,6 +97,8 @@ let processedTransfers = derived([transfers, submittedTransfers], ([$transfers, 
       hop_chain_destination_channel_id,
       hop_chain_source_connection_id,
       hop_chain_source_channel_id,
+      // @ts-ignore
+      transfer_day: toIsoString(new Date(tx.source_timestamp)).split('T')[0],
       ...tx
     }
   })
@@ -438,9 +440,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     </section>
     </Card.Content>
     <Card.Footer class="items-start flex flex-col w-full gap-4">
-      {#if typeof transfer.source_timestamp === 'string' }
-      <div class="mt-6 font-bold text-md">{toIsoString(new Date(transfer.source_timestamp)).split('T')[0]}</div>
-      {/if}
+      <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
       <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
       {@const pTrace = $processedTraces?.at(transferIndex) ?? null } 
       {@const ts = derived(tracesSteps, ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []) } 
