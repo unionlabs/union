@@ -4,7 +4,7 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import AssetCard from "$lib/components/asset-card.svelte"
 import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
 import LoadingLogo from "./loading-logo.svelte"
-    import { userAddrOnChain } from "$lib/utilities/address";
+import { userAddrOnChain } from "$lib/utilities/address"
 
 export let userAddr: UserAddresses
 export let chains: Array<Chain>

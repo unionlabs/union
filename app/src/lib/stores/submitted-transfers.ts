@@ -1,3 +1,3 @@
-import { persisted } from 'svelte-persisted-store'
+import { persisted } from "svelte-persisted-store"
 
-export const submittedTransfers = persisted('submittedTransfers', { });
+export const submittedTransfers = persisted("submittedTransfers", {})

@@ -20,7 +20,7 @@ import type { Step, StepStatus } from "$lib/stepper-types.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import { zip } from "$lib/utilities/helpers.ts"
 import type { Chain } from "$lib/types"
-    import { submittedTransfers } from "$lib/stores/submitted-transfers";
+import { submittedTransfers } from "$lib/stores/submitted-transfers"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -41,68 +41,71 @@ let transfers = createQuery({
   }
 })
 //@ts-ignore
-let processedTransfers = derived([transfers, submittedTransfers], ([$transfers, $submittedTransfers]) => {
-  if ($transfers.data === undefined || $transfers.data.length === 0) {
-    if ($submittedTransfers[source] === undefined) {
-      return null
-    } 
-    return [ $submittedTransfers[source] ]
+let processedTransfers = derived(
+  [transfers, submittedTransfers],
+  ([$transfers, $submittedTransfers]) => {
+    if ($transfers.data === undefined || $transfers.data.length === 0) {
+      if ($submittedTransfers[source] === undefined) {
+        return null
+      }
+      return [$submittedTransfers[source]]
+    }
+    //@ts-ignore
+    return $transfers.data.map(transfer => {
+      let tx = structuredClone(transfer)
+
+      let hop_chain_id: string | null = null
+      let hop_chain_destination_connection_id: string | null = null
+      let hop_chain_destination_channel_id: string | null = null
+      let hop_chain_source_connection_id: string | null = null
+      let hop_chain_source_channel_id: string | null = null
+
+      // overwrite destination and receiver if to last forward
+      const lastForward = tx.forwards_2?.at(-1)
+      if (lastForward) {
+        hop_chain_id = tx.destination_chain_id
+        hop_chain_destination_connection_id = tx.destination_connection_id
+        hop_chain_destination_channel_id = tx.destination_channel_id
+        hop_chain_source_connection_id = lastForward.source_connection_id
+        hop_chain_source_channel_id = lastForward.source_channel_id
+        tx.destination_chain_id = lastForward.chain?.chain_id ?? "unknown"
+        tx.destination_connection_id = lastForward.destination_connection_id
+        tx.destination_channel_id = lastForward.destination_channel_id
+        tx.receiver = lastForward.receiver
+        tx.normalized_receiver = lastForward.receiver
+      }
+
+      // if (tx.hop !== null) {
+      //   // hop_chain = tx.destination_chain
+      //   // hop_chain_id = tx.destination_chain_id
+
+      //   // tx.destination_chain = tx.hop.destination_chain
+      //   // tx.destination_chain_id = tx.hop.destination_chain_id
+      //   // tx.destination_connection_id = tx.hop.destination_connection_id
+      //   // tx.destination_channel_id = tx.hop.destination_channel_id
+      //   // tx.receiver = tx.hop.receiver
+      //   tx.normalized_receiver = tx.hop.normalized_receiver
+      //   tx.traces.push.apply(tx.traces, tx.hop.traces)
+      //   tx.traces.sort((a, b) => {
+      //     // @ts-ignore timestamp is guaranteed to be a date
+      //     // biome-ignore lint/nursery/useDateNow: this is a biome bug
+      //     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      //   })
+      // }
+
+      return {
+        hop_chain_id,
+        hop_chain_destination_connection_id,
+        hop_chain_destination_channel_id,
+        hop_chain_source_connection_id,
+        hop_chain_source_channel_id,
+        // @ts-ignore
+        transfer_day: toIsoString(new Date(tx.source_timestamp)).split("T")[0],
+        ...tx
+      }
+    })
   }
-  //@ts-ignore
-  return $transfers.data.map(transfer => {
-    let tx = structuredClone(transfer)
-
-    let hop_chain_id: string | null = null
-    let hop_chain_destination_connection_id: string | null = null
-    let hop_chain_destination_channel_id: string | null = null
-    let hop_chain_source_connection_id: string | null = null
-    let hop_chain_source_channel_id: string | null = null
-
-    // overwrite destination and receiver if to last forward
-    const lastForward = tx.forwards_2?.at(-1)
-    if (lastForward) {
-      hop_chain_id = tx.destination_chain_id
-      hop_chain_destination_connection_id = tx.destination_connection_id
-      hop_chain_destination_channel_id = tx.destination_channel_id
-      hop_chain_source_connection_id = lastForward.source_connection_id
-      hop_chain_source_channel_id = lastForward.source_channel_id
-      tx.destination_chain_id = lastForward.chain?.chain_id ?? "unknown"
-      tx.destination_connection_id = lastForward.destination_connection_id
-      tx.destination_channel_id = lastForward.destination_channel_id
-      tx.receiver = lastForward.receiver
-      tx.normalized_receiver = lastForward.receiver
-    }
-
-    // if (tx.hop !== null) {
-    //   // hop_chain = tx.destination_chain
-    //   // hop_chain_id = tx.destination_chain_id
-
-    //   // tx.destination_chain = tx.hop.destination_chain
-    //   // tx.destination_chain_id = tx.hop.destination_chain_id
-    //   // tx.destination_connection_id = tx.hop.destination_connection_id
-    //   // tx.destination_channel_id = tx.hop.destination_channel_id
-    //   // tx.receiver = tx.hop.receiver
-    //   tx.normalized_receiver = tx.hop.normalized_receiver
-    //   tx.traces.push.apply(tx.traces, tx.hop.traces)
-    //   tx.traces.sort((a, b) => {
-    //     // @ts-ignore timestamp is guaranteed to be a date
-    //     // biome-ignore lint/nursery/useDateNow: this is a biome bug
-    //     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    //   })
-    // }
-
-    return {
-      hop_chain_id,
-      hop_chain_destination_connection_id,
-      hop_chain_destination_channel_id,
-      hop_chain_source_connection_id,
-      hop_chain_source_channel_id,
-      // @ts-ignore
-      transfer_day: toIsoString(new Date(tx.source_timestamp)).split('T')[0],
-      ...tx
-    }
-  })
-})
+)
 
 let tracesAndHops = createQuery({
   queryKey: ["transfers-by-source-traces-and-hops", source],
@@ -116,27 +119,30 @@ let tracesAndHops = createQuery({
     ).v0_transfers
 })
 
-let processedTraces = derived([tracesAndHops, submittedTransfers], ([$tracesAndHops, $submittedTransfers]) => {
-  if (!$tracesAndHops.data || $tracesAndHops.data.length === 0) {
-    if ($submittedTransfers[source] !== undefined) {
-      return [[]]; // pre-generate trace for submitted transfer
+let processedTraces = derived(
+  [tracesAndHops, submittedTransfers],
+  ([$tracesAndHops, $submittedTransfers]) => {
+    if (!$tracesAndHops.data || $tracesAndHops.data.length === 0) {
+      if ($submittedTransfers[source] !== undefined) {
+        return [[]] // pre-generate trace for submitted transfer
+      }
+      return null
     }
-    return null
+
+    return $tracesAndHops.data.map(tx => {
+      if (tx.hop !== null) {
+        tx.traces.push.apply(tx.traces, tx.hop.traces)
+        tx.traces.sort((a, b) => {
+          // @ts-ignore timestamp is guaranteed to be a date
+          // biome-ignore lint/nursery/useDateNow: this is a biome bug
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        })
+      }
+
+      return tx.traces
+    })
   }
-
-  return $tracesAndHops.data.map(tx => {
-    if (tx.hop !== null) {
-      tx.traces.push.apply(tx.traces, tx.hop.traces)
-      tx.traces.sort((a, b) => {
-        // @ts-ignore timestamp is guaranteed to be a date
-        // biome-ignore lint/nursery/useDateNow: this is a biome bug
-        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      })
-    }
-
-    return tx.traces
-  })
-})
+)
 
 let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
   [processedTraces, processedTransfers],

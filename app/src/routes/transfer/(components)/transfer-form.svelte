@@ -55,9 +55,8 @@ import {
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
-import { submittedTransfers } from '$lib/stores/submitted-transfers.ts'
-    import { toIsoString } from "$lib/utilities/date";
-
+import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
+import { toIsoString } from "$lib/utilities/date"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -428,13 +427,14 @@ const transfer = async () => {
     submittedTransfers.update(ts => {
       // @ts-ignore
       ts[$transferState.transferHash] = {
-        source_chain_id: $fromChainId, 
-        destination_chain_id: $toChainId, 
+        source_chain_id: $fromChainId,
+        destination_chain_id: $toChainId,
         source_transaction_hash: $transferState.transferHash,
         hop_chain_id: $hopChain?.chain_id,
         sender: userAddrOnChain(userAddr, $fromChain),
-        normalized_sender: $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
-        transfer_day: toIsoString(new Date(Date.now())).split('T')[0],
+        normalized_sender:
+          $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
+        transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
         receiver: $recipient,
         assets: {
           [$assetSymbol]: {
@@ -442,10 +442,10 @@ const transfer = async () => {
             amount: parsedAmount
           }
         },
-        amount,
+        amount
       }
-      return ts;
-    });
+      return ts
+    })
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }

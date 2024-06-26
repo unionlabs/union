@@ -14,7 +14,7 @@ export const rawToBech32 = (prefix: string, raw: Uint8Array): string => {
 
 export const userAddrOnChain = (userAddr: UserAddresses, chain: Chain): string => {
   if (chain.rpc_type === "cosmos") {
-    return rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes);
+    return rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes)
   }
-  return userAddr.evm.canonical;
+  return userAddr.evm.canonical
 }
