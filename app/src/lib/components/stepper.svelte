@@ -16,9 +16,9 @@ let stepsUpToError = derived(steps, $steps => {
 export let onRetry: (() => void) | undefined = undefined
 </script>
 
-<ol>
+<ol class="max-w-full">
 {#each $stepsUpToError as step, index}
-  <li class="flex gap-4">
+  <li class="flex gap-4 max-w-full">
     <div class="flex flex-col items-center">
       <!-- top step connector !-->
       <div class={cn("w-1 flex-1", index !== 0 ?  "bg-black" : "")}></div>
@@ -45,7 +45,7 @@ export let onRetry: (() => void) | undefined = undefined
       <!-- bottom step connector !-->
       <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" ?  "bg-black" : "")}></div>
     </div>
-    <div class="font-bold py-4 flex flex-col min-h-[80px] justify-center">
+    <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-50px)] break-words justify-center">
       {#if step.traceDetails}
         {@const trace = step.traceDetails}
         <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {trace.chain_display_name} at {#if trace.block_url}<a class="underline" href={trace.block_url}>{trace.block}</a>{:else}{trace.block}{/if}</p>
@@ -59,7 +59,7 @@ export let onRetry: (() => void) | undefined = undefined
           <p class="text-xs text-muted-foreground">{trace.tx}</p>
         {/if}
       {:else if step.description}
-          <div class="font-normal text-sm">{step.description}</div>      
+          <div class="font-normal break-words">{step.description}</div>      
       {/if} 
     </div>
   </li>
