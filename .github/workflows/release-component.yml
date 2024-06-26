@@ -149,50 +149,6 @@ jobs:
           name: ${{ needs.eval-tag.outputs.component }}-${{ matrix.system }}
           path: ${{ needs.eval-tag.outputs.component }}-${{ matrix.system }}
 
-  public-release:
-    needs: [download-binaries, eval-tag]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-      - id: prep-artifacts
-        env:
-          COMPONENT: ${{ needs.eval-tag.outputs.component }}
-        run: |
-          echo "# sha256 Checksums" >> release.md
-          case $COMPONENT in
-            bundle-testnet-8)
-              comp_aarch64="$COMPONENT-aarch64-linux"
-              comp_aarch64_archive="$comp_aarch64.tar.gz"
-              echo "- $(cd "$comp_aarch64" && mv "$comp_aarch64" "$comp_aarch64_archive" && sha256sum "$comp_aarch64_archive")" >> release.md
-              comp_x86_64="$COMPONENT-x86_64-linux"
-              comp_x86_64_archive="$comp_x86_64.tar.gz"
-              echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_x86_64_archive" && sha256sum "$comp_x86_64_archive")" >> release.md
-              echo "FILES=**/$COMPONENT-*.tar.gz" >> $GITHUB_OUTPUT
-              ;;
-            cometbls-light-client | ucs01-relay)
-              comp_x86_64="$COMPONENT-x86_64-linux"
-              comp_archive="$COMPONENT.tar.gz"
-              echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_archive" && sha256sum "$comp_archive")" >> release.md
-              echo "FILES=**/$comp_archive" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              comp_aarch64="$COMPONENT-aarch64-linux"
-              echo "- $(cd "$comp_aarch64" && sha256sum "$comp_aarch64")" >> release.md
-              comp_x86_64="$COMPONENT-x86_64-linux"
-              echo "- $(cd "$comp_x86_64" && sha256sum "$comp_x86_64")" >> release.md
-              echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
-              ;;
-          esac
-      - uses: softprops/action-gh-release@v2
-        with:
-          body_path: release.md
-          prerelease: false
-          repository: ${{ needs.eval-tag.outputs.repo }}
-          token: ${{ secrets.UNION_RELEASES_PAT }}
-          tag_name: ${{ needs.eval-tag.outputs.version }}
-          fail_on_unmatched_files: true
-          files: ${{ steps.prep-artifacts.outputs.FILES }}
-
   release-images:
     needs: [download-images, eval-tag]
     if: ${{ needs.eval-tag.outputs.image-produced }}
@@ -290,3 +246,47 @@ jobs:
 
           skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/$COMPONENT:$TAG" "docker://ghcr.io/unionlabs/$COMPONENT:$TAG"
           echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
+
+  public-release:
+    needs: [download-binaries, eval-tag, release-images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - id: prep-artifacts
+        env:
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+        run: |
+          echo "# sha256 Checksums" >> release.md
+          case $COMPONENT in
+            bundle-testnet-8)
+              comp_aarch64="$COMPONENT-aarch64-linux"
+              comp_aarch64_archive="$comp_aarch64.tar.gz"
+              echo "- $(cd "$comp_aarch64" && mv "$comp_aarch64" "$comp_aarch64_archive" && sha256sum "$comp_aarch64_archive")" >> release.md
+              comp_x86_64="$COMPONENT-x86_64-linux"
+              comp_x86_64_archive="$comp_x86_64.tar.gz"
+              echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_x86_64_archive" && sha256sum "$comp_x86_64_archive")" >> release.md
+              echo "FILES=**/$COMPONENT-*.tar.gz" >> $GITHUB_OUTPUT
+              ;;
+            cometbls-light-client | ucs01-relay)
+              comp_x86_64="$COMPONENT-x86_64-linux"
+              comp_archive="$COMPONENT.tar.gz"
+              echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_archive" && sha256sum "$comp_archive")" >> release.md
+              echo "FILES=**/$comp_archive" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              comp_aarch64="$COMPONENT-aarch64-linux"
+              echo "- $(cd "$comp_aarch64" && sha256sum "$comp_aarch64")" >> release.md
+              comp_x86_64="$COMPONENT-x86_64-linux"
+              echo "- $(cd "$comp_x86_64" && sha256sum "$comp_x86_64")" >> release.md
+              echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
+              ;;
+          esac
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release.md
+          prerelease: false
+          repository: ${{ needs.eval-tag.outputs.repo }}
+          token: ${{ secrets.UNION_RELEASES_PAT }}
+          tag_name: ${{ needs.eval-tag.outputs.version }}
+          fail_on_unmatched_files: true
+          files: ${{ steps.prep-artifacts.outputs.FILES }}
