@@ -182,8 +182,6 @@ const transfer = async () => {
   if (!$toChain) return toast.error("can't find chain in config")
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
-  if (!userAddr.evm) return toast.error("No evm wallet connected")
-  if (!userAddr.cosmos) return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
   if (!$ucs01Configuration)
     return toast.error(
