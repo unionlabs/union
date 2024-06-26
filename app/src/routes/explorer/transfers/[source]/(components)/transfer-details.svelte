@@ -22,6 +22,7 @@ import { zip } from "$lib/utilities/helpers.ts"
 import type { Chain } from "$lib/types"
 import { submittedTransfers } from "$lib/stores/submitted-transfers"
 import { cn } from "$lib/utilities/shadcn"
+import Truncate from "$lib/components/truncate.svelte"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -385,8 +386,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     !-->
 
   <Card.Root class="flex flex-col max-w-full overflow-auto justify-self-center">
-    <Card.Header class="font-bold text-md text-center break-words text-muted-foreground">
-      TRANSFER {transfer.source_transaction_hash}
+    <Card.Header class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center">
+      TRANSFER <Truncate value={transfer.source_transaction_hash} type="hash"/>
     </Card.Header>
     <Card.Content class="flex flex-col gap-8">
 
@@ -395,9 +396,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         <ul class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
             {#if value.info}
-              <li><ExplorerPrecise amount={value.amount} decimals={value.info.decimals} showToolTip displayDecimals={8}/> {truncate(value.info.display_symbol, 8)}</li>
+              <li><ExplorerPrecise amount={value.amount} decimals={value.info.decimals} showToolTip displayDecimals={8}/><Truncate value={value.info.display_symbol} type="address"/></li>
               {:else}
-              <li>{value.amount} {truncate(denom, 4)}</li>
+              <li>{value.amount} <Truncate value={denom} type="address"/></li>
               {/if}
           {/each}
         </ul>
