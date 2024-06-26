@@ -429,6 +429,7 @@ const transfer = async () => {
       ts[$transferState.transferHash] = {
         source_chain_id: $fromChainId, 
         destination_chain_id: $toChainId, 
+        source_transaction_hash: $transferState.transferHash,
         hop_chain_id: $hopChain?.chain_id,
         sender: userAddrOnChain(userAddr, $fromChain),
         normalized_sender: $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
