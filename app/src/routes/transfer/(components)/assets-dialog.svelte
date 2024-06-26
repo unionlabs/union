@@ -8,6 +8,7 @@ import type { Chain } from "$lib/types.ts"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
+import { toast } from "svelte-sonner"
 
 /**
  * TODO: format the balance to a readable format - in order to do that properly, need:
@@ -28,6 +29,15 @@ export let assets: Array<{
 }>
 
 export let onAssetSelect: (asset: string) => void
+
+const copyAddress = (asset: { address: string }) => {
+  if (asset.address) {
+    navigator.clipboard
+      .writeText(asset.address)
+      .then(() => toast.info("Address copied!"))
+      .catch(err => toast.error("Failed to copy address"))
+  }
+}
 </script>
 
 <Dialog.Root
@@ -49,21 +59,27 @@ export let onAssetSelect: (asset: string) => void
           {#if $showUnsupported || supportedAsset}
             <li
               class={cn(
-              'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
+              'pb-2 dark:text-accent-foreground flex h-full justify-start ali',
             )}
             >
+              <button type="button" on:click={() => copyAddress(asset)} variant="ghost" class="group pr-2 pl-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4 opacity-50 group-hover:fill-accent group-hover:opacity-100">
+                  <path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5h-1v-3.379a3 3 0 0 0-.879-2.121L10.5 5.379A3 3 0 0 0 8.379 4.5H7v-1Z" />
+                  <path d="M4.5 6A1.5 1.5 0 0 0 3 7.5v9A1.5 1.5 0 0 0 4.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L9.44 6.439A1.5 1.5 0 0 0 8.378 6H4.5Z" />
+                </svg>
+              </button>
               <Button
                 variant="ghost"
-                class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
+                class={cn('size-full px-2 py-2 w-full text-foreground rounded-none flex justify-between pr-4')}
                 on:click={() => {
                 onAssetSelect(asset.symbol)
                 dialogOpen = false
               }}
               >
-                <div class="size-full flex flex-col items-start" class:opacity-30={!supportedAsset}>
+                <div class="flex flex-col items-start" class:opacity-30={!supportedAsset}>
                   {truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}
                 </div>
-                <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
+                <p class="text-lg font-black" class:opacity-30={!supportedAsset}>
                   <Precise {chain} {asset} showToolTip/>
                 </p>
               </Button>
