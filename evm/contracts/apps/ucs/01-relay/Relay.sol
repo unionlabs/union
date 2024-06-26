@@ -409,7 +409,7 @@ contract UCS01Relay is
                 denomAddress =
                     denomToAddress[ibcPacket.destination_channel][denom];
                 if (denomAddress == address(0)) {
-                    denomAddress = address(new ERC20Denom(token.denom));
+                    denomAddress = address(new ERC20Denom{salt: keccak256(bytes(denom))}(denom));
                     denomToAddress[ibcPacket.destination_channel][denom] =
                         denomAddress;
                     addressToDenom[ibcPacket.destination_channel][denomAddress]
