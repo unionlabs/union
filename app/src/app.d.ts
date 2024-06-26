@@ -20,6 +20,13 @@ declare global {
 
   interface Window extends KeplrWindow, LeapWindow {
     EventEmitter: typeof EventEmitter
+    __google_recaptcha_client: boolean
+    grecaptcha: {
+      execute: (siteKey: string, options: { action: string }) => Promise<string>
+      enterprise: {
+        execute: (siteKey: string, options: { action: string }) => Promise<string>
+      }
+    }
   }
 
   interface WindowEventMap {

@@ -1,5 +1,6 @@
 <script lang="ts">
 import { toast } from "svelte-sonner"
+import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
 import { Label } from "$lib/components/ui/label"
 import { debounce } from "$lib/utilities/index.ts"
@@ -59,7 +60,16 @@ function handleMouseMove(event: MouseEvent) {
 
 const mutation = createMutation({
   mutationKey: ["faucetRequest"],
-  mutationFn: async () => getUnoFromFaucet(address),
+
+  mutationFn: async () => {
+    if (!window?.__google_recaptcha_client) {
+      return console.error("Recaptcha not loaded")
+    }
+    const token = await window.grecaptcha.execute("6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow", {
+      action: "submit"
+    })
+    return getUnoFromFaucet({ address, captchaToken: token })
+  },
   onError: error => {
     console.error("Error during the faucet request:", error)
     submissionStatus = "error"
@@ -67,7 +77,6 @@ const mutation = createMutation({
   },
   onSuccess: data => {
     toast.success("Faucet request successful!")
-    console.log("Faucet request successful:", data)
   }
 })
 
@@ -81,7 +90,8 @@ const debouncedSubmit = debounce(() => {
   toast.error("Faucet request submitted!")
 }, debounceDelay)
 
-const handleSubmit = () => {
+const handleSubmit = (event: SubmitEvent) => {
+  event.preventDefault()
   submissionStatus = "submitting"
   toast.loading("Submitting faucet request..")
   debouncedSubmit()
@@ -92,96 +102,101 @@ const handleSubmit = () => {
   <title>Union | Faucet</title>
 </svelte:head>
 
-  <main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
-    <Card.Root class="w-full max-w-lg">
-      <Card.Header>
-        <Card.Title>UNO Faucet</Card.Title>
-        <Card.Description>Official faucet for Union's native gas token.</Card.Description>
-      </Card.Header>
-      <Card.Content>
-        <form class="space-y-8" on:submit|preventDefault={handleSubmit}>
-          <div class="relative flex flex-col gap-4">
-            <div class="grid w-full items-center gap-2 mb-4">
-              <Label for="address">Address</Label>
-              <div class="flex items-start gap-2">
-                <div class="w-full">
-                  <div class="relative w-full mb-2">
-                    <Input
-                      autocapitalize="none"
-                      autocomplete="off"
-                      autocorrect="off"
-                      bind:value={address}
-                      disabled={inputState === 'locked'}
-                      id="address"
-                      on:blur={handleBlur}
-                      on:focus={handleFocus}
-                      on:input={handleInput}
-                      on:mouseenter={handleMouseEnter}
-                      on:mouseleave={handleMouseLeave}
-                      on:mousemove={handleMouseMove}
-                      pattern={unionAddressRegex.source}
-                      placeholder="union14ea6..."
-                      required={true}
-                      spellcheck="false"
-                      type="text"
-                      class="disabled:opacity-100 disabled:bg-black/20"
-                    />
-                  </div>
-                  <div class="flex justify-between px-1">
-                    <div class="text-xs">
-                      <ChainsGate let:chains>
-                        <WalletGate  let:userAddr let:connected let:cosmosConnected>
-                          <p>
-                            <span class="text-muted-foreground">Balance: </span>
+<main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
+  <Card.Root class="w-full max-w-lg">
+    <Card.Header>
+      <Card.Title>UNO Faucet</Card.Title>
+      <Card.Description>Official faucet for Union's native gas token.</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <form class="space-y-8" action="?" method="POST" on:submit|preventDefault={handleSubmit}>
+        <div
+          class="g-recaptcha"
+          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
+          data-action="LOGIN"
+        ></div>
+        <div class="relative flex flex-col gap-4">
+          <div class="grid w-full items-center gap-2 mb-4">
+            <Label for="address">Address</Label>
+            <div class="flex items-start gap-2">
+              <div class="w-full">
+                <div class="relative w-full mb-2">
+                  <Input
+                    autocapitalize="none"
+                    autocomplete="off"
+                    autocorrect="off"
+                    bind:value={address}
+                    disabled={inputState === 'locked'}
+                    id="address"
+                    on:blur={handleBlur}
+                    on:focus={handleFocus}
+                    on:input={handleInput}
+                    on:mouseenter={handleMouseEnter}
+                    on:mouseleave={handleMouseLeave}
+                    on:mousemove={handleMouseMove}
+                    pattern={unionAddressRegex.source}
+                    placeholder="union14ea6..."
+                    required={true}
+                    spellcheck="false"
+                    type="text"
+                    class="disabled:opacity-100 disabled:bg-black/20"
+                  />
+                </div>
+                <div class="flex justify-between px-1">
+                  <div class="text-xs">
+                    <ChainsGate let:chains>
+                      <WalletGate let:userAddr let:connected let:cosmosConnected>
+                        <p>
+                          <span class="text-muted-foreground">Balance: </span>
                           {#if cosmosConnected}
-                            <UnoBalance {chains} {userAddr} {connected}/>
-                            {:else}
+                            <UnoBalance {chains} {userAddr} {connected} />
+                          {:else}
                             Connect cosmos wallet
                           {/if}
-                          </p>
-                        </WalletGate>
-                      </ChainsGate>
-                    </div>
-                    {#if userInput}
-                      <button
-                        type="button"
-                        on:click={resetInput}
-                        class="text-xs text-muted-foreground hover:text-primary transition"
-                      >
-                        Reset
-                      </button>
-                    {/if}
+                        </p>
+                      </WalletGate>
+                    </ChainsGate>
                   </div>
-                </div>
-                <Button
-                  aria-label="Toggle address lock"
-                  class="px-3"
-                  on:click={onLockClick}
-                  variant="ghost"
-                >
-                  {#if inputState === 'locked'}
-                    <LockLockedIcon class="size-4.5" />
-                  {:else}
-                    <LockOpenIcon class="size-4.5" />
+                  {#if userInput}
+                    <button
+                      type="button"
+                      on:click={resetInput}
+                      class="text-xs text-muted-foreground hover:text-primary transition"
+                    >
+                      Reset
+                    </button>
                   {/if}
-                </Button>
+                </div>
               </div>
-            </div>
-            <div class="flex flex-col gap-4 sm:flex-row">
-              <Button class="w-full sm:w-fit" type="submit">
-                Submit
-                {#if submissionStatus === 'submitting'}
-                  <span class="ml-2">
-                    <SpinnerSVG className="w-4 h-4" />
-                  </span>
+              <Button
+                aria-label="Toggle address lock"
+                class="px-3"
+                on:click={onLockClick}
+                variant="ghost"
+              >
+                {#if inputState === 'locked'}
+                  <LockLockedIcon class="size-4.5" />
+                {:else}
+                  <LockOpenIcon class="size-4.5" />
                 {/if}
               </Button>
             </div>
           </div>
-        </form>
-      </Card.Content>
-    </Card.Root>
-    <ChainsGate let:chains>
-      <ExternalFaucets {chains}/>
-    </ChainsGate>
-  </main>
+          <div class="flex flex-col gap-4 sm:flex-row">
+            <Button type="submit" class={cn('w-full sm:w-fit')}>
+              Submit
+              {#if submissionStatus === 'submitting'}
+                <span class="ml-2">
+                  <SpinnerSVG className="w-4 h-4" />
+                </span>
+              {/if}
+            </Button>
+          </div>
+        </div>
+      </form>
+    </Card.Content>
+  </Card.Root>
+  <ChainsGate let:chains>
+    <ExternalFaucets {chains} />
+  </ChainsGate>
+</main>

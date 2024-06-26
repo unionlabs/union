@@ -1,14 +1,17 @@
 import { faucetUnoMutation } from "$lib/graphql/documents/faucet.ts"
 import { URLS } from "$lib/constants"
 
-export async function getUnoFromFaucet(address: string) {
+export async function getUnoFromFaucet({
+  address,
+  captchaToken
+}: { address: string; captchaToken: string }) {
   const response = await fetch(URLS.GRAPHQL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query: faucetUnoMutation,
-      variables: { address },
-      operationName: "FaucetUnoMutation"
+      operationName: "FaucetUnoMutation",
+      variables: { address, captchaToken }
     })
   })
 
