@@ -20,6 +20,7 @@ import type { Step, StepStatus } from "$lib/stepper-types.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import { zip } from "$lib/utilities/helpers.ts"
 import type { Chain } from "$lib/types"
+    import { submittedTransfers } from "$lib/stores/submitted-transfers";
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -356,7 +357,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 <a href="/explorer/transfers">Back to all transfers </a>
 !-->
 
-{#if !!$transfers.data && $processedTransfers !== null}
+{#if $transfers.data && $processedTransfers !== null && $processedTransfers.length > 0}
 <div class="max-h-auto min-w-full flex flex-col items-center gap-6">
   {#each $processedTransfers as transfer, transferIndex}
     {@const sourceExplorer = chains.find(c => c.chain_id === transfer.source_chain_id)?.explorers?.at(0)}
@@ -444,6 +445,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
   </Card.Root>
   {/each}
 </div>
+{:else if $submittedTransfers[source] !== undefined}
+  {@const transfer = $submittedTransfers[source]} 
+  {JSON.stringify(transfer, null, 2)}
 {:else if $transfers.isLoading}
   <LoadingLogo class="size-16"/>
 {:else if $transfers.isError}

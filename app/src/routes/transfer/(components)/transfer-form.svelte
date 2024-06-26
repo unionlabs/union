@@ -55,6 +55,8 @@ import {
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
+import { submittedTransfers } from '$lib/stores/submitted-transfers.ts'
+
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -422,6 +424,14 @@ const transfer = async () => {
 
   if ($transferState.kind === "TRANSFERRING") {
     await sleep(REDIRECT_DELAY_MS)
+    submittedTransfers.update(ts => {
+      // @ts-ignore
+      ts[$transferState.transferHash] = {
+        source_chain_id: $fromChainId, 
+        destination_chain_id: $toChainId, 
+      }
+      return ts;
+    });
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
