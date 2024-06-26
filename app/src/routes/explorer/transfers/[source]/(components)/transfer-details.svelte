@@ -374,7 +374,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 !-->
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
-<div class="max-h-auto min-w-full flex flex-col items-center gap-6">
+<div class="flex flex-col w-full items-center gap-6">
   {#each $processedTransfers as transfer, transferIndex}
     {@const sourceExplorer = chains.find(c => c.chain_id === transfer.source_chain_id)?.explorers?.at(0)}
     {@const destinationExplorer = chains.find(c => c.chain_id === transfer.destination_chain_id)?.explorers?.at(0)}
@@ -383,8 +383,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col  justify-self-center">
-    <Card.Header class="font-bold text-md text-center text-muted-foreground">
+  <Card.Root class="flex flex-col max-w-full overflow-auto justify-self-center">
+    <Card.Header class="font-bold text-md text-center break-words text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
     <Card.Content class="flex flex-col gap-8">
