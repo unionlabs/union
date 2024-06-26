@@ -5,6 +5,7 @@ import "solidity-stringutils/strings.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
 import "../../../../../contracts/lib/Hex.sol";
 import "../../../../../contracts/apps/Base.sol";
 import "../../../../../contracts/apps/ucs/01-relay/Relay.sol";
@@ -1528,5 +1529,131 @@ contract RelayTests is Test {
 
         (, bytes32[] memory writes) = vm.accesses(address(relay));
         assertEq(writes.length, 0);
+    }
+
+    struct UpdateTokenMetadataArg {
+        string name;
+        string symbol;
+        uint8 decimals;
+    }
+
+    function test_updateTokenMetadata_ok(
+        ReceiveRemoteToken memory args,
+        UpdateTokenMetadataArg memory updateArgs
+    ) public {
+        vm.assume(args.receiver != address(0));
+        vm.assume(args.relayer != address(0));
+        vm.assume(args.sequence > 1);
+        vm.assume(args.amount > 0);
+        vm.assume(
+            keccak256(bytes(args.denomName))
+                != keccak256(bytes(updateArgs.name))
+        );
+
+        initChannel(
+            args.sourcePort,
+            args.sourceChannel,
+            args.destinationPort,
+            args.destinationChannel
+        );
+
+        receiveRemoteToken(
+            args.sequence - 1,
+            args.sourcePort,
+            args.sourceChannel,
+            args.destinationPort,
+            args.destinationChannel,
+            args.timeoutRevisionNumber,
+            args.timeoutRevisionHeight,
+            args.timeoutTimestamp,
+            args.sender,
+            args.receiver,
+            args.relayer,
+            args.denomName,
+            args.amount,
+            args.extension
+        );
+
+        IERC20Denom denom = IERC20Denom(
+            relay.getDenomAddress(
+                args.destinationChannel,
+                RelayLib.makeForeignDenom(
+                    args.destinationPort,
+                    args.destinationChannel,
+                    args.denomName
+                )
+            )
+        );
+
+        vm.prank(address(this));
+        UCS01Relay(address(relay)).updateMetadata(
+            denom, updateArgs.name, updateArgs.symbol, updateArgs.decimals
+        );
+
+        assertEq(updateArgs.name, denom.name());
+        assertEq(updateArgs.symbol, denom.symbol());
+        assertEq(updateArgs.decimals, denom.decimals());
+    }
+
+    function test_updateTokenMetadata_onlyOwner(
+        ReceiveRemoteToken memory args,
+        UpdateTokenMetadataArg memory updateArgs,
+        address malicious
+    ) public {
+        vm.assume(malicious != address(this));
+        vm.assume(args.receiver != address(0));
+        vm.assume(args.relayer != address(0));
+        vm.assume(args.sequence > 1);
+        vm.assume(args.amount > 0);
+        vm.assume(
+            keccak256(bytes(args.denomName))
+                != keccak256(bytes(updateArgs.name))
+        );
+
+        initChannel(
+            args.sourcePort,
+            args.sourceChannel,
+            args.destinationPort,
+            args.destinationChannel
+        );
+
+        receiveRemoteToken(
+            args.sequence - 1,
+            args.sourcePort,
+            args.sourceChannel,
+            args.destinationPort,
+            args.destinationChannel,
+            args.timeoutRevisionNumber,
+            args.timeoutRevisionHeight,
+            args.timeoutTimestamp,
+            args.sender,
+            args.receiver,
+            args.relayer,
+            args.denomName,
+            args.amount,
+            args.extension
+        );
+
+        IERC20Denom denom = IERC20Denom(
+            relay.getDenomAddress(
+                args.destinationChannel,
+                RelayLib.makeForeignDenom(
+                    args.destinationPort,
+                    args.destinationChannel,
+                    args.denomName
+                )
+            )
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OwnableUpgradeable.OwnableUnauthorizedAccount.selector,
+                malicious
+            )
+        );
+        vm.prank(address(malicious));
+        UCS01Relay(address(relay)).updateMetadata(
+            denom, updateArgs.name, updateArgs.symbol, updateArgs.decimals
+        );
     }
 }
