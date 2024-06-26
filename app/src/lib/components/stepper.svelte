@@ -5,7 +5,7 @@ import { type Readable, derived } from "svelte/store"
 import SpinnerSvg from "./spinner-svg.svelte"
 import type { Step, StepStatus } from "$lib/stepper-types.ts"
 import { toIsoString } from "$lib/utilities/date"
-import Truncate from '$lib/components/truncate.svelte'
+import Truncate from "$lib/components/truncate.svelte"
 
 export let steps: Readable<Array<Step>>
 

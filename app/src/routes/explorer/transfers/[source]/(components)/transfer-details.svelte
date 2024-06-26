@@ -22,7 +22,7 @@ import { zip } from "$lib/utilities/helpers.ts"
 import type { Chain } from "$lib/types"
 import { submittedTransfers } from "$lib/stores/submitted-transfers"
 import { cn } from "$lib/utilities/shadcn"
-import Truncate from '$lib/components/truncate.svelte'
+import Truncate from "$lib/components/truncate.svelte"
 
 const source = $page.params.source
 export let chains: Array<Chain>
