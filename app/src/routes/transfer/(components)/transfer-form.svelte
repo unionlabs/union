@@ -689,8 +689,7 @@ const resetInput = () => {
 
 
 {#if !isTransferring}
-  <Card.Root class="max-w-xl w-full">
-    <ScrollArea>
+  <Card.Root class="w-full max-w-lg">
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
@@ -831,11 +830,9 @@ const resetInput = () => {
           {buttonText}
         </Button>
       </Card.Footer>
-    </ScrollArea>
   </Card.Root>
 {:else}
-  <Card.Root class="max-w-full w-full pb-4">
-    <ScrollArea>
+  <Card.Root class="w-full max-w-lg">
       {#if $fromChain}
         <Stepper steps={stepperSteps} onRetry={() => {
         transferState.update(ts => {
@@ -847,7 +844,6 @@ const resetInput = () => {
         transfer()
       }}/>
       {/if}
-    </ScrollArea>
   </Card.Root>
   <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
 {/if}

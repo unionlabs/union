@@ -9,10 +9,11 @@ import NotConnected from "$lib/components/not-connected.svelte"
   <title>Union | Send</title>
 </svelte:head>
 
-<ChainsGate let:chains>
-  <WalletGate let:connected let:userAddr>
-    <div class="w-full h-full flex flex-col items-center p-2">
-      <TransferForm {chains} {connected} {userAddr} />
-    </div>
-  </WalletGate>
-</ChainsGate>
+
+<main class="flex flex-col items-center max-h-full py-6 px-3 sm:px-6 w-full">
+  <ChainsGate let:chains>
+    <WalletGate let:connected let:userAddr>
+      <TransferForm {chains} {connected} {userAddr}/>
+    </WalletGate>
+  </ChainsGate>
+</main>
