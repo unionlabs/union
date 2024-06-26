@@ -1,6 +1,6 @@
 import path from "node:path"
-import preprocess from "svelte-preprocess"
 import childProcess from "node:child_process"
+import { sveltePreprocess } from "svelte-preprocess"
 import adapterStatic from "@sveltejs/adapter-static"
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
 
@@ -9,7 +9,7 @@ export default {
   preprocess: [
     // https://kit.svelte.dev/docs/integrations#preprocessors-svelte-preprocess
     vitePreprocess(),
-    preprocess({
+    sveltePreprocess({
       postcss: {
         configFilePath: "./postcss.config.cjs"
       }
