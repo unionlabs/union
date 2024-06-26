@@ -5,7 +5,7 @@ import { sepolia, berachainTestnetbArtio } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient, createCosmosSdkClient, cosmosHttp } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { raise, sleep } from "$lib/utilities/index.ts"
+import { debounce, raise, sleep } from "$lib/utilities/index.ts"
 import { getConnectorClient, getWalletClient } from "@wagmi/core"
 import { type Writable, writable, derived } from "svelte/store"
 import { evmAccount } from "$lib/wallet/evm/stores.ts"
@@ -73,7 +73,9 @@ let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 let amount = ""
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 $: {
-  amount = amount.replaceAll(amountRegex, "")
+  debounce(() => {
+    amount = amount.replace(amountRegex, "")
+  }, 100)()
 }
 
 const REDIRECT_DELAY_MS = 5000
@@ -238,7 +240,8 @@ async function getTransactionEstimateCost() {
   let parsedAmount = parseUnits(amount, decimals)
   let sourceChainRpcUrls = $fromChain.rpcs
     .filter(rpc => rpc.type === "rpc")
-    .map(rpc => (URL.canParse(rpc.url) ? rpc.url : `https://${rpc.url}`))
+    .map(rpc => (rpc.url.startsWith("https") ? rpc.url : `https://${rpc.url}`))
+  console.info(sourceChainRpcUrls)
 
   const connectorClient = await getConnectorClient(config)
   const unionClient = createCosmosSdkClient({
