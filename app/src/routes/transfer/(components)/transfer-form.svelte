@@ -690,7 +690,7 @@ const resetInput = () => {
 
 <div
   class={cn("transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
-<div class="w-full max-w-xl">
+<div class="w-full max-w-xl py-2">
   <div class={cn("cube", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
 
 
