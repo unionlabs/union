@@ -23,6 +23,7 @@ import type { Chain } from "$lib/types"
 import { submittedTransfers } from "$lib/stores/submitted-transfers"
 import { cn } from "$lib/utilities/shadcn"
 import Truncate from "$lib/components/truncate.svelte"
+import { formatUnits } from "viem"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -396,10 +397,10 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         <ul class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
             {#if value.info}
-              <li><ExplorerPrecise amount={value.amount} decimals={value.info.decimals} showToolTip displayDecimals={8}/><Truncate value={value.info.display_symbol} type="address"/></li>
-              {:else}
-              <li>{value.amount} <Truncate value={denom} type="address"/></li>
-              {/if}
+              <li><Truncate value={formatUnits(value.amount, value.info.decimals)} type="full"/> <Truncate value={value.info.display_symbol} type="address"/></li>
+            {:else}
+                <li><Truncate value={value.amount} type="full"/> <Truncate value={denom} type="address"/></li>
+            {/if}
           {/each}
         </ul>
       {:else}
