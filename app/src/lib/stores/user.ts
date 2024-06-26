@@ -12,4 +12,4 @@ function persistStore<T>(key: string, initial: T) {
   return store
 }
 
-export const showUnsupported = persistStore("show-unsupported", false)
+export const showUnsupported = persistStore("show-unsupported", true)
