@@ -26,7 +26,7 @@ import { sleep } from "$lib/utilities"
 import { KEY } from "$lib/constants/keys.ts"
 import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { walletConnect, injected } from "@wagmi/connectors"
+import { injected } from "@wagmi/connectors"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
 
 const chains = [sepolia] as const
@@ -73,32 +73,32 @@ export const config = createConfig({
     injected({
       shimDisconnect: true,
       unstable_shimAsyncInject: 2_500
-    }),
-    walletConnect({
-      projectId: KEY.WALLET_CONNECT_PROJECT_ID,
-      qrModalOptions: {
-        themeMode: "dark",
-        enableExplorer: true,
-        explorerRecommendedWalletIds: [
-          /* Multichain */
-          "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0", // Trust
-          /* EVM */
-          "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369", // rainbow
-          "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // metamask
-          "ecc4036f814562b41a5268adc86270fba1365471402006302e70169465b7ac18", // zerion
-          "18388be9ac2d02726dbac9777c96efaac06d744b2f6d580fccdd4127a6d01fd1" // rabby
-          /* Cosmos */
-          // "3ed8cc046c6211a798dc5ec70f1302b43e07db9639fd287de44a9aa115a21ed6", // Leap
-          // "6adb6082c909901b9e7189af3a4a0223102cd6f8d5c39e39f3d49acb92b578bb", // Keplr
-        ]
-      },
-      metadata: {
-        name: "Union App",
-        description: "Union App (beta)",
-        url: "https://app.union.build",
-        icons: ["/images/icons/union.svg", "/images/logo.png"]
-      }
     })
+    // walletConnect({
+    //   projectId: KEY.WALLET_CONNECT_PROJECT_ID,
+    //   qrModalOptions: {
+    //     themeMode: "dark",
+    //     enableExplorer: true,
+    //     explorerRecommendedWalletIds: [
+    //       /* Multichain */
+    //       "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0", // Trust
+    //       /* EVM */
+    //       "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369", // rainbow
+    //       "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // metamask
+    //       "ecc4036f814562b41a5268adc86270fba1365471402006302e70169465b7ac18", // zerion
+    //       "18388be9ac2d02726dbac9777c96efaac06d744b2f6d580fccdd4127a6d01fd1" // rabby
+    //       /* Cosmos */
+    //       // "3ed8cc046c6211a798dc5ec70f1302b43e07db9639fd287de44a9aa115a21ed6", // Leap
+    //       // "6adb6082c909901b9e7189af3a4a0223102cd6f8d5c39e39f3d49acb92b578bb", // Keplr
+    //     ]
+    //   },
+    //   metadata: {
+    //     name: "Union App",
+    //     description: "Union App (beta)",
+    //     url: "https://app.union.build",
+    //     icons: ["/images/icons/union.svg", "/images/logo.png"]
+    //   }
+    // })
   ]
 })
 
@@ -185,11 +185,11 @@ export {
 }
 
 const desiredWalletIds = [
-  "injected",
+  // "injected",
   "io.metamask",
   "app.phantom",
   "io.tokenary",
-  "walletconnect",
+  // "walletconnect",
   "io.metamask.flask"
 ]
 

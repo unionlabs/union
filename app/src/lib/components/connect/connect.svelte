@@ -16,6 +16,7 @@ import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.
 import { Switch } from "$lib/components/ui/switch"
 import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
+import MetamaskIcon from "$lib/components/connect/MetamaskIcon.svelte"
 
 let buttonText: string
 
@@ -37,21 +38,23 @@ let sheetOpen = false
 $: if ($navigating) sheetOpen = false
 
 let collapsibleOpen = true
+
+$: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
-  <Sheet.Trigger asChild let:builder class="w-full">
+  <Sheet.Trigger asChild class="w-full" let:builder>
     <Button
-      size="sm"
       builders={[builder]}
-      on:click={() => (sheetOpen = !sheetOpen)}
       class={cn(
         'space-x-2 w-[189px] text-md bg-accent text-black hover:bg-cyan-300/90',
         ($sepoliaStore.connectionStatus === 'connected' &&
           $cosmosStore.connectionStatus === 'connected')
       )}
+      on:click={() => (sheetOpen = !sheetOpen)}
+      size="sm"
     >
-      <WalletIcon class="size-4 text-black" />
+      <WalletIcon class="size-4 text-black"/>
       <span class="font-supermolot font-bold uppercase">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
@@ -74,31 +77,43 @@ let collapsibleOpen = true
       </Sheet.Title>
     </Sheet.Header>
     <Connection
-      chain="evm"
       address={$sepoliaStore.address}
+      chain="evm"
+      chainWalletsInformation={evmWalletsInformation}
+      connectStatus={$sepoliaStore.connectionStatus}
+      connectedWalletId={$sepoliaStore.connectedWallet}
       hoverState={$sepoliaStore.hoverState}
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
-      connectStatus={$sepoliaStore.connectionStatus}
-      chainWalletsInformation={evmWalletsInformation}
-      connectedWalletId={$sepoliaStore.connectedWallet}
     />
-    <Separator class={cn('px-0 bg-border my-4')} />
+    {#if !gotMetamask}
+      <Button
+        variant="outline"
+        on:click={() => window.alert('Please install metamask')}
+        class={cn('px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start h-[48px]')}
+      >
+        <MetamaskIcon/>
+        <span class="w-full text-left font-mono pl-3 sm:text-[15.5px]" >
+          Install Metamask
+        </span>
+      </Button>
+    {/if}
+    <Separator class={cn('px-0 bg-border my-4')}/>
     <Connection
-      chain="cosmos"
       address={$cosmosStore.address}
+      chain="cosmos"
+      chainWalletsInformation={cosmosWalletsInformation}
+      connectStatus={$cosmosStore.connectionStatus}
+      connectedWalletId={$cosmosStore.connectedWallet}
       hoverState={$cosmosStore.hoverState}
       onConnectClick={cosmosStore.connect}
       onDisconnectClick={cosmosStore.disconnect}
-      connectStatus={$cosmosStore.connectionStatus}
-      chainWalletsInformation={cosmosWalletsInformation}
-      connectedWalletId={$cosmosStore.connectedWallet}
     />
     <div class="flex items-center space-x-2 mt-auto">
-      <Switch id="unsupported-assets" bind:checked={$showUnsupported}/>
+      <Switch bind:checked={$showUnsupported} id="unsupported-assets"/>
       <Label for="unsupported-assets">Show unverified assets</Label>
     </div>
-    <ThemeSwitch />
+    <ThemeSwitch/>
   </Sheet.Content>
 </Sheet.Root>
 
