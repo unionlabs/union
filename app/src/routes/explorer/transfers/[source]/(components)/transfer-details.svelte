@@ -391,7 +391,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 
     <section class="mt-6">
       {#if transfer.assets}
-        <ul class="text-foreground text-center  uppercase condenced font-bold text-4xl">
+        <ul class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
             {#if value.info}
               <li><ExplorerPrecise amount={value.amount} decimals={value.info.decimals} showToolTip displayDecimals={8}/> {truncate(value.info.display_symbol, 8)}</li>
@@ -408,7 +408,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <section>
     <section class="flex">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
+        <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
         <p class="text-sm">{transfer.source_chain_id}</p>
         <p class="text-sm">{transfer.source_connection_id}</p>
         <p class="text-sm">{transfer.source_channel_id}</p>
@@ -417,7 +417,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         <MoveRightIcon class="text-foreground size-8"/>
       </div>
       <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
+        <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
         <p class="text-sm">{transfer.destination_chain_id}</p>
         <p class="text-sm">{transfer.destination_connection_id}</p>
         <p class="text-sm">{transfer.destination_channel_id}</p>
@@ -426,19 +426,19 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     {#if transfer.hop_chain_id}
       <div class="flex-1 text-center flex-col text-sm text-muted-foreground items-center">
         forwarded through
-        <h2 class="font-supermolot uppercase font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.hop_chain_id, chains)}</h2>
+        <h2 class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.hop_chain_id, chains)}</h2>
         <p class="text-sm">{transfer?.hop_chain_destination_connection_id ?? "unknown"} -> {transfer?.hop_chain_source_connection_id ?? "unknown"}</p>
         <p class="text-sm">{transfer?.hop_chain_destination_channel_id ?? "unknown"} -> {transfer.hop_chain_source_channel_id}</p>
       </div>
     {/if}
     </section>
-    <section class="flex gap-8">
+    <section class="flex flex-col lg:flex-row gap-8">
       <div class=" lex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
         {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline">{transfer.sender}</a>{:else}<p class="text-sm">{transfer.sender}</p>{/if}
         <p class="text-[10px]">normalized: {transfer.normalized_sender}</p>
       </div>
-      <div class="flex-1 text-right flex-col text-muted-foreground">
+      <div class="flex-1 lg:text-right flex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
         {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline">{transfer.receiver}</a>{:else}<p class="text-sm">{transfer.receiver}</p>{/if}
         <p class="text-[10px]">normalized: {transfer.normalized_receiver}</p>
