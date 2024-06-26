@@ -8,36 +8,31 @@ let title: string
 let text: string
 
 $: if (
-  $sepoliaStore.connectionStatus === "connected" &&
-  $cosmosStore.connectionStatus === "connected"
+  $sepoliaStore.connectionStatus !== "connected" &&
+  $cosmosStore.connectionStatus !== "connected"
 ) {
-  title = "All Wallets Connected"
-  text = "Both wallets are connected. You can now fully use the app."
-} else if (
-  $sepoliaStore.connectionStatus === "connected" ||
-  $cosmosStore.connectionStatus === "connected"
-) {
-  title = "Connect One More Wallet"
-  text =
-    "One of the two required wallets is connected. Please connect the other wallet to continue."
+  title = "Connect Wallet"
+  text = "Please connect a wallet to continue using the app."
 } else {
-  title = "Connect Wallets"
-  text = "Please connect both wallets to continue using the app."
+  title = ""
+  text = ""
 }
 </script>
 
 <section class="max-w-lg">
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>
-        {title}
-      </Card.Title>
-      <Card.Description>
-        {text}
-      </Card.Description>
-    </Card.Header>
-    <Card.Content>
-      <Connect />
-    </Card.Content>
-  </Card.Root>
+  {#if title}
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>
+          {title}
+        </Card.Title>
+        <Card.Description>
+          {text}
+        </Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <Connect />
+      </Card.Content>
+    </Card.Root>
+  {/if}
 </section>

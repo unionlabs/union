@@ -1,17 +1,22 @@
 import type { Address } from "viem"
 
 export type UserAddresses = {
-  cosmos: {
-    canonical: string
-    normalized: string
-    bytes: Uint8Array
-    normalized_prefixed: Address
-  }
-  evm: {
-    canonical: Address
-    normalized: string
-    normalized_prefixed: Address
-  }
+  cosmos: UserAddressCosmos | null
+  evm: UserAddressEvm | null
+  [key: string]: UserAddressCosmos | UserAddressEvm | null
+}
+
+export type UserAddressCosmos = {
+  canonical: string
+  normalized: string
+  bytes: Uint8Array
+  normalized_prefixed: Address
+}
+
+export type UserAddressEvm = {
+  canonical: Address
+  normalized: string
+  normalized_prefixed: Address
 }
 
 export type Chain = {

@@ -6,12 +6,16 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
 </script>
 
 <ChainsGate let:chains>
-  <WalletGate>
-    <div class="max-w-full" let:userAddr slot="connected">
-      <BalancesOverview {chains} {userAddr}/>
-    </div>
-    <div class="flex items-center justify-center w-full h-full" slot="disconnected">
-      <NotConnected/>
+  <WalletGate let:connected let:userAddr>
+    <div class="max-w-full w-full">
+      {#await console.log(connected)}{/await}
+      {#if connected}
+        <BalancesOverview {chains} {userAddr} {connected}/>
+      {:else}
+        <div class="flex w-full h-full items-center justify-center">
+          <NotConnected/>
+        </div>
+      {/if}
     </div>
   </WalletGate>
 </ChainsGate>

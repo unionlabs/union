@@ -30,7 +30,7 @@ $: if (
 ) {
   buttonText = "Connected (1/2)"
 } else {
-  buttonText = "Connect Wallets"
+  buttonText = "Connect Wallet"
 }
 
 let sheetOpen = false

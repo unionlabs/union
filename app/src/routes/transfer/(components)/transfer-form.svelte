@@ -1,14 +1,11 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
-import { sepolia, berachainTestnetbArtio } from "viem/chains"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
-import { getWalletClient } from "@wagmi/core"
 import { type Writable, writable, derived } from "svelte/store"
-import { evmAccount } from "$lib/wallet/evm/stores.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.js"
@@ -17,18 +14,11 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
-import { config } from "$lib/wallet/evm/config.ts"
 import { truncate } from "$lib/utilities/format.ts"
 import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
-import {
-  type Address,
-  parseUnits,
-  SwitchChainError,
-  ResourceUnavailableRpcError,
-  type SimulateContractReturnType
-} from "viem"
+import { type Address, parseUnits } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import Stepper from "$lib/components/stepper.svelte"
@@ -42,29 +32,20 @@ import {
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import {
-  erc20Abi,
-  createWalletClient,
-  createPublicClient,
-  http,
-  custom,
-  defineChain,
-  publicActions,
-  fallback
-} from "viem"
+import { erc20Abi, createWalletClient, createPublicClient, http, custom, fallback } from "viem"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
-import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
-let userBalances = userBalancesQuery({ chains, userAddr })
+export let connected: boolean
+$: userBalances = userBalancesQuery({ chains, userAddr, connected })
 
 // CURRENT FORM STATE
-let fromChainId = writable("union-testnet-8")
-let toChainId = writable("11155111")
+let fromChainId = writable("")
+let toChainId = writable("")
 let assetSymbol = writable("")
 
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
@@ -104,7 +85,7 @@ let fromChain = derived(
   $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
-let asset = derived(
+$: asset = derived(
   [assetSymbol, fromChain, userBalances],
   ([$assetSymbol, $fromChain, $userBalances]) => {
     if ($assetSymbol === "" || $fromChain === null) return null
@@ -199,6 +180,8 @@ const transfer = async () => {
   if (!$toChain) return toast.error("can't find chain in config")
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
+  if (!userAddr.evm) return toast.error("No evm wallet connected")
+  if (!userAddr.cosmos) return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
   if (!$ucs01Configuration)
     return toast.error(
@@ -433,12 +416,14 @@ const transfer = async () => {
         hop_chain_id: $hopChain?.chain_id,
         sender: userAddrOnChain(userAddr, $fromChain),
         normalized_sender:
-          $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
+          $fromChain?.rpc_type === "cosmos"
+            ? userAddr?.cosmos?.normalized
+            : userAddr?.evm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
         receiver: $recipient,
         assets: {
           [$assetSymbol]: {
-            info: $fromChain.assets.find(d => d.denom === $assetSymbol),
+            info: $fromChain?.assets?.find(d => d.denom === $assetSymbol) ?? null,
             amount: parsedAmount
           }
         },
@@ -466,7 +451,8 @@ onMount(() => {
   }
 })
 
-let sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
+$: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
+  if (!$fromChainId) return
   const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
   const cosmosBalance = $userBalances[chainIndex]
   if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
@@ -675,87 +661,155 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   }
   raise("trying to make stepper for unsupported chain")
 })
+
+let inputState: "locked" | "unlocked" = "locked"
+const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+
+let userInput = false
+$: address = $recipient ?? ""
+
+$: if (!userInput && $recipient !== address) {
+  address = $recipient ?? ""
+}
+
+const handleInput = (event: Event) => {
+  address = (event.target as HTMLInputElement).value
+  userInput = true
+}
+
+const resetInput = () => {
+  userInput = false
+  address = $recipient ?? ""
+}
 </script>
 
 
-<div class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+<div
+  class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 <div class="cube-scene">
   <div class={cn("cube", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
     <Card.Root class="cube-front">
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-    <Card.Content class={cn('flex flex-col gap-4')}>
-      <section>
-        <CardSectionHeading>From</CardSectionHeading>
-        <ChainButton bind:selectedChainId={$fromChainId} bind:dialogOpen={dialogOpenFromChain}>
-          {$fromChain?.display_name}
-        </ChainButton>
+      <Card.Content class={cn('flex flex-col gap-4')}>
+        <section>
+          <CardSectionHeading>From</CardSectionHeading>
+          <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
+            {$fromChain?.display_name ?? "Select chain"}
+          </ChainButton>
 
-        <div class="flex flex-col items-center pt-4 -mb-6">
-          <Button size="icon" variant="outline" on:click={swapChainsClick}>
-            <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
-          </Button>
-        </div>
-
-        <CardSectionHeading>To</CardSectionHeading>
-        <ChainButton bind:selectedChainId={$toChainId} bind:dialogOpen={dialogOpenToChain}>
-          {$toChain?.display_name}
-        </ChainButton>
-      </section>
-      <section>
-        <CardSectionHeading>Asset</CardSectionHeading>
-        {#if $sendableBalances === null}
-          Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-        {:else if $sendableBalances.length === 0}
-          You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
-        {:else}
-          <Button
-            class="w-full"
-            variant="outline"
-            on:click={() => (dialogOpenToken = !dialogOpenToken)}
-          >
-            <div class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</div>
-
-            <Chevron />
-          </Button>
-        {/if}
-        {#if $assetSymbol !== '' && $sendableBalances !== null}
-          <div class="mt-4 text-xs text-muted-foreground">
-            <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on <b>{$fromChain?.display_name}</b> is
-            <Precise chain={$fromChain} asset={$asset} showToolTip/>
-<!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
+          <div class="flex flex-col items-center pt-4 -mb-6">
+            <Button on:click={swapChainsClick} size="icon" variant="outline">
+              <ArrowLeftRight class="size-5 dark:text-white rotate-90"/>
+            </Button>
           </div>
-        {/if}
-      </section>
 
-      <section>
-        <CardSectionHeading>Amount</CardSectionHeading>
-        <Input
-          disabled={
+          <CardSectionHeading>To</CardSectionHeading>
+          <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
+            {$toChain?.display_name ?? "Select chain"}
+          </ChainButton>
+        </section>
+        <section>
+          <CardSectionHeading>Asset</CardSectionHeading>
+          {#if $sendableBalances}
+            {#if $sendableBalances === null}
+              Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+            {:else if $sendableBalances && $sendableBalances.length === 0}
+              You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
+            {:else}
+              <Button
+                class="w-full"
+                variant="outline"
+                on:click={() => (dialogOpenToken = !dialogOpenToken)}
+              >
+                <div
+                  class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</div>
+
+                <Chevron/>
+              </Button>
+            {/if}
+            {:else}
+            Select a chain to send from.
+          {/if}
+          {#if $assetSymbol !== '' && $sendableBalances !== null}
+            <div class="mt-4 text-xs text-muted-foreground">
+              <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
+              <b>{$fromChain?.display_name}</b> is
+              <Precise chain={$fromChain} asset={$asset} showToolTip/>
+              <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
+            </div>
+          {/if}
+        </section>
+
+        <section>
+          <CardSectionHeading>Amount</CardSectionHeading>
+          <Input
+            autocapitalize="none"
+            autocomplete="off"
+            autocorrect="off"
+            bind:value={amount}
+            class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
+            disabled={
           !$asset
           }
-          minlength={1}
-          maxlength={64}
-          placeholder="0.00"
-          autocorrect="off"
-          autocomplete="off"
-          spellcheck="false"
-          bind:value={amount}
-          autocapitalize="none"
-          pattern="^[0-9]*[.,]?[0-9]*$"
-          class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
-        />
-      </section>
-      <section>
-        <CardSectionHeading>Recipient</CardSectionHeading>
-        <div class="text-muted-foreground font-mono text-xs sm:text-base">{$recipient}</div>
-      </section>
-    </Card.Content>
-    <Card.Footer class="flex flex-col gap-4 items-start">
-      <Button
-        type="button"
-        disabled={!amount ||
+            maxlength={64}
+            minlength={1}
+            pattern="^[0-9]*[.,]?[0-9]*$"
+            placeholder="0.00"
+            spellcheck="false"
+          />
+        </section>
+        <section>
+          <CardSectionHeading>Recipient</CardSectionHeading>
+          <div class="flex items-start gap-2">
+            <div class="w-full">
+              <div class="relative w-full mb-2">
+                <Input
+                  autocapitalize="none"
+                  autocomplete="off"
+                  autocorrect="off"
+                  bind:value={address}
+                  class="disabled:opacity-100 disabled:bg-black/20"
+                  disabled={inputState === 'locked'}
+                  id="address"
+                  on:input={handleInput}
+                  placeholder="Select chain"
+                  required={true}
+                  spellcheck="false"
+                  type="text"
+                />
+              </div>
+              <div class="flex justify-between px-1">
+                {#if userInput}
+                  <button
+                    type="button"
+                    on:click={resetInput}
+                    class="text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    Reset
+                  </button>
+                {/if}
+              </div>
+            </div>
+            <!--            <Button-->
+            <!--              aria-label="Toggle address lock"-->
+            <!--              class="px-3"-->
+            <!--              on:click={onLockClick}-->
+            <!--              variant="ghost"-->
+            <!--            >-->
+            <!--              {#if inputState === 'locked'}-->
+            <!--                <LockLockedIcon class="size-4.5"/>-->
+            <!--              {:else}-->
+            <!--                <LockOpenIcon class="size-4.5"/>-->
+            <!--              {/if}-->
+            <!--            </Button>-->
+          </div>
+        </section>
+      </Card.Content>
+      <Card.Footer class="flex flex-col gap-4 items-start">
+        <Button
+          disabled={!amount ||
           !$asset ||
           !$toChainId ||
           !$recipient ||
@@ -764,20 +818,22 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           // >= because need some sauce for gas
           !balanceCoversAmount
           }
-        on:click={async event => {
+          on:click={async event => {
           event.preventDefault()
           transferState.set({ kind: "FLIPPING" })
           await sleep(1200)
           transfer()
         }}
-      >
-        {buttonText}
-      </Button>
-    </Card.Footer>
+          type="button"
+        >
+          {buttonText}
+        </Button>
+      </Card.Footer>
     </Card.Root>
 
     <Card.Root class="cube-back p-6">
-      <Stepper steps={stepperSteps} onRetry={() => {
+      {#if $fromChain}
+        <Stepper steps={stepperSteps} onRetry={() => {
         transferState.update(ts => {
           // @ts-ignore
           ts.error = undefined; 
@@ -786,33 +842,37 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 
         transfer()
       }}/>
+      {/if}
     </Card.Root>
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION UNION UNION UNION UNION</div>
+    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION
+      UNION UNION UNION UNION
+    </div>
   </div>
 </div>
 
 
-
-
-
 <ChainDialog
-  kind="from"
+  bind:dialogOpen={dialogOpenFromChain}
   {chains}
-  selectedChain={$fromChainId}
+  kind="from"
   onChainSelect={newSelectedChain => {
     fromChainId.set(newSelectedChain)
   }}
-  bind:dialogOpen={dialogOpenFromChain}
+  selectedChain={$fromChainId}
+  userAddr={userAddr}
+  connected={connected}
 />
 
 <ChainDialog
-  kind="to"
+  bind:dialogOpen={dialogOpenToChain}
   {chains}
-  selectedChain={$toChainId}
+  kind="to"
   onChainSelect={newSelectedChain => {
     toChainId.set(newSelectedChain)
   }}
-  bind:dialogOpen={dialogOpenToChain}
+  selectedChain={$toChainId}
+  userAddr={userAddr}
+  connected={connected}
 />
 
 {#if $sendableBalances !== null}
@@ -829,53 +889,54 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 
 <style global lang="postcss">
 
-  .cube-scene {
-    @apply absolute -my-6 py-6 z-20;
-    top: calc(50% - (var(--height) / 2));
-    --width: calc(min(500px, (100dvw - 32px)));
-    --height: calc(min(700px, (100dvh - 164px)));
-    --depth: 80px;
-    --speed: 2s;
-    width: var(--width);
-    height: var(--height);
-    perspective: 1000px;
-  }
+    .cube-scene {
+        @apply absolute -my-6 py-6 z-20;
+        top: calc(50% - (var(--height) / 2));
+        --width: calc(min(500px, (100dvw - 32px)));
+        --height: calc(min(700px, (100dvh - 164px)));
+        --depth: 80px;
+        --speed: 2s;
+        width: var(--width);
+        height: var(--height);
+        perspective: 1000px;
+    }
 
-  .cube {
-    @apply relative;
-    width: var(--width);
-    height: var(--height);
-    transform-style: preserve-3d;
-    transition: transform var(--speed);
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
-  }
+    .cube {
+        @apply relative;
+        width: var(--width);
+        height: var(--height);
+        transform-style: preserve-3d;
+        transition: transform var(--speed);
+        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
+    }
 
-  .cube--flipped {
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+    .cube--flipped {
+        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
 
-  }
+    }
 
-  .cube-front, .cube-back {
-    @apply absolute overflow-y-auto overflow-x-hidden;
+    .cube-front, .cube-back {
+        @apply absolute overflow-y-auto overflow-x-hidden;
 
-    width: var(--width);
-    height: var(--height);
-  }
+        width: var(--width);
+        height: var(--height);
+    }
 
-  .cube-left {
-    @apply absolute bg-card border;
-    width: var(--height);
-    height: var(--depth);
-    top: calc((var(--height) / 2) - (var(--depth) / 2));
-    right: calc((var(--width) / 2) - (var(--height) / 2));
-    transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
-  }
+    .cube-left {
+        @apply absolute bg-card border;
+        width: var(--height);
+        height: var(--depth);
+        top: calc((var(--height) / 2) - (var(--depth) / 2));
+        right: calc((var(--width) / 2) - (var(--height) / 2));
+        transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+    }
 
-  .cube-front {
-    transform: translateZ(calc(var(--depth) * 0.5));
-  }
-  .cube-back {
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg) ;
-  }
+    .cube-front {
+        transform: translateZ(calc(var(--depth) * 0.5));
+    }
+
+    .cube-back {
+        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+    }
 
 </style>
