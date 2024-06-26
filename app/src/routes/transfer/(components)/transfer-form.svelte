@@ -175,7 +175,6 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
 
 let isTransferring: boolean
 const transfer = async () => {
-  isTransferring = true
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
   if (!$fromChainId) return toast.error("Please select a from chain")
@@ -194,6 +193,9 @@ const transfer = async () => {
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
   let parsedAmount = parseUnits(amount, decimals)
+
+  //if true we show steps card
+  isTransferring = true
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
