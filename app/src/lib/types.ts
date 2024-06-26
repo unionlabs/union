@@ -48,6 +48,7 @@ export type Chain = {
     denom: string
     display_symbol: string
     display_name: string | null
+    gas_token: boolean
     decimals: number
     faucets: Array<{
       url: string

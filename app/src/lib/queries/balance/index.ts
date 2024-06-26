@@ -1,5 +1,6 @@
 import { raise } from "$lib/utilities/index.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
+import { evmGasBalance } from "./evm/gas-balance.ts"
 import { createQueries } from "@tanstack/svelte-query"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -18,7 +19,7 @@ export function userBalancesQuery({
       // note: we assume each chain only has one userAddr. this might change later
       queryKey: ["balances", chain.chain_id, userAddr.evm.normalized],
       refetchOnWindowFocus: false,
-      refetchInterval: 4_000,
+      refetchInterval: 6_000,
       queryFn: async () => {
         if (chain.rpc_type === "evm") {
           const rpc = chain.rpcs
@@ -27,23 +28,30 @@ export function userBalancesQuery({
           if (rpc === undefined) {
             raise(`no alchemy or routescan rpc available for chain ${chain.chain_id}`)
           }
-          // broken, should use the chains' rpcs
-          //
-          // const gasBalance = await evmGasBalance({
-          //   address: userAddr.evm.canonical,
-          //   chainId: chain.chain_id
-          // })
+
           if (rpc.type === "alchemy") {
-            return await getBalancesFromAlchemy({
+            const gasBalance = await evmGasBalance({
+              url: rpc.url,
+              address: userAddr.evm.canonical,
+              chainId: chain.chain_id
+            })
+            const alchemyBalances = await getBalancesFromAlchemy({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
+
+            return [gasBalance, ...alchemyBalances]
           }
           if (rpc.type === "routescan") {
-            return await getBalancesFromRoutescan({
+            const gasBalance = await evmGasBalance({
+              address: userAddr.evm.canonical,
+              chainId: chain.chain_id
+            })
+            const routescanBalances = await getBalancesFromRoutescan({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
+            return [gasBalance, ...routescanBalances]
           }
         }
 

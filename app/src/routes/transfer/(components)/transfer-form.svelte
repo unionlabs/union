@@ -76,19 +76,6 @@ $: {
   amount = amount.replaceAll(amountRegex, "")
 }
 
-let balanceCoversAmount: boolean
-$: if ($fromChain && $asset && amount) {
-  try {
-    const supported = getSupportedAsset($fromChain, $asset.address)
-    const decimals = supported ? supported?.decimals : 0
-    const inputAmount = parseUnits(amount.toString(), decimals)
-    const balance = BigInt($asset.balance.toString())
-    balanceCoversAmount = inputAmount <= balance
-  } catch (error) {
-    console.error("Error parsing amount or balance:", error)
-  }
-}
-
 const REDIRECT_DELAY_MS = 5000
 
 let dialogOpenToken = false
@@ -192,6 +179,26 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
+let sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
+  const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
+  let balances = $userBalances[chainIndex]
+
+  if (!balances?.isSuccess || balances?.data?.length === 0) {
+    console.log("trying to send from cosmos but no balances fetched yet")
+    return []
+  }
+
+  if ($fromChain?.rpc_type === "evm") return balances.data
+  const gasToken = $fromChain?.assets.find(asset => asset.gas_token === true)
+  return balances.data.map(balance => ({
+    ...balance,
+    gasToken: balance.address === gasToken?.denom
+  }))
+})
+
+let balanceCoversAmount = false
+let SUBMISSION_STATUS: "DISABLED" | "ENABLED" | "LOADING" = "DISABLED"
+
 $: transactionEstimatePayloadComplete =
   !!amount &&
   $asset?.address &&
@@ -213,6 +220,8 @@ let gasCostText = derived(transactionGasCost, $transactionGasCost =>
 async function getTransactionEstimateCost() {
   if (!($fromChain?.rpc_type && $toChain?.chain_id && $recipient && $asset?.address)) return
   if (typeof window === "undefined" || typeof window.ethereum === "undefined") return
+  SUBMISSION_STATUS = "LOADING"
+  const network = $fromChain.rpc_type
   const cosmosOfflineSigner = (
     $cosmosStore.connectedWallet === "keplr"
       ? window?.keplr?.getOfflineSigner($fromChainId, {
@@ -227,6 +236,10 @@ async function getTransactionEstimateCost() {
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
   let parsedAmount = parseUnits(amount, decimals)
+  let sourceChainRpcUrls = $fromChain.rpcs
+    .filter(rpc => rpc.type === "rpc")
+    .map(rpc => (URL.canParse(rpc.url) ? rpc.url : `https://${rpc.url}`))
+
   const connectorClient = await getConnectorClient(config)
   const unionClient = createCosmosSdkClient({
     evm: {
@@ -237,10 +250,10 @@ async function getTransactionEstimateCost() {
     cosmos: {
       account: cosmosOfflineSigner,
       gasPrice: { amount: "0.025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+      transport: sourceChainRpcUrls.map(url => cosmosHttp(url))
     }
   })
-  const denomAddress = $fromChain.rpc_type === "cosmos" ? $assetSymbol : $asset.address.toString()
+  const denomAddress = network === "cosmos" ? $assetSymbol : $asset.address.toString()
   const gasRequest = await unionClient.simulateTransaction({
     network: $fromChain.rpc_type,
     recipient: $recipient,
@@ -254,10 +267,26 @@ async function getTransactionEstimateCost() {
     sourceChannel: $ucs01Configuration?.ucs1_configuration.channel_id,
     relayContractAddress: $ucs01Configuration?.ucs1_configuration.contract_address
   })
-
-  console.info(JSON.stringify({ gasRequest }, undefined, 2))
+  if (!gasRequest.success) {
+    toast.error(gasRequest.data)
+    return (SUBMISSION_STATUS = "DISABLED")
+  }
 
   transactionGasCost.set(BigInt(gasRequest.data))
+
+  const gasTokenBalance = $sendableBalances?.find(balance => balance.gasToken === true)
+
+  if (!gasTokenBalance) {
+    toast.error("No gas token found")
+    return (SUBMISSION_STATUS = "DISABLED")
+  }
+
+  if ($transactionGasCost + parsedAmount > BigInt(gasTokenBalance.balance)) {
+    toast.error("Insufficient gas token balance")
+    return (SUBMISSION_STATUS = "DISABLED")
+  }
+
+  SUBMISSION_STATUS = "ENABLED"
 }
 
 $: if (transactionEstimatePayloadComplete) {
@@ -463,8 +492,8 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        // @ts-ignore
         const transferHash = await walletClient.writeContract(
+          // @ts-expect-error
           $transferState.simulationResult.request
         )
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
@@ -543,30 +572,37 @@ onMount(() => {
   }
 })
 
-let sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
-  const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
-  const cosmosBalance = $userBalances[chainIndex]
-  if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
-    console.log("trying to send from cosmos but no balances fetched yet")
-    return null
-  }
-  return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
-})
-
 function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$fromChainId, $toChainId]
   toChainId.set(fromChain)
   fromChainId.set(toChain)
+  assetSymbol.set("")
+  amount = ""
+  transactionGasCost.set(0n)
+}
+
+$: if ($fromChain && $asset && amount) {
+  try {
+    const supported = getSupportedAsset($fromChain, $asset.address)
+    const decimals = supported ? supported?.decimals : 0
+    const inputAmount = parseUnits(amount.toString(), decimals)
+    const balance = BigInt($asset.balance.toString())
+    balanceCoversAmount = inputAmount + $transactionGasCost <= balance
+  } catch (error) {
+    console.error("Error parsing amount or balance:", error)
+  }
 }
 
 $: buttonText =
-  $asset && amount
-    ? balanceCoversAmount
-      ? "transfer"
-      : "insufficient balance"
-    : $asset && !amount
-      ? "enter amount"
-      : "select asset and enter amount"
+  SUBMISSION_STATUS === "LOADING"
+    ? "Loading..."
+    : $asset && amount
+      ? balanceCoversAmount
+        ? "transfer"
+        : "insufficient balance"
+      : $asset && !amount
+        ? "enter amount"
+        : "select asset and enter amount"
 
 let supportedAsset: any
 $: if ($fromChain && $asset) supportedAsset = getSupportedAsset($fromChain, $asset.address)
@@ -838,7 +874,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           !$recipient ||
           !$assetSymbol ||
           !$fromChainId ||
-          // >= because need some sauce for gas
+          SUBMISSION_STATUS !== "ENABLED" ||
           !balanceCoversAmount
           }
         on:click={async event => {

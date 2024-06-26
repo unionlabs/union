@@ -38,6 +38,7 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
       display_symbol
       display_name
       decimals
+      gas_token
       faucets {
         url
         display_name

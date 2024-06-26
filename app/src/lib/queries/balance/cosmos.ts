@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import { raise } from "$lib/utilities"
+import type { Balance } from "$lib/queries/balance/types"
 
 const cosmosBalancesResponseSchema = v.object({
   balances: v.array(
@@ -13,12 +14,12 @@ const cosmosBalancesResponseSchema = v.object({
 export async function getCosmosChainBalances({
   url,
   walletAddress
-}: { url: string; walletAddress: string }) {
+}: { url: string; walletAddress: string }): Promise<Array<Balance>> {
   let json: undefined | unknown
 
   try {
     url = URL.canParse(url) ? url : `https://${url}`
-    const response = await fetch(`${url}/cosmos/bank/v1beta1/balances/${walletAddress}`)
+    const response = await fetch(`${url}/cosmos/bank/v1beta1/spendable_balances/${walletAddress}`)
     if (!response.ok) raise("invalid response")
 
     json = await response.json()
@@ -35,7 +36,9 @@ export async function getCosmosChainBalances({
   return result.output.balances.map(x => ({
     address: x.denom,
     symbol: x.denom,
+    name: x.denom,
     balance: BigInt(x.amount),
-    decimals: 0
+    decimals: 0,
+    gasToken: false
   }))
 }

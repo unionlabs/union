@@ -1,9 +1,26 @@
+import { get } from "svelte/store"
+import { page } from "$app/stores"
+import { toast } from "svelte-sonner"
 import { browser } from "$app/environment"
-import { MutationCache, QueryClient } from "@tanstack/svelte-query"
+import { MutationCache, QueryClient, QueryCache } from "@tanstack/svelte-query"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 
 export function createQueryClient() {
   const queryClient: QueryClient = new QueryClient({
+    queryCache: new QueryCache({
+      /**
+       * https://tkdodo.eu/blog/react-query-error-handling#putting-it-all-together
+       * shows a toast message when an error occurs in development mode
+       */
+      onError: (error, query) => {
+        if (import.meta.env.MODE !== "development") return
+        if (!get(page).url.host.includes("localhost")) return
+
+        if (query.state.data !== undefined) {
+          toast.error(`Tanstack Error: ${error.message}`)
+        }
+      }
+    }),
     defaultOptions: {
       queries: {
         enabled: browser,
