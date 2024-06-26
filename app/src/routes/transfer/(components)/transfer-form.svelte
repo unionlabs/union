@@ -912,9 +912,8 @@ const resetInput = () => {
 
     }
 
-    .cube-front, .cube-back {
-        @apply absolute overflow-auto;
-
+  .cube-front, .cube-back {
+    @apply absolute overflow-y-auto overflow-x-hidden;
         width: var(--width);
         height: var(--height);
     }
