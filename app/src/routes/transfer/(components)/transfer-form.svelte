@@ -51,6 +51,8 @@ let assetSymbol = writable("")
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 let amount = ""
+$: amountLargerThanZero = Number.parseFloat(amount) > 0
+
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
 $: {
   amount = amount.replaceAll(amountRegex, "")
@@ -815,16 +817,12 @@ const resetInput = () => {
           !$recipient ||
           !$assetSymbol ||
           !$fromChainId ||
+          !amountLargerThanZero ||
           // >= because need some sauce for gas
           !balanceCoversAmount
           }
           on:click={async event => {
           event.preventDefault()
-          let numericAmount = Number.parseFloat(amount)
-            if (!isNaN(numericAmount) && numericAmount <= 0) {
-                window.alert("Amount needs to be larger than 0");
-                return
-            }
           transferState.set({ kind: "FLIPPING" })
           await sleep(1200)
           transfer()
