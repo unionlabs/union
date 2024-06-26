@@ -9,7 +9,9 @@ use unionlabs::encoding::{self, Decode, DecodeErrorOf, Encode};
 
 use crate::{
     middleware::{InFlightPfmPacket, Memo, PacketForward},
-    types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
+    types::{
+        EncodingError, GenericAck, PacketTag, TransferPacket, TransferPacketCommon, TransferToken,
+    },
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
@@ -49,7 +51,7 @@ pub enum ProtocolError {
     Unauthorized,
 }
 
-pub type PacketExtensionOf<T> = <<T as TransferProtocol>::Packet as TransferPacket>::Extension;
+pub type PacketExtensionOf<T> = <<T as TransferProtocol>::TokenPacket as TransferPacket>::Extension;
 
 pub struct TransferInput {
     pub current_time: Timestamp,
@@ -88,7 +90,7 @@ pub trait TransferProtocol {
     const ORDERING: IbcOrder;
     const RECEIVE_REPLY_ID: u64;
 
-    type Packet: Decode<Self::Encoding> + Encode<Self::Encoding> + TransferPacket;
+    type TokenPacket: Decode<Self::Encoding> + Encode<Self::Encoding> + TransferPacket;
 
     type Ack: Decode<Self::Encoding> + Encode<Self::Encoding> + Into<GenericAck>;
 
@@ -99,7 +101,7 @@ pub trait TransferProtocol {
     type Error: Debug
         + From<ProtocolError>
         + From<EncodingError>
-        + From<DecodeErrorOf<Self::Encoding, Self::Packet>>
+        + From<DecodeErrorOf<Self::Encoding, Self::TokenPacket>>
         + From<DecodeErrorOf<Self::Encoding, Self::Ack>>;
 
     fn channel_endpoint(&self) -> &IbcEndpoint;
@@ -112,7 +114,7 @@ pub trait TransferProtocol {
     fn common_to_protocol_packet(
         &self,
         packet: TransferPacketCommon<PacketExtensionOf<Self>>,
-    ) -> Result<Self::Packet, EncodingError>;
+    ) -> Result<Self::TokenPacket, EncodingError>;
 
     fn ack_success() -> Self::Ack;
 
@@ -125,22 +127,22 @@ pub trait TransferProtocol {
 
     fn send_tokens(
         &mut self,
-        sender: &AddrOf<Self::Packet>,
-        receiver: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
+        receiver: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn send_tokens_success(
         &mut self,
-        sender: &AddrOf<Self::Packet>,
-        receiver: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
+        receiver: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
     fn send_tokens_failure(
         &mut self,
-        sender: &AddrOf<Self::Packet>,
-        receiver: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
+        receiver: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<Self::CustomMsg>>, Self::Error>;
 
@@ -194,15 +196,14 @@ pub trait TransferProtocol {
             ]))
     }
 
-    fn send_ack(
+    fn send_ack_relay(
         &mut self,
         ibc_packet: IbcPacketAckMsg,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
         // NOTE: `ibc_packet.original_packet` here refers to the packet that is being acknowledged, not the
         // original packet in the pfm chain. At this point in the ack handling process, we don't even know
         // if this is a pfm message anyways.
-
-        let packet = Self::Packet::decode(ibc_packet.original_packet.data.as_slice())?;
+        let packet = Self::TokenPacket::decode(ibc_packet.original_packet.data.as_slice())?;
 
         // https://github.com/cosmos/ibc-go/blob/5ca37ef6e56a98683cf2b3b1570619dc9b322977/modules/apps/transfer/ibc_module.go#L261
         let ack: GenericAck = Self::Ack::decode(ibc_packet.acknowledgement.data.as_slice())?.into();
@@ -274,11 +275,27 @@ pub trait TransferProtocol {
             .add_messages(ack_msgs))
     }
 
+    fn send_ack_metadata(
+        &mut self,
+        ibc_packet: IbcPacketAckMsg,
+    ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
+    }
+
+    fn send_ack(
+        &mut self,
+        ibc_packet: IbcPacketAckMsg,
+    ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
+        match PacketTag::decode(ibc_packet.original_packet.data.as_slice())? {
+            PacketTag::Relay => self.send_ack_relay(ibc_packet),
+            PacketTag::Metadata => todo!(),
+        }
+    }
+
     fn send_timeout(
         &mut self,
         ibc_packet: IbcPacket,
     ) -> Result<IbcBasicResponse<Self::CustomMsg>, Self::Error> {
-        let packet = Self::Packet::decode(ibc_packet.clone().data.as_slice())?;
+        let packet = Self::TokenPacket::decode(ibc_packet.clone().data.as_slice())?;
         // same branch as failure ack
         let memo = packet.extension().to_string();
         let ack = GenericAck::Err(ACK_ERR_TIMEOUT_MSG.to_vec());
@@ -317,13 +334,13 @@ pub trait TransferProtocol {
     #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
-        receiver: &AddrOf<Self::Packet>,
+        receiver: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), Self::Error>;
 
     fn receive(&mut self, original_packet: IbcPacket) -> IbcReceiveResponse<Self::CustomMsg> {
         let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
-            let packet = Self::Packet::decode(original_packet.data.as_slice())?;
+            let packet = Self::TokenPacket::decode(original_packet.data.as_slice())?;
 
             let memo = packet.extension().to_string();
 
@@ -389,7 +406,7 @@ pub trait TransferProtocol {
     /// Extracts and processes the forward information from a messages memo. Initiates the forward transfer process.
     fn packet_forward(
         &mut self,
-        packet: Self::Packet,
+        packet: Self::TokenPacket,
         original_packet: IbcPacket,
         forward: PacketForward,
         processed: bool,
@@ -419,7 +436,7 @@ pub trait TransferProtocol {
         ack: GenericAck,
         ibc_packet: IbcPacket,
         refund_info: InFlightPfmPacket,
-        sender: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error>;
 

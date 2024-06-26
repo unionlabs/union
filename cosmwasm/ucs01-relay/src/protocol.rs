@@ -60,7 +60,7 @@ pub trait TransferProtocolExt<'a>:
         ibc_packet: IbcPacket,
         refund_info: InFlightPfmPacket,
         ack: Result<Vec<u8>, Vec<u8>>,
-        sender: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error> {
         let ack =
@@ -607,7 +607,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 0;
 
-    type Packet = Ics20Packet;
+    type TokenPacket = Ics20Packet;
     type Ack = Ics20Ack;
     type CustomMsg = TokenFactoryMsg;
     type Error = ContractError;
@@ -679,7 +679,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
-        receiver: &AddrOf<Self::Packet>,
+        receiver: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), ContractError> {
         let (tokens, msgs) = StatefulOnReceive {
@@ -719,13 +719,13 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         packet: ucs01_relay_api::types::TransferPacketCommon<
             ucs01_relay_api::protocol::PacketExtensionOf<Self>,
         >,
-    ) -> Result<Self::Packet, ucs01_relay_api::types::EncodingError> {
+    ) -> Result<Self::TokenPacket, ucs01_relay_api::types::EncodingError> {
         Ics20Packet::try_from(packet)
     }
 
     fn packet_forward(
         &mut self,
-        packet: Self::Packet,
+        packet: Self::TokenPacket,
         original_packet: IbcPacket,
         forward: PacketForward,
         processed: bool,
@@ -792,7 +792,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         ack: GenericAck,
         ibc_packet: IbcPacket,
         refund_info: InFlightPfmPacket,
-        sender: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error> {
         self.do_pfm_ack(ibc_packet, refund_info, ack, sender, tokens)
@@ -832,7 +832,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 1;
 
-    type Packet = Ucs01TransferPacket;
+    type TokenPacket = Ucs01TransferPacket;
     type Ack = Ucs01Ack;
     type CustomMsg = TokenFactoryMsg;
     type Error = ContractError;
@@ -906,7 +906,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     #[allow(clippy::type_complexity)]
     fn receive_transfer(
         &mut self,
-        receiver: &AddrOf<Self::Packet>,
+        receiver: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), ContractError> {
         let receiver = self
@@ -953,7 +953,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         packet: ucs01_relay_api::types::TransferPacketCommon<
             ucs01_relay_api::protocol::PacketExtensionOf<Self>,
         >,
-    ) -> Result<Self::Packet, EncodingError> {
+    ) -> Result<Self::TokenPacket, EncodingError> {
         Ok(Ucs01TransferPacket::new(
             self.common
                 .deps
@@ -977,7 +977,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
     fn packet_forward(
         &mut self,
-        packet: Self::Packet,
+        packet: Self::TokenPacket,
         original_packet: IbcPacket,
         forward: PacketForward,
         processed: bool,
@@ -1054,7 +1054,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         ack: GenericAck,
         ibc_packet: IbcPacket,
         refund_info: InFlightPfmPacket,
-        sender: &AddrOf<Self::Packet>,
+        sender: &AddrOf<Self::TokenPacket>,
         tokens: Vec<TransferToken>,
     ) -> Result<(Vec<CosmosMsg<Self::CustomMsg>>, Vec<Attribute>), Self::Error> {
         self.do_pfm_ack(ibc_packet, refund_info, ack, sender, tokens)

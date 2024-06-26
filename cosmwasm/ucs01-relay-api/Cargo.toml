@@ -11,6 +11,8 @@ cosmwasm-schema   = { version = "2.0.0" }
 cosmwasm-std      = { version = "2.0.0", features = ["stargate"] }
 ethabi            = { workspace = true }
 go-parse-duration = { workspace = true }
+num-derive        = { version = "0.4" }
+num-traits        = { version = "0.2" }
 prost             = { workspace = true }
 protos            = { workspace = true }
 serde             = { workspace = true }

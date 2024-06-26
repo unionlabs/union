@@ -21,6 +21,8 @@ pub enum EncodingError {
     InvalidSender { value: String, err: StdError },
     #[error("Invalid receiver address: receiver: `{value}`, err: {err}")]
     InvalidReceiver { value: String, err: StdError },
+    #[error("Invalid packet tag: {value}")]
+    InvalidPacketTag { value: u8 },
 }
 
 /// A json encoding specific to [`serde_json_wasm`] as it does not use the same error types as `serde_json`.
@@ -122,6 +124,11 @@ impl Ucs01TransferPacket {
 impl Encode<encoding::EthAbi> for Ucs01TransferPacket {
     fn encode(self) -> Vec<u8> {
         ethabi::encode(&[
+            Token::Uint(
+                num_traits::ToPrimitive::to_u8(&PacketTag::Relay)
+                    .expect("impossible")
+                    .into(),
+            ),
             Token::Bytes(self.sender.into()),
             Token::Bytes(self.receiver.into()),
             Token::Array(
@@ -146,6 +153,8 @@ impl Decode<encoding::EthAbi> for Ucs01TransferPacket {
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
         let encoded_packet = ethabi::decode(
             &[
+                // The packet tag
+                ParamType::Uint(8),
                 ParamType::Bytes,
                 ParamType::Bytes,
                 ParamType::Array(Box::new(ParamType::Tuple(vec![
@@ -163,7 +172,8 @@ impl Decode<encoding::EthAbi> for Ucs01TransferPacket {
         // NOTE: at this point, it is technically impossible to have any other branch than the one we
         // match unless there is a bug in the underlying `ethabi` crate
         match &encoded_packet[..] {
-            [Token::Bytes(sender), Token::Bytes(receiver), Token::Array(tokens), Token::String(memo)] => {
+            // Discard the tag
+            [Token::Uint(_), Token::Bytes(sender), Token::Bytes(receiver), Token::Array(tokens), Token::String(memo)] => {
                 Ok(Ucs01TransferPacket {
                     sender: sender.clone().into(),
                     receiver: receiver.clone().into(),
@@ -368,6 +378,127 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
         {
             Some(denom) => DenomOrigin::Local { denom },
             None => DenomOrigin::Remote { denom },
+        }
+    }
+}
+
+pub struct Ucs01Metadata {
+    pub denom: String,
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u8,
+}
+
+pub struct Ucs01MetadataPacket {
+    pub tokens_metadata: Vec<Ucs01Metadata>,
+}
+
+impl Encode<encoding::EthAbi> for Ucs01MetadataPacket {
+    fn encode(self) -> Vec<u8> {
+        ethabi::encode(&[
+            Token::Uint(
+                num_traits::ToPrimitive::to_u8(&PacketTag::Metadata)
+                    .expect("impossible")
+                    .into(),
+            ),
+            Token::Array(
+                self.tokens_metadata
+                    .into_iter()
+                    .map(
+                        |Ucs01Metadata {
+                             denom,
+                             name,
+                             symbol,
+                             decimals,
+                         }| {
+                            Token::Tuple(vec![
+                                Token::String(denom),
+                                Token::String(name),
+                                Token::String(symbol),
+                                Token::Uint(decimals.into()),
+                            ])
+                        },
+                    )
+                    .collect(),
+            ),
+        ])
+    }
+}
+
+impl Decode<encoding::EthAbi> for Ucs01MetadataPacket {
+    type Error = EncodingError;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let encoded_packet = ethabi::decode(
+            &[
+                ParamType::Uint(8),
+                ParamType::Array(Box::new(ParamType::Tuple(vec![
+                    ParamType::String,
+                    ParamType::String,
+                    ParamType::String,
+                    ParamType::String,
+                    ParamType::Bytes,
+                    ParamType::Uint(8),
+                ]))),
+            ],
+            bytes,
+        )
+        .map_err(|err| EncodingError::InvalidUCS01PacketEncoding {
+            value: bytes.to_vec(),
+            err,
+        })?;
+        match &encoded_packet[..] {
+            [Token::Uint(_), Token::Array(tokens_metadata)] => {
+                Ok(Ucs01MetadataPacket {
+                    tokens_metadata: tokens_metadata
+                        .iter()
+                        .map(|token_metadata| {
+                            if let Token::Tuple(encoded_token_metadata_inner) = token_metadata {
+                                match &encoded_token_metadata_inner[..] {
+                                    [Token::String(denom), Token::String(name), Token::String(symbol), Token::Uint(decimals)] => {
+                                        Ucs01Metadata {
+                                            denom: denom.clone(),
+                                            name: name.clone(),
+                                            symbol: symbol.clone(),
+                                            decimals: decimals.as_u128() as u8,
+                                        }
+                                    }
+                                    _ => unreachable!(),
+                                }
+                            } else {
+                                unreachable!()
+                            }
+                        })
+                        .collect(),
+                })
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(FromPrimitive, ToPrimitive)]
+pub enum PacketTag {
+    Relay = 0,
+    Metadata = 1,
+}
+
+impl Decode<encoding::EthAbi> for PacketTag {
+    type Error = EncodingError;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        match ethabi::decode(&[ParamType::Uint(8)], bytes) {
+            Ok(tokens) => match &tokens[..] {
+                &[Token::Uint(tag)] => num_traits::FromPrimitive::from_u8(tag.as_u128() as u8)
+                    .ok_or(EncodingError::InvalidPacketTag {
+                        value: tag.as_u128() as u8,
+                    }),
+                _ => unreachable!(),
+            },
+            Err(err) => Err(EncodingError::InvalidUCS01PacketEncoding {
+                value: bytes.to_vec(),
+                err,
+            }),
         }
     }
 }
