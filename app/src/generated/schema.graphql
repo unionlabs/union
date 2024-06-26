@@ -2705,6 +2705,7 @@ type v0_faucets {
   chain_id: Int!
   denom: String!
   display_name: String!
+  enabled: Boolean!
   url: String!
 }
 
@@ -2742,6 +2743,7 @@ input v0_faucets_bool_exp {
   chain_id: Int_comparison_exp
   denom: String_comparison_exp
   display_name: String_comparison_exp
+  enabled: Boolean_comparison_exp
   url: String_comparison_exp
 }
 
@@ -2770,6 +2772,7 @@ input v0_faucets_order_by {
   chain_id: order_by
   denom: order_by
   display_name: order_by
+  enabled: order_by
   url: order_by
 }
 
@@ -2785,6 +2788,9 @@ enum v0_faucets_select_column {
 
   """column name"""
   display_name
+
+  """column name"""
+  enabled
 
   """column name"""
   url
@@ -2827,6 +2833,7 @@ input v0_faucets_stream_cursor_value_input {
   chain_id: Int
   denom: String
   display_name: String
+  enabled: Boolean
   url: String
 }
 

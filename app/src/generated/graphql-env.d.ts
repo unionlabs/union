@@ -10257,6 +10257,18 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "url",
             "type": {
               "kind": "NON_NULL",
@@ -10428,6 +10440,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
             "name": "url",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -10533,6 +10552,13 @@ export type introspection = {
             }
           },
           {
+            "name": "enabled",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "url",
             "type": {
               "kind": "ENUM",
@@ -10556,6 +10582,10 @@ export type introspection = {
           },
           {
             "name": "display_name",
+            "isDeprecated": false
+          },
+          {
+            "name": "enabled",
             "isDeprecated": false
           },
           {
@@ -10653,6 +10683,13 @@ export type introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "String"
+            }
+          },
+          {
+            "name": "enabled",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
             }
           },
           {
