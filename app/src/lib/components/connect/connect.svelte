@@ -37,6 +37,8 @@ let sheetOpen = false
 $: if ($navigating) sheetOpen = false
 
 let collapsibleOpen = true
+
+$: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
@@ -83,6 +85,11 @@ let collapsibleOpen = true
       chainWalletsInformation={evmWalletsInformation}
       connectedWalletId={$sepoliaStore.connectedWallet}
     />
+    {#if !gotMetamask}
+      <Button on:click={() => window.alert('Please install metamask')}>
+        Install Metmask
+      </Button>
+    {/if}
     <Separator class={cn('px-0 bg-border my-4')} />
     <Connection
       chain="cosmos"
