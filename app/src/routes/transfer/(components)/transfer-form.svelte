@@ -724,7 +724,7 @@ const resetInput = () => {
                 on:click={() => (dialogOpenToken = !dialogOpenToken)}
               >
                 <div
-                  class="flex-1 text-left">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
+                  class="flex-1 text-left font-bold text-md">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
 
                 <Chevron/>
               </Button>
