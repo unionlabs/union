@@ -32,8 +32,6 @@ curl --silent $RPC_ENDPOINT/block | \
   jq --raw-output '.result.block.header.height + "\n" + .result.block_id.hash'
 ```
 
-_Where `RPC_ENDPOINT` is an RPC endpoint from the [Public Endpoints](/docs/joining-testnet/public-endpoints/) list._
-
 You should then see output in the form of:
 
 ```

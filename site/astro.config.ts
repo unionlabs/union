@@ -102,28 +102,26 @@ export default defineConfig({
           ]
         },
         {
-          label: "Integration",
-          autogenerate: {
-            directory: "/docs/integration"
-          }
-        },
-        {
-          label: "Demos",
-          autogenerate: {
-            directory: "/docs/demos"
-          }
+          label: "Integrations",
+          items: [
+            {
+              label: "Getting Started",
+              link: "/docs/integrations/getting-started"
+            },
+            {
+              label: "CometBFT",
+              collapsed: true,
+              autogenerate: {
+                directory: "/docs/integrations/cometbft"
+              }
+            }
+          ]
         },
         {
           label: "Joining the Testnet",
           collapsed: true,
           autogenerate: {
             directory: "/docs/joining-testnet"
-          }
-        },
-        {
-          label: "Style Guide",
-          autogenerate: {
-            directory: "/docs/style-guide"
           }
         }
       ],

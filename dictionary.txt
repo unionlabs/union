@@ -108,6 +108,7 @@ Millis
 Mimc
 Misbehaviour
 Monaspace
+Movementlabs
 Multichain
 NIXBUILDNET
 Neue
@@ -394,6 +395,7 @@ ctxt
 ctypes
 curr
 dabindings
+daemonizing
 dakeeper
 dalek
 damodule
@@ -804,6 +806,7 @@ pbjson
 pedersen
 permissioned
 permissionless
+permissionlessly
 pflag
 phang
 pingpong
