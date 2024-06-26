@@ -248,6 +248,16 @@ contract UCS01Relay is
         outstanding[sourceChannel][token] -= amount;
     }
 
+    // TODO: temporary entrypoint until the protocol gets extended to support this via the counterparty.
+    function updateMetadata(
+        IERC20Denom denom,
+        string calldata newName,
+        string calldata newSymbol,
+        uint8 newDecimals
+    ) public onlyOwner {
+        IERC20Denom(denom).update(newName, newSymbol, newDecimals);
+    }
+
     // Internal function
     // Send the given token over the specified channel.
     // If token is native, we increase the oustanding amount and escrow it. Otherwise, we burn the amount.
@@ -399,7 +409,9 @@ contract UCS01Relay is
                 denomAddress =
                     denomToAddress[ibcPacket.destination_channel][denom];
                 if (denomAddress == address(0)) {
-                    denomAddress = address(new ERC20Denom(token.denom));
+                    denomAddress = address(
+                        new ERC20Denom{salt: keccak256(bytes(denom))}(denom)
+                    );
                     denomToAddress[ibcPacket.destination_channel][denom] =
                         denomAddress;
                     addressToDenom[ibcPacket.destination_channel][denomAddress]

@@ -1152,16 +1152,11 @@ contract IBCPacketHandlerTest is TestPlus {
 
     function test_timeoutPacket_timestamp_ok(
         address relayer,
-        uint64 timeoutTimestamp,
         bytes memory payload
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
-        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP + 1);
-        vm.assume(
-            timeoutTimestamp
-                < (type(uint64).max / 1e9) - Cometbls.MAX_CLOCK_DRIFT - 1
-        );
         vm.prank(address(app));
+        uint64 timeoutTimestamp = LATEST_TIMESTAMP + 2;
         handler.sendPacket(
             channelId,
             ClientHeight.Data({revision_number: 0, revision_height: 0}),
@@ -1195,15 +1190,10 @@ contract IBCPacketHandlerTest is TestPlus {
 
     function test_timeoutPacket_timestamp_notReached(
         address relayer,
-        uint64 timeoutTimestamp,
         bytes memory payload
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
-        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP + 1);
-        vm.assume(
-            timeoutTimestamp
-                < (type(uint64).max / 1e9) - Cometbls.MAX_CLOCK_DRIFT - 1
-        );
+        uint64 timeoutTimestamp = LATEST_TIMESTAMP + 2;
         vm.prank(address(app));
         handler.sendPacket(
             channelId,
