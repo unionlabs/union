@@ -374,7 +374,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 !-->
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
-<div class="max-h-auto min-w-full flex flex-col items-center gap-6">
+<div class="flex flex-col w-full items-center gap-6">
   {#each $processedTransfers as transfer, transferIndex}
     {@const sourceExplorer = chains.find(c => c.chain_id === transfer.source_chain_id)?.explorers?.at(0)}
     {@const destinationExplorer = chains.find(c => c.chain_id === transfer.destination_chain_id)?.explorers?.at(0)}
@@ -383,15 +383,15 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col  justify-self-center">
-    <Card.Header class="font-bold text-md text-center text-muted-foreground">
+  <Card.Root class="flex flex-col max-w-full overflow-auto justify-self-center">
+    <Card.Header class="font-bold text-md text-center break-words text-muted-foreground">
       TRANSFER {transfer.source_transaction_hash}
     </Card.Header>
     <Card.Content class="flex flex-col gap-8">
 
     <section class="mt-6">
       {#if transfer.assets}
-        <ul class="text-foreground text-center  uppercase condenced font-bold text-4xl">
+        <ul class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl">
           {#each Object.entries(transfer.assets) as [denom, value]}
             {#if value.info}
               <li><ExplorerPrecise amount={value.amount} decimals={value.info.decimals} showToolTip displayDecimals={8}/> {truncate(value.info.display_symbol, 8)}</li>
@@ -406,9 +406,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     </section>
 
     <section>
-    <section class="flex">
+    <section class="flex flex-col sm:flex-row">
       <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
+        <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
         <p class="text-sm">{transfer.source_chain_id}</p>
         <p class="text-sm">{transfer.source_connection_id}</p>
         <p class="text-sm">{transfer.source_channel_id}</p>
@@ -416,8 +416,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       <div class="flex items-center justify-center px-8">
         <MoveRightIcon class="text-foreground size-8"/>
       </div>
-      <div class="flex-1 text-right flex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
+      <div class="flex-1 sm:text-right flex-col text-muted-foreground">
+        <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
         <p class="text-sm">{transfer.destination_chain_id}</p>
         <p class="text-sm">{transfer.destination_connection_id}</p>
         <p class="text-sm">{transfer.destination_channel_id}</p>
@@ -426,22 +426,22 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     {#if transfer.hop_chain_id}
       <div class="flex-1 text-center flex-col text-sm text-muted-foreground items-center">
         forwarded through
-        <h2 class="font-supermolot uppercase font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.hop_chain_id, chains)}</h2>
+        <h2 class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.hop_chain_id, chains)}</h2>
         <p class="text-sm">{transfer?.hop_chain_destination_connection_id ?? "unknown"} -> {transfer?.hop_chain_source_connection_id ?? "unknown"}</p>
         <p class="text-sm">{transfer?.hop_chain_destination_channel_id ?? "unknown"} -> {transfer.hop_chain_source_channel_id}</p>
       </div>
     {/if}
     </section>
-    <section class="flex gap-8">
+    <section class="flex flex-col lg:flex-row gap-8">
       <div class=" lex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
-        {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline">{transfer.sender}</a>{:else}<p class="text-sm">{transfer.sender}</p>{/if}
-        <p class="text-[10px]">normalized: {transfer.normalized_sender}</p>
+        {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline break-words">{transfer.sender}</a>{:else}<p class="text-sm break-words">{transfer.sender}</p>{/if}
+        <p class="text-[10px] break-words">normalized: {transfer.normalized_sender}</p>
       </div>
-      <div class="flex-1 text-right flex-col text-muted-foreground">
+      <div class="flex-1 lg:text-right flex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
-        {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline">{transfer.receiver}</a>{:else}<p class="text-sm">{transfer.receiver}</p>{/if}
-        <p class="text-[10px]">normalized: {transfer.normalized_receiver}</p>
+        {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline break-words">{transfer.receiver}</a>{:else}<p class="text-sm break-words">{transfer.receiver}</p>{/if}
+        <p class="text-[10px] break-words">normalized: {transfer.normalized_receiver}</p>
       </div>
     </section>
     </Card.Content>

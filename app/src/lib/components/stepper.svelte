@@ -45,7 +45,7 @@ export let onRetry: (() => void) | undefined = undefined
       <!-- bottom step connector !-->
       <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" ?  "bg-black" : "")}></div>
     </div>
-    <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-50px)] break-words justify-center">
+    <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if step.traceDetails}
         {@const trace = step.traceDetails}
         <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {trace.chain_display_name} at {#if trace.block_url}<a class="underline" href={trace.block_url}>{trace.block}</a>{:else}{trace.block}{/if}</p>
