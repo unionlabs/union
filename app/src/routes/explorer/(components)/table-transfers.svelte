@@ -21,7 +21,7 @@ export let chains: Array<Chain>
 
 let transfers = createQuery({
   queryKey: ["transfers-all"],
-  refetchInterval: 5_000,
+  refetchInterval: 10_000,
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
   queryFn: async () => {
     const response = await request(URLS.GRAPHQL, allTransfersQueryDocument, {})
