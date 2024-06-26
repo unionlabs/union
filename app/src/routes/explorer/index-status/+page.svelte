@@ -17,9 +17,9 @@ let indexStatus = createQuery({
   queryFn: async () => request(URLS.GRAPHQL, indexStatusQuery, {}),
   select: data => {
     const enabledChains = data.chains.flatMap(chain => chain.chain_id)
-    return data.statuses.filter(
-      status => status.chain_id && enabledChains.includes(status.chain_id)
-    ).map(s => ({ chain: {chain_display_name: s.display_name, chain_id: s.chain_id}, ...s }))
+    return data.statuses
+      .filter(status => status.chain_id && enabledChains.includes(status.chain_id))
+      .map(s => ({ chain: { chain_display_name: s.display_name, chain_id: s.chain_id }, ...s }))
   }
 })
 
