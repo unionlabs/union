@@ -11,7 +11,7 @@ import NotConnected from "$lib/components/not-connected.svelte"
 
 <ChainsGate let:chains>
   <WalletGate let:connected let:userAddr>
-    <div class="w-full flex flex-col items-center">
+    <div class="w-full h-full flex flex-col items-center p-2">
       <TransferForm {chains} {connected} {userAddr} />
     </div>
   </WalletGate>
