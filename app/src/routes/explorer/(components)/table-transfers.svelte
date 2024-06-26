@@ -31,7 +31,7 @@ let transfers = createQuery({
       let destinationChainId = tx.destination_chain_id
       let receiver = tx.receiver
 
-      const lastForward = tx.forwards?.at(-1)
+      const lastForward = tx.forwards_2?.at(-1)
       if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
         receiver = lastForward.receiver
         destinationChainId = lastForward.chain.chain_id

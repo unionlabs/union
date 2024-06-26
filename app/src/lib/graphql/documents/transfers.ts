@@ -10,7 +10,7 @@ export const allTransfersQueryDocument = graphql(/* GraphQL */ `
       destination_chain_id
       assets
       source_timestamp
-      forwards {
+      forwards_2 {
         chain {
           chain_id
         }
