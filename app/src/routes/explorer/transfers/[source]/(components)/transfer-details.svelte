@@ -21,6 +21,7 @@ import Stepper from "$lib/components/stepper.svelte"
 import { zip } from "$lib/utilities/helpers.ts"
 import type { Chain } from "$lib/types"
 import { submittedTransfers } from "$lib/stores/submitted-transfers"
+import { cn } from "$lib/utilities/shadcn"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -410,8 +411,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       <div class="flex-1 lex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
         <p class="text-sm">{transfer.source_chain_id}</p>
-        <p class="text-sm">{transfer.source_connection_id}</p>
-        <p class="text-sm">{transfer.source_channel_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.source_connection_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.source_channel_id}</p>
       </div>
       <div class="flex items-center justify-center px-8">
         <MoveRightIcon class="text-foreground size-8"/>
@@ -419,8 +420,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       <div class="flex-1 sm:text-right flex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
         <p class="text-sm">{transfer.destination_chain_id}</p>
-        <p class="text-sm">{transfer.destination_connection_id}</p>
-        <p class="text-sm">{transfer.destination_channel_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.destination_connection_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.destination_channel_id}</p>
       </div>
     </section>
     {#if transfer.hop_chain_id}
