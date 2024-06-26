@@ -434,7 +434,12 @@ const transfer = async () => {
         sender: userAddrOnChain(userAddr, $fromChain),
         normalized_sender: $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
         receiver: $recipient,
-        asset: $asset,
+        assets: {
+          [$assetSymbol]: {
+            info: $fromChain.assets.find(d => d.denom === $assetSymbol),
+            amount: parsedAmount
+          }
+        },
         amount,
       }
       return ts;
