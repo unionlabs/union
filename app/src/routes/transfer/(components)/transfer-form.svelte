@@ -173,9 +173,9 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-let isTrasnfering: boolean
+let isTransferring: boolean
 const transfer = async () => {
-  isTrasnfering = true
+  isTransferring = true
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
   if (!$fromChainId) return toast.error("Please select a from chain")
@@ -688,7 +688,7 @@ const resetInput = () => {
 </script>
 
 
-{#if !isTrasnfering}
+{#if !isTransferring}
   <Card.Root class="max-w-xl w-full">
     <ScrollArea>
       <Card.Header>
