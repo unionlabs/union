@@ -12,6 +12,10 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
 use tracing::{debug, debug_span, info_span, trace, Instrument};
 
+use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
+
+pub mod metrics;
+
 // pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 
 /// A fifo queue backed by a postgres table. Not suitable for high-throughput, but enough for ~1k items/sec.
@@ -114,7 +118,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         .await?;
 
         for ready in ready_ids {
-            debug!(id = ready.id, "enqueued item");
+            debug!(id = ready.id, "enqueued ready item");
         }
 
         let optimize_further_ids = sqlx::query(
@@ -135,7 +139,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         .await?;
 
         for ready in optimize_further_ids {
-            debug!(id = ready.id, "enqueued item");
+            debug!(id = ready.id, "enqueued optimize item");
         }
 
         tx.commit().await?;
@@ -193,7 +197,9 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
                 // really don't feel like defining a new error type right now
                 let json = de(&row.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
+                let timer = ITEM_PROCESSING_DURATION.start_timer();
                 let (r, res) = f(json).instrument(span).await;
+                let _ = timer.stop_and_record();
 
                 match res {
                     Err(error) => {
@@ -328,6 +334,12 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         .await
         .map_err(Either::Left)?;
 
+        if msgs.is_empty() {
+            trace!("optimizer queue is empty");
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            return Ok(());
+        }
+
         let (ids, msgs) = msgs
             .into_iter()
             .map(|r| {
@@ -339,6 +351,8 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
             .collect::<Result<(Vec<_>, Vec<_>), sqlx::Error>>()
             .map_err(Either::Left)?;
 
+        OPTIMIZE_ITEM_COUNT.observe(msgs.len() as f64);
+        let timer = OPTIMIZE_PROCESSING_DURATION.start_timer();
         let OptimizationResult {
             optimize_further,
             ready,
@@ -354,6 +368,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
             ))
             .await
             .map_err(Either::Right)?;
+        let _ = timer.stop_and_record();
 
         trace!(
             ready = ready.len(),
