@@ -5,6 +5,7 @@ import { type Readable, derived } from "svelte/store"
 import SpinnerSvg from "./spinner-svg.svelte"
 import type { Step, StepStatus } from "$lib/stepper-types.ts"
 import { toIsoString } from "$lib/utilities/date"
+import Truncate from '$lib/components/truncate.svelte'
 
 export let steps: Readable<Array<Step>>
 
@@ -54,9 +55,9 @@ export let onRetry: (() => void) | undefined = undefined
       {#if step.traceDetails}
         {@const trace = step.traceDetails}
         {#if trace.tx_url !== undefined}
-          <a href={trace.tx_url} class="-mt-1 block underline text-xs text-muted-foreground">{trace.tx}</a>
+          <a href={trace.tx_url} class="-mt-1 block underline text-xs text-muted-foreground"><Truncate class="underline" value={trace.tx} type="hash"/></a>
         {:else}
-          <p class="text-xs text-muted-foreground">{trace.tx}</p>
+          <p class="text-xs text-muted-foreground"><Truncate value={trace.tx} type="hash"/></p>
         {/if}
       {:else if step.description}
           <div class="font-normal break-words">{step.description}</div>      
