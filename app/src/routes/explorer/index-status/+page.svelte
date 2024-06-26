@@ -1,7 +1,8 @@
 <script lang="ts">
+import LoadingLogo from "$lib/components/loading-logo.svelte"
 import request from "graphql-request"
+import { derived } from "svelte/store"
 import { URLS } from "$lib/constants"
-import { writable } from "svelte/store"
 import Table from "../(components)/table.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import CellStatus from "../(components)/cell-status.svelte"
@@ -9,7 +10,7 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
 import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
 
-$: indexStatus = createQuery({
+let indexStatus = createQuery({
   queryKey: ["index-status"],
   refetchInterval: 500,
   queryFn: async () => request(URLS.GRAPHQL, indexStatusQuery, {}),
@@ -21,11 +22,7 @@ $: indexStatus = createQuery({
   }
 })
 
-$: indexStatusData = $indexStatus?.data ?? []
-
-type IndexStatus = (typeof indexStatusData)[number]
-
-$: indexStatusStore = writable<Array<IndexStatus>>(indexStatusData as Array<IndexStatus>)
+let indexStatusData = derived(indexStatus, $indexStatus => $indexStatus.data ?? [])
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {
@@ -58,4 +55,11 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 ]
 </script>
 
-<Table bind:dataStore={indexStatusStore} {columns} />
+
+{#if $indexStatus.data }
+  <Table bind:dataStore={indexStatusData} {columns} />
+{:else if $indexStatus.isLoading}
+  <LoadingLogo class="size-16"/>
+{:else if $indexStatus.isError}
+  Error fetching index status...
+{/if}

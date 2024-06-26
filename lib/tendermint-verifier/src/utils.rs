@@ -73,6 +73,7 @@ pub fn validators_hash(validator_set: &ValidatorSet) -> H256 {
             SimpleValidator {
                 pub_key: match &validator.pub_key {
                     // hackerman
+                    // https://github.com/unionlabs/cometbls/issues/86
                     PublicKey::Bls12_381(key) => PublicKey::Bn254(key.clone()),
                     key => key.clone(),
                 },
@@ -86,10 +87,13 @@ pub fn validators_hash(validator_set: &ValidatorSet) -> H256 {
 }
 
 #[must_use]
-pub fn header_expired(h: &SignedHeader, trusting_period: Duration, now: Timestamp) -> bool {
-    let Some(expiration_time) = h.header.time.checked_add(trusting_period) else {
-        return false;
-    };
+pub fn header_expired(_h: &SignedHeader, _trusting_period: Duration, _now: Timestamp) -> bool {
+    // TODO: Re-enable
+    // let Some(expiration_time) = h.header.time.checked_add(trusting_period) else {
+    //     return false;
+    // };
 
-    expiration_time <= now
+    // expiration_time <= now
+
+    false
 }

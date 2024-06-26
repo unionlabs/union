@@ -15,7 +15,7 @@ import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
-import { rawToBech32 } from "$lib/utilities/address.ts"
+import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { type Address, parseUnits } from "viem"
@@ -37,6 +37,9 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import LockLockedIcon from "virtual:icons/lucide/lock"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
+import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/documents/transfers"
+import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
+import { toIsoString } from "$lib/utilities/date"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -407,6 +410,28 @@ const transfer = async () => {
 
   if ($transferState.kind === "TRANSFERRING") {
     await sleep(REDIRECT_DELAY_MS)
+    submittedTransfers.update(ts => {
+      // @ts-ignore
+      ts[$transferState.transferHash] = {
+        source_chain_id: $fromChainId,
+        destination_chain_id: $toChainId,
+        source_transaction_hash: $transferState.transferHash,
+        hop_chain_id: $hopChain?.chain_id,
+        sender: userAddrOnChain(userAddr, $fromChain),
+        normalized_sender:
+          $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
+        transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
+        receiver: $recipient,
+        assets: {
+          [$assetSymbol]: {
+            info: $fromChain.assets.find(d => d.denom === $assetSymbol),
+            amount: parsedAmount
+          }
+        },
+        amount
+      }
+      return ts
+    })
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
