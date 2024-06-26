@@ -844,9 +844,7 @@ const resetInput = () => {
       }}/>
       {/if}
     </Card.Root>
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION UNION UNION UNION
-      UNION UNION UNION UNION
-    </div>
+    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
   </div>
 </div>
 
@@ -889,16 +887,17 @@ const resetInput = () => {
 
 <style global lang="postcss">
 
+
     .cube-scene {
-        @apply absolute -my-6 py-6 z-20;
-        top: calc(50% - (var(--height) / 2));
-        --width: calc(min(500px, (100dvw - 32px)));
-        --height: calc(min(700px, (100dvh - 164px)));
-        --depth: 80px;
-        --speed: 2s;
-        width: var(--width);
-        height: var(--height);
-        perspective: 1000px;
+      @apply absolute -my-6 py-6 z-20;
+      top: calc(50% - (var(--height) / 2));
+      --width: calc(min(500px, (100dvw - 32px)));
+      --height: calc(min(700px, (100dvh - 144px)));
+      --depth: 80px;
+      --speed: 2s;
+      width: var(--width);
+      height: var(--height);
+      perspective: 1000px;
     }
 
     .cube {
