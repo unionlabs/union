@@ -736,7 +736,7 @@ const resetInput = () => {
             <div class="mt-4 text-xs text-muted-foreground">
               <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
               <b>{$fromChain?.display_name}</b> is
-                <Precise chain={$fromChain} asset={$asset} showToolTip/>
+              <Precise chain={$fromChain} asset={$asset} showToolTip/>
               <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
             </div>
           {/if}
@@ -820,6 +820,11 @@ const resetInput = () => {
           }
           on:click={async event => {
           event.preventDefault()
+          let numericAmount = Number.parseFloat(amount)
+            if (!isNaN(numericAmount) && numericAmount <= 0) {
+                window.alert("Amount needs to be larger than 0");
+                return
+            }
           transferState.set({ kind: "FLIPPING" })
           await sleep(1200)
           transfer()
@@ -889,15 +894,15 @@ const resetInput = () => {
 
 
     .cube-scene {
-      @apply absolute -my-6 py-6 z-20;
-      top: calc(50% - (var(--height) / 2));
-      --width: calc(min(500px, (100dvw - 32px)));
-      --height: calc(min(740px, (100dvh - 144px)));
-      --depth: 80px;
-      --speed: 2s;
-      width: var(--width);
-      height: var(--height);
-      perspective: 1000px;
+        @apply absolute -my-6 py-6 z-20;
+        top: calc(50% - (var(--height) / 2));
+        --width: calc(min(500px, (100dvw - 32px)));
+        --height: calc(min(740px, (100dvh - 144px)));
+        --depth: 80px;
+        --speed: 2s;
+        width: var(--width);
+        height: var(--height);
+        perspective: 1000px;
     }
 
     .cube {
