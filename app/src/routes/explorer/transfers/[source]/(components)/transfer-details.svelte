@@ -273,7 +273,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         {
           status: onSource("SEND_PACKET") ? "COMPLETED" : "IN_PROGRESS",
           title: `Send Packet`,
-          description: `Sent on time at height with hash`,
+          description: "Waiting on indexer",
           traceDetails: traceDetails("SEND_PACKET", "source")
         },
         (() => {
