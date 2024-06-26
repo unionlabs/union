@@ -856,7 +856,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   }
 
   .cube-front, .cube-back {
-    @apply absolute overflow-y-auto;
+    @apply absolute overflow-y-auto overflow-x-hidden;
 
     width: var(--width);
     height: var(--height);
