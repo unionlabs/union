@@ -8,6 +8,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import CellStatus from "../(components)/cell-status.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import CellDurationText from "../(components)/cell-duration-text.svelte"
+import CellChainIndex from "../(components)/cell-chain-index.svelte"
 import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
 
 let indexStatus = createQuery({
@@ -18,7 +19,7 @@ let indexStatus = createQuery({
     const enabledChains = data.chains.flatMap(chain => chain.chain_id)
     return data.statuses.filter(
       status => status.chain_id && enabledChains.includes(status.chain_id)
-    )
+    ).map(s => ({ chain: {chain_display_name: s.display_name, chain_id: s.chain_id}, ...s }))
   }
 })
 
@@ -26,16 +27,10 @@ let indexStatusData = derived(indexStatus, $indexStatus => $indexStatus.data ?? 
 
 const columns: Array<ColumnDef<{ chain_id: string }>> = [
   {
-    accessorKey: "display_name",
+    accessorKey: "chain",
     header: () => "Chain",
     size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "chain_id",
-    header: () => "Chain ID",
-    size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellChainIndex, { value: info.getValue() })
   },
   {
     accessorKey: "timestamp",
