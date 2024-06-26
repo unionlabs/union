@@ -4,6 +4,7 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import AssetCard from "$lib/components/asset-card.svelte"
 import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
 import LoadingLogo from "./loading-logo.svelte"
+    import { userAddrOnChain } from "$lib/utilities/address";
 
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
@@ -15,11 +16,12 @@ let userBalances = userBalancesQuery({
 </script>
 
 {#each $userBalances as balance, index}
+  {@const chain = chains[index]}
   <div class="pt-6">
     <div class="pl-3 sm:pl-6 flex flex-col sm:flex-row items-baseline gap-3">
-      <h3 class="font-bold font-supermolot text-2xl">{chains[index].display_name}</h3>
+      <h3 class="font-bold font-supermolot text-2xl">{chain.display_name}</h3>
       <div class="text-xs font-mono text-muted-foreground">
-        {userAddr.evm.canonical}
+        {userAddrOnChain(userAddr, chain)}
       </div>
     </div>
     {#if !!balance.data}

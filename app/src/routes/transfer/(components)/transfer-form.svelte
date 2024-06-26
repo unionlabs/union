@@ -19,7 +19,7 @@ import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { config } from "$lib/wallet/evm/config.ts"
 import { truncate } from "$lib/utilities/format.ts"
-import { rawToBech32 } from "$lib/utilities/address.ts"
+import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import {
@@ -429,6 +429,12 @@ const transfer = async () => {
       ts[$transferState.transferHash] = {
         source_chain_id: $fromChainId, 
         destination_chain_id: $toChainId, 
+        hop_chain_id: $hopChain?.chain_id,
+        sender: userAddrOnChain(userAddr, $fromChain),
+        normalized_sender: $fromChain.rpc_type === "cosmos" ? userAddr.cosmos.normalized : userAddr.evm.normalized,
+        receiver: $recipient,
+        asset: $asset,
+        amount,
       }
       return ts;
     });
