@@ -26,7 +26,7 @@ import { sleep } from "$lib/utilities"
 import { KEY } from "$lib/constants/keys.ts"
 import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { walletConnect, injected } from "@wagmi/connectors"
+import { injected } from "@wagmi/connectors"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
 
 const chains = [sepolia] as const
