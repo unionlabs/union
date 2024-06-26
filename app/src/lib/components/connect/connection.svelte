@@ -72,7 +72,6 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 <div class="flex flex-col">
   {#each chainWalletsInformation as { name, id, icon, download }, index (index)}
     {@const walletIdentifier = id}
-    {#await console.log(name)}{/await}
     {#if walletIdentifier !== "walletConnect"}
       {#if walletIdentifier !== "injected"}
         <div
