@@ -37,7 +37,7 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
-import { ScrollArea } from "$lib/components/ui/scroll-area";
+import { ScrollArea } from "$lib/components/ui/scroll-area"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -683,8 +683,6 @@ const resetInput = () => {
   userInput = false
   address = $recipient ?? ""
 }
-
-
 </script>
 
 
