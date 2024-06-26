@@ -8,31 +8,33 @@ import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
 export function userBalancesQuery({
   userAddr,
-  chains
+  chains,
+  connected
 }: {
   userAddr: UserAddresses
   chains: Array<Chain>
+  connected: boolean
 }) {
   return createQueries({
     queries: chains.map(chain => ({
-      // note: we assume each chain only has one userAddr. this might change later
-      queryKey: ["balances", chain.chain_id, userAddr.evm.normalized],
+      // Using JSON.stringify to ensure queryKey updates when userAddr changes.
+      queryKey: [
+        "balances",
+        chain.chain_id,
+        userAddr?.evm?.normalized,
+        userAddr?.cosmos?.normalized
+      ],
       refetchOnWindowFocus: false,
       refetchInterval: 4_000,
       queryFn: async () => {
-        if (chain.rpc_type === "evm") {
+        if (chain.rpc_type === "evm" && userAddr.evm && connected) {
           const rpc = chain.rpcs
             .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
             .at(0)
-          if (rpc === undefined) {
-            raise(`no alchemy or routescan rpc available for chain ${chain.chain_id}`)
+          if (!rpc) {
+            raise(`No Alchemy or Routescan RPC available for chain ${chain.chain_id}`)
           }
-          // broken, should use the chains' rpcs
-          //
-          // const gasBalance = await evmGasBalance({
-          //   address: userAddr.evm.canonical,
-          //   chainId: chain.chain_id
-          // })
+
           if (rpc.type === "alchemy") {
             return await getBalancesFromAlchemy({
               url: rpc.url,
@@ -47,9 +49,9 @@ export function userBalancesQuery({
           }
         }
 
-        if (chain.rpc_type === "cosmos") {
+        if (chain.rpc_type === "cosmos" && userAddr.cosmos && connected) {
           const url = chain.rpcs.filter(rpc => rpc.type === "rest").at(0)?.url
-          if (!url) raise(`no rest rpc available for chain ${chain.chain_id}`)
+          if (!url) raise(`No REST RPC available for chain ${chain.chain_id}`)
 
           const bech32_addr = rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes)
           return getCosmosChainBalances({ url, walletAddress: bech32_addr })

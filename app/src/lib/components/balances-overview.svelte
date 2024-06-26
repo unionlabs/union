@@ -8,10 +8,12 @@ import { userAddrOnChain } from "$lib/utilities/address"
 
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
+export let connected: boolean
 
-let userBalances = userBalancesQuery({
+$: userBalances = userBalancesQuery({
   chains,
-  userAddr
+  userAddr,
+  connected
 })
 </script>
 
@@ -21,7 +23,7 @@ let userBalances = userBalancesQuery({
     <div class="pl-3 sm:pl-6 flex flex-col sm:flex-row items-baseline gap-3">
       <h3 class="font-bold font-supermolot text-2xl">{chain.display_name}</h3>
       <div class="text-xs font-mono text-muted-foreground">
-        {userAddrOnChain(userAddr, chain)}
+        {userAddrOnChain(userAddr, chain) ?? ''}
       </div>
     </div>
     {#if !!balance.data}
@@ -29,7 +31,7 @@ let userBalances = userBalancesQuery({
         <div class="flex gap-4 px-3 sm:px-6 overflow-x-scroll">
           {#if !(balance.data instanceof Error)}
             {#each balance.data as asset}
-              <AssetCard {asset} chain={chains[index]} />
+              <AssetCard {asset} chain={chains[index]}/>
             {/each}
           {/if}
         </div>

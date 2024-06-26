@@ -130,16 +130,15 @@ const handleSubmit = () => {
                   <div class="flex justify-between px-1">
                     <div class="text-xs">
                       <ChainsGate let:chains>
-                        <WalletGate>
-                          <div slot="connected" let:userAddr>
-                            <p>
-                              <span class="text-muted-foreground">Balance: </span>
-                              <UnoBalance {chains} {userAddr} />
-                            </p>
-                          </div>
-                          <div slot="disconnected">
-                            <p>Please check wallet connections</p>
-                          </div>
+                        <WalletGate  let:userAddr let:connected let:cosmosConnected>
+                          <p>
+                            <span class="text-muted-foreground">Balance: </span>
+                          {#if cosmosConnected}
+                            <UnoBalance {chains} {userAddr} {connected}/>
+                            {:else}
+                            Connect cosmos wallet
+                          {/if}
+                          </p>
                         </WalletGate>
                       </ChainsGate>
                     </div>

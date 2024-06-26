@@ -12,9 +12,22 @@ export const rawToBech32 = (prefix: string, raw: Uint8Array): string => {
   return bech32.encode(prefix, words)
 }
 
-export const userAddrOnChain = (userAddr: UserAddresses, chain: Chain): string => {
-  if (chain.rpc_type === "cosmos") {
-    return rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes)
+export const userAddrOnChain = (userAddr: UserAddresses, chain: Chain | null): string | null => {
+  if (!chain) {
+    return null
   }
-  return userAddr.evm.canonical
+
+  if (chain.rpc_type === "cosmos") {
+    if (userAddr.cosmos?.bytes) {
+      return rawToBech32(chain.addr_prefix, userAddr.cosmos.bytes)
+    }
+    console.log("userAddrOnChain got no cosmos address")
+    return null
+  }
+
+  if (userAddr.evm?.canonical) {
+    return userAddr.evm.canonical
+  }
+  console.log("userAddrOnChain got no evm address")
+  return null
 }
