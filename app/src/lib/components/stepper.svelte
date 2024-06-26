@@ -16,7 +16,7 @@ let stepsUpToError = derived(steps, $steps => {
 export let onRetry: (() => void) | undefined = undefined
 </script>
 
-<ol class="max-w-full w-full">
+<ol class="max-w-full w-full p-4">
 {#each $stepsUpToError as step, index}
   <li class="flex gap-4 w-full">
     <div class="flex flex-col items-center">
