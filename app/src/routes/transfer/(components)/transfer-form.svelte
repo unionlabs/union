@@ -729,14 +729,14 @@ const resetInput = () => {
                 <Chevron/>
               </Button>
             {/if}
-            {:else}
+          {:else}
             Select a chain to send from.
           {/if}
-          {#if $assetSymbol !== '' && $sendableBalances !== null}
+          {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
               <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
               <b>{$fromChain?.display_name}</b> is
-              <Precise chain={$fromChain} asset={$asset} showToolTip/>
+                <Precise chain={$fromChain} asset={$asset} showToolTip/>
               <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
             </div>
           {/if}
@@ -854,25 +854,25 @@ const resetInput = () => {
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
   {chains}
+  connected={connected}
   kind="from"
   onChainSelect={newSelectedChain => {
     fromChainId.set(newSelectedChain)
   }}
   selectedChain={$fromChainId}
   userAddr={userAddr}
-  connected={connected}
 />
 
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
   {chains}
+  connected={connected}
   kind="to"
   onChainSelect={newSelectedChain => {
     toChainId.set(newSelectedChain)
   }}
   selectedChain={$toChainId}
   userAddr={userAddr}
-  connected={connected}
 />
 
 {#if $sendableBalances !== null}

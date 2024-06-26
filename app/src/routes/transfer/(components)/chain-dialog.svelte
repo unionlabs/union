@@ -17,7 +17,7 @@ export let connected: boolean
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 
 function selectChain(chain: { chain_id: string; display_name: string; rpc_type: string }) {
-  if (!connected || userAddr && !userAddr[chain.rpc_type]) {
+  if (!connected || (userAddr && !userAddr[chain.rpc_type])) {
     toast.info(`Connect ${chain.rpc_type} wallet`)
   } else {
     onChainSelect(chain.chain_id)

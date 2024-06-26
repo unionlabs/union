@@ -48,11 +48,12 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-$: supportedAsset = getSupportedAsset(chain, asset.address)
+$: supportedAsset = asset ? getSupportedAsset(chain, asset.address) : null
 
-$: balance = asset.balance ?? BigInt(0)
-$: decimals = supportedAsset ? supportedAsset.decimals : asset.decimals
-$: symbol = supportedAsset ? supportedAsset.display_symbol : asset.symbol
+$: balance = asset ? asset.balance ?? BigInt(0) : BigInt(0)
+$: decimals = asset && supportedAsset ? supportedAsset.decimals : asset ? asset.decimals : 0
+$: symbol =
+  asset && supportedAsset ? supportedAsset.display_symbol : asset ? asset.symbol : "Unknown"
 
 $: formatted = formatBalance(balance, decimals, true)
 $: precise = formatBalance(balance, decimals, false)

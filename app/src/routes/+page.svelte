@@ -8,7 +8,6 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
 <ChainsGate let:chains>
   <WalletGate let:connected let:userAddr>
     <div class="max-w-full w-full">
-      {#await console.log(connected)}{/await}
       {#if connected}
         <BalancesOverview {chains} {userAddr} {connected}/>
       {:else}
