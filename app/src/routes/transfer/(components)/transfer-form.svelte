@@ -892,7 +892,7 @@ const resetInput = () => {
       @apply absolute -my-6 py-6 z-20;
       top: calc(50% - (var(--height) / 2));
       --width: calc(min(500px, (100dvw - 32px)));
-      --height: calc(min(700px, (100dvh - 144px)));
+      --height: calc(min(740px, (100dvh - 144px)));
       --depth: 80px;
       --speed: 2s;
       width: var(--width);
