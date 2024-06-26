@@ -114,8 +114,13 @@ let tracesAndHops = createQuery({
     ).v0_transfers
 })
 
-let processedTraces = derived(tracesAndHops, $tracesAndHops => {
-  if (!$tracesAndHops.data) return null
+let processedTraces = derived([tracesAndHops, submittedTransfers], ([$tracesAndHops, $submittedTransfers]) => {
+  if (!$tracesAndHops.data || $tracesAndHops.data.length === 0) {
+    if ($submittedTransfers[source] !== undefined) {
+      return [[]]; // pre-generate trace for submitted transfer
+    }
+    return null
+  }
 
   return $tracesAndHops.data.map(tx => {
     if (tx.hop !== null) {
@@ -208,12 +213,12 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
             }
       }
 
-      if (transfer.hop_chain_id === null) {
+      if (!transfer.hop_chain_id) {
         return [
           {
             status: onSource("SEND_PACKET") ? "COMPLETED" : "IN_PROGRESS",
             title: `Send Packet`,
-            description: `Sent on time at height with hash`,
+            description: "Waiting on indexer",
             traceDetails: traceDetails("SEND_PACKET", "source")
           },
           (() => {
