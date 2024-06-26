@@ -21,7 +21,7 @@ export let chains: Array<Chain>
 
 let transfers = createQuery({
   queryKey: ["transfers-all"],
-  refetchInterval: 5_000,
+  refetchInterval: 10_000,
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
   queryFn: async () => {
     const response = await request(URLS.GRAPHQL, allTransfersQueryDocument, {})
@@ -31,7 +31,7 @@ let transfers = createQuery({
       let destinationChainId = tx.destination_chain_id
       let receiver = tx.receiver
 
-      const lastForward = tx.forwards?.at(-1)
+      const lastForward = tx.forwards_2?.at(-1)
       if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
         receiver = lastForward.receiver
         destinationChainId = lastForward.chain.chain_id
