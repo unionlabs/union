@@ -96,7 +96,7 @@ let collapsibleOpen = true
     />
     <div class="flex items-center space-x-2 mt-auto">
       <Switch id="unsupported-assets" bind:checked={$showUnsupported}/>
-      <Label for="unsupported-assets">Show unsupported assets</Label>
+      <Label for="unsupported-assets">Show unverified assets</Label>
     </div>
     <ThemeSwitch />
   </Sheet.Content>

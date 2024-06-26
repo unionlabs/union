@@ -284,7 +284,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               : "PENDING"
           return {
             status,
-            title: `Hop: Light Client Update`,
+            title: `Light Client Update`,
             description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
             traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "hop")
           }
@@ -297,7 +297,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               : "PENDING"
           return {
             status,
-            title: `Hop: Receive Packet`,
+            title: `Receive Packet`,
             traceDetails: traceDetails("RECEIVE_PACKET", "hop")
           }
         })(),
@@ -309,7 +309,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               : "PENDING"
           return {
             status,
-            title: `Hop: Send Packet`,
+            title: `Send Packet`,
             traceDetails: traceDetails("SEND_PACKET", "hop")
           }
         })(),
@@ -346,7 +346,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               : "PENDING"
           return {
             status,
-            title: `Hop: Acknowledge Packet`,
+            title: `Acknowledge Packet`,
             traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "hop")
           }
         })(),
