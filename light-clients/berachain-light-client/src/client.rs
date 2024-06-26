@@ -294,7 +294,6 @@ impl IbcClient for BerachainLightClient {
         }) = read_consensus_state::<Self>(deps, &height)?
         {
             if comet_timestamp != header.cometbft_header.signed_header.header.time
-                // || hash != header.cometbft_header.signed_header.header.app_hash
                 || comet_next_validators_hash
                     != header
                         .cometbft_header
@@ -408,7 +407,7 @@ impl IbcClient for BerachainLightClient {
 
     fn status(
         deps: Deps<Self::CustomQuery>,
-        env: &cosmwasm_std::Env,
+        _env: &cosmwasm_std::Env,
     ) -> Result<Status, IbcClientError<Self>> {
         let client_state = read_client_state::<Self>(deps)?;
 
@@ -418,22 +417,23 @@ impl IbcClient for BerachainLightClient {
             return Ok(Status::Frozen);
         }
 
-        let Some(consensus_state) =
-            read_consensus_state::<Self>(deps, &client_state.latest_height)?
-        else {
-            return Ok(Status::Expired);
-        };
+        // TODO: Re-enable
+        // let Some(consensus_state) =
+        //     read_consensus_state::<Self>(deps, &client_state.latest_height)?
+        // else {
+        //     return Ok(Status::Expired);
+        // };
 
-        if tendermint_light_client::client::is_client_expired(
-            &consensus_state.data.comet_timestamp,
-            client_state.data.trusting_period,
-            env.block
-                .time
-                .try_into()
-                .map_err(|_| Error::from(InvalidHostTimestamp(env.block.time)))?,
-        ) {
-            return Ok(Status::Expired);
-        }
+        // if tendermint_light_client::client::is_client_expired(
+        //     &consensus_state.data.comet_timestamp,
+        //     client_state.data.trusting_period,
+        //     env.block
+        //         .time
+        //         .try_into()
+        //         .map_err(|_| Error::from(InvalidHostTimestamp(env.block.time)))?,
+        // ) {
+        //     return Ok(Status::Expired);
+        // }
 
         Ok(Status::Active)
     }
