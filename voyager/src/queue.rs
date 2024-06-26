@@ -50,6 +50,7 @@ pub struct Voyager {
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
     pub max_batch_size: NonZeroUsize,
+    pub optimizer_delay_milliseconds: u64,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -255,6 +256,7 @@ impl Voyager {
             laddr: config.voyager.laddr,
             queue,
             max_batch_size: config.voyager.max_batch_size,
+            optimizer_delay_milliseconds: config.voyager.optimizer_delay_milliseconds,
         })
     }
 
@@ -385,7 +387,10 @@ impl Voyager {
                         .into_inner()
                 })?;
 
-                // tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(
+                    self.optimizer_delay_milliseconds,
+                ))
+                .await;
             }
         });
 

@@ -19,6 +19,8 @@ pub struct VoyagerConfig {
     pub laddr: SocketAddr,
     pub queue: AnyQueueConfig,
     pub max_batch_size: NonZeroUsize,
+    #[serde(default)]
+    pub optimizer_delay_milliseconds: u64,
 }
 
 impl Config {

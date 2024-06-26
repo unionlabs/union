@@ -83,14 +83,18 @@
           default = null;
           example = 20971520;
         };
-        laddr = mkOption {
-          type = types.str;
-          default = "0.0.0.0:65534";
-          example = "0.0.0.0:65534";
-        };
-        max-batch-size = mkOption {
-          type = types.number;
-          example = 10;
+        # laddr = mkOption {
+        #   type = types.str;
+        #   default = "0.0.0.0:65534";
+        #   example = "0.0.0.0:65534";
+        # };
+        # max-batch-size = mkOption {
+        #   type = types.number;
+        #   example = 10;
+        # };
+        voyager-extra = mkOption {
+          type = types.attrs;
+          default = { };
         };
       };
 
@@ -98,10 +102,8 @@
         let
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
             chain = cfg.chains;
-            voyager = {
+            voyager = cfg.voyager-extra // {
               num_workers = cfg.workers;
-              laddr = cfg.laddr;
-              max_batch_size = cfg.max-batch-size;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;
