@@ -218,7 +218,7 @@ jobs:
         with:
           lfs: true
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_NIX_TOKEN }}
       - name: Annotate Manifest
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
@@ -248,7 +248,7 @@ jobs:
           echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
 
   public-release:
-    needs: [download-binaries, eval-tag, release-images]
+    needs: [download-binaries, eval-tag]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
