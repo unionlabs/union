@@ -2,7 +2,7 @@ name: Release Component
 
 on:
   push:
-    # tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
+    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   eval-tag:
@@ -16,7 +16,7 @@ jobs:
     steps:
       - id: eval
         env:
-          TAG: "uniond/test"
+          TAG: ${{github.ref_name}}
         run: |
           component="${TAG%/*}"
           case $component in
@@ -52,8 +52,6 @@ jobs:
               exit 1
               ;;
           esac
-
-          # TODO: maybe use printf
           echo "BUILD=(.top_attr == \"packages\") \
             and (.system == \"x86_64-linux\" or .system == \"aarch64-linux\") \
             and $build" >> $GITHUB_OUTPUT
