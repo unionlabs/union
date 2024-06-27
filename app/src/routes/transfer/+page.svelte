@@ -2,7 +2,6 @@
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import WalletGate from "$lib/components/wallet-gate.svelte"
 import TransferForm from "./(components)/transfer-form.svelte"
-import NotConnected from "$lib/components/not-connected.svelte"
 </script>
 
 <svelte:head>

@@ -1,6 +1,6 @@
 <script generics="T extends object" lang="ts">
-import { derived, get } from "svelte/store"
-import { onDestroy, onMount } from "svelte"
+import { derived } from "svelte/store"
+import { onDestroy } from "svelte"
 import {
   flexRender,
   type ColumnDef,
@@ -15,7 +15,6 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import * as Card from "$lib/components/ui/card/index.ts"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 
 export let columns: Array<ColumnDef<any>>

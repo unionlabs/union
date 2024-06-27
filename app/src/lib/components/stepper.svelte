@@ -3,7 +3,7 @@ import { cn } from "$lib/utilities/shadcn"
 import Button from "$lib/components/ui/button/button.svelte"
 import { type Readable, derived } from "svelte/store"
 import SpinnerSvg from "./spinner-svg.svelte"
-import type { Step, StepStatus } from "$lib/stepper-types.ts"
+import type { Step } from "$lib/stepper-types.ts"
 import { toIsoString } from "$lib/utilities/date"
 import Truncate from "$lib/components/truncate.svelte"
 

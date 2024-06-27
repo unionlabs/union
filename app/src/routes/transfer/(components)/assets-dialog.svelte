@@ -1,5 +1,4 @@
 <script lang="ts">
-import { formatUnits } from "viem"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Dialog from "$lib/components/ui/dialog"
