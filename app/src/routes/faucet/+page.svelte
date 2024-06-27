@@ -65,7 +65,7 @@ const mutation = createMutation({
       action: "submit"
     })
     console.info("Submitting faucet request..")
-    return getUnoFromFaucet({ address, captchaToken: "token" })
+    return getUnoFromFaucet({ address, captchaToken: token })
   },
   onError: error => {
     console.error("Error during the faucet request:", error)
