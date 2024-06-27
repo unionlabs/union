@@ -18,15 +18,8 @@ declare global {
     }
   }
 
-  interface Window extends KeplrWindow, LeapWindow {
+  interface Window extends KeplrWindow, LeapWindow, EthereumSnapsRequest, GoogleRecaptcha {
     EventEmitter: typeof EventEmitter
-    __google_recaptcha_client: boolean
-    grecaptcha: {
-      execute: (siteKey: string, options: { action: string }) => Promise<string>
-      enterprise: {
-        execute: (siteKey: string, options: { action: string }) => Promise<string>
-      }
-    }
   }
 
   interface WindowEventMap {
@@ -68,8 +61,12 @@ declare global {
   }
 }
 
-type EthereumRequestMethod =
-  | "wallet_getSnaps"
-  | "wallet_requestSnaps"
-  | "wallet_invokeSnap"
-  | "wallet_watchAsset"
+interface GoogleRecaptcha {
+  __google_recaptcha_client: boolean
+  grecaptcha: {
+    execute: (siteKey: string, options: { action: string }) => Promise<string>
+    enterprise: {
+      execute: (siteKey: string, options: { action: string }) => Promise<string>
+    }
+  }
+}

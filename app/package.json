@@ -27,8 +27,8 @@
     "@tanstack/svelte-table": "^8.17.3",
     "@tanstack/svelte-virtual": "^3.5.1",
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.19",
-    "@wagmi/connectors": "^5.0.16",
-    "@wagmi/core": "^2.11.4",
+    "@wagmi/connectors": "^5.0.19",
+    "@wagmi/core": "^2.11.5",
     "bech32": "^2.0.0",
     "bits-ui": "^0.21.10",
     "cmdk-sv": "^0.0.17",
@@ -44,7 +44,7 @@
     "uint8array-extras": "^1.1.0",
     "valibot": "^0.33.3",
     "vaul-svelte": "^0.3.1",
-    "viem": "^2.16.0"
+    "viem": "^2.16.2"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.8",
