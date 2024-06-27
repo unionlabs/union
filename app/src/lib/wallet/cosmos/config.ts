@@ -3,7 +3,6 @@ import { sleep } from "$lib/utilities/index.ts"
 import { persisted } from "svelte-persisted-store"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { keplrChainInfo, leapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-import { goto } from "$app/navigation"
 
 export const cosmosWalletsInformation = [
   {
@@ -48,9 +47,8 @@ function createCosmosStore(
       update(v => ({ ...v, connectionStatus: "connecting", connectedWallet: walletId }))
       const walletApi = window[walletId]
       if (!walletApi) {
-        if (walletId === "leap") {
-          goto("https://leapcosmoswallet.page.link/ZJLLFGiGzNrCESgt5")
-        } else alert(`Please install ${walletId} wallet`)
+        const downloadLink = cosmosWalletsInformation.find(w => w.id === walletId)?.download
+        if (downloadLink) window.open(downloadLink, "_blank")
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
       const chainInfoMap = {

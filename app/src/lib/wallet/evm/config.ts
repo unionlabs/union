@@ -3,18 +3,10 @@ import {
   fallback,
   reconnect,
   serialize,
-  getClient,
-  getChainId,
   getAccount,
   deserialize,
-  watchClient,
   createConfig,
   watchAccount,
-  watchChainId,
-  getConnectors,
-  getConnections,
-  watchConnectors,
-  watchConnections,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
@@ -23,11 +15,11 @@ import {
   createStorage as createWagmiStorage
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
+import { writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
-import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { injected, walletConnect, metaMask } from "@wagmi/connectors"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
+import { injected, walletConnect, metaMask } from "@wagmi/connectors"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
@@ -149,45 +141,6 @@ export function createSepoliaStore(
 }
 
 export const sepoliaStore = createSepoliaStore()
-
-export const client = readable(getClient(config), set => watchClient(config, { onChange: set }))
-export const chainId = readable(getChainId(config), set => watchChainId(config, { onChange: set }))
-export const account = readable(getAccount(config), set => watchAccount(config, { onChange: set }))
-export const connectors = readable(getConnectors(config), set =>
-  watchConnectors(config, { onChange: set })
-)
-export const connections = readable(getConnections(config), set =>
-  watchConnections(config, { onChange: set })
-)
-export const provider = readable<() => Promise<undefined | unknown>>(
-  async () =>
-    await getConnectors(config)
-      .find(async connector => await connector.isAuthorized())
-      ?.getProvider(),
-  set => {
-    watchConnectors(config, {
-      onChange: (connections, _previousConnectors) => {
-        const connector = connections.find(connector => connector.isAuthorized())
-        if (connector) set(() => connector.getProvider({ chainId: getChainId(config) }))
-      }
-    })
-    watchAccount(config, {
-      onChange: account => {
-        if (!account.connector) return set(async () => undefined)
-        set(async () => await account.connector?.getProvider({ chainId: getChainId(config) }))
-      }
-    })
-  }
-)
-
-export {
-  client as evmClient,
-  chainId as evmChainId,
-  account as evmAccount,
-  connectors as evmConnectors,
-  connections as evmConnections,
-  provider as evmProvider
-}
 
 const desiredWalletIds = [
   "injected",
