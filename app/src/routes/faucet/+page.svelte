@@ -93,6 +93,7 @@ let submissionDisabled = false
 $: console.info("submissionStatus:", submissionDisabled)
 const handleSubmit = (event: MouseEvent | SubmitEvent) => {
   event.preventDefault()
+  if (!address) return toast.error("No address")
   submissionStatus = "submitting"
   toast.loading("Submitting faucet request..")
   debouncedSubmit()
@@ -178,6 +179,7 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                 class="px-3"
                 on:click={onLockClick}
                 variant="ghost"
+                type="button"
               >
                 {#if inputState === 'locked'}
                   <LockLockedIcon class="size-4.5" />
@@ -198,7 +200,10 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                   submissionDisabled = false
                 }, submissionWaitTime)
               }}
-              disabled={submissionDisabled}
+              disabled={
+              submissionDisabled ||
+              !address
+              }
               class={cn('w-full sm:w-fit disabled:cursor-not-allowed disabled:opacity-50')}
             >
               Submit
