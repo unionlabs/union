@@ -46,15 +46,18 @@ pub struct GasConfig {
 }
 
 impl GasConfig {
-    pub fn max_fee(&self) -> Fee {
-        let gas_limit = u128_mul_f64(self.max_gas.into(), self.gas_price);
+    pub fn mk_fee(&self, gas: u64) -> Fee {
+        let gas_limit =
+            u64_mul_f64(gas, self.gas_price * self.gas_multiplier).clamp(0, self.max_gas);
+
+        let amount = u64_mul_f64(gas, self.gas_price).clamp(0, self.max_gas);
 
         Fee {
             amount: vec![Coin {
-                amount: gas_limit,
+                amount: amount.into(),
                 denom: self.gas_denom.clone(),
             }],
-            gas_limit: gas_limit.try_into().unwrap_or(u64::MAX),
+            gas_limit,
             payer: String::new(),
             granter: String::new(),
         }
@@ -196,11 +199,12 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
     /// - simulate tx
     /// - submit tx
     /// - wait for inclusion
+    /// - return (tx_hash, gas_used)
     async fn broadcast_tx_commit(
         &self,
         signer: &CosmosSigner,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-    ) -> Result<H256, BroadcastTxCommitError> {
+    ) -> Result<(H256, u64), BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
         let account = self.account_info(&signer.to_string()).await;
@@ -229,7 +233,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 sequence: account.sequence,
             }]
             .to_vec(),
-            fee: self.gas_config().max_fee().clone(),
+            fee: self.gas_config().mk_fee(self.gas_config().max_gas).clone(),
         };
 
         let simulation_signature = signer
@@ -276,12 +280,10 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             "tx simulation successful"
         );
 
-        auth_info.fee.amount.iter_mut().for_each(|coin| {
-            // lol
-            let amount = u128_mul_f64(coin.amount, self.gas_config().gas_multiplier);
-
-            coin.amount = amount;
-        });
+        auth_info.fee = self.gas_config().mk_fee(u64_mul_f64(
+            simulation_gas_info.gas_used,
+            self.gas_config().gas_multiplier,
+        ));
 
         // re-sign the new auth info with the simulated gas
         let signature = signer
@@ -310,22 +312,19 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .into();
         let tx_hash = hex::encode_upper(tx_hash_normalized);
 
-        if self
-            .tm_client()
-            .tx(tx_hash.parse().unwrap(), false)
-            .await
-            .is_ok()
-        {
-            info!(%tx_hash, "tx already included");
-            return Ok(hex::decode(tx_hash).unwrap().try_into().unwrap());
+        if let Ok(tx) = self.tm_client().tx(tx_hash.parse().unwrap(), false).await {
+            debug!(%tx_hash_normalized, "tx already included");
+            return Ok((
+                tx_hash_normalized,
+                tx.tx_result.gas_used.try_into().unwrap(),
+            ));
         }
 
-        let response_result = self
+        let response = self
             .tm_client()
             .broadcast_tx_sync(tx_raw_bytes.clone())
-            .await;
-
-        let response = response_result.unwrap();
+            .await
+            .unwrap();
 
         assert_eq!(
             tx_hash,
@@ -333,20 +332,21 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             "tx hash calculated incorrectly"
         );
 
-        debug!(%tx_hash);
-
-        info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
+        info!(
+            check_tx_code = ?response.code,
+            codespace = %response.codespace,
+            check_tx_log = %response.log
+        );
 
         if response.code.is_err() {
-            let value = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
+            let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
                 &response.codespace,
                 response.code.value(),
             );
 
-            error!("cosmos tx failed: {}", value);
+            error!(%error, "cosmos tx failed");
 
-            // TODO: Return an error here
-            return Ok(tx_hash_normalized);
+            return Err(BroadcastTxCommitError::Tx(error));
         };
 
         let mut target_height = self.query_latest_height().await.unwrap().increment();
@@ -357,7 +357,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 if current_height.into_height() >= target_height.into_height() {
                     break 'l current_height;
                 }
-                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             };
 
             let tx_inclusion = self.tm_client().tx(tx_hash.parse().unwrap(), false).await;
@@ -365,7 +365,12 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             debug!(?tx_inclusion);
 
             match tx_inclusion {
-                Ok(_) => break Ok(tx_hash_normalized),
+                Ok(tx) => {
+                    break Ok((
+                        tx_hash_normalized,
+                        tx.tx_result.gas_used.try_into().unwrap(),
+                    ))
+                }
                 Err(err) if i > 5 => {
                     warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
@@ -377,38 +382,6 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 }
             }
         }
-    }
-
-    fn sign_doc(
-        &self,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-        signer: &CosmosSigner,
-        account: &BaseAccount,
-        fee: Fee,
-    ) -> (TxBody, AuthInfo) {
-        (
-            TxBody {
-                messages: messages.clone().into_iter().collect(),
-                // TODO(benluelo): What do we want to use as our memo?
-                memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
-                timeout_height: 0,
-                extension_options: vec![],
-                non_critical_extension_options: vec![],
-            },
-            AuthInfo {
-                signer_infos: [SignerInfo {
-                    public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                        key: signer.public_key(),
-                    })),
-                    mode_info: ModeInfo::Single {
-                        mode: SignMode::Direct,
-                    },
-                    sequence: account.sequence,
-                }]
-                .to_vec(),
-                fee,
-            },
-        )
     }
 }
 
@@ -450,12 +423,19 @@ pub async fn fetch_balances(
     out_vec
 }
 
-fn u128_mul_f64(u: u128, f: f64) -> u128 {
+fn u64_mul_f64(u: u64, f: f64) -> u64 {
     (num_rational::BigRational::from_integer(u.into())
-        * num_rational::BigRational::from_float(f).expect("gas multiplier is finite"))
+        * num_rational::BigRational::from_float(f).expect("finite"))
     .to_integer()
     .try_into()
-    .expect("gas multiplier * amount overflow")
+    .expect("overflow")
+}
+
+#[test]
+fn test_u64_mul_f64() {
+    let val = u64_mul_f64(100, 1.1);
+
+    assert_eq!(val, 110);
 }
 
 impl<T: CosmosSdkChain> CosmosSdkChainExt for T {}
