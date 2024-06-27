@@ -34,6 +34,11 @@ $: connectText =
 let copyClicked = false
 const toggleCopy = () => (copyClicked = !copyClicked)
 const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
+
+// filter items with duplicate names
+let sanitizeWalletInformation = chainWalletsInformation.filter(
+  (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
+)
 </script>
 
 <h3 class="uppercase font-supermolot font-bold text-xl">{chain}</h3>
@@ -70,59 +75,53 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 </Button>
 
 <div class="flex flex-col">
-  {#each chainWalletsInformation as { name, id, icon, download }, index (index)}
+  {#each sanitizeWalletInformation as { name, id, icon, download }, index (index)}
     {@const walletIdentifier = id}
-    {#if walletIdentifier !== "walletConnect"}
-      {#if walletIdentifier !== "injected"}
-        <div
-          role="row"
-          tabindex={0}
-          data-index={index}
-          on:mouseleave={() => (hoverState = connectedWalletId === id ? 'none' : 'none')}
-          on:mouseenter={() => (hoverState = connectedWalletId === id ? 'hover' : 'none')}
+    {#if !(connectStatus === 'connected' && connectedWalletId !== id)}
+      <div
+        role="row"
+        tabindex={0}
+        data-index={index}
+        on:mouseleave={() => (hoverState = connectedWalletId === id ? 'none' : 'none')}
+        on:mouseenter={() => (hoverState = connectedWalletId === id ? 'hover' : 'none')}
+        class={cn('flex flex-col w-full justify-start mb-3')}
+      >
+        <Button
+          type="button"
+          variant="outline"
           class={cn(
-        'flex',
-        'flex-col w-full justify-start mb-3',
-        connectStatus === 'connected' && connectedWalletId !== id ? 'hidden' : 'flex',
-      )}
+            'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
+            connectStatus === 'connected' && connectedWalletId === id && 'border-border',
+            (connectStatus === 'disconnected' || connectStatus == undefined) &&
+              'opacity-60 hover:opacity-100',
+            hoverState === 'hover' &&
+              connectedWalletId === id &&
+              'hover:text-destructive border-destructive hover:bg-transparent',
+          )}
+          on:click={() => {
+            if (connectStatus === 'connected') onDisconnectClick()
+            else onConnectClick(walletIdentifier)
+          }}
         >
-          <Button
-            type="button"
-            variant="outline"
-            class={cn(
-          'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
-          connectStatus === 'connected' && connectedWalletId === id && 'border-border',
-          (connectStatus === 'disconnected' || connectStatus == undefined) &&
-            'opacity-60 hover:opacity-100',
-          hoverState === 'hover' &&
-            connectedWalletId === id &&
-            'hover:text-destructive border-destructive hover:bg-transparent',
-        )}
-            on:click={() => {
-          if (connectStatus === 'connected') onDisconnectClick()
-          else onConnectClick(walletIdentifier)
-        }}
-          >
-            <img src={icon} alt={name} class="size-7 mr-3 dark:text-white"/>
-            {name}
-            {#if connectStatus === 'connected'}
-              {#if connectedWalletId === id}
-                {#if hoverState === 'hover'}
-                  <XIcon class="ml-auto"/>
-                {:else}
-                  <CheckIcon class="ml-auto"/>
-                {/if}
-              {/if}
-            {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
-              {#if connectedWalletId === id}
-                <LoaderCircleIcon class="animate-spin ml-auto"/>
+          <img src={icon} alt={name} class="size-7 mr-3 dark:text-white" />
+          {name}
+          {#if connectStatus === 'connected'}
+            {#if connectedWalletId === id}
+              {#if hoverState === 'hover'}
+                <XIcon class="ml-auto" />
               {:else}
-                <LoaderCircleIcon class="animate-spin ml-auto opacity-0"/>
+                <CheckIcon class="ml-auto" />
               {/if}
             {/if}
-          </Button>
-        </div>
-      {/if}
+          {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
+            {#if connectedWalletId === id}
+              <LoaderCircleIcon class="animate-spin ml-auto" />
+            {:else}
+              <LoaderCircleIcon class="animate-spin ml-auto opacity-0" />
+            {/if}
+          {/if}
+        </Button>
+      </div>
     {/if}
   {/each}
 </div>

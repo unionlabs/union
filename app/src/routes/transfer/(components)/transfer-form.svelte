@@ -31,7 +31,7 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
-import { config, evmChainId, evmSwitchChain } from "$lib/wallet/evm/config"
+import { config } from "$lib/wallet/evm/config"
 import {
   writeContract,
   simulateContract,
