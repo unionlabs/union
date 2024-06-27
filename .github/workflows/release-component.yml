@@ -121,17 +121,13 @@ jobs:
             --arg system "$SYSTEM" \
             '.packages[$system][$component].outputs.out' result.json)
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
-
           echo "Copying $OUTPUT from nixbuild.net"
           nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$OUTPUT" --extra-experimental-features nix-command
-
           echo "Get the NAR_URL"
           nar_url_line=$(cat "./$SYSTEM/$NARINFO_NAME.narinfo" | grep "URL:")
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
-
           echo "Restore the package from the NAR_URL archive"
           cat "$SYSTEM/$NAR_URL" | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"
-
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
             mv "$SYSTEM.$COMPONENT"/bin/uniond "$COMPONENT-$SYSTEM"
@@ -151,7 +147,7 @@ jobs:
     needs: [download-images, eval-tag]
     if: ${{ needs.eval-tag.outputs.image-produced }}
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       packages: write
     services:
       registry:
@@ -183,17 +179,13 @@ jobs:
             echo "Tagging $COMPONENT for $arch"
             dockerstring=$(docker load < $arch.$COMPONENT-image)
             dockerstring=$(echo ${dockerstring##*':'})
-
             echo "Getting image ID for $dockerstring"
             imageid=$(docker images --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
             imageid=$(echo ${imageid%%':'*})
-
             echo "Tagging image"
             docker tag "$imageid" "localhost:5000/unionlabs/$COMPONENT:$TAG-$arch"
             echo "$COMPONENT for $arch is tagged"
-
             docker push "localhost:5000/unionlabs/$COMPONENT:$TAG-$arch"
-
             echo "localhost:5000/unionlabs/$COMPONENT:$TAG-$arch is pushed"
           done
       - name: Create Manifest
@@ -225,7 +217,6 @@ jobs:
           curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 >regctl
           chmod 755 regctl && sudo cp ./regctl /usr/bin
           echo "downloaded & installed regctl"
-
           regctl registry set --tls disabled localhost:5000
           regctl image mod "localhost:5000/unionlabs/$COMPONENT:$TAG" --to-oci --create "$TAG" --annotation org.opencontainers.image.description="$(cat "$GITHUB_WORKSPACE/.github/container-descriptions/$COMPONENT.txt")"
       - uses: docker/login-action@v2
@@ -241,7 +232,6 @@ jobs:
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
           chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
           echo "downloaded & installed skopeo"
-
           skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/$COMPONENT:$TAG" "docker://ghcr.io/unionlabs/$COMPONENT:$TAG"
           echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
 
