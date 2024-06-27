@@ -26,7 +26,7 @@ import { sleep } from "$lib/utilities"
 import { KEY } from "$lib/constants/keys.ts"
 import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { injected, walletConnect } from "@wagmi/connectors"
+import { injected, walletConnect, metaMask } from "@wagmi/connectors"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
 
 const chains = [sepolia] as const
@@ -74,7 +74,12 @@ export const config = createConfig({
       shimDisconnect: true,
       unstable_shimAsyncInject: 2_500
     }),
+    metaMask({
+      infuraAPIKey: KEY.RPC.INFURA,
+      dappMetadata: { name: "Union App", iconUrl: "https://app.union.build/images/logo.png" }
+    }),
     walletConnect({
+      disableProviderPing: false,
       projectId: KEY.WALLET_CONNECT_PROJECT_ID,
       qrModalOptions: {
         themeMode: "dark",
