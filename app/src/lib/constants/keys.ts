@@ -5,7 +5,6 @@
 
 export const KEY = {
   RPC: {
-    INFURA: "48cff39cea384e3e99d9bd5ce44e0ac3",
     ALCHEMY: "SQAcneXzJzITjplR7cwQhFUqF-SU-ds4",
     CHAINSTACK: "57408c51ba71f58eba01a832cb23c6a8",
     QUICK_NODE: "3e6a917b56620f854de771c23f8f7a8ed973cf7e",

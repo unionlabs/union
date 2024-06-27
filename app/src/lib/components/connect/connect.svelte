@@ -1,5 +1,6 @@
 <script lang="ts">
 import { navigating } from "$app/stores"
+import { slide } from "svelte/transition"
 import Connection from "./connection.svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Sheet from "$lib/components/ui/sheet"
@@ -7,12 +8,15 @@ import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
 import { Separator } from "$lib/components/ui/separator"
+import * as Collapsible from "$lib/components/ui/collapsible"
 import ThemeSwitch from "$lib/components/header/theme-switch.svelte"
+import ChevronsUpDownIcon from "virtual:icons/lucide/chevrons-up-down"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { Switch } from "$lib/components/ui/switch"
 import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
+import MetamaskIcon from "$lib/components/connect/MetamaskIcon.svelte"
 
 let buttonText: string
 
@@ -32,6 +36,10 @@ $: if (
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
+
+let collapsibleOpen = true
+
+$: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
@@ -40,18 +48,18 @@ $: if ($navigating) sheetOpen = false
       builders={[builder]}
       class={cn(
         'space-x-2 w-[189px] text-md bg-accent text-black hover:bg-cyan-300/90',
-        $sepoliaStore.connectionStatus === 'connected' &&
-          $cosmosStore.connectionStatus === 'connected',
+        ($sepoliaStore.connectionStatus === 'connected' &&
+          $cosmosStore.connectionStatus === 'connected')
       )}
       on:click={() => (sheetOpen = !sheetOpen)}
       size="sm"
     >
-      <WalletIcon class="size-4 text-black" />
+      <WalletIcon class="size-4 text-black"/>
       <span class="font-supermolot font-bold uppercase">{buttonText}</span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="h-full border-solid border-left w-full max-w-[92.5%] sm:min-w-min sm:max-w-[500px] flex flex-col justify-start"
+    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[475px] flex flex-col justify-start"
   >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title class="flex gap-4 items-center">
@@ -65,13 +73,7 @@ $: if ($navigating) sheetOpen = false
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
-        <h2 class=" text-start w-full text-2xl font-bold uppercase font-supermolot">
-          {#if buttonText === 'Connected'}
-            wallets
-          {:else}
-            Connect Wallet
-          {/if}
-        </h2>
+        <h2 class=" text-start w-full text-2xl font-bold uppercase font-supermolot">Connect Wallets</h2>
       </Sheet.Title>
     </Sheet.Header>
     <Connection
@@ -84,7 +86,19 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    <Separator class={cn('px-0 bg-border my-4')} />
+    {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
+      <Button
+        variant="outline"
+        on:click={() => window.alert('Please install metamask')}
+        class={cn('px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start h-[48px]')}
+      >
+        <MetamaskIcon/>
+        <span class="w-full text-left font-mono pl-3 sm:text-[15.5px]" >
+          Install Metamask
+        </span>
+      </Button>
+    {/if}
+    <Separator class={cn('px-0 bg-border my-4')}/>
     <Connection
       address={$cosmosStore.address}
       chain="cosmos"
@@ -96,9 +110,10 @@ $: if ($navigating) sheetOpen = false
       onDisconnectClick={cosmosStore.disconnect}
     />
     <div class="flex items-center space-x-2 mt-auto">
-      <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
+      <Switch bind:checked={$showUnsupported} id="unsupported-assets"/>
       <Label for="unsupported-assets">Show unverified assets</Label>
     </div>
-    <ThemeSwitch />
+    <ThemeSwitch/>
   </Sheet.Content>
 </Sheet.Root>
+

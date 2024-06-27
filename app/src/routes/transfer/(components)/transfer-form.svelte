@@ -736,7 +736,9 @@ const resetInput = () => {
             autocorrect="off"
             bind:value={amount}
             class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
-            disabled={!$asset}
+            disabled={
+          !$asset
+          }
             maxlength={64}
             minlength={1}
             pattern="^[0-9]*[.,]?[0-9]*$"
