@@ -86,7 +86,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    {#if !gotMetamask}
+    {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
       <Button
         variant="outline"
         on:click={() => window.alert('Please install metamask')}
