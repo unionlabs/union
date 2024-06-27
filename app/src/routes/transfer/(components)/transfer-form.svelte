@@ -183,8 +183,8 @@ const transfer = async () => {
   if (!$toChain) return toast.error("can't find chain in config")
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
-  if (!userAddr.evm) return toast.error("No evm wallet connected")
-  if (!userAddr.cosmos) return toast.error("No cosmos wallet connected")
+  if ($fromChain.rpc_type === "evm" && !userAddr.evm) return toast.error("No evm wallet connected")
+  if ($fromChain.rpc_type === "cosmos" && !userAddr.cosmos) return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
   if (!$ucs01Configuration)
     return toast.error(
@@ -346,7 +346,7 @@ const transfer = async () => {
           address: ucs01address,
           args: [
             ucs1_configuration.channel_id,
-            userAddr.cosmos.normalized_prefixed, // TODO: make dependent on target
+            pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
             [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
             pfmMemo ?? "", // memo
             { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
