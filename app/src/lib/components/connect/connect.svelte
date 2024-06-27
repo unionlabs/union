@@ -88,7 +88,7 @@ let showInstallMetaMask = !!evmWalletsInformation
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    {#if showInstallMetaMask}
+    <!-- {#if showInstallMetaMask}
       <Button
         variant="outline"
         on:click|once={event => {
@@ -107,7 +107,7 @@ let showInstallMetaMask = !!evmWalletsInformation
         />
         <span class="w-full text-left font-mono sm:text-[15.5px]">Install Metamask</span>
       </Button>
-    {/if}
+    {/if} -->
     <Separator class={cn('px-0 bg-border my-4')} />
     <Connection
       address={$cosmosStore.address}
