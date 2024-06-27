@@ -72,7 +72,7 @@ $: if ($fromChain && $asset && amount) {
   }
 }
 
-const REDIRECT_DELAY_MS = 5000
+const REDIRECT_DELAY_MS = 2500
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
@@ -400,7 +400,6 @@ const transfer = async () => {
   }
 
   if ($transferState.kind === "TRANSFERRING") {
-    await sleep(REDIRECT_DELAY_MS)
     submittedTransfers.update(ts => {
       // @ts-ignore
       ts[$transferState.transferHash] = {
@@ -425,6 +424,12 @@ const transfer = async () => {
       }
       return ts
     })
+    await sleep(REDIRECT_DELAY_MS);
+    transferState.set({ kind: "TRANSFERRED", transferHash: $transferState.transferHash }); 
+  }
+
+  if ($transferState.kind === "TRANSFERRED") {
+    await sleep(REDIRECT_DELAY_MS);
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
