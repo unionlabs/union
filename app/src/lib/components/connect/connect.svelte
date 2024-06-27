@@ -32,10 +32,6 @@ $: if (
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
-
-let showInstallMetaMask = !!evmWalletsInformation
-  .filter(connector => ["injected", "walletconnect"].includes(connector.id.toLowerCase()))
-  .find(connector => connector.name.toLowerCase() === "metamask")
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
@@ -88,26 +84,6 @@ let showInstallMetaMask = !!evmWalletsInformation
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    <!-- {#if showInstallMetaMask}
-      <Button
-        variant="outline"
-        on:click|once={event => {
-          event.preventDefault()
-          window.open('https://metamask.io/download', '_blank', 'noopener noreferrer')
-        }}
-        class={cn(
-          'opacity-60 hover:opacity-100',
-          '-mt-3 px-4 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start h-[48px]',
-        )}
-      >
-        <img
-          src="/images/icons/metamask.svg"
-          class="size-7 mr-3 dark:text-white"
-          alt="metamask icon"
-        />
-        <span class="w-full text-left font-mono sm:text-[15.5px]">Install Metamask</span>
-      </Button>
-    {/if} -->
     <Separator class={cn('px-0 bg-border my-4')} />
     <Connection
       address={$cosmosStore.address}
