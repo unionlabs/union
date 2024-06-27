@@ -20,7 +20,7 @@ pub struct EventTrackerConfig {
     pub idx: u64,      // 0: sendpacket, 1: recvpacket, 2:writeack, 3:acknowledge
     pub arrived: bool, // is packet arrived or not
     pub arrived_time: Option<DateTime<Utc>>, // time when packet arrived
-    pub tx_hash: Option<H256>, // hash of the transaction
+    pub tx_hash: Option<String>, // hash of the transaction
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -30,6 +30,7 @@ pub struct EthereumConfig {
     pub transfer_module: TransferModule,
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
     pub enabled: bool,
+    pub master_account: PrivateKey<ecdsa::SigningKey>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

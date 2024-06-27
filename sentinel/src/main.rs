@@ -50,6 +50,14 @@ pub struct AppArgs {
     // Check balances
     #[arg(long, global = true)]
     pub check_balances: bool,
+
+    // Perform token distribution before any other operations
+    #[arg(long, global = true)]
+    pub token_distribution: bool,
+
+    // Perform native token distribution before any other operations
+    #[arg(long, global = true)]
+    pub native_token_distribution: bool,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -72,6 +80,24 @@ async fn main() {
     }
 
     let context = Context::new(config.clone()).await.unwrap();
+
+    if args.token_distribution || args.native_token_distribution {
+        if args.native_token_distribution {
+            if let Err(e) = context.perform_native_token_distribution().await.await {
+                tracing::error!("Native token distribution task has panicked: {:?}", e);
+                std::process::exit(1);
+            }
+        }
+
+        if args.token_distribution {
+            if let Err(e) = context.perform_token_distribution().await.await {
+                tracing::error!("Token distribution task has panicked: {:?}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    tracing::info!("All token distribution over.");
 
     let mut handles = vec![];
 

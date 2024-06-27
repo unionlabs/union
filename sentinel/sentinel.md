@@ -2,13 +2,12 @@
 
 # Sentinel
 
-## Use cases
+Sentinel is a blockchain interaction service designed to automate the periodic transfer of native and wrapped tokens between different blockchain networks. It also traces Inter-Blockchain Communication (IBC) events, handles token distributions, and ensures successful transaction completion. For monitoring and error tracking, Sentinel integrates with Datadog and BetterStack to provide alerts and notifications.
 
-1. Send native tokens and wrapped tokens back periodically.
+## Use Cases
 
-2. Trace the ibc events.
-
-## Structure
+1. **Send Native and Wrapped Tokens:** Sentinel periodically sends tokens between different chains, managing both native and wrapped tokens.
+2. **Trace IBC Events:** Sentinel monitors IBC events to ensure transactions are completed successfully and handles any issues that arise.
 
 ### Config file
 
@@ -22,15 +21,32 @@
         "enabled": true,
         "ibc_handler_address": "0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb",
         "signers": [
-          {
-            "raw": "0xc7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff"
-          }
-        ],
+          { "raw": "0x1419fbc200ea996170f89684d523637cdbf50db4e5285fde8da6d34558fb354a" }
+        ],        
         "eth_rpc_api": "wss://eth-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB",
         "transfer_module": {
           "type": "contract",
           "address": "0xd0081080ae8493cf7340458eaf4412030df5feeb"
-        }
+        },
+        "master_account": {"raw": "0x09368c5c0c4d6427bea98bc2ef0ee4a25442fb798633d2d91437a9dcc64fc5b9"}
+      }
+    },
+    "bera": {
+      "ethereum": {
+        "enabled": false,
+        "ibc_handler_address": "0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc",
+        "signers": [
+          {
+            "raw": "0x09368c5c0c4d6427bea98bc2ef0ee4a25442fb798633d2d91437a9dcc64fc5b9"
+          }
+        ],
+        "eth_rpc_api": "wss://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1",
+        "transfer_module": {
+          "type": "contract",
+          "address": "0x0e7aee8a4109b1c1916281d25f43b937f103a409"
+        },
+        "master_account": {"raw": "0xc56de6bf91c78afb4757055a080e6c3a53f83e588750e39196f4e65931bc86a2"}
+
       }
     },
     "osmosis": {
@@ -76,6 +92,7 @@
               }
             ]
           },
+
           "gas_config": {
             "gas_price": "1.0",
             "gas_denom": "muno",
@@ -98,82 +115,95 @@
     {
       "source": {
         "chain": "ethereum",
-        "channel": "channel-78"
+        "channel": "channel-81"
       },
       "destination": {
         "chain": "union",
-        "channel": "channel-83"
+        "channel": "channel-89"
       },
       "protocol": {
         "Ucs01": {
           "receivers": ["union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq"],
-          "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+          "contract": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
         }
       },
-      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-70\"}}",
-      "sending_memo_probability": 1,
-      "denoms": [
-        "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
-        "muno",
-        "0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4"
-      ],
-      "send_packet_interval": 50,
-      "expect_full_cycle": 35,
-      "amount_min": 1,
-      "amount_max": 3
-    },
-    {
-      "source": {
-        "chain": "union",
-        "channel": "channel-83"
-      },
-      "destination": {
-        "chain": "ethereum",
-        "channel": "channel-78"
-      },
-      "protocol": {
-        "Ucs01": {
-          "receivers": ["0xfbf2b6f136feb11b738592c7c5cf63b83825ff46"],
-          "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
-        }
-      },
-      "memo": "{\"forward\":{\"receiver\":\"84cB5E16918547aD6181fe6513861a7eA476f2EC\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-78\"}}",
-      "sending_memo_probability": 0.0,
-      "denoms": [
-        "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0xe619529b4396a62ab6d88ff2bb195e83c11e909ad9",
-        "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0x742f7232c73bea91be2828fa14129f68015c3f895b",
-        "muno"
-      ],
-      "send_packet_interval": 50,
-      "expect_full_cycle": 35,
-      "amount_min": 1,
-      "amount_max": 3
+      "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h\",\"channel\":\"channel-80\"}}",
+      "sending_memo_probability": 0,
+      "denoms": ["0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"],
+      "send_packet_interval": 1,
+      "expect_full_cycle": 900,
+      "amount_min": 5000000,
+      "amount_max": 10000000,
+      "max_retry": 3
     }
   ],
   "single_interaction": {
     "source": {
       "chain": "ethereum",
-      "channel": "channel-78"
+      "channel": "channel-81"
     },
     "destination": {
       "chain": "union",
-      "channel": "channel-83"
+      "channel": "channel-89"
     },
     "protocol": {
       "Ucs01": {
         "receivers": ["union1qgvmcfkpd66wat6shhfas0z8z9dzp683mcj9tq"],
-        "contract": "union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa"
+        "contract": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
       }
     },
-    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa\",\"channel\":\"channel-79\"}}",
+    "memo": "{\"forward\":{\"receiver\":\"614E946f6D769Ad2983E4d4B81DDeBBFA51B09b5\",\"port\":\"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h\",\"channel\":\"channel-80\"}}",
     "sending_memo_probability": 0,
-    "denoms": [
-      "factory/union1m37cxl0ld4uaw3r4lv9nt2uw69xxf8xfjrf7a4w9hamv6xvp6ddqqfaaaa/0x742f7232c73bea91be2828fa14129f68015c3f895b"
-    ],
+    "denoms": ["0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4"],
     "send_packet_interval": 1,
-    "expect_full_cycle": 1,
-    "amount_min": 1,
-    "amount_max": 1
+    "expect_full_cycle": 900,
+    "amount_min": 10000000,
+    "amount_max": 10000000,
+    "max_retry": 3
   }
 }
+
 ```
+
+
+## Key Features
+
+### Token Distribution
+
+Sentinel supports token distribution to ensure even allocation among participants:
+
+- **Native Token Distribution:** If the `native_token_distribution` flag is enabled, Sentinel collects native tokens from participants and redistributes them to ensure even balances.
+- **ERC20 Token Distribution:** If the `token_distribution` flag is enabled, Sentinel manages ERC20 token distribution. It collects tokens from participants, consolidates them, and redistributes them to maintain healthy balances.
+
+### Transaction Execution
+
+Sentinel handles the execution of transactions between configured chains:
+
+- **Scheduled Transactions:** Transactions are sent periodically as defined in the configuration.
+- **Parallel Processing:** Transactions are executed in parallel, improving efficiency and ensuring timely transfers.
+- **Configurable Interactions:** Interactions are defined in the configuration file, specifying source and destination chains, channels, protocols, denominations, and transaction parameters like amounts and retry limits.
+
+### Event Listening
+
+By default, Sentinel listens for IBC events on all enabled chains to monitor and verify transaction statuses:
+
+- **Event Types:** Sentinel tracks various IBC event types such as SendPacket, RecvPacket, AcknowledgePacket, and WriteAcknowledgement.
+- **Error Handling:** Sentinel logs detailed information about events and handles any errors that occur, providing insights for debugging and ensuring smooth operations.
+
+### Configuration Flexibility
+
+Sentinel's behavior can be customized through configuration settings:
+
+- **Disabling Functionalities:** Listening and interaction functionalities can be disabled via command-line flags.
+- **Single Transaction Mode:** Sentinel can perform a single transaction and then terminate, useful for testing and specific use cases.
+
+### Monitoring and Alerts
+
+Sentinel integrates with monitoring and alerting services to ensure reliability and quick issue resolution:
+
+- **Datadog:** Tracks vital metrics and logs related to Sentinel’s operations, such as CPU usage, memory usage, network activity, and transaction statuses.
+- **BetterStack Integration:** Provides alerts via email, Slack, and phone calls for critical errors or warnings, ensuring prompt issue resolution.
+
+## Conclusion
+
+Sentinel is a robust solution for automating blockchain interactions, ensuring secure and efficient token transfers between chains. With its comprehensive configuration options, real-time monitoring, and detailed error tracking, Sentinel provides a reliable and scalable service for managing blockchain transactions and IBC events.

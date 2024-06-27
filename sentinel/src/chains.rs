@@ -4,6 +4,7 @@ use bech32::FromBase32;
 use chain_utils::{
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChainExt},
     ethereum::{EthereumExecutionRpcs, EthereumExecutionRpcsExt, IBCHandlerEvents},
+    private_key::PrivateKey,
 };
 use chrono::Utc;
 use contracts::{
@@ -16,12 +17,13 @@ use ethers::{
     contract::EthLogDecode,
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
+    prelude::*,
     providers::{Middleware, Provider, Ws},
     signers::LocalWallet,
     types::{Address, Filter, H256},
     utils::secret_key_to_address,
 };
-use futures::StreamExt;
+use futures::stream::{FuturesUnordered, StreamExt};
 use hex::{self, encode as hex_encode};
 use prost::Message;
 use protos::{google::protobuf::Any, ibc::applications::transfer::v1::MsgTransfer};
@@ -64,6 +66,12 @@ pub trait IbcTransfer: Send + Sync {
         memo: String,
         max_retry: u64,
     );
+
+    async fn native_token_distribution(&self);
+
+    async fn token_distribution(&self, tokens: Vec<H160>);
+
+    // async fn distribute_balance(&self);
 }
 
 pub trait IbcListen: Send + Sync {
@@ -131,6 +139,7 @@ pub trait IbcListen: Send + Sync {
         event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
+        chain_id: String,
     );
 
     fn handle_ibc_event_boxed<'a>(
@@ -139,7 +148,19 @@ pub trait IbcListen: Send + Sync {
         event_state_map: &'a EventStateMap,
         _block_number: u64,
         tx_hash: Option<H256>,
+        chain_id: String,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+        let chain_type = get_chain_type(&chain_id);
+        let mut formatted_tx: String = Default::default();
+        if let Some(tx) = tx_hash {
+            formatted_tx = match chain_type {
+                ChainType::Ethereum => unionlabs::hash::H256::from(tx).to_string(),
+                ChainType::Cosmos => {
+                    unionlabs::hash::H256::from(tx).to_string()[2..].to_ascii_uppercase()
+                }
+            };
+        }
+
         Box::pin(async move {
             let (packet_sequence, key) = match &ibc_event {
                 IbcEvent::SendPacket(e) => (
@@ -191,12 +212,14 @@ pub trait IbcListen: Send + Sync {
                     if let Some(event_data) = sequence_entry.get_mut(&0) {
                         event_data.arrived = true;
                         event_data.arrived_time = Some(chrono::Utc::now());
-                        event_data.tx_hash = tx_hash;
+                        event_data.tx_hash = Some(formatted_tx.clone());
+
                         tracing::info!(
                             sequence = sequence,
+                            chain_id = chain_id,
                             key = key,
-                            "SendPacket event recorded. Tx Hash: {:?}",
-                            event_data.tx_hash
+                            tx_hash = formatted_tx.clone(),
+                            "SendPacket event recorded."
                         );
                     } else {
                         tracing::warn!(
@@ -209,12 +232,13 @@ pub trait IbcListen: Send + Sync {
                         if let Some(event_data) = sequence_entry.get_mut(&1) {
                             event_data.arrived = true;
                             event_data.arrived_time = Some(chrono::Utc::now());
-                            event_data.tx_hash = tx_hash;
+                            event_data.tx_hash = Some(formatted_tx.clone());
                             tracing::info!(
                                 sequence = sequence,
+                                chain_id = chain_id,
                                 key = key,
-                                "RecvPacket event recorded. Tx Hash: {:?}",
-                                event_data.tx_hash
+                                tx_hash = formatted_tx.clone(),
+                                "RecvPacket event recorded."
                             );
                         } else {
                             tracing::warn!(
@@ -224,25 +248,28 @@ pub trait IbcListen: Send + Sync {
                     } else {
                         tracing::warn!(
                             sequence = sequence,
+                            chain_id = chain_id,
                             key = key,
-                            "RecvPacket event received without SendPacket. Tx Hash: {:?}",
-                            tx_hash
+                            tx_hash = formatted_tx.clone(),
+                            "RecvPacket event received without SendPacket."
                         );
                         entry.remove(&sequence);
                     }
                 }
+
                 IbcEvent::WriteAcknowledgement(ref e) => {
                     if sequence_entry.get(&0).map_or(false, |e| e.arrived) {
                         if self.write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone()) {
                             if let Some(event_data) = sequence_entry.get_mut(&2) {
                                 event_data.arrived = true;
                                 event_data.arrived_time = Some(chrono::Utc::now());
-                                event_data.tx_hash = tx_hash;
+                                event_data.tx_hash = Some(formatted_tx.clone());
                                 tracing::info!(
                                     sequence = sequence,
+                                    chain_id = chain_id,
                                     key = key,
-                                    "WriteAcknowledgement event recorded. Tx Hash: {:?}",
-                                    event_data.tx_hash
+                                    tx_hash = formatted_tx.clone(),
+                                    "WriteAcknowledgement event recorded."
                                 );
                             } else {
                                 tracing::warn!(
@@ -250,21 +277,26 @@ pub trait IbcListen: Send + Sync {
                                 );
                             }
                         } else {
+                            let initial_tx_hash =
+                                sequence_entry.get(&0).and_then(|e| e.tx_hash.clone());
                             tracing::error!(
                                 sequence = sequence,
+                                chain_id = chain_id,
                                 key = key,
-                                "[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}. Tx Hash: {:?}",
-                                e.packet_ack_hex.clone(),
-                                tx_hash
+                                tx_hash = formatted_tx.clone(),
+                                initial_tx_hash = initial_tx_hash,
+                                "[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}.",
+                                e.packet_ack_hex.clone()
                             );
                             entry.remove(&sequence);
                         }
                     } else {
                         tracing::warn!(
                             sequence = sequence,
+                            chain_id = chain_id,
                             key = key,
-                            "WriteAcknowledgement event received without SendPacket. Tx Hash: {:?}",
-                            tx_hash
+                            tx_hash = formatted_tx.clone(),
+                            "WriteAcknowledgement event received without SendPacket. "
                         );
                         entry.remove(&sequence);
                     }
@@ -277,20 +309,23 @@ pub trait IbcListen: Send + Sync {
                         if let Some(event_data) = sequence_entry.get_mut(&3) {
                             event_data.arrived = true;
                             event_data.arrived_time = Some(chrono::Utc::now());
-                            event_data.tx_hash = tx_hash;
+                            event_data.tx_hash = Some(formatted_tx.clone());
                             tracing::info!(
                                 sequence = sequence,
+                                chain_id = chain_id,
                                 key = key,
-                                "AcknowledgePacket event recorded. Tx Hash: {:?}",
-                                event_data.tx_hash
+                                tx_hash = formatted_tx.clone(),
+                                "AcknowledgePacket event recorded."
                             );
 
                             if sequence_entry.values().all(|event_data| event_data.arrived) {
                                 tracing::info!(
                                     sequence = sequence,
-                                    "All events completed. sequence_entry: {:?} Tx Hash: {:?}",
-                                    sequence_entry,
-                                    tx_hash
+                                    chain_id = chain_id,
+                                    key = key,
+                                    tx_hash = formatted_tx.clone(),
+                                    "All events completed. sequence_entry: {:?}.",
+                                    sequence_entry
                                 );
                                 entry.remove(&sequence);
                             }
@@ -302,11 +337,10 @@ pub trait IbcListen: Send + Sync {
                     } else {
                         tracing::warn!(
                             sequence = sequence,
+                            chain_id = chain_id,
                             key = key,
-                            "AcknowledgePacket event received out of order for sequence: {}. key: {} Tx Hash: {:?}",
-                            sequence,
-                            key,
-                            tx_hash
+                            tx_hash = formatted_tx.clone(),
+                            "AcknowledgePacket event received out of order. "
                         );
                         entry.remove(&sequence);
                     }
@@ -355,16 +389,17 @@ impl IbcListen for Chain {
         event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
+        chain_id: String,
     ) {
         match self {
             Chain::Ethereum(ethereum) => {
                 ethereum
-                    .handle_ibc_event(ibc_event, event_state_map, block_number, tx_hash)
+                    .handle_ibc_event(ibc_event, event_state_map, block_number, tx_hash, chain_id)
                     .await;
             }
             Chain::Cosmos(cosmos) => {
                 cosmos
-                    .handle_ibc_event(ibc_event, event_state_map, block_number, tx_hash)
+                    .handle_ibc_event(ibc_event, event_state_map, block_number, tx_hash, chain_id)
                     .await;
             }
         }
@@ -418,6 +453,27 @@ impl IbcTransfer for Chain {
             }
         }
     }
+    async fn native_token_distribution(&self) {
+        match self {
+            Chain::Ethereum(ethereum) => {
+                ethereum.native_token_distribution().await;
+            }
+            Chain::Cosmos(cosmos) => {
+                cosmos.native_token_distribution().await;
+            }
+        }
+    }
+
+    async fn token_distribution(&self, tokens: Vec<H160>) {
+        match self {
+            Chain::Ethereum(ethereum) => {
+                ethereum.token_distribution(tokens).await;
+            }
+            Chain::Cosmos(cosmos) => {
+                cosmos.token_distribution(tokens).await;
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -435,6 +491,7 @@ pub struct Ethereum {
     pub ucs01_contract: String,
     pub msg_senders: Vec<ethers::types::H160>,
     pub relay_addr: ethers::types::H160,
+    pub master_account: PrivateKey<ecdsa::SigningKey>,
 }
 
 #[derive(Debug, Clone)]
@@ -470,11 +527,11 @@ impl IbcListen for Ethereum {
                 .await
                 .expect("Failed to get chain ID")
                 .as_u64();
-            tracing::info!(
-                block = latest_block,
-                chain_id = chain_id,
-                "Fetching Ethereum latest_block."
-            );
+            // tracing::info!(
+            //     block = latest_block,
+            //     chain_id = chain_id,
+            //     "Fetching Ethereum latest_block."
+            // );
             // Update the filter to fetch logs from the latest block processed + 1
             let filter = Filter::new()
                 .address(ethers::types::H160::from(self.rpc.ibc_handler_address))
@@ -522,6 +579,7 @@ impl IbcListen for Ethereum {
                                 &event_state_map,
                                 latest_block,
                                 transaction_hash,
+                                chain_id.to_string(),
                             )
                             .await;
                         }
@@ -537,9 +595,17 @@ impl IbcListen for Ethereum {
         event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
+        chain_id: String,
     ) {
-        IbcListen::handle_ibc_event_boxed(self, ibc_event, event_state_map, block_number, tx_hash)
-            .await;
+        IbcListen::handle_ibc_event_boxed(
+            self,
+            ibc_event,
+            event_state_map,
+            block_number,
+            tx_hash,
+            chain_id,
+        )
+        .await;
     }
 }
 impl IbcListen for Cosmos {
@@ -560,7 +626,7 @@ impl IbcListen for Cosmos {
                                 if let Some(heights) = events.get("tx.height") {
                                     if let Some(height) = heights.first() {
                                         let block_number: u64 = height.parse().expect("Failed to parse block number");
-                                        tracing::info!("Fetched cosmos Block number: {}", block_number);
+                                        // tracing::info!("Fetched cosmos Block number: {}", block_number);
 
                                         if let Some(tx_hashes) = events.get("tx.hash") {
                                             if let Some(tx_hash) = tx_hashes.first() {
@@ -582,7 +648,7 @@ impl IbcListen for Cosmos {
                                                             });
 
                                                             if let Some(Ok(ibc_event)) = some_event {
-                                                                self.handle_ibc_event(ibc_event, &event_state_map, block_number, tx_hash.into()).await;
+                                                                self.handle_ibc_event(ibc_event, &event_state_map, block_number, tx_hash.into(), self.chain.chain_id.clone()).await;
                                                             }
                                                         }
                                                     }
@@ -612,13 +678,340 @@ impl IbcListen for Cosmos {
         event_state_map: &EventStateMap,
         block_number: u64,
         tx_hash: Option<H256>,
+        chain_id: String,
     ) {
-        IbcListen::handle_ibc_event_boxed(self, ibc_event, event_state_map, block_number, tx_hash)
-            .await;
+        IbcListen::handle_ibc_event_boxed(
+            self,
+            ibc_event,
+            event_state_map,
+            block_number,
+            tx_hash,
+            chain_id,
+        )
+        .await;
     }
 }
 
 impl IbcTransfer for Ethereum {
+    async fn token_distribution(&self, erc20_contracts: Vec<H160>) {
+        let provider = self.rpc.provider.clone();
+        let master_acc = self.master_account.clone().value();
+        let addr_of_master: ethers::types::H160 = secret_key_to_address(&master_acc);
+
+        let chain_id = match provider.get_chainid().await {
+            Ok(chain_id) => chain_id.as_u64(),
+            Err(e) => {
+                tracing::error!("Failed to get chain ID: {:?}", e);
+                return;
+            }
+        };
+
+        tracing::info!(
+            "Token distribution for tokens: {:?} on chain: {}",
+            erc20_contracts,
+            chain_id
+        );
+        let master_wallet =
+            LocalWallet::new_with_signer(master_acc.clone(), addr_of_master, chain_id);
+
+        let master_middleware = Arc::new(SignerMiddleware::new(
+            NonceManagerMiddleware::new(provider.clone(), addr_of_master),
+            master_wallet.clone(),
+        ));
+
+        for contract_address in erc20_contracts.iter() {
+            let erc20 = erc20::ERC20::new(*contract_address, provider.clone());
+
+            // Collect tokens from signers
+            let mut total_collected = erc20.balance_of(addr_of_master).await.unwrap();
+            tracing::info!(
+                "Gathering from users started for contract: {:?}",
+                contract_address
+            );
+
+            let mut futures: FuturesUnordered<_> = self.signer_middlewares
+                .iter()
+                .map(|signer_middleware| {
+                    let provider = provider.clone();
+                    let signer_middleware = signer_middleware.clone();
+                    let addr_of_master = addr_of_master.clone();
+                    let erc20 = erc20.clone();
+
+                    async move {
+                        let signer_middleware = signer_middleware.lock().await;
+                        let address = signer_middleware.address();
+                        let balance = match erc20.balance_of(address).call().await {
+                            Ok(balance) => balance,
+                            Err(e) => {
+                                tracing::error!(
+                                    "Failed to get token balance for address {:?}: {:?}",
+                                    address,
+                                    e
+                                );
+                                return ethers::types::U256::from(0);
+                            }
+                        };
+
+                        if balance > ethers::types::U256::from(1e6 as u64) {
+                            // Adjust threshold as needed
+                            let amount_to_send = balance - ethers::types::U256::from(1e6 as u64); // Keep 1 token
+                            let tx = erc20.transfer(addr_of_master, amount_to_send).tx;
+
+                            for _ in 0..3 {
+                                let pending_tx = signer_middleware.send_transaction(
+                                    tx.clone(),
+                                    None
+                                ).await;
+                                match pending_tx {
+                                    Ok(pending_tx) => {
+                                        if pending_tx.await.is_ok() {
+                                            return amount_to_send;
+                                        } else {
+                                            tracing::error!(
+                                                "Failed to send tokens from {:?} to master, retrying...",
+                                                address
+                                            );
+                                            tokio::time::sleep(Duration::from_secs(10)).await;
+                                        }
+                                    }
+                                    Err(e) => {
+                                        tracing::error!(
+                                            "Failed to send tokens from {:?} to master: {:?}, retrying...",
+                                            address,
+                                            e
+                                        );
+                                        tokio::time::sleep(Duration::from_secs(10)).await;
+                                    }
+                                }
+                            }
+                        }
+                        ethers::types::U256::from(0)
+                    }
+                })
+                .collect();
+
+            while let Some(amount_to_send) = futures.next().await {
+                total_collected += amount_to_send;
+            }
+
+            // Just to be sure all transactions are mined
+            tokio::time::sleep(Duration::from_secs(10)).await; // TODO: Adjust sleep duration as needed
+
+            tracing::info!(
+                "Gathering from users end for contract: {:?}, total collected: {:?}. Distribution from master started.",
+                contract_address,
+                total_collected
+            );
+
+            // Distribute collected tokens back to signers, keeping 1 token in master account
+            if total_collected > ethers::types::U256::from(1e6 as u64) {
+                // Adjust threshold as needed
+                let amount_to_distribute = total_collected - ethers::types::U256::from(1e6 as u64); // Keep 1 token
+                let num_signers = self.signer_middlewares.len();
+                let amount_per_signer =
+                    amount_to_distribute / ethers::types::U256::from(num_signers as u64);
+
+                for signer_middleware in self.signer_middlewares.iter() {
+                    let provider = provider.clone();
+                    let address = signer_middleware.lock().await.address();
+                    let tx = erc20.transfer(address, amount_per_signer).tx;
+
+                    for _ in 0..3 {
+                        let pending_tx = master_middleware.send_transaction(tx.clone(), None).await;
+                        match pending_tx {
+                            Ok(pending_tx) => {
+                                if pending_tx.await.is_ok() {
+                                    tracing::info!(
+                                        chain_id = chain_id,
+                                        "Distributed {:?} tokens to {:?}",
+                                        amount_per_signer,
+                                        address
+                                    );
+                                    tokio::time::sleep(Duration::from_secs(10)).await;
+                                    break;
+                                } else {
+                                    tracing::error!(
+                                        "Failed to distribute tokens to {:?}, retrying...",
+                                        address
+                                    );
+                                    tokio::time::sleep(Duration::from_secs(10)).await;
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!(
+                                    "Failed to distribute tokens to {:?}: {:?}, retrying...",
+                                    address,
+                                    e
+                                );
+                                tokio::time::sleep(Duration::from_secs(10)).await;
+                            }
+                        }
+                    }
+                }
+            } else {
+            }
+        }
+        tracing::info!("Distribution token from master finalized.");
+    }
+
+    async fn native_token_distribution(&self) {
+        let provider = self.rpc.provider.clone();
+        let master_acc = self.master_account.clone().value();
+        let addr_of_master: ethers::types::H160 = secret_key_to_address(&master_acc);
+
+        let chain_id = match provider.get_chainid().await {
+            Ok(chain_id) => chain_id.as_u64(),
+            Err(e) => {
+                tracing::error!("Failed to get chain ID: {:?}", e);
+                return;
+            }
+        };
+
+        let master_wallet =
+            LocalWallet::new_with_signer(master_acc.clone(), addr_of_master, chain_id);
+
+        let master_middleware = Arc::new(SignerMiddleware::new(
+            NonceManagerMiddleware::new(provider.clone(), addr_of_master),
+            master_wallet.clone(),
+        ));
+
+        // Collect ETH from signers
+        let mut total_collected = match provider.get_balance(addr_of_master, None).await {
+            Ok(balance) => balance,
+            Err(e) => {
+                tracing::error!("Failed to get master account balance: {:?}", e);
+                return;
+            }
+        };
+        tracing::info!(
+            chain_id = chain_id,
+            "Gathering from users started for native token."
+        );
+
+        let mut futures: FuturesUnordered<_> = self.signer_middlewares
+            .iter()
+            .map(|signer_middleware| {
+                let provider = provider.clone();
+                let signer_middleware = signer_middleware.clone();
+                let addr_of_master = addr_of_master.clone();
+
+                async move {
+                    let signer_middleware = signer_middleware.lock().await;
+                    let address = signer_middleware.address();
+                    let balance = match provider.get_balance(address, None).await {
+                        Ok(balance) => balance,
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to get balance for address {:?}: {:?}",
+                                address,
+                                e
+                            );
+                            return ethers::types::U256::from(0);
+                        }
+                    };
+
+                    if balance > ethers::types::U256::from(1e16 as u64) {
+                        // 0.01 ETH in wei
+                        let amount_to_send = balance - ethers::types::U256::from(1e16 as u64); // Keep 0.01 ETH
+                        let tx = TransactionRequest::new().to(addr_of_master).value(amount_to_send);
+
+                        for _ in 0..2 {
+                            let pending_tx = signer_middleware.send_transaction(
+                                tx.clone(),
+                                None
+                            ).await;
+                            match pending_tx {
+                                Ok(pending_tx) => {
+                                    if pending_tx.await.is_ok() {
+                                        return amount_to_send;
+                                    } else {
+                                        tracing::error!(
+                                            "Failed to send transaction from {:?} to master, retrying...",
+                                            address
+                                        );
+                                        tokio::time::sleep(Duration::from_secs(10)).await;
+                                    }
+                                }
+                                Err(e) => {
+                                    tracing::error!(
+                                        "Failed to send transaction from {:?} to master: {:?}, retrying...",
+                                        address,
+                                        e
+                                    );
+                                    tokio::time::sleep(Duration::from_secs(10)).await;
+                                }
+                            }
+                        }
+                    }
+                    ethers::types::U256::from(0)
+                }
+            })
+            .collect();
+
+        while let Some(amount_to_send) = futures.next().await {
+            total_collected += amount_to_send;
+        }
+
+        // Just to be sure all transactions are mined
+        tokio::time::sleep(Duration::from_secs(10)).await; // TODO(caglankaan): Do we really need to wait 10 sec? idk
+
+        tracing::info!(
+            "Gathering from users end, total collected: {:?}. Distribution from master started.",
+            total_collected
+        );
+
+        // Distribute collected ETH back to signers, keeping 1 ETH in master account
+        if total_collected > ethers::types::U256::from(1e17 as u64) {
+            // More than 1 ETH collected
+            let amount_to_distribute = total_collected - ethers::types::U256::from(1e17 as u64); // Keep 1 ETH
+            let num_signers = self.signer_middlewares.len();
+            let amount_per_signer =
+                amount_to_distribute / ethers::types::U256::from(num_signers as u64);
+
+            for signer_middleware in self.signer_middlewares.iter() {
+                let provider = provider.clone();
+                let address = signer_middleware.lock().await.address();
+
+                let tx = TransactionRequest::new()
+                    .to(address)
+                    .value(amount_per_signer);
+
+                for _ in 0..2 {
+                    let pending_tx = master_middleware.send_transaction(tx.clone(), None).await;
+                    match pending_tx {
+                        Ok(pending_tx) => {
+                            if pending_tx.await.is_ok() {
+                                tracing::info!(
+                                    chain_id = chain_id,
+                                    "Distributed {:?} wei to {:?}",
+                                    amount_per_signer,
+                                    address
+                                );
+                                tokio::time::sleep(Duration::from_secs(10)).await;
+                                break;
+                            } else {
+                                tracing::error!(
+                                    "Failed to distribute to {:?}, retrying...",
+                                    address
+                                );
+                                tokio::time::sleep(Duration::from_secs(10)).await;
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to distribute to {:?}: {:?}, retrying...",
+                                address,
+                                e
+                            );
+                            tokio::time::sleep(Duration::from_secs(10)).await;
+                        }
+                    }
+                }
+            }
+        }
+        tracing::info!("Distribution native token from master finalized.");
+    }
+
     async fn send_ibc_transfer(
         &self,
         protocol: Protocol,
@@ -661,6 +1054,12 @@ impl IbcTransfer for Ethereum {
             return;
         }
         let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
+        tracing::info!(
+            "ERC20 contract address: {:?}, denom: {}, channel: {}",
+            denom_address,
+            denom,
+            destination_channel
+        );
         let balance = erc_contract.balance_of(msg_sender).await.unwrap();
         tracing::info!(
             "ETH Token({:?}) balance: {} of account: {:?}. Sending amount: {}",
@@ -670,15 +1069,15 @@ impl IbcTransfer for Ethereum {
             amount
         );
 
-        if balance < ethers::types::U256::exp10(9) {
-            tracing::error!(
-                "[INSUFFICIENT ERC20 BALANCE] Current balance is: {}. It should always be higher than: {}. Address: {:?}, ERC20 Address: {:?}",
-                balance,
-                ethers::types::U256::exp10(9).to_string(),
-                msg_sender,
-                erc_contract
-            );
-        }
+        // if balance < ethers::types::U256::exp10(9) {
+        //     tracing::error!(
+        //         "[INSUFFICIENT ERC20 BALANCE] Current balance is: {}. It should always be higher than: {}. Address: {:?}, ERC20 Address: {:?}",
+        //         balance,
+        //         ethers::types::U256::exp10(9).to_string(),
+        //         msg_sender,
+        //         erc_contract
+        //     );
+        // }
 
         if balance < amount.into() {
             tracing::warn!(
@@ -885,6 +1284,7 @@ impl Ethereum {
             ucs01_contract,
             msg_senders,
             relay_addr,
+            master_account: config.master_account,
         }
     }
 }
@@ -900,6 +1300,14 @@ pub struct Union {
 }
 
 impl IbcTransfer for Cosmos {
+    async fn native_token_distribution(&self) {
+        unimplemented!()
+    }
+
+    async fn token_distribution(&self, tokens: Vec<H160>) {
+        unimplemented!()
+    }
+
     async fn send_ibc_transfer(
         &self,
         protocol: Protocol,
@@ -1073,8 +1481,6 @@ async fn get_channel_for_eth_ack_packet(
     channel_id: String,
     block_number: u64,
 ) -> Option<Channel> {
-    tracing::info!(port_id, channel_id, block_number);
-
     let channel_result = eth_rpcs
         .ibc_handler()
         .get_channel(port_id.clone(), channel_id.clone())
@@ -1144,7 +1550,6 @@ async fn ibchandler_events_to_ibc_event(
                         )
                         .await
                         {
-                            tracing::info!("Found channel for packet: {:?}", channel);
                             Some(IbcEvent::RecvPacket(RecvPacket {
                                 packet_sequence: event.packet.sequence.try_into().unwrap(),
                                 packet_src_port: event.packet.source_port.parse().unwrap(),
@@ -1214,11 +1619,7 @@ async fn ibchandler_events_to_ibc_event(
                                     .to_string()
                                     .parse()
                                     .unwrap(),
-                                packet_src_channel: event
-                                    .packet
-                                    .destination_channel
-                                    .parse()
-                                    .unwrap(),
+                                packet_src_channel: event.packet.source_channel.parse().unwrap(),
                                 packet_dst_port: event.packet.destination_port.parse().unwrap(),
                                 packet_dst_channel: event
                                     .packet
@@ -1244,7 +1645,7 @@ async fn ibchandler_events_to_ibc_event(
                     }
                 },
                 _ => {
-                    tracing::warn!("Unhandled event type.");
+                    // tracing::warn!("Unhandled event type.");
                     None
                 }
             }
@@ -1253,5 +1654,27 @@ async fn ibchandler_events_to_ibc_event(
             tracing::warn!("Could not decode Ethereum log event.");
             None
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+enum ChainType {
+    Ethereum,
+    Cosmos,
+}
+
+fn get_chain_type(chain_id: &str) -> ChainType {
+    // TODO fill these with other chain ids
+    let ethereum_chain_ids = vec!["11155111"];
+    let cosmos_chain_ids = vec!["union-testnet-8"];
+
+    if ethereum_chain_ids.contains(&chain_id) {
+        ChainType::Ethereum
+    } else if cosmos_chain_ids.contains(&chain_id) {
+        ChainType::Cosmos
+    } else if chain_id.parse::<u64>().is_ok() {
+        ChainType::Ethereum
+    } else {
+        ChainType::Cosmos
     }
 }

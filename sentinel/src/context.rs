@@ -9,6 +9,7 @@ use ethers::{
 use parking_lot::Mutex;
 use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
 use tokio::{task::JoinHandle, time::interval};
+use unionlabs::hash::H160;
 
 use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
@@ -406,5 +407,58 @@ impl Context {
             handles.push(handle);
         }
         handles
+    }
+
+    pub async fn perform_token_distribution(&self) -> JoinHandle<()> {
+        let mut chain_tokens: HashMap<String, Vec<H160>> = HashMap::new();
+
+        // Extract tokens from interactions based on the source chain
+        for interaction in &self.interactions {
+            if let Chain::Ethereum(_) = self.chains[&interaction.source.chain] {
+                let tokens = chain_tokens
+                    .entry(interaction.source.chain.clone())
+                    .or_insert_with(Vec::new);
+
+                for denom in &interaction.denoms {
+                    if let Ok(token) = H160::from_str(denom) {
+                        if !tokens.contains(&token) {
+                            tokens.push(token);
+                        }
+                    } else {
+                        tracing::warn!("Invalid token address: {}", denom);
+                    }
+                }
+            }
+        }
+
+        let chains = self.chains.clone();
+        tokio::spawn(async move {
+            for (chain_name, tokens) in chain_tokens {
+                if let Some(Chain::Ethereum(ethereum)) = chains.get(&chain_name) {
+                    ethereum.token_distribution(tokens).await;
+                }
+            }
+        })
+    }
+
+    pub async fn perform_native_token_distribution(&self) -> JoinHandle<()> {
+        let ethereum_chains: Vec<_> = self
+            .chains
+            .values()
+            .filter_map(|chain| {
+                if let Chain::Ethereum(eth) = chain {
+                    Some(eth)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect();
+
+        tokio::spawn(async move {
+            for ethereum in &ethereum_chains {
+                ethereum.native_token_distribution().await;
+            }
+        })
     }
 }
