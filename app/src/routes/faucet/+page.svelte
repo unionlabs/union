@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
@@ -102,7 +101,10 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
 
 <svelte:head>
   <title>Union | Faucet</title>
+  <script src="https://www.google.com/recaptcha/api.js?render=6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow" async
+          defer></script>
 </svelte:head>
+
 <main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
@@ -117,12 +119,6 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
         name="faucet-form"
         on:submit|preventDefault={handleSubmit}
       >
-        <div
-          id="g-recaptcha"
-          class="g-recaptcha"
-          data-action="LOGIN"
-          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
-        ></div>
         <div class="relative flex flex-col gap-4">
           <div class="grid w-full items-center gap-2 mb-4">
             <Label for="address">Address</Label>
@@ -214,6 +210,12 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
             </Button>
           </div>
         </div>
+        <div
+          class="g-recaptcha sr-only"
+          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
+          data-callback="onSubmit"
+          data-size="invisible">
+          ></div>
       </form>
     </Card.Content>
   </Card.Root>
