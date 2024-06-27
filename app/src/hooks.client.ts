@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/sveltekit"
 import type { HandleClientError } from "@sveltejs/kit"
-console.info(Sentry.feedbackIntegration.arguments)
+
 Sentry.init({
   enabled: import.meta.env.MODE === "production",
   dsn: "https://b410cea864cbfaefea5fc8b18e40ae4f@o4506911891783680.ingest.us.sentry.io/4507500708954112",
