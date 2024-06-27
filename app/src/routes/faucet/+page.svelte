@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
@@ -26,23 +27,7 @@ $: if (!userInput && $cosmosStore.address !== address) {
   address = $cosmosStore.address ?? ""
 }
 
-const handleInput = (event: Event) => {
-  address = (event.target as HTMLInputElement).value
-  userInput = true
-}
-
-const resetInput = () => {
-  userInput = false
-  address = $cosmosStore.address ?? ""
-}
-
-const debounceDelay = 3_500
-let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
-let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
-const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
-
 let opacity = 0
-
 let focused = false
 let input: HTMLInputElement
 let position = { x: 0, y: 0 }
@@ -58,24 +43,37 @@ function handleMouseMove(event: MouseEvent) {
   position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
 }
 
+const handleInput = (event: Event) => {
+  address = (event.target as HTMLInputElement).value
+  userInput = true
+}
+
+const resetInput = () => {
+  userInput = false
+  address = $cosmosStore.address ?? ""
+}
+
+let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
+let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
+const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+
 const mutation = createMutation({
   mutationKey: ["faucetRequest"],
-
   mutationFn: async () => {
-    if (!window?.__google_recaptcha_client) {
-      return console.error("Recaptcha not loaded")
-    }
+    if (!window?.__google_recaptcha_client) return console.error("Recaptcha not loaded")
+
     const token = await window.grecaptcha.execute("6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow", {
       action: "submit"
     })
-    return getUnoFromFaucet({ address, captchaToken: token })
+    console.info("Submitting faucet request..")
+    return getUnoFromFaucet({ address, captchaToken: "token" })
   },
   onError: error => {
     console.error("Error during the faucet request:", error)
     submissionStatus = "error"
     toast.error("Faucet request failed.")
   },
-  onSuccess: data => {
+  onSuccess: () => {
     toast.success("Faucet request successful!")
   }
 })
@@ -87,10 +85,14 @@ const debouncedSubmit = debounce(() => {
   }
   $mutation.mutate()
   submissionStatus = "submitted"
-  toast.error("Faucet request submitted!")
-}, debounceDelay)
+  toast.success("Faucet request submitted!")
+}, 5_500)
 
-const handleSubmit = (event: SubmitEvent) => {
+const submissionWaitTime = 2_000 // 20 seconds
+let submissionDisabled = false
+
+$: console.info("submissionStatus:", submissionDisabled)
+const handleSubmit = (event: MouseEvent | SubmitEvent) => {
   event.preventDefault()
   submissionStatus = "submitting"
   toast.loading("Submitting faucet request..")
@@ -101,7 +103,6 @@ const handleSubmit = (event: SubmitEvent) => {
 <svelte:head>
   <title>Union | Faucet</title>
 </svelte:head>
-
 <main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
@@ -109,11 +110,18 @@ const handleSubmit = (event: SubmitEvent) => {
       <Card.Description>Official faucet for Union's native gas token.</Card.Description>
     </Card.Header>
     <Card.Content>
-      <form class="space-y-8" action="?" method="POST" on:submit|preventDefault={handleSubmit}>
+      <form
+        action="?"
+        method="POST"
+        class="space-y-8"
+        name="faucet-form"
+        on:submit|preventDefault={handleSubmit}
+      >
         <div
+          id="g-recaptcha"
           class="g-recaptcha"
-          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
           data-action="LOGIN"
+          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
         ></div>
         <div class="relative flex flex-col gap-4">
           <div class="grid w-full items-center gap-2 mb-4">
@@ -138,6 +146,7 @@ const handleSubmit = (event: SubmitEvent) => {
                     placeholder="union14ea6..."
                     required={true}
                     spellcheck="false"
+                    name="wallet-address"
                     type="text"
                     class="disabled:opacity-100 disabled:bg-black/20"
                   />
@@ -183,7 +192,19 @@ const handleSubmit = (event: SubmitEvent) => {
             </div>
           </div>
           <div class="flex flex-col gap-4 sm:flex-row">
-            <Button type="submit" class={cn('w-full sm:w-fit')}>
+            <Button
+              type="submit"
+              on:click={event => {
+                event.preventDefault()
+                submissionDisabled = true
+                handleSubmit(event)
+                setTimeout(() => {
+                  submissionDisabled = false
+                }, submissionWaitTime)
+              }}
+              disabled={submissionDisabled}
+              class={cn('w-full sm:w-fit disabled:cursor-not-allowed disabled:opacity-50')}
+            >
               Submit
               {#if submissionStatus === 'submitting'}
                 <span class="ml-2">

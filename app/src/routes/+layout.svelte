@@ -73,7 +73,7 @@ onMount(() => {
 
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
-  <slot />
+    <slot />
   </div>
   <Footer />
   <SvelteQueryDevtools
@@ -85,3 +85,9 @@ onMount(() => {
   <!-- will be enabled once powered by index status !-->
   <!-- <OnlineStatus /> !-->
 </PersistQueryClientProvider>
+
+<style>
+  :global(.grecaptcha-badge) {
+    bottom: 70px !important;
+  }
+</style>
