@@ -424,12 +424,12 @@ const transfer = async () => {
       }
       return ts
     })
-    await sleep(REDIRECT_DELAY_MS);
-    transferState.set({ kind: "TRANSFERRED", transferHash: $transferState.transferHash }); 
+    await sleep(REDIRECT_DELAY_MS)
+    transferState.set({ kind: "TRANSFERRED", transferHash: $transferState.transferHash })
   }
 
   if ($transferState.kind === "TRANSFERRED") {
-    await sleep(REDIRECT_DELAY_MS);
+    await sleep(REDIRECT_DELAY_MS)
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
