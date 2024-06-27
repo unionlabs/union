@@ -32,7 +32,12 @@ import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 import { config } from "$lib/wallet/evm/config"
-import { writeContract, simulateContract, waitForTransactionReceipt } from "@wagmi/core"
+import {
+  writeContract,
+  simulateContract,
+  waitForTransactionReceipt,
+  switchChain
+} from "@wagmi/core"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -282,14 +287,14 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
-      // try {
-      //   // await walletClient.switchChain({ id: Number($fromChain.chain_id) })
-      // } catch (error) {
-      //   if (error instanceof Error) {
-      //     transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
-      //   }
-      //   return
-      // }
+      try {
+        await switchChain(config, { chainId: 11155111 })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
+        }
+        return
+      }
       transferState.set({ kind: "APPROVING_ASSET" })
     }
 
@@ -488,22 +493,22 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
-      stateToStatus(
-        $transferState,
-        "ADDING_CHAIN",
-        `Add ${$fromChain.display_name}`,
-        `Added ${$fromChain.display_name}`,
-        ts => ({
-          status: "ERROR",
-          title: `Error adding ${$fromChain.display_name}`,
-          description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
-        }),
-        () => ({
-          status: "IN_PROGRESS",
-          title: `Adding ${$fromChain.display_name}`,
-          description: `Click 'Approve' in wallet.`
-        })
-      ),
+      // stateToStatus(
+      //   $transferState,
+      //   "ADDING_CHAIN",
+      //   `Add ${$fromChain.display_name}`,
+      //   `Added ${$fromChain.display_name}`,
+      //   ts => ({
+      //     status: "ERROR",
+      //     title: `Error adding ${$fromChain.display_name}`,
+      //     description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
+      //   }),
+      //   () => ({
+      //     status: "IN_PROGRESS",
+      //     title: `Adding ${$fromChain.display_name}`,
+      //     description: `Click 'Approve' in wallet.`
+      //   })
+      // ),
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",
