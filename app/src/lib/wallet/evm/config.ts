@@ -17,6 +17,7 @@ import {
 import { writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { noThrow, sleep } from "$lib/utilities"
+import { APP_INFO } from "$lib/constants/app.ts"
 import { injected, metaMask } from "@wagmi/connectors"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
@@ -41,8 +42,10 @@ export const config = createConfig({
         retryCount: 3,
         retryDelay: 100
       }),
-      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
-      http(sepolia.rpcUrls.default.http.at(0))
+      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`, {
+        name: "QuickNode - Sepolia"
+      }),
+      http(sepolia.rpcUrls.default.http.at(0), { name: "default Sepolia RPC" })
     ]),
     [berachainTestnetbArtio.id]: fallback([
       unstable_connector(injected, {
@@ -50,7 +53,7 @@ export const config = createConfig({
         retryCount: 3,
         retryDelay: 100
       }),
-      http(berachainTestnetbArtio.rpcUrls.default.http.at(0))
+      http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
     ])
   },
   syncConnectedChain: true,
@@ -67,8 +70,17 @@ export const config = createConfig({
       unstable_shimAsyncInject: 2_500
     }),
     metaMask({
+      preferDesktop: true,
+      forceInjectProvider: false,
       infuraAPIKey: KEY.RPC.INFURA,
-      dappMetadata: { name: "Union App", iconUrl: "https://app.union.build/images/logo.png" }
+      checkInstallationOnAllCalls: false,
+      checkInstallationImmediately: false,
+      dappMetadata: {
+        name: APP_INFO.name,
+        url: APP_INFO.baseUrl,
+        iconUrl: APP_INFO.iconUrl,
+        base64Icon: APP_INFO.base64Icon
+      }
     })
   ]
 })
@@ -83,8 +95,7 @@ config.subscribe(
 )
 
 export function createSepoliaStore(
-  // @ts-expect-error
-  previousState: ChainWalletStore<"evm"> = {
+  previousState: Omit<ChainWalletStore<"evm">, "rawAddress"> = {
     chain: "sepolia",
     hoverState: "none",
     address: getAccount(config).address,
@@ -118,14 +129,16 @@ export const sepoliaStore = createSepoliaStore()
 
 const desiredWalletIds = [
   "injected",
-  "io.metamask",
   "io.tokenary",
   "walletconnect",
   "io.rabby",
   "io.xdefi",
   "app.phantom",
   "io.metamask.flask"
-]
+  /**
+   * intentionally leaving out 'io.metamask' since that is handled by the imported 'metaMask' connector
+   */
+] as const
 
 export const evmWalletsInformation = config.connectors
   .map(connector => ({
@@ -141,12 +154,10 @@ export const evmWalletsInformation = config.connectors
   }))
   .filter(connector => desiredWalletIds.includes(connector.id.toLowerCase()))
 
-export type EvmWalletName = (typeof evmWalletsInformation)[number]["name"]
 export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 
 watchAccount(config, {
   onChange: account =>
-    // @ts-expect-error
     sepoliaStore.set({
       chain: account.chain?.name ?? "sepolia",
       hoverState: "none",
