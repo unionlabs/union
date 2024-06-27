@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
@@ -66,7 +65,7 @@ const mutation = createMutation({
       action: "submit"
     })
     console.info("Submitting faucet request..")
-    return getUnoFromFaucet({ address, captchaToken: "token" })
+    return getUnoFromFaucet({ address, captchaToken: token })
   },
   onError: error => {
     console.error("Error during the faucet request:", error)
@@ -94,6 +93,7 @@ let submissionDisabled = false
 $: console.info("submissionStatus:", submissionDisabled)
 const handleSubmit = (event: MouseEvent | SubmitEvent) => {
   event.preventDefault()
+  if (!address) return toast.error("No address")
   submissionStatus = "submitting"
   toast.loading("Submitting faucet request..")
   debouncedSubmit()
@@ -102,7 +102,10 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
 
 <svelte:head>
   <title>Union | Faucet</title>
+  <script src="https://www.google.com/recaptcha/api.js?render=6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow" async
+          defer></script>
 </svelte:head>
+
 <main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
@@ -117,12 +120,6 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
         name="faucet-form"
         on:submit|preventDefault={handleSubmit}
       >
-        <div
-          id="g-recaptcha"
-          class="g-recaptcha"
-          data-action="LOGIN"
-          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
-        ></div>
         <div class="relative flex flex-col gap-4">
           <div class="grid w-full items-center gap-2 mb-4">
             <Label for="address">Address</Label>
@@ -182,6 +179,7 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                 class="px-3"
                 on:click={onLockClick}
                 variant="ghost"
+                type="button"
               >
                 {#if inputState === 'locked'}
                   <LockLockedIcon class="size-4.5" />
@@ -202,7 +200,10 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                   submissionDisabled = false
                 }, submissionWaitTime)
               }}
-              disabled={submissionDisabled}
+              disabled={
+              submissionDisabled ||
+              !address
+              }
               class={cn('w-full sm:w-fit disabled:cursor-not-allowed disabled:opacity-50')}
             >
               Submit
@@ -214,6 +215,12 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
             </Button>
           </div>
         </div>
+        <div
+          class="g-recaptcha sr-only"
+          data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
+          data-callback="onSubmit"
+          data-size="invisible">
+          ></div>
       </form>
     </Card.Content>
   </Card.Root>

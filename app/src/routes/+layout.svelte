@@ -88,6 +88,9 @@ onMount(() => {
 
 <style>
   :global(.grecaptcha-badge) {
-    bottom: 70px !important;
+      visibility: hidden;
+      position: fixed;
+      width: 0;
+      height: 0;
   }
 </style>
