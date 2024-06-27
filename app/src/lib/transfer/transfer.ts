@@ -29,6 +29,7 @@ export type TransferState = DiscriminatedUnion<
     CONFIRMING_TRANSFER: { error?: Error; simulationResult: SimulateContractReturnType }
     AWAITING_TRANSFER_RECEIPT: { error?: Error; transferHash: `0x${string}` }
     TRANSFERRING: { transferHash: string }
+    TRANSFERRED: { transferHash: string }
   }
 >
 
@@ -55,6 +56,8 @@ export const transferStep = (state: TransferState): number => {
       return 9
     case "TRANSFERRING":
       return 10
+    case "TRANSFERRED":
+      return 11
   }
 }
 

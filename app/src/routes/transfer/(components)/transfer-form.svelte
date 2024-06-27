@@ -72,7 +72,7 @@ $: if ($fromChain && $asset && amount) {
   }
 }
 
-const REDIRECT_DELAY_MS = 5000
+const REDIRECT_DELAY_MS = 2500
 
 let dialogOpenToken = false
 let dialogOpenToChain = false
@@ -197,6 +197,8 @@ const transfer = async () => {
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
+    // @ts-ignore
+    transferState.set({ kind: "CONFIRMING_TRANSFER" })
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
@@ -398,7 +400,6 @@ const transfer = async () => {
   }
 
   if ($transferState.kind === "TRANSFERRING") {
-    await sleep(REDIRECT_DELAY_MS)
     submittedTransfers.update(ts => {
       // @ts-ignore
       ts[$transferState.transferHash] = {
@@ -423,6 +424,12 @@ const transfer = async () => {
       }
       return ts
     })
+    await sleep(REDIRECT_DELAY_MS)
+    transferState.set({ kind: "TRANSFERRED", transferHash: $transferState.transferHash })
+  }
+
+  if ($transferState.kind === "TRANSFERRED") {
+    await sleep(REDIRECT_DELAY_MS)
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
