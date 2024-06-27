@@ -184,7 +184,8 @@ const transfer = async () => {
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
   if ($fromChain.rpc_type === "evm" && !userAddr.evm) return toast.error("No evm wallet connected")
-  if ($fromChain.rpc_type === "cosmos" && !userAddr.cosmos) return toast.error("No cosmos wallet connected")
+  if ($fromChain.rpc_type === "cosmos" && !userAddr.cosmos)
+    return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
   if (!$ucs01Configuration)
     return toast.error(
@@ -497,6 +498,7 @@ const stateToStatus = <K extends TransferState["kind"]>(
         : progressFormatter(state as Extract<TransferState, { kind: K }>)
 
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
+  if ($transferState.kind === "PRE_TRANSFER") return [] // don't generate steps before transfer is ready
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
@@ -710,11 +712,11 @@ const resetInput = () => {
         </section>
         <section>
           <CardSectionHeading>Asset</CardSectionHeading>
-          {#if $sendableBalances}
+          {#if $sendableBalances !== undefined && $fromChainId}
             {#if $sendableBalances === null}
               Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
             {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable balances on <b>{$fromChain?.display_name}</b>.
+              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some from <a class="underline font-bold" href="/faucet">the faucet</a>
             {:else}
               <Button
                 class="w-full"
