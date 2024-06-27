@@ -18,6 +18,7 @@ use chain_utils::{any_chain, AnyChain, AnyChainTryFromConfigError, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt, TryStreamExt};
 use pg_queue::{PgQueue, PgQueueConfig};
+use prometheus::TextEncoder;
 use queue_msg::{
     optimize::{
         passes::{FinalPass, Normalize},
@@ -49,6 +50,7 @@ pub struct Voyager {
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
     pub max_batch_size: NonZeroUsize,
+    pub optimizer_delay_milliseconds: u64,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -254,6 +256,7 @@ impl Voyager {
             laddr: config.voyager.laddr,
             queue,
             max_batch_size: config.voyager.max_batch_size,
+            optimizer_delay_milliseconds: config.voyager.optimizer_delay_milliseconds,
         })
     }
 
@@ -269,6 +272,7 @@ impl Voyager {
             .route("/msg", post(msg))
             .route("/msgs", post(msgs))
             .route("/health", get(|| async move { StatusCode::OK }))
+            .route("/metrics", get(metrics))
             .route(
                 "/signer/balances",
                 get({
@@ -298,6 +302,15 @@ impl Voyager {
             }
 
             StatusCode::OK
+        }
+
+        async fn metrics() -> Result<String, StatusCode> {
+            TextEncoder::new()
+                .encode_to_string(&prometheus::gather())
+                .map_err(|err| {
+                    error!(?err, "could not gather metrics");
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })
         }
 
         tokio::spawn(axum::Server::bind(&self.laddr).serve(app.into_make_service()));
@@ -374,7 +387,10 @@ impl Voyager {
                         .into_inner()
                 })?;
 
-                // tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(
+                    self.optimizer_delay_milliseconds,
+                ))
+                .await;
             }
         });
 

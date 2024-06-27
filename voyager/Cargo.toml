@@ -39,6 +39,7 @@ itertools                 = "0.13.0"
 num-bigint                = { workspace = true }
 pg-queue                  = { workspace = true }
 pin-utils                 = "0.1.0"
+prometheus                = "0.13.4"
 prost                     = { workspace = true }
 protos                    = { workspace = true, features = ["proto_full", "client"] }
 queue-msg                 = { workspace = true }

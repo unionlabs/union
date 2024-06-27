@@ -25,6 +25,27 @@
               curl localhost:65534/msg -H "content-type: application/json" -d "$@"
             '';
           };
+        ethereum-multi-send = pkgs.writeShellApplication {
+          name = "ethereum-multi-send";
+          runtimeInputs = [ self'.packages.forge ];
+          text = ''
+            set -e
+
+            PRIVATE_KEY="''${PRIVATE_KEY:?private key is unset}"
+            echo "$PRIVATE_KEY"
+
+            RPC_URL="''${RPC_URL:?rpc url is unset}"
+            echo "$RPC_URL"
+
+            VALUE="''${VALUE:?value is unset}"
+            echo "$VALUE"
+
+            for var in "$@"
+            do
+                cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --value "$VALUE" "$var"
+            done
+          '';
+        };
         voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
       };
       checks = voyager.checks;
@@ -83,14 +104,18 @@
           default = null;
           example = 20971520;
         };
-        laddr = mkOption {
-          type = types.str;
-          default = "0.0.0.0:65534";
-          example = "0.0.0.0:65534";
-        };
-        max-batch-size = mkOption {
-          type = types.number;
-          example = 10;
+        # laddr = mkOption {
+        #   type = types.str;
+        #   default = "0.0.0.0:65534";
+        #   example = "0.0.0.0:65534";
+        # };
+        # max-batch-size = mkOption {
+        #   type = types.number;
+        #   example = 10;
+        # };
+        voyager-extra = mkOption {
+          type = types.attrs;
+          default = { };
         };
       };
 
@@ -98,10 +123,8 @@
         let
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
             chain = cfg.chains;
-            voyager = {
+            voyager = cfg.voyager-extra // {
               num_workers = cfg.workers;
-              laddr = cfg.laddr;
-              max_batch_size = cfg.max-batch-size;
               queue = {
                 type = "pg-queue";
                 database_url = cfg.db-url;

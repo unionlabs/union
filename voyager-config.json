@@ -225,14 +225,15 @@
   "voyager": {
     "num_workers": 90,
     "laddr": "0.0.0.0:65534",
-    "max_batch_size": 10,
+    "max_batch_size": 20,
     "queue": {
       "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
       "max_connections": 20,
       "min_connections": 20,
       "idle_timeout": null,
-      "max_lifetime": null
+      "max_lifetime": null,
+      "optimizer_delay_milliseconds": 100
     }
   }
 }

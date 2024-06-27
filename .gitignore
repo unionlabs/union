@@ -65,3 +65,6 @@ process-compose.override.yml
 *.cpuprofile
 .vite-inspect
 ~partytown/
+
+# prometheus
+data/

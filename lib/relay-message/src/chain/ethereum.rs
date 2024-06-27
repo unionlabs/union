@@ -337,7 +337,7 @@ where
                         );
 
                         // TODO: config
-                        let msg = msg.gas(estimated_gas + (estimated_gas / 2));
+                        let msg = msg.gas(estimated_gas + (estimated_gas / 10));
                         let result = msg.send().await;
                         match result {
                             Ok(ok) => {
