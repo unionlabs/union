@@ -48,6 +48,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
   id={`${chain}-connect`}
   on:click={_event => onCopyClick()}
   tabindex={0}
+  data-connect-button=""
   variant={connectStatus === 'connected' ? 'default' : 'ghost'}
 >
   <div
@@ -120,3 +121,9 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
     </div>
   {/each}
 </div>
+
+<style lang="postcss">
+  :global(button[data-connect-button]) {
+    text-transform: unset !important;
+  }
+</style>
