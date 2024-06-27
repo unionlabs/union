@@ -7,6 +7,7 @@ Sentry.init({
   tracesSampleRate: 1,
   replaysOnErrorSampleRate: 1,
   replaysSessionSampleRate: 0.1,
+  enabled: import.meta.env.MODE === "production",
   integrations: [
     Sentry.replayIntegration(),
     Sentry.breadcrumbsIntegration(),
