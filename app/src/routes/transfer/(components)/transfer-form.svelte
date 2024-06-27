@@ -197,6 +197,8 @@ const transfer = async () => {
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
+    // @ts-ignore
+    transferState.set({ kind: "CONFIRMING_TRANSFER" })
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
