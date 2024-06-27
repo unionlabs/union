@@ -7,14 +7,16 @@ import {
   deserialize,
   createConfig,
   watchAccount,
+  watchChainId,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage
+  createStorage as createWagmiStorage,
+  getChainId
 } from "@wagmi/core"
-import { writable } from "svelte/store"
+import { readable, writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { noThrow, sleep } from "$lib/utilities"
 import { APP_INFO } from "$lib/constants/app.ts"
@@ -37,6 +39,11 @@ export const config = createConfig({
   batch: { multicall: true },
   transports: {
     [sepolia.id]: fallback([
+      unstable_connector(metaMask, {
+        key: "unstable_connector-metamask",
+        retryCount: 3,
+        retryDelay: 100
+      }),
       unstable_connector(injected, {
         key: "unstable_connector-injected",
         retryCount: 3,
@@ -71,7 +78,6 @@ export const config = createConfig({
     }),
     metaMask({
       preferDesktop: true,
-      forceInjectProvider: false,
       infuraAPIKey: KEY.RPC.INFURA,
       checkInstallationOnAllCalls: false,
       checkInstallationImmediately: false,
@@ -167,6 +173,10 @@ watchAccount(config, {
     })
 })
 reconnect(config)
+
+export const evmChainId = readable(getChainId(config), set =>
+  watchChainId(config, { onChange: set })
+)
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
