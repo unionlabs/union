@@ -67,6 +67,7 @@ library RelayLib {
     error ErrInvalidProtocolVersion();
     error ErrInvalidProtocolOrdering();
     error ErrInvalidCounterpartyProtocolVersion();
+    error ErrInvalidAmount();
     error ErrUnstoppable();
 
     IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
@@ -266,6 +267,9 @@ contract UCS01Relay is
         string calldata sourceChannel,
         LocalToken calldata localToken
     ) internal returns (string memory) {
+        if (localToken.amount == 0) {
+            revert RelayLib.ErrInvalidAmount();
+        }
         // If the token is originating from the counterparty channel, we must have saved it's denom.
         string memory addressDenom =
             addressToDenom[sourceChannel][localToken.denom];
@@ -379,6 +383,9 @@ contract UCS01Relay is
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
+            if (token.amount == 0) {
+                revert RelayLib.ErrInvalidAmount();
+            }
             strings.slice memory denomSlice = token.denom.toSlice();
             // This will trim the denom in-place IFF it is prefixed
             strings.slice memory trimedDenom =
