@@ -11,3 +11,6 @@ vite.config.*.timestamp-*
 .prettiercache
 stats
 ~partytown
+
+# Sentry Config File
+.sentryclirc
