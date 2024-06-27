@@ -8,6 +8,7 @@ import type { Chain } from "$lib/types.ts"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
+import { ScrollArea } from "$lib/components/ui/scroll-area"
 
 /**
  * TODO: format the balance to a readable format - in order to do that properly, need:
@@ -37,40 +38,42 @@ export let onAssetSelect: (asset: string) => void
   preventScroll={true}
 >
   <Dialog.Content
-    class="max-w-[90%] sm:max-w-[450px]  overflow-auto px-0 pt-4 pb-2 flex flex-col items-start"
+    class="max-w-[90%] sm:max-w-[450px] h-[95%] px-0 pt-4 pb-2 flex flex-col items-start"
   >
     <Dialog.Header class="max-h-min h-8 p-2">
       <Dialog.Title class="px-2">Select Asset</Dialog.Title>
     </Dialog.Header>
+    <ScrollArea class="w-full">
     <Dialog.Description class="size-full">
-      <ul class="">
-        {#each assets as asset, index}
-          {@const supportedAsset = getSupportedAsset(chain, asset.address)}
-          {#if $showUnsupported || supportedAsset}
-            <li
-              class={cn(
+      <ul class="h-full">
+          {#each assets as asset, index}
+            {@const supportedAsset = getSupportedAsset(chain, asset.address)}
+            {#if $showUnsupported || supportedAsset}
+              <li
+                class={cn(
               'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
             )}
-            >
-              <Button
-                variant="ghost"
-                class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
-                on:click={() => {
+              >
+                <Button
+                  variant="ghost"
+                  class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
+                  on:click={() => {
                 onAssetSelect(asset.symbol)
                 dialogOpen = false
               }}
-              >
-                <div class="size-full flex flex-col items-start" class:opacity-30={!supportedAsset}>
-                  {truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}
-                </div>
-                <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
-                  <Precise {chain} {asset} showToolTip/>
-                </p>
-              </Button>
-            </li>
-          {/if}
-        {/each}
+                >
+                  <div class="size-full flex flex-col items-start" class:opacity-30={!supportedAsset}>
+                    {truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}
+                  </div>
+                  <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
+                    <Precise {chain} {asset} showToolTip/>
+                  </p>
+                </Button>
+              </li>
+            {/if}
+          {/each}
       </ul>
     </Dialog.Description>
+    </ScrollArea>
   </Dialog.Content>
 </Dialog.Root>
