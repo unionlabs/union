@@ -5,7 +5,6 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     net::SocketAddr,
-    num::NonZeroUsize,
     sync::Arc,
 };
 
@@ -49,7 +48,7 @@ pub struct Voyager {
     pub laddr: SocketAddr,
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
-    pub max_batch_size: NonZeroUsize,
+    pub tx_batch: TxBatch,
     pub optimizer_delay_milliseconds: u64,
 }
 
@@ -255,7 +254,7 @@ impl Voyager {
             num_workers: config.voyager.num_workers,
             laddr: config.voyager.laddr,
             queue,
-            max_batch_size: config.voyager.max_batch_size,
+            tx_batch: config.voyager.tx_batch,
             optimizer_delay_milliseconds: config.voyager.optimizer_delay_milliseconds,
         })
     }
@@ -368,16 +367,7 @@ impl Voyager {
         join_set.spawn(async move {
             let q = self.queue.clone();
 
-            let passes = (
-                Normalize::default(),
-                (
-                    TxBatch {
-                        max_batch_size: self.max_batch_size,
-                        min_batch_size: 1.try_into().unwrap(),
-                    },
-                    FinalPass,
-                ),
-            );
+            let passes = (Normalize::default(), (self.tx_batch.clone(), FinalPass));
 
             loop {
                 debug!("optimizing");
