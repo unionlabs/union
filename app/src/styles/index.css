@@ -14,6 +14,10 @@ body {
   box-sizing: border-box;
 }
 
+#sentry-feedback {
+  --font-size: 12px;
+}
+
 
 html[data-theme='dark'], body[data-theme='dark'] {
   color-scheme: dark;
