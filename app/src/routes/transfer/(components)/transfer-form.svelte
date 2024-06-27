@@ -4,7 +4,7 @@ import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { raise, sleep } from "$lib/utilities/index.ts"
+import { noThrow, raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.js"
@@ -20,7 +20,7 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { type Address, parseUnits } from "viem"
+import { type Address, parseUnits, toHex } from "viem"
 import Stepper from "$lib/components/stepper.svelte"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -31,13 +31,15 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
-import { config } from "$lib/wallet/evm/config"
+import { config, evmChainId, evmSwitchChain } from "$lib/wallet/evm/config"
 import {
   writeContract,
   simulateContract,
   waitForTransactionReceipt,
-  switchChain
+  getConnectorClient,
+  getAccount
 } from "@wagmi/core"
+import { sepolia } from "viem/chains"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -175,6 +177,14 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
+async function windowEthereumSwitchChain() {
+  if (!window?.ethereum?.request) return
+  return await window.ethereum?.request({
+    method: "wallet_switchEthereumChain",
+    params: [{ chainId: toHex(sepolia.id) }]
+  })
+}
+
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
@@ -269,6 +279,12 @@ const transfer = async () => {
       }
     }
   } else if ($fromChain.rpc_type === "evm") {
+    const connectorClient = await getConnectorClient(config)
+    if (connectorClient?.chain?.id !== sepolia.id) {
+      await noThrow(windowEthereumSwitchChain())
+      await sleep(1_500)
+    }
+
     const ucs01address = ucs1_configuration.contract_address as Address
 
     if (window.ethereum === undefined) raise("no ethereum browser extension")
@@ -303,6 +319,7 @@ const transfer = async () => {
 
       try {
         hash = await writeContract(config, {
+          chain: sepolia,
           account: userAddr.evm.canonical,
           abi: erc20Abi,
           address: $asset.address as Address,
@@ -338,6 +355,7 @@ const transfer = async () => {
     if ($transferState.kind === "SIMULATING_TRANSFER") {
       try {
         const simulationResult = await simulateContract(config, {
+          chainId: sepolia.id,
           abi: ucs01abi,
           account: userAddr.evm.canonical,
           functionName: "send",
@@ -698,7 +716,7 @@ const resetInput = () => {
 
           <CardSectionHeading>To</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
-            {$toChain?.display_name ?? "Select chain"}
+            {$toChain?.display_name ?? 'Select chain'}
           </ChainButton>
         </section>
         <section>
@@ -801,15 +819,14 @@ const resetInput = () => {
       <Card.Footer class="flex flex-col gap-4 items-start">
         <Button
           disabled={!amount ||
-          !$asset ||
-          !$toChainId ||
-          !$recipient ||
-          !$assetSymbol ||
-          !$fromChainId ||
-          !amountLargerThanZero ||
-          // >= because need some sauce for gas
-          !balanceCoversAmount
-          }
+            !$asset ||
+            !$toChainId ||
+            !$recipient ||
+            !$assetSymbol ||
+            !$fromChainId ||
+            !amountLargerThanZero ||
+            // >= because need some sauce for gas
+            !balanceCoversAmount}
           on:click={async event => {
           event.preventDefault()
           transferState.set({ kind: "FLIPPING" })
@@ -839,7 +856,6 @@ const resetInput = () => {
     <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
   </div>
 </div>
-
 
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
@@ -876,7 +892,6 @@ const resetInput = () => {
   />
 {/if}
 
-
 <style global lang="postcss">
 
 
@@ -909,9 +924,9 @@ const resetInput = () => {
     .cube-front, .cube-back {
         @apply absolute overflow-y-auto overflow-x-hidden;
 
-        width: var(--width);
-        height: var(--height);
-    }
+    width: var(--width);
+    height: var(--height);
+  }
 
     .cube-left {
         @apply absolute bg-card border;

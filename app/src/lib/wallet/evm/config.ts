@@ -11,18 +11,15 @@ import {
   createConfig,
   watchAccount,
   watchChainId,
-  getConnectors,
-  getConnections,
-  watchConnectors,
-  watchConnections,
   unstable_connector,
   connect as _connect,
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage
+  createStorage as createWagmiStorage,
+  getChainId
 } from "@wagmi/core"
-import { sleep } from "$lib/utilities"
+import { readable, writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { readable, writable } from "svelte/store"
 import type { ChainWalletStore } from "$lib/wallet/types"
@@ -44,6 +41,11 @@ export const config = createConfig({
   batch: { multicall: true },
   transports: {
     [sepolia.id]: fallback([
+      unstable_connector(metaMask, {
+        key: "unstable_connector-metamask",
+        retryCount: 3,
+        retryDelay: 100
+      }),
       unstable_connector(injected, {
         key: "unstable_connector-injected",
         retryCount: 3,
@@ -73,32 +75,19 @@ export const config = createConfig({
     injected({
       shimDisconnect: true,
       unstable_shimAsyncInject: 2_500
+    }),
+    metaMask({
+      preferDesktop: true,
+      infuraAPIKey: KEY.RPC.INFURA,
+      checkInstallationOnAllCalls: false,
+      checkInstallationImmediately: false,
+      dappMetadata: {
+        name: APP_INFO.name,
+        url: APP_INFO.baseUrl,
+        iconUrl: APP_INFO.iconUrl,
+        base64Icon: APP_INFO.base64Icon
+      }
     })
-    // walletConnect({
-    //   projectId: KEY.WALLET_CONNECT_PROJECT_ID,
-    //   qrModalOptions: {
-    //     themeMode: "dark",
-    //     enableExplorer: true,
-    //     explorerRecommendedWalletIds: [
-    //       /* Multichain */
-    //       "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0", // Trust
-    //       /* EVM */
-    //       "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369", // rainbow
-    //       "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // metamask
-    //       "ecc4036f814562b41a5268adc86270fba1365471402006302e70169465b7ac18", // zerion
-    //       "18388be9ac2d02726dbac9777c96efaac06d744b2f6d580fccdd4127a6d01fd1" // rabby
-    //       /* Cosmos */
-    //       // "3ed8cc046c6211a798dc5ec70f1302b43e07db9639fd287de44a9aa115a21ed6", // Leap
-    //       // "6adb6082c909901b9e7189af3a4a0223102cd6f8d5c39e39f3d49acb92b578bb", // Keplr
-    //     ]
-    //   },
-    //   metadata: {
-    //     name: "Union App",
-    //     description: "Union App (beta)",
-    //     url: "https://app.union.build",
-    //     icons: ["/images/icons/union.svg", "/images/logo.png"]
-    //   }
-    // })
   ]
 })
 
@@ -222,6 +211,10 @@ watchAccount(config, {
     })
 })
 reconnect(config)
+
+export const evmChainId = readable(getChainId(config), set =>
+  watchChainId(config, { onChange: set })
+)
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
