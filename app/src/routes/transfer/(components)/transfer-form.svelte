@@ -5,7 +5,6 @@ import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
-import { type Writable, writable, derived } from "svelte/store"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.js"
@@ -15,28 +14,25 @@ import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
+import { type Writable, writable, derived } from "svelte/store"
 import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
-import { type Address, parseUnits } from "viem"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
+import { type Address, parseUnits } from "viem"
 import Stepper from "$lib/components/stepper.svelte"
-import {
-  type TransferState,
-  chainToViemChain,
-  stepBefore,
-  stepAfter
-} from "$lib/transfer/transfer.ts"
-
+import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { erc20Abi, createWalletClient, createPublicClient, http, custom, fallback } from "viem"
+import { erc20Abi } from "viem"
 import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
+import { config } from "$lib/wallet/evm/config"
+import { writeContract, simulateContract, waitForTransactionReceipt } from "@wagmi/core"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -268,43 +264,32 @@ const transfer = async () => {
       }
     }
   } else if ($fromChain.rpc_type === "evm") {
-    const viemChain = chainToViemChain($fromChain)
     const ucs01address = ucs1_configuration.contract_address as Address
-    const publicClient = createPublicClient({
-      chain: viemChain,
-      transport: fallback(
-        $fromChain.rpcs.filter(c => c.type === "rpc").map(c => http(`https://${c.url}`))
-      )
-    })
 
     if (window.ethereum === undefined) raise("no ethereum browser extension")
-    const walletClient = createWalletClient({
-      chain: viemChain,
-      transport: custom(window.ethereum)
-    })
 
     if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
       transferState.set({ kind: "ADDING_CHAIN" })
-      try {
-        await walletClient.addChain({ chain: viemChain })
-      } catch (error) {
-        if (error instanceof Error) {
-          transferState.set({ kind: "ADDING_CHAIN", error })
-        }
-        return
-      }
+      // try {
+      //   // await walletClient.addChain({ chain: viemChain })
+      // } catch (error) {
+      //   if (error instanceof Error) {
+      //     transferState.set({ kind: "ADDING_CHAIN", error })
+      //   }
+      //   return
+      // }
       transferState.set({ kind: "SWITCHING_TO_CHAIN" })
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
-      try {
-        await walletClient.switchChain({ id: Number($fromChain.chain_id) })
-      } catch (error) {
-        if (error instanceof Error) {
-          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
-        }
-        return
-      }
+      // try {
+      //   // await walletClient.switchChain({ id: Number($fromChain.chain_id) })
+      // } catch (error) {
+      //   if (error instanceof Error) {
+      //     transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
+      //   }
+      //   return
+      // }
       transferState.set({ kind: "APPROVING_ASSET" })
     }
 
@@ -312,7 +297,7 @@ const transfer = async () => {
       let hash: `0x${string}` | null = null
 
       try {
-        hash = await walletClient.writeContract({
+        hash = await writeContract(config, {
           account: userAddr.evm.canonical,
           abi: erc20Abi,
           address: $asset.address as Address,
@@ -331,12 +316,14 @@ const transfer = async () => {
 
     if ($transferState.kind === "AWAITING_APPROVAL_RECEIPT") {
       try {
-        await publicClient.waitForTransactionReceipt({
-          hash: $transferState.hash
-        })
+        await waitForTransactionReceipt(config, { hash: $transferState.hash })
       } catch (error) {
         if (error instanceof Error) {
-          transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash: $transferState.hash, error })
+          transferState.set({
+            kind: "AWAITING_APPROVAL_RECEIPT",
+            hash: $transferState.hash,
+            error
+          })
         }
         return
       }
@@ -345,7 +332,7 @@ const transfer = async () => {
 
     if ($transferState.kind === "SIMULATING_TRANSFER") {
       try {
-        const simulationResult = await publicClient.simulateContract({
+        const simulationResult = await simulateContract(config, {
           abi: ucs01abi,
           account: userAddr.evm.canonical,
           functionName: "send",
@@ -372,9 +359,7 @@ const transfer = async () => {
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
         // @ts-ignore
-        const transferHash = await walletClient.writeContract(
-          $transferState.simulationResult.request
-        )
+        const transferHash = await writeContract(config, $transferState.simulationResult.request)
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
       } catch (error) {
         if (error instanceof Error) {
@@ -389,7 +374,7 @@ const transfer = async () => {
 
     if ($transferState.kind === "AWAITING_TRANSFER_RECEIPT") {
       try {
-        await publicClient.waitForTransactionReceipt({
+        await waitForTransactionReceipt(config, {
           hash: $transferState.transferHash
         })
         transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
@@ -684,7 +669,6 @@ const resetInput = () => {
   address = $recipient ?? ""
 }
 </script>
-
 
 <div
   class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
