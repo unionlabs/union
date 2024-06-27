@@ -7,11 +7,11 @@ type Chain = "evm" | "cosmos"
 type HoverState = "hover" | "none"
 type ChainConnectStatus = State["status"]
 type ChainWalletsInformation = ReadonlyArray<{
-  id?: string
+  id: string
   name: string
   icon: string
   download: string
-}> // & any
+}>
 
 type Props<TChain extends Chain = Chain> = {
   chain: TChain

@@ -59,7 +59,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[475px] flex flex-col justify-start"
+    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px] flex flex-col justify-start"
   >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title class="flex gap-4 items-center">
@@ -86,7 +86,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
+    <!-- {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
       <Button
         variant="outline"
         on:click={() => window.alert('Please install metamask')}
@@ -97,7 +97,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
           Install Metamask
         </span>
       </Button>
-    {/if}
+    {/if} -->
     <Separator class={cn('px-0 bg-border my-4')}/>
     <Connection
       address={$cosmosStore.address}
