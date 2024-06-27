@@ -430,8 +430,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       <div class="flex-1 text-center flex-col text-sm text-muted-foreground items-center">
         forwarded through
         <h2 class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.hop_chain_id, chains)}</h2>
-        <p class="text-sm">{transfer?.hop_chain_destination_connection_id ?? "unknown"} -> {transfer?.hop_chain_source_connection_id ?? "unknown"}</p>
-        <p class="text-sm">{transfer?.hop_chain_destination_channel_id ?? "unknown"} -> {transfer.hop_chain_source_channel_id}</p>
+        <p class={cn("text-sm", transfer.hop_chain_destination_connection_id && transfer.hop_chain_source_connection_id ? "text-black" : "text-transparent")}>{transfer?.hop_chain_destination_connection_id ?? "unknown"} -> {transfer?.hop_chain_source_connection_id ?? "unknown"}</p>
+        <p class={cn("text-sm", transfer.hop_chain_destination_channel_id && transfer.hop_chain_source_channel_id ? "text-black" : "text-transparent")}>{transfer?.hop_chain_destination_channel_id ?? "unknown"} -> {transfer.hop_chain_source_channel_id ?? "unknown"}</p>
       </div>
     {/if}
     </section>
