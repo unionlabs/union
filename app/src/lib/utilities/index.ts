@@ -1,6 +1,6 @@
 import { derived } from "svelte/store"
 import type { CreateQueryResult } from "@tanstack/svelte-query"
-import type { Readable } from "svelte/store"
+import type { Readable } from "svelte"
 
 export function raise(message?: string, opts?: ErrorOptions): never {
   throw new Error(message, opts)
