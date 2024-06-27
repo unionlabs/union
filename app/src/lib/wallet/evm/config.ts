@@ -44,21 +44,21 @@ export const config = createConfig({
   batch: { multicall: true },
   transports: {
     [sepolia.id]: fallback([
-      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
       unstable_connector(injected, {
         key: "unstable_connector-injected",
         retryCount: 3,
         retryDelay: 100
       }),
+      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`),
       http(sepolia.rpcUrls.default.http.at(0))
     ]),
     [berachainTestnetbArtio.id]: fallback([
-      http(berachainTestnetbArtio.rpcUrls.default.http.at(0)),
       unstable_connector(injected, {
         key: "unstable_connector-injected",
         retryCount: 3,
         retryDelay: 100
-      })
+      }),
+      http(berachainTestnetbArtio.rpcUrls.default.http.at(0))
     ])
   },
   syncConnectedChain: true,
