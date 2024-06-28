@@ -1,6 +1,5 @@
 <script lang="ts">
 import { navigating } from "$app/stores"
-import { slide } from "svelte/transition"
 import Connection from "./connection.svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Sheet from "$lib/components/ui/sheet"
@@ -8,15 +7,12 @@ import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
 import { Separator } from "$lib/components/ui/separator"
-import * as Collapsible from "$lib/components/ui/collapsible"
 import ThemeSwitch from "$lib/components/header/theme-switch.svelte"
-import ChevronsUpDownIcon from "virtual:icons/lucide/chevrons-up-down"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { Switch } from "$lib/components/ui/switch"
 import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
-import MetamaskIcon from "$lib/components/connect/MetamaskIcon.svelte"
 
 let buttonText: string
 
@@ -36,10 +32,6 @@ $: if (
 
 let sheetOpen = false
 $: if ($navigating) sheetOpen = false
-
-let collapsibleOpen = true
-
-$: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
@@ -59,7 +51,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[475px] flex flex-col justify-start"
+    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px] flex flex-col justify-start"
   >
     <Sheet.Header class="mb-4 pl-2">
       <Sheet.Title class="flex gap-4 items-center">
@@ -86,7 +78,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
+    <!-- {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
       <Button
         variant="outline"
         on:click={() => window.alert('Please install metamask')}
@@ -97,7 +89,7 @@ $: gotMetamask = !!evmWalletsInformation.find(obj => obj.name === "MetaMask")
           Install Metamask
         </span>
       </Button>
-    {/if}
+    {/if} -->
     <Separator class={cn('px-0 bg-border my-4')}/>
     <Connection
       address={$cosmosStore.address}
