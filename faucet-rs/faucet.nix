@@ -32,7 +32,7 @@
               name = "faucet-systemd";
               runtimeInputs = [ pkgs.coreutils cfg.package ];
               text = ''
-                ${pkgs.lib.getExe cfg.package} -c '${cfg.configFile}'
+                ${pkgs.lib.getExe cfg.package} -c '${builtins.toFile (builtins.toJSON cfg.configFile)}'
               '';
             };
           in
