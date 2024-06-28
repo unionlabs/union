@@ -6,7 +6,7 @@
       };
     in
     {
-      packages = faucet.packages;
+      packages.faucet = faucet.packages.faucet-rs;
     };
 
   flake.nixosModules.faucet = { lib, pkgs, config, ... }:
