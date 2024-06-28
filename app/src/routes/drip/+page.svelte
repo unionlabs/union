@@ -1,5 +1,4 @@
 <script lang="ts">
-import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
 import { Label } from "$lib/components/ui/label"
@@ -23,7 +22,7 @@ import request from "graphql-request"
 import { writable, type Writable } from "svelte/store";
 import { URLS } from "$lib/constants/index.ts";
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts";
-
+import Truncate from "$lib/components/truncate.svelte";
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -36,32 +35,17 @@ type FaucetState = DiscriminatedUnion<
   }
 >
 
-
-let userInput = false
 let address: string = $cosmosStore.address ?? ""
 
-$: if (!userInput && $cosmosStore.address !== address) {
-  address = $cosmosStore.address ?? ""
-}
-
-let input: HTMLInputElement
-
-const handleInput = (event: Event) => {
-  address = (event.target as HTMLInputElement).value
-  userInput = true
-}
-
 const resetInput = () => {
-  userInput = false
   address = $cosmosStore.address ?? ""
 }
 
 let faucetState: Writable<FaucetState> = writable({ kind: "IDLE" });
 
 const fetchFromFaucet = async () => {
-  if ($faucetState.kind === "IDLE") {
+  if ($faucetState.kind === "IDLE" || $faucetState.kind === "REQUESTING_TOKEN") {
     faucetState.set({ kind: "REQUESTING_TOKEN" })
-    toast.info("Requesting captcha")
 
     if (!window?.__google_recaptcha_client) return console.error("Recaptcha not loaded")
 
@@ -73,17 +57,28 @@ const fetchFromFaucet = async () => {
   }
 
   if ($faucetState.kind === "SUBMITTING") {
-    toast.info("Requesting UNO from faucet")
 
-    const result = await request(URLS.GRAPHQL, faucetUnoMutation2, { address, captchaToken: $faucetState.captchaToken });
-    console.log(result);
+    try {
+      const result = await request(URLS.GRAPHQL, faucetUnoMutation2, { address, captchaToken: $faucetState.captchaToken });
+      if (result.faucet2 === null) {
+        faucetState.set({ kind: "RESULT_ERR", error: "Empty faucet response" })
+        return;
+      }
+
+      if (result.faucet2.send.startsWith("ERROR")) {
+        faucetState.set({ kind: "RESULT_ERR", error: `Error from faucet: ${result.faucet2.send}` })
+        return;
+      }
+
+      faucetState.set({ kind: "RESULT_OK", transactionHash: result.faucet2.send })
+
+    } catch(error) {
+      // @ts-ignore
+      faucetState.set({ kind: "RESULT_ERR", error: "Faucet connection error" })
+      return;
+    }
   }
 }
-
-let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
-const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
-
-const submissionWaitTime = 20_000
 </script>
 
 <svelte:head>
@@ -99,6 +94,12 @@ const submissionWaitTime = 20_000
       <Card.Description>Official faucet for Union's native gas token.</Card.Description>
     </Card.Header>
     <Card.Content>
+      {#if $faucetState.kind === "RESULT_OK"}
+        <p>You received UNO: <a href={`https://explorer.testnet-8.union.build/union/tx/${$faucetState.transactionHash}`}><Truncate class="underline" value={$faucetState.transactionHash} type="hash"/></a></p>
+      {:else if $faucetState.kind === "RESULT_ERR"}
+        <p class="mb-4">Sorry, we encountered an error while using the faucet: {$faucetState.error}</p>
+        <Button on:click={() => faucetState.set({ kind: "IDLE"})}>Retry</Button>
+      {:else}
       <form
         action="?"
         method="POST"
@@ -116,7 +117,6 @@ const submissionWaitTime = 20_000
                     autocomplete="off"
                     autocorrect="off"
                     bind:value={address}
-                    disabled={inputState === 'locked'}
                     id="address"
                     pattern={unionAddressRegex.source}
                     placeholder="union14ea6..."
@@ -142,7 +142,7 @@ const submissionWaitTime = 20_000
                       </WalletGate>
                     </ChainsGate>
                   </div>
-                  {#if userInput}
+                  {#if address !== $cosmosStore.address }
                     <button
                       type="button"
                       on:click={resetInput}
@@ -153,19 +153,6 @@ const submissionWaitTime = 20_000
                   {/if}
                 </div>
               </div>
-              <Button
-                aria-label="Toggle address lock"
-                class="px-3"
-                on:click={onLockClick}
-                variant="ghost"
-                type="button"
-              >
-                {#if inputState === 'locked'}
-                  <LockLockedIcon class="size-4.5" />
-                {:else}
-                  <LockOpenIcon class="size-4.5" />
-                {/if}
-              </Button>
             </div>
           </div>
           <div class="flex flex-row items-center gap-4">
@@ -194,6 +181,7 @@ const submissionWaitTime = 20_000
           data-size="invisible">
           ></div>
       </form>
+      {/if}
     </Card.Content>
   </Card.Root>
   <ChainsGate let:chains>
