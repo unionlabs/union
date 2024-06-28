@@ -22,5 +22,6 @@
   },
   "faucet_denom": "muno",
   "log_format": "text",
-  "amount": 13370
+  "amount": 13370,
+  "max_request_polls": 7
 }

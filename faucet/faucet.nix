@@ -1,4 +1,4 @@
-{ self, ... }: {
+{ ... }: {
   perSystem = { self', pkgs, ... }: { };
   #   let
   #     faucet = pkgs.buildGoModule {

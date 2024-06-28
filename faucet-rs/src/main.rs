@@ -4,9 +4,8 @@ use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
 use async_sqlite::{rusqlite::params, JournalMode, Pool, PoolBuilder};
 use axum::{
-    extract::Extension,
     response::{self, IntoResponse},
-    routing::{get, post},
+    routing::get,
     Router,
 };
 use chain_utils::{

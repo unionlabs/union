@@ -3600,6 +3600,7 @@ dependencies = [
  "serde_json",
  "tendermint-rpc",
  "tokio",
+ "tonic 0.10.2",
  "tracing",
  "tracing-subscriber",
  "unionlabs",
