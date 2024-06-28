@@ -37,7 +37,10 @@ import {
   simulateContract,
   waitForTransactionReceipt,
   getConnectorClient,
-  getAccount
+  getAccount,
+
+  switchChain
+
 } from "@wagmi/core"
 import { sepolia } from "viem/chains"
 
@@ -208,6 +211,8 @@ const transfer = async () => {
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
+    // @ts-ignore
+    transferState.set({ kind: "CONFIRMING_TRANSFER" })
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
@@ -304,14 +309,14 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
-      // try {
-      //   // await walletClient.switchChain({ id: Number($fromChain.chain_id) })
-      // } catch (error) {
-      //   if (error instanceof Error) {
-      //     transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
-      //   }
-      //   return
-      // }
+      try {
+        await switchChain(config, { chainId: 11155111 })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
+        }
+        return
+      }
       transferState.set({ kind: "APPROVING_ASSET" })
     }
 
