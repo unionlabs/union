@@ -254,7 +254,7 @@
         ./e2e/e2e.nix
         ./fuzz
         ./devnet-compose/devnet-compose.nix
-        ./faucet/faucet.nix
+        ./faucet-rs/faucet.nix
         ./ucli/ucli.nix
         treefmt-nix.flakeModule
       ];

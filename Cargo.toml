@@ -73,6 +73,7 @@ members = [
   "near/near-light-client",
   "near/dummy-ibc-app",
   "near/near-ibc-tests",
+  "faucet-rs",
 ]
 
 [workspace.package]

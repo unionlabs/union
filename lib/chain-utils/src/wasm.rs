@@ -105,7 +105,7 @@ impl<Hc: ChainKeyring> ChainKeyring for Wasm<Hc> {
     }
 }
 
-impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
+impl<Hc: Chain + CosmosSdkChain> Chain for Wasm<Hc> {
     type ChainType = WasmChainType<Hc>;
 
     type SelfClientState = Hc::SelfClientState;
