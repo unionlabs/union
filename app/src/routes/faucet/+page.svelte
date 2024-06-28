@@ -2,21 +2,15 @@
 import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
 import { Label } from "$lib/components/ui/label"
-import { debounce } from "$lib/utilities/index.ts"
-import LockLockedIcon from "virtual:icons/lucide/lock"
-import { createMutation } from "@tanstack/svelte-query"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
-import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import UnoBalance from "./(components)/uno-balance.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import WalletGate from "$lib/components/wallet-gate.svelte"
-import { getUnoFromFaucet } from "$lib/mutations/faucet.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
-import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
 import type { DiscriminatedUnion } from "$lib/types.ts"
 import request from "graphql-request"
 import { writable, type Writable } from "svelte/store"
@@ -78,7 +72,7 @@ const fetchFromFaucet = async () => {
       faucetState.set({ kind: "RESULT_OK", transactionHash: result.faucet2.send })
     } catch (error) {
       // @ts-ignore
-      faucetState.set({ kind: "RESULT_ERR", error: "Faucet connection error" })
+      faucetState.set({ kind: "RESULT_ERR", error: `Faucet error: ${error}` })
       return
     }
   }
@@ -101,8 +95,9 @@ const fetchFromFaucet = async () => {
       {#if $faucetState.kind === "RESULT_OK"}
         <p>Tokens sent: <a href={`https://explorer.testnet-8.union.build/union/tx/${$faucetState.transactionHash}`}><Truncate class="underline" value={$faucetState.transactionHash} type="hash"/></a></p>
       {:else if $faucetState.kind === "RESULT_ERR"}
-        <p class="mb-4">Sorry, we encountered an error while using the faucet: {$faucetState.error}</p>
+        <p class="mb-4">Sorry, there was an error while using the faucet. Did you make sure that the address is correct?</p>
         <Button on:click={() => faucetState.set({ kind: "IDLE"})}>Retry</Button>
+        <p class="mt-4 break-words text-xs">{$faucetState.error}</p>
       {:else}
       <form
         action="?"
