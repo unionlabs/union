@@ -1,22 +1,28 @@
 use std::sync::Arc;
 
-use prost::{Message, Name};
-use serde::{Deserialize, Serialize};
+use prost::{ Message, Name };
+use serde::{ Deserialize, Serialize };
 use sha2::Digest;
-use tendermint_rpc::{Client, WebSocketClient};
-use tracing::{debug, error, info, warn};
+use tendermint_rpc::{ Client, WebSocketClient };
+use tracing::{ debug, error, info, warn };
 use unionlabs::{
     cosmos::{
         auth::base_account::BaseAccount,
         base::coin::Coin,
-        crypto::{secp256k1, AnyPubKey},
+        crypto::{ secp256k1, AnyPubKey },
         tx::{
-            auth_info::AuthInfo, fee::Fee, mode_info::ModeInfo, sign_doc::SignDoc,
-            signer_info::SignerInfo, signing::sign_info::SignMode, tx::Tx, tx_body::TxBody,
+            auth_info::AuthInfo,
+            fee::Fee,
+            mode_info::ModeInfo,
+            sign_doc::SignDoc,
+            signer_info::SignerInfo,
+            signing::sign_info::SignMode,
+            tx::Tx,
+            tx_body::TxBody,
             tx_raw::TxRaw,
         },
     },
-    encoding::{EncodeAs, Proto},
+    encoding::{ EncodeAs, Proto },
     google::protobuf::any::Any,
     hash::H256,
     ibc::core::client::height::IsHeight,
@@ -24,12 +30,13 @@ use unionlabs::{
     parse_wasm_client_type,
     signer::CosmosSigner,
     traits::Chain,
-    MaybeRecoverableError, WasmClientType,
+    MaybeRecoverableError,
+    WasmClientType,
 };
 
 use crate::{
-    cosmos_sdk::cosmos_sdk_error::{CosmosSdkError, SdkError},
-    keyring::{ConcurrentKeyring, SignerBalance},
+    cosmos_sdk::cosmos_sdk_error::{ CosmosSdkError, SdkError },
+    keyring::{ ConcurrentKeyring, SignerBalance },
 };
 
 pub type CosmosKeyring = ConcurrentKeyring<String, CosmosSigner>;
@@ -82,25 +89,21 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             );
 
             return Some(*ty);
-        };
+        }
 
         info!(
             checksum = %checksum.to_string_unprefixed(),
             "cache miss for checksum"
         );
 
-        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: checksum.to_string_unprefixed(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .data;
+        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient
+            ::connect(self.grpc_url().clone()).await
+            .unwrap()
+            .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
+                checksum: checksum.to_string_unprefixed(),
+            }).await
+            .unwrap()
+            .into_inner().data;
 
         match parse_wasm_client_type(bz) {
             Ok(Some(ty)) => {
@@ -128,67 +131,55 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
     }
 
     async fn checksum_of_client_id(&self, client_id: Self::ClientId) -> H256 {
-        let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: client_id.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .client_state
-        .unwrap();
+        let client_state = protos::ibc::core::client::v1::query_client::QueryClient
+            ::connect(self.grpc_url().clone()).await
+            .unwrap()
+            .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+                client_id: client_id.to_string(),
+            }).await
+            .unwrap()
+            .into_inner()
+            .client_state.unwrap();
 
         assert!(
             client_state.type_url == protos::ibc::lightclients::wasm::v1::ClientState::type_url()
         );
 
         // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
-        protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)
+        protos::ibc::lightclients::wasm::v1::ClientState
+            ::decode(&*client_state.value)
             .unwrap()
-            .checksum
-            .try_into()
+            .checksum.try_into()
             .unwrap()
     }
 
     async fn client_id_of_connection(&self, connection_id: ConnectionId) -> Self::ClientId {
-        protos::ibc::core::connection::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
-            connection_id: connection_id.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .connection
-        .unwrap()
-        .client_id
-        .parse()
-        .unwrap()
+        protos::ibc::core::connection::v1::query_client::QueryClient
+            ::connect(self.grpc_url().clone()).await
+            .unwrap()
+            .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
+                connection_id: connection_id.to_string(),
+            }).await
+            .unwrap()
+            .into_inner()
+            .connection.unwrap()
+            .client_id.parse()
+            .unwrap()
     }
 
     async fn account_info(&self, account: &str) -> BaseAccount {
         debug!(%account, "fetching account");
-        let Any(account) =
-            protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(self.grpc_url())
-                .await
-                .unwrap()
-                .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
-                    address: account.to_string(),
-                })
-                .await
-                .unwrap()
-                .into_inner()
-                .account
-                .unwrap()
-                .try_into()
-                .unwrap();
+        let Any(account) = protos::cosmos::auth::v1beta1::query_client::QueryClient
+            ::connect(self.grpc_url()).await
+            .unwrap()
+            .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
+                address: account.to_string(),
+            }).await
+            .unwrap()
+            .into_inner()
+            .account.unwrap()
+            .try_into()
+            .unwrap();
 
         account
     }
@@ -199,70 +190,69 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
     async fn broadcast_tx_commit(
         &self,
         signer: &CosmosSigner,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone
     ) -> Result<H256, BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
         let account = self.account_info(&signer.to_string()).await;
 
-        let mut client = tx::v1beta1::service_client::ServiceClient::connect(self.grpc_url())
-            .await
+        let mut client = tx::v1beta1::service_client::ServiceClient
+            ::connect(self.grpc_url()).await
             .unwrap();
 
         let tx_body = TxBody {
             messages: messages.clone().into_iter().collect(),
             // TODO(benluelo): What do we want to use as our memo?
-            memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+            memo: String::new(),
             timeout_height: 0,
             extension_options: vec![],
             non_critical_extension_options: vec![],
         };
 
         let mut auth_info = AuthInfo {
-            signer_infos: [SignerInfo {
-                public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: signer.public_key(),
-                })),
-                mode_info: ModeInfo::Single {
-                    mode: SignMode::Direct,
+            signer_infos: [
+                SignerInfo {
+                    public_key: Some(
+                        AnyPubKey::Secp256k1(secp256k1::PubKey {
+                            key: signer.public_key(),
+                        })
+                    ),
+                    mode_info: ModeInfo::Single {
+                        mode: SignMode::Direct,
+                    },
+                    sequence: account.sequence,
                 },
-                sequence: account.sequence,
-            }]
-            .to_vec(),
+            ].to_vec(),
             fee: self.gas_config().max_fee().clone(),
         };
 
         let simulation_signature = signer
             .try_sign(
-                &SignDoc {
+                &(SignDoc {
                     body_bytes: tx_body.clone().encode_as::<Proto>(),
                     auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
                     chain_id: self.chain_id().to_string(),
                     account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
+                }).encode_as::<Proto>()
             )
             .expect("signing failed")
             .to_vec();
 
         let simulation_gas_info = {
-            let result = client
-                .simulate(tx::v1beta1::SimulateRequest {
-                    tx_bytes: Tx {
-                        body: tx_body.clone(),
-                        auth_info: auth_info.clone(),
-                        signatures: [simulation_signature.clone()].to_vec(),
-                    }
-                    .encode_as::<Proto>(),
-                    ..Default::default()
-                })
-                .await;
+            let result = client.simulate(tx::v1beta1::SimulateRequest {
+                tx_bytes: (Tx {
+                    body: tx_body.clone(),
+                    auth_info: auth_info.clone(),
+                    signatures: [simulation_signature.clone()].to_vec(),
+                }).encode_as::<Proto>(),
+                ..Default::default()
+            }).await;
 
             match result {
-                Ok(ok) => ok
-                    .into_inner()
-                    .gas_info
-                    .expect("gas info is present on successful simulation result"),
+                Ok(ok) =>
+                    ok
+                        .into_inner()
+                        .gas_info.expect("gas info is present on successful simulation result"),
                 Err(err) => {
                     error!(error = %err.message(), "tx simulation failed");
                     return Err(BroadcastTxCommitError::SimulateTx(err.message().to_owned()));
@@ -286,52 +276,39 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         // re-sign the new auth info with the simulated gas
         let signature = signer
             .try_sign(
-                &SignDoc {
+                &(SignDoc {
                     body_bytes: tx_body.clone().encode_as::<Proto>(),
                     auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
                     chain_id: self.chain_id().to_string(),
                     account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
+                }).encode_as::<Proto>()
             )
             .expect("signing failed")
             .to_vec();
 
-        let tx_raw_bytes = TxRaw {
+        let tx_raw_bytes = (TxRaw {
             body_bytes: tx_body.clone().encode_as::<Proto>(),
             auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
             signatures: [signature].to_vec(),
-        }
-        .encode_as::<Proto>();
+        }).encode_as::<Proto>();
 
-        let tx_hash_normalized: H256 = sha2::Sha256::new()
+        let tx_hash_normalized: H256 = sha2::Sha256
+            ::new()
             .chain_update(&tx_raw_bytes)
             .finalize()
             .into();
         let tx_hash = hex::encode_upper(tx_hash_normalized);
 
-        if self
-            .tm_client()
-            .tx(tx_hash.parse().unwrap(), false)
-            .await
-            .is_ok()
-        {
+        if self.tm_client().tx(tx_hash.parse().unwrap(), false).await.is_ok() {
             info!(%tx_hash, "tx already included");
             return Ok(hex::decode(tx_hash).unwrap().try_into().unwrap());
         }
 
-        let response_result = self
-            .tm_client()
-            .broadcast_tx_sync(tx_raw_bytes.clone())
-            .await;
+        let response_result = self.tm_client().broadcast_tx_sync(tx_raw_bytes.clone()).await;
 
         let response = response_result.unwrap();
 
-        assert_eq!(
-            tx_hash,
-            response.hash.to_string(),
-            "tx hash calculated incorrectly"
-        );
+        assert_eq!(tx_hash, response.hash.to_string(), "tx hash calculated incorrectly");
 
         debug!(%tx_hash);
 
@@ -340,14 +317,14 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         if response.code.is_err() {
             let value = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
                 &response.codespace,
-                response.code.value(),
+                response.code.value()
             );
 
             error!("cosmos tx failed: {}", value);
 
             // TODO: Return an error here
             return Ok(tx_hash_normalized);
-        };
+        }
 
         let mut target_height = self.query_latest_height().await.unwrap().increment();
         let mut i = 0;
@@ -365,7 +342,9 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             debug!(?tx_inclusion);
 
             match tx_inclusion {
-                Ok(_) => break Ok(tx_hash_normalized),
+                Ok(_) => {
+                    break Ok(tx_hash_normalized);
+                }
                 Err(err) if i > 5 => {
                     warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
@@ -384,28 +363,31 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         signer: &CosmosSigner,
         account: &BaseAccount,
-        fee: Fee,
+        fee: Fee
     ) -> (TxBody, AuthInfo) {
         (
             TxBody {
                 messages: messages.clone().into_iter().collect(),
                 // TODO(benluelo): What do we want to use as our memo?
-                memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+                memo: String::new(),
                 timeout_height: 0,
                 extension_options: vec![],
                 non_critical_extension_options: vec![],
             },
             AuthInfo {
-                signer_infos: [SignerInfo {
-                    public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                        key: signer.public_key(),
-                    })),
-                    mode_info: ModeInfo::Single {
-                        mode: SignMode::Direct,
+                signer_infos: [
+                    SignerInfo {
+                        public_key: Some(
+                            AnyPubKey::Secp256k1(secp256k1::PubKey {
+                                key: signer.public_key(),
+                            })
+                        ),
+                        mode_info: ModeInfo::Single {
+                            mode: SignMode::Direct,
+                        },
+                        sequence: account.sequence,
                     },
-                    sequence: account.sequence,
-                }]
-                .to_vec(),
+                ].to_vec(),
                 fee,
             },
         )
@@ -415,12 +397,11 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 pub async fn fetch_balances(
     keyring: &CosmosKeyring,
     gas_denom: String,
-    grpc_url: String,
+    grpc_url: String
 ) -> Vec<SignerBalance<String>> {
-    let mut query_client =
-        protos::cosmos::bank::v1beta1::query_client::QueryClient::connect(grpc_url.clone())
-            .await
-            .unwrap();
+    let mut query_client = protos::cosmos::bank::v1beta1::query_client::QueryClient
+        ::connect(grpc_url.clone()).await
+        .unwrap();
 
     // couldn't get fancy stream stuff to work so this will have to do
     let mut out_vec = vec![];
@@ -430,12 +411,10 @@ pub async fn fetch_balances(
             .balance(protos::cosmos::bank::v1beta1::QueryBalanceRequest {
                 address: address.clone(),
                 denom: gas_denom.clone(),
-            })
-            .await
+            }).await
             .unwrap()
             .into_inner()
-            .balance
-            .unwrap()
+            .balance.unwrap()
             .try_into()
             .unwrap();
 
@@ -451,23 +430,22 @@ pub async fn fetch_balances(
 }
 
 fn u128_mul_f64(u: u128, f: f64) -> u128 {
-    (num_rational::BigRational::from_integer(u.into())
-        * num_rational::BigRational::from_float(f).expect("gas multiplier is finite"))
-    .to_integer()
-    .try_into()
-    .expect("gas multiplier * amount overflow")
+    (
+        num_rational::BigRational::from_integer(u.into()) *
+        num_rational::BigRational::from_float(f).expect("gas multiplier is finite")
+    )
+        .to_integer()
+        .try_into()
+        .expect("gas multiplier * amount overflow")
 }
 
 impl<T: CosmosSdkChain> CosmosSdkChainExt for T {}
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum BroadcastTxCommitError {
-    #[error("tx was not included")]
-    Inclusion(#[from] tendermint_rpc::Error),
-    #[error("tx failed: {0:?}")]
-    Tx(CosmosSdkError),
-    #[error("tx simulation failed: {0:?}")]
-    SimulateTx(String),
+    #[error("tx was not included")] Inclusion(#[from] tendermint_rpc::Error),
+    #[error("tx failed: {0:?}")] Tx(CosmosSdkError),
+    #[error("tx simulation failed: {0:?}")] SimulateTx(String),
 }
 
 impl MaybeRecoverableError for BroadcastTxCommitError {
@@ -475,13 +453,14 @@ impl MaybeRecoverableError for BroadcastTxCommitError {
         match self {
             // tx wasn't included, retry unconditionally
             Self::Inclusion(_) => true,
-            Self::Tx(code) => matches!(
-                code,
-                CosmosSdkError::SdkError(SdkError::ErrTxInMempoolCache)
-                    | CosmosSdkError::SdkError(SdkError::ErrMempoolIsFull)
-                    | CosmosSdkError::SdkError(SdkError::ErrTxTimeoutHeight)
-                    | CosmosSdkError::SdkError(SdkError::ErrWrongSequence)
-            ),
+            Self::Tx(code) =>
+                matches!(
+                    code,
+                    CosmosSdkError::SdkError(SdkError::ErrTxInMempoolCache) |
+                        CosmosSdkError::SdkError(SdkError::ErrMempoolIsFull) |
+                        CosmosSdkError::SdkError(SdkError::ErrTxTimeoutHeight) |
+                        CosmosSdkError::SdkError(SdkError::ErrWrongSequence)
+                ),
             Self::SimulateTx(_) => false,
         }
     }
@@ -493,9 +472,13 @@ pub mod cosmos_sdk_error {
         (
             $(
                 #[err(name = $Module:ident, codespace = $codespace:literal)]
-                var (
+                var(
                     $(
-                    	$Err:ident = errorsmod.Register($ModuleName_:ident, $code:literal, $msg:literal)
+                        $Err:ident = errorsmod.Register(
+                            $ModuleName_:ident,
+                            $code:literal,
+                            $msg:literal
+                        )
                     )+
                 )
             )+
@@ -554,7 +537,7 @@ pub mod cosmos_sdk_error {
                     )+
                 }
             )+
-        }
+        };
     }
 
     cosmos_sdk_errors! {

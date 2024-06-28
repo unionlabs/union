@@ -18,8 +18,8 @@ use unionlabs::{
 use crate::{
     ethereum::{
         self, balance_of_signers, Ethereum, EthereumChain, EthereumConsensusChain,
-        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
-        ReadWrite, Readonly,
+        EthereumExecutionRpcs, EthereumInitError, EthereumKeyring, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite, Readonly,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
@@ -95,7 +95,7 @@ impl ChainKeyring for Scroll {
     }
 }
 
-impl EthereumChain for Scroll {
+impl EthereumExecutionRpcs for Scroll {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }
@@ -127,7 +127,9 @@ impl EthereumConsensusChain for Scroll {
         let proof = match <[_; 1]>::try_from(proof.storage_proof) {
             Ok([proof]) => proof,
             Err(invalid) => {
-                panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+                panic!(
+                    "received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`"
+                );
             }
         };
 

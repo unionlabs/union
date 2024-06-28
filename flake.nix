@@ -256,6 +256,7 @@
         ./devnet-compose/devnet-compose.nix
         ./faucet/faucet.nix
         ./ucli/ucli.nix
+        ./sentinel/sentinel.nix
         treefmt-nix.flakeModule
       ];
 

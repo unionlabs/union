@@ -2,7 +2,7 @@ use std::{collections::VecDeque, marker::PhantomData};
 
 use chain_utils::{
     berachain::Berachain,
-    ethereum::{EthereumChainExt, EthereumConsensusChain, IbcHandlerExt},
+    ethereum::{EthereumConsensusChain, EthereumExecutionRpcsExt, IbcHandlerExt},
 };
 use enumorph::Enumorph;
 use ethers::providers::Middleware;

@@ -52,13 +52,16 @@ pub type EthereumSignerMiddleware =
 
 // NOTE: ClientType bound is temporary until I figure out a better way to deal with client types
 /// A chain running the EVM and our solidity IBC stack. This can be any Ethereum L1 or L2, or a chain running the EVM in a different environment (such as Berachain).
-pub trait EthereumChain: Chain<IbcStateEncoding = EthAbi, ClientType = String> {
+pub trait EthereumExecutionRpcs {
     /// The provider connected to this chain's [JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/).
     fn provider(&self) -> Arc<Provider<Ws>>;
 
     /// The address of the [`IBCHandler`] smart contract deployed natively on this chain.
     fn ibc_handler_address(&self) -> H160;
 }
+
+pub trait EthereumChain =
+    EthereumExecutionRpcs + Chain<IbcStateEncoding = EthAbi, ClientType = String>;
 
 /// An Ethereum-based chain. This can be any chain that is based off of and settles on Ethereum (i.e. Ethereum mainnet/ Sepolia, L2s such as Scroll).
 pub trait EthereumConsensusChain: EthereumChain<StateProof = StorageProof> {
@@ -74,17 +77,17 @@ pub trait EthereumConsensusChain: EthereumChain<StateProof = StorageProof> {
     ) -> impl Future<Output = StorageProof>;
 }
 
-#[diagnostic::on_unimplemented(message = "{Self} does not implement `EthereumChain`")]
-pub trait EthereumChainExt: EthereumChain {
+#[diagnostic::on_unimplemented(message = "{Self} does not implement `EthereumExecutionRpcs`")]
+pub trait EthereumExecutionRpcsExt: EthereumExecutionRpcs {
     /// Convenience method to construct an [`IBCHandler`] instance for this chain.
     fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
         IBCHandler::new(self.ibc_handler_address(), self.provider())
     }
 }
 
-impl<T: EthereumChain> EthereumChainExt for T {}
+impl<T: EthereumExecutionRpcs> EthereumExecutionRpcsExt for T {}
 
-impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
+impl<C: ChainSpec, S: EthereumSignersConfig> EthereumExecutionRpcs for Ethereum<C, S> {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }

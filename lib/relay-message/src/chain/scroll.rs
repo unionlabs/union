@@ -4,7 +4,7 @@ use std::{
 };
 
 use chain_utils::{
-    ethereum::{EthereumChain, EthereumChainExt, EthereumConsensusChain, IbcHandlerExt},
+    ethereum::{EthereumChain, EthereumConsensusChain, EthereumExecutionRpcsExt, IbcHandlerExt},
     scroll::Scroll,
 };
 use ethers::{abi::AbiDecode, providers::Middleware};
