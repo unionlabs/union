@@ -1,5 +1,4 @@
 <script lang="ts">
-import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { unionAddressRegex } from "./schema.ts"
 import { Label } from "$lib/components/ui/label"
@@ -18,85 +17,67 @@ import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
+import type { DiscriminatedUnion } from "$lib/types.ts" 
+import request from "graphql-request"
+import { writable, type Writable } from "svelte/store";
+import { URLS } from "$lib/constants/index.ts";
+import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts";
+import Truncate from "$lib/components/truncate.svelte";
 
-let userInput = false
+type FaucetState = DiscriminatedUnion<
+  "kind",
+  {
+    IDLE: {}
+    REQUESTING_TOKEN: {}
+    SUBMITTING: { captchaToken: string }
+    RESULT_OK: { transactionHash: string }
+    RESULT_ERR: { error: string }
+  }
+>
+
 let address: string = $cosmosStore.address ?? ""
 
-$: if (!userInput && $cosmosStore.address !== address) {
-  address = $cosmosStore.address ?? ""
-}
-
-let opacity = 0
-let focused = false
-let input: HTMLInputElement
-let position = { x: 0, y: 0 }
-
-const handleFocus = () => ([focused, opacity] = [true, 1])
-const handleBlur = () => ([focused, opacity] = [false, 0])
-const handleMouseEnter = () => (opacity = 1)
-const handleMouseLeave = () => (opacity = 0)
-
-function handleMouseMove(event: MouseEvent) {
-  if (!input || focused) return
-  const rect = input.getBoundingClientRect()
-  position = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-}
-
-const handleInput = (event: Event) => {
-  address = (event.target as HTMLInputElement).value
-  userInput = true
-}
-
 const resetInput = () => {
-  userInput = false
   address = $cosmosStore.address ?? ""
 }
 
-let submissionStatus: "idle" | "submitting" | "submitted" | "error" = "idle"
-let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unlocked"
-const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
+let faucetState: Writable<FaucetState> = writable({ kind: "IDLE" });
 
-const mutation = createMutation({
-  mutationKey: ["faucetRequest"],
-  mutationFn: async () => {
+const fetchFromFaucet = async () => {
+  if ($faucetState.kind === "IDLE" || $faucetState.kind === "REQUESTING_TOKEN") {
+    faucetState.set({ kind: "REQUESTING_TOKEN" })
+
     if (!window?.__google_recaptcha_client) return console.error("Recaptcha not loaded")
 
-    const token = await window.grecaptcha.execute("6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow", {
+    const captchaToken = await window.grecaptcha.execute("6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow", {
       action: "submit"
     })
-    console.info("Submitting faucet request..")
-    return getUnoFromFaucet({ address, captchaToken: token })
-  },
-  onError: error => {
-    console.error("Error during the faucet request:", error)
-    submissionStatus = "error"
-    toast.error("Faucet request failed.")
-  },
-  onSuccess: () => {
-    toast.success("Faucet request successful!")
+
+    faucetState.set({ kind: "SUBMITTING", captchaToken})
   }
-})
 
-const debouncedSubmit = debounce(() => {
-  if (!isValidCosmosAddress(address)) {
-    toast.error("Invalid address")
-    return
+  if ($faucetState.kind === "SUBMITTING") {
+
+    try {
+      const result = await request(URLS.GRAPHQL, faucetUnoMutation2, { address, captchaToken: $faucetState.captchaToken });
+      if (result.faucet2 === null) {
+        faucetState.set({ kind: "RESULT_ERR", error: "Empty faucet response" })
+        return;
+      }
+
+      if (result.faucet2.send.startsWith("ERROR")) {
+        faucetState.set({ kind: "RESULT_ERR", error: `Error from faucet: ${result.faucet2.send}` })
+        return;
+      }
+
+      faucetState.set({ kind: "RESULT_OK", transactionHash: result.faucet2.send })
+
+    } catch(error) {
+      // @ts-ignore
+      faucetState.set({ kind: "RESULT_ERR", error: "Faucet connection error" })
+      return;
+    }
   }
-  $mutation.mutate()
-  submissionStatus = "submitted"
-  toast.success("Faucet request submitted!")
-}, 5_500)
-
-const submissionWaitTime = 2_000 // 20 seconds
-let submissionDisabled = false
-
-$: console.info("submissionStatus:", submissionDisabled)
-const handleSubmit = (event: MouseEvent | SubmitEvent) => {
-  event.preventDefault()
-  if (!address) return toast.error("No address")
-  submissionStatus = "submitting"
-  toast.loading("Submitting faucet request..")
-  debouncedSubmit()
 }
 </script>
 
@@ -109,19 +90,24 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
 <main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
-      <Card.Title>UNO Faucet</Card.Title>
+      <Card.Title>UNO Drip Faucet</Card.Title>
       <Card.Description>Official faucet for Union's native gas token.</Card.Description>
     </Card.Header>
     <Card.Content>
+      {#if $faucetState.kind === "RESULT_OK"}
+        <p>Tokens sent: <a href={`https://explorer.testnet-8.union.build/union/tx/${$faucetState.transactionHash}`}><Truncate class="underline" value={$faucetState.transactionHash} type="hash"/></a></p>
+      {:else if $faucetState.kind === "RESULT_ERR"}
+        <p class="mb-4">Sorry, we encountered an error while using the faucet: {$faucetState.error}</p>
+        <Button on:click={() => faucetState.set({ kind: "IDLE"})}>Retry</Button>
+      {:else}
       <form
         action="?"
         method="POST"
-        class="space-y-8"
+        class="flex flex-col w-full gap-4"
         name="faucet-form"
-        on:submit|preventDefault={handleSubmit}
+        on:submit|preventDefault={fetchFromFaucet}
       >
-        <div class="relative flex flex-col gap-4">
-          <div class="grid w-full items-center gap-2 mb-4">
+          <div>
             <Label for="address">Address</Label>
             <div class="flex items-start gap-2">
               <div class="w-full">
@@ -131,14 +117,7 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                     autocomplete="off"
                     autocorrect="off"
                     bind:value={address}
-                    disabled={inputState === 'locked'}
                     id="address"
-                    on:blur={handleBlur}
-                    on:focus={handleFocus}
-                    on:input={handleInput}
-                    on:mouseenter={handleMouseEnter}
-                    on:mouseleave={handleMouseLeave}
-                    on:mousemove={handleMouseMove}
                     pattern={unionAddressRegex.source}
                     placeholder="union14ea6..."
                     required={true}
@@ -163,7 +142,7 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                       </WalletGate>
                     </ChainsGate>
                   </div>
-                  {#if userInput}
+                  {#if address !== $cosmosStore.address }
                     <button
                       type="button"
                       on:click={resetInput}
@@ -174,47 +153,27 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
                   {/if}
                 </div>
               </div>
-              <Button
-                aria-label="Toggle address lock"
-                class="px-3"
-                on:click={onLockClick}
-                variant="ghost"
-                type="button"
-              >
-                {#if inputState === 'locked'}
-                  <LockLockedIcon class="size-4.5" />
-                {:else}
-                  <LockOpenIcon class="size-4.5" />
-                {/if}
-              </Button>
             </div>
           </div>
-          <div class="flex flex-col gap-4 sm:flex-row">
+          <div class="flex flex-row items-center gap-4">
             <Button
               type="submit"
               on:click={event => {
                 event.preventDefault()
-                submissionDisabled = true
-                handleSubmit(event)
-                setTimeout(() => {
-                  submissionDisabled = false
-                }, submissionWaitTime)
-              }}
-              disabled={
-              submissionDisabled ||
-              !address
-              }
-              class={cn('w-full sm:w-fit disabled:cursor-not-allowed disabled:opacity-50')}
+                fetchFromFaucet()
+               }}
+              disabled={$faucetState.kind !== "IDLE"}
+              class={cn('min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50')}
             >
               Submit
-              {#if submissionStatus === 'submitting'}
+              {#if $faucetState.kind !== "IDLE"}
                 <span class="ml-2">
                   <SpinnerSVG className="w-4 h-4" />
                 </span>
               {/if}
             </Button>
+            <div class="text-[10px]">This faucet is protected by reCAPTCHA and the Google <a class="underline" href="https://policies.google.com/privacy">Privacy Policy</a> and <a class="underline" href="https://policies.google.com/terms">Terms of Service</a> apply.</div>
           </div>
-        </div>
         <div
           class="g-recaptcha sr-only"
           data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
@@ -222,9 +181,11 @@ const handleSubmit = (event: MouseEvent | SubmitEvent) => {
           data-size="invisible">
           ></div>
       </form>
+      {/if}
     </Card.Content>
   </Card.Root>
   <ChainsGate let:chains>
     <ExternalFaucets {chains} />
   </ChainsGate>
 </main>
+
