@@ -66,7 +66,7 @@ const cancel = () => {
           <p class="text-xs text-muted-foreground"><Truncate value={trace.tx} type="hash"/></p>
         {/if}
       {:else if step.description}
-          <div class="font-normal break-words">{step.description}</div>      
+          <div class="font-normal break-words">{step.description}</div>
       {/if}
     </div>
   </li>

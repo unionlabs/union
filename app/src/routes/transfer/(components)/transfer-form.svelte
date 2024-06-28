@@ -853,7 +853,7 @@ const resetInput = () => {
         {#if $fromChain}
           <Stepper steps={stepperSteps}
                    on:cancel={() => transferState.set({kind: "PRE_TRANSFER"})}
-                   nRetry={() => {
+                   onRetry={() => {
         transferState.update(ts => {
           // @ts-ignore
           ts.error = undefined;
