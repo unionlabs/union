@@ -64,10 +64,10 @@ function isSafari(): boolean {
   const userAgent = navigator.userAgent.toLowerCase()
   const iOS =
     userAgent.match(/Macintosh/i) || userAgent.match(/iPad/i) || userAgent.match(/iPhone/i)
-  const webket = userAgent.match(/WebKit/i)
+  const webkit = userAgent.match(/WebKit/i)
   const iOSSafari =
     iOS &&
-    webket &&
+    webkit &&
     !userAgent.match(/CriOS/i) &&
     !userAgent.match(/EdgiOS/i) &&
     !userAgent.match(/Chrome/i) &&

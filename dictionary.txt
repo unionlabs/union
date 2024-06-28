@@ -49,6 +49,7 @@ Disket
 Distinctio
 Djuric
 ECTO
+Edgi
 EigenLayer
 F1bonacc1
 FLUSHCOMPLETE
@@ -1197,6 +1198,7 @@ wasmtypes
 wasmvm
 wasmvmstatic
 wasmvmtypes
+webkit
 webp
 webpki
 wght
