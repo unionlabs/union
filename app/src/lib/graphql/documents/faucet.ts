@@ -5,3 +5,10 @@ export const faucetUnoMutation = /* GraphQL */ `
     }
   }
 `
+export const faucetUnoMutation2 = /* GraphQL */ `
+  mutation FaucetUnoMutation2($address: String!, $captchaToken: String!) {
+    faucet2 {
+      send(toAddress: $address, captchaToken: $captchaToken)
+    }
+  }
+`
