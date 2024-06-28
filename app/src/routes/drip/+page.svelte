@@ -95,7 +95,7 @@ const fetchFromFaucet = async () => {
     </Card.Header>
     <Card.Content>
       {#if $faucetState.kind === "RESULT_OK"}
-        <p>You received UNO: <a href={`https://explorer.testnet-8.union.build/union/tx/${$faucetState.transactionHash}`}><Truncate class="underline" value={$faucetState.transactionHash} type="hash"/></a></p>
+        <p>Tokens sent: <a href={`https://explorer.testnet-8.union.build/union/tx/${$faucetState.transactionHash}`}><Truncate class="underline" value={$faucetState.transactionHash} type="hash"/></a></p>
       {:else if $faucetState.kind === "RESULT_ERR"}
         <p class="mb-4">Sorry, we encountered an error while using the faucet: {$faucetState.error}</p>
         <Button on:click={() => faucetState.set({ kind: "IDLE"})}>Retry</Button>
