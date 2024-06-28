@@ -57,6 +57,10 @@ input Int_comparison_exp {
 
 scalar Long
 
+type Mutation {
+  send(captchaToken: String!, toAddress: String!): String!
+}
+
 input SendInput {
   captchaToken: String
   toAddress: Address!
@@ -145,6 +149,10 @@ enum cursor_ordering {
   DESC
 }
 
+type faucet2Query {
+  howdy: String!
+}
+
 type faucetMutation {
   send(input: SendInput!): Void
 }
@@ -195,6 +203,7 @@ input jsonb_comparison_exp {
 """mutation root"""
 type mutation_root {
   faucet: faucetMutation
+  faucet2: Mutation
 }
 
 scalar numeric
@@ -237,6 +246,7 @@ enum order_by {
 
 type query_root {
   faucet: faucetQuery
+  faucet2: faucet2Query
 
   """
   fetch data from the table: "v0.assets"
@@ -449,6 +459,9 @@ type query_root {
     """filter the rows returned"""
     where: v0_faucets_bool_exp
   ): [v0_faucets!]!
+
+  """fetch data from the table: "v0.faucets" using primary key columns"""
+  v0_faucets_by_pk(chain_id: Int!, url: String!): v0_faucets
 
   """
   execute function "v0.get_transfer_forwards" which returns "v0.transfer_forwards"
@@ -975,6 +988,9 @@ type subscription_root {
     """filter the rows returned"""
     where: v0_faucets_bool_exp
   ): [v0_faucets!]!
+
+  """fetch data from the table: "v0.faucets" using primary key columns"""
+  v0_faucets_by_pk(chain_id: Int!, url: String!): v0_faucets
 
   """
   fetch data from the table in a streaming manner: "v0.faucets"
@@ -2296,10 +2312,15 @@ type v0_channels_variance_fields {
 columns and relationships of "v0.connection_map"
 """
 type v0_connection_map {
+  """An object relationship"""
+  destination_chain: v0_chains
   from_chain_id: String
   from_client_id: String
   from_connection_id: String
   from_id: Int
+
+  """An object relationship"""
+  source_chain: v0_chains
   status: String
   to_chain_id: String
   to_client_id: String
@@ -2314,10 +2335,12 @@ input v0_connection_map_bool_exp {
   _and: [v0_connection_map_bool_exp!]
   _not: v0_connection_map_bool_exp
   _or: [v0_connection_map_bool_exp!]
+  destination_chain: v0_chains_bool_exp
   from_chain_id: String_comparison_exp
   from_client_id: String_comparison_exp
   from_connection_id: String_comparison_exp
   from_id: Int_comparison_exp
+  source_chain: v0_chains_bool_exp
   status: String_comparison_exp
   to_chain_id: String_comparison_exp
   to_client_id: String_comparison_exp
@@ -2327,10 +2350,12 @@ input v0_connection_map_bool_exp {
 
 """Ordering options when selecting data from "v0.connection_map"."""
 input v0_connection_map_order_by {
+  destination_chain: v0_chains_order_by
   from_chain_id: order_by
   from_client_id: order_by
   from_connection_id: order_by
   from_id: order_by
+  source_chain: v0_chains_order_by
   status: order_by
   to_chain_id: order_by
   to_client_id: order_by
