@@ -2843,6 +2843,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
+name = "drip"
+version = "0.1.0"
+dependencies = [
+ "async-graphql",
+ "async-graphql-axum",
+ "async-sqlite",
+ "axum 0.7.5",
+ "chain-utils",
+ "clap 4.5.4",
+ "dashmap",
+ "prost 0.12.6",
+ "protos",
+ "recaptcha-verify",
+ "serde",
+ "serde_json",
+ "subtle-encoding",
+ "tendermint-rpc",
+ "tokio",
+ "tonic 0.10.2",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "dummy-ibc-app"
 version = "0.1.0"
 dependencies = [
@@ -3581,31 +3606,6 @@ name = "fastrand"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
-
-[[package]]
-name = "faucet-rs"
-version = "0.1.0"
-dependencies = [
- "async-graphql",
- "async-graphql-axum",
- "async-sqlite",
- "axum 0.7.5",
- "chain-utils",
- "clap 4.5.4",
- "dashmap",
- "prost 0.12.6",
- "protos",
- "recaptcha-verify",
- "serde",
- "serde_json",
- "subtle-encoding",
- "tendermint-rpc",
- "tokio",
- "tonic 0.10.2",
- "tracing",
- "tracing-subscriber",
- "unionlabs",
-]
 
 [[package]]
 name = "fetch-scroll-codec-test-vectors"

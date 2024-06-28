@@ -1,23 +1,23 @@
 { self, ... }: {
   perSystem = { self', pkgs, system, config, crane, stdenv, dbg, mkCi, ... }:
     let
-      faucet = crane.buildWorkspaceMember {
-        crateDirFromRoot = "faucet-rs";
+      drip = crane.buildWorkspaceMember {
+        crateDirFromRoot = "drip";
       };
     in
     {
-      packages.faucet = faucet.packages.faucet-rs;
+      packages.drip = drip.packages.drip;
     };
 
-  flake.nixosModules.faucet = { lib, pkgs, config, ... }:
+  flake.nixosModules.drip = { lib, pkgs, config, ... }:
     with lib;
-    let cfg = config.services.faucet;
+    let cfg = config.services.drip;
     in {
-      options.services.faucet = {
-        enable = mkEnableOption "Faucet service";
+      options.services.drip = {
+        enable = mkEnableOption "drip service";
         package = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.faucet;
+          default = self.packages.${pkgs.system}.drip;
         };
         config = mkOption {
           type = types.attrs;
@@ -30,22 +30,22 @@
       };
 
       config = mkIf cfg.enable {
-        systemd.services.faucet =
+        systemd.services.drip =
           let
-            faucet-systemd-script = pkgs.writeShellApplication {
-              name = "faucet-systemd";
+            drip-systemd-script = pkgs.writeShellApplication {
+              name = "drip-systemd";
               runtimeInputs = [ pkgs.coreutils cfg.package ];
               text = ''
-                ${pkgs.lib.getExe cfg.package} -c '${builtins.toFile "faucet-config.json" (builtins.toJSON cfg.config)}'
+                ${pkgs.lib.getExe cfg.package} -c '${builtins.toFile "drip-config.json" (builtins.toJSON cfg.config)}'
               '';
             };
           in
           {
             wantedBy = [ "multi-user.target" ];
-            description = "Faucet";
+            description = "drip";
             serviceConfig = {
               Type = "simple";
-              ExecStart = pkgs.lib.getExe faucet-systemd-script;
+              ExecStart = pkgs.lib.getExe drip-systemd-script;
               Restart = mkForce "always";
             };
             environment = {

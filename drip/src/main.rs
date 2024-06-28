@@ -67,7 +67,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let faucet = FaucetClient {
+    let drip = DripClient {
         cosmos: Cosmos::new(config.chain)
             .await
             .expect("unable to create cosmos client"),
@@ -77,7 +77,7 @@ async fn main() {
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(pool.clone())
         .data(MaxRequestPolls(config.max_request_polls))
-        .data(Bech32Prefix(faucet.cosmos.bech32_prefix.clone()))
+        .data(Bech32Prefix(drip.cosmos.bech32_prefix.clone()))
         .data(secret)
         .finish();
 
@@ -85,7 +85,7 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             let handle = tokio::spawn({
-                let faucet = faucet.clone();
+                let drip = drip.clone();
                 let pool = pool.clone();
                 async move {
                     loop {
@@ -122,7 +122,7 @@ async fn main() {
 
                         let mut i = 0;
                         let result = loop {
-                            let send_res = faucet
+                            let send_res = drip
                                 .send(
                                     addresses
                                         .clone()
@@ -227,12 +227,12 @@ pub struct MaxRequestPolls(pub u32);
 pub struct Bech32Prefix(pub String);
 
 #[derive(Clone)]
-struct FaucetClient {
+struct DripClient {
     cosmos: Cosmos,
     faucet_denom: String,
 }
 
-impl FaucetClient {
+impl DripClient {
     /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
     async fn send(&self, to_send: Vec<(String, u64)>) -> Result<H256, BroadcastTxCommitError> {
         self.cosmos
