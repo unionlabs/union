@@ -38,9 +38,7 @@ import {
   waitForTransactionReceipt,
   getConnectorClient,
   getAccount,
-
   switchChain
-
 } from "@wagmi/core"
 import { sepolia } from "viem/chains"
 
