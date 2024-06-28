@@ -513,22 +513,23 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
-      stateToStatus(
-        $transferState,
-        "ADDING_CHAIN",
-        `Add ${$fromChain.display_name}`,
-        `Added ${$fromChain.display_name}`,
-        ts => ({
-          status: "ERROR",
-          title: `Error adding ${$fromChain.display_name}`,
-          description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
-        }),
-        () => ({
-          status: "IN_PROGRESS",
-          title: `Adding ${$fromChain.display_name}`,
-          description: `Click 'Approve' in wallet.`
-        })
-      ),
+      // Do not uncomment
+      // stateToStatus(
+      //   $transferState,
+      //   "ADDING_CHAIN",
+      //   `Add ${$fromChain.display_name}`,
+      //   `Added ${$fromChain.display_name}`,
+      //   ts => ({
+      //     status: "ERROR",
+      //     title: `Error adding ${$fromChain.display_name}`,
+      //     description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
+      //   }),
+      //   () => ({
+      //     status: "IN_PROGRESS",
+      //     title: `Adding ${$fromChain.display_name}`,
+      //     description: `Click 'Approve' in wallet.`
+      //   })
+      // ),
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",
