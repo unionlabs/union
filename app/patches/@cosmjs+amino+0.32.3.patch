@@ -1,0 +1,23 @@
+diff --git a/node_modules/@cosmjs/amino/build/pubkeys.js b/node_modules/@cosmjs/amino/build/pubkeys.js
+index e9844ef..86101f8 100644
+--- a/node_modules/@cosmjs/amino/build/pubkeys.js
++++ b/node_modules/@cosmjs/amino/build/pubkeys.js
+@@ -9,6 +9,10 @@ function isSecp256k1Pubkey(pubkey) {
+     return pubkey.type === "tendermint/PubKeySecp256k1";
+ }
+ exports.isSecp256k1Pubkey = isSecp256k1Pubkey;
++function isBn254Pubkey(pubkey) {
++    return pubkey.type === "tendermint/PubKeyBn254";
++}
++exports.isBn254Pubkey = isBn254Pubkey;
+ exports.pubkeyType = {
+     /** @see https://github.com/tendermint/tendermint/blob/v0.33.0/crypto/ed25519/ed25519.go#L22 */
+     secp256k1: "tendermint/PubKeySecp256k1",
+@@ -16,6 +20,7 @@ exports.pubkeyType = {
+     ed25519: "tendermint/PubKeyEd25519",
+     /** @see https://github.com/tendermint/tendermint/blob/v0.33.0/crypto/sr25519/codec.go#L12 */
+     sr25519: "tendermint/PubKeySr25519",
++    bn254: "tendermint/PubKeyBn254",
+     multisigThreshold: "tendermint/PubKeyMultisigThreshold",
+ };
+ function isSinglePubkey(pubkey) {
