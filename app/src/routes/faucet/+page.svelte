@@ -17,12 +17,12 @@ import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { isValidCosmosAddress } from "$/lib/wallet/utilities/validate.ts"
-import type { DiscriminatedUnion } from "$lib/types.ts" 
+import type { DiscriminatedUnion } from "$lib/types.ts"
 import request from "graphql-request"
-import { writable, type Writable } from "svelte/store";
-import { URLS } from "$lib/constants/index.ts";
-import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts";
-import Truncate from "$lib/components/truncate.svelte";
+import { writable, type Writable } from "svelte/store"
+import { URLS } from "$lib/constants/index.ts"
+import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
+import Truncate from "$lib/components/truncate.svelte"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -41,7 +41,7 @@ const resetInput = () => {
   address = $cosmosStore.address ?? ""
 }
 
-let faucetState: Writable<FaucetState> = writable({ kind: "IDLE" });
+let faucetState: Writable<FaucetState> = writable({ kind: "IDLE" })
 
 const fetchFromFaucet = async () => {
   if ($faucetState.kind === "IDLE" || $faucetState.kind === "REQUESTING_TOKEN") {
@@ -49,33 +49,37 @@ const fetchFromFaucet = async () => {
 
     if (!window?.__google_recaptcha_client) return console.error("Recaptcha not loaded")
 
-    const captchaToken = await window.grecaptcha.execute("6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow", {
-      action: "submit"
-    })
+    const captchaToken = await window.grecaptcha.execute(
+      "6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow",
+      {
+        action: "submit"
+      }
+    )
 
-    faucetState.set({ kind: "SUBMITTING", captchaToken})
+    faucetState.set({ kind: "SUBMITTING", captchaToken })
   }
 
   if ($faucetState.kind === "SUBMITTING") {
-
     try {
-      const result = await request(URLS.GRAPHQL, faucetUnoMutation2, { address, captchaToken: $faucetState.captchaToken });
+      const result = await request(URLS.GRAPHQL, faucetUnoMutation2, {
+        address,
+        captchaToken: $faucetState.captchaToken
+      })
       if (result.faucet2 === null) {
         faucetState.set({ kind: "RESULT_ERR", error: "Empty faucet response" })
-        return;
+        return
       }
 
       if (result.faucet2.send.startsWith("ERROR")) {
         faucetState.set({ kind: "RESULT_ERR", error: `Error from faucet: ${result.faucet2.send}` })
-        return;
+        return
       }
 
       faucetState.set({ kind: "RESULT_OK", transactionHash: result.faucet2.send })
-
-    } catch(error) {
+    } catch (error) {
       // @ts-ignore
       faucetState.set({ kind: "RESULT_ERR", error: "Faucet connection error" })
-      return;
+      return
     }
   }
 }

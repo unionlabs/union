@@ -11,7 +11,7 @@ import {
   type SimulateContractReturnType
 } from "viem"
 import { berachainTestnetbArtio, sepolia } from "viem/chains"
-import type { DiscriminatedUnion } from "$lib/types" 
+import type { DiscriminatedUnion } from "$lib/types"
 
 export type TransferState = DiscriminatedUnion<
   "kind",
