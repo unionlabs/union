@@ -73,16 +73,20 @@ where
             async move {
                 let msgs = process_msgs(msg, signer, mk_create_client_states, mk_client_message);
 
-                let msg_count = msgs.len();
-                let msg_names = msgs
-                    .iter()
-                    .map(|x| &*x.type_url)
-                    .collect::<Vec<_>>()
-                    .join(",");
+                let batch_size = msgs.len();
+                let msg_names = msgs.iter().map(|x| x.type_url.clone()).collect::<Vec<_>>();
 
-                let tx_hash = hc.broadcast_tx_commit(signer, msgs).await?;
+                let (tx_hash, gas_used) = hc.broadcast_tx_commit(signer, msgs).await?;
 
-                info!(%tx_hash, batch_size = %msg_count, msgs = %msg_names, "cosmos tx");
+                info!(
+                    %tx_hash,
+                    %gas_used,
+                    batch.size = %batch_size,
+                    "submitted cosmos transaction"
+                );
+                for msg in msg_names {
+                    info!(%tx_hash, %msg, "cosmos tx");
+                }
 
                 Ok(())
             }

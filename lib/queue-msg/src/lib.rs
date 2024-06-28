@@ -6,7 +6,7 @@ use std::{
     error::Error,
     fmt::Debug,
     future::Future,
-    num::NonZeroU64,
+    num::{NonZeroU64, NonZeroU8},
     pin::Pin,
     sync::{
         atomic::{AtomicU32, Ordering},
@@ -137,9 +137,9 @@ pub enum Op<T: QueueMessage> {
     /// if D.is_none() noop else race([B C D])
     /// ```
     Race(VecDeque<Self>),
-    // REVIEW: Remove? We don't use this
+    /// Handle `msg`, retrying on failure. If `msg` fails, this will requeue itself with `remaining - 1`.
     Retry {
-        remaining: u8,
+        remaining: NonZeroU8,
         msg: Box<Self>,
     },
     Aggregate {
@@ -163,7 +163,7 @@ pub enum Defer {
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn retry<T: QueueMessage>(count: u8, t: impl Into<Op<T>>) -> Op<T> {
+pub fn retry<T: QueueMessage>(count: NonZeroU8, t: impl Into<Op<T>>) -> Op<T> {
     Op::Retry {
         remaining: count,
         msg: Box::new(t.into()),
@@ -358,14 +358,13 @@ impl<T: QueueMessage> Op<T> {
                     None => Ok(None),
                 },
                 Self::Retry { remaining, msg } => {
+                    // TODO: Add some sort of exponential backoff functionality to this message type
                     const RETRY_DELAY_SECONDS: u64 = 1;
 
                     match msg.clone().handle(store, depth + 1).await {
                         Ok(ok) => Ok(ok),
-                        Err(err) => {
-                            if remaining > 0 {
-                                let retries_left = remaining - 1;
-
+                        Err(err) => match remaining.get().checked_sub(1).and_then(NonZeroU8::new) {
+                            Some(retries_left) => {
                                 warn!(
                                     retries_left,
                                     ?err,
@@ -376,11 +375,12 @@ impl<T: QueueMessage> Op<T> {
                                     defer_absolute(now() + RETRY_DELAY_SECONDS),
                                     retry(retries_left, *msg),
                                 ])))
-                            } else {
+                            }
+                            None => {
                                 error!("msg failed after all retries");
                                 Err(err)
                             }
-                        }
+                        },
                     }
                 }
                 Self::Aggregate {

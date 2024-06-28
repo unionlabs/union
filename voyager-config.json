@@ -223,7 +223,7 @@
     }
   },
   "voyager": {
-    "num_workers": 90,
+    "num_workers": 10,
     "laddr": "0.0.0.0:65534",
     "max_batch_size": 20,
     "queue": {
@@ -232,8 +232,13 @@
       "max_connections": 20,
       "min_connections": 20,
       "idle_timeout": null,
-      "max_lifetime": null,
-      "optimizer_delay_milliseconds": 100
-    }
+      "max_lifetime": null
+    },
+    "tx_batch": {
+      "retry_count": 3,
+      "min_batch_size": 1,
+      "max_batch_size": 20
+    },
+    "optimizer_delay_milliseconds": 0
   }
 }

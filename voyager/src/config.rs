@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, net::SocketAddr, num::NonZeroUsize};
+use std::{collections::BTreeMap, net::SocketAddr};
 
 use chain_utils::{AnyChain, AnyChainTryFromConfigError, ChainConfigType};
 use serde::{Deserialize, Serialize};
 
-use crate::queue::AnyQueueConfig;
+use crate::{passes::tx_batch::TxBatch, queue::AnyQueueConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
@@ -18,7 +18,7 @@ pub struct VoyagerConfig {
     pub num_workers: u16,
     pub laddr: SocketAddr,
     pub queue: AnyQueueConfig,
-    pub max_batch_size: NonZeroUsize,
+    pub tx_batch: TxBatch,
     #[serde(default)]
     pub optimizer_delay_milliseconds: u64,
 }

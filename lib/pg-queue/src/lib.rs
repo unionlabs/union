@@ -35,6 +35,7 @@ pub struct PgQueue<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PgQueueConfig {
     pub database_url: String,
     pub max_connections: Option<u32>,

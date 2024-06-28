@@ -1,21 +1,28 @@
-use std::{collections::HashMap, num::NonZeroUsize};
+use std::{
+    collections::HashMap,
+    num::{NonZeroU8, NonZeroUsize},
+};
 
 use itertools::Itertools;
 use queue_msg::{
     effect,
     optimize::{OptimizationResult, PurePass},
-    Op,
+    retry, Op,
 };
 use relay_message::{
     effect::{AnyEffect, BatchMsg, Effect},
     id, identified, AnyLightClientIdentified, ChainExt, RelayMessage,
 };
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 use unionlabs::traits::ChainIdOf;
 use voyager_message::{FromOp, VoyagerEffect, VoyagerMessage};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TxBatch {
+    // TODO: Make these per-chain-id mappings?
+    pub retry_count: NonZeroU8,
     pub min_batch_size: NonZeroUsize,
     pub max_batch_size: NonZeroUsize,
 }
@@ -27,48 +34,52 @@ impl PurePass<VoyagerMessage> for TxBatch {
             ready: vec![],
         };
 
-        let mut ethereum_mainnet_on_union_batch =
-            Batcher::new(self.min_batch_size, self.max_batch_size);
-        let mut ethereum_minimal_on_union_batch =
-            Batcher::new(self.min_batch_size, self.max_batch_size);
-        let mut scroll_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
-        let mut arbitrum_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
-        let mut berachain_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
-        let mut wasm_cosmos_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
-        let mut cosmos_on_union_batch = Batcher::new(self.min_batch_size, self.max_batch_size);
+        let mut ethereum_mainnet_on_union_batch = Batcher::new(self);
+        let mut ethereum_minimal_on_union_batch = Batcher::new(self);
+        let mut scroll_on_union_batch = Batcher::new(self);
+        let mut arbitrum_on_union_batch = Batcher::new(self);
+        let mut berachain_on_union_batch = Batcher::new(self);
+        let mut wasm_cosmos_on_union_batch = Batcher::new(self);
+        let mut cosmos_on_union_batch = Batcher::new(self);
 
         debug!(count = msgs.len(), "optimizing messages");
 
+        let mut do_batch = |idx, effect, opt_res: &mut OptimizationResult<_>| match effect {
+            AnyLightClientIdentified::EthereumMainnetOnUnion(effect) => {
+                ethereum_mainnet_on_union_batch.push(idx, effect)
+            }
+            AnyLightClientIdentified::EthereumMinimalOnUnion(effect) => {
+                ethereum_minimal_on_union_batch.push(idx, effect)
+            }
+            AnyLightClientIdentified::ScrollOnUnion(effect) => {
+                scroll_on_union_batch.push(idx, effect)
+            }
+            AnyLightClientIdentified::ArbitrumOnUnion(effect) => {
+                arbitrum_on_union_batch.push(idx, effect)
+            }
+            AnyLightClientIdentified::BerachainOnUnion(effect) => {
+                berachain_on_union_batch.push(idx, effect)
+            }
+            AnyLightClientIdentified::WasmCosmosOnUnion(effect) => {
+                wasm_cosmos_on_union_batch.push(idx, effect)
+            }
+            AnyLightClientIdentified::CosmosOnUnion(effect) => {
+                cosmos_on_union_batch.push(idx, effect)
+            }
+            e => {
+                opt_res
+                    .optimize_further
+                    .push((vec![idx], Op::Effect(VoyagerEffect::Relay(e))));
+            }
+        };
+
         for (idx, msg) in msgs.into_iter().enumerate() {
             match msg {
-                Op::Effect(VoyagerEffect::Relay(effect)) => match effect {
-                    AnyLightClientIdentified::EthereumMainnetOnUnion(effect) => {
-                        ethereum_mainnet_on_union_batch.push(idx, effect)
-                    }
-                    AnyLightClientIdentified::EthereumMinimalOnUnion(effect) => {
-                        ethereum_minimal_on_union_batch.push(idx, effect)
-                    }
-                    AnyLightClientIdentified::ScrollOnUnion(effect) => {
-                        scroll_on_union_batch.push(idx, effect)
-                    }
-                    AnyLightClientIdentified::ArbitrumOnUnion(effect) => {
-                        arbitrum_on_union_batch.push(idx, effect)
-                    }
-                    AnyLightClientIdentified::BerachainOnUnion(effect) => {
-                        berachain_on_union_batch.push(idx, effect)
-                    }
-                    AnyLightClientIdentified::WasmCosmosOnUnion(effect) => {
-                        wasm_cosmos_on_union_batch.push(idx, effect)
-                    }
-                    AnyLightClientIdentified::CosmosOnUnion(effect) => {
-                        cosmos_on_union_batch.push(idx, effect)
-                    }
-                    e => {
-                        opt_res
-                            .optimize_further
-                            .push((vec![idx], Op::Effect(VoyagerEffect::Relay(e))));
-                    }
+                Op::Retry { remaining: _, msg } => match *msg {
+                    Op::Effect(VoyagerEffect::Relay(effect)) => do_batch(idx, effect, &mut opt_res),
+                    msg => opt_res.optimize_further.push((vec![idx], msg)),
                 },
+                Op::Effect(VoyagerEffect::Relay(effect)) => do_batch(idx, effect, &mut opt_res),
                 msg => opt_res.optimize_further.push((vec![idx], msg)),
             }
         }
@@ -99,21 +110,17 @@ impl PurePass<VoyagerMessage> for TxBatch {
     }
 }
 
-struct Batcher<Hc: ChainExt, Tr: ChainExt> {
-    // TODO: Make these per-chain-id mappings?
-    #[allow(dead_code)]
-    min_batch_size: NonZeroUsize,
-    max_batch_size: NonZeroUsize,
+struct Batcher<'a, Hc: ChainExt, Tr: ChainExt> {
+    config: &'a TxBatch,
     #[allow(clippy::type_complexity)] // leave me alone
     // bucket by chain id and then again by batch size
     batches: HashMap<ChainIdOf<Hc>, Vec<(usize, Effect<Hc, Tr>)>>,
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> Batcher<Hc, Tr> {
-    fn new(min_batch_size: NonZeroUsize, max_batch_size: NonZeroUsize) -> Self {
+impl<'a, Hc: ChainExt, Tr: ChainExt> Batcher<'a, Hc, Tr> {
+    fn new(config: &'a TxBatch) -> Self {
         Self {
-            max_batch_size,
-            min_batch_size,
+            config,
             batches: Default::default(),
         }
     }
@@ -141,7 +148,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Batcher<Hc, Tr> {
             .into_iter()
             .flat_map(|(chain_id, msgs): (ChainIdOf<Hc>, _)| {
                 msgs.into_iter()
-                    .chunks(self.max_batch_size.get())
+                    .chunks(self.config.max_batch_size.get())
                     .into_iter()
                     .map(|chunk| {
                         let (ids, mut batch) = chunk.into_iter().collect::<(Vec<_>, Vec<_>)>();
@@ -149,20 +156,23 @@ impl<Hc: ChainExt, Tr: ChainExt> Batcher<Hc, Tr> {
                         if batch.len() == 1 {
                             (
                                 ids,
-                                VoyagerMessage::from_op(effect::<RelayMessage>(id(
-                                    chain_id.clone(),
-                                    batch.pop().expect("length is 1; qed;"),
-                                ))),
+                                VoyagerMessage::from_op(retry(
+                                    self.config.retry_count,
+                                    effect::<RelayMessage>(id(
+                                        chain_id.clone(),
+                                        batch.pop().expect("length is 1; qed;"),
+                                    )),
+                                )),
                             )
                         } else {
                             info!(batch_size = batch.len(), %chain_id, "batched messages");
 
                             (
                                 ids,
-                                VoyagerMessage::from_op(effect::<RelayMessage>(id(
-                                    chain_id.clone(),
-                                    BatchMsg(batch),
-                                ))),
+                                VoyagerMessage::from_op(retry(
+                                    self.config.retry_count,
+                                    effect::<RelayMessage>(id(chain_id.clone(), BatchMsg(batch))),
+                                )),
                             )
                         }
                     })
@@ -217,6 +227,7 @@ mod tests {
         let msgs = [msg.clone(), msg].to_vec();
 
         let batcher = TxBatch {
+            retry_count: 3.try_into().unwrap(),
             min_batch_size: 1.try_into().unwrap(),
             max_batch_size: 10.try_into().unwrap(),
         };
