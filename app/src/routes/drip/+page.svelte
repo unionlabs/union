@@ -37,7 +37,6 @@ type FaucetState = DiscriminatedUnion<
 >
 
 
-
 let userInput = false
 let address: string = $cosmosStore.address ?? ""
 
@@ -85,7 +84,6 @@ let inputState: "locked" | "unlocked" = $cosmosStore.address ? "locked" : "unloc
 const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
 
 const submissionWaitTime = 20_000
-let submissionDisabled = false
 </script>
 
 <svelte:head>
@@ -104,12 +102,11 @@ let submissionDisabled = false
       <form
         action="?"
         method="POST"
-        class="space-y-8"
+        class="flex flex-col w-full gap-4"
         name="faucet-form"
         on:submit|preventDefault={fetchFromFaucet}
       >
-        <div class="relative flex flex-col gap-4">
-          <div class="grid w-full items-center gap-2 mb-4">
+          <div>
             <Label for="address">Address</Label>
             <div class="flex items-start gap-2">
               <div class="w-full">
@@ -190,7 +187,6 @@ let submissionDisabled = false
             </Button>
             <div class="text-[10px]">This faucet is protected by reCAPTCHA and the Google <a class="underline" href="https://policies.google.com/privacy">Privacy Policy</a> and <a class="underline" href="https://policies.google.com/terms">Terms of Service</a> apply.</div>
           </div>
-        </div>
         <div
           class="g-recaptcha sr-only"
           data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
