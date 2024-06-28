@@ -366,10 +366,19 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 
             match tx_inclusion {
                 Ok(tx) => {
-                    break Ok((
-                        tx_hash_normalized,
-                        tx.tx_result.gas_used.try_into().unwrap(),
-                    ))
+                    if tx.tx_result.code.is_ok() {
+                        break Ok((
+                            tx_hash_normalized,
+                            tx.tx_result.gas_used.try_into().unwrap(),
+                        ));
+                    } else {
+                        let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
+                            &tx.tx_result.codespace,
+                            tx.tx_result.code.value(),
+                        );
+                        warn!(%error, %tx_hash, "cosmos transaction failed");
+                        break Err(BroadcastTxCommitError::Tx(error));
+                    }
                 }
                 Err(err) if i > 5 => {
                     warn!("tx inclusion couldn't be retrieved after {} try", i);
