@@ -62,8 +62,8 @@ export const config = createConfig({
   storage: createWagmiStorage({
     serialize,
     deserialize,
-    key: "wagmi",
-    storage: typeof window !== "undefined" ? window.sessionStorage : undefined
+    key: "union-wagmi",
+    storage: typeof window !== "undefined" ? window.localStorage : undefined
   }),
   connectors: [
     injected({
@@ -72,13 +72,9 @@ export const config = createConfig({
     }),
     metaMask({
       preferDesktop: true,
-      // extensionOnly: true,
-      infuraAPIKey: KEY.RPC.INFURA,
       shouldShimWeb3: false,
       injectProvider: false,
-
-      // checkInstallationOnAllCalls: false,
-      // checkInstallationImmediately: false,
+      infuraAPIKey: KEY.RPC.INFURA,
       dappMetadata: {
         name: APP_INFO.name,
         url: APP_INFO.baseUrl,

@@ -47,7 +47,8 @@ function createCosmosStore(
       update(v => ({ ...v, connectionStatus: "connecting", connectedWallet: walletId }))
       const walletApi = window[walletId]
       if (!walletApi) {
-        alert(`Please install ${walletId} wallet`)
+        const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === walletId)
+        if (walletInfo) window.open(walletInfo?.download, "_blank", "noopener noreferrer")
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
       const chainInfoMap = {
@@ -97,4 +98,3 @@ function createCosmosStore(
 }
 
 export const cosmosStore = createCosmosStore()
-// cosmosStore.subscribe(value => localStorage.setItem("cosmos-config", JSON.stringify(value)))
