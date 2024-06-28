@@ -19,9 +19,13 @@
           type = types.package;
           default = self.packages.${pkgs.system}.faucet;
         };
-        configFile = mkOption {
+        config = mkOption {
           type = types.attrs;
           description = "config file";
+        };
+        log-level = mkOption {
+          type = types.str;
+          description = "RUST_LOG";
         };
       };
 
@@ -32,7 +36,7 @@
               name = "faucet-systemd";
               runtimeInputs = [ pkgs.coreutils cfg.package ];
               text = ''
-                ${pkgs.lib.getExe cfg.package} -c '${builtins.toFile "faucet-config.json" (builtins.toJSON cfg.configFile)}'
+                ${pkgs.lib.getExe cfg.package} -c '${builtins.toFile "faucet-config.json" (builtins.toJSON cfg.config)}'
               '';
             };
           in
@@ -43,6 +47,9 @@
               Type = "simple";
               ExecStart = pkgs.lib.getExe faucet-systemd-script;
               Restart = mkForce "always";
+            };
+            environment = {
+              RUST_LOG = cfg.log-level;
             };
           };
       };
