@@ -72,6 +72,7 @@ async fn main() {
             .await
             .expect("unable to create cosmos client"),
         faucet_denom: config.faucet_denom,
+        memo: config.memo,
     };
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
@@ -221,6 +222,7 @@ pub struct Config {
     pub secret: Option<String>,
     pub amount: u64,
     pub max_request_polls: u32,
+    pub memo: String,
 }
 
 pub struct MaxRequestPolls(pub u32);
@@ -230,6 +232,7 @@ pub struct Bech32Prefix(pub String);
 struct DripClient {
     cosmos: Cosmos,
     faucet_denom: String,
+    memo: String,
 }
 
 impl DripClient {
@@ -268,7 +271,10 @@ impl DripClient {
                     value: msg.encode_to_vec().into(),
                 };
 
-                let (tx_hash, gas_used) = self.cosmos.broadcast_tx_commit(signer, [msg]).await?;
+                let (tx_hash, gas_used) = self
+                    .cosmos
+                    .broadcast_tx_commit(signer, [msg], self.memo.clone())
+                    .await?;
 
                 info!(
                     %tx_hash,

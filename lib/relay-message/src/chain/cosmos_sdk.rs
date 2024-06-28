@@ -76,7 +76,14 @@ where
                 let batch_size = msgs.len();
                 let msg_names = msgs.iter().map(|x| x.type_url.clone()).collect::<Vec<_>>();
 
-                let (tx_hash, gas_used) = hc.broadcast_tx_commit(signer, msgs).await?;
+                let (tx_hash, gas_used) = hc
+                    .broadcast_tx_commit(
+                        signer,
+                        msgs,
+                        // TODO: Figure out a way to thread this value through
+                        format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+                    )
+                    .await?;
 
                 info!(
                     %tx_hash,
@@ -1176,7 +1183,7 @@ pub mod wasm {
 
     impl<Hc> CosmosSdkChainSealed for Wasm<Hc>
     where
-        Wasm<Hc>: ChainExt,
+        Wasm<Hc>: ChainExt<Error = tendermint_rpc::Error>,
         Hc: CosmosSdkChainSealed<Error = tendermint_rpc::Error>,
     {
     }
@@ -1219,9 +1226,10 @@ pub mod wasm {
                 SelfClientState: Encode<Proto> + TypeUrl,
                 MsgError = BroadcastTxCommitError,
                 Config = WasmConfig,
+                Error = tendermint_rpc::Error,
             >,
         Hc: ChainKeyring<Signer = CosmosSigner>
-            + CosmosSdkChainSealed<MsgError = BroadcastTxCommitError>,
+            + CosmosSdkChainSealed<MsgError = BroadcastTxCommitError, Error = tendermint_rpc::Error>,
         Tr: ChainExt<
             StoredClientState<Wasm<Hc>>: IntoAny,
             StateProof: Encode<Proto>,

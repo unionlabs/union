@@ -23,5 +23,6 @@
   "faucet_denom": "muno",
   "log_format": "text",
   "amount": 13370,
-  "max_request_polls": 7
+  "max_request_polls": 7,
+  "memo": "drip drop"
 }

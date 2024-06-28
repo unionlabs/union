@@ -204,6 +204,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         &self,
         signer: &CosmosSigner,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        memo: String,
     ) -> Result<(H256, u64), BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
@@ -216,7 +217,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         let tx_body = TxBody {
             messages: messages.clone().into_iter().collect(),
             // TODO(benluelo): What do we want to use as our memo?
-            memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+            memo,
             timeout_height: 0,
             extension_options: vec![],
             non_critical_extension_options: vec![],
