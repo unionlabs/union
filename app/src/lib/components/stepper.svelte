@@ -3,18 +3,24 @@ import { cn } from "$lib/utilities/shadcn"
 import Button from "$lib/components/ui/button/button.svelte"
 import { type Readable, derived } from "svelte/store"
 import SpinnerSvg from "./spinner-svg.svelte"
-import type { Step, StepStatus } from "$lib/stepper-types.ts"
+import type { Step } from "$lib/stepper-types.ts"
 import { toIsoString } from "$lib/utilities/date"
 import Truncate from "$lib/components/truncate.svelte"
+import { createEventDispatcher } from "svelte"
 
 export let steps: Readable<Array<Step>>
+export let onRetry: (() => void) | undefined = undefined
+
+const dispatch = createEventDispatcher()
 
 let stepsUpToError = derived(steps, $steps => {
   let errorIndex = $steps.findIndex(step => step.status === "ERROR")
   return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
 })
 
-export let onRetry: (() => void) | undefined = undefined
+const cancel = () => {
+  dispatch("cancel")
+}
 </script>
 
 <ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
@@ -26,17 +32,17 @@ export let onRetry: (() => void) | undefined = undefined
       <!-- stepper icon !-->
       <div class={cn(
         "size-12 border-4 relative transition-all duration-300",
-        step.status === "PENDING" ? "bg-white" : 
+        step.status === "PENDING" ? "bg-white" :
         step.status === "IN_PROGRESS" ? "bg-white" :
         step.status === "COMPLETED" ? "bg-accent" :
         step.status === "ERROR" ? "bg-black" : ""
       )}>
-        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300", 
-          step.status === "COMPLETED" ? "w-1 h-7 rotate-45 translate-x-[2px]" : 
+        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300",
+          step.status === "COMPLETED" ? "w-1 h-7 rotate-45 translate-x-[2px]" :
           step.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" : "w-2 h-2"
           )}></div>
-        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300", 
-          step.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" : 
+        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300",
+          step.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" :
           step.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" : "w-2 h-2"
           )}></div>
         {#if step.status === "IN_PROGRESS"}
@@ -50,7 +56,7 @@ export let onRetry: (() => void) | undefined = undefined
       {#if step.traceDetails}
         {@const trace = step.traceDetails}
         <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {trace.chain_display_name} at {#if trace.block_url}<a class="underline" href={trace.block_url}>{trace.block}</a>{:else}{trace.block}{/if}</p>
-      {/if} 
+      {/if}
       <div>{step.title}</div>
       {#if step.traceDetails}
         {@const trace = step.traceDetails}
@@ -60,23 +66,32 @@ export let onRetry: (() => void) | undefined = undefined
           <p class="text-xs text-muted-foreground"><Truncate value={trace.tx} type="hash"/></p>
         {/if}
       {:else if step.description}
-          <div class="font-normal break-words">{step.description}</div>      
-      {/if} 
+          <div class="font-normal break-words">{step.description}</div>
+      {/if}
     </div>
   </li>
 {/each}
 </ol>
 {#if $stepsUpToError.length < $steps.length && onRetry !== undefined}
 
-      <Button
-        size="default"
-        variant="link"
-        on:click={onRetry}
-        class='bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground'
-      >
-        Retry
-      </Button>
+  <div class="flex gap-1 mt-6 w-full">
 
+    <Button
+      variant="default"
+      on:click={onRetry}
+      class='!hover:bg-foreground !hover:text-primary-foreground hover:text-accent w-full'
+    >
+      RETRY
+    </Button>
+
+    <Button
+      on:click={cancel}
+      variant="outline"
+      class='text-primary text-md font-bold !hover:bg-foreground !hover:text-primary-foreground w-full'
+    >
+      CANCEL
+    </Button>
+  </div>
 
 {/if}
 

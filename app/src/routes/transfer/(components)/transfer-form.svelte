@@ -1,4 +1,5 @@
 <script lang="ts">
+import { slide } from "svelte/transition"
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
@@ -699,167 +700,174 @@ const resetInput = () => {
 }
 </script>
 
-<div
-  class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
-<div class="cube-scene">
-  <div class={cn("cube", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "")}>
-    <Card.Root class="cube-front">
-      <Card.Header>
-        <Card.Title>Transfer</Card.Title>
-      </Card.Header>
-      <Card.Content class={cn('flex flex-col gap-4')}>
-        <section>
-          <CardSectionHeading>From</CardSectionHeading>
-          <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
-            {$fromChain?.display_name ?? "Select chain"}
-          </ChainButton>
+<section class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
 
-          <div class="flex flex-col items-center pt-4 -mb-6">
-            <Button on:click={swapChainsClick} size="icon" variant="outline">
-              <ArrowLeftRight class="size-5 dark:text-white rotate-90"/>
-            </Button>
-          </div>
-
-          <CardSectionHeading>To</CardSectionHeading>
-          <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
-            {$toChain?.display_name ?? 'Select chain'}
-          </ChainButton>
-        </section>
-        <section>
-          <CardSectionHeading>Asset</CardSectionHeading>
-          {#if $sendableBalances !== undefined && $fromChainId}
-            {#if $sendableBalances === null}
-              Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
-            {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some from <a class="underline font-bold" href="/faucet">the faucet</a>
-            {:else}
-              <Button
-                class="w-full"
-                variant="outline"
-                on:click={() => (dialogOpenToken = !dialogOpenToken)}
-              >
-                <div
-                  class="flex-1 text-left font-bold text-md">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
-
-                <Chevron/>
+  {#if $transferState.kind === "PRE_TRANSFER"}
+    <div class="w-full max-w-lg">
+      <Card.Root class="mb-4">
+        <Card.Header>
+          <Card.Title>Transfer</Card.Title>
+        </Card.Header>
+        <Card.Content class={cn('flex flex-col gap-4')}>
+          <section>
+            <CardSectionHeading>From</CardSectionHeading>
+            <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
+              {$fromChain?.display_name ?? "Select chain"}
+            </ChainButton>
+            <div class="flex flex-col items-center pt-4 -mb-6">
+              <Button on:click={swapChainsClick} size="icon" variant="outline">
+                <ArrowLeftRight class="size-5 dark:text-white rotate-90"/>
               </Button>
-            {/if}
-          {:else}
-            Select a chain to send from.
-          {/if}
-          {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
-            <div class="mt-4 text-xs text-muted-foreground">
-              <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
-              <b>{$fromChain?.display_name}</b> is
-              <Precise chain={$fromChain} asset={$asset} showToolTip/>
-              <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
             </div>
-          {/if}
-        </section>
+            <CardSectionHeading>To</CardSectionHeading>
+            <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
+              {$toChain?.display_name ?? "Select chain"}
+            </ChainButton>
+          </section>
+          <section>
+            <CardSectionHeading>Asset</CardSectionHeading>
+            {#if $sendableBalances !== undefined && $fromChainId}
+              {#if $sendableBalances === null}
+                Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+              {:else if $sendableBalances && $sendableBalances.length === 0}
+                You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some from <a
+                class="underline font-bold" href="/faucet">the faucet</a>
+              {:else}
+                <Button
+                  class="w-full"
+                  variant="outline"
+                  on:click={() => (dialogOpenToken = !dialogOpenToken)}
+                >
+                  <div
+                    class="flex-1 text-left font-bold text-md">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
 
-        <section>
-          <CardSectionHeading>Amount</CardSectionHeading>
-          <Input
-            autocapitalize="none"
-            autocomplete="off"
-            autocorrect="off"
-            bind:value={amount}
-            class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
-            disabled={!$asset}
-            maxlength={64}
-            minlength={1}
-            pattern="^[0-9]*[.,]?[0-9]*$"
-            placeholder="0.00"
-            spellcheck="false"
-          />
-        </section>
-        <section>
-          <CardSectionHeading>Recipient</CardSectionHeading>
-          <div class="flex items-start gap-2">
-            <div class="w-full">
-              <div class="relative w-full mb-2">
-                <Input
-                  autocapitalize="none"
-                  autocomplete="off"
-                  autocorrect="off"
-                  bind:value={address}
-                  class="disabled:opacity-100 disabled:bg-black/20"
-                  disabled={inputState === 'locked'}
-                  id="address"
-                  on:input={handleInput}
-                  placeholder="Select chain"
-                  required={true}
-                  spellcheck="false"
-                  type="text"
-                />
+                  <Chevron/>
+                </Button>
+              {/if}
+            {:else}
+              Select a chain to send from.
+            {/if}
+            {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
+              <div class="mt-4 text-xs text-muted-foreground">
+                <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
+                <b>{$fromChain?.display_name}</b> is
+                <Precise chain={$fromChain} asset={$asset} showToolTip/>
+                <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
               </div>
-              <div class="flex justify-between px-1">
-                {#if userInput}
-                  <button
-                    type="button"
-                    on:click={resetInput}
-                    class="text-xs text-muted-foreground hover:text-primary transition"
-                  >
-                    Reset
-                  </button>
-                {/if}
+            {/if}
+          </section>
+
+          <section>
+            <CardSectionHeading>Amount</CardSectionHeading>
+            <Input
+              autocapitalize="none"
+              autocomplete="off"
+              autocorrect="off"
+              bind:value={amount}
+              class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
+              disabled={
+          !$asset
+          }
+              maxlength={64}
+              minlength={1}
+              pattern="^[0-9]*[.,]?[0-9]*$"
+              placeholder="0.00"
+              spellcheck="false"
+            />
+          </section>
+          <section>
+            <CardSectionHeading>Recipient</CardSectionHeading>
+            <div class="flex items-start gap-2">
+              <div class="w-full">
+                <div class="relative w-full mb-2">
+                  <Input
+                    autocapitalize="none"
+                    autocomplete="off"
+                    autocorrect="off"
+                    bind:value={address}
+                    class="disabled:opacity-100 disabled:bg-black/20"
+                    disabled={inputState === 'locked'}
+                    id="address"
+                    on:input={handleInput}
+                    placeholder="Select chain"
+                    required={true}
+                    spellcheck="false"
+                    type="text"
+                  />
+                </div>
+                <div class="flex justify-between px-1">
+                  {#if userInput}
+                    <button
+                      type="button"
+                      on:click={resetInput}
+                      class="text-xs text-muted-foreground hover:text-primary transition"
+                    >
+                      Reset
+                    </button>
+                  {/if}
+                </div>
               </div>
+              <!--            <Button-->
+              <!--              aria-label="Toggle address lock"-->
+              <!--              class="px-3"-->
+              <!--              on:click={onLockClick}-->
+              <!--              variant="ghost"-->
+              <!--            >-->
+              <!--              {#if inputState === 'locked'}-->
+              <!--                <LockLockedIcon class="size-4.5"/>-->
+              <!--              {:else}-->
+              <!--                <LockOpenIcon class="size-4.5"/>-->
+              <!--              {/if}-->
+              <!--            </Button>-->
             </div>
-            <!--            <Button-->
-            <!--              aria-label="Toggle address lock"-->
-            <!--              class="px-3"-->
-            <!--              on:click={onLockClick}-->
-            <!--              variant="ghost"-->
-            <!--            >-->
-            <!--              {#if inputState === 'locked'}-->
-            <!--                <LockLockedIcon class="size-4.5"/>-->
-            <!--              {:else}-->
-            <!--                <LockOpenIcon class="size-4.5"/>-->
-            <!--              {/if}-->
-            <!--            </Button>-->
-          </div>
-        </section>
-      </Card.Content>
-      <Card.Footer class="flex flex-col gap-4 items-start">
-        <Button
-          disabled={!amount ||
-            !$asset ||
-            !$toChainId ||
-            !$recipient ||
-            !$assetSymbol ||
-            !$fromChainId ||
-            !amountLargerThanZero ||
-            // >= because need some sauce for gas
-            !balanceCoversAmount}
-          on:click={async event => {
+          </section>
+        </Card.Content>
+        <Card.Footer class="flex flex-col gap-4 items-start">
+          <Button
+            disabled={!amount ||
+          !$asset ||
+          !$toChainId ||
+          !$recipient ||
+          !$assetSymbol ||
+          !$fromChainId ||
+          !amountLargerThanZero ||
+          // >= because need some sauce for gas
+          !balanceCoversAmount
+          }
+            on:click={async event => {
           event.preventDefault()
           transferState.set({ kind: "FLIPPING" })
           await sleep(1200)
           transfer()
         }}
-          type="button"
-        >
-          {buttonText}
-        </Button>
-      </Card.Footer>
-    </Card.Root>
-
-    <Card.Root class="cube-back p-6">
-      {#if $fromChain}
-        <Stepper steps={stepperSteps} onRetry={() => {
+            type="button"
+          >
+            {buttonText}
+          </Button>
+        </Card.Footer>
+      </Card.Root>
+    </div>
+  {:else}
+    <div in:slide class="w-full max-w-lg">
+      <Card.Root class="p-6">
+        {#if $fromChain}
+          <Stepper steps={stepperSteps}
+                   on:cancel={() => transferState.set({kind: "PRE_TRANSFER"})}
+                   onRetry={() => {
         transferState.update(ts => {
           // @ts-ignore
-          ts.error = undefined; 
+          ts.error = undefined;
           return ts
         });
 
         transfer()
       }}/>
-      {/if}
-    </Card.Root>
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
-  </div>
-</div>
+        {/if}
+      </Card.Root>
+    </div>
+  {/if}
+
+</section>
 
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
@@ -899,54 +907,54 @@ const resetInput = () => {
 <style global lang="postcss">
 
 
-    .cube-scene {
-        @apply absolute -my-6 py-6 z-20;
-        top: calc(50% - (var(--height) / 2));
-        --width: calc(min(500px, (100dvw - 32px)));
-        --height: calc(min(740px, (100dvh - 144px)));
-        --depth: 80px;
-        --speed: 2s;
-        width: var(--width);
-        height: var(--height);
-        perspective: 1000px;
-    }
+    /*.cube-scene {*/
+    /*    @apply absolute -my-6 py-6 z-20;*/
+    /*    top: calc(50% - (var(--height) / 2));*/
+    /*    --width: calc(min(500px, (100dvw - 32px)));*/
+    /*    --height: calc(min(740px, (100dvh - 144px)));*/
+    /*    --depth: 80px;*/
+    /*    --speed: 2s;*/
+    /*    width: var(--width);*/
+    /*    height: var(--height);*/
+    /*    perspective: 1000px;*/
+    /*}*/
 
-    .cube {
-        @apply relative;
-        width: var(--width);
-        height: var(--height);
-        transform-style: preserve-3d;
-        transition: transform var(--speed);
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
-    }
+    /*.cube {*/
+    /*    @apply relative;*/
+    /*    width: var(--width);*/
+    /*    height: var(--height);*/
+    /*    transform-style: preserve-3d;*/
+    /*    transition: transform var(--speed);*/
+    /*    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);*/
+    /*}*/
 
-    .cube--flipped {
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+    /*.cube--flipped {*/
+    /*    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);*/
 
-    }
+    /*}*/
 
-    .cube-front, .cube-back {
-        @apply absolute overflow-y-auto overflow-x-hidden;
+    /*.cube-front, .cube-back {*/
+    /*    @apply absolute overflow-y-auto overflow-x-hidden;*/
 
-    width: var(--width);
-    height: var(--height);
-  }
+    /*    width: var(--width);*/
+    /*    height: var(--height);*/
+    /*}*/
 
-    .cube-left {
-        @apply absolute bg-card border;
-        width: var(--height);
-        height: var(--depth);
-        top: calc((var(--height) / 2) - (var(--depth) / 2));
-        right: calc((var(--width) / 2) - (var(--height) / 2));
-        transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
-    }
+    /*.cube-left {*/
+    /*    @apply absolute bg-card border;*/
+    /*    width: var(--height);*/
+    /*    height: var(--depth);*/
+    /*    top: calc((var(--height) / 2) - (var(--depth) / 2));*/
+    /*    right: calc((var(--width) / 2) - (var(--height) / 2));*/
+    /*    transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);*/
+    /*}*/
 
-    .cube-front {
-        transform: translateZ(calc(var(--depth) * 0.5));
-    }
+    /*.cube-front {*/
+    /*    transform: translateZ(calc(var(--depth) * 0.5));*/
+    /*}*/
 
-    .cube-back {
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-    }
+    /*.cube-back {*/
+    /*    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);*/
+    /*}*/
 
 </style>
