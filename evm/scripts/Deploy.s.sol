@@ -270,3 +270,149 @@ contract GetDeployed is Script {
         console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
     }
 }
+
+contract DryUpgradeUCS01 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    address immutable owner;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        owner = vm.envAddress("OWNER");
+    }
+
+    function getDeployed(string memory salt) internal returns (address) {
+        return CREATE3.getDeployed(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
+        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
+        address newImplementation = address(new UCS01Relay());
+        vm.prank(owner);
+        UCS01Relay(ucs01).upgradeToAndCall(newImplementation, new bytes(0));
+    }
+}
+
+contract UpgradeUCS01 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(string memory salt) internal returns (address) {
+        return CREATE3.getDeployed(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
+
+        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new UCS01Relay());
+        UCS01Relay(ucs01).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
+contract DryUpgradeIBCHandler is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    address immutable owner;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        owner = vm.envAddress("OWNER");
+    }
+
+    function getDeployed(string memory salt) internal returns (address) {
+        return CREATE3.getDeployed(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address handler = getDeployed(IBC.BASED);
+        console.log(
+            string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
+        );
+        address newHandlerImplementation = address(new OwnableIBCHandler());
+        bytes memory upgradeImplsCall = abi.encodeCall(
+            IBCHandler.upgradeImpls,
+            (
+                address(new IBCClient()),
+                address(new IBCConnection()),
+                address(new IBCChannelHandshake()),
+                address(new IBCPacket())
+            )
+        );
+        vm.prank(owner);
+        IBCHandler(handler).upgradeToAndCall(
+            newHandlerImplementation, upgradeImplsCall
+        );
+    }
+}
+
+contract UpgradeIBCHandler is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(string memory salt) internal returns (address) {
+        return CREATE3.getDeployed(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address handler = getDeployed(IBC.BASED);
+        console.log(
+            string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
+        );
+        vm.startBroadcast(privateKey);
+        address newHandlerImplementation = address(new OwnableIBCHandler());
+        IBCHandler(handler).upgradeToAndCall(
+            newHandlerImplementation,
+            abi.encodeCall(
+                IBCHandler.upgradeImpls,
+                (
+                    address(new IBCClient()),
+                    address(new IBCConnection()),
+                    address(new IBCChannelHandshake()),
+                    address(new IBCPacket())
+                )
+            )
+        );
+        vm.stopBroadcast();
+    }
+}

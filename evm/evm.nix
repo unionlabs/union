@@ -124,6 +124,7 @@
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
+        ast = true
 
         [profile.script]
         src = "scripts"
@@ -136,7 +137,6 @@
         [profile.test]
         test = "tests/src"
         optimizer = false
-        ast = true
       '';
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
@@ -207,6 +207,48 @@
           rm -rf "$OUT"
         '';
       };
+      eth-upgrade = { dry ? false, rpc-url, protocol, ... }: mkCi false (pkgs.writeShellApplicationWithArgs {
+        name = "evm-${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
+        runtimeInputs = [ self'.packages.forge pkgs.jq ];
+        arguments = [
+          {
+            arg = "deployer_pk";
+            required = true;
+            help = "The deployer contract address.";
+          }
+          {
+            arg = "sender_pk";
+            required = true;
+            help = "The sender address that created the contract through the deployer.";
+          }
+          {
+            arg = "owner_pk";
+            required = true;
+            help = "The contract owner public key to prank.";
+          }
+        ] ++ pkgs.lib.optional (!dry) {
+          arg = "private_key";
+          required = true;
+          help = "The contract owner private key.";
+        };
+        text = ''
+          OUT="$(mktemp -d)"
+          pushd "$OUT"
+          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+          cp --no-preserve=mode -r ${evmSources}/* .
+
+          DEPLOYER="$argc_deployer_pk" \
+          SENDER="$argc_sender_pk" \
+          OWNER="$argc_owner_pk" \
+          PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
+          FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
+            --rpc-url ${rpc-url} \
+            --broadcast
+
+          rm -rf "$OUT"
+          popd
+        '';
+      });
     in
     {
       packages = {
@@ -336,18 +378,18 @@
               ${contracts}/out/IBCPacket.sol/IBCPacket.json \
               ${contracts}/out/IBCConnection.sol/IBCConnection.json \
               ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json 
+              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json
 
             jq --compact-output --slurp 'map(.abi) | add' \
               ${contracts}/out/Relay.sol/IRelay.json \
               ${contracts}/out/Relay.sol/UCS01Relay.json \
               ${contracts}/out/Relay.sol/RelayLib.json \
-              ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json 
+              ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
 
             jq --compact-output --slurp 'map(.abi) | add' \
               ${contracts}/out/NFT.sol/NFTLib.json \
               ${contracts}/out/NFT.sol/NFTPacketLib.json \
-              ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json 
+              ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
           '';
 
 
@@ -361,7 +403,7 @@
         };
 
         evm-contracts-addresses = pkgs.writeShellApplication {
-          name = "eth-contracts-addresses";
+          name = "evm-contracts-addresses";
           runtimeInputs = [ self'.packages.forge pkgs.jq ];
           text = ''
             ${ensureAtRepositoryRoot}
@@ -384,6 +426,26 @@
       builtins.listToAttrs (
         builtins.map
           (args: { name = "eth-deploy-${args.network}"; value = eth-deploy args; })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "eth-dryupgrade-${args.network}-ucs01"; value = eth-upgrade ({ dry = true; protocol = "UCS01"; } // args); })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "eth-dryupgrade-${args.network}-ibc"; value = eth-upgrade ({ dry = true; protocol = "IBCHandler"; } // args); })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "eth-upgrade-${args.network}-ucs01"; value = eth-upgrade ({ protocol = "UCS01"; } // args); })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "eth-upgrade-${args.network}-ibc"; value = eth-upgrade ({ protocol = "IBCHandler"; } // args); })
           networks
       );
     };

@@ -60,4 +60,16 @@ abstract contract IBCHandler is
         override
         onlyOwner
     {}
+
+    function upgradeImpls(
+        address _ibcClient,
+        address _ibcConnection,
+        address _ibcChannel,
+        address _ibcPacket
+    ) public onlyOwner {
+        ibcClient = _ibcClient;
+        ibcConnection = _ibcConnection;
+        ibcChannel = _ibcChannel;
+        ibcPacket = _ibcPacket;
+    }
 }
