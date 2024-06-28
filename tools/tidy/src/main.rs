@@ -50,10 +50,11 @@ fn main() -> ExitCode {
                     if dep_name.as_ref() == "cosmwasm-schema"
                         || dep_name.as_ref() == "cosmwasm-std"
                         || dep_name.as_ref() == "cw-storage-plus"
+                        || dep_name.as_ref() == "axum"
                     {
                         tracing::warn!(
                             member = %member.name,
-                            "{dep_name} is being ignored for deduplication checks as we gradually migrate to cosmwasm 2.0"
+                            "{dep_name} is being ignored for deduplication checks as there are currently multiple incompatible versions being used in the repo"
                         );
                         continue;
                     }

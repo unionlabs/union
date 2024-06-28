@@ -12,7 +12,7 @@ dashmap            = { workspace = true }
 prost              = { workspace = true }
 protos             = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
-serde_json         = "1.0.118"
+serde_json         = { workspace = true }
 tendermint-rpc     = { workspace = true }
 tokio              = { workspace = true, features = ["full"] }
 tonic              = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
