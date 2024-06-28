@@ -36,9 +36,14 @@ const toggleCopy = () => (copyClicked = !copyClicked)
 const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
 // filter items with duplicate names
-let sanitizeWalletInformation = chainWalletsInformation.filter(
-  (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
-)
+let sanitizeWalletInformation = chainWalletsInformation
+  .toReversed()
+  .filter(
+    (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
+  )
+
+$: walletListToRender =
+  connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
 </script>
 
 <h3 class="uppercase font-supermolot font-bold text-xl">{chain}</h3>
@@ -74,7 +79,7 @@ let sanitizeWalletInformation = chainWalletsInformation.filter(
 </Button>
 
 <div class="flex flex-col">
-  {#each sanitizeWalletInformation as { name, id, icon, download }, index (index)}
+  {#each walletListToRender as { name, id, icon, download }, index (index)}
     {@const walletIdentifier = id}
     {#if !(connectStatus === 'connected' && connectedWalletId !== id)}
       <div
