@@ -3598,6 +3598,7 @@ dependencies = [
  "recaptcha-verify",
  "serde",
  "serde_json",
+ "subtle-encoding",
  "tendermint-rpc",
  "tokio",
  "tonic 0.10.2",

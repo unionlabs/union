@@ -42,6 +42,7 @@ pub struct Cosmos {
     pub chain_revision: u64,
     pub grpc_url: String,
     pub gas_config: GasConfig,
+    pub bech32_prefix: String,
 
     pub checksum_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
 }
@@ -345,6 +346,7 @@ impl Cosmos {
             grpc_url: config.grpc_url,
             checksum_cache: Arc::new(dashmap::DashMap::default()),
             gas_config: config.gas_config,
+            bech32_prefix: prefix,
         })
     }
 

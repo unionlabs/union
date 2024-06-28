@@ -16,7 +16,7 @@ use clap::Parser;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{hash::H256, ErrorReporter};
 
@@ -74,96 +74,108 @@ async fn main() {
         faucet_denom: config.faucet_denom,
     };
 
+    let schema = Schema::build(Query, Mutation, EmptySubscription)
+        .data(pool.clone())
+        .data(MaxRequestPolls(config.max_request_polls))
+        .data(Bech32Prefix(faucet.cosmos.bech32_prefix.clone()))
+        .data(secret)
+        .finish();
+
     info!("spawning worker");
-    tokio::spawn({
-        let pool = pool.clone();
-        async move {
-            loop {
-                let (ids, addresses) = pool
-                    .conn(|conn| {
-                        let mut stmt = conn
-                            .prepare_cached(
-                                "SELECT id, address FROM requests WHERE tx_hash IS NULL",
-                            )
-                            .expect("???");
+    tokio::spawn(async move {
+        loop {
+            let handle = tokio::spawn({
+                let faucet = faucet.clone();
+                let pool = pool.clone();
+                async move {
+                    loop {
+                        let (ids, addresses) = pool
+                            .conn(|conn| {
+                                let mut stmt = conn
+                                    .prepare_cached(
+                                        "SELECT id, address FROM requests WHERE tx_hash IS NULL",
+                                    )
+                                    .expect("???");
 
-                        let mut rows = stmt.query([]).expect("can't query rows");
+                                let mut rows = stmt.query([]).expect("can't query rows");
 
-                        let mut addresses = vec![];
-                        let mut ids = vec![];
-                        while let Some(row) = rows.next().expect("could not read row") {
-                            let id: i64 = row.get(0).expect("could not read id");
-                            let address: String = row.get(1).expect("could not read address");
+                                let mut addresses = vec![];
+                                let mut ids = vec![];
+                                while let Some(row) = rows.next().expect("could not read row") {
+                                    let id: i64 = row.get(0).expect("could not read id");
+                                    let address: String =
+                                        row.get(1).expect("could not read address");
 
-                            addresses.push(address);
-                            ids.push(id);
+                                    addresses.push(address);
+                                    ids.push(id);
+                                }
+
+                                Ok((ids, addresses))
+                            })
+                            .await
+                            .expect("pool error");
+
+                        if ids.is_empty() {
+                            tokio::time::sleep(Duration::from_millis(1000)).await;
+                            continue;
                         }
 
-                        Ok((ids, addresses))
-                    })
-                    .await
-                    .expect("pool error");
+                        let mut i = 0;
+                        let result = loop {
+                            let send_res = faucet
+                                .send(
+                                    addresses
+                                        .clone()
+                                        .into_iter()
+                                        .map(|a| (a, config.amount))
+                                        .collect(),
+                                )
+                                .await;
 
-                if ids.is_empty() {
-                    tokio::time::sleep(Duration::from_millis(1000)).await;
-                    continue;
+                            match send_res {
+                                Err(err) => {
+                                    if i >= 5 {
+                                        break format!("ERROR: {}", ErrorReporter(err));
+                                    }
+                                    warn!(err = %ErrorReporter(err), attempt = i, "unable to submit transaction");
+                                    i += 1;
+                                }
+                                // this will be displayed to users, print the hash in the same way that cosmos sdk does
+                                Ok(tx_hash) => break tx_hash.to_string_unprefixed().to_uppercase(),
+                            };
+                        };
+
+                        pool.conn(move |conn| {
+                            let mut stmt = conn
+                                .prepare_cached(
+                                    "UPDATE requests SET tx_hash = ?1 WHERE id >= ?2 AND id <= ?3",
+                                )
+                                .expect("???");
+
+                            let rows_modified = stmt
+                                .execute(params![
+                                    &result,
+                                    &ids.first().unwrap(),
+                                    &ids.last().unwrap()
+                                ])
+                                .expect("can't query rows");
+
+                            info!(rows_modified, "updated requests");
+
+                            Ok(())
+                        })
+                        .await
+                        .expect("pool error");
+                    }
                 }
+            }).await;
 
-                let mut i = 0;
-                let result = loop {
-                    let send_res = faucet
-                        .send(
-                            addresses
-                                .clone()
-                                .into_iter()
-                                .map(|a| (a, config.amount))
-                                .collect(),
-                        )
-                        .await;
-
-                    match send_res {
-                        Err(err) => {
-                            if i >= 5 {
-                                break format!("ERROR: {}", ErrorReporter(err));
-                            }
-                            warn!(err = %ErrorReporter(err), attempt = i, "unable to submit transaction");
-                            i += 1;
-                        }
-                        // this will be displayed to users, print the hash in the same way that cosmos sdk does
-                        Ok(tx_hash) => break tx_hash.to_string_unprefixed().to_uppercase(),
-                    };
-                };
-
-                pool.conn(move |conn| {
-                    let mut stmt = conn
-                        .prepare_cached(
-                            "UPDATE requests SET tx_hash = ?1 WHERE id >= ?2 AND id <= ?3",
-                        )
-                        .expect("???");
-
-                    let rows_modified = stmt
-                        .execute(params![
-                            &result,
-                            &ids.first().unwrap(),
-                            &ids.last().unwrap()
-                        ])
-                        .expect("can't query rows");
-
-                    info!(rows_modified, "updated requests");
-
-                    Ok(())
-                })
-                .await
-                .expect("pool error");
+            match handle {
+                Ok(()) => {}
+                Err(err) => error!(err = %ErrorReporter(err), "handler panicked"),
             }
         }
     });
-
-    let schema = Schema::build(Query, Mutation, EmptySubscription)
-        .data(pool)
-        .data(MaxRequestPolls(config.max_request_polls))
-        .data(secret)
-        .finish();
 
     // Build the router
     let router = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
@@ -212,7 +224,9 @@ pub struct Config {
 }
 
 pub struct MaxRequestPolls(pub u32);
+pub struct Bech32Prefix(pub String);
 
+#[derive(Clone)]
 struct FaucetClient {
     cosmos: Cosmos,
     faucet_denom: String,
@@ -283,12 +297,26 @@ impl Mutation {
     ) -> Result<String> {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
+        let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
 
         if let Some(secret) = secret {
             recaptcha_verify::verify(&secret.0, &captcha_token, None)
                 .await
                 .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
         }
+
+        match subtle_encoding::bech32::Bech32::lower_case().decode(&to_address) {
+            Ok((hrp, _bz)) => {
+                if hrp != bech32_prefix.0 {
+                    return Err(format!(
+                        "incorrect bech32 prefix, expected `{}` but found `{hrp}`",
+                        bech32_prefix.0
+                    )
+                    .into());
+                }
+            }
+            Err(err) => return Err(err.into()),
+        };
 
         let db = ctx.data::<Pool>().unwrap();
         let id: i64 = db

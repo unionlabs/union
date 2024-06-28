@@ -1177,7 +1177,7 @@ pub mod wasm {
     impl<Hc> CosmosSdkChainSealed for Wasm<Hc>
     where
         Wasm<Hc>: ChainExt,
-        Hc: CosmosSdkChainSealed,
+        Hc: CosmosSdkChainSealed<Error = tendermint_rpc::Error>,
     {
     }
 

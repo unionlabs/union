@@ -324,7 +324,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .tm_client()
             .broadcast_tx_sync(tx_raw_bytes.clone())
             .await
-            .map_err(|err| BroadcastTxCommitError::BroadcastTxSync(err))
+            .map_err(BroadcastTxCommitError::BroadcastTxSync)
             .unwrap();
 
         assert_eq!(
