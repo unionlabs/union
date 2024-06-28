@@ -44,9 +44,6 @@
               ExecStart = pkgs.lib.getExe faucet-systemd-script;
               Restart = mkForce "always";
             };
-            environment = {
-              HOME = cfg.home;
-            };
           };
       };
     };
