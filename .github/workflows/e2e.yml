@@ -8,6 +8,8 @@ on:
         required: true
       github-token:
         required: true
+      org_token:
+        required: true
 
 jobs:
   build:
