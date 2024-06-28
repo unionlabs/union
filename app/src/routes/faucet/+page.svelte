@@ -123,6 +123,8 @@ const fetchFromFaucet = async () => {
                     spellcheck="false"
                     name="wallet-address"
                     type="text"
+                    data-1p-ignore={true}
+                    data-lpignore={true}
                     class="disabled:opacity-100 disabled:bg-black/20"
                   />
                 </div>
