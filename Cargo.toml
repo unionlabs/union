@@ -70,7 +70,7 @@ members = [
   "unionvisor",
   "voyager",
   "near/near-ibc",
-  "light-clients/near/near-light-client",
+  "light-clients/near/near",
   "near/dummy-ibc-app",
 
   "drip",

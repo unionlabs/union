@@ -86,7 +86,7 @@ impl IbcClient for NearLightClient {
 
         near_verifier::verify_header(
             &NearVerifierCtx { deps },
-            wasm_consensus_state.data.state.clone(),
+            wasm_consensus_state.data.state,
             header.new_state.clone(),
         )
         .map_err(Into::<Error>::into)?;

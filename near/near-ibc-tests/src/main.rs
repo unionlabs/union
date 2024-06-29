@@ -13,12 +13,14 @@ use near_workspaces::{
     Account, AccountId, Contract, Worker,
 };
 use unionlabs::{
-    ibc::core::{
-        channel::{self, packet::Packet},
-        client::height::Height,
-        commitment::merkle_prefix::MerklePrefix,
+    ibc::{
+        core::{
+            channel::{self, packet::Packet},
+            client::height::Height,
+            commitment::merkle_prefix::MerklePrefix,
+        },
+        lightclients::near::header::Header,
     },
-    near::types::Header,
     validated::ValidateT,
 };
 use utils::convert_block_producers;

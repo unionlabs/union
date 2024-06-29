@@ -5926,6 +5926,7 @@ dependencies = [
  "near-sdk",
  "near-sdk-contract-tools",
  "near-units",
+ "near-verifier",
  "serde",
  "serde_json",
  "tokio",

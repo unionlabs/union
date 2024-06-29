@@ -94,7 +94,7 @@
       };
 
       near-light-client = (crane.buildWasmContract {
-        crateDirFromRoot = "light-clients/near/near-light-client";
+        crateDirFromRoot = "light-clients/near/near";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });

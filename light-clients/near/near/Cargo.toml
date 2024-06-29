@@ -13,6 +13,7 @@ near-sdk-contract-tools = { workspace = true }
 serde                   = { workspace = true }
 serde_json              = { workspace = true }
 unionlabs               = { workspace = true, features = ["near"] }
+near-verifier = { workspace = true }
 
 [dev-dependencies]
 anyhow     = "1.0"
