@@ -64,7 +64,7 @@ impl GasConfig {
     }
 }
 
-pub trait CosmosSdkChainRpcs: Chain {
+pub trait CosmosSdkChainRpcs: Chain<Error = tendermint_rpc::Error> {
     fn grpc_url(&self) -> String;
     fn tm_client(&self) -> &WebSocketClient;
 }
@@ -204,6 +204,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         &self,
         signer: &CosmosSigner,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        memo: String,
     ) -> Result<(H256, u64), BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
@@ -216,7 +217,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         let tx_body = TxBody {
             messages: messages.clone().into_iter().collect(),
             // TODO(benluelo): What do we want to use as our memo?
-            memo: format!("Voyager {}", env!("CARGO_PKG_VERSION")),
+            memo,
             timeout_height: 0,
             extension_options: vec![],
             non_critical_extension_options: vec![],
@@ -324,6 +325,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .tm_client()
             .broadcast_tx_sync(tx_raw_bytes.clone())
             .await
+            .map_err(BroadcastTxCommitError::BroadcastTxSync)
             .unwrap();
 
         assert_eq!(
@@ -349,11 +351,19 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             return Err(BroadcastTxCommitError::Tx(error));
         };
 
-        let mut target_height = self.query_latest_height().await.unwrap().increment();
+        let mut target_height = self
+            .query_latest_height()
+            .await
+            .map_err(BroadcastTxCommitError::QueryLatestHeight)?;
+
         let mut i = 0;
         loop {
             let reached_height = 'l: loop {
-                let current_height = self.query_latest_height().await.unwrap();
+                let current_height = self
+                    .query_latest_height()
+                    .await
+                    .map_err(BroadcastTxCommitError::QueryLatestHeight)?;
+
                 if current_height.into_height() >= target_height.into_height() {
                     break 'l current_height;
                 }
@@ -451,8 +461,12 @@ impl<T: CosmosSdkChain> CosmosSdkChainExt for T {}
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum BroadcastTxCommitError {
+    #[error("error querying latest height")]
+    QueryLatestHeight(#[source] tendermint_rpc::Error),
+    #[error("error sending broadcast_tx_sync")]
+    BroadcastTxSync(#[source] tendermint_rpc::Error),
     #[error("tx was not included")]
-    Inclusion(#[from] tendermint_rpc::Error),
+    Inclusion(#[source] tendermint_rpc::Error),
     #[error("tx failed: {0:?}")]
     Tx(CosmosSdkError),
     #[error("tx simulation failed: {0:?}")]
@@ -472,6 +486,7 @@ impl MaybeRecoverableError for BroadcastTxCommitError {
                     | CosmosSdkError::SdkError(SdkError::ErrWrongSequence)
             ),
             Self::SimulateTx(_) => false,
+            _ => false,
         }
     }
 }

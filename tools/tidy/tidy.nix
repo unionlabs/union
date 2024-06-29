@@ -3,7 +3,8 @@
     let
       tidy = (crane.buildWorkspaceMember {
         crateDirFromRoot = "tools/tidy";
-      }).packages.tidy;
+        dev = true;
+      }).packages.tidy-dev;
     in
     {
       checks.cargo-tidy = pkgs.stdenv.mkDerivation {
