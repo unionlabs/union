@@ -67,18 +67,15 @@ async fn main() {
     .await
     .unwrap();
 
-    let drip = DripClient {
-        cosmos: Cosmos::new(config.chain)
-            .await
-            .expect("unable to create cosmos client"),
-        faucet_denom: config.faucet_denom,
-        memo: config.memo,
-    };
+    // there are more efficient ways to get the bech32 prefix, but this works for now
+    let cosmos = Cosmos::new(config.chain.clone())
+        .await
+        .expect("unable to connect to chain");
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(pool.clone())
         .data(MaxRequestPolls(config.max_request_polls))
-        .data(Bech32Prefix(drip.cosmos.bech32_prefix.clone()))
+        .data(Bech32Prefix(cosmos.bech32_prefix.clone()))
         .data(secret)
         .finish();
 
@@ -86,7 +83,15 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             let handle = tokio::spawn({
-                let drip = drip.clone();
+                // recreate each time so that if this task panics, the keyring gets rebuilt
+                info!("creating drip client");
+                let drip = DripClient {
+                    cosmos: Cosmos::new(config.chain.clone())
+                        .await
+                        .expect("unable to create cosmos client"),
+                    faucet_denom: config.faucet_denom.clone(),
+                    memo: config.memo.clone(),
+                };
                 let pool = pool.clone();
                 async move {
                     loop {
@@ -117,6 +122,7 @@ async fn main() {
                             .expect("pool error");
 
                         if ids.is_empty() {
+                            debug!("no requests in queue");
                             tokio::time::sleep(Duration::from_millis(1000)).await;
                             continue;
                         }
@@ -138,7 +144,11 @@ async fn main() {
                                     if i >= 5 {
                                         break format!("ERROR: {}", ErrorReporter(err));
                                     }
-                                    warn!(err = %ErrorReporter(err), attempt = i, "unable to submit transaction");
+                                    warn!(
+                                        err = %ErrorReporter(err),
+                                        attempt = i,
+                                        "unable to submit transaction"
+                                    );
                                     i += 1;
                                 }
                                 // this will be displayed to users, print the hash in the same way that cosmos sdk does
@@ -169,11 +179,14 @@ async fn main() {
                         .expect("pool error");
                     }
                 }
-            }).await;
+            })
+            .await;
 
             match handle {
                 Ok(()) => {}
-                Err(err) => error!(err = %ErrorReporter(err), "handler panicked"),
+                Err(err) => {
+                    error!(err = %ErrorReporter(err), "handler panicked");
+                }
             }
         }
     });
@@ -304,6 +317,8 @@ impl Mutation {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
         let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
+
+        info!(%to_address, "received drip request");
 
         if let Some(secret) = secret {
             recaptcha_verify::verify(&secret.0, &captcha_token, None)
