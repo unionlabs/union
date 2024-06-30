@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@builder.io/partytown": "^0.10.2",
-    "@cosmjs/encoding": "^0.32.3",
+    "@cosmjs/encoding": "^0.32.4",
     "@sentry/sveltekit": "^8.13.0",
     "@tanstack/match-sorter-utils": "^8.15.1",
     "@tanstack/query-core": "^5.49.1",
     "@tanstack/query-sync-storage-persister": "^5.49.1",
     "@tanstack/svelte-query": "^5.49.1",
     "@tanstack/svelte-query-persist-client": "^5.49.1",
-    "@tanstack/svelte-table": "^8.19.1",
+    "@tanstack/svelte-table": "^8.19.2",
     "@tanstack/svelte-virtual": "^3.8.1",
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.19",
     "@wagmi/connectors": "^5.0.20",
@@ -42,11 +42,11 @@
     "uint8array-extras": "^1.2.0",
     "valibot": "^0.35.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.16.4"
+    "viem": "^2.16.5"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.10",
-    "@cosmjs/tendermint-rpc": "0.32.3",
+    "@cosmjs/tendermint-rpc": "0.32.4",
     "@iconify-json/fa6-solid": "^1.1.21",
     "@iconify-json/logos": "^1.1.43",
     "@iconify-json/lucide": "^1.1.196",
