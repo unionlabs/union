@@ -9,6 +9,7 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 import { ScrollArea } from "$lib/components/ui/scroll-area"
+import { type Address, parseUnits, toHex } from "viem"
 
 /**
  * TODO: format the balance to a readable format - in order to do that properly, need:
@@ -66,7 +67,7 @@ export let onAssetSelect: (asset: string) => void
                     {truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}
                   </div>
                   <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
-                    <Precise {chain} {asset} showToolTip/>
+                    {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
                   </p>
                 </Button>
               </li>

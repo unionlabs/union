@@ -21,7 +21,7 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { type Address, parseUnits, toHex } from "viem"
+import { type Address, parseUnits, toHex, formatUnits } from "viem"
 import Stepper from "$lib/components/stepper.svelte"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -751,8 +751,7 @@ const resetInput = () => {
               <div class="mt-4 text-xs text-muted-foreground">
                 <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
                 <b>{$fromChain?.display_name}</b> is
-                <Precise chain={$fromChain} asset={$asset} showToolTip/>
-                <!--        <b>{$sendableBalances.find(b => b.symbol === $assetSymbol)?.balance}</b>-->
+                {formatUnits(BigInt($asset.balance), supportedAsset.decimals ?? 0)}
               </div>
             {/if}
           </section>
