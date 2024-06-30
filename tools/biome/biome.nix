@@ -65,6 +65,7 @@
                 "css"
                 "astro"
                 "svelte"
+                "css"
                 "json"
                 "jsonc"
               ])) ../../.);

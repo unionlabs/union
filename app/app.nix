@@ -55,6 +55,20 @@
             '';
           };
         };
+
+        app-svelte-check = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "app-svelte-check";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd app/
+
+              npm run check
+            '';
+          };
+        };
       };
     };
 }
