@@ -1,5 +1,7 @@
 telemetry = false
 
+preload = ["./scripts/preload.ts"]
+
 [run]
 # equivalent to `bun --bun` for all `bun run` commands
 bun = true

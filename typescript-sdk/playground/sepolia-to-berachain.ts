@@ -1,27 +1,28 @@
 #!/usr/bin/env bun
-import { fallback, http } from "viem"
+import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
+import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
-/* `bun playground/sepolia-to-union.ts --private-key "..."` */
+/**
+ * WIP
+ */
+
+/* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: {
-    "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+  options: { "private-key": { type: "string" } }
 })
 
 const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
-const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
@@ -35,15 +36,9 @@ const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
 const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 
 try {
-  /**
-   * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
-   */
   const {
     data: [sepoliaInfo]
-  } = await offchainQuery.chain({
-    chainId: "11155111",
-    includeContracts: true
-  })
+  } = await offchainQuery.chains({ includeContracts: true })
   if (!sepoliaInfo) raise("Sepolia info not found")
 
   const ucsConfiguration = sepoliaInfo.ucs1_configurations
@@ -57,30 +52,33 @@ try {
     evm: {
       chain: sepolia,
       account: evmAccount,
-      transport: fallback([
-        http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
-        http(sepolia?.rpcUrls.default.http.at(0))
-      ])
+      transport: http("https://rpc2.sepolia.org")
     },
-    // @ts-expect-error
-    cosmos: {}
+    cosmos: {
+      account: cosmosAccount,
+      gasPrice: { amount: "0.0025", denom: "muno" },
+      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+    }
+  })
+
+  const pfmMemo = client.createPfmMemo({
+    channel: "channel-80",
+    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+    port: "wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
   })
 
   const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
+    memo: pfmMemo,
     sourceChannel: channel_id,
-    evmSigner: evmAccount.address,
     network: sepoliaInfo.rpc_type,
-    denomAddress: USDC_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
-    // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd", // "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
   consola.info(`Gas cost: ${gasEstimationResponse.data}`)
-
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
 
   if (!gasEstimationResponse.success) {
     console.info("Transaction simulation failed")
@@ -89,12 +87,12 @@ try {
 
   const transfer = await client.transferAsset({
     amount: 1n,
+    memo: pfmMemo,
     sourceChannel: channel_id,
     network: sepoliaInfo.rpc_type,
-    denomAddress: USDC_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
-    // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd", //"union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+    denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 

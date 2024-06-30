@@ -28,7 +28,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noPropertyAccessFromIndexSignature": true,
-    "types": ["node", "bun"],
+    "types": ["node"],
     "paths": {
       "~root/*": ["../*"]
     }
