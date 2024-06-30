@@ -17,6 +17,7 @@ import { writable, type Writable } from "svelte/store"
 import { URLS } from "$lib/constants/index.ts"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import Truncate from "$lib/components/truncate.svelte"
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -45,9 +46,7 @@ const fetchFromFaucet = async () => {
 
     const captchaToken = await window.grecaptcha.execute(
       "6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow",
-      {
-        action: "submit"
-      }
+      { action: "submit" }
     )
 
     faucetState.set({ kind: "SUBMITTING", captchaToken })
@@ -71,7 +70,6 @@ const fetchFromFaucet = async () => {
 
       faucetState.set({ kind: "RESULT_OK", transactionHash: result.faucet2.send })
     } catch (error) {
-      // @ts-ignore
       faucetState.set({ kind: "RESULT_ERR", error: `Faucet error: ${error}` })
       return
     }
@@ -104,7 +102,7 @@ const fetchFromFaucet = async () => {
         method="POST"
         class="flex flex-col w-full gap-4"
         name="faucet-form"
-        on:submit|preventDefault={fetchFromFaucet}
+        on:submit|preventDefault|once={fetchFromFaucet}
       >
           <div>
             <Label for="address">Address</Label>
@@ -120,6 +118,8 @@ const fetchFromFaucet = async () => {
                     pattern={unionAddressRegex.source}
                     placeholder="union14ea6..."
                     required={true}
+                    minlength={44}
+                    maxlength={44}
                     spellcheck="false"
                     name="wallet-address"
                     type="text"
@@ -163,7 +163,7 @@ const fetchFromFaucet = async () => {
                 event.preventDefault()
                 fetchFromFaucet()
                }}
-              disabled={$faucetState.kind !== "IDLE"}
+              disabled={$faucetState.kind !== "IDLE" || isValidCosmosAddress(address, ['union']) === false}
               class={cn('min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50')}
             >
               Submit
@@ -179,8 +179,9 @@ const fetchFromFaucet = async () => {
           class="g-recaptcha sr-only"
           data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
           data-callback="onSubmit"
-          data-size="invisible">
-          ></div>
+          data-size="invisible"
+        >
+        </div>
       </form>
       {/if}
     </Card.Content>
