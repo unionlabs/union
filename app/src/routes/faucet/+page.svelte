@@ -17,7 +17,7 @@ import { writable, type Writable } from "svelte/store"
 import { URLS } from "$lib/constants/index.ts"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import Truncate from "$lib/components/truncate.svelte"
-import { isValidCosmosAddress } from '$lib/wallet/utilities/validate.ts'
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
