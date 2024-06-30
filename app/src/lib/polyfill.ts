@@ -11,7 +11,6 @@ if (browser) {
   window.EventEmitter = EventEmitter
 }
 
-// @ts-expect-error
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
