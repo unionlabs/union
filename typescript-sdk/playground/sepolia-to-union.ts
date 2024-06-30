@@ -42,6 +42,7 @@ try {
     data: [sepoliaInfo]
   } = await offchainQuery.chain({
     chainId: "11155111",
+    includeEndpoints: true,
     includeContracts: true
   })
   if (!sepoliaInfo) raise("Sepolia info not found")
@@ -58,6 +59,10 @@ try {
       chain: sepolia,
       account: evmAccount,
       transport: fallback([
+        http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
+        http(
+          "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
+        ),
         http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
         http(sepolia?.rpcUrls.default.http.at(0))
       ])
@@ -71,7 +76,7 @@ try {
     sourceChannel: channel_id,
     evmSigner: evmAccount.address,
     network: sepoliaInfo.rpc_type,
-    denomAddress: USDC_CONTRACT_ADDRESS,
+    denomAddress: LINK_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
@@ -91,7 +96,7 @@ try {
     amount: 1n,
     sourceChannel: channel_id,
     network: sepoliaInfo.rpc_type,
-    denomAddress: USDC_CONTRACT_ADDRESS,
+    denomAddress: LINK_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
