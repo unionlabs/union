@@ -38,10 +38,6 @@ onMount(() => {
 <svelte:head>
   <title>Union App Beta</title>
   <meta name="description" content="Union Web App" />
-  <script>
-    partytown = { forward: ['dataLayer.push'] }
-  </script>
-  {@html '<script>' + partytownSnippet() + '</script>'}
 </svelte:head>
 
 <svelte:window

@@ -23,7 +23,7 @@ export function userBalancesQuery({
         chain.chain_id,
         userAddr?.evm?.normalized,
         userAddr?.cosmos?.normalized
-      ],
+      ].filter(Boolean),
       refetchOnWindowFocus: false,
       refetchInterval: 4_000,
       queryFn: async () => {

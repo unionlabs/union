@@ -25,7 +25,7 @@ export async function getBalancesFromAlchemy({
   let json: unknown
 
   try {
-    const alchemyUrl = URL.canParse(url) ? url : `https://${url}`
+    const alchemyUrl = url.startsWith("https") ? url : `https://${url}`
     const response = await fetch(alchemyUrl, {
       method: "POST",
       body: JSON.stringify({
