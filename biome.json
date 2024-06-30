@@ -162,6 +162,7 @@
         "all": true,
         "noConsole": "off",
         "useTopLevelRegex": "off",
+        "noExportedImports": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
         "noUnusedFunctionParameters": "off",

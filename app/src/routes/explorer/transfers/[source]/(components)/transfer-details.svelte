@@ -91,7 +91,6 @@ let processedTransfers = derived(
       //   tx.traces.push.apply(tx.traces, tx.hop.traces)
       //   tx.traces.sort((a, b) => {
       //     // @ts-ignore timestamp is guaranteed to be a date
-      //     // biome-ignore lint/nursery/useDateNow: this is a biome bug
       //     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       //   })
       // }
@@ -137,7 +136,6 @@ let processedTraces = derived(
         tx.traces.push.apply(tx.traces, tx.hop.traces)
         tx.traces.sort((a, b) => {
           // @ts-ignore timestamp is guaranteed to be a date
-          // biome-ignore lint/nursery/useDateNow: this is a biome bug
           return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         })
       }
