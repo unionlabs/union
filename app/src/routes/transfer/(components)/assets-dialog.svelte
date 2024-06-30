@@ -5,23 +5,12 @@ import { truncate } from "$lib/utilities/format"
 import * as Dialog from "$lib/components/ui/dialog"
 import { Button } from "$lib/components/ui/button/index.js"
 import type { Chain } from "$lib/types.ts"
-import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 import { ScrollArea } from "$lib/components/ui/scroll-area"
-import { type Address, parseUnits, toHex } from "viem"
-
-/**
- * TODO: format the balance to a readable format - in order to do that properly, need:
- *  - the balance,
- *  - the decimals,
- *  - whether it's evm or cosmos:
- *    - if evm then `Number(formatUnits(balance, decimals)).toFixed(2)`, - the 2 can be a 4 if you want more precision
- *    - if cosmos then: TBD
- */
 
 export let dialogOpen = false
-export let chain: Chain
+export let chain: Chain | null
 export let assets: Array<{
   address: string
   balance: bigint
@@ -47,7 +36,9 @@ export let onAssetSelect: (asset: string) => void
     <div class="w-full overflow-scroll">
       <ul>
           {#each assets as asset, index}
-            {@const supportedAsset = getSupportedAsset(chain, asset.address)}
+            {@const supportedAsset = getSupportedAsset(
+              // @ts-ignore
+              chain, asset.address)}
             {#if $showUnsupported || supportedAsset}
               <li
                 class={cn(

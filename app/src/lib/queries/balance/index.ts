@@ -6,6 +6,14 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
+export interface Balance {
+  name: string
+  symbol: string
+  address: string
+  balance: bigint
+  gasToken?: boolean
+}
+
 export function userBalancesQuery({
   userAddr,
   chains,
@@ -13,7 +21,7 @@ export function userBalancesQuery({
 }: {
   userAddr: UserAddresses
   chains: Array<Chain>
-  connected: boolean
+  connected?: boolean
 }) {
   return createQueries({
     queries: chains.map(chain => ({

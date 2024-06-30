@@ -10,7 +10,7 @@ const EMPTY_CHAINS: Array<Chain> = []
 
 let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   // this will never happen, but is needed to satisfy svelte's prop type checker
-  if ($chains.data === null || $chains.data === undefined || $chains.data === [])
+  if ($chains.data === null || $chains.data === undefined || $chains.data.length === 0)
     return EMPTY_CHAINS
 
   return $chains.data.map(chain => {

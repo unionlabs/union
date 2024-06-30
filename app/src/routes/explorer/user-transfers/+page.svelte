@@ -5,7 +5,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { derived, writable } from "svelte/store"
+import { derived } from "svelte/store"
 import CellOrigin from "../(components)/cell-origin.svelte"
 import CellAssets from "../(components)/cell-assets.svelte"
 import { chainsQuery } from "$lib/queries/chains"
@@ -88,12 +88,14 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
     accessorKey: "sender",
     header: () => "Sender",
     size: 200,
+    // @ts-expect-error
     cell: info => truncate(info.getValue(), 8)
   },
   {
     accessorKey: "receiver",
     header: () => "Receiver",
     size: 200,
+    // @ts-expect-error
     cell: info => truncate(info.getValue(), 8)
   },
   {

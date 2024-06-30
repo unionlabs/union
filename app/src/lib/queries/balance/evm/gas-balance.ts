@@ -1,19 +1,13 @@
 import { getAddress } from "viem"
 import { raise } from "$lib/utilities"
+import type { Balance } from "../index.ts"
 import { getPublicClient } from "@wagmi/core"
 import { config } from "$lib/wallet/evm/config.ts"
 
 export async function evmGasBalance({
   address,
   chainId
-}: { address: string; chainId: string }): Promise<{
-  gasToken: boolean
-  name: string
-  symbol: string
-  decimals: number
-  balance: bigint
-  chainId: string
-}> {
+}: { address: string; chainId: string }): Promise<Balance> {
   const validAddress = getAddress(address)
   const chain = config.chains.find(chain => String(chain.id) === chainId)
   if (!chain) raise(`chain with id ${chainId} not found`)
@@ -21,7 +15,7 @@ export async function evmGasBalance({
     chainId: chain.id
   })
   const balance = await viemClient.getBalance({ address: validAddress })
-  return { gasToken: true, ...chain.nativeCurrency, chainId, balance }
+  return { address: "", gasToken: true, ...chain.nativeCurrency, balance }
 }
 
 /**

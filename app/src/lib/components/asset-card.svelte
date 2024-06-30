@@ -7,7 +7,7 @@ import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 
 //Create correct type here
-export let asset: { symbol: string; balance: string | bigint; denom: string; address: string }
+export let asset: { symbol: string; balance: bigint; denom?: string; address: string }
 export let chain: Chain
 
 //Finds the asset in chains.assets and checks if supported,

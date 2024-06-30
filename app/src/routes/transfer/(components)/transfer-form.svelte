@@ -125,8 +125,10 @@ $: asset = derived(
 let recipient = derived(toChain, $toChain => {
   switch ($toChain?.rpc_type) {
     case "evm":
+      // @ts-expect-error
       return userAddr.evm.canonical
     case "cosmos":
+      // @ts-expect-error
       return rawToBech32($toChain.addr_prefix, userAddr.cosmos.bytes)
     default:
       return null
@@ -304,6 +306,7 @@ const transfer = async () => {
                 sourcePort: "transfer",
                 sourceChannel: ucs1_configuration.channel_id,
                 token: { denom: $assetSymbol, amount: parsedAmount.toString() },
+                // @ts-expect-error
                 sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
                 receiver: $recipient,
                 memo: pfmMemo ?? "",
@@ -389,7 +392,7 @@ const transfer = async () => {
 
       try {
         hash = await writeContract(config, {
-          chain: selectedChain,
+          chain: sepolia,
           account: userAddr.evm.canonical,
           abi: erc20Abi,
           address: $asset.address as Address,
@@ -423,38 +426,24 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SIMULATING_TRANSFER") {
-      console.log("simulating transfer step")
-
-      const contractRequest = {
-        chainId: selectedChain.id,
-        abi: ucs01abi,
-        account: userAddr.evm.canonical,
-        functionName: "send",
-        address: ucs01address,
-        args: [
-          ucs1_configuration.channel_id,
-          pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
-          [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
-          pfmMemo ?? "", // memo
-          { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-          0n
-        ]
-      } as const
-
-      if ($transferState.warning) {
-        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
-        transfer()
-        return
-      }
-
-      // ^ the user is continuing continuing after having seen the warning
-
-      console.log("confirming transfers test")
-
       try {
-        console.log("contract request", contractRequest)
-        const simulationResult = await simulateContract(config, contractRequest)
-        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+        const simulationResult = await simulateContract(config, {
+          chainId: sepolia.id,
+          abi: ucs01abi,
+          account: userAddr.evm.canonical,
+          functionName: "send",
+          address: ucs01address,
+          args: [
+            ucs1_configuration.channel_id,
+            pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
+            [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
+            pfmMemo ?? "", // memo
+            { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+            0n
+          ]
+        })
+        // @ts-ignore
+        transferState.set({ kind: "CONFIRMING_TRANSFER", simulationResult })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
@@ -550,10 +539,10 @@ $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $user
   const cosmosBalance = $userBalances[chainIndex]
   if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
     console.log("trying to send from cosmos but no balances fetched yet")
-    return null
+    return []
   }
   return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
-})
+}) as any
 
 function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [$fromChainId, $toChainId]
@@ -781,10 +770,9 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     ]
   }
   raise("trying to make stepper for unsupported chain")
-})
+}) as any
 
 let inputState: "locked" | "unlocked" = "locked"
-const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
 
 let userInput = false
 $: address = $recipient ?? ""
@@ -1009,9 +997,7 @@ const resetInput = () => {
   <AssetsDialog
     chain={$fromChain}
     assets={$sendableBalances}
-    onAssetSelect={newSelectedAsset => {
-      assetSymbol.set(newSelectedAsset)
-    }}
+    onAssetSelect={assetSymbol.set}
     bind:dialogOpen={dialogOpenToken}
   />
 {/if}

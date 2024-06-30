@@ -41,17 +41,18 @@ let transfers = createQuery({
     return response.v0_transfers
   }
 })
-//@ts-ignore
+
 let processedTransfers = derived(
   [transfers, submittedTransfers],
   ([$transfers, $submittedTransfers]) => {
     if ($transfers.data === undefined || $transfers.data.length === 0) {
+      // @ts-expect-error
       if ($submittedTransfers[source] === undefined) {
         return null
       }
+      // @ts-expect-error
       return [$submittedTransfers[source]]
     }
-    //@ts-ignore
     return $transfers.data.map(transfer => {
       let tx = structuredClone(transfer)
 
@@ -123,6 +124,7 @@ let processedTraces = derived(
   [tracesAndHops, submittedTransfers],
   ([$tracesAndHops, $submittedTransfers]) => {
     if (!$tracesAndHops.data || $tracesAndHops.data.length === 0) {
+      // @ts-expect-error
       if ($submittedTransfers[source] !== undefined) {
         return [[]] // pre-generate trace for submitted transfer
       }
@@ -142,7 +144,7 @@ let processedTraces = derived(
     })
   }
 )
-
+// @ts-expect-error
 let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
   [processedTraces, processedTransfers],
   ([$processedTraces, $processedTransfers]) => {
@@ -370,7 +372,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 <!--
 <h1 class="font-bold text-md">Transfer for <span class="font-mono">{source}</span></h1>
 <a href="/explorer/transfers">Back to all transfers </a>
-!-->
+-->
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
 <div class="flex flex-col w-full items-center gap-6">

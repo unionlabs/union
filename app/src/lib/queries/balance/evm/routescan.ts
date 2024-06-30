@@ -1,6 +1,6 @@
 import * as v from "valibot"
-import type { Address } from "viem"
 import { raise } from "$lib/utilities"
+import type { Balance } from "../index.ts"
 
 const routescanTokenBalancesSchema = v.object({
   items: v.array(
@@ -12,12 +12,10 @@ const routescanTokenBalancesSchema = v.object({
   )
 })
 
-export type EvmBalances = v.InferOutput<typeof routescanTokenBalancesSchema>
-
 export async function getBalancesFromRoutescan({
   url,
   walletAddress
-}: { url: string; walletAddress: string }) {
+}: { url: string; walletAddress: string }): Promise<Array<Balance>> {
   let json: unknown
 
   try {
@@ -38,7 +36,8 @@ export async function getBalancesFromRoutescan({
   return result.output.items.map(({ tokenAddress, tokenQuantity, tokenSymbol }) => ({
     balance: BigInt(tokenQuantity),
     gasToken: false,
-    address: tokenAddress as Address,
-    symbol: tokenSymbol
+    address: tokenAddress,
+    symbol: tokenSymbol,
+    name: tokenSymbol
   }))
 }

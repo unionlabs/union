@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import { raise } from "$lib/utilities"
+import type { Balance } from "./index.ts"
 
 const cosmosBalancesResponseSchema = v.object({
   balances: v.array(
@@ -13,7 +14,7 @@ const cosmosBalancesResponseSchema = v.object({
 export async function getCosmosChainBalances({
   url,
   walletAddress
-}: { url: string; walletAddress: string }) {
+}: { url: string; walletAddress: string }): Promise<Array<Balance>> {
   let json: undefined | unknown
 
   try {
@@ -35,6 +36,7 @@ export async function getCosmosChainBalances({
   return result.output.balances.map(x => ({
     address: x.denom,
     symbol: x.denom,
+    name: x.denom,
     balance: BigInt(x.amount),
     decimals: 0
   }))

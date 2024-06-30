@@ -2,7 +2,6 @@
 import { userBalancesQuery } from "$lib/queries/balance"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import Precise from "$lib/components/precise.svelte"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -16,7 +15,6 @@ $: userBalances = userBalancesQuery({
 })
 $: unionBalances = $userBalances.at(0)?.data ?? []
 $: asset = unionBalances.find(balance => balance.symbol.toLowerCase() === "muno")
-$: supportedAsset = getSupportedAsset(chain[0], asset?.address)
 </script>
 
 {#if asset}
