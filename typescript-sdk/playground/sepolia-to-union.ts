@@ -58,14 +58,17 @@ try {
     evm: {
       chain: sepolia,
       account: evmAccount,
-      transport: fallback([
-        http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
-        http(
-          "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
-        ),
-        http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
-        http(sepolia?.rpcUrls.default.http.at(0))
-      ])
+      transport: fallback(
+        [
+          http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
+          http(
+            "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
+          ),
+          http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
+          http(sepolia?.rpcUrls.default.http.at(0))
+        ],
+        { rank: true, retryCount: 3 }
+      )
     },
     // @ts-expect-error
     cosmos: {}
@@ -83,7 +86,7 @@ try {
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
-  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
+  consola.box("Sepolia to Union gas cost:", gasEstimationResponse)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 

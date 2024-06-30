@@ -11,6 +11,7 @@ import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import type { TransactionResponse } from "../types.ts"
+import { simulateTransaction } from "../query/evm-gas-estimation.ts"
 
 /**
  * TODO:
@@ -143,32 +144,17 @@ export async function transferAssetFromEvmSimulate(
     relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
     memo ||= timestamp()
-    const gasCostEstimation = await client.estimateContractGas({
-      account,
-      abi: ucs01RelayAbi,
-      functionName: "send",
-      address: relayContractAddress,
-      /**
-       * string calldata sourceChannel,
-       * bytes calldata receiver,
-       * LocalToken[] calldata tokens,
-       * string calldata extension (memo),
-       * IbcCoreClientV1Height.Data calldata timeoutHeight,
-       * uint64 timeoutTimestamp
-       */
-      args: [
-        sourceChannel,
-        recipient.startsWith("0x")
-          ? getAddress(recipient)
-          : bech32AddressToHex({ address: recipient }),
-        [{ denom: denomAddress, amount }],
-        memo,
-        { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-        0n
-      ]
-    })
 
-    return { success: true, data: gasCostEstimation.toString() }
+    const gasEstimation = await simulateTransaction({
+      memo,
+      amount,
+      account,
+      recipient,
+      denomAddress,
+      sourceChannel,
+      relayContractAddress
+    })
+    return { success: true, data: gasEstimation.toString() }
   } catch (error) {
     console.error(error)
     return {

@@ -89,7 +89,7 @@ try {
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
-  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
+  consola.box("Sepolia to Berachain gas cost:", gasEstimationResponse)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 

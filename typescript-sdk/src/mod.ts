@@ -28,7 +28,7 @@ import {
 } from "./transfer/cosmos.ts"
 import { sepolia } from "viem/chains"
 import { timestamp } from "./utilities/index.ts"
-import { offchainQuery } from "./query/off-chain.ts"
+import { offchainQuery } from "./query/hubble.ts"
 import { findPfmPath, createPfmMemo } from "./pfm.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"

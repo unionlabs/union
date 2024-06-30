@@ -5,7 +5,7 @@ import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
-import { timestamp } from "../scripts/logger.ts"
+import { consola, timestamp } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
@@ -75,7 +75,7 @@ try {
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   })
 
-  console.info("Union to Sepolia gas cost:", gasEstimationResponse)
+  consola.box("Union to Sepolia gas cost:", gasEstimationResponse)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
