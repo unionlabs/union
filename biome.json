@@ -1,5 +1,5 @@
 {
-  "$schema": "https://esm.sh/@biomejs/biome@1.8.0/configuration_schema.json",
+  "$schema": "https://esm.sh/@biomejs/biome@1.8.3/configuration_schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -162,6 +162,7 @@
         "all": true,
         "noConsole": "off",
         "useTopLevelRegex": "off",
+        "noExportedImports": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
         "noUnusedFunctionParameters": "off",
