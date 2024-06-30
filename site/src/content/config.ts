@@ -18,11 +18,6 @@ const blogCollection = defineCollection({
     })
 })
 
-const openApiCollection = defineCollection({
-  type: "data",
-  schema: z.object({ name: z.string() })
-})
-
 export const collections = {
   blog: blogCollection,
   docs: defineCollection({ schema: docsSchema() }),

@@ -43,6 +43,19 @@
             '';
           };
         };
+
+        site-check = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "site-check";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd site/
+              npm run check
+            '';
+          };
+        };
       };
     };
 }
