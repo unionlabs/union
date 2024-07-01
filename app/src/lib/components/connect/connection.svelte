@@ -43,7 +43,7 @@ let sanitizeWalletInformation =
   chainWalletsInformation
     .toReversed()
     .filter(
-      (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i,
+      (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
     ) ?? chainWalletsInformation
 
 $: walletListToRender =

@@ -13,7 +13,7 @@ import {
   disconnect as _disconnect,
   type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage,
+  createStorage as createWagmiStorage
 } from "@wagmi/core"
 import { writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
