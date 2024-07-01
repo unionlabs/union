@@ -6,8 +6,8 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
 

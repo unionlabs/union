@@ -6,8 +6,8 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { offchainQuery, createCosmosSdkClient } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { offchainQuery, createCosmosSdkClient } from "#mod.ts"
 
 /**
  *
