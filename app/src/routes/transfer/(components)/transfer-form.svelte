@@ -295,15 +295,6 @@ const transfer = async () => {
     if (window.ethereum === undefined) raise("no ethereum browser extension")
 
     if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
-      transferState.set({ kind: "ADDING_CHAIN" })
-      // try {
-      //   // await walletClient.addChain({ chain: viemChain })
-      // } catch (error) {
-      //   if (error instanceof Error) {
-      //     transferState.set({ kind: "ADDING_CHAIN", error })
-      //   }
-      //   return
-      // }
       transferState.set({ kind: "SWITCHING_TO_CHAIN" })
     }
 
@@ -384,8 +375,6 @@ const transfer = async () => {
         ]
       } as const; 
 
-      if ($transferState.warning !== undefined) 
-
       if ($transferState.warning) {
         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
         transfer();
@@ -398,9 +387,9 @@ const transfer = async () => {
       console.log("confirming transfers test");
 
       try {
+      console.log('contract request', contractRequest);
         const simulationResult = await simulateContract(config, contractRequest )
-        // @ts-ignore
-        transferState.set({ kind: "CONFIRMING_TRANSFER", contractArgs })
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
@@ -411,8 +400,7 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        // @ts-ignore
-        const transferHash = await writeContract(config, $transferState.contractArgs)
+        const transferHash = await writeContract(config, $transferState.contractRequest)
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
       } catch (error) {
         if (error instanceof Error) {
@@ -547,22 +535,6 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     // TODO: Refactor this by implementing Ord for transferState
     return [
       // Do not uncomment
-      // stateToStatus(
-      //   $transferState,
-      //   "ADDING_CHAIN",
-      //   `Add ${$fromChain.display_name}`,
-      //   `Added ${$fromChain.display_name}`,
-      //   ts => ({
-      //     status: "ERROR",
-      //     title: `Error adding ${$fromChain.display_name}`,
-      //     description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
-      //   }),
-      //   () => ({
-      //     status: "IN_PROGRESS",
-      //     title: `Adding ${$fromChain.display_name}`,
-      //     description: `Click 'Approve' in wallet.`
-      //   })
-      // ),
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",

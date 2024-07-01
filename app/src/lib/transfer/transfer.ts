@@ -18,7 +18,6 @@ export type TransferState = DiscriminatedUnion<
   {
     PRE_TRANSFER: {}
     FLIPPING: {}
-    ADDING_CHAIN: { error?: Error }
     SWITCHING_TO_CHAIN: { warning?: Error }
     APPROVING_ASSET: { error?: Error }
     AWAITING_APPROVAL_RECEIPT: { error?: Error; hash: `0x${string}` }
@@ -37,24 +36,22 @@ export const transferStep = (state: TransferState): number => {
       return 1
     case "FLIPPING":
       return 2
-    case "ADDING_CHAIN":
-      return 3
     case "SWITCHING_TO_CHAIN":
-      return 4
+      return 3
     case "APPROVING_ASSET":
-      return 5
+      return 4
     case "AWAITING_APPROVAL_RECEIPT":
-      return 6
+      return 5
     case "SIMULATING_TRANSFER":
-      return 7
+      return 6
     case "CONFIRMING_TRANSFER":
-      return 8
+      return 7
     case "AWAITING_TRANSFER_RECEIPT":
-      return 9
+      return 8
     case "TRANSFERRING":
-      return 10
+      return 9
     case "TRANSFERRED":
-      return 11
+      return 10
   }
 }
 
