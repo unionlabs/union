@@ -44,6 +44,7 @@ try {
     data: [unionTestnetInfo]
   } = await offchainQuery.chain({
     includeContracts: true,
+    includeEndpoints: true,
     chainId: "union-testnet-8"
   })
 
@@ -67,19 +68,26 @@ try {
 
   const transactionObject = {
     amount: 1n,
-    network: "cosmos",
     denomAddress: "muno",
+    network: unionTestnetInfo.rpc_type,
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,
     recipient: "osmo14qemq0vw6y3gc3u3e0aty2e764u4gs5l32ydm0",
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
 
-  console.info(transactionObject)
+  const gasEstimationResponse = await client.simulateTransaction(transactionObject)
 
-  const gasCostResponse = await client.simulateTransaction(transactionObject)
+  if (gasEstimationResponse.success) {
+    consola.box("Union to Osmosis gas cost:", gasEstimationResponse)
+  } else {
+    console.error("Transaction simulation failed", gasEstimationResponse.data)
+  }
 
-  console.info(`Gas cost: ${gasCostResponse.data}`)
+  if (!gasEstimationResponse.success) {
+    console.info("Transaction simulation failed")
+    process.exit(1)
+  }
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 

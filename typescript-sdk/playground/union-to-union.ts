@@ -4,7 +4,7 @@ import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
-import { raise } from '#utilities/index.ts'
+import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
