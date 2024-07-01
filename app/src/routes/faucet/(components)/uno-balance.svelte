@@ -20,5 +20,5 @@ $: supportedAsset = getSupportedAsset(chain[0], asset?.address)
 </script>
 
 {#if asset}
-  <span class=""><Precise chain={chain[0]} {asset} showSymbol showToolTip /></span>
+  <span class=""><Precise chain={chain[0]} {asset} showSymbol displayDecimals={6} /></span>
 {/if}
