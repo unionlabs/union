@@ -34,7 +34,7 @@ let sheetOpen = false
 $: if ($navigating) sheetOpen = false
 </script>
 
-<Sheet.Root open={true}>
+<Sheet.Root bind:open={sheetOpen}>
   <Sheet.Trigger asChild class="w-full" let:builder>
     <Button
       builders={[builder]}
@@ -51,9 +51,13 @@ $: if ($navigating) sheetOpen = false
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
-    class="h-full border-solid border-left min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px] flex flex-col justify-start"
+    class={cn("h-full border-solid border-left flex flex-col justify-start",
+'min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]'
+      ,
+      'overflow-y-auto'
+    )}
   >
-    <Sheet.Header class="mb-4 pl-2">
+    <Sheet.Header class="pl-2">
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
@@ -78,7 +82,7 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    <Separator class={cn('px-0 bg-border my-4')}/>
+    <Separator class={cn('px-0 bg-border -mt-5')} />
     <Connection
       address={$cosmosStore.address}
       chain="cosmos"

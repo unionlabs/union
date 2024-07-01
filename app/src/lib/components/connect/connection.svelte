@@ -40,11 +40,9 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
 // filter items with duplicate names
 let sanitizeWalletInformation =
-  chainWalletsInformation
-    .toReversed()
-    .filter(
-      (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
-    ) ?? chainWalletsInformation
+  chainWalletsInformation.filter(
+    (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
+  ) ?? chainWalletsInformation
 
 $: walletListToRender =
   connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
@@ -52,7 +50,6 @@ $: walletListToRender =
 let metamaskAlertDialogOpen = false
 </script>
 
-<MetamaskMobileAlert {metamaskAlertDialogOpen} />
 
 <h3 class="uppercase font-supermolot font-bold text-xl">{chain}</h3>
 <Button
@@ -105,7 +102,7 @@ let metamaskAlertDialogOpen = false
             "capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent",
             connectStatus === "connected" && connectedWalletId === id && "border-border",
             (connectStatus === "disconnected" || connectStatus == undefined) &&
-              "opacity-60 hover:opacity-100",
+              "opacity-75 hover:opacity-100",
             hoverState === "hover" &&
               connectedWalletId === id &&
               "hover:text-destructive border-destructive hover:bg-transparent",
@@ -143,6 +140,7 @@ let metamaskAlertDialogOpen = false
     {/if}
   {/each}
 </div>
+<MetamaskMobileAlert {metamaskAlertDialogOpen} />
 
 <style lang="postcss">
   :global(button[data-connect-button]) {

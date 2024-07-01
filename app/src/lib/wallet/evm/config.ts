@@ -35,7 +35,9 @@ export const config = createConfig({
   chains: [sepolia, berachainTestnetbArtio],
   cacheTime: 4_000,
   pollingInterval: 4_000,
+  syncConnectedChain: true,
   batch: { multicall: true },
+  multiInjectedProviderDiscovery: true,
   transports: {
     [sepolia.id]: fallback([
       unstable_connector(injected, {
@@ -59,8 +61,6 @@ export const config = createConfig({
       http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
     ])
   },
-  syncConnectedChain: true,
-  multiInjectedProviderDiscovery: true,
   storage: createWagmiStorage({
     serialize,
     deserialize,
