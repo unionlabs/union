@@ -295,24 +295,22 @@ const transfer = async () => {
     if (window.ethereum === undefined) raise("no ethereum browser extension")
 
     if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
-      transferState.set({ kind: "ADDING_CHAIN" })
-      // try {
-      //   // await walletClient.addChain({ chain: viemChain })
-      // } catch (error) {
-      //   if (error instanceof Error) {
-      //     transferState.set({ kind: "ADDING_CHAIN", error })
-      //   }
-      //   return
-      // }
       transferState.set({ kind: "SWITCHING_TO_CHAIN" })
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
+      if ($transferState.warning) {
+        transferState.set({ kind: "APPROVING_ASSET" })
+        transfer()
+        return
+      }
+      // ^ the user is continuing continuing after having seen the warning
+
       try {
         await switchChain(config, { chainId: 11155111 })
       } catch (error) {
         if (error instanceof Error) {
-          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
         }
         return
       }
@@ -358,27 +356,41 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SIMULATING_TRANSFER") {
+      console.log("simulating transfer step")
+
+      const contractRequest = {
+        chainId: sepolia.id,
+        abi: ucs01abi,
+        account: userAddr.evm.canonical,
+        functionName: "send",
+        address: ucs01address,
+        args: [
+          ucs1_configuration.channel_id,
+          pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
+          [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
+          pfmMemo ?? "", // memo
+          { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+          0n
+        ]
+      } as const
+
+      if ($transferState.warning) {
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+        transfer()
+        return
+      }
+
+      // ^ the user is continuing continuing after having seen the warning
+
+      console.log("confirming transfers test")
+
       try {
-        const simulationResult = await simulateContract(config, {
-          chainId: sepolia.id,
-          abi: ucs01abi,
-          account: userAddr.evm.canonical,
-          functionName: "send",
-          address: ucs01address,
-          args: [
-            ucs1_configuration.channel_id,
-            pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
-            [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
-            pfmMemo ?? "", // memo
-            { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-            0n
-          ]
-        })
-        // @ts-ignore
-        transferState.set({ kind: "CONFIRMING_TRANSFER", simulationResult })
+        console.log("contract request", contractRequest)
+        const simulationResult = await simulateContract(config, contractRequest)
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
       } catch (error) {
         if (error instanceof Error) {
-          transferState.set({ kind: "SIMULATING_TRANSFER", error })
+          transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
         }
         return
       }
@@ -386,14 +398,13 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        // @ts-ignore
-        const transferHash = await writeContract(config, $transferState.simulationResult.request)
+        const transferHash = await writeContract(config, $transferState.contractRequest)
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
             kind: "CONFIRMING_TRANSFER",
-            simulationResult: $transferState.simulationResult,
+            contractRequest: $transferState.contractRequest,
             error
           })
         }
@@ -501,6 +512,7 @@ const stateToStatus = <K extends TransferState["kind"]>(
   pendingTitle: string,
   completedTitle: string,
   errorFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown,
+  warningFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown,
   progressFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown
 ) =>
   stepBefore(state, kind)
@@ -508,9 +520,12 @@ const stateToStatus = <K extends TransferState["kind"]>(
     : stepAfter(state, kind)
       ? { status: "COMPLETED", title: completedTitle }
       : // @ts-ignore
-        state.error !== undefined
-        ? errorFormatter(state as Extract<TransferState, { kind: K }>)
-        : progressFormatter(state as Extract<TransferState, { kind: K }>)
+        state.warning !== undefined
+        ? warningFormatter(state as Extract<TransferState, { kind: K }>)
+        : // @ts-ignore
+          state.error !== undefined
+          ? errorFormatter(state as Extract<TransferState, { kind: K }>)
+          : progressFormatter(state as Extract<TransferState, { kind: K }>)
 
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
   if ($transferState.kind === "PRE_TRANSFER") return [] // don't generate steps before transfer is ready
@@ -518,22 +533,6 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     // TODO: Refactor this by implementing Ord for transferState
     return [
       // Do not uncomment
-      // stateToStatus(
-      //   $transferState,
-      //   "ADDING_CHAIN",
-      //   `Add ${$fromChain.display_name}`,
-      //   `Added ${$fromChain.display_name}`,
-      //   ts => ({
-      //     status: "ERROR",
-      //     title: `Error adding ${$fromChain.display_name}`,
-      //     description: `There was an issue adding ${$fromChain.display_name} to your wallet. ${ts.error}`
-      //   }),
-      //   () => ({
-      //     status: "IN_PROGRESS",
-      //     title: `Adding ${$fromChain.display_name}`,
-      //     description: `Click 'Approve' in wallet.`
-      //   })
-      // ),
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",
@@ -543,6 +542,11 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           status: "ERROR",
           title: `Error switching to ${$fromChain.display_name}`,
           description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
+        }),
+        () => ({
+          status: "WARNING",
+          title: `Could not automatically switch chain.`,
+          description: `Please make sure your wallet is connected to  ${$fromChain.display_name}`
         }),
         () => ({
           status: "IN_PROGRESS",
@@ -560,6 +564,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: `Error approving ERC20`,
           description: `${ts.error}`
         }),
+        () => {},
         () => ({
           status: "IN_PROGRESS",
           title: "Approving ERC20",
@@ -576,6 +581,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: `Error waiting for approval receipt`,
           description: `${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Awaiting approval receipt",
@@ -593,6 +599,11 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           description: `${ts.error}`
         }),
         () => ({
+          status: "WARNING",
+          title: `Failed to simulate transfer`,
+          description: `You can still attempt to make this transfer in your wallet`
+        }),
+        () => ({
           status: "IN_PROGRESS",
           title: "Simulating transfer",
           description: `Waiting on ${$fromChain.display_name}`
@@ -608,6 +619,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: "Error confirming transfer",
           description: `${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
@@ -624,6 +636,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: "Error while waiting on transfer receipt",
           description: `tx hash: ${ts.transferHash}, error: ${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Awaiting transfer receipt",
@@ -635,6 +648,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         "TRANSFERRING",
         "Transfer assets",
         "Transferred assets",
+        () => ({}),
         () => ({}),
         () => ({
           status: "IN_PROGRESS",
@@ -656,6 +670,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: "Error confirming transfer",
           description: `${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
@@ -667,6 +682,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         "TRANSFERRING",
         "Transfer assets",
         "Transferred assets",
+        () => ({}),
         () => ({}),
         () => ({
           status: "IN_PROGRESS",
@@ -701,7 +717,6 @@ const resetInput = () => {
 </script>
 
 <section class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
-
   {#if $transferState.kind === "PRE_TRANSFER"}
     <div class="w-full max-w-lg">
       <Card.Root class="mb-4">

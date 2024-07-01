@@ -14,7 +14,7 @@ export let onRetry: (() => void) | undefined = undefined
 const dispatch = createEventDispatcher()
 
 let stepsUpToError = derived(steps, $steps => {
-  let errorIndex = $steps.findIndex(step => step.status === "ERROR")
+  let errorIndex = $steps.findIndex(step => step.status === "ERROR" || step.status === "WARNING")
   return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
 })
 
@@ -35,22 +35,25 @@ const cancel = () => {
         step.status === "PENDING" ? "bg-white" :
         step.status === "IN_PROGRESS" ? "bg-white" :
         step.status === "COMPLETED" ? "bg-accent" :
-        step.status === "ERROR" ? "bg-black" : ""
+        step.status === "ERROR" ? "bg-black" :
+        step.status === "WARNING" ? "bg-yellow-300" : ""
       )}>
         <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300",
           step.status === "COMPLETED" ? "w-1 h-7 rotate-45 translate-x-[2px]" :
-          step.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" : "w-2 h-2"
+          step.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" :
+          step.status === "WARNING" ? "w-1 h-4 -translate-y-[12px]" : "w-2 h-2"
           )}></div>
         <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300",
           step.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" :
-          step.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" : "w-2 h-2"
+          step.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" :
+          step.status === "WARNING" ? "w-1 h-1 translate-y-[8px]" : "w-2 h-2"
           )}></div>
         {#if step.status === "IN_PROGRESS"}
           <SpinnerSvg className="absolute text-accent w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"/>
         {/if}
       </div>
       <!-- bottom step connector !-->
-      <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" ?  "bg-black" : "")}></div>
+      <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" && step.status !== "WARNING" ?  "bg-black" : "")}></div>
     </div>
     <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if step.traceDetails}
@@ -72,6 +75,8 @@ const cancel = () => {
   </li>
 {/each}
 </ol>
+
+
 {#if $stepsUpToError.length < $steps.length && onRetry !== undefined}
 
   <div class="flex gap-1 mt-6 w-full">
@@ -81,7 +86,8 @@ const cancel = () => {
       on:click={onRetry}
       class='!hover:bg-foreground !hover:text-primary-foreground hover:text-accent w-full'
     >
-      RETRY
+      {$stepsUpToError.slice(-1)[0].status === "WARNING" ? "CONTINUE" : "RETRY" }
+      
     </Button>
 
     <Button
@@ -94,5 +100,3 @@ const cancel = () => {
   </div>
 
 {/if}
-
-

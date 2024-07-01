@@ -13,4 +13,4 @@ export type Step = {
   }
 }
 
-export type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ERROR"
+export type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "WARNING" | "ERROR"
