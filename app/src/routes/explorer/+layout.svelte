@@ -17,9 +17,6 @@ onNavigate(navigation => {
     explorerRoute = navigation.to?.route.id?.split("/").at(2) ?? null
   }
 })
-
-// @ts-expect-error
-$: mainExplorerPage = $page.route.id?.split("/").length <= 3
 </script>
 
 <svelte:head>

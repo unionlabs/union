@@ -7,42 +7,37 @@ import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { derived } from "svelte/store"
 import CellOriginChannel from "../(components)/cell-origin-channel.svelte"
-import { raise } from "$lib/utilities"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import { toDisplayName } from "$lib/utilities/chains.ts"
-import type { Chain } from "$lib/types"
-
-export let chains: Array<Chain>
+import type { UnwrapReadable } from "$lib/types"
 
 let channels = createQuery({
   queryKey: ["channels"],
   refetchInterval: 5_000,
-  retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
-  queryFn: async () => {
-    const response = await request(URLS.GRAPHQL, channelsQuery, {})
-    if (!response.v0_channel_map) raise("error fetching transfers")
-
-    return response.v0_channel_map.map(channel => ({
+  retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000),
+  queryFn: async () => request(URLS.GRAPHQL, channelsQuery, {}),
+  select: data =>
+    data.v0_channel_map.map(channel => ({
       source: {
-        chain_display_name: toDisplayName(channel.from_chain_id, chains),
+        chain_display_name: channel.source?.display_name,
         chain_id: channel.from_chain_id ?? "unknown",
         connection_id: channel.to_connection_id ?? "unknown",
         channel_id: channel.from_channel_id ?? "unknown"
       },
       destination: {
-        chain_display_name: toDisplayName(channel.from_chain_id, chains),
+        chain_display_name: channel.destination?.display_name,
         chain_id: channel.to_chain_id ?? "unknown",
         connection_id: channel.to_connection_id ?? "unknown",
         channel_id: channel.to_channel_id ?? "unknown"
       },
       status: channel.status
     }))
-  }
 })
 
-let channelsData = derived(channels, $channels => $channels.data ?? [])
+let channelsDataStore = derived(channels, $channels => $channels.data ?? [])
 
-const columns: Array<ColumnDef<{}>> = [
+type DataRow = UnwrapReadable<typeof channelsDataStore>[number]
+
+const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source",
     header: () => "Source",
@@ -58,10 +53,10 @@ const columns: Array<ColumnDef<{}>> = [
 ]
 </script>
 
-{#if $channels.data }
-  <Table bind:dataStore={channelsData} {columns} />
+{#if $channels.data}
+  <Table bind:dataStore={channelsDataStore} {columns} />
 {:else if $channels.isLoading}
-  <LoadingLogo class="size-16"/>
+  <LoadingLogo class="size-16" />
 {:else if $channels.isError}
   Error fetching channels...
 {/if}

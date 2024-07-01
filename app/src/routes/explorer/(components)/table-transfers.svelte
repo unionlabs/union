@@ -5,28 +5,26 @@ import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { derived, writable } from "svelte/store"
+import { derived } from "svelte/store"
 import CellAssets from "../(components)/cell-assets.svelte"
 import CellDuration from "../(components)/cell-duration-text.svelte"
 import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
-import { truncate } from "$lib/utilities/format"
 import { goto } from "$app/navigation"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
-import { raise, readableData } from "$lib/utilities"
-import { onMount } from "svelte"
-import type { Chain } from "$lib/types"
+import { raise } from "$lib/utilities"
+import type { Chain, UnwrapReadable } from "$lib/types"
 
 export let chains: Array<Chain>
 
 let transfers = createQuery({
   queryKey: ["transfers-all"],
   refetchInterval: 5_000,
-  queryFn: async () => {
-    const response = await request(URLS.GRAPHQL, allTransfersQueryDocument, {})
-    if (!response.v0_transfers) raise("error fetching transfers")
+  queryFn: async () => request(URLS.GRAPHQL, allTransfersQueryDocument, {}),
+  select: data => {
+    if (!data.v0_transfers) raise("error fetching transfers")
 
-    return response.v0_transfers.map(tx => {
+    return data.v0_transfers.map(tx => {
       let destinationChainId = tx.destination_chain_id
       let receiver = tx.receiver
 
@@ -53,9 +51,11 @@ let transfers = createQuery({
   }
 })
 
-let transfersData = derived(transfers, $transfers => $transfers.data ?? [])
+let transfersDataStore = derived(transfers, $transfers => $transfers.data ?? [])
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
+
+const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source",
     header: () => "Source",
@@ -84,12 +84,15 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 </script>
 
 {#if $transfers.data}
-  <Table bind:dataStore={transfersData} {columns} onClick={(x) => {
-    // @ts-ignore
-    goto(`/explorer/transfers/${x.source_transaction_hash}`)
-  }}/>
+  <Table
+    bind:dataStore={transfersDataStore}
+    {columns}
+    onClick={x => {
+      goto(`/explorer/transfers/${x.source_transaction_hash}`)
+    }}
+  />
 {:else if $transfers.isLoading}
-  <LoadingLogo class="size-16"/>
+  <LoadingLogo class="size-16" />
 {:else if $transfers.isError}
   Error fetching transfers...
 {/if}
