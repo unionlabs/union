@@ -299,11 +299,10 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
-
       if ($transferState.warning) {
         transferState.set({ kind: "APPROVING_ASSET" })
-        transfer();
-        return;
+        transfer()
+        return
       }
       // ^ the user is continuing continuing after having seen the warning
 
@@ -357,7 +356,7 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SIMULATING_TRANSFER") {
-      console.log("simulating transfer step");
+      console.log("simulating transfer step")
 
       const contractRequest = {
         chainId: sepolia.id,
@@ -373,22 +372,21 @@ const transfer = async () => {
           { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
           0n
         ]
-      } as const; 
+      } as const
 
       if ($transferState.warning) {
         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
-        transfer();
-        return;
+        transfer()
+        return
       }
 
-      
       // ^ the user is continuing continuing after having seen the warning
 
-      console.log("confirming transfers test");
+      console.log("confirming transfers test")
 
       try {
-      console.log('contract request', contractRequest);
-        const simulationResult = await simulateContract(config, contractRequest )
+        console.log("contract request", contractRequest)
+        const simulationResult = await simulateContract(config, contractRequest)
         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
       } catch (error) {
         if (error instanceof Error) {
@@ -522,8 +520,8 @@ const stateToStatus = <K extends TransferState["kind"]>(
     : stepAfter(state, kind)
       ? { status: "COMPLETED", title: completedTitle }
       : // @ts-ignore
-        state.warning !== undefined 
-        ? warningFormatter(state as Extract<TransferState, { kind: K}>)
+        state.warning !== undefined
+        ? warningFormatter(state as Extract<TransferState, { kind: K }>)
         : // @ts-ignore
           state.error !== undefined
           ? errorFormatter(state as Extract<TransferState, { kind: K }>)
