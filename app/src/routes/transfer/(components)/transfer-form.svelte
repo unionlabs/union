@@ -308,11 +308,15 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
+
+      if ($transferState.warning) transferState.set({ kind: "APPROVING_ASSET" })
+      // ^ the user is continuing continuing after having seen the warning
+
       try {
         await switchChain(config, { chainId: 11155111 })
       } catch (error) {
         if (error instanceof Error) {
-          transferState.set({ kind: "SWITCHING_TO_CHAIN", error })
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
         }
         return
       }
@@ -358,27 +362,36 @@ const transfer = async () => {
     }
 
     if ($transferState.kind === "SIMULATING_TRANSFER") {
+      console.log("simulating transfer step");
+
+      const contractRequest = {
+        chainId: sepolia.id,
+        abi: ucs01abi,
+        account: userAddr.evm.canonical,
+        functionName: "send",
+        address: ucs01address,
+        args: [
+          ucs1_configuration.channel_id,
+          pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
+          [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
+          pfmMemo ?? "", // memo
+          { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+          0n
+        ]
+      } as const; 
+
+      if ($transferState.warning !== undefined) transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+      // ^ the user is continuing continuing after having seen the warning
+
+      console.log("confirming transfers test");
+
       try {
-        const simulationResult = await simulateContract(config, {
-          chainId: sepolia.id,
-          abi: ucs01abi,
-          account: userAddr.evm.canonical,
-          functionName: "send",
-          address: ucs01address,
-          args: [
-            ucs1_configuration.channel_id,
-            pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
-            [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
-            pfmMemo ?? "", // memo
-            { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-            0n
-          ]
-        })
+        const simulationResult = await simulateContract(config, contractRequest )
         // @ts-ignore
-        transferState.set({ kind: "CONFIRMING_TRANSFER", simulationResult })
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractArgs })
       } catch (error) {
         if (error instanceof Error) {
-          transferState.set({ kind: "SIMULATING_TRANSFER", error })
+          transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
         }
         return
       }
@@ -387,13 +400,13 @@ const transfer = async () => {
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
         // @ts-ignore
-        const transferHash = await writeContract(config, $transferState.simulationResult.request)
+        const transferHash = await writeContract(config, $transferState.contractArgs)
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
             kind: "CONFIRMING_TRANSFER",
-            simulationResult: $transferState.simulationResult,
+            contractRequest: $transferState.contractRequest,
             error
           })
         }
@@ -722,7 +735,6 @@ const resetInput = () => {
 </script>
 
 <section class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
-
   {#if $transferState.kind === "PRE_TRANSFER"}
     <div class="w-full max-w-lg">
       <Card.Root class="mb-4">

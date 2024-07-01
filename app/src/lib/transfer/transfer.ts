@@ -23,7 +23,7 @@ export type TransferState = DiscriminatedUnion<
     APPROVING_ASSET: { error?: Error }
     AWAITING_APPROVAL_RECEIPT: { error?: Error; hash: `0x${string}` }
     SIMULATING_TRANSFER: { warning?: Error }
-    CONFIRMING_TRANSFER: { error?: Error; simulationResult: SimulateContractReturnType }
+    CONFIRMING_TRANSFER: { error?: Error; contractRequest: unknown }
     AWAITING_TRANSFER_RECEIPT: { error?: Error; transferHash: `0x${string}` }
     TRANSFERRING: { transferHash: string }
     TRANSFERRED: { transferHash: string }

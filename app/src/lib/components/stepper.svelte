@@ -14,7 +14,7 @@ export let onRetry: (() => void) | undefined = undefined
 const dispatch = createEventDispatcher()
 
 let stepsUpToError = derived(steps, $steps => {
-  let errorIndex = $steps.findIndex(step => step.status === "ERROR")
+  let errorIndex = $steps.findIndex(step => step.status === "ERROR" || step.status === "WARNING")
   return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
 })
 
@@ -53,7 +53,7 @@ const cancel = () => {
         {/if}
       </div>
       <!-- bottom step connector !-->
-      <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" ?  "bg-black" : "")}></div>
+      <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" && step.status !== "WARNING" ?  "bg-black" : "")}></div>
     </div>
     <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if step.traceDetails}
@@ -75,6 +75,8 @@ const cancel = () => {
   </li>
 {/each}
 </ol>
+
+
 {#if $stepsUpToError.length < $steps.length && onRetry !== undefined}
 
   <div class="flex gap-1 mt-6 w-full">
@@ -84,7 +86,8 @@ const cancel = () => {
       on:click={onRetry}
       class='!hover:bg-foreground !hover:text-primary-foreground hover:text-accent w-full'
     >
-      RETRY
+      {$stepsUpToError.slice(-1)[0].status === "WARNING" ? "CONTINUE" : "RETRY" }
+      
     </Button>
 
     <Button
@@ -97,5 +100,3 @@ const cancel = () => {
   </div>
 
 {/if}
-
-
