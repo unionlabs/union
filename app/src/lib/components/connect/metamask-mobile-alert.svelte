@@ -34,7 +34,7 @@ export let metamaskAlertDialogOpen: boolean
           rel="noopener noreferrer"
           class="text-center"
         >
-          Video walkhrough
+          Video Walkthrough 🔗
         </a>
       </AlertDialog.Action>
     </AlertDialog.Footer>
