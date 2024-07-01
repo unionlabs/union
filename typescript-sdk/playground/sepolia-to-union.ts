@@ -9,7 +9,7 @@ import { hexStringToUint8Array } from "#convert.ts"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
-/* `bun playground/sepolia-to-union.ts --private-key "..."` */
+/* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -20,7 +20,7 @@ const { values } = parseArgs({
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) throw new Error("Private key not found")
+if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)

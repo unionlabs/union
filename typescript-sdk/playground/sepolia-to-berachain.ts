@@ -10,10 +10,6 @@ import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
-/**
- * WIP
- */
-
 /* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
 
 const { values } = parseArgs({
@@ -25,7 +21,7 @@ const { values } = parseArgs({
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) throw new Error("Private key not found")
+if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)

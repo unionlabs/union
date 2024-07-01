@@ -27,27 +27,42 @@ const hubbleRestFetch = ofetch.create({
 export const offchainQuery = {
   chains: async ({
     includeEndpoints = false,
-    includeContracts = false
-  }: { includeEndpoints?: boolean; includeContracts?: boolean } = {}) => {
+    includeContracts = false,
+    includeAssets = false
+  }: {
+    includeEndpoints?: boolean
+    includeContracts?: boolean
+    includeAssets?: boolean
+  } = {}) => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
     >(`/chains`, {
-      query: { include_rpcs: includeEndpoints, include_contracts: includeContracts }
+      query: {
+        include_rpcs: includeEndpoints,
+        include_contracts: includeContracts,
+        include_assets: includeAssets
+      }
     })
   },
   chain: async ({
     chainId,
     includeEndpoints = false,
-    includeContracts = false
+    includeContracts = false,
+    includeAssets = false
   }: {
     chainId: string
     includeEndpoints?: boolean
     includeContracts?: boolean
+    includeAssets?: boolean
   }) => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
     >(`/chains/${chainId}`, {
-      query: { include_rpcs: includeEndpoints, include_contracts: includeContracts }
+      query: {
+        include_rpcs: includeEndpoints,
+        include_contracts: includeContracts,
+        include_assets: includeAssets
+      }
     })
   }
 }
@@ -109,17 +124,18 @@ export interface Ucs1Configuration {
 
 export interface Chain<
   IncludeEndpoints extends boolean | undefined = undefined,
-  IncludeContracts extends boolean | undefined = undefined
+  IncludeContracts extends boolean | undefined = undefined,
+  IncludeAssets extends boolean | undefined = undefined
 > {
   id: number
   testnet: boolean
   chain_id: string
   enabled: boolean
   addr_prefix: string
-  assets: Array<Asset>
   display_name: string
   logo_uri: string | null
   rpc_type: "evm" | "cosmos"
   rpcs: IncludeEndpoints extends true ? Array<Rpc> : undefined
+  assets: IncludeAssets extends true ? Array<Asset> : undefined
   ucs1_configurations: IncludeContracts extends true ? Array<Ucs1Configuration> : undefined
 }

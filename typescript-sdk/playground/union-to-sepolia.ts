@@ -11,7 +11,7 @@ import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
-/* `bun playground/union-to-sepolia.ts --private-key "..."` */
+/* `bun playground/union-to-sepolia.ts --private-key "..."` --estimate-gas */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -22,7 +22,7 @@ const { values } = parseArgs({
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) throw new Error("Private key not found")
+if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -31,8 +31,6 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
-
-// console.info(cosmosAccount)
 
 const stamp = timestamp()
 

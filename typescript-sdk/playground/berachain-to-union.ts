@@ -1,24 +1,28 @@
 #!/usr/bin/env bun
-import { erc20Abi, http } from "viem"
 import { parseArgs } from "node:util"
+import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
-  options: { "private-key": { type: "string" } }
+  options: {
+    "private-key": { type: "string" },
+    "estimate-gas": { type: "boolean", default: false }
+  }
 })
-erc20Abi
+
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) throw new Error("Private key not found")
+if (!PRIVATE_KEY) raise("Private key not found")
+const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
@@ -37,6 +41,7 @@ try {
     data: [beraInfo]
   } = await offchainQuery.chain({
     chainId: "80084",
+    includeEndpoints: true,
     includeContracts: true
   })
   if (!beraInfo) raise("Berachain info not found")
@@ -52,9 +57,12 @@ try {
     evm: {
       account: berachainAccount,
       chain: berachainTestnetbArtio,
-      transport: http(
-        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
-      )
+      transport: fallback([
+        http(
+          "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
+        ),
+        http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
+      ])
     },
     cosmos: {
       account: cosmosAccount,
@@ -67,14 +75,16 @@ try {
     amount: 1n,
     sourceChannel: channel_id,
     network: beraInfo.rpc_type,
+    denomAddress: WBTC_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    denomAddress: "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae", // wBTC
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
-  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
+  consola.box("Berachain to union gas cost:", gasEstimationResponse)
+
+  if (ONLY_ESTIMATE_GAS) process.exit(0)
 
   if (!gasEstimationResponse.success) {
     console.info("Transaction simulation failed")
@@ -85,10 +95,10 @@ try {
     amount: 1n,
     sourceChannel: channel_id,
     network: beraInfo.rpc_type,
+    denomAddress: WBTC_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    denomAddress: "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae", // wBTC
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 

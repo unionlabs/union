@@ -4,12 +4,13 @@ import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
+import { raise } from '#utilities/index.ts'
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, type TransferAssetsParameters } from "#mod.ts"
 
-/* `bun playground/union-to-union.ts --private-key "..."` */
+/* `bun playground/union-to-union.ts --private-key "..."` --estimate-gas */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -20,7 +21,7 @@ const { values } = parseArgs({
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) throw new Error("Private key not found")
+if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -53,7 +54,8 @@ try {
   } satisfies TransferAssetsParameters
 
   const gasEstimationResponse = await client.simulateTransaction(transferAssetsParameters)
-  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
+
+  consola.box("union to union gas cost:", gasEstimationResponse)
 
   if (!gasEstimationResponse.success) {
     console.info("Transaction simulation failed")
